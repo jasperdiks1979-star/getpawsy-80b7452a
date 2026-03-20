@@ -107,7 +107,7 @@ const Index = () => {
 
               <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-display font-bold text-foreground leading-[1.1] tracking-tight" style={{ textWrap: 'balance' as any }}>
                 Never Scoop Litter Again
-                <span className="text-primary"> — 100% Automatic</span>
+                <span className="text-primary"> — Fully Automatic</span>
               </h1>
 
               <p className="text-sm md:text-base text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
