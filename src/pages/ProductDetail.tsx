@@ -1600,7 +1600,7 @@ const ProductDetail = () => {
 
               {/* Add to Cart Button */}
               <Button
-                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-semibold shadow-soft"
+                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-semibold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
