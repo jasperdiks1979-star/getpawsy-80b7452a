@@ -99,25 +99,25 @@ const Index = () => {
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-xl space-y-5">
              <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-               Stop Pulling, Barking & Bad Habits
+               Smart Pet Care
                <br />
-               <span className="text-primary">— Starting Today</span>
+               <span className="text-primary">Starts Here</span>
              </h1>
              <p className="text-base md:text-lg text-muted-foreground max-w-md">
-               Smart training tools & comfort solutions for real results — fast US shipping.
+               Upgrade your pet's comfort, hygiene & safety with proven essentials.
              </p>
             <div className="flex flex-wrap gap-3">
               <a
-                href="/collections/dog-potty-training"
+                href="#bestsellers"
                 className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all"
               >
-                Shop Training Tools →
+                Shop Bestsellers →
               </a>
               <a
-                href="/bestsellers"
+                href="/products"
                 className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent transition-colors"
               >
-                View Bestsellers
+                Browse All Products
               </a>
             </div>
           </div>
