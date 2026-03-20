@@ -1398,25 +1398,31 @@ const ProductDetail = () => {
           </Tabs>
         </motion.div>
 
-        {/* Why Choose This Product — 300+ words unique content (prevents Soft 404) */}
-        <ProductWhyChoose productName={product.name} category={product.category || ''} />
-
-        {/* Problem → Solution Block */}
+        {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ''} />
 
-        {/* How It Works — step-by-step */}
-        <ProductHowItWorks productName={product.name} category={product.category || ''} />
+        {/* 2. Why Choose — 300+ words unique content (prevents Soft 404) */}
+        <ProductWhyChoose productName={product.name} category={product.category || ''} />
 
-        {/* Feature Grid — 4 feature cards */}
+        {/* 3. Feature Grid — detailed benefits */}
         <ProductFeatureGrid productName={product.name} category={product.category || ''} />
 
-        {/* Social Proof — category-aware review quotes */}
+        {/* 4. How It Works — step-by-step */}
+        <ProductHowItWorks productName={product.name} category={product.category || ''} />
+
+        {/* 5. Real-Life Use Cases — who is this for */}
+        <ProductUseCases productName={product.name} category={product.category || ''} />
+
+        {/* 6. Why This vs Alternatives — comparison table */}
+        <ProductVsAlternatives productName={product.name} category={product.category || ''} />
+
+        {/* 7. Social Proof — category-aware review quotes */}
         <ProductSocialProof productName={product.name} category={product.category || ''} />
 
-        {/* Visible FAQ Accordion */}
+        {/* 8. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
-        {/* Final CTA Block — conversion closer */}
+        {/* 9. Final CTA Block — conversion closer */}
         <FinalCtaBlock
           onAddToCart={handleAddToCart}
           inStock={inStock}
