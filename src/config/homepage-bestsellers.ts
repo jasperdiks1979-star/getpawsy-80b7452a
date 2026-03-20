@@ -42,8 +42,8 @@ export interface CuratedProduct {
 export const MANUAL_PRODUCTS: CuratedProduct[] = [
   {
     slug: 'dog-cot-cooling-pet-bed-3',
-    displayName: 'Orthopedic Dog Bed',
-    benefit: 'Relieves joint pain & improves sleep',
+    displayName: 'Orthopedic Elevated Dog Bed — Cooling Comfort & Joint Support',
+    benefit: 'Supports joints & keeps your dog cool and comfortable',
   },
   {
     slug: 'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo',
