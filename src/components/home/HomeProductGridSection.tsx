@@ -7,6 +7,7 @@ interface GridProduct {
   image_url: string | null;
   price: number;
   category?: string | null;
+  benefit?: string;
 }
 
 interface HomeProductGridSectionProps {
