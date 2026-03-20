@@ -1,49 +1,105 @@
 import { useQuery } from '@tanstack/react-query';
 import { HomeProductGridSection } from './HomeProductGridSection';
+import {
+  BESTSELLER_CONFIG,
+  MANUAL_PRODUCTS,
+  EXCLUDED_KEYWORDS,
+  MIN_PRICE,
+} from '@/config/homepage-bestsellers';
 
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 /**
- * Manually curated bestseller slugs — strict order.
- * These are high-value, high-converting products only.
+ * Checks whether a product name/slug contains an excluded keyword.
  */
-const CURATED_SLUGS = [
-  'memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner',
-  'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo',
-  'dog-booster-car-seat-pet-car-seat-for-small-medium-dog-up-to-40-lbs-black',
-  '2-in-1-dog-paw-cleaner-cup-soft-pet-dog-foot-cleaning-washer-brush-cup-portable-pet-foot-washer-paw-',
-];
+function isExcluded(name: string, slug: string): boolean {
+  const haystack = `${name} ${slug}`.toLowerCase();
+  return EXCLUDED_KEYWORDS.some(kw => haystack.includes(kw));
+}
 
-/** Display-friendly names to override long DB titles */
-const DISPLAY_NAMES: Record<string, string> = {
-  'memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner': 'Orthopedic Dog Bed',
-  'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo': 'No-Pull Dog Harness',
-  'dog-booster-car-seat-pet-car-seat-for-small-medium-dog-up-to-40-lbs-black': 'Dog Car Seat & Travel Kit',
-  '2-in-1-dog-paw-cleaner-cup-soft-pet-dog-foot-cleaning-washer-brush-cup-portable-pet-foot-washer-paw-': 'Portable Dog Paw Cleaner',
-};
+/**
+ * MANUAL MODE — fetch only curated slugs, preserve strict order,
+ * apply display-name overrides.
+ */
+async function fetchManualProducts() {
+  const supabase = await getSupabase();
+  const slugs = MANUAL_PRODUCTS.map(p => p.slug);
+
+  const { data, error } = await supabase
+    .from('products_public')
+    .select('id, name, slug, image_url, price, category')
+    .in('slug', slugs)
+    .eq('is_active', true);
+
+  if (error) throw error;
+
+  // Map by slug for O(1) lookup
+  const bySlug = new Map((data ?? []).map(p => [p.slug, p]));
+
+  // Build result in strict curated order, skip missing
+  const result = MANUAL_PRODUCTS
+    .map(curated => {
+      const db = bySlug.get(curated.slug);
+      if (!db) {
+        console.warn(`[Bestsellers] Curated product missing: "${curated.displayName}" (${curated.slug})`);
+        return null;
+      }
+      return {
+        ...db,
+        name: curated.displayName,
+        benefit: curated.benefit,
+      };
+    })
+    .filter(Boolean) as Array<{
+      id: string;
+      name: string;
+      slug: string;
+      image_url: string | null;
+      price: number;
+      category: string | null;
+      benefit: string;
+    }>;
+
+  return result;
+}
+
+/**
+ * AUTO MODE — pull top-scored products from DB, apply exclusions.
+ * Falls back to manual mode if no scored data exists.
+ */
+async function fetchAutoProducts() {
+  const supabase = await getSupabase();
+
+  // Try scored winners first (future: a dedicated 'product_scores' table)
+  const { data, error } = await supabase
+    .from('products_public')
+    .select('id, name, slug, image_url, price, category')
+    .eq('is_active', true)
+    .gte('price', MIN_PRICE)
+    .order('price', { ascending: false })
+    .limit(40);
+
+  if (error) throw error;
+
+  const filtered = (data ?? [])
+    .filter(p => !isExcluded(p.name, p.slug))
+    .slice(0, BESTSELLER_CONFIG.maxProducts);
+
+  // Fallback to manual if auto yields nothing useful
+  if (filtered.length === 0) {
+    console.info('[Bestsellers] Auto mode returned 0 products — falling back to manual.');
+    return fetchManualProducts();
+  }
+
+  return filtered.map(p => ({ ...p, benefit: '' }));
+}
 
 export function TrendingProducts() {
+  const mode = BESTSELLER_CONFIG.mode;
+
   const { data: products, isLoading } = useQuery({
-    queryKey: ['curated-bestsellers-v3'],
-    queryFn: async () => {
-      const supabase = await getSupabase();
-
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('id, name, slug, image_url, price, category')
-        .in('slug', CURATED_SLUGS)
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      // Sort by curated order & apply display names
-      const sorted = CURATED_SLUGS
-        .map(slug => data?.find(p => p.slug === slug))
-        .filter(Boolean)
-        .map(p => ({ ...p!, name: DISPLAY_NAMES[p!.slug] || p!.name }));
-
-      return sorted;
-    },
+    queryKey: ['homepage-bestsellers', mode],
+    queryFn: mode === 'manual' ? fetchManualProducts : fetchAutoProducts,
     staleTime: 30 * 60 * 1000,
   });
 
@@ -53,7 +109,7 @@ export function TrendingProducts() {
         <div className="container px-4 md:px-6">
           <div className="h-8 w-56 bg-muted rounded mb-8 animate-pulse" />
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-            {Array.from({ length: 4 }).map((_, i) => (
+            {Array.from({ length: BESTSELLER_CONFIG.maxProducts }).map((_, i) => (
               <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
             ))}
           </div>
@@ -66,12 +122,12 @@ export function TrendingProducts() {
 
   return (
     <HomeProductGridSection
-      title="Top Picks for Pet Parents"
-      subtitle="Proven tools that solve real problems — fast."
+      title={BESTSELLER_CONFIG.sectionTitle}
+      subtitle={BESTSELLER_CONFIG.sectionSubtitle}
       products={products}
-      trackingKey="curated-bestsellers"
-      seeAllHref="/products"
-      seeAllLabel="View All Products"
+      trackingKey="homepage-bestsellers"
+      seeAllHref={BESTSELLER_CONFIG.seeAllHref}
+      seeAllLabel={BESTSELLER_CONFIG.seeAllLabel}
     />
   );
 }
