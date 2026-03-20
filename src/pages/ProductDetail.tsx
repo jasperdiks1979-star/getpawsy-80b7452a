@@ -56,6 +56,8 @@ import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
 import { ProductWhyChoose } from '@/components/products/ProductWhyChoose';
 import { ProductHowItWorks } from '@/components/products/ProductHowItWorks';
+import { ProductUseCases } from '@/components/products/ProductUseCases';
+import { ProductVsAlternatives } from '@/components/products/ProductVsAlternatives';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
