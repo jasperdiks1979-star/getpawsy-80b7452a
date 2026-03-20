@@ -108,7 +108,7 @@ const SCIENCE_POINTS = [
 ];
 
 export default function OrthopedicDogBeds() {
-  const { isAffiliate } = useAffiliateMode();
+  
   const domConfig = getDominationConfig('orthopedic-dog-beds');
   // Fetch products
   const { data: products = [], isLoading } = useQuery({
