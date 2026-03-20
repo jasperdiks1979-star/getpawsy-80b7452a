@@ -268,6 +268,7 @@ const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/Shopping
 const ProductOptimizerPage = lazyWithRetry(() => import("./pages/admin/ProductOptimizerPage"));
 const ImageCompliancePage = lazyWithRetry(() => import("./pages/admin/ImageCompliancePage"));
 const CornerstoneEnginePage = lazyWithRetry(() => import("./pages/admin/CornerstoneEnginePage"));
+const WinningProductFinder = lazyWithRetry(() => import("./pages/admin/WinningProductFinder"));
 const MerchantComplianceReport = lazyWithRetry(() => import("./pages/admin/MerchantComplianceReport"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
@@ -692,6 +693,7 @@ const App = () => {
                         <Route path="image-compliance" element={<Suspense fallback={<RouteLoader />}><ImageCompliancePage /></Suspense>} />
                         <Route path="cornerstone-engine" element={<Suspense fallback={<RouteLoader />}><CornerstoneEnginePage /></Suspense>} />
                         <Route path="merchant-compliance" element={<Suspense fallback={<RouteLoader />}><MerchantComplianceReport /></Suspense>} />
+                        <Route path="winning-products" element={<Suspense fallback={<RouteLoader />}><WinningProductFinder /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
