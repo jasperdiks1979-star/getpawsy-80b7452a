@@ -364,6 +364,40 @@ const About = () => {
           </div>
         </section>
 
+        {/* Why Customers Choose GetPawsy */}
+        <section className="py-16 lg:py-20">
+          <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Heart className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+                  Why Customers Choose GetPawsy
+                </h2>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                {[
+                  { title: 'Pet comfort first', desc: 'Every product is selected with your pet\'s comfort and safety in mind.' },
+                  { title: 'Reliable delivery', desc: 'Orders ship within 1–2 business days with tracking to the United States.' },
+                  { title: 'Customer-first approach', desc: 'Real support from real people — we respond within 24 hours.' },
+                  { title: 'Transparent policies', desc: '30-day returns, clear pricing, and no hidden fees.' },
+                ].map((item) => (
+                  <div key={item.title} className="bg-card rounded-xl shadow-card p-5">
+                    <p className="font-medium text-foreground mb-1">{item.title}</p>
+                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* Closing Promise */}
         <section className="py-16 lg:py-20 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10">
           <div className="container px-4 md:px-6 max-w-3xl mx-auto">
