@@ -461,7 +461,30 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 text-sm text-muted-foreground leading-relaxed">
             {props.introText}
           </div>
+
+          {/* Post-intro CTA */}
+          <div className="flex flex-wrap gap-3 mt-5">
+            <Link to={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
+              <Button className="gap-2"><ShoppingCart className="w-4 h-4" /> Shop Top Picks</Button>
+            </Link>
+            <a href="#comparison">
+              <Button variant="outline" className="gap-2"><Star className="w-4 h-4" /> See Full Comparison</Button>
+            </a>
+          </div>
         </section>
+
+        {/* ── 🏆 Best Overall Pick Hero ── */}
+        {props.bestOverallPick && (
+          <BestOverallHero
+            pick={props.bestOverallPick}
+            products={products ?? undefined}
+            categories={props.productCategories}
+            species={props.species}
+          />
+        )}
+
+        {/* ── Customer Quotes ── */}
+        {props.customerQuotes && <QuoteStrip quotes={props.customerQuotes} />}
 
         {/* ── Quick Answer — Top 3 Picks (Conversion-Optimized) ── */}
         {props.quickAnswer && (
