@@ -53,7 +53,7 @@ import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
 
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
-import { inferClusterFromCategory } from '@/lib/cluster-config';
+
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
 import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
 import { SimilarProductsCompare } from '@/components/products/SimilarProductsCompare';
