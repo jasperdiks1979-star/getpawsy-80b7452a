@@ -52,7 +52,6 @@ const NOINDEX_PREFIXES: string[] = [
   '/terms-iframe',
   '/compliance',
   '/merchant-fix-checklist',
-  '/landing',
 ];
 
 /**

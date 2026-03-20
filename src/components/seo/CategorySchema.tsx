@@ -137,9 +137,8 @@ export function CategorySchema({
       <link rel="alternate" hrefLang="en-US" href={canonicalUrl} />
       <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
 
-      {/* Robots — noindex all filtered/search/category views; only /products is indexable */}
-      {/* Category pages canonicalize to /collections/* pillar pages — always noindex parameter URLs */}
-      <meta name="robots" content={(isSearch || categoryName) ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
+      {/* Robots — search pages noindex; category/collection pages must be indexable for GMC */}
+      <meta name="robots" content={isSearch ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
 
       {/* Open Graph */}
       <meta property="og:type" content="website" />
