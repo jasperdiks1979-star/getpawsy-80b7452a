@@ -78,7 +78,7 @@ export const RETURNS_PROCESS = 'Contact info@getpawsy.pet with your order number
 // ============= SUPPORT CONSTANTS =============
 
 /** Support email */
-export const SUPPORT_EMAIL = 'info@getpawsy.pet';
+export const SUPPORT_EMAIL = 'support@getpawsy.pet';
 
 /** Response time promise */
 export const RESPONSE_TIME = 'We respond within 24 hours';
