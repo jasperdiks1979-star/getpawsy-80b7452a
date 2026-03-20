@@ -241,32 +241,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 2. TRUST BAR ═══ */}
-      <section className="py-4 border-y border-border/40 bg-card/50" aria-label="Trust signals">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
-              </svg>
-              Free US Shipping $35+
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              30-Day Returns
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-              Secure Checkout
-            </span>
-          </div>
-        </div>
-      </section>
+      {/* Trust bar removed — trust signals already in hero and footer to avoid repetition */}
 
       {/* ═══ 3. HOW IT WORKS — funnel bridge (moved up, before bestsellers) ═══ */}
       <section id="how-it-works" className="py-12 md:py-16 scroll-mt-20 bg-muted/20">
