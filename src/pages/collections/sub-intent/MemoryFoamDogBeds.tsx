@@ -9,7 +9,7 @@ export default function MemoryFoamDogBeds() {
       h1="Best Memory Foam Dog Beds — High-Density Joint Support (2026)"
       subtitle="Viscoelastic memory foam beds that contour to your dog's body, relieve pressure points, and maintain support for 3–5 years. Tested and density-rated."
       ctaText="Shop Memory Foam Beds"
-      ctaLink="/products?category=dog-beds"
+      ctaLink="/collections/orthopedic-calming-dog-beds"
       trustBadges={['Foam Density Tested', '3–7 Day US Shipping', '30-Day Comfort Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },

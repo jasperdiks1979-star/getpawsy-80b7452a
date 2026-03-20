@@ -9,7 +9,7 @@ export default function DogBoosterSeat() {
       h1="Best Dog Booster Seats — Elevated View for Calmer Car Rides (2026)"
       subtitle="Elevated car platforms that give small dogs a clear window view while keeping them securely tethered. Reduces car anxiety and keeps dogs safe."
       ctaText="Shop Dog Booster Seats"
-      ctaLink="/products?category=dog-car-seats"
+      ctaLink="/collections/best-dog-car-seats"
       trustBadges={['Elevated Window View', '3–7 Day US Shipping', '30-Day Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
