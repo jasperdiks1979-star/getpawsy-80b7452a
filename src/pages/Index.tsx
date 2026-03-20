@@ -102,7 +102,7 @@ const Index = () => {
             {/* Left — copy */}
             <div className="space-y-4 order-2 md:order-1">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary">
-                🏆 #1 Best-Selling Automatic Cat Litter Box
+                Popular Choice — Automatic Cat Litter Box
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-display font-bold text-foreground leading-[1.1] tracking-tight" style={{ textWrap: 'balance' as any }}>
