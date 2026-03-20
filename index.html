@@ -198,6 +198,13 @@
       var el = document.getElementById('gp-canonical');
       if (el) el.setAttribute('href', canonical);
 
+      // Sync hreflang tags to match canonical
+      var hIds = ['gp-hreflang-en','gp-hreflang-en-us','gp-hreflang-default'];
+      for (var h = 0; h < hIds.length; h++) {
+        var hEl = document.getElementById(hIds[h]);
+        if (hEl) hEl.setAttribute('href', canonical);
+      }
+
       // NOINDEX prefixes — routes that must never be indexed
       var NI = ['/admin','/api','/private','/dashboard','/diagnostics','/cart','/checkout',
         '/account','/auth','/profile','/orders','/search','/wishlist','/payment-success',
