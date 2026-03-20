@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async';
 import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
 } from '@/lib/shipping-constants';
 
 interface LocalBusinessSchemaProps {
@@ -27,7 +28,7 @@ export function LocalBusinessSchema({
     url: baseUrl,
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
-    email: 'info@getpawsy.pet',
+    email: SUPPORT_EMAIL,
     vatID: 'NL003295015B69',
     taxID: 'NL003295015B69',
     address: {
@@ -38,7 +39,7 @@ export function LocalBusinessSchema({
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'info@getpawsy.pet',
+      email: SUPPORT_EMAIL,
       contactType: 'customer service',
       availableLanguage: 'English',
       hoursAvailable: {

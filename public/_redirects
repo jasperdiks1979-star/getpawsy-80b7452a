@@ -21,6 +21,12 @@
 /policies/returns   /returns    301
 /policies/privacy   /privacy    301
 /policies/terms     /terms      301
+/shipping-policy    /shipping   301
+/returns-refunds    /returns    301
+/returns-refund     /returns    301
+/return-policy      /returns    301
+/privacy-policy     /privacy    301
+/terms-of-service   /terms      301
 
 # ═══ LEGACY PAGE REDIRECTS (Shopify/WooCommerce patterns) ═══
 /pages/contact      /contact    301

@@ -73,12 +73,12 @@ export const RETURNS_POLICY_SHORT = '30-day hassle-free returns';
 export const RETURNS_POLICY_DETAILED = 'Not satisfied? Return within 30 days for a full refund.';
 
 /** How to initiate returns */
-export const RETURNS_PROCESS = 'Contact info@getpawsy.pet with your order number and photos of any issues.';
+export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order number and photos of any issues.';
 
 // ============= SUPPORT CONSTANTS =============
 
 /** Support email */
-export const SUPPORT_EMAIL = 'info@getpawsy.pet';
+export const SUPPORT_EMAIL = 'support@getpawsy.pet';
 
 /** Response time promise */
 export const RESPONSE_TIME = 'We respond within 24 hours';

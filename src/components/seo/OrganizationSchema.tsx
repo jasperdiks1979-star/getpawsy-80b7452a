@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { SITE_URL } from '@/lib/constants';
+import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 /**
  * Organization JSON-LD schema — renders site-wide via Layout.
@@ -13,7 +14,7 @@ export function OrganizationSchema() {
     name: 'GetPawsy',
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
-    email: 'info@getpawsy.pet',
+    email: SUPPORT_EMAIL,
     brand: 'GetPawsy',
     vatID: 'NL003295015B69',
     taxID: 'NL003295015B69',
@@ -31,7 +32,7 @@ export function OrganizationSchema() {
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'info@getpawsy.pet',
+      email: SUPPORT_EMAIL,
       contactType: 'customer service',
       availableLanguage: 'English',
     },

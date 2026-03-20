@@ -1,5 +1,5 @@
 import { Truck, RotateCcw, ShieldCheck, Headphones } from 'lucide-react';
-import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS } from '@/lib/shipping-constants';
+import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS, SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 /**
  * Sitewide Trust Bar — renders above the footer on every page.
@@ -27,7 +27,7 @@ export function SitewiseTrustBar() {
         </div>
         <div className="flex items-center gap-2">
           <Headphones className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Need help? <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">info@getpawsy.pet</a></span>
+          <span>Need help? <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></span>
         </div>
       </div>
       <p className="text-center text-xs text-muted-foreground/60 mt-2">
