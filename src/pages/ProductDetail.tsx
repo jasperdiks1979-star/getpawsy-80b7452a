@@ -35,8 +35,6 @@ import USProductDescription from '@/components/products/USProductDescription';
 import { generateClarityIntro } from '@/components/products/ClarityIntro';
 import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
 import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
-import { ShippingTransparency } from '@/components/products/ShippingTransparency';
-import { ProductShippingReturns } from '@/components/products/ProductShippingReturns';
 import { WhyPetParentsLoveThis } from '@/components/products/WhyPetParentsLoveThis';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
