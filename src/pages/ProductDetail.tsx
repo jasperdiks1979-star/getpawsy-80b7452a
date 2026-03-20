@@ -49,6 +49,7 @@ import { RelatedGuides } from '@/components/guides/RelatedGuides';
 
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
+import { ProductSocialProof } from '@/components/products/ProductSocialProof';
 
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 
