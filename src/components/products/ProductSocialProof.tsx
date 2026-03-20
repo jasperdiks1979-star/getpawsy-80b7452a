@@ -83,9 +83,9 @@ const REVIEWS: Record<ProductType, Review[]> = {
     { text: 'Sturdy enough for our 18-lb Maine Coon. No wobbling at all.', name: 'Paula A.' },
   ],
   'litter box': [
-    { text: 'No more daily scooping. This thing basically cleans itself.', name: 'Angela C.' },
-    { text: 'Odor control is amazing. Guests don\'t even know we have cats.', name: 'Robert F.' },
-    { text: 'Both our cats use it without issues. Quiet and efficient.', name: 'Tina M.' },
+    { text: 'No more daily scooping. This thing cleans itself and our home smells fresh all day.', name: 'Angela C.' },
+    { text: 'Guests don\'t even know we have three cats. The odor control is incredible.', name: 'Robert F.' },
+    { text: 'Both our cats adapted immediately. Quiet, efficient, and saves us so much time.', name: 'Tina M.' },
   ],
   default: [
     { text: 'Great quality product. My pet loves it and it arrived fast.', name: 'Jordan W.' },

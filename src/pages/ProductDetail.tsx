@@ -980,10 +980,10 @@ const ProductDetail = () => {
                     );
                   } else if (/litter/i.test(n + ' ' + cat)) {
                     bullets.push(
-                      'Sealed design traps odors at the source',
-                      'Less scooping — efficient waste separation',
-                      'Easy-clean removable tray saves time',
-                      'High walls prevent litter scatter',
+                      'Fully automatic cleaning system',
+                      'Eliminates odors instantly',
+                      'Smart sensors for safety',
+                      'Perfect for multi-cat homes',
                     );
                   } else if (n.includes('toy') || cat.includes('toy')) {
                     bullets.push(

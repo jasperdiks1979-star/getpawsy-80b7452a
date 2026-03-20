@@ -92,10 +92,10 @@ const FEATURES: Record<ProductType, Feature[]> = {
     { title: 'Cozy Hideaway', description: 'Enclosed space for napping and privacy' },
   ],
   'litter box': [
-    { title: 'Odor Control', description: 'Sealed compartment traps smells at the source' },
-    { title: 'Low-Entry Design', description: 'Easy access for kittens and senior cats' },
-    { title: 'Easy Cleaning', description: 'Removable tray simplifies waste disposal' },
-    { title: 'Splash Guard', description: 'High walls prevent litter scatter and mess' },
+    { title: 'Smart App Control', description: 'Monitor and control cleaning cycles from your phone' },
+    { title: 'Whisper-Quiet Operation', description: 'Under 50 dB — won\'t startle your cat or disturb you' },
+    { title: 'Safe Infrared Sensors', description: 'Detects your cat and pauses operation for safety' },
+    { title: 'Large Capacity', description: 'Multi-cat friendly with extended waste storage' },
   ],
   default: [
     { title: 'Premium Materials', description: 'Built to withstand daily pet life demands' },
