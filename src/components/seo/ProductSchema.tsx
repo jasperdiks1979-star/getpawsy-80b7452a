@@ -264,8 +264,8 @@ export function ProductSchema({
       <meta name="twitter:description" content={metaDescription} />
       <meta name="twitter:image" content={primaryImage} />
 
-      {/* Robots — Tier C products get noindex to reduce index bloat; A/B1/B2 stay indexable */}
-      <meta name="robots" content={product.seo_tier === 'C' ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
+      {/* Robots — ALL products must be indexable for Google Merchant Center compliance */}
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 
       {/* JSON-LD Structured Data */}
       <script type="application/ld+json">
