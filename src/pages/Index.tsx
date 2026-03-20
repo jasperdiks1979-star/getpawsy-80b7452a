@@ -80,51 +80,54 @@ const Index = () => {
       {/* ═══ 1. HERO ═══ */}
       <section
         className="relative overflow-hidden flex items-center"
-        style={{ minHeight: 'min(75vh, 560px)', contain: 'layout style' }}
+        style={{ minHeight: 'min(78vh, 600px)', contain: 'layout style' }}
       >
         <div className="absolute inset-0 z-0">
           <picture>
-            <source media="(max-width: 768px)" srcSet="/hero/dog-training-hero-mobile.webp" type="image/webp" width={896} height={1184} />
+            <source media="(max-width: 768px)" srcSet="/hero/cat-litter-box-hero-mobile.webp" type="image/webp" width={810} height={1080} />
             <img
-              src="/hero/dog-training-hero-desktop.webp"
-              alt="Dog being trained by owner — professional dog training tools"
+              src="/hero/cat-litter-box-hero.webp"
+              alt="Happy cat next to a modern self-cleaning litter box in a clean home"
               width={1920} height={1080}
               loading="eager" fetchPriority="high" decoding="async"
               className="hero-lcp-img"
             />
           </picture>
-          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
         </div>
 
-        <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
-          <div className="max-w-xl space-y-5">
-             <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-               Upgrade Your Pet's Life
-               <br />
-               <span className="text-primary">Today</span>
-             </h1>
-             <p className="text-base md:text-lg text-muted-foreground max-w-md">
-               Smart solutions for happier cats & dogs.
-             </p>
-            <div className="flex flex-wrap gap-3">
+        <div className="container relative z-10 px-4 md:px-6 py-14 md:py-24">
+          <div className="max-w-lg space-y-5">
+            <h1 className="text-3xl md:text-[2.75rem] font-display font-bold text-foreground leading-[1.08] tracking-tight" style={{ textWrap: 'balance' as any }}>
+              Upgrade Your Pet's Life Today
+              <br className="hidden sm:block" />
+              <span className="text-primary"> — Smarter, Cleaner & Happier</span>
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
+              No more mess, stress, or guesswork. Discover smart solutions that make pet care easier — starting today.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-1">
               <a
                 href="#bestsellers"
-                className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all"
+                className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
               >
-                Shop Bestsellers →
+                Shop Bestsellers
               </a>
               <a
-                href="/products"
-                className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent transition-colors"
+                href="#how-it-works"
+                className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-200"
               >
-                Browse All Products
+                See How It Works
               </a>
             </div>
+            <p className="text-xs text-muted-foreground/70 pt-1">
+              Trusted by pet owners across the US
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ═══ 2. TRUST BAR — exactly 3 items ═══ */}
+      {/* ═══ 2. TRUST BAR ═══ */}
       <section className="py-4 border-y border-border/40 bg-card/50" aria-label="Trust signals">
         <div className="container px-4 md:px-6">
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-muted-foreground">
@@ -146,12 +149,6 @@ const Index = () => {
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
               Secure Checkout
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-              </svg>
-              support@getpawsy.pet
             </span>
           </div>
         </div>
