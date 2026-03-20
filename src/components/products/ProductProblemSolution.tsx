@@ -103,9 +103,9 @@ const DATA: Record<ProductType, ProblemSolutionData> = {
     benefits: ['Saves your furniture', 'Multi-level enrichment', 'Supports 25+ lbs'],
   },
   'litter box': {
-    problem: 'Manual scooping is time-consuming and unpleasant. Odors spread through the house between cleanings, and cats may refuse to use a dirty box — leading to accidents elsewhere.',
-    solution: 'This litter box solution minimizes odor and maintenance with efficient waste separation. Sealed compartments trap smells at the source, while the design encourages consistent use — keeping your home fresher with far less effort.',
-    benefits: ['Odor-sealed design', 'Low maintenance', 'Cat-approved comfort'],
+    problem: 'Still scooping your cat\'s litter every day? Traditional litter boxes are messy, smelly, and time-consuming. Odors spread through your home between cleanings, and cats may refuse to use a dirty box — leading to accidents elsewhere.',
+    solution: 'Let the litter box clean itself. This smart system automatically removes waste after every use — keeping your home fresh without any effort. Sealed compartments trap smells at the source while sensors ensure your cat\'s safety.',
+    benefits: ['No more scooping', 'Always odor-free', 'Multi-cat friendly'],
   },
   accessory: {
     problem: "Finding quality pet accessories that actually work is frustrating. Many products look good online but break easily, don't fit properly, or aren't safe for daily use.",

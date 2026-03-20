@@ -54,6 +54,7 @@ import { ProductSocialProof } from '@/components/products/ProductSocialProof';
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
+import { ProductHowItWorks } from '@/components/products/ProductHowItWorks';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
@@ -980,10 +981,10 @@ const ProductDetail = () => {
                     );
                   } else if (/litter/i.test(n + ' ' + cat)) {
                     bullets.push(
-                      'Sealed design traps odors at the source',
-                      'Less scooping — efficient waste separation',
-                      'Easy-clean removable tray saves time',
-                      'High walls prevent litter scatter',
+                      'Fully automatic cleaning system',
+                      'Eliminates odors instantly',
+                      'Smart sensors for safety',
+                      'Perfect for multi-cat homes',
                     );
                   } else if (n.includes('toy') || cat.includes('toy')) {
                     bullets.push(
@@ -1397,6 +1398,9 @@ const ProductDetail = () => {
         {/* Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ''} />
 
+        {/* How It Works — step-by-step */}
+        <ProductHowItWorks productName={product.name} category={product.category || ''} />
+
         {/* Feature Grid — 4 feature cards */}
         <ProductFeatureGrid productName={product.name} category={product.category || ''} />
 
@@ -1412,6 +1416,8 @@ const ProductDetail = () => {
           inStock={inStock}
           price={Number(product.price)}
           compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : null}
+          productName={product.name}
+          category={product.category || ''}
         />
 
         {/* Reviews Section */}

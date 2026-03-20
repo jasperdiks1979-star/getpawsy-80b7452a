@@ -43,16 +43,16 @@ function generateFAQs(name: string, category?: string) {
 
   if (isLitter) {
     return [
-      { q: `How does the self-cleaning mechanism work?`, a: `After your cat exits, an automatic rake or rotating sieve separates clumps into a sealed waste compartment, keeping the litter bed fresh without daily scooping.` },
-      { q: `Is this safe for kittens?`, a: `We recommend self-cleaning boxes for cats over 5 lbs. Kittens under 6 months should use a standard box until they reach the minimum weight.` },
-      { q: `How often do I need to change the litter?`, a: `With advanced filtration and waste separation, you only need a full litter change every 2–3 weeks — 50% less frequently than manual boxes.` },
-      { q: `Does this control odor effectively?`, a: `Yes. Sealed waste compartments and carbon filters trap odors at the source. Most customers report a dramatic reduction in litter smell.` },
-      { q: `What type of litter should I use?`, a: `Clumping clay litter works best with most self-cleaning systems. Avoid crystal or non-clumping litter as it can jam the mechanism.` },
-      { q: `How loud is the cleaning cycle?`, a: `Modern self-cleaning boxes operate at whisper-quiet levels (under 50 dB). Most cats are not disturbed by the cleaning cycle.` },
-      { q: `Can multiple cats share this litter box?`, a: `Yes, but we recommend one box per 2 cats maximum. The automatic cleaning ensures it stays fresh between uses.` },
+      { q: `Is it safe for kittens?`, a: `Yes. Built-in infrared sensors prevent the cleaning cycle from starting when a cat is inside. We recommend it for cats over 5 lbs. Kittens under 6 months should use a standard box until they reach the minimum weight.` },
+      { q: `How often do I need to empty it?`, a: `Typically every few days depending on usage. With the sealed waste compartment, you only need a full litter change every 2–3 weeks — 50% less frequently than manual boxes.` },
+      { q: `Does it smell?`, a: `No — waste is automatically sealed after each use, and odors are minimized at the source. Most customers report guests can't even tell they have cats.` },
+      { q: `How does the self-cleaning mechanism work?`, a: `After your cat exits, the infrared sensor triggers an automatic cycle that separates clumps into a sealed waste compartment, keeping the litter bed fresh without any manual scooping.` },
+      { q: `Can multiple cats share this litter box?`, a: `Yes — this model is designed for multi-cat homes. We recommend one box per 2 cats maximum. The automatic cleaning ensures it stays fresh between uses.` },
+      { q: `What type of litter should I use?`, a: `Clumping clay litter works best with the self-cleaning system. Avoid crystal or non-clumping litter as it can jam the mechanism.` },
+      { q: `How loud is the cleaning cycle?`, a: `Whisper-quiet at under 50 dB. Most cats are not disturbed by the cleaning cycle, and it won't wake you at night.` },
       { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
       { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you're not satisfied, contact our support team for a full refund.` },
-      { q: `What maintenance is required?`, a: `Empty the waste compartment weekly, replace carbon filters monthly, and wipe sensors with a dry cloth. Full deep-clean recommended every 3 months.` },
+      { q: `What maintenance is required?`, a: `Empty the waste compartment every few days, replace carbon filters monthly, and wipe sensors with a dry cloth. Full deep-clean recommended every 3 months.` },
     ];
   }
 
