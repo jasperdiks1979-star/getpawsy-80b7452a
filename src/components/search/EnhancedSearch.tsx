@@ -200,7 +200,7 @@ export const EnhancedSearch = ({
     setIsOpen(false);
     setQuery('');
     onClose?.();
-    navigate(`/products?category=${encodeURIComponent(category.name)}`);
+    navigate(`/collections/${encodeURIComponent(category.slug)}`);
   };
 
   // Click outside to close

@@ -9,7 +9,7 @@ export default function CatTreeMaineCoon() {
       h1="Best Cat Tree for Maine Coon — Heavy Duty & Extra Wide (2026)"
       subtitle={'Cat trees engineered for the largest domestic breed. 18"+ platforms, 12" condo openings, and reinforced construction rated for 25–30+ lb cats.'}
       ctaText="Shop Maine Coon Cat Trees"
-      ctaLink="/products?category=cat-trees-and-condos"
+      ctaLink="/collections/cat-trees-and-condos"
       trustBadges={['Rated for 25+ lb Cats', '3–7 Day US Shipping', '30-Day Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },

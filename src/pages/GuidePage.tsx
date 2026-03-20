@@ -936,7 +936,7 @@ const GuidePage = () => {
                 return (
                   <Link
                     key={cat}
-                    to={collectionSlug ? `/collections/${collectionSlug}` : `/products?category=${cat}`}
+                    to={collectionSlug ? `/collections/${collectionSlug}` : `/collections/${cat}`}
                     className="text-sm bg-card border border-border rounded-full px-5 py-2 hover:border-primary/40 hover:text-primary hover:shadow-sm transition-all font-medium"
                   >
                     View all {displayName} products →

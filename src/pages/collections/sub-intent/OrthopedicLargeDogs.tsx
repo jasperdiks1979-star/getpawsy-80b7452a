@@ -9,7 +9,7 @@ export default function OrthopedicLargeDogs() {
       h1="Best Orthopedic Dog Bed for Large Dogs — Heavy Duty Memory Foam (2026)"
       subtitle="Purpose-built orthopedic beds for Labradors, German Shepherds, Golden Retrievers, and giant breeds. 5–7 inch high-density foam rated for 50–150+ lbs."
       ctaText="Shop Large Dog Orthopedic Beds"
-      ctaLink="/products?category=dog-beds"
+      ctaLink="/collections/orthopedic-calming-dog-beds"
       trustBadges={['Rated for 50–150+ lbs', '3–7 Day US Shipping', '30-Day Comfort Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },

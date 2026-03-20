@@ -270,7 +270,7 @@ export default function DogTrainingBehaviorTools() {
             {products.slice(0, 16).map(p => <ProductCard key={p.id} product={p} />)}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground py-12">Training products coming soon — browse our <Link to="/products?category=Dog Training" className="text-primary underline">full catalog</Link>.</p>
+          <p className="text-center text-muted-foreground py-12">Training products coming soon — browse our <Link to="/collections/dog-leash-control" className="text-primary underline">full catalog</Link>.</p>
         )}
       </section>
 

@@ -451,7 +451,7 @@ export default function SlowFeederDogBowls() {
 
             <div className="text-center mt-8">
               <Button asChild variant="outline" className="rounded-full gap-2">
-                <Link to="/products?category=Dog+Bowls+%26+Feeders">
+                <Link to="/collections/best-slow-feeder-dog-bowls">
                   View All Dog Bowls & Feeders
                   <ChevronRight className="w-4 h-4" />
                 </Link>

@@ -743,7 +743,7 @@ export default function OrthopedicDogBeds() {
             <div className="flex-1">
               <h3 className="text-lg font-semibold mb-1">Bundle & Save 15%</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Add a <Link to="/products?category=dog-blankets" className="text-primary hover:underline font-medium">Waterproof Dog Blanket</Link> to protect your orthopedic bed and save 15% on the combination. Most popular pairing among our customers.
+                Add a <Link to="/collections/dog" className="text-primary hover:underline font-medium">Waterproof Dog Blanket</Link> to protect your orthopedic bed and save 15% on the combination. Most popular pairing among our customers.
               </p>
               <Button size="sm" variant="outline" asChild>
                 <a href="#products">View Bundle Options <ArrowRight className="w-3.5 h-3.5 ml-1" /></a>
