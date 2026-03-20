@@ -1166,16 +1166,14 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Trust Microcopy - Below Add to Cart (Above-the-fold trust stack) */}
+            {/* Trust Microcopy - 3 bullets only */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="pt-4 pb-2"
+              className="pt-3"
             >
               <TrustMicrocopy />
-              <ShippingTransparency variant="inline" className="mt-2" />
-              <ProductShippingReturns className="mt-3" />
             </motion.div>
 
             {/* Bundle Upsell — contextual companion product */}
