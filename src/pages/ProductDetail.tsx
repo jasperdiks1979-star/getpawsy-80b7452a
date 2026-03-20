@@ -790,6 +790,10 @@ const ProductDetail = () => {
               <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
                 {safeString(product.name)}
               </h1>
+              {/* Benefit subline — 1-sentence value prop */}
+              <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
+                {generateClarityIntro(product.name, product.category || '')}
+              </p>
               
               {/* Rating — only shown when real verified reviews exist */}
               {reviews.length > 0 && (
