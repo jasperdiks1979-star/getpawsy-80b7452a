@@ -159,21 +159,23 @@ const Index = () => {
 
       {/* ═══ 3. BESTSELLERS / PRODUCTS — immediately visible ═══ */}
       <div id="bestsellers">
-        <Suspense fallback={
-          <section className="py-10">
-            <div className="container px-4 md:px-6">
-              <div className="h-7 w-48 bg-muted rounded mb-6 animate-pulse" />
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
-                ))}
+        <SectionErrorBoundary sectionName="Trending Products">
+          <Suspense fallback={
+            <section className="py-10">
+              <div className="container px-4 md:px-6">
+                <div className="h-7 w-48 bg-muted rounded mb-6 animate-pulse" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
-        }>
-          <TrendingProducts />
-        </Suspense>
-      </SectionErrorBoundary>
+            </section>
+          }>
+            <TrendingProducts />
+          </Suspense>
+        </SectionErrorBoundary>
+      </div>
 
       {/* ═══ 4. SHOP BY CATEGORY — 5 core categories ═══ */}
       <section className="py-10 md:py-12 bg-muted/20">
