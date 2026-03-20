@@ -1521,56 +1521,18 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* Complete the Look */}
-        {complementaryProducts && complementaryProducts.length > 0 && (
-          <div className="mt-16">
-            <CompleteTheLook
-              products={complementaryProducts.map(p => ({
-                id: p.id,
-                name: p.name,
-                price: Number(p.price),
-                compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
-                image_url: p.image_url,
-                slug: (p as { slug?: string }).slug,
-                category: p.category,
-              }))}
-              isLoading={complementaryLoading}
-              currentProductName={product.name}
-              sourceProductId={product.id}
-              sourceProductName={product.name}
-            />
-          </div>
-        )}
-
-        {/* Related Products Carousel */}
+        {/* Related Products */}
         <div className="mt-16">
           <RelatedProductsCarousel 
             products={relatedProducts || []}
             isLoading={relatedLoading}
-            title="Customers Also Viewed"
-            subtitle="Popular products from the same category"
+            title="You May Also Like"
+            subtitle="Popular picks from the same category"
             listId="related-products"
             listName="Related Products"
             sourceProductId={product.id}
             sourceProductName={product.name}
             crossSellType="related_products"
-          />
-        </div>
-
-        {/* Customers Also Train With - Training-specific cross-sell */}
-        <CustomersAlsoTrainWith
-          productId={product.id}
-          productName={product.name}
-          productCategory={product.category || ''}
-          maxItems={4}
-        />
-
-        {/* Customers Also Bought - Based on Real Purchase Data */}
-        <div className="mt-16">
-          <CustomersAlsoBought
-            productId={product.id}
-            productName={product.name}
-            maxItems={4}
           />
         </div>
 
