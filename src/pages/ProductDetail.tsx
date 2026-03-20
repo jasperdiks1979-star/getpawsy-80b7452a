@@ -1018,12 +1018,7 @@ const ProductDetail = () => {
               </ul>
             </div>
 
-            {/* Short Description - Clarity-first intro for cold traffic */}
-            <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
-              <p className="text-[15px] leading-relaxed">
-                {generateClarityIntro(product.name, product.category || '')}
-              </p>
-            </div>
+            {/* Short description moved to subline under title */}
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
