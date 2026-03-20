@@ -279,7 +279,7 @@ const Index = () => {
             🔥 Best Buying Guides 2026
           </h2>
           <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-            In-depth reviews and comparisons tested by our team — find the right product in minutes.
+            👉 Read before you buy: expert-tested comparisons that save you money and regret.
           </p>
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             {BUYING_GUIDES.map((g) => (
@@ -291,11 +291,21 @@ const Index = () => {
                 <span className="absolute top-3 right-3 text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                   {g.badge}
                 </span>
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors pr-20">
+                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors pr-20 mb-1">
                   {g.title}
                 </h3>
+                <span className="text-xs font-medium text-primary">View Best Picks →</span>
               </Link>
             ))}
+          </div>
+          {/* CTA after guides */}
+          <div className="text-center mt-6">
+            <Link
+              to="/best-cat-litter-box-2026"
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
+            >
+              View Best Litter Boxes →
+            </Link>
           </div>
         </div>
       </section>
