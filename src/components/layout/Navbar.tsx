@@ -155,7 +155,7 @@ const MegaMenuCategoryItem = ({
             {category.children.map((child) => (
               <Link
                 key={child.id}
-                to={`/products?category=${encodeURIComponent(child.slug)}`}
+                to={`/collections/${encodeURIComponent(child.slug)}`}
                 onClick={onClose}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
               >
