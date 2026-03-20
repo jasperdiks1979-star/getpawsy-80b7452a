@@ -49,6 +49,7 @@ import { RelatedGuides } from '@/components/guides/RelatedGuides';
 
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
+import { ProductSocialProof } from '@/components/products/ProductSocialProof';
 
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 
@@ -789,6 +790,10 @@ const ProductDetail = () => {
               <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
                 {safeString(product.name)}
               </h1>
+              {/* Benefit subline — 1-sentence value prop */}
+              <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
+                {generateClarityIntro(product.name, product.category || '')}
+              </p>
               
               {/* Rating — only shown when real verified reviews exist */}
               {reviews.length > 0 && (
@@ -1013,12 +1018,7 @@ const ProductDetail = () => {
               </ul>
             </div>
 
-            {/* Short Description - Clarity-first intro for cold traffic */}
-            <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
-              <p className="text-[15px] leading-relaxed">
-                {generateClarityIntro(product.name, product.category || '')}
-              </p>
-            </div>
+            {/* Short description moved to subline under title */}
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
@@ -1400,6 +1400,9 @@ const ProductDetail = () => {
         {/* Feature Grid — 4 feature cards */}
         <ProductFeatureGrid productName={product.name} category={product.category || ''} />
 
+        {/* Social Proof — category-aware review quotes */}
+        <ProductSocialProof productName={product.name} category={product.category || ''} />
+
         {/* Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
@@ -1597,7 +1600,7 @@ const ProductDetail = () => {
 
               {/* Add to Cart Button */}
               <Button
-                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-semibold shadow-soft"
+                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-semibold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
