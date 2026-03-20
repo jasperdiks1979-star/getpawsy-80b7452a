@@ -49,7 +49,6 @@ import { RelatedGuides } from '@/components/guides/RelatedGuides';
 
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 import { FreeShippingBar } from '@/components/products/FreeShippingBar';
-import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
 import { ClusterAuthorityBlock } from '@/components/authority/ClusterAuthorityBlock';
