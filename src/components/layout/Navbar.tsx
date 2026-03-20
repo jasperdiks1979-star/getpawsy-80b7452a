@@ -114,7 +114,7 @@ const MegaMenuCategoryItem = ({
         )}
         <div className="flex-1 min-w-0">
           <Link
-            to={`/products?category=${encodeURIComponent(category.slug)}`}
+            to={`/collections/${encodeURIComponent(category.slug)}`}
             onClick={(e) => {
               if (!hasChildren) {
                 onClose();
