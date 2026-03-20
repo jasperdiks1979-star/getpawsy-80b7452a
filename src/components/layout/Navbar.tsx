@@ -214,7 +214,7 @@ const MobileCategoryItem = ({
             <span className="font-medium">{category.name}</span>
           ) : (
             <Link
-              to={`/products?category=${encodeURIComponent(category.slug)}`}
+              to={`/collections/${encodeURIComponent(category.slug)}`}
               onClick={onClose}
               className="font-medium block"
             >
