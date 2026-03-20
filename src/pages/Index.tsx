@@ -63,12 +63,12 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy</title>
-        <meta name="description" content="Upgrade your pet's comfort, hygiene & safety with proven essentials. Self-cleaning litter boxes, no-pull harnesses, car seats & more. Free US shipping $35+." />
+        <title>Upgrade Your Pet's Life — Smart Cat & Dog Essentials | GetPawsy</title>
+        <meta name="description" content="Smart solutions for happier cats & dogs. Self-cleaning litter boxes, orthopedic dog beds, cat trees & more. Free US shipping $35+." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy" />
-        <meta property="og:description" content="Proven pet essentials for comfort, hygiene & safety. Free US shipping $35+, 30-day returns." />
+        <meta property="og:title" content="Upgrade Your Pet's Life — Smart Cat & Dog Essentials | GetPawsy" />
+        <meta property="og:description" content="Smart solutions for happier cats & dogs. Free US shipping $35+, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
       </Helmet>
@@ -99,12 +99,12 @@ const Index = () => {
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-xl space-y-5">
              <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-               Smart Pet Care
+               Upgrade Your Pet's Life
                <br />
-               <span className="text-primary">Starts Here</span>
+               <span className="text-primary">Today</span>
              </h1>
              <p className="text-base md:text-lg text-muted-foreground max-w-md">
-               Upgrade your pet's comfort, hygiene & safety with proven essentials.
+               Smart solutions for happier cats & dogs.
              </p>
             <div className="flex flex-wrap gap-3">
               <a
