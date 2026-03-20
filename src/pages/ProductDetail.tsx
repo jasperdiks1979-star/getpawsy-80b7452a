@@ -54,6 +54,7 @@ import { ProductSocialProof } from '@/components/products/ProductSocialProof';
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
+import { ProductWhyChoose } from '@/components/products/ProductWhyChoose';
 import { ProductHowItWorks } from '@/components/products/ProductHowItWorks';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
