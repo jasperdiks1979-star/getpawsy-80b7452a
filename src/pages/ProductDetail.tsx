@@ -46,7 +46,7 @@ import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
 
-import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
+
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
 import { ProductPageCrossLinks } from '@/components/seo/ProductPageCrossLinks';
 import { TopicGuideLinks } from '@/components/seo/TopicGuideLinks';
