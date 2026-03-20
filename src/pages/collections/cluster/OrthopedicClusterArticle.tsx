@@ -225,9 +225,6 @@ export default function OrthopedicClusterArticle() {
   if (!cluster) return <Navigate to={HUB} replace />;
 
   const canonical = `${BASE}${HUB}/${cluster.slug}`;
-  const filteredProducts = cluster.affiliateFilter
-    ? cluster.affiliateFilter.map(i => AFFILIATE_ORTHOPEDIC_BEDS[i]).filter(Boolean)
-    : AFFILIATE_ORTHOPEDIC_BEDS.slice(0, 3);
 
   const faqSchema = {
     '@context': 'https://schema.org', '@type': 'FAQPage',
