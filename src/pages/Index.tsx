@@ -276,7 +276,7 @@ const Index = () => {
               How GetPawsy Works
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              From browsing to unboxing — it's simple, fast, and guaranteed.
+              From browsing to unboxing — simple, fast, and transparent.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-5 max-w-3xl mx-auto">
