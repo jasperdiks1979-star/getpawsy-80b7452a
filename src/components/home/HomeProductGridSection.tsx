@@ -7,6 +7,7 @@ interface GridProduct {
   image_url: string | null;
   price: number;
   category?: string | null;
+  benefit?: string;
 }
 
 interface HomeProductGridSectionProps {
@@ -80,10 +81,15 @@ export function HomeProductGridSection({
                     {product.category}
                   </span>
                 )}
-                <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug mb-auto group-hover:text-primary transition-colors">
+                <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                   {product.name}
                 </h3>
-                <div className="flex items-center justify-between mt-2">
+                {product.benefit && (
+                  <p className="text-[11px] text-muted-foreground leading-snug mt-1 line-clamp-2">
+                    {product.benefit}
+                  </p>
+                )}
+                <div className="flex items-center justify-between mt-auto pt-2">
                   <span className="text-primary font-bold text-sm">
                     ${product.price.toFixed(2)}
                   </span>
