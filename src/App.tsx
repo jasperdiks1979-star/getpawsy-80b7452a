@@ -693,6 +693,7 @@ const App = () => {
                         <Route path="image-compliance" element={<Suspense fallback={<RouteLoader />}><ImageCompliancePage /></Suspense>} />
                         <Route path="cornerstone-engine" element={<Suspense fallback={<RouteLoader />}><CornerstoneEnginePage /></Suspense>} />
                         <Route path="merchant-compliance" element={<Suspense fallback={<RouteLoader />}><MerchantComplianceReport /></Suspense>} />
+                        <Route path="winning-products" element={<Suspense fallback={<RouteLoader />}><WinningProductFinder /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
