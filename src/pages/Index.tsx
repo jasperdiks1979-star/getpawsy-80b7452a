@@ -17,16 +17,31 @@ const showToast = (type: 'success' | 'error' | 'info', msg: string) =>
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 const CATEGORIES = [
-  { name: 'Potty Training', href: '/collections/dog-potty-training', emoji: '🏠' },
-  { name: 'Leash & Control', href: '/collections/dog-leash-control', emoji: '🦮' },
-  { name: 'Anti-Bark', href: '/collections/dog-anti-bark', emoji: '🔇' },
-  { name: 'Puppy Essentials', href: '/collections/puppy-training-essentials', emoji: '🐶' },
-  { name: 'Training Accessories', href: '/collections/dog-training-accessories', emoji: '🎯' },
+  { name: 'Cat Litter Solutions', href: '/collections/self-cleaning-litter-boxes', emoji: '🐱' },
+  { name: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos', emoji: '🏠' },
+  { name: 'Dog Beds & Comfort', href: '/collections/orthopedic-dog-beds', emoji: '🛏️' },
+  { name: 'Dog Travel & Safety', href: '/collections/dog-car-seats', emoji: '🚗' },
+  { name: 'Training Essentials', href: '/collections/dog-training-accessories', emoji: '🎯' },
+] as const;
+
+const BUYING_GUIDES = [
+  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes 2026', badge: '🔥 Top Guide' },
+  { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', badge: '🔥 Top Guide' },
+  { path: '/guides/best-cat-trees-and-condos-2026', title: 'Best Cat Trees & Condos 2026', badge: '🔥 Top Guide' },
+  { path: '/guides/best-dog-anxiety-solutions-2026', title: 'Best Dog Anxiety Solutions 2026', badge: '🔥 Top Guide' },
 ] as const;
 
 const GUIDES = [
   { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', desc: 'Safety-rated picks for travel with your dog.' },
   { path: '/guides/complete-dog-training-guide-2026', title: 'Dog Training Toys Guide', desc: 'Expert-tested methods for any breed or age.' },
+  { path: '/guides/best-cat-trees-and-condos-2026', title: 'Best Cat Trees 2026', desc: 'Stability-tested picks for every home size.' },
+  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes', desc: 'No more scooping — tested for odor & safety.' },
+] as const;
+
+const HOW_IT_WORKS_STEPS = [
+  { step: '1', title: 'Browse & Choose', desc: 'Find the right product for your pet\'s specific needs — from litter solutions to travel gear.' },
+  { step: '2', title: 'Fast US Delivery', desc: 'Every order ships with tracking. Free shipping on orders over $35. Delivered in 3–7 business days.' },
+  { step: '3', title: 'Happier Pet, Easier Life', desc: 'Smart products that solve real problems — less mess, less stress, more quality time with your pet.' },
 ] as const;
 
 const Index = () => {
@@ -104,7 +119,7 @@ const Index = () => {
               <span className="text-primary"> — Smarter, Cleaner & Happier</span>
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
-              No more mess, stress, or guesswork. Discover smart solutions that make pet care easier — starting today.
+              Discover smart pet solutions designed to save time, reduce mess, and improve your pet's daily life.
             </p>
             <div className="flex flex-wrap gap-3 pt-1">
               <a
@@ -114,7 +129,11 @@ const Index = () => {
                 Shop Bestsellers
               </a>
               <a
-                href="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+                href="#how-it-works"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-200 relative z-10"
               >
                 See How It Works
@@ -154,7 +173,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 3. BESTSELLERS / PRODUCTS — immediately visible ═══ */}
+      {/* ═══ 3. BESTSELLERS — immediately visible ═══ */}
       <div id="bestsellers">
         <SectionErrorBoundary sectionName="Trending Products">
           <Suspense fallback={
@@ -174,11 +193,36 @@ const Index = () => {
         </SectionErrorBoundary>
       </div>
 
-      {/* ═══ 4. SHOP BY CATEGORY — 5 core categories ═══ */}
-      <section className="py-10 md:py-12 bg-muted/20">
+      {/* ═══ 4. HOW IT WORKS — funnel bridge ═══ */}
+      <section id="how-it-works" className="py-12 md:py-16 scroll-mt-20 bg-muted/20">
+        <div className="container px-4 md:px-6">
+          <div className="text-center mb-8">
+            <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">
+              How GetPawsy Works
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              From browsing to unboxing — it's simple, fast, and guaranteed.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-5 max-w-3xl mx-auto">
+            {HOW_IT_WORKS_STEPS.map((s) => (
+              <article key={s.step} className="relative bg-card rounded-xl p-6 border border-border/50 text-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-sm font-bold text-primary">{s.step}</span>
+                </div>
+                <h3 className="text-sm font-semibold text-foreground mb-2">{s.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 5. SHOP BY CATEGORY — Dogs + Cats ═══ */}
+      <section className="py-10 md:py-12">
         <div className="container px-4 md:px-6">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
-            Shop by Training Need
+            Shop by Category
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {CATEGORIES.map((cat) => (
@@ -197,7 +241,35 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 5. WHY CHOOSE US — single block, 3 bullets ═══ */}
+      {/* ═══ 6. BUYING GUIDES HUB — money page authority ═══ */}
+      <section className="py-10 md:py-12 bg-muted/20">
+        <div className="container px-4 md:px-6">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
+            🔥 Best Buying Guides 2026
+          </h2>
+          <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
+            In-depth reviews and comparisons tested by our team — find the right product in minutes.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            {BUYING_GUIDES.map((g) => (
+              <Link
+                key={g.path}
+                to={g.path}
+                className="group relative rounded-xl border border-border/40 bg-card p-5 hover:border-primary/40 hover:shadow-md transition-all"
+              >
+                <span className="absolute top-3 right-3 text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  {g.badge}
+                </span>
+                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors pr-20">
+                  {g.title}
+                </h3>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 7. WHY CHOOSE US ═══ */}
       <section className="py-10 md:py-12">
         <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-6">
@@ -223,7 +295,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 6. GUIDES — max 3, minimal ═══ */}
+      {/* ═══ 8. EXPERT GUIDES ═══ */}
       <section className="py-10 md:py-12 bg-muted/20">
         <div className="container px-4 md:px-6">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
@@ -251,7 +323,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 7. NEWSLETTER — simple inline ═══ */}
+      {/* ═══ 9. NEWSLETTER ═══ */}
       <section className="py-10 md:py-12">
         <div className="container px-4 md:px-6">
           <div className="max-w-md mx-auto text-center">
