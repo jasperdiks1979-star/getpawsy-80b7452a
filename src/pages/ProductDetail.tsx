@@ -1396,6 +1396,9 @@ const ProductDetail = () => {
           </Tabs>
         </motion.div>
 
+        {/* Why Choose This Product — 300+ words unique content (prevents Soft 404) */}
+        <ProductWhyChoose productName={product.name} category={product.category || ''} />
+
         {/* Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ''} />
 
