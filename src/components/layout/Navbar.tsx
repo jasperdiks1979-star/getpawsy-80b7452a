@@ -145,7 +145,7 @@ const MegaMenuCategoryItem = ({
           <div className="border-l-2 border-muted pl-2 py-1 space-y-1">
             {/* Link to parent category */}
             <Link
-              to={`/products?category=${encodeURIComponent(category.slug)}`}
+              to={`/collections/${encodeURIComponent(category.slug)}`}
               onClick={onClose}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-primary font-medium"
             >
