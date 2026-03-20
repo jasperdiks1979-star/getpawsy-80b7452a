@@ -187,7 +187,7 @@ const Index = () => {
                 </div>
                 {/* Floating badge */}
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-card border border-border rounded-full px-4 py-1.5 shadow-md text-xs font-semibold text-foreground whitespace-nowrap">
-                  ⭐ Best Seller — Trusted by 10,000+ Pet Owners
+                  ⭐ Popular among pet owners
                 </div>
               </div>
             </div>
