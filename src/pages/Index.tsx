@@ -211,6 +211,19 @@ const Index = () => {
         </SectionErrorBoundary>
       </div>
 
+      {/* ═══ CTA BLOCK — after bestsellers ═══ */}
+      <section className="py-6">
+        <div className="container px-4 md:px-6 text-center">
+          <p className="text-sm text-muted-foreground mb-3">🔥 Selling fast in the US — limited stock available</p>
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
+          >
+            Shop All Products
+          </Link>
+        </div>
+      </section>
+
       {/* ═══ 4. HOW IT WORKS — funnel bridge ═══ */}
       <section id="how-it-works" className="py-12 md:py-16 scroll-mt-20 bg-muted/20">
         <div className="container px-4 md:px-6">
