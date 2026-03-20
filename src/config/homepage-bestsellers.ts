@@ -41,7 +41,7 @@ export interface CuratedProduct {
 
 export const MANUAL_PRODUCTS: CuratedProduct[] = [
   {
-    slug: 'memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner',
+    slug: 'dog-cot-cooling-pet-bed-3',
     displayName: 'Orthopedic Dog Bed',
     benefit: 'Relieves joint pain & improves sleep',
   },
