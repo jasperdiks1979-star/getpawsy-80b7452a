@@ -158,7 +158,7 @@ const Index = () => {
       </section>
 
       {/* ═══ 3. BESTSELLERS / PRODUCTS — immediately visible ═══ */}
-      <SectionErrorBoundary sectionName="Trending Products">
+      <div id="bestsellers">
         <Suspense fallback={
           <section className="py-10">
             <div className="container px-4 md:px-6">
