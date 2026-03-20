@@ -98,14 +98,14 @@ const Index = () => {
 
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-xl space-y-5">
-            <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-              Stop Bad Habits.
-              <br />
-              <span className="text-primary">Start Real Training.</span>
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-md">
-              Effective, humane tools for potty training, leash control & behavior correction — delivered fast across the US.
-            </p>
+             <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
+               Stop Pulling, Barking & Bad Habits
+               <br />
+               <span className="text-primary">— Starting Today</span>
+             </h1>
+             <p className="text-base md:text-lg text-muted-foreground max-w-md">
+               Smart training tools & comfort solutions for real results — fast US shipping.
+             </p>
             <div className="flex flex-wrap gap-3">
               <a
                 href="/collections/dog-potty-training"
