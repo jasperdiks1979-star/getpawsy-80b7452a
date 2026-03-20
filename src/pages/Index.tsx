@@ -168,14 +168,15 @@ const Index = () => {
               <div className="relative w-full max-w-sm md:max-w-md">
                 <div className="aspect-square rounded-2xl overflow-hidden bg-muted border border-border/30 shadow-lg">
                   <img
-                    src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
-                    alt="60L Smart Self-Cleaning Cat Litter Box with app control and deodorizing system"
+                    src="/hero/cat-litter-box-hero.webp"
+                    alt="Automatic Self-Cleaning Cat Litter Box"
                     width={600}
                     height={600}
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
                     className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg'; }}
                   />
                 </div>
                 {/* Floating badge */}
