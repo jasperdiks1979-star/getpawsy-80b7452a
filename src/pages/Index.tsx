@@ -329,10 +329,10 @@ const Index = () => {
       <section className="py-10 md:py-12 bg-muted/20">
         <div className="container px-4 md:px-6">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
-            🔥 Best Buying Guides 2026
+            Buying Guides 2026
           </h2>
           <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-            👉 Read before you buy: expert-tested comparisons that save you money and regret.
+            Read before you buy: expert-tested comparisons to help you choose the right product.
           </p>
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             {BUYING_GUIDES.map((g) => (
