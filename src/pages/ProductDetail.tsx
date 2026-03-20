@@ -47,8 +47,6 @@ import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
 
 
-import { ProductUseCases } from '@/components/products/ProductUseCases';
-import { CatTreeAuthorityBadges } from '@/components/products/CatTreeAuthorityBadges';
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 import { FreeShippingBar } from '@/components/products/FreeShippingBar';
 import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
