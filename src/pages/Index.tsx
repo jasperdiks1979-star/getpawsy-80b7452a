@@ -351,30 +351,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 4. HOW IT WORKS — funnel bridge ═══ */}
-      <section id="how-it-works" className="py-12 md:py-16 scroll-mt-20 bg-muted/20">
-        <div className="container px-4 md:px-6">
-          <div className="text-center mb-8">
-            <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">
-              How GetPawsy Works
-            </h2>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              From browsing to unboxing — it's simple, fast, and guaranteed.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5 max-w-3xl mx-auto">
-            {HOW_IT_WORKS_STEPS.map((s) => (
-              <article key={s.step} className="relative bg-card rounded-xl p-6 border border-border/50 text-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-sm font-bold text-primary">{s.step}</span>
-                </div>
-                <h3 className="text-sm font-semibold text-foreground mb-2">{s.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* (How It Works moved above bestsellers) */}
 
       {/* ═══ 5. SHOP BY CATEGORY — Dogs + Cats ═══ */}
       <section className="py-10 md:py-12">
