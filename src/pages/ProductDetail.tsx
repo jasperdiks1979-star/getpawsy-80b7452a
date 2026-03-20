@@ -41,9 +41,7 @@ import { StockNotificationForm } from '@/components/products/StockNotificationFo
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
 import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBoughtTogether';
-import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
-import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
 
 
