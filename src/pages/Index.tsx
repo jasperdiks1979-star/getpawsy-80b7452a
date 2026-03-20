@@ -25,9 +25,8 @@ const CATEGORIES = [
 ] as const;
 
 const GUIDES = [
-  { path: '/guides/complete-dog-training-guide-2026', title: 'Complete Dog Training Guide 2026', desc: 'Expert-tested methods for any breed or age.' },
   { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', desc: 'Safety-rated picks for travel with your dog.' },
-  { path: '/best-cat-litter-box-2026', title: 'Best Cat Litter Box 2026', desc: 'Top odor-control picks, reviewed & ranked.' },
+  { path: '/guides/complete-dog-training-guide-2026', title: 'Dog Training Toys Guide', desc: 'Expert-tested methods for any breed or age.' },
 ] as const;
 
 const Index = () => {
