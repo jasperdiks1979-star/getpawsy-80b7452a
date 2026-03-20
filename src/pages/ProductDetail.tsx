@@ -66,6 +66,7 @@ import { ProductComparisonTable } from '@/components/products/ProductComparisonT
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
 import { ClusterAuthorityBlock } from '@/components/authority/ClusterAuthorityBlock';
+import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 import { inferClusterFromCategory } from '@/lib/cluster-config';
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
 import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
