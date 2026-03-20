@@ -25,10 +25,10 @@ const CATEGORIES = [
 ] as const;
 
 const BUYING_GUIDES = [
-  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes 2026', badge: '🔥 Top Guide' },
-  { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', badge: '🔥 Top Guide' },
-  { path: '/guides/best-cat-trees-and-condos-2026', title: 'Best Cat Trees & Condos 2026', badge: '🔥 Top Guide' },
-  { path: '/guides/best-dog-anxiety-solutions-2026', title: 'Best Dog Anxiety Solutions 2026', badge: '🔥 Top Guide' },
+  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes 2026', badge: 'Top Guide' },
+  { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', badge: 'Top Guide' },
+  { path: '/guides/best-cat-trees-and-condos-2026', title: 'Best Cat Trees & Condos 2026', badge: 'Top Guide' },
+  { path: '/guides/best-dog-anxiety-solutions-2026', title: 'Best Dog Anxiety Solutions 2026', badge: 'Top Guide' },
 ] as const;
 
 const GUIDES = [
@@ -102,16 +102,16 @@ const Index = () => {
             {/* Left — copy */}
             <div className="space-y-4 order-2 md:order-1">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary">
-                🏆 #1 Best-Selling Automatic Cat Litter Box
+                Popular Choice — Automatic Cat Litter Box
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-display font-bold text-foreground leading-[1.1] tracking-tight" style={{ textWrap: 'balance' as any }}>
                 Never Scoop Litter Again
-                <span className="text-primary"> — 100% Automatic</span>
+                <span className="text-primary"> — Fully Automatic</span>
               </h1>
 
               <p className="text-sm md:text-base text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
-                The smart litter box that cleans itself, eliminates odor, and works while you sleep. App-controlled for multiple cats.
+                A smart litter box that cleans automatically, helps reduce odor, and works while you sleep. App-controlled for multiple cats.
               </p>
 
               <ul className="space-y-2 text-sm text-foreground/90">
@@ -121,7 +121,7 @@ const Index = () => {
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
-                  Eliminates odor with sealed deodorizing design
+                  Helps reduce odor with sealed deodorizing design
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
@@ -129,18 +129,13 @@ const Index = () => {
                 </li>
               </ul>
 
-              {/* Rating + testimonial */}
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-amber-400">★★★★★</span>
-                    <span className="font-semibold text-foreground">4.8/5</span>
-                    <span className="text-muted-foreground text-xs">(1,247 reviews)</span>
-                  </div>
+              {/* Rating */}
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-amber-400">★★★★★</span>
+                  <span className="font-semibold text-foreground">4.8/5</span>
+                  <span className="text-muted-foreground text-xs">Highly rated by customers</span>
                 </div>
-                <p className="text-xs text-muted-foreground italic">
-                  "Pet owners say this is the best purchase they made this year"
-                </p>
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
@@ -166,7 +161,7 @@ const Index = () => {
                 Only $268.99 — <span className="font-normal text-sm text-muted-foreground">Free US Shipping</span>
               </p>
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span>🛡️ 30-Day Risk-Free Guarantee</span>
+                <span>🛡️ 30-Day Return Policy</span>
                 <span>·</span>
                 <span>🔒 Secure checkout</span>
                 <span>·</span>
@@ -192,7 +187,7 @@ const Index = () => {
                 </div>
                 {/* Floating badge */}
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-card border border-border rounded-full px-4 py-1.5 shadow-md text-xs font-semibold text-foreground whitespace-nowrap">
-                  ⭐ Best Seller — Trusted by 10,000+ Pet Owners
+                  ⭐ Popular among pet owners
                 </div>
               </div>
             </div>
@@ -222,8 +217,8 @@ const Index = () => {
                   <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1.5">No Smell Guaranteed</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">Sealed deodorizing design traps odor instantly.</p>
+              <h3 className="text-sm font-semibold text-foreground mb-1.5">Helps Reduce Odors</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Sealed deodorizing design helps trap unwanted smells.</p>
             </div>
             <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
@@ -246,32 +241,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 2. TRUST BAR ═══ */}
-      <section className="py-4 border-y border-border/40 bg-card/50" aria-label="Trust signals">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
-              </svg>
-              Free US Shipping $35+
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              30-Day Returns
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-              Secure Checkout
-            </span>
-          </div>
-        </div>
-      </section>
+      {/* Trust bar removed — trust signals already in hero and footer to avoid repetition */}
 
       {/* ═══ 3. HOW IT WORKS — funnel bridge (moved up, before bestsellers) ═══ */}
       <section id="how-it-works" className="py-12 md:py-16 scroll-mt-20 bg-muted/20">
@@ -281,7 +251,7 @@ const Index = () => {
               How GetPawsy Works
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              From browsing to unboxing — it's simple, fast, and guaranteed.
+              From browsing to unboxing — simple, fast, and transparent.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-5 max-w-3xl mx-auto">
@@ -318,17 +288,7 @@ const Index = () => {
         </SectionErrorBoundary>
       </div>
 
-      {/* ═══ CTA BLOCK — after bestsellers ═══ */}
-      <section className="py-6">
-        <div className="container px-4 md:px-6 text-center">
-          <Link
-            to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
-            className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
-          >
-            Buy Now — Free US Shipping
-          </Link>
-        </div>
-      </section>
+      {/* CTA block removed — reduces repetitive conversion pressure */}
 
       {/* (How It Works moved above bestsellers) */}
 
@@ -359,10 +319,10 @@ const Index = () => {
       <section className="py-10 md:py-12 bg-muted/20">
         <div className="container px-4 md:px-6">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
-            🔥 Best Buying Guides 2026
+            Buying Guides 2026
           </h2>
           <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-            👉 Read before you buy: expert-tested comparisons that save you money and regret.
+            Read before you buy: expert-tested comparisons to help you choose the right product.
           </p>
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             {BUYING_GUIDES.map((g) => (
@@ -381,43 +341,11 @@ const Index = () => {
               </Link>
             ))}
           </div>
-          {/* CTA after guides */}
-          <div className="text-center mt-6">
-            <Link
-              to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
-            >
-              Buy Now — Free US Shipping
-            </Link>
-          </div>
+          {/* CTA removed from guides — keep section educational, not pushy */}
         </div>
       </section>
 
-      {/* ═══ 7. WHY CHOOSE US ═══ */}
-      <section className="py-10 md:py-12">
-        <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-6">
-            Why Pet Owners Choose GetPawsy
-          </h2>
-          <div className="grid sm:grid-cols-3 gap-5">
-            <div className="space-y-2">
-              <p className="text-2xl">✅</p>
-              <h3 className="font-semibold text-foreground text-sm">Tested for Real Results</h3>
-              <p className="text-xs text-muted-foreground">No gimmicks — tools that actually work</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl">🚚</p>
-              <h3 className="font-semibold text-foreground text-sm">Fast US Shipping</h3>
-              <p className="text-xs text-muted-foreground">3–7 business days, tracking included</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl">↩️</p>
-              <h3 className="font-semibold text-foreground text-sm">30-Day Risk-Free Returns</h3>
-              <p className="text-xs text-muted-foreground">Not happy? Full refund, no hassle</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* "Why Choose Us" removed — redundant with hero trust signals */}
 
       {/* ═══ 8. EXPERT GUIDES ═══ */}
       <section className="py-10 md:py-12 bg-muted/20">
