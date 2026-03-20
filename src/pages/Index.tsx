@@ -288,17 +288,7 @@ const Index = () => {
         </SectionErrorBoundary>
       </div>
 
-      {/* ═══ CTA BLOCK — after bestsellers ═══ */}
-      <section className="py-6">
-        <div className="container px-4 md:px-6 text-center">
-          <Link
-            to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
-            className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
-          >
-            Buy Now — Free US Shipping
-          </Link>
-        </div>
-      </section>
+      {/* CTA block removed — reduces repetitive conversion pressure */}
 
       {/* (How It Works moved above bestsellers) */}
 
