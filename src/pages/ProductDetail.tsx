@@ -265,14 +265,6 @@ const ProductDetail = () => {
     recentlyViewedIds,
   });
 
-  // Fetch complementary products for "Complete the Look"
-  const { data: complementaryProducts, isLoading: complementaryLoading } = useCompleteTheLook({
-    productId: product?.id || '',
-    productName: product?.name || '',
-    category: product?.category || null,
-    maxItems: 4,
-    enabled: !!product?.id,
-  });
 
   // Fetch recently viewed products with React Query caching
   // Pass recentlyViewedIds to avoid duplicate hook calls
