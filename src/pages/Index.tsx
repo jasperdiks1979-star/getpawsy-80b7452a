@@ -217,8 +217,8 @@ const Index = () => {
                   <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1.5">No Smell Guaranteed</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">Sealed deodorizing design traps odor instantly.</p>
+              <h3 className="text-sm font-semibold text-foreground mb-1.5">Helps Reduce Odors</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Sealed deodorizing design helps trap unwanted smells.</p>
             </div>
             <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
