@@ -162,9 +162,12 @@ const Contact = () => {
             <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
               Contact Us
             </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-3">
               Have a question or need help? We are here for you and your furry friends. 
               Fill out the form below and we will get back to you as soon as possible.
+            </p>
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+              We typically respond within 24 hours. Our support team is here to help with any questions about your order, shipping, returns, or products.
             </p>
           </motion.div>
 
