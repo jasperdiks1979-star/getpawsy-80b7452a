@@ -236,7 +236,7 @@ const MobileCategoryItem = ({
         >
           <div className="py-2 px-4 space-y-1">
             <Link
-              to={`/products?category=${encodeURIComponent(category.slug)}`}
+              to={`/collections/${encodeURIComponent(category.slug)}`}
               onClick={onClose}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
             >
