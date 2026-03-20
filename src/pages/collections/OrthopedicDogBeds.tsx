@@ -21,9 +21,6 @@ import {
 } from '@/components/ui/accordion';
 import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator';
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
-import { AffiliateProductGrid } from '@/components/affiliate/AffiliateProductCard';
-import { AFFILIATE_ORTHOPEDIC_BEDS } from '@/data/affiliate-orthopedic-beds';
-import { useAffiliateMode } from '@/hooks/useAffiliateMode';
 import { MedicalDisclaimer } from '@/components/affiliate/AffiliateDisclaimer';
 import { AuthorityAuthorBox } from '@/components/affiliate/AuthorityAuthorBox';
 import { FeaturedSnippetBlock } from '@/components/seo/FeaturedSnippetBlock';
