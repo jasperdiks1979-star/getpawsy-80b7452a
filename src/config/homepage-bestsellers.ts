@@ -46,19 +46,19 @@ export const MANUAL_PRODUCTS: CuratedProduct[] = [
     benefit: 'Fully automatic cleaning. Always fresh. Zero effort.',
   },
   {
-    slug: 'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo',
-    displayName: 'No-Pull Dog Harness — Stop Pulling Instantly',
-    benefit: 'Stops pulling instantly. Safer walks in seconds.',
+    slug: 'dog-cot-cooling-pet-bed-3',
+    displayName: 'Orthopedic Dog Bed — Stops Joint Pain Fast',
+    benefit: 'Elevated cooling design. Relief for achy joints.',
   },
   {
-    slug: 'dog-booster-car-seat-pet-car-seat-for-small-medium-dog-up-to-40-lbs-black',
-    displayName: 'Dog Car Seat — Safe & Comfortable Car Rides',
-    benefit: 'Keeps your dog safe during every ride.',
+    slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-beige',
+    displayName: 'Cat Tree for Large Cats — Stable & No Wobble',
+    benefit: 'Multi-level tower with anti-tip design. Built to last.',
   },
   {
-    slug: '2-in-1-dog-paw-cleaner-cup-soft-pet-dog-foot-cleaning-washer-brush-cup-portable-pet-foot-washer-paw-',
-    displayName: 'Dog Paw Cleaner — Clean Paws in Seconds',
-    benefit: 'Clean dirty paws in 10 seconds.',
+    slug: 'transparent-and-visible-pet-feeding-and-drinking-dispenser-automatically-refilling-food-and-water-ca',
+    displayName: 'Automatic Pet Feeder — Never Miss a Meal',
+    benefit: 'Auto-refills food & water. Perfect for busy owners.',
   },
 ];
 

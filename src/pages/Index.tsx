@@ -99,12 +99,12 @@ const Index = () => {
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-xl space-y-5">
              <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-               Smart Pet Care
+               Upgrade Your Pet's Life
                <br />
-               <span className="text-primary">Starts Here</span>
+               <span className="text-primary">Today</span>
              </h1>
              <p className="text-base md:text-lg text-muted-foreground max-w-md">
-               Upgrade your pet's comfort, hygiene & safety with proven essentials.
+               Smart solutions for happier cats & dogs.
              </p>
             <div className="flex flex-wrap gap-3">
               <a
