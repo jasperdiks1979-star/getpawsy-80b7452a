@@ -70,7 +70,7 @@ export function ProductHowItWorks({ productName, category }: ProductHowItWorksPr
   }, [productName, category]);
 
   return (
-    <section className="mt-12">
+    <section id="how-it-works" className="mt-12 scroll-mt-20">
       <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-6">
         How It Works
       </h2>
