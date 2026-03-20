@@ -63,12 +63,12 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy</title>
-        <meta name="description" content="Upgrade your pet's comfort, hygiene & safety with proven essentials. Self-cleaning litter boxes, no-pull harnesses, car seats & more. Free US shipping $35+." />
+        <title>Upgrade Your Pet's Life — Smart Cat & Dog Essentials | GetPawsy</title>
+        <meta name="description" content="Smart solutions for happier cats & dogs. Self-cleaning litter boxes, orthopedic dog beds, cat trees & more. Free US shipping $35+." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy" />
-        <meta property="og:description" content="Proven pet essentials for comfort, hygiene & safety. Free US shipping $35+, 30-day returns." />
+        <meta property="og:title" content="Upgrade Your Pet's Life — Smart Cat & Dog Essentials | GetPawsy" />
+        <meta property="og:description" content="Smart solutions for happier cats & dogs. Free US shipping $35+, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
       </Helmet>
