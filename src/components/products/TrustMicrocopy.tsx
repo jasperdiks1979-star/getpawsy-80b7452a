@@ -1,12 +1,9 @@
 import React from 'react';
-import { Truck, RotateCcw, Lock, CreditCard, Mail } from 'lucide-react';
-import { PaymentBadges } from '@/components/shared/PaymentBadges';
 import { Link } from 'react-router-dom';
 import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_TIME_STANDARD,
-  RETURNS_POLICY_SHORT,
-  SUPPORT_EMAIL,
+  RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 
 interface TrustMicrocopyProps {
@@ -14,42 +11,28 @@ interface TrustMicrocopyProps {
 }
 
 /**
- * Trust Microcopy Section - Placed directly below Add-to-Cart button
- * 
- * Google Merchant Center compliance trust signals for cold traffic conversion.
- * Uses centralized shipping constants for consistency.
+ * Trust Microcopy — exactly 3 trust bullets below Add to Cart.
+ * Clean, scannable, no clutter.
  */
 export const TrustMicrocopy: React.FC<TrustMicrocopyProps> = ({ className = '' }) => {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-        <span className="text-primary flex-shrink-0">⭐</span>
-        <span>Trusted by pet owners across the United States</span>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="text-primary flex-shrink-0">✔</span>
+        <span>Free US Shipping ({DELIVERY_TIME_STANDARD})</span>
       </div>
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-        <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Secure, encrypted checkout</span>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="text-primary flex-shrink-0">✔</span>
+        <span>{RETURN_WINDOW_DAYS}-Day Risk-Free Returns</span>
       </div>
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-        <CreditCard className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Visa, Mastercard, Apple Pay, Google Pay accepted</span>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="text-primary flex-shrink-0">✔</span>
+        <span>Secure Checkout via Stripe</span>
       </div>
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-        <Truck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Tracked US shipping · {DELIVERY_TIME_STANDARD}</span>
-      </div>
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-        <RotateCcw className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>{RETURNS_POLICY_SHORT} · no questions asked</span>
-      </div>
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-        <Mail className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Need help? <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></span>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground pt-1">
-        <Link to="/returns" className="text-primary hover:underline">Return Policy</Link>
+      <div className="flex items-center gap-3 text-xs text-muted-foreground/70 pt-1">
+        <Link to="/shipping" className="hover:text-primary transition-colors">Shipping Info</Link>
         <span>·</span>
-        <Link to="/shipping" className="text-primary hover:underline">Shipping Info</Link>
+        <Link to="/returns" className="hover:text-primary transition-colors">Return Policy</Link>
       </div>
     </div>
   );

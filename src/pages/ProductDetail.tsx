@@ -35,8 +35,6 @@ import USProductDescription from '@/components/products/USProductDescription';
 import { generateClarityIntro } from '@/components/products/ClarityIntro';
 import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
 import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
-import { ShippingTransparency } from '@/components/products/ShippingTransparency';
-import { ProductShippingReturns } from '@/components/products/ProductShippingReturns';
 import { WhyPetParentsLoveThis } from '@/components/products/WhyPetParentsLoveThis';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
@@ -66,6 +64,7 @@ import { ProductComparisonTable } from '@/components/products/ProductComparisonT
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
 import { ClusterAuthorityBlock } from '@/components/authority/ClusterAuthorityBlock';
+import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 import { inferClusterFromCategory } from '@/lib/cluster-config';
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
 import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
@@ -74,7 +73,6 @@ import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
-  TRUST_BADGES,
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
@@ -1143,11 +1141,11 @@ const ProductDetail = () => {
                 </Button>
               </div>
 
-              {/* Add to Cart */}
+              {/* Add to Cart — high-contrast CTA */}
               <Button
                 ref={addToCartButtonRef}
                 size="lg"
-                className="flex-1 h-12 gap-2 btn-organic text-base font-semibold"
+                className="flex-1 h-12 gap-2 text-base font-semibold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
                >
@@ -1166,16 +1164,14 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Trust Microcopy - Below Add to Cart (Above-the-fold trust stack) */}
+            {/* Trust Microcopy - 3 bullets only */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="pt-4 pb-2"
+              className="pt-3"
             >
               <TrustMicrocopy />
-              <ShippingTransparency variant="inline" className="mt-2" />
-              <ProductShippingReturns className="mt-3" />
             </motion.div>
 
             {/* Bundle Upsell — contextual companion product */}
@@ -1203,47 +1199,10 @@ const ProductDetail = () => {
               />
             )}
 
-            {/* Trust Features - Complementary to above microcopy */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="grid grid-cols-3 gap-3 pt-4"
-            >
-              {[
-                { icon: Shield, title: 'Secure Checkout', subtitle: 'Powered by Stripe' },
-                { icon: Truck, title: 'Tracked Shipping', subtitle: 'US delivery with tracking number' },
-                { icon: Award, title: TRUST_BADGES.quality.title, subtitle: TRUST_BADGES.quality.subtitle },
-              ].map((feature, idx) => (
-                <motion.div 
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + idx * 0.1 }}
-                  className="flex items-center gap-2.5"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-foreground">{feature.title}</p>
-                    <p className="text-xs text-muted-foreground">{feature.subtitle}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
           </motion.div>
         </div>
 
-        {/* Mid-Page Delivery & Returns Reassurance - Visible before scrolling to tabs */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-12"
-        >
-          <DeliveryReassurance />
-        </motion.div>
+        {/* Emotional trigger + delivery info consolidated */}
 
         {/* Tabs Section */}
         <motion.div 
@@ -1530,6 +1489,14 @@ const ProductDetail = () => {
         <ClusterAuthorityBlock
           clusterId={inferClusterFromCategory(product.category || '')}
           productName={product.name}
+        />
+
+        {/* Final CTA Block — conversion closer */}
+        <FinalCtaBlock
+          onAddToCart={handleAddToCart}
+          inStock={inStock}
+          price={Number(product.price)}
+          compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : null}
         />
 
         {/* Reviews Section */}
