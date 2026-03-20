@@ -79,6 +79,19 @@ export interface QuickPick {
   cta?: string;           // e.g. "Check Price", "View Deal"
 }
 
+export interface CustomerQuote {
+  text: string;
+  name: string;
+  context?: string; // e.g. "Multi-cat owner, Texas"
+}
+
+export interface BestOverallPick {
+  name: string;
+  benefits: string[];
+  productSlug?: string;
+  badge?: string;
+}
+
 export interface SeoTrafficPageProps {
   slug: string;
   title: string;
@@ -104,6 +117,8 @@ export interface SeoTrafficPageProps {
   bestAlternatives?: LockdownSection;
   expertVerdict?: LockdownSection;
   ctrHook?: string;
+  bestOverallPick?: BestOverallPick;
+  customerQuotes?: CustomerQuote[];
 }
 
 // ── Badge color helper ──
