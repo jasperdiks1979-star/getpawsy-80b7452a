@@ -11,9 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
-import { AffiliateProductGrid } from '@/components/affiliate/AffiliateProductCard';
-import { AFFILIATE_ORTHOPEDIC_BEDS } from '@/data/affiliate-orthopedic-beds';
-import { useAffiliateMode } from '@/hooks/useAffiliateMode';
 import { MedicalDisclaimer } from '@/components/affiliate/AffiliateDisclaimer';
 import { AuthorityAuthorBox } from '@/components/affiliate/AuthorityAuthorBox';
 import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator';
@@ -222,15 +219,12 @@ const CLUSTERS: Record<string, ClusterData> = {
 export default function OrthopedicClusterArticle() {
   const location = useLocation();
   const slug = location.pathname.split('/').pop() || '';
-  const { isAffiliate } = useAffiliateMode();
+  
   const cluster = CLUSTERS[slug] || null;
 
   if (!cluster) return <Navigate to={HUB} replace />;
 
   const canonical = `${BASE}${HUB}/${cluster.slug}`;
-  const filteredProducts = cluster.affiliateFilter
-    ? cluster.affiliateFilter.map(i => AFFILIATE_ORTHOPEDIC_BEDS[i]).filter(Boolean)
-    : AFFILIATE_ORTHOPEDIC_BEDS.slice(0, 3);
 
   const faqSchema = {
     '@context': 'https://schema.org', '@type': 'FAQPage',
@@ -368,13 +362,12 @@ export default function OrthopedicClusterArticle() {
           </section>
         )}
 
-        {/* Affiliate Products */}
-        {isAffiliate && (
-          <section className="mb-12">
-            <h2 className="text-xl md:text-2xl font-display font-bold mb-4">Our Top Picks</h2>
-            <AffiliateProductGrid products={filteredProducts} />
-          </section>
-        )}
+        {/* Products section — links to main collection */}
+        <section className="mb-12 text-center">
+          <Link to="/collections/orthopedic-calming-dog-beds" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity">
+            Shop Orthopedic Dog Beds <ArrowRight className="w-4 h-4" />
+          </Link>
+        </section>
 
         {/* FAQ */}
         <section className="mb-12 bg-muted/30 rounded-2xl p-6">

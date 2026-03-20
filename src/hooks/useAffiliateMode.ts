@@ -12,7 +12,7 @@
  * This makes future inventory swap seamless — no URL or SEO changes needed.
  */
 
-const AFFILIATE_MODE = true; // flip to false when private-label inventory is sourced
+const AFFILIATE_MODE = false; // disabled — all products are first-party inventory
 
 export function useAffiliateMode() {
   return {
