@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async';
 import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
 } from '@/lib/shipping-constants';
 
 interface LocalBusinessSchemaProps {
