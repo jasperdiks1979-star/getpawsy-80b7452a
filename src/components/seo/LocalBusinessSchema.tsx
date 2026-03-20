@@ -28,7 +28,7 @@ export function LocalBusinessSchema({
     url: baseUrl,
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
-    email: 'info@getpawsy.pet',
+    email: SUPPORT_EMAIL,
     vatID: 'NL003295015B69',
     taxID: 'NL003295015B69',
     address: {
