@@ -1,8 +1,9 @@
 /**
- * StickyMobileCta — Fixed bottom bar on mobile (≤768px) with dog training links.
- * Hides on scroll down, shows on scroll up. No JS libraries.
+ * StickyMobileCta — Fixed bottom bar on mobile (≤768px) with Buy Now CTA.
+ * Hides on scroll down, shows on scroll up.
  */
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 
 export function StickyMobileCta() {
   const [visible, setVisible] = useState(true);
@@ -25,19 +26,17 @@ export function StickyMobileCta() {
       }`}
       style={{ contain: 'layout' }}
     >
-      <div className="flex border-t border-border bg-card/95 backdrop-blur-sm shadow-lg">
-        <a
-          href="/collections/dog-potty-training"
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors"
+      <div className="flex items-center justify-between border-t border-border bg-card/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
+        <div className="flex flex-col">
+          <span className="text-sm font-bold text-foreground">$268.99</span>
+          <span className="text-[10px] text-muted-foreground">Free US Shipping</span>
+        </div>
+        <Link
+          to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+          className="rounded-full px-6 py-2.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
         >
-          🚽 Potty Training
-        </a>
-        <a
-          href="/collections/dog-leash-control"
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold text-foreground bg-secondary hover:bg-secondary/80 transition-colors"
-        >
-          🦮 Leash & Control
-        </a>
+          Buy Now
+        </Link>
       </div>
     </div>
   );
