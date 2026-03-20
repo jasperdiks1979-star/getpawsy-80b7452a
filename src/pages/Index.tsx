@@ -111,7 +111,7 @@ const Index = () => {
               </h1>
 
               <p className="text-sm md:text-base text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
-                The smart litter box that cleans itself, eliminates odor, and works while you sleep. App-controlled for multiple cats.
+                A smart litter box that cleans automatically, helps reduce odor, and works while you sleep. App-controlled for multiple cats.
               </p>
 
               <ul className="space-y-2 text-sm text-foreground/90">
