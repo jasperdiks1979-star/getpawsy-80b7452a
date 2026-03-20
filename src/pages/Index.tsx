@@ -200,19 +200,19 @@ const Index = () => {
           </h2>
           <div className="grid sm:grid-cols-3 gap-5">
             <div className="space-y-2">
-              <p className="text-2xl">📦</p>
-              <h3 className="font-semibold text-foreground text-sm">Fast US Delivery</h3>
+              <p className="text-2xl">✅</p>
+              <h3 className="font-semibold text-foreground text-sm">Tested for Real Results</h3>
+              <p className="text-xs text-muted-foreground">No gimmicks — tools that actually work</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-2xl">🚚</p>
+              <h3 className="font-semibold text-foreground text-sm">Fast US Shipping</h3>
               <p className="text-xs text-muted-foreground">3–7 business days, tracking included</p>
             </div>
             <div className="space-y-2">
               <p className="text-2xl">↩️</p>
-              <h3 className="font-semibold text-foreground text-sm">Hassle-Free Returns</h3>
-              <p className="text-xs text-muted-foreground">30-day return window, no runaround</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl">💬</p>
-              <h3 className="font-semibold text-foreground text-sm">Real Support</h3>
-              <p className="text-xs text-muted-foreground">We respond within 24 hours</p>
+              <h3 className="font-semibold text-foreground text-sm">30-Day Risk-Free Returns</h3>
+              <p className="text-xs text-muted-foreground">Not happy? Full refund, no hassle</p>
             </div>
           </div>
         </div>
