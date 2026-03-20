@@ -32,10 +32,10 @@ function detectType(name: string, category: string): ProductType {
 
 const FEATURES: Record<ProductType, Feature[]> = {
   bed: [
-    { title: 'Supportive Fill', description: 'Cushions joints and pressure points for deep rest' },
-    { title: 'Washable Cover', description: 'Removable cover keeps things fresh and clean' },
-    { title: 'Non-Slip Base', description: 'Stays in place on hardwood and tile floors' },
-    { title: 'Size Options', description: 'Available in sizes for small to extra-large pets' },
+    { title: 'Memory Foam Core', description: 'Adapts to your dog\'s body and relieves pressure points' },
+    { title: 'Raised Edges', description: 'Provides extra comfort, security, and neck support' },
+    { title: 'Washable Cover', description: 'Removable cover for easy machine washing' },
+    { title: 'Non-Slip Base', description: 'Stays firmly in place on hardwood and tile floors' },
   ],
   bowl: [
     { title: 'Slow-Feed Design', description: 'Ridges promote healthier eating pace' },

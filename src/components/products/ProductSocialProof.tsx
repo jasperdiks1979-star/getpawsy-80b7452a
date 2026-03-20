@@ -38,9 +38,9 @@ const REVIEWS: Record<ProductType, Review[]> = {
     { text: 'Great control without choking. Exactly what we needed.', name: 'Sarah K.' },
   ],
   bed: [
-    { text: 'My old dog sleeps so much better now. Worth every penny.', name: 'Linda T.' },
-    { text: 'Easy to wash and still looks brand new after months of use.', name: 'Chris P.' },
-    { text: 'Finally a bed that doesn\'t flatten after a week.', name: 'Amanda W.' },
+    { text: 'My older dog finally sleeps through the night again. Huge difference in her energy.', name: 'Amanda L.' },
+    { text: 'Best purchase I made for my dog. He sinks right in and doesn\'t move all night.', name: 'Chris T.' },
+    { text: 'Worth every penny. Our senior lab moves so much better in the mornings now.', name: 'Rachel K.' },
   ],
   bowl: [
     { text: 'My dog eats so much slower now. No more bloating after meals.', name: 'Mark H.' },
