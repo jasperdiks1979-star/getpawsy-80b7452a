@@ -113,6 +113,11 @@ const Index = () => {
 
         <div className="container relative z-10 px-4 md:px-6 py-14 md:py-24">
           <div className="max-w-lg space-y-5">
+            {/* Product spotlight badge */}
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary">
+              🏆 #1 Best-Selling Smart Litter Box
+            </div>
+
             <h1 className="text-3xl md:text-[2.75rem] font-display font-bold text-foreground leading-[1.08] tracking-tight" style={{ textWrap: 'balance' as any }}>
               Upgrade Your Pet's Life Today
               <br className="hidden sm:block" />
@@ -121,13 +126,21 @@ const Index = () => {
             <p className="text-base md:text-lg text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
               Discover smart pet solutions designed to save time, reduce mess, and improve your pet's daily life.
             </p>
+
+            {/* Hero product benefits */}
+            <ul className="space-y-1.5 text-sm text-foreground/90">
+              <li className="flex items-center gap-2"><span className="text-primary">✓</span> No more scooping — fully automatic</li>
+              <li className="flex items-center gap-2"><span className="text-primary">✓</span> Eliminates odor with sealed design</li>
+              <li className="flex items-center gap-2"><span className="text-primary">✓</span> Works while you sleep — app-controlled</li>
+            </ul>
+
             <div className="flex flex-wrap gap-3 pt-1">
-              <a
-                href="#bestsellers"
+              <Link
+                to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
                 className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
               >
-                Shop Bestsellers
-              </a>
+                Buy Now — Free US Shipping
+              </Link>
               <a
                 href="#how-it-works"
                 onClick={(e) => {
@@ -139,9 +152,14 @@ const Index = () => {
                 See How It Works
               </a>
             </div>
-            <p className="text-xs text-muted-foreground/70 pt-1">
-              Trusted by pet owners across the US
-            </p>
+
+            {/* Social proof */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex text-amber-400 text-sm" aria-label="5 star rating">★★★★★</div>
+              <p className="text-xs text-muted-foreground/80">
+                Trusted by <strong className="text-foreground">10,000+</strong> happy pet owners
+              </p>
+            </div>
           </div>
         </div>
       </section>
