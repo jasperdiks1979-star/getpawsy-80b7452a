@@ -45,7 +45,7 @@ import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
-import { HeroProductBoost } from '@/components/products/HeroProductBoost';
+
 import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
 import { ProductPageCrossLinks } from '@/components/seo/ProductPageCrossLinks';
