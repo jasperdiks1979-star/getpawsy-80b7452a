@@ -100,19 +100,27 @@ const Index = () => {
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-xl space-y-5">
             <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-              Smarter Dog Training
+              Stop Bad Habits.
               <br />
-              <span className="text-primary">Starts Here</span>
+              <span className="text-primary">Start Real Training.</span>
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-md">
-              Potty pads, no-pull harnesses, bark control & more — shipped fast to the US.
+              Effective, humane tools for potty training, leash control & behavior correction — delivered fast across the US.
             </p>
-            <a
-              href="/products"
-              className="inline-flex items-center gap-2 rounded-full px-10 py-3.5 text-base font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all"
-            >
-              Shop Now →
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/collections/dog-potty-training"
+                className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all"
+              >
+                Shop Training Tools →
+              </a>
+              <a
+                href="/bestsellers"
+                className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent transition-colors"
+              >
+                View Bestsellers
+              </a>
+            </div>
           </div>
         </div>
       </section>
