@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { SITE_URL } from '@/lib/constants';
+import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 /**
  * Organization JSON-LD schema — renders site-wide via Layout.
