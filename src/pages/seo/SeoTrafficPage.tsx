@@ -155,6 +155,26 @@ function MidCTA({ slug, categories, species }: { slug: string; categories: strin
   );
 }
 
+// ── Mini trust strip ──
+function TrustStrip() {
+  return (
+    <div className="flex flex-wrap gap-4 text-sm mb-6">
+      <span className="flex items-center gap-1.5 text-primary">
+        <Truck className="w-4 h-4" /> Free shipping over $35
+      </span>
+      <span className="flex items-center gap-1.5 text-primary">
+        <Shield className="w-4 h-4" /> 30-day happiness guarantee
+      </span>
+      <span className="flex items-center gap-1.5 text-primary">
+        <CheckCircle className="w-4 h-4" /> Expert-reviewed picks
+      </span>
+      <span className="flex items-center gap-1.5 text-primary">
+        <Heart className="w-4 h-4" /> Trusted by US pet owners
+      </span>
+    </div>
+  );
+}
+
 // ── Customer quote strip ──
 function QuoteStrip({ quotes }: { quotes: CustomerQuote[] }) {
   if (!quotes || quotes.length === 0) return null;
