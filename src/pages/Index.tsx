@@ -129,18 +129,13 @@ const Index = () => {
                 </li>
               </ul>
 
-              {/* Rating + testimonial */}
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-amber-400">★★★★★</span>
-                    <span className="font-semibold text-foreground">4.8/5</span>
-                    <span className="text-muted-foreground text-xs">(1,247 reviews)</span>
-                  </div>
+              {/* Rating */}
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-amber-400">★★★★★</span>
+                  <span className="font-semibold text-foreground">4.8/5</span>
+                  <span className="text-muted-foreground text-xs">Highly rated by customers</span>
                 </div>
-                <p className="text-xs text-muted-foreground italic">
-                  "Pet owners say this is the best purchase they made this year"
-                </p>
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
