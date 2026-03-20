@@ -268,6 +268,7 @@ const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/Shopping
 const ProductOptimizerPage = lazyWithRetry(() => import("./pages/admin/ProductOptimizerPage"));
 const ImageCompliancePage = lazyWithRetry(() => import("./pages/admin/ImageCompliancePage"));
 const CornerstoneEnginePage = lazyWithRetry(() => import("./pages/admin/CornerstoneEnginePage"));
+const WinningProductFinder = lazyWithRetry(() => import("./pages/admin/WinningProductFinder"));
 const MerchantComplianceReport = lazyWithRetry(() => import("./pages/admin/MerchantComplianceReport"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
