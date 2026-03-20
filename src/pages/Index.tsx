@@ -161,7 +161,7 @@ const Index = () => {
                 Only $268.99 — <span className="font-normal text-sm text-muted-foreground">Free US Shipping</span>
               </p>
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span>🛡️ 30-Day Risk-Free Guarantee</span>
+                <span>🛡️ 30-Day Return Policy</span>
                 <span>·</span>
                 <span>🔒 Secure checkout</span>
                 <span>·</span>
