@@ -2,20 +2,21 @@
  * HostnameGuard — React component that enforces noindex on lovable.app
  * and always emits the correct canonical link.
  *
+ * Uses react-helmet-async to UPDATE the canonical <link> that was already
+ * injected by the inline script in index.html. Helmet uses "last-wins"
+ * deduplication on rel="canonical", so this replaces rather than duplicates.
+ *
  * Hostname redirects (www → apex) are handled by Cloudflare 301 rules.
- * This component does NOT redirect — it only sets meta tags.
  */
 
 import { Helmet } from "react-helmet-async";
-import { SITE_URL } from "@/lib/constants";
 import { isLovableAppHost } from "@/lib/hostname-guard";
 import { useLocation } from "react-router-dom";
+import { buildCanonicalUrl } from "@/lib/seo-canonical";
 
 export function HostnameGuard() {
   const location = useLocation();
-
-  const cleanPath = location.pathname.replace(/\/+$/, "") || "";
-  const canonicalUrl = `${SITE_URL}${cleanPath}`;
+  const canonicalUrl = buildCanonicalUrl(location.pathname);
 
   // On lovable.app: block indexing + set canonical to apex
   if (isLovableAppHost()) {

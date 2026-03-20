@@ -174,7 +174,54 @@
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
     <link rel="mask-icon" href="/favicon.png" color="#7C3AED" />
-    <!-- Canonical is managed by React Helmet (HostnameGuard.tsx) — do NOT add here -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PRE-HYDRATION CANONICAL + ROBOTS INJECTION
+         Runs synchronously BEFORE React mounts. Ensures Googlebot sees
+         the correct canonical URL and robots directive in the raw HTML
+         response, even without JS execution.
+         ═══════════════════════════════════════════════════════════════════ -->
+    <link rel="canonical" href="https://getpawsy.pet/" id="gp-canonical" />
+    <script>
+    (function(){
+      var ORIGIN = 'https://getpawsy.pet';
+      var p = location.pathname;
+
+      // Normalize: lowercase, collapse double slashes, strip trailing slash
+      p = p.replace(/\/{2,}/g, '/').toLowerCase();
+      if (p.length > 1 && p.charAt(p.length - 1) === '/') p = p.replace(/\/+$/, '');
+
+      // Build canonical: homepage gets trailing slash, all others don't
+      var canonical = p === '/' || p === '' ? ORIGIN + '/' : ORIGIN + p;
+
+      // Set canonical link
+      var el = document.getElementById('gp-canonical');
+      if (el) el.setAttribute('href', canonical);
+
+      // NOINDEX prefixes — routes that must never be indexed
+      var NI = ['/admin','/api','/private','/dashboard','/diagnostics','/cart','/checkout',
+        '/account','/auth','/profile','/orders','/search','/wishlist','/payment-success',
+        '/thank-you','/track','/my-claims','/unsubscribe','/newsletter-preferences',
+        '/live-map','/install','/google-review','/slow-feeder-offer','/download-ads',
+        '/technical-declaration','/appeal-response','/security','/privacy-policy-iframe',
+        '/terms-iframe','/compliance','/merchant-fix-checklist','/landing'];
+
+      var noindex = false;
+      for (var i = 0; i < NI.length; i++) {
+        if (p === NI[i] || p.indexOf(NI[i] + '/') === 0) { noindex = true; break; }
+      }
+
+      // Also noindex if on lovable.app
+      if (location.hostname.indexOf('.lovable.app') !== -1) noindex = true;
+
+      if (noindex) {
+        var metas = document.querySelectorAll('meta[name="robots"], meta[name="googlebot"]');
+        for (var j = 0; j < metas.length; j++) {
+          metas[j].setAttribute('content', 'noindex, follow');
+        }
+      }
+    })();
+    </script>
     
     <!-- Hreflang Tags for International SEO -->
     <link rel="alternate" hreflang="en" href="https://getpawsy.pet/" />
