@@ -63,12 +63,12 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Dog Training Supplies – Free US Shipping | GetPawsy</title>
-        <meta name="description" content="Premium dog training tools with free US shipping on orders $35+. Potty training, leash control, anti-bark solutions. 30-day returns, 3–7 day delivery." />
+        <title>Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy</title>
+        <meta name="description" content="Upgrade your pet's comfort, hygiene & safety with proven essentials. Self-cleaning litter boxes, no-pull harnesses, car seats & more. Free US shipping $35+." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Dog Training Supplies – Free US Shipping | GetPawsy" />
-        <meta property="og:description" content="Premium dog training tools. Free shipping $35+, 30-day returns." />
+        <meta property="og:title" content="Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy" />
+        <meta property="og:description" content="Proven pet essentials for comfort, hygiene & safety. Free US shipping $35+, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
       </Helmet>
@@ -99,25 +99,25 @@ const Index = () => {
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-xl space-y-5">
              <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-               Stop Pulling, Barking & Bad Habits
+               Smart Pet Care
                <br />
-               <span className="text-primary">— Starting Today</span>
+               <span className="text-primary">Starts Here</span>
              </h1>
              <p className="text-base md:text-lg text-muted-foreground max-w-md">
-               Smart training tools & comfort solutions for real results — fast US shipping.
+               Upgrade your pet's comfort, hygiene & safety with proven essentials.
              </p>
             <div className="flex flex-wrap gap-3">
               <a
-                href="/collections/dog-potty-training"
+                href="#bestsellers"
                 className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all"
               >
-                Shop Training Tools →
+                Shop Bestsellers →
               </a>
               <a
-                href="/bestsellers"
+                href="/products"
                 className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent transition-colors"
               >
-                View Bestsellers
+                Browse All Products
               </a>
             </div>
           </div>
@@ -147,27 +147,35 @@ const Index = () => {
               </svg>
               Secure Checkout
             </span>
+            <span className="inline-flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+              </svg>
+              support@getpawsy.pet
+            </span>
           </div>
         </div>
       </section>
 
       {/* ═══ 3. BESTSELLERS / PRODUCTS — immediately visible ═══ */}
-      <SectionErrorBoundary sectionName="Trending Products">
-        <Suspense fallback={
-          <section className="py-10">
-            <div className="container px-4 md:px-6">
-              <div className="h-7 w-48 bg-muted rounded mb-6 animate-pulse" />
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
-                ))}
+      <div id="bestsellers">
+        <SectionErrorBoundary sectionName="Trending Products">
+          <Suspense fallback={
+            <section className="py-10">
+              <div className="container px-4 md:px-6">
+                <div className="h-7 w-48 bg-muted rounded mb-6 animate-pulse" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
-        }>
-          <TrendingProducts />
-        </Suspense>
-      </SectionErrorBoundary>
+            </section>
+          }>
+            <TrendingProducts />
+          </Suspense>
+        </SectionErrorBoundary>
+      </div>
 
       {/* ═══ 4. SHOP BY CATEGORY — 5 core categories ═══ */}
       <section className="py-10 md:py-12 bg-muted/20">
