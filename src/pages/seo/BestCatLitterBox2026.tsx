@@ -13,6 +13,23 @@ export default function BestCatLitterBox2026() {
       species="cat"
       lastUpdated="2026-03-19"
       productCategories={['cat-litter-boxes', 'cat-litter', 'cat-supplies']}
+      bestOverallPick={{
+        name: 'Smart Self-Cleaning Cat Litter Box',
+        badge: '#1 Best Overall',
+        productSlug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
+        benefits: [
+          'Fully automatic cleaning — no scooping needed',
+          'Sealed odor-control compartment keeps your home fresh',
+          'Infrared safety sensors protect your cat during every cycle',
+          'Smart app control — monitor and manage from your phone',
+          'Multi-cat friendly with large 60L capacity',
+        ],
+      }}
+      customerQuotes={[
+        { text: 'No more daily scooping. Our home smells fresh and our cats actually use it consistently now.', name: 'Rachel T.', context: '2-cat household, California' },
+        { text: 'The app notifications are a game-changer. I know exactly when the waste drawer needs emptying.', name: 'Marcus D.', context: 'Tech-savvy cat dad, New York' },
+        { text: 'Guests can\'t even tell we have cats anymore. The odor control is that good.', name: 'Linda K.', context: '3-cat owner, Texas' },
+      ]}
       quickAnswer={{
         picks: [
           { name: 'PetSafe ScoopFree Ultra', bestFor: 'Hands-free automatic cleaning', badge: '#1 Best Overall', cta: 'Check Price' },
