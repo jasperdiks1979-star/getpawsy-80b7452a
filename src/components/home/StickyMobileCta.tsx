@@ -35,7 +35,7 @@ export function StickyMobileCta() {
           to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
           className="rounded-full px-6 py-2.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
         >
-          Buy Now
+          Buy Now — Free US Shipping
         </Link>
       </div>
     </div>
