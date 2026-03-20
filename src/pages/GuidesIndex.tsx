@@ -239,7 +239,7 @@ const GuidesIndex = () => {
               {hub && (
                 <div className="mt-5">
                   <Link
-                    to={`/products?category=${hub.shopCategory}`}
+                    to={`/collections/${hub.shopCategory}`}
                     className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all duration-300"
                   >
                     {hub.shopLabel} <ArrowRight className="w-3.5 h-3.5" />

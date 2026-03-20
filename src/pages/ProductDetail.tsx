@@ -724,7 +724,7 @@ const ProductDetail = () => {
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to={`/products?category=${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, '-'))}`}>
+                      <Link to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, '-'))}`}>
                         {safeString(product.category)}
                       </Link>
                     </BreadcrumbLink>

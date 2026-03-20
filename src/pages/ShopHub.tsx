@@ -82,7 +82,7 @@ export default function ShopHub() {
               {section.categories.map((cat) => (
                 <Link
                   key={cat.slug}
-                  to={`/products?category=${cat.slug}`}
+                  to={`/collections/${cat.slug}`}
                   className="group p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200"
                 >
                   <h3 className="font-semibold text-foreground text-sm group-hover:text-primary transition-colors">{cat.name}</h3>
