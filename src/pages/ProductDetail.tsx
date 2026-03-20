@@ -1486,35 +1486,9 @@ const ProductDetail = () => {
           </div>
         </motion.section>
 
-        {/* Contextual Buying Guide — category-matched cornerstone link */}
-        {product?.category && (
-          <BuyingGuideBlock category={product.category} />
-        )}
-
-        {/* Related Guides */}
+        {/* Related Guides — max 3 */}
         {relatedGuides.length > 0 && (
           <RelatedGuides guides={relatedGuides} />
-        )}
-
-        {/* Learn More About This Topic — pillar guide links */}
-        <TopicGuideLinks productCategory={product.category} />
-
-        {/* Popular Buying Guides — cornerstone authority block */}
-        <PopularGuidesBlock compact />
-
-        {/* Product → Collection cross-links */}
-        <ProductPageCrossLinks
-          productCategory={product.category}
-          productName={product.name}
-        />
-
-        {/* Explore More in Category — silo closure */}
-        {product?.category && (
-          <ExploreMoreCategory 
-            category={product.category}
-            currentProductId={product.id}
-            currentProductSlug={product.slug}
-          />
         )}
 
         {/* Frequently Bought Together */}
