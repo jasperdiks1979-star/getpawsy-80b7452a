@@ -73,7 +73,6 @@ import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
-  TRUST_BADGES,
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
