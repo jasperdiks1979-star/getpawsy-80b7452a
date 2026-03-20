@@ -816,14 +816,6 @@ const ProductDetail = () => {
                   </a>
                 </div>
               )}
-              
-              {/* Cat Tree / Litter Authority Badges */}
-              <CatTreeAuthorityBadges
-                productName={safeString(product.name)}
-                category={product.category}
-                price={Number(product.price)}
-                weight={product.weight ? Number(product.weight) : null}
-              />
             </div>
 
             {/* Price */}
