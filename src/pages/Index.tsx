@@ -210,12 +210,13 @@ const Index = () => {
             <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
               <div className="aspect-[4/3] bg-muted overflow-hidden">
                 <img
-                  src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
+                  src="/assets/no-scooping.webp"
                   alt="Self-cleaning litter box — no scooping needed"
                   className="w-full h-full object-cover"
                   loading="lazy"
-                  width={320}
-                  height={240}
+                  width={672}
+                  height={512}
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                 />
               </div>
               <div className="p-4 text-center">
@@ -226,12 +227,13 @@ const Index = () => {
             <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
               <div className="aspect-[4/3] bg-muted overflow-hidden">
                 <img
-                  src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
+                  src="/assets/no-smell.webp"
                   alt="Sealed deodorizing litter box — no smell"
                   className="w-full h-full object-cover"
                   loading="lazy"
-                  width={320}
-                  height={240}
+                  width={672}
+                  height={512}
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                 />
               </div>
               <div className="p-4 text-center">
@@ -242,12 +244,13 @@ const Index = () => {
             <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
               <div className="aspect-[4/3] bg-muted overflow-hidden">
                 <img
-                  src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
+                  src="/assets/save-time.webp"
                   alt="App-controlled smart litter box — saves time"
                   className="w-full h-full object-cover"
                   loading="lazy"
-                  width={320}
-                  height={240}
+                  width={672}
+                  height={512}
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                 />
               </div>
               <div className="p-4 text-center">
