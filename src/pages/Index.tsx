@@ -341,15 +341,7 @@ const Index = () => {
               </Link>
             ))}
           </div>
-          {/* CTA after guides */}
-          <div className="text-center mt-6">
-            <Link
-              to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
-            >
-              Buy Now — Free US Shipping
-            </Link>
-          </div>
+          {/* CTA removed from guides — keep section educational, not pushy */}
         </div>
       </section>
 
