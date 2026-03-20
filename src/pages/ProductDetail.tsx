@@ -1201,35 +1201,6 @@ const ProductDetail = () => {
               />
             )}
 
-            {/* Trust Features - Complementary to above microcopy */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="grid grid-cols-3 gap-3 pt-4"
-            >
-              {[
-                { icon: Shield, title: 'Secure Checkout', subtitle: 'Powered by Stripe' },
-                { icon: Truck, title: 'Tracked Shipping', subtitle: 'US delivery with tracking number' },
-                { icon: Award, title: TRUST_BADGES.quality.title, subtitle: TRUST_BADGES.quality.subtitle },
-              ].map((feature, idx) => (
-                <motion.div 
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + idx * 0.1 }}
-                  className="flex items-center gap-2.5"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-foreground">{feature.title}</p>
-                    <p className="text-xs text-muted-foreground">{feature.subtitle}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
           </motion.div>
         </div>
 
