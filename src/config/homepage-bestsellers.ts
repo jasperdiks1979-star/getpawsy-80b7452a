@@ -42,7 +42,7 @@ export interface CuratedProduct {
 export const MANUAL_PRODUCTS: CuratedProduct[] = [
   {
     slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-    displayName: 'Stop Litter Box Smell Instantly — Smart Self-Cleaning',
+    displayName: '🏆 Smart Self-Cleaning Litter Box — #1 Best Seller',
     benefit: 'Fully automatic. No scooping, no odor. App-controlled.',
   },
   {

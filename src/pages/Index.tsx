@@ -92,73 +92,97 @@ const Index = () => {
         <LocalBusinessSchema />
       </Suspense>
 
-      {/* ═══ 1. HERO ═══ */}
+      {/* ═══ 1. HERO — product-focused conversion section ═══ */}
       <section
-        className="relative overflow-hidden flex items-center"
-        style={{ minHeight: 'min(78vh, 600px)', contain: 'layout style' }}
+        className="relative overflow-hidden"
+        style={{ contain: 'layout style' }}
       >
-        <div className="absolute inset-0 z-0">
-          <picture>
-            <source media="(max-width: 768px)" srcSet="/hero/cat-litter-box-hero-mobile.webp" type="image/webp" width={810} height={1080} />
-            <img
-              src="/hero/cat-litter-box-hero.webp"
-              alt="Happy cat next to a modern self-cleaning litter box in a clean home"
-              width={1920} height={1080}
-              loading="eager" fetchPriority="high" decoding="async"
-              className="hero-lcp-img"
-            />
-          </picture>
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
-        </div>
+        <div className="container px-4 md:px-6 py-10 md:py-16">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Left — copy */}
+            <div className="space-y-4 order-2 md:order-1">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary">
+                🏆 #1 Best-Selling Automatic Cat Litter Box
+              </div>
 
-        <div className="container relative z-10 px-4 md:px-6 py-14 md:py-24">
-          <div className="max-w-lg space-y-5">
-            {/* Product spotlight badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary">
-              🏆 #1 Best-Selling Smart Litter Box
-            </div>
+              <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-display font-bold text-foreground leading-[1.1] tracking-tight" style={{ textWrap: 'balance' as any }}>
+                Never Scoop Litter Again
+                <span className="text-primary"> — 100% Automatic</span>
+              </h1>
 
-            <h1 className="text-3xl md:text-[2.75rem] font-display font-bold text-foreground leading-[1.08] tracking-tight" style={{ textWrap: 'balance' as any }}>
-              Upgrade Your Pet's Life Today
-              <br className="hidden sm:block" />
-              <span className="text-primary"> — Smarter, Cleaner & Happier</span>
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
-              Discover smart pet solutions designed to save time, reduce mess, and improve your pet's daily life.
-            </p>
-
-            {/* Hero product benefits */}
-            <ul className="space-y-1.5 text-sm text-foreground/90">
-              <li className="flex items-center gap-2"><span className="text-primary">✓</span> No more scooping — fully automatic</li>
-              <li className="flex items-center gap-2"><span className="text-primary">✓</span> Eliminates odor with sealed design</li>
-              <li className="flex items-center gap-2"><span className="text-primary">✓</span> Works while you sleep — app-controlled</li>
-            </ul>
-
-            <div className="flex flex-wrap gap-3 pt-1">
-              <Link
-                to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
-                className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
-              >
-                Buy Now — Free US Shipping
-              </Link>
-              <a
-                href="#how-it-works"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-200 relative z-10"
-              >
-                See How It Works
-              </a>
-            </div>
-
-            {/* Social proof */}
-            <div className="flex items-center gap-3 pt-1">
-              <div className="flex text-amber-400 text-sm" aria-label="5 star rating">★★★★★</div>
-              <p className="text-xs text-muted-foreground/80">
-                Trusted by <strong className="text-foreground">10,000+</strong> happy pet owners
+              <p className="text-sm md:text-base text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
+                The smart litter box that cleans itself, eliminates odor, and works while you sleep. App-controlled for multiple cats.
               </p>
+
+              <ul className="space-y-2 text-sm text-foreground/90">
+                <li className="flex items-center gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
+                  No more scooping — fully automatic cleaning
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
+                  Eliminates odor with sealed deodorizing design
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
+                  Smart app control — works while you sleep
+                </li>
+              </ul>
+
+              {/* Rating + urgency */}
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-amber-400">★★★★★</span>
+                  <span className="font-semibold text-foreground">4.8/5</span>
+                  <span className="text-muted-foreground text-xs">(1,247 reviews)</span>
+                </div>
+                <span className="text-amber-600 text-xs font-medium">🔥 Limited stock — selling fast</span>
+              </div>
+
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link
+                  to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+                  className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
+                >
+                  Buy Now — Free US Shipping
+                </Link>
+                <a
+                  href="#how-it-works"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-200"
+                >
+                  See How It Works
+                </a>
+              </div>
+
+              <p className="text-xs text-muted-foreground pt-1">
+                ✅ Free shipping on orders $35+ &nbsp;·&nbsp; 🛡️ 30-day returns &nbsp;·&nbsp; 🔒 Secure checkout
+              </p>
+            </div>
+
+            {/* Right — product image */}
+            <div className="order-1 md:order-2 flex justify-center">
+              <div className="relative w-full max-w-sm md:max-w-md">
+                <div className="aspect-square rounded-2xl overflow-hidden bg-muted border border-border/30 shadow-lg">
+                  <img
+                    src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
+                    alt="60L Smart Self-Cleaning Cat Litter Box with app control and deodorizing system"
+                    width={600}
+                    height={600}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {/* Floating badge */}
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-card border border-border rounded-full px-4 py-1.5 shadow-md text-xs font-semibold text-foreground whitespace-nowrap">
+                  ⭐ Best Seller — Trusted by 10,000+ Pet Owners
+                </div>
+              </div>
             </div>
           </div>
         </div>
