@@ -25,10 +25,10 @@ const CATEGORIES = [
 ] as const;
 
 const BUYING_GUIDES = [
-  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes 2026', badge: '🔥 Top Guide' },
-  { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', badge: '🔥 Top Guide' },
-  { path: '/guides/best-cat-trees-and-condos-2026', title: 'Best Cat Trees & Condos 2026', badge: '🔥 Top Guide' },
-  { path: '/guides/best-dog-anxiety-solutions-2026', title: 'Best Dog Anxiety Solutions 2026', badge: '🔥 Top Guide' },
+  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes 2026', badge: 'Top Guide' },
+  { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', badge: 'Top Guide' },
+  { path: '/guides/best-cat-trees-and-condos-2026', title: 'Best Cat Trees & Condos 2026', badge: 'Top Guide' },
+  { path: '/guides/best-dog-anxiety-solutions-2026', title: 'Best Dog Anxiety Solutions 2026', badge: 'Top Guide' },
 ] as const;
 
 const GUIDES = [
