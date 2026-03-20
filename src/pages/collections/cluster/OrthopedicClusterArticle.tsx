@@ -219,7 +219,7 @@ const CLUSTERS: Record<string, ClusterData> = {
 export default function OrthopedicClusterArticle() {
   const location = useLocation();
   const slug = location.pathname.split('/').pop() || '';
-  const { isAffiliate } = useAffiliateMode();
+  
   const cluster = CLUSTERS[slug] || null;
 
   if (!cluster) return <Navigate to={HUB} replace />;
