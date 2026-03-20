@@ -227,6 +227,19 @@
           metas[j].setAttribute('content', 'noindex, follow');
         }
       }
+
+      // PRE-HYDRATION: Set meaningful title & description for product pages
+      // so Googlebot sees real content before React hydrates (prevents Soft 404)
+      if (p.indexOf('/product/') === 0) {
+        var slug = p.replace('/product/', '');
+        // Convert slug to readable name: "orthopedic-dog-bed" → "Orthopedic Dog Bed"
+        var productName = slug.replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+        // Truncate excessively long CJ-style names
+        if (productName.length > 80) productName = productName.substring(0, 77) + '...';
+        document.title = productName + ' | GetPawsy - Premium Pet Products';
+        var descMeta = document.querySelector('meta[name="description"]');
+        if (descMeta) descMeta.setAttribute('content', 'Shop ' + productName + ' at GetPawsy. Premium quality, fast US shipping & 30-day returns. Trusted by pet owners nationwide.');
+      }
     })();
     </script>
     
