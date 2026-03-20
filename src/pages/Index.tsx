@@ -224,7 +224,7 @@ const Index = () => {
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
             Expert Pet Guides
           </h2>
-          <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             {GUIDES.map((g) => (
               <Link
                 key={g.path}
