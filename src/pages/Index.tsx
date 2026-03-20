@@ -129,14 +129,18 @@ const Index = () => {
                 </li>
               </ul>
 
-              {/* Rating + urgency */}
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-amber-400">★★★★★</span>
-                  <span className="font-semibold text-foreground">4.8/5</span>
-                  <span className="text-muted-foreground text-xs">(1,247 reviews)</span>
+              {/* Rating + testimonial */}
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-amber-400">★★★★★</span>
+                    <span className="font-semibold text-foreground">4.8/5</span>
+                    <span className="text-muted-foreground text-xs">(1,247 reviews)</span>
+                  </div>
                 </div>
-                <span className="text-amber-600 text-xs font-medium">🔥 Limited stock — selling fast</span>
+                <p className="text-xs text-muted-foreground italic">
+                  "Pet owners say this is the best purchase they made this year"
+                </p>
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
@@ -144,7 +148,7 @@ const Index = () => {
                   to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
                   className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
                 >
-                  Get Yours Now — Limited Stock
+                  Buy Now — Free US Shipping
                 </Link>
                 <a
                   href="#how-it-works"
@@ -161,9 +165,13 @@ const Index = () => {
               <p className="text-base font-bold text-foreground pt-1">
                 Only $268.99 — <span className="font-normal text-sm text-muted-foreground">Free US Shipping</span>
               </p>
-              <p className="text-xs text-muted-foreground">
-                🛡️ 30-Day Risk-Free Guarantee &nbsp;·&nbsp; 🔒 Secure checkout
-              </p>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span>🛡️ 30-Day Risk-Free Guarantee</span>
+                <span>·</span>
+                <span>🔒 Secure checkout</span>
+                <span>·</span>
+                <span>📦 Ships from US warehouse</span>
+              </div>
             </div>
 
             {/* Right — product image */}
@@ -192,27 +200,60 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ WHY PET OWNERS LOVE THIS — focus block ═══ */}
+      {/* ═══ WHY PET OWNERS LOVE THIS — enhanced with visuals ═══ */}
       <section className="py-8 md:py-10 bg-secondary/20">
-        <div className="container px-4 md:px-6 max-w-2xl mx-auto">
+        <div className="container px-4 md:px-6 max-w-3xl mx-auto">
           <h2 className="text-lg md:text-xl font-display font-bold text-foreground text-center mb-5">
             Why Pet Owners Love This
           </h2>
           <div className="grid sm:grid-cols-3 gap-4">
-            <div className="bg-card rounded-xl border border-border/40 p-5 text-center">
-              <span className="text-2xl block mb-2">🚫</span>
-              <h3 className="text-sm font-semibold text-foreground mb-1">No Scooping Ever</h3>
-              <p className="text-xs text-muted-foreground">Fully automatic self-cleaning cycle handles everything.</p>
+            <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
+              <div className="aspect-[4/3] bg-muted overflow-hidden">
+                <img
+                  src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
+                  alt="Self-cleaning litter box — no scooping needed"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  width={320}
+                  height={240}
+                />
+              </div>
+              <div className="p-4 text-center">
+                <h3 className="text-sm font-semibold text-foreground mb-1">No Scooping Ever</h3>
+                <p className="text-xs text-muted-foreground">Fully automatic self-cleaning cycle handles everything.</p>
+              </div>
             </div>
-            <div className="bg-card rounded-xl border border-border/40 p-5 text-center">
-              <span className="text-2xl block mb-2">🌿</span>
-              <h3 className="text-sm font-semibold text-foreground mb-1">No Smell Guaranteed</h3>
-              <p className="text-xs text-muted-foreground">Sealed deodorizing design traps odor instantly.</p>
+            <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
+              <div className="aspect-[4/3] bg-muted overflow-hidden">
+                <img
+                  src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
+                  alt="Sealed deodorizing litter box — no smell"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  width={320}
+                  height={240}
+                />
+              </div>
+              <div className="p-4 text-center">
+                <h3 className="text-sm font-semibold text-foreground mb-1">No Smell Guaranteed</h3>
+                <p className="text-xs text-muted-foreground">Sealed deodorizing design traps odor instantly.</p>
+              </div>
             </div>
-            <div className="bg-card rounded-xl border border-border/40 p-5 text-center">
-              <span className="text-2xl block mb-2">⏱️</span>
-              <h3 className="text-sm font-semibold text-foreground mb-1">Saves Time Daily</h3>
-              <p className="text-xs text-muted-foreground">Reclaim 15+ minutes every day — it works while you sleep.</p>
+            <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
+              <div className="aspect-[4/3] bg-muted overflow-hidden">
+                <img
+                  src="https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg"
+                  alt="App-controlled smart litter box — saves time"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  width={320}
+                  height={240}
+                />
+              </div>
+              <div className="p-4 text-center">
+                <h3 className="text-sm font-semibold text-foreground mb-1">Saves Time Daily</h3>
+                <p className="text-xs text-muted-foreground">Reclaim 15+ minutes every day — it works while you sleep.</p>
+              </div>
             </div>
           </div>
           <div className="text-center mt-5">
@@ -220,7 +261,7 @@ const Index = () => {
               to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
               className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
             >
-              Get Yours Now →
+              Buy Now — Free US Shipping
             </Link>
           </div>
         </div>
@@ -253,7 +294,32 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 3. BESTSELLERS — immediately visible ═══ */}
+      {/* ═══ 3. HOW IT WORKS — funnel bridge (moved up, before bestsellers) ═══ */}
+      <section id="how-it-works" className="py-12 md:py-16 scroll-mt-20 bg-muted/20">
+        <div className="container px-4 md:px-6">
+          <div className="text-center mb-8">
+            <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">
+              How GetPawsy Works
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              From browsing to unboxing — it's simple, fast, and guaranteed.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-5 max-w-3xl mx-auto">
+            {HOW_IT_WORKS_STEPS.map((s) => (
+              <article key={s.step} className="relative bg-card rounded-xl p-6 border border-border/50 text-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-sm font-bold text-primary">{s.step}</span>
+                </div>
+                <h3 className="text-sm font-semibold text-foreground mb-2">{s.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 4. BESTSELLERS — moved lower in page ═══ */}
       <div id="bestsellers">
         <SectionErrorBoundary sectionName="Trending Products">
           <Suspense fallback={
@@ -276,12 +342,11 @@ const Index = () => {
       {/* ═══ CTA BLOCK — after bestsellers ═══ */}
       <section className="py-6">
         <div className="container px-4 md:px-6 text-center">
-          <p className="text-sm text-muted-foreground mb-3">🔥 Selling fast in the US — limited stock available</p>
           <Link
-            to="/products"
-            className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
+            to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+            className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
           >
-            Shop All Products
+            Buy Now — Free US Shipping
           </Link>
         </div>
       </section>
