@@ -94,11 +94,11 @@
 /guides/crate-training-guide            /guides/puppy-training-first-30-days     301
 
 # ═══ COLLECTION ALIAS REDIRECTS (broken/legacy slugs) ═══
-/collections/self-cleaning-litter-boxes  /collections/cat-litter-boxes             301
-/collections/best-cat-litter-boxes       /collections/cat-litter-boxes             301
-/collections/orthopedic-dog-beds         /collections/orthopedic-calming-dog-beds  301
-/collections/dog-car-seats               /collections/best-dog-car-seats           301
-/collections/dog-beds                    /collections/orthopedic-calming-dog-beds  301
+/collections/self-cleaning-litter-boxes  /collections/best-cat-litter-boxes       301
+/collections/cat-litter-boxes            /collections/best-cat-litter-boxes       301
+/collections/orthopedic-dog-beds         /collections/orthopedic-calming-dog-beds 301
+/collections/dog-car-seats               /collections/best-dog-car-seats          301
+/collections/dog-beds                    /collections/orthopedic-calming-dog-beds 301
 /collections/cat-carriers                /collections/best-cat-carriers           301
 
 # ═══ MISC LEGACY PATTERNS ═══
