@@ -598,22 +598,22 @@ const App = () => {
                       <Route path="/diagnostics/market-takeover" element={<Suspense fallback={<RouteLoader />}><MarketTakeover /></Suspense>} />
                       
                       {/* Parent category routes */}
-                      <Route path="/dogs" element={<Navigate to="/products?category=dogs" replace />} />
-                      <Route path="/cats" element={<Navigate to="/products?category=cats" replace />} />
+                      <Route path="/dogs" element={<Navigate to="/collections/dog" replace />} />
+                      <Route path="/cats" element={<Navigate to="/collections/cat" replace />} />
                       
-                      {/* Category navigation routes — redirect to /products?category= */}
-                      <Route path="/dogs/dog-beds" element={<Navigate to="/products?category=dog-beds" replace />} />
-                      <Route path="/dogs/dog-toys" element={<Navigate to="/products?category=dog-toys" replace />} />
-                      <Route path="/dogs/chew-toys" element={<Navigate to="/products?category=dog-toys" replace />} />
-                      <Route path="/dogs/dog-collars-leashes" element={<Navigate to="/products?category=dog-collars-leashes" replace />} />
-                      <Route path="/dogs/dog-carriers" element={<Navigate to="/products?category=dog-carriers" replace />} />
-                      <Route path="/dogs/dog-grooming" element={<Navigate to="/products?category=dog-grooming" replace />} />
-                      <Route path="/cats/cat-toys" element={<Navigate to="/products?category=cat-toys" replace />} />
-                      <Route path="/cats/cat-litter" element={<Navigate to="/products?category=cat-litter-boxes" replace />} />
-                      <Route path="/cats/litter-boxes" element={<Navigate to="/products?category=cat-litter-boxes" replace />} />
-                      <Route path="/cats/cat-trees" element={<Navigate to="/products?category=cat-trees-and-condos" replace />} />
-                      <Route path="/cats/cat-carriers" element={<Navigate to="/products?category=cat-carriers" replace />} />
-                      <Route path="/cats/automatic-feeders" element={<Navigate to="/products?category=automatic-cat-feeders" replace />} />
+                      {/* Category navigation routes — redirect to /collections/ */}
+                      <Route path="/dogs/dog-beds" element={<Navigate to="/collections/orthopedic-calming-dog-beds" replace />} />
+                      <Route path="/dogs/dog-toys" element={<Navigate to="/collections/dog-toys" replace />} />
+                      <Route path="/dogs/chew-toys" element={<Navigate to="/collections/dog-toys" replace />} />
+                      <Route path="/dogs/dog-collars-leashes" element={<Navigate to="/collections/dog-collars-leashes" replace />} />
+                      <Route path="/dogs/dog-carriers" element={<Navigate to="/collections/dog-carriers" replace />} />
+                      <Route path="/dogs/dog-grooming" element={<Navigate to="/collections/best-dog-grooming-kits" replace />} />
+                      <Route path="/cats/cat-toys" element={<Navigate to="/collections/cat-toys" replace />} />
+                      <Route path="/cats/cat-litter" element={<Navigate to="/collections/best-cat-litter-boxes" replace />} />
+                      <Route path="/cats/litter-boxes" element={<Navigate to="/collections/best-cat-litter-boxes" replace />} />
+                      <Route path="/cats/cat-trees" element={<Navigate to="/collections/cat-trees-and-condos" replace />} />
+                      <Route path="/cats/cat-carriers" element={<Navigate to="/collections/best-cat-carriers" replace />} />
+                      <Route path="/cats/automatic-feeders" element={<Navigate to="/collections/automatic-cat-feeders" replace />} />
                       <Route path="/category/:slug" element={<Navigate to="/products" replace />} />
                       <Route path="/shop" element={<Suspense fallback={<RouteLoader />}><ShopHub /></Suspense>} />
                       <Route path="/site-map" element={<Suspense fallback={<RouteLoader />}><HtmlSitemap /></Suspense>} />

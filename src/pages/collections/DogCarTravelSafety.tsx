@@ -143,7 +143,7 @@ export default function DogCarTravelSafety() {
             Crash-tested car seats, harnesses, and booster seats designed to keep your dog safe on every ride. From quick errands to cross-country road trips.
           </p>
           <div className="flex flex-wrap gap-4 mb-6">
-            <Link to="/products?category=dog-car-seats">
+            <Link to="/collections/best-dog-car-seats">
               <Button size="lg" className="gap-2">Shop Crash-Tested Gear <ArrowRight className="w-4 h-4" /></Button>
             </Link>
           </div>
