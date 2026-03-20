@@ -365,13 +365,12 @@ export default function OrthopedicClusterArticle() {
           </section>
         )}
 
-        {/* Affiliate Products */}
-        {isAffiliate && (
-          <section className="mb-12">
-            <h2 className="text-xl md:text-2xl font-display font-bold mb-4">Our Top Picks</h2>
-            <AffiliateProductGrid products={filteredProducts} />
-          </section>
-        )}
+        {/* Products section — links to main collection */}
+        <section className="mb-12 text-center">
+          <Link to="/collections/orthopedic-calming-dog-beds" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity">
+            Shop Orthopedic Dog Beds <ArrowRight className="w-4 h-4" />
+          </Link>
+        </section>
 
         {/* FAQ */}
         <section className="mb-12 bg-muted/30 rounded-2xl p-6">

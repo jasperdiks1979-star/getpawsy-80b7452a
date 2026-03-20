@@ -676,14 +676,12 @@ export default function OrthopedicDogBeds() {
         <section id="products" className="mb-16">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl md:text-3xl font-display font-bold">
-              {isAffiliate ? 'Top-Rated Orthopedic Dog Beds (2026)' : 'Shop Orthopedic Dog Beds'}
+              Shop Orthopedic Dog Beds
             </h2>
-            {!isAffiliate && <span className="text-muted-foreground text-sm">{products.length} products</span>}
+            <span className="text-muted-foreground text-sm">{products.length} products</span>
           </div>
 
-          {isAffiliate ? (
-            <AffiliateProductGrid products={AFFILIATE_ORTHOPEDIC_BEDS} />
-          ) : isLoading ? (
+          {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {[...Array(8)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-xl" />)}
             </div>
