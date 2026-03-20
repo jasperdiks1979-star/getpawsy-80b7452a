@@ -173,7 +173,7 @@ const Index = () => {
       <section className="py-10 md:py-12 bg-muted/20">
         <div className="container px-4 md:px-6">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
-            Shop by Category
+            Shop by Training Need
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {CATEGORIES.map((cat) => (
