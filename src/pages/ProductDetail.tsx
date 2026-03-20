@@ -1405,6 +1405,9 @@ const ProductDetail = () => {
         {/* Feature Grid — 4 feature cards */}
         <ProductFeatureGrid productName={product.name} category={product.category || ''} />
 
+        {/* Social Proof — category-aware review quotes */}
+        <ProductSocialProof productName={product.name} category={product.category || ''} />
+
         {/* Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
