@@ -42,23 +42,23 @@ export interface CuratedProduct {
 export const MANUAL_PRODUCTS: CuratedProduct[] = [
   {
     slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-    displayName: 'Smart Automatic Cat Litter Box',
-    benefit: 'Self-cleaning & app-controlled — zero scooping',
+    displayName: 'Self-Cleaning Cat Litter Box — No Smell, No Scooping',
+    benefit: 'Fully automatic cleaning. Always fresh. Zero effort.',
   },
   {
     slug: 'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo',
-    displayName: 'No-Pull Dog Harness',
-    benefit: 'Stop pulling instantly',
+    displayName: 'No-Pull Dog Harness — Stop Pulling Instantly',
+    benefit: 'Stops pulling instantly. Safer walks in seconds.',
   },
   {
     slug: 'dog-booster-car-seat-pet-car-seat-for-small-medium-dog-up-to-40-lbs-black',
-    displayName: 'Dog Car Seat & Travel Kit',
-    benefit: 'Safe & stress-free travel',
+    displayName: 'Dog Car Seat — Safe & Comfortable Car Rides',
+    benefit: 'Keeps your dog safe during every ride.',
   },
   {
     slug: '2-in-1-dog-paw-cleaner-cup-soft-pet-dog-foot-cleaning-washer-brush-cup-portable-pet-foot-washer-paw-',
-    displayName: 'Portable Dog Paw Cleaner',
-    benefit: 'Clean paws in seconds — no mess',
+    displayName: 'Dog Paw Cleaner — Clean Paws in Seconds',
+    benefit: 'Clean dirty paws in 10 seconds.',
   },
 ];
 
