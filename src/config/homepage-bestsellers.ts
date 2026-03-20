@@ -42,23 +42,23 @@ export interface CuratedProduct {
 export const MANUAL_PRODUCTS: CuratedProduct[] = [
   {
     slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-    displayName: 'Self-Cleaning Cat Litter Box — No Smell, No Scooping',
-    benefit: 'Fully automatic cleaning. Always fresh. Zero effort.',
+    displayName: 'Stop Litter Box Smell Instantly — Smart Self-Cleaning',
+    benefit: 'Fully automatic. No scooping, no odor. App-controlled.',
   },
   {
     slug: 'dog-cot-cooling-pet-bed-3',
-    displayName: 'Orthopedic Dog Bed — Stops Joint Pain Fast',
-    benefit: 'Elevated cooling design. Relief for achy joints.',
+    displayName: 'End Joint Pain — Orthopedic Cooling Dog Bed',
+    benefit: 'Elevated airflow design. Instant relief for achy joints.',
   },
   {
     slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-beige',
-    displayName: 'Cat Tree for Large Cats — Stable & No Wobble',
-    benefit: 'Multi-level tower with anti-tip design. Built to last.',
+    displayName: 'No More Furniture Scratching — Sturdy Cat Tree',
+    benefit: 'Multi-level tower with anti-tip base. Built to last.',
   },
   {
     slug: 'transparent-and-visible-pet-feeding-and-drinking-dispenser-automatically-refilling-food-and-water-ca',
-    displayName: 'Automatic Pet Feeder — Never Miss a Meal',
-    benefit: 'Auto-refills food & water. Perfect for busy owners.',
+    displayName: 'Never Miss a Meal — Auto Pet Feeder & Water Station',
+    benefit: 'Self-refilling food & water. Perfect for busy owners.',
   },
 ];
 
