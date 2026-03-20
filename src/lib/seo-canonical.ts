@@ -12,12 +12,18 @@ import { SITE_URL } from '@/lib/constants';
 
 /**
  * Strip query params, trailing slashes, and enforce apex canonical.
+ * Homepage always gets trailing slash per Google convention.
  */
 export function buildCanonicalUrl(path: string): string {
-  // Remove query string
+  // Remove query string and hash
   const cleanPath = path.split('?')[0].split('#')[0];
-  // Remove trailing slash (except root)
-  const normalizedPath = cleanPath === '/' ? '/' : cleanPath.replace(/\/+$/, '');
+  // Normalize: collapse double slashes, lowercase, strip trailing slash
+  let normalizedPath = cleanPath.replace(/\/{2,}/g, '/').toLowerCase();
+  if (normalizedPath.length > 1) normalizedPath = normalizedPath.replace(/\/+$/, '');
+  // Homepage gets trailing slash
+  if (normalizedPath === '/' || normalizedPath === '') {
+    return `${SITE_URL}/`;
+  }
   return `${SITE_URL}${normalizedPath}`;
 }
 
