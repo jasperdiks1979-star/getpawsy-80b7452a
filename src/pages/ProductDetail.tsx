@@ -1143,11 +1143,11 @@ const ProductDetail = () => {
                 </Button>
               </div>
 
-              {/* Add to Cart */}
+              {/* Add to Cart — high-contrast CTA */}
               <Button
                 ref={addToCartButtonRef}
                 size="lg"
-                className="flex-1 h-12 gap-2 btn-organic text-base font-semibold"
+                className="flex-1 h-12 gap-2 text-base font-semibold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
                >
