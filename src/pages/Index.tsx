@@ -144,7 +144,7 @@ const Index = () => {
                   to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
                   className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
                 >
-                  Buy Now — Free US Shipping
+                  Get Yours Now — Limited Stock
                 </Link>
                 <a
                   href="#how-it-works"
@@ -158,8 +158,11 @@ const Index = () => {
                 </a>
               </div>
 
-              <p className="text-xs text-muted-foreground pt-1">
-                ✅ Free shipping on orders $35+ &nbsp;·&nbsp; 🛡️ 30-day returns &nbsp;·&nbsp; 🔒 Secure checkout
+              <p className="text-base font-bold text-foreground pt-1">
+                Only $268.99 — <span className="font-normal text-sm text-muted-foreground">Free US Shipping</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                🛡️ 30-Day Risk-Free Guarantee &nbsp;·&nbsp; 🔒 Secure checkout
               </p>
             </div>
 
