@@ -1494,6 +1494,14 @@ const ProductDetail = () => {
           productName={product.name}
         />
 
+        {/* Final CTA Block — conversion closer */}
+        <FinalCtaBlock
+          onAddToCart={handleAddToCart}
+          inStock={inStock}
+          price={Number(product.price)}
+          compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : null}
+        />
+
         {/* Reviews Section */}
         <motion.section
           initial={{ opacity: 0, y: 40 }}
