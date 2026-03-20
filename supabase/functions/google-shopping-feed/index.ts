@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const BASE_URL = "https://getpawsy.pet";
-const MAX_EXPORT = 290;
+const MAX_EXPORT = 25; // CLEAN RESTART: minimal high-quality feed for Merchant re-approval
 const FREE_SHIPPING_THRESHOLD = 49;
 
 // ── XML helpers ──────────────────────────────────────────────────────

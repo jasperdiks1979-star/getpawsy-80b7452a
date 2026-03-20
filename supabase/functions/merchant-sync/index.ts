@@ -339,9 +339,9 @@ Deno.serve(async (req: Request) => {
     // Batch size for Google API sends (NOT for DB scan)
     const SEND_BATCH_SIZE = body.send_batch_size || 100;
     // ── MERCHANT EXPORT CAP ──────────────────────────────────────
-    // Hard limit on products sent to Google Merchant to avoid 403 "Product limit exceeded".
-    // This ONLY affects Merchant export — NOT CJ sync, admin, store, CSV, or DB.
-    const MAX_EXPORT_PRODUCTS = 290;
+    // Hard limit — CLEAN RESTART MODE: only top-25 highest-quality products
+    // to rebuild Google Merchant trust after suspension. Increase after approval.
+    const MAX_EXPORT_PRODUCTS = 25;
     const syncStartTime = Date.now();
 
     console.log(`[merchant-sync] START runId=${runId} mode=${modeEffective} prune=${PRUNE_ENABLED} prune_dryrun=${PRUNE_DRYRUN} prune_max=${PRUNE_MAX_DELETES}`);
