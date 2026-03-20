@@ -207,56 +207,32 @@ const Index = () => {
             Why Pet Owners Love This
           </h2>
           <div className="grid sm:grid-cols-3 gap-4">
-            <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
-              <div className="aspect-[4/3] bg-muted overflow-hidden">
-                <img
-                  src="/assets/no-scooping.webp"
-                  alt="Self-cleaning litter box — no scooping needed"
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  width={672}
-                  height={512}
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                />
+            <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-primary" aria-hidden="true">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
               </div>
-              <div className="p-4 text-center">
-                <h3 className="text-sm font-semibold text-foreground mb-1">No Scooping Ever</h3>
-                <p className="text-xs text-muted-foreground">Fully automatic self-cleaning cycle handles everything.</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground mb-1.5">No Scooping Ever</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Fully automatic self-cleaning cycle handles everything.</p>
             </div>
-            <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
-              <div className="aspect-[4/3] bg-muted overflow-hidden">
-                <img
-                  src="/assets/no-smell.webp"
-                  alt="Sealed deodorizing litter box — no smell"
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  width={672}
-                  height={512}
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                />
+            <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-primary" aria-hidden="true">
+                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
+                </svg>
               </div>
-              <div className="p-4 text-center">
-                <h3 className="text-sm font-semibold text-foreground mb-1">No Smell Guaranteed</h3>
-                <p className="text-xs text-muted-foreground">Sealed deodorizing design traps odor instantly.</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground mb-1.5">No Smell Guaranteed</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Sealed deodorizing design traps odor instantly.</p>
             </div>
-            <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
-              <div className="aspect-[4/3] bg-muted overflow-hidden">
-                <img
-                  src="/assets/save-time.webp"
-                  alt="App-controlled smart litter box — saves time"
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  width={672}
-                  height={512}
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                />
+            <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-primary" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
               </div>
-              <div className="p-4 text-center">
-                <h3 className="text-sm font-semibold text-foreground mb-1">Saves Time Daily</h3>
-                <p className="text-xs text-muted-foreground">Reclaim 15+ minutes every day — it works while you sleep.</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground mb-1.5">Saves Time Daily</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Reclaim 15+ minutes every day — it works while you sleep.</p>
             </div>
           </div>
           <div className="text-center mt-5">
