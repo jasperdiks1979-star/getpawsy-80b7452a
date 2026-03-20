@@ -33,9 +33,7 @@ import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
 import { computeAvailability } from '@/lib/availability';
 import USProductDescription from '@/components/products/USProductDescription';
 import { generateClarityIntro } from '@/components/products/ClarityIntro';
-import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
 import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
-import { WhyPetParentsLoveThis } from '@/components/products/WhyPetParentsLoveThis';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
@@ -43,32 +41,18 @@ import { StockNotificationForm } from '@/components/products/StockNotificationFo
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
 import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBoughtTogether';
-import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
-import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
-import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
-import { CustomersAlsoTrainWith } from '@/components/products/CustomersAlsoTrainWith';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
-import { BuyingGuideBlock } from '@/components/seo/BuyingGuideBlock';
-import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
-import { HeroProductBoost } from '@/components/products/HeroProductBoost';
-import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
-import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
-import { ProductPageCrossLinks } from '@/components/seo/ProductPageCrossLinks';
-import { TopicGuideLinks } from '@/components/seo/TopicGuideLinks';
-import { ProductUseCases } from '@/components/products/ProductUseCases';
-import { CatTreeAuthorityBadges } from '@/components/products/CatTreeAuthorityBadges';
+
+
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
-import { FreeShippingBar } from '@/components/products/FreeShippingBar';
-import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
+
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
-import { ClusterAuthorityBlock } from '@/components/authority/ClusterAuthorityBlock';
+
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
-import { inferClusterFromCategory } from '@/lib/cluster-config';
+
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
-import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
-import { SimilarProductsCompare } from '@/components/products/SimilarProductsCompare';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
@@ -281,14 +265,6 @@ const ProductDetail = () => {
     recentlyViewedIds,
   });
 
-  // Fetch complementary products for "Complete the Look"
-  const { data: complementaryProducts, isLoading: complementaryLoading } = useCompleteTheLook({
-    productId: product?.id || '',
-    productName: product?.name || '',
-    category: product?.category || null,
-    maxItems: 4,
-    enabled: !!product?.id,
-  });
 
   // Fetch recently viewed products with React Query caching
   // Pass recentlyViewedIds to avoid duplicate hook calls
@@ -830,14 +806,6 @@ const ProductDetail = () => {
                   </a>
                 </div>
               )}
-              
-              {/* Cat Tree / Litter Authority Badges */}
-              <CatTreeAuthorityBadges
-                productName={safeString(product.name)}
-                category={product.category}
-                price={Number(product.price)}
-                weight={product.weight ? Number(product.weight) : null}
-              />
             </div>
 
             {/* Price */}
@@ -1054,18 +1022,6 @@ const ProductDetail = () => {
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
-            {/* Why Pet Parents Choose This - Benefit-driven scannable section */}
-            <WhyPetParentsLoveThis 
-              productName={product.name} 
-              category={product.category || ''} 
-            />
-
-            {/* Hero Product Conversion Boost — Who is this for / FAQ / urgency */}
-            {product.slug && <HeroProductBoost productSlug={product.slug} />}
-
-            {/* Free Shipping Progress Bar */}
-            <FreeShippingBar previewAmount={Number(product.price)} />
-
             {/* Stock Status & Subtle Social Proof */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
@@ -1174,30 +1130,6 @@ const ProductDetail = () => {
               <TrustMicrocopy />
             </motion.div>
 
-            {/* Bundle Upsell — contextual companion product */}
-            {product.slug && (
-              <ProductBundleUpsell
-                productSlug={product.slug}
-                mainProductPrice={product.price}
-                mainProductName={product.name}
-              />
-            )}
-
-            {/* Compare With Similar — mini comparison module */}
-            {relatedProducts && relatedProducts.length >= 2 && (
-              <SimilarProductsCompare
-                products={(relatedProducts || []).slice(0, 3).map(p => ({
-                  id: p.id,
-                  name: p.name,
-                  price: Number(p.price),
-                  image_url: p.image_url,
-                  slug: (p as any).slug,
-                  category: p.category,
-                  weight: p.weight ? Number(p.weight) : null,
-                }))}
-                currentProductName={safeString(product.name)}
-              />
-            )}
 
           </motion.div>
         </div>
@@ -1468,28 +1400,8 @@ const ProductDetail = () => {
         {/* Feature Grid — 4 feature cards */}
         <ProductFeatureGrid productName={product.name} category={product.category || ''} />
 
-        {/* Specifications Table — semantic, real product data */}
-        <ProductSpecsTable product={{
-          name: product.name,
-          category: product.category,
-          weight: product.weight ? Number(product.weight) : null,
-          sku: product.sku,
-        }} />
-
-        {/* Use Case Segmentation — "Best For" */}
-        <ProductUseCases productName={product.name} category={product.category || ''} />
-
-        {/* Comparison Table — GetPawsy vs Generic */}
-        <ProductComparisonTable productName={product.name} />
-
-        {/* Visible FAQ Accordion — 10 Questions */}
+        {/* Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
-
-        {/* Cluster Authority Block — "Learn More About [Topic]" */}
-        <ClusterAuthorityBlock
-          clusterId={inferClusterFromCategory(product.category || '')}
-          productName={product.name}
-        />
 
         {/* Final CTA Block — conversion closer */}
         <FinalCtaBlock
@@ -1542,35 +1454,9 @@ const ProductDetail = () => {
           </div>
         </motion.section>
 
-        {/* Contextual Buying Guide — category-matched cornerstone link */}
-        {product?.category && (
-          <BuyingGuideBlock category={product.category} />
-        )}
-
-        {/* Related Guides */}
+        {/* Related Guides — max 3 */}
         {relatedGuides.length > 0 && (
           <RelatedGuides guides={relatedGuides} />
-        )}
-
-        {/* Learn More About This Topic — pillar guide links */}
-        <TopicGuideLinks productCategory={product.category} />
-
-        {/* Popular Buying Guides — cornerstone authority block */}
-        <PopularGuidesBlock compact />
-
-        {/* Product → Collection cross-links */}
-        <ProductPageCrossLinks
-          productCategory={product.category}
-          productName={product.name}
-        />
-
-        {/* Explore More in Category — silo closure */}
-        {product?.category && (
-          <ExploreMoreCategory 
-            category={product.category}
-            currentProductId={product.id}
-            currentProductSlug={product.slug}
-          />
         )}
 
         {/* Frequently Bought Together */}
@@ -1603,56 +1489,18 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* Complete the Look */}
-        {complementaryProducts && complementaryProducts.length > 0 && (
-          <div className="mt-16">
-            <CompleteTheLook
-              products={complementaryProducts.map(p => ({
-                id: p.id,
-                name: p.name,
-                price: Number(p.price),
-                compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
-                image_url: p.image_url,
-                slug: (p as { slug?: string }).slug,
-                category: p.category,
-              }))}
-              isLoading={complementaryLoading}
-              currentProductName={product.name}
-              sourceProductId={product.id}
-              sourceProductName={product.name}
-            />
-          </div>
-        )}
-
-        {/* Related Products Carousel */}
+        {/* Related Products */}
         <div className="mt-16">
           <RelatedProductsCarousel 
             products={relatedProducts || []}
             isLoading={relatedLoading}
-            title="Customers Also Viewed"
-            subtitle="Popular products from the same category"
+            title="You May Also Like"
+            subtitle="Popular picks from the same category"
             listId="related-products"
             listName="Related Products"
             sourceProductId={product.id}
             sourceProductName={product.name}
             crossSellType="related_products"
-          />
-        </div>
-
-        {/* Customers Also Train With - Training-specific cross-sell */}
-        <CustomersAlsoTrainWith
-          productId={product.id}
-          productName={product.name}
-          productCategory={product.category || ''}
-          maxItems={4}
-        />
-
-        {/* Customers Also Bought - Based on Real Purchase Data */}
-        <div className="mt-16">
-          <CustomersAlsoBought
-            productId={product.id}
-            productName={product.name}
-            maxItems={4}
           />
         </div>
 
