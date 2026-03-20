@@ -363,31 +363,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ═══ 7. WHY CHOOSE US ═══ */}
-      <section className="py-10 md:py-12">
-        <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-6">
-            Why Pet Owners Choose GetPawsy
-          </h2>
-          <div className="grid sm:grid-cols-3 gap-5">
-            <div className="space-y-2">
-              <p className="text-2xl">✅</p>
-              <h3 className="font-semibold text-foreground text-sm">Tested for Real Results</h3>
-              <p className="text-xs text-muted-foreground">No gimmicks — tools that actually work</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl">🚚</p>
-              <h3 className="font-semibold text-foreground text-sm">Fast US Shipping</h3>
-              <p className="text-xs text-muted-foreground">3–7 business days, tracking included</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl">↩️</p>
-              <h3 className="font-semibold text-foreground text-sm">30-Day Risk-Free Returns</h3>
-              <p className="text-xs text-muted-foreground">Not happy? Full refund, no hassle</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* "Why Choose Us" removed — redundant with hero trust signals */}
 
       {/* ═══ 8. EXPERT GUIDES ═══ */}
       <section className="py-10 md:py-12 bg-muted/20">
