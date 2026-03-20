@@ -959,10 +959,10 @@ const ProductDetail = () => {
                   // Category-aware benefit bullets (problem → outcome)
                   if (n.includes('bed') || cat.includes('bed')) {
                     bullets.push(
-                      'Relieves joint pressure so your pet wakes up rested',
-                      'Removable cover for easy machine washing',
-                      'Non-slip base stays put on any floor',
-                      'Fits small to extra-large breeds',
+                      'Relieves joint pain and stiffness overnight',
+                      'Improves sleep quality from the first night',
+                      'Supports older, injured, and active dogs',
+                      'Ultra-soft, breathable cover stays cool',
                     );
                   } else if (n.includes('harness') || cat.includes('harness')) {
                     bullets.push(

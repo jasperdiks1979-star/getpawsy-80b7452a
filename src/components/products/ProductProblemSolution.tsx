@@ -38,9 +38,9 @@ function detectType(name: string, category: string): ProductType {
 
 const DATA: Record<ProductType, ProblemSolutionData> = {
   bed: {
-    problem: 'Many pets sleep on hard floors or worn-out beds that offer no joint support. Over time this can lead to stiffness, restless nights, and decreased energy during the day — especially for senior dogs and larger breeds.',
-    solution: 'This bed is designed with supportive filling that cushions pressure points, helping your pet settle faster and sleep more deeply. The removable, washable cover keeps things fresh with minimal effort, so your pet always has a clean place to rest.',
-    benefits: ['Joint-friendly support', 'Machine-washable cover', 'Fits any room'],
+    problem: 'Does your dog struggle to get comfortable? Wake up stiff or restless? Many pets sleep on hard floors or worn-out beds that offer zero joint support — leading to pain, low energy, and restless nights, especially for older or active dogs.',
+    solution: 'This orthopedic bed supports joints and pressure points with memory foam that adapts to your dog\'s body. Raised edges provide security, while the breathable cover keeps them cool. Your dog spends hours resting every day — make those hours count.',
+    benefits: ['Deep joint relief', 'Better sleep quality', 'Easy-wash cover'],
   },
   bowl: {
     problem: 'Pets that eat too quickly risk bloating, vomiting, and poor digestion. Lightweight bowls slide across the floor, creating mess and frustration at every mealtime.',
