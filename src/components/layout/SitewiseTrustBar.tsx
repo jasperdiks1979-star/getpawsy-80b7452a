@@ -1,5 +1,5 @@
 import { Truck, RotateCcw, ShieldCheck, Headphones } from 'lucide-react';
-import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS } from '@/lib/shipping-constants';
+import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS, SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 /**
  * Sitewide Trust Bar — renders above the footer on every page.

@@ -39,7 +39,7 @@ export function LocalBusinessSchema({
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'info@getpawsy.pet',
+      email: SUPPORT_EMAIL,
       contactType: 'customer service',
       availableLanguage: 'English',
       hoursAvailable: {

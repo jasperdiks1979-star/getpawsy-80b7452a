@@ -625,7 +625,7 @@ const Bestsellers = () => {
                 <RotateCcw className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-semibold mb-2">30-Day Returns</h3>
-              <p className="text-sm text-muted-foreground">Not happy? Return any product within 30 days for a full refund — no questions asked. Contact info@getpawsy.pet.</p>
+              <p className="text-sm text-muted-foreground">Not happy? Return any product within 30 days for a full refund — no questions asked. Contact support@getpawsy.pet.</p>
             </div>
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
