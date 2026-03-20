@@ -51,7 +51,7 @@ import { RelatedGuides } from '@/components/guides/RelatedGuides';
 import { FreeShippingBar } from '@/components/products/FreeShippingBar';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
-import { ClusterAuthorityBlock } from '@/components/authority/ClusterAuthorityBlock';
+
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 import { inferClusterFromCategory } from '@/lib/cluster-config';
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
