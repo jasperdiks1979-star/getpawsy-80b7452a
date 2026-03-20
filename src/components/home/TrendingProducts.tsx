@@ -158,12 +158,12 @@ export function TrendingProducts() {
 
   return (
     <HomeProductGridSection
-      title="Dog Training Picks"
-      subtitle="Top-rated training tools trusted by US dog owners"
+      title="Top Picks for Pet Parents"
+      subtitle="Proven tools that solve real problems — fast."
       products={items}
       trackingKey="top-8-homepage-picks"
-      seeAllHref="/collections/dog-leash-control"
-      seeAllLabel="Shop All Training Gear"
+      seeAllHref="/products"
+      seeAllLabel="View All Products"
     />
   );
 }

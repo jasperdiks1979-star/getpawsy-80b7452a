@@ -251,10 +251,10 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="max-w-md mx-auto text-center">
             <h2 className="text-lg font-display font-semibold text-foreground mb-2">
-              Get Pet Care Tips & Deals
+              Get 10% Off Your First Order
             </h2>
             <p className="text-sm text-muted-foreground mb-4">
-              No spam — just helpful content and new arrivals.
+              Join thousands of pet parents. Get exclusive deals & tips.
             </p>
             <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
               <input
@@ -270,7 +270,7 @@ const Index = () => {
                 className="rounded-full px-6 py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 disabled={isSubscribing}
               >
-                {isSubscribing ? '...' : 'Subscribe'}
+                {isSubscribing ? '...' : 'Get 10% Off'}
               </button>
             </form>
           </div>
