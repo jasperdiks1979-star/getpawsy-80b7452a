@@ -1054,18 +1054,6 @@ const ProductDetail = () => {
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
-            {/* Why Pet Parents Choose This - Benefit-driven scannable section */}
-            <WhyPetParentsLoveThis 
-              productName={product.name} 
-              category={product.category || ''} 
-            />
-
-            {/* Hero Product Conversion Boost — Who is this for / FAQ / urgency */}
-            {product.slug && <HeroProductBoost productSlug={product.slug} />}
-
-            {/* Free Shipping Progress Bar */}
-            <FreeShippingBar previewAmount={Number(product.price)} />
-
             {/* Stock Status & Subtle Social Proof */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
