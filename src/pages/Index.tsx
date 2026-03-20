@@ -1,75 +1,38 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
-const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
-import { FadeInView } from '@/components/ui/FadeInView';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
-// ── Below-fold heavy components — lazy-loaded ──────────────────────────
-const TrustTransparencySection = lazy(() => import('@/components/home/TrustTransparencySection'));
-const TopPicksSection = lazy(() => import('@/components/home/TopPicksSection'));
+// ── Lazy-loaded below-fold sections ──
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
-const ProblemSolutionBlock = lazy(() => import('@/components/home/ProblemSolutionBlock'));
-const WhyGetPawsyComparison = lazy(() => import('@/components/home/WhyGetPawsyComparison'));
-const WhyTrainingToolsWork = lazy(() => import('@/components/home/WhyTrainingToolsWork'));
-const GuaranteeBlock = lazy(() => import('@/components/home/GuaranteeBlock'));
-const WhyShopGetPawsy = lazy(() => import('@/components/home/WhyShopGetPawsy'));
-const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
-const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
-const FeaturedCollectionsGuides = lazy(() => import('@/components/home/FeaturedCollectionsGuides'));
-const BestBuyingGuides2026 = lazy(() => import('@/components/home/BestBuyingGuides2026'));
-const TrendingGuidesStrip = lazy(() => import('@/components/home/TrendingGuidesStrip'));
-const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
-const TrendingWinnersBlock = lazy(() => import('@/components/homepage/TrendingWinnersBlock').then(m => ({ default: m.TrendingWinnersBlock })));
 
-// ── SEO schemas — tiny, sync ─────────────────────────────────────────────
+// ── SEO schemas ──
 const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
 const LocalBusinessSchema = lazy(() => import('@/components/seo/LocalBusinessSchema').then(m => ({ default: m.LocalBusinessSchema })));
 
-// ── Non-critical analytics/debug — deferred ───────────────────────────────
-const trackNewsletterSignup = (email: string) =>
-  import('@/lib/analytics').then(m => m.trackNewsletterSignup(email));
 const showToast = (type: 'success' | 'error' | 'info', msg: string) =>
   import('sonner').then(m => m.toast[type](msg));
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
-// ── Hook: gates non-critical data fetches until after first interaction/paint ──
-function useHydrationReady(): boolean {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (ready) return;
-    const activate = () => setReady(true);
-    const ric = 'requestIdleCallback' in window
-      ? (window as any).requestIdleCallback(activate, { timeout: 3000 })
-      : setTimeout(activate, 1000);
-    const handler = () => activate();
-    window.addEventListener('scroll', handler, { once: true, passive: true });
-    window.addEventListener('click', handler, { once: true, passive: true });
-    window.addEventListener('touchstart', handler, { once: true, passive: true });
-    return () => {
-      if ('requestIdleCallback' in window) (window as any).cancelIdleCallback(ric);
-      else clearTimeout(ric as number);
-      window.removeEventListener('scroll', handler);
-      window.removeEventListener('click', handler);
-      window.removeEventListener('touchstart', handler);
-    };
-  }, [ready]);
-  return ready;
-}
+const CATEGORIES = [
+  { name: 'Potty Training', href: '/collections/dog-potty-training', emoji: '🏠' },
+  { name: 'Leash & Control', href: '/collections/dog-leash-control', emoji: '🦮' },
+  { name: 'Anti-Bark', href: '/collections/dog-anti-bark', emoji: '🔇' },
+  { name: 'Puppy Essentials', href: '/collections/puppy-training-essentials', emoji: '🐶' },
+  { name: 'Training Accessories', href: '/collections/dog-training-accessories', emoji: '🎯' },
+] as const;
+
+const GUIDES = [
+  { path: '/guides/complete-dog-training-guide-2026', title: 'Complete Dog Training Guide 2026', desc: 'Expert-tested methods for any breed or age.' },
+  { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', desc: 'Safety-rated picks for travel with your dog.' },
+  { path: '/best-cat-litter-box-2026', title: 'Best Cat Litter Box 2026', desc: 'Top odor-control picks, reviewed & ranked.' },
+] as const;
 
 const Index = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
-  const hydrationReady = useHydrationReady();
-
-  // Dev-only crawl heatmap logger
-  useEffect(() => {
-    if (hydrationReady) {
-      import('@/utils/crawlHeatmap').then(m => m.logHomepageCrawlStats()).catch(() => {});
-    }
-  }, [hydrationReady]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,17 +48,14 @@ const Index = () => {
         .insert({ email: newsletterEmail });
       if (error) {
         if (error.code === '23505') {
-          showToast('info', 'You\'re already subscribed to our newsletter!');
-        } else {
-          throw error;
-        }
+          showToast('info', "You're already subscribed!");
+        } else throw error;
       } else {
-        showToast('success', 'Thanks for signing up! You\'ll receive pet care tips and new arrivals.');
-        trackNewsletterSignup(newsletterEmail);
+        showToast('success', 'Thanks for signing up!');
       }
       setNewsletterEmail('');
     } catch {
-      showToast('error', 'Something went wrong. Please try again later.');
+      showToast('error', 'Something went wrong. Please try again.');
     } finally {
       setIsSubscribing(false);
     }
@@ -104,306 +64,213 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Pet Supplies – Free US Shipping | GetPawsy</title>
-        <meta name="description" content="High-quality pet products for dogs, cats & small animals. Free US shipping $35+, 30-day returns. Estimated delivery: 3–7 business days." />
+        <title>Dog Training Supplies – Free US Shipping | GetPawsy</title>
+        <meta name="description" content="Premium dog training tools with free US shipping on orders $35+. Potty training, leash control, anti-bark solutions. 30-day returns, 3–7 day delivery." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Pet Supplies – Free US Shipping | GetPawsy" />
-        <meta property="og:description" content="High-quality pet products for dogs, cats & small animals. Free US shipping $35+, 30-day returns." />
+        <meta property="og:title" content="Dog Training Supplies – Free US Shipping | GetPawsy" />
+        <meta property="og:description" content="Premium dog training tools. Free shipping $35+, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Pet Supplies – Free US Shipping | GetPawsy" />
-        <meta name="twitter:description" content="High-quality pet products. Free shipping $35+, 30-day returns. 3–7 day US delivery." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
         <LocalBusinessSchema />
       </Suspense>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          1. HERO — Dog Training Authority positioning
-          ═══════════════════════════════════════════════════════════════ */}
+      {/* ═══ 1. HERO ═══ */}
       <section
-        className="hero-lcp-section relative overflow-hidden flex items-center"
-        style={{ minHeight: 'calc(85vh - 148px)', contain: 'layout style' }}
+        className="relative overflow-hidden flex items-center"
+        style={{ minHeight: 'min(75vh, 560px)', contain: 'layout style' }}
       >
-        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+        <div className="absolute inset-0 z-0">
           <picture>
-            <source
-              media="(max-width: 768px)"
-              srcSet="/hero/dog-training-hero-mobile.webp"
-              type="image/webp"
-              width={896}
-              height={1184}
-            />
+            <source media="(max-width: 768px)" srcSet="/hero/dog-training-hero-mobile.webp" type="image/webp" width={896} height={1184} />
             <img
               src="/hero/dog-training-hero-desktop.webp"
-              alt="Golden retriever being trained by owner in sunlit backyard — professional dog training tools"
-              width={1920}
-              height={1080}
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
+              alt="Dog being trained by owner — professional dog training tools"
+              width={1920} height={1080}
+              loading="eager" fetchPriority="high" decoding="async"
               className="hero-lcp-img"
             />
           </picture>
-          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
         </div>
 
-        <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
-          <div className="max-w-2xl">
-            <div className="space-y-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">
-                DOG TRAINING ESSENTIALS — FAST SHIPPING TO THE UNITED STATES
-              </p>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
-                Dog Training Essentials
-                <br />
-                <span className="text-primary">Fast Shipping to the United States</span>
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Potty training. Behavior correction. Safer walks. Smarter solutions.
-              </p>
-              {/* ⚡ Hero CTAs */}
-              <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
-                <a
-                  href="/collections/dog-potty-training"
-                  className="inline-flex items-center gap-2 rounded-full px-10 py-3 text-base font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all duration-200"
-                >
-                  Shop Potty Training →
-                </a>
-                <a
-                  href="/collections/dog-leash-control"
-                  className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                >
-                  Explore Leash & Control →
-                </a>
-              </div>
-            </div>
+        <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
+          <div className="max-w-xl space-y-5">
+            <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
+              Smarter Dog Training
+              <br />
+              <span className="text-primary">Starts Here</span>
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground max-w-md">
+              Potty pads, no-pull harnesses, bark control & more — shipped fast to the US.
+            </p>
+            <a
+              href="/products"
+              className="inline-flex items-center gap-2 rounded-full px-10 py-3.5 text-base font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all"
+            >
+              Shop Now →
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          2. TRUST BAR — 3 trust badges as specified
-          ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-5 border-y border-border/40 bg-card/60" aria-label="Trust signals">
+      {/* ═══ 2. TRUST BAR — exactly 3 items ═══ */}
+      <section className="py-4 border-y border-border/40 bg-card/50" aria-label="Trust signals">
         <div className="container px-4 md:px-6">
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm font-medium text-muted-foreground">
-            <span className="inline-flex items-center gap-2 whitespace-nowrap">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-              Secure Checkout
-            </span>
-            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
                 <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                 <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
-              Delivery: 3–7 Business Days
+              Free US Shipping $35+
             </span>
-            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+            <span className="inline-flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
               30-Day Returns
             </span>
-            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+            <span className="inline-flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
-              Customer Support Available
+              Secure Checkout
             </span>
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          2a. MOST POPULAR GUIDES — above fold authority strip
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Trending Guides">
-        <Suspense fallback={<div className="py-8" style={{ minHeight: 200 }} />}>
-          <TrendingGuidesStrip />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          2b. TRUST & TRANSPARENCY — business legitimacy signals
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Trust Transparency">
-        <Suspense fallback={<div className="py-10" style={{ minHeight: 400 }} />}>
-          <TrustTransparencySection />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          3. TRENDING PET FAVORITES — max 6 products
-          ═══════════════════════════════════════════════════════════════ */}
+      {/* ═══ 3. BESTSELLERS / PRODUCTS — immediately visible ═══ */}
       <SectionErrorBoundary sectionName="Trending Products">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 400 }} />}>
+        <Suspense fallback={
+          <section className="py-10">
+            <div className="container px-4 md:px-6">
+              <div className="h-7 w-48 bg-muted rounded mb-6 animate-pulse" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
+                ))}
+              </div>
+            </div>
+          </section>
+        }>
           <TrendingProducts />
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          3b. BEST BUYING GUIDES 2026 — money page link hub
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Best Buying Guides">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
-          <BestBuyingGuides2026 />
-        </Suspense>
-      </SectionErrorBoundary>
+      {/* ═══ 4. SHOP BY CATEGORY — 5 core categories ═══ */}
+      <section className="py-10 md:py-12 bg-muted/20">
+        <div className="container px-4 md:px-6">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
+            Shop by Category
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {CATEGORIES.map((cat) => (
+              <a
+                key={cat.href}
+                href={cat.href}
+                className="group flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-card p-5 hover:border-primary/50 hover:shadow-md transition-all text-center"
+              >
+                <span className="text-2xl">{cat.emoji}</span>
+                <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                  {cat.name}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          3c. FEATURED COLLECTIONS & GUIDES — high-priority internal links
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Featured Collections">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
-          <FeaturedCollectionsGuides />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          4. SHOP BY PROBLEM — 4 grid blocks
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Problem Solution">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
-          <ProblemSolutionBlock />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          4b. WHY OUR TRAINING TOOLS WORK — authority block
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Why Training Tools Work">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
-          <WhyTrainingToolsWork />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          5. WHY GETPAWSY — 4 feature blocks
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Why GetPawsy">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
-          <WhyGetPawsyComparison />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          6. GUARANTEE BLOCK — 30-day happiness guarantee
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Guarantee">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
-          <GuaranteeBlock />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          6b. WHY SHOP WITH GETPAWSY — 4 trust pillars
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Why Shop GetPawsy">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
-          <WhyShopGetPawsy />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          7. TOP PICKS — 20 curated products for internal link authority
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Top Picks">
-        <Suspense fallback={<div className="py-16" style={{ minHeight: 500 }} />}>
-          <TopPicksSection />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          7a. TRENDING WINNERS — dynamic top 4 boosted products
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Trending Winners">
-        <Suspense fallback={<div className="py-10" style={{ minHeight: 300 }} />}>
-          {hydrationReady ? <TrendingWinnersBlock /> : <div style={{ minHeight: 300 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          7b. POPULAR RIGHT NOW — 3 boost-target money collections
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Popular Right Now">
-        <Suspense fallback={<div className="py-10" style={{ minHeight: 200 }} />}>
-          {hydrationReady ? <PopularRightNow /> : <div style={{ minHeight: 200 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          8. EXPERT PET GUIDES — cornerstone guide links for SEO authority
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Expert Pet Guides">
-        <Suspense fallback={<div className="py-10" style={{ minHeight: 300 }} />}>
-          {hydrationReady ? <ExpertPetGuides /> : <div style={{ minHeight: 300 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          9. SEO AUTHORITY TEXT — category links + 200-word paragraph
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Authority Section">
-        <Suspense fallback={<div className="py-16" style={{ minHeight: 300 }} />}>
-          {hydrationReady ? <HomepageAuthoritySection /> : <div style={{ minHeight: 300 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          10. EMAIL CAPTURE — 10% off, inline form, no popup
-          ═══════════════════════════════════════════════════════════════ */}
-      <SectionErrorBoundary sectionName="Newsletter">
-        {hydrationReady ? (
-          <section className="py-16 md:py-20">
-            <div className="container px-4 md:px-6">
-              <FadeInView className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-                <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-primary-foreground">
-                    Get 10% Off Your First Order
-                  </h2>
-                  <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-                    Join thousands of pet parents. Get exclusive deals, new arrivals, and pet care tips.
-                  </p>
-                  <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                    <input
-                      type="email"
-                      placeholder="Enter your email"
-                      value={newsletterEmail}
-                      onChange={(e) => setNewsletterEmail(e.target.value)}
-                      className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
-                      disabled={isSubscribing}
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-full px-8 py-3.5 text-sm font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-                      disabled={isSubscribing}
-                    >
-                      {isSubscribing ? 'Subscribing...' : 'Get 10% Off'}
-                    </button>
-                  </form>
-                  <p className="text-sm text-primary-foreground/70 mt-4">
-                    No spam, unsubscribe anytime. We respect your inbox.
-                  </p>
-                </div>
-              </FadeInView>
+      {/* ═══ 5. WHY CHOOSE US — single block, 3 bullets ═══ */}
+      <section className="py-10 md:py-12">
+        <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-6">
+            Why Pet Owners Choose GetPawsy
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-5">
+            <div className="space-y-2">
+              <p className="text-2xl">📦</p>
+              <h3 className="font-semibold text-foreground text-sm">Fast US Delivery</h3>
+              <p className="text-xs text-muted-foreground">3–7 business days, tracking included</p>
             </div>
-          </section>
-        ) : (
-          <div style={{ minHeight: 300 }} />
-        )}
-      </SectionErrorBoundary>
+            <div className="space-y-2">
+              <p className="text-2xl">↩️</p>
+              <h3 className="font-semibold text-foreground text-sm">Hassle-Free Returns</h3>
+              <p className="text-xs text-muted-foreground">30-day return window, no runaround</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-2xl">💬</p>
+              <h3 className="font-semibold text-foreground text-sm">Real Support</h3>
+              <p className="text-xs text-muted-foreground">We respond within 24 hours</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          STICKY MOBILE CTA — fixed bottom bar, Dog/Cat links
-          ═══════════════════════════════════════════════════════════════ */}
+      {/* ═══ 6. GUIDES — max 3, minimal ═══ */}
+      <section className="py-10 md:py-12 bg-muted/20">
+        <div className="container px-4 md:px-6">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
+            Expert Pet Guides
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            {GUIDES.map((g) => (
+              <Link
+                key={g.path}
+                to={g.path}
+                className="group rounded-xl border border-border/40 bg-card p-5 hover:border-primary/40 hover:shadow-md transition-all"
+              >
+                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors mb-1">
+                  {g.title}
+                </h3>
+                <p className="text-xs text-muted-foreground line-clamp-2">{g.desc}</p>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-5">
+            <Link to="/guides" className="text-sm font-medium text-primary hover:underline">
+              View all guides →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 7. NEWSLETTER — simple inline ═══ */}
+      <section className="py-10 md:py-12">
+        <div className="container px-4 md:px-6">
+          <div className="max-w-md mx-auto text-center">
+            <h2 className="text-lg font-display font-semibold text-foreground mb-2">
+              Get Pet Care Tips & Deals
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              No spam — just helpful content and new arrivals.
+            </p>
+            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Your email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                className="flex-1 px-4 py-2.5 rounded-full border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                disabled={isSubscribing}
+              />
+              <button
+                type="submit"
+                className="rounded-full px-6 py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                disabled={isSubscribing}
+              >
+                {isSubscribing ? '...' : 'Subscribe'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* Sticky mobile CTA */}
       <Suspense fallback={null}>
         <StickyMobileCta />
       </Suspense>
