@@ -155,23 +155,104 @@ function MidCTA({ slug, categories, species }: { slug: string; categories: strin
   );
 }
 
-// ── Mini trust strip ──
-function TrustStrip() {
+// ── Customer quote strip ──
+function QuoteStrip({ quotes }: { quotes: CustomerQuote[] }) {
+  if (!quotes || quotes.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-4 text-sm mb-6">
-      <span className="flex items-center gap-1.5 text-primary">
-        <Truck className="w-4 h-4" /> Free shipping over $35
-      </span>
-      <span className="flex items-center gap-1.5 text-primary">
-        <Shield className="w-4 h-4" /> 30-day happiness guarantee
-      </span>
-      <span className="flex items-center gap-1.5 text-primary">
-        <CheckCircle className="w-4 h-4" /> Expert-reviewed picks
-      </span>
-      <span className="flex items-center gap-1.5 text-primary">
-        <Heart className="w-4 h-4" /> Trusted by US pet owners
-      </span>
+    <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {quotes.slice(0, 3).map((q, i) => (
+        <blockquote key={i} className="bg-card border border-border/50 rounded-xl p-4">
+          <div className="flex gap-0.5 mb-2">
+            {[...Array(5)].map((_, j) => (
+              <Star key={j} className="w-3 h-3 fill-amber-400 text-amber-400" />
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground italic leading-relaxed mb-2">"{q.text}"</p>
+          <footer className="text-xs font-medium text-foreground">
+            — {q.name}{q.context && <span className="text-muted-foreground font-normal">, {q.context}</span>}
+          </footer>
+        </blockquote>
+      ))}
     </div>
+  );
+}
+
+// ── Best Overall Pick hero ──
+function BestOverallHero({ pick, products, categories, species }: { pick: BestOverallPick; products?: SafeProduct[]; categories: string[]; species: string }) {
+  const matchedProduct = products?.find(p =>
+    pick.productSlug && p.slug === pick.productSlug
+  );
+
+  return (
+    <section className="mb-10 bg-primary/5 border-2 border-primary/30 rounded-2xl p-6 md:p-8 scroll-mt-16">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-2xl">🏆</span>
+        <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">Best Overall Pick</h2>
+        {pick.badge && (
+          <span className="text-[11px] font-bold bg-primary text-primary-foreground px-3 py-0.5 rounded-full">
+            {pick.badge}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6 items-start">
+        {/* Product image */}
+        {matchedProduct?.image_url && (
+          <div className="w-full md:w-48 flex-shrink-0">
+            <img
+              src={matchedProduct.image_url}
+              alt={pick.name}
+              className="w-full rounded-xl border border-border object-cover aspect-square"
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        <div className="flex-1">
+          <h3 className="text-lg font-display font-bold text-foreground mb-3">{pick.name}</h3>
+
+          {/* Benefits */}
+          <ul className="space-y-2 mb-5">
+            {pick.benefits.map((b, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                {b}
+              </li>
+            ))}
+          </ul>
+
+          {/* CTA */}
+          <div className="flex flex-wrap gap-3 items-center">
+            {pick.productSlug ? (
+              <Link to={`/product/${pick.productSlug}`}>
+                <Button className="gap-2 bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white">
+                  <ShoppingCart className="w-4 h-4" /> Buy Now — Free Shipping
+                </Button>
+              </Link>
+            ) : (
+              <Link to={`/collections/${categories[0] || (species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
+                <Button className="gap-2">
+                  <ShoppingCart className="w-4 h-4" /> Shop Now
+                </Button>
+              </Link>
+            )}
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Shield className="w-3 h-3" /> 30-day happiness guarantee
+            </span>
+          </div>
+
+          {/* Price if available */}
+          {matchedProduct && (
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-xl font-bold text-primary">${Number(matchedProduct.price).toFixed(2)}</span>
+              {matchedProduct.compare_at_price && Number(matchedProduct.compare_at_price) > Number(matchedProduct.price) && (
+                <span className="text-sm text-muted-foreground line-through">${Number(matchedProduct.compare_at_price).toFixed(2)}</span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
