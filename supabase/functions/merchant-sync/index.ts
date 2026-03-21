@@ -897,11 +897,12 @@ Deno.serve(async (req: Request) => {
     }
 
     // ══════════════════════════════════════════════════════════════
-    // E) PRUNE LEGACY OFFERS (live, prune enabled, not dryrun)
+    // E) PRUNE LEGACY OFFERS — with FULL_CLEANUP loop support
     // ══════════════════════════════════════════════════════════════
     const pruneSummary: Record<string, unknown> = {
       enabled: PRUNE_ENABLED,
       dryrun: PRUNE_DRYRUN,
+      fullCleanup: FULL_CLEANUP,
       maxDeletesPerRun: PRUNE_MAX_DELETES,
       prefixes: PRUNE_PREFIXES,
       existingCount: 0,
@@ -909,49 +910,75 @@ Deno.serve(async (req: Request) => {
       wouldDeleteCount: 0,
       deletedCount: 0,
       deleteErrors: 0,
+      remainingOldItems: 0,
+      passes: 0,
       sampleOfferIds: [] as string[],
     };
 
     if (PRUNE_ENABLED && modeEffective === "live") {
-      console.log(`[merchant-sync] PRUNE: listing existing Merchant products...`);
+      console.log(`[merchant-sync] PRUNE: full_cleanup=${FULL_CLEANUP} listing existing Merchant products...`);
       try {
-        const existingProducts = await listMerchantProducts(accessToken, merchantId);
-        pruneSummary.existingCount = existingProducts.length;
+        let totalDeleted = 0;
+        let totalDelErrors = 0;
+        let pass = 0;
+        let remainingStale = 0;
 
-        // Find stale offers matching our prefix but not in current export
-        const staleProducts = existingProducts.filter(ep => {
-          const matchesPrefix = PRUNE_PREFIXES.some((prefix: string) => ep.offerId.startsWith(prefix));
-          if (!matchesPrefix) return false;
-          return !exportedOfferIds.has(ep.offerId);
-        });
-
-        pruneSummary.wouldDeleteCount = staleProducts.length;
-        pruneSummary.sampleOfferIds = staleProducts.slice(0, 20).map(p => p.offerId);
-
-        console.log(`[merchant-sync] PRUNE: existing=${existingProducts.length} stale=${staleProducts.length} dryrun=${PRUNE_DRYRUN} max=${PRUNE_MAX_DELETES}`);
-
-        if (!PRUNE_DRYRUN) {
-          let deleted = 0;
-          let delErrors = 0;
-          // Cap at PRUNE_MAX_DELETES per run for safety
-          const toDelete = staleProducts.slice(0, PRUNE_MAX_DELETES);
-          
-          for (const sp of toDelete) {
-            const delResult = await deleteGoogleProduct(accessToken, merchantId, sp.id);
-            if (delResult.ok) {
-              deleted++;
-            } else {
-              delErrors++;
-              console.error(`[merchant-sync] PRUNE delete failed: offerId=${sp.offerId} error=${delResult.error}`);
-            }
-            if ((deleted + delErrors) % 10 === 0) {
-              await new Promise(r => setTimeout(r, 200));
-            }
+        // Loop: in FULL_CLEANUP mode, keep deleting until 0 stale remain (max 10 passes)
+        do {
+          pass++;
+          const existingProducts = await listMerchantProducts(accessToken, merchantId);
+          if (pass === 1) {
+            pruneSummary.existingCount = existingProducts.length;
           }
-          pruneSummary.deletedCount = deleted;
-          pruneSummary.deleteErrors = delErrors;
-          console.log(`[merchant-sync] PRUNE LIVE: deleted=${deleted} errors=${delErrors} remaining=${staleProducts.length - toDelete.length}`);
-        }
+
+          // Find stale offers matching our prefix but not in current export
+          const staleProducts = existingProducts.filter(ep => {
+            const matchesPrefix = PRUNE_PREFIXES.some((prefix: string) => ep.offerId.startsWith(prefix));
+            if (!matchesPrefix) return false;
+            return !exportedOfferIds.has(ep.offerId);
+          });
+
+          remainingStale = staleProducts.length;
+          if (pass === 1) {
+            pruneSummary.wouldDeleteCount = staleProducts.length;
+            pruneSummary.sampleOfferIds = staleProducts.slice(0, 20).map(p => p.offerId);
+          }
+
+          console.log(`[merchant-sync] PRUNE pass=${pass}: existing=${existingProducts.length} stale=${staleProducts.length} dryrun=${PRUNE_DRYRUN}`);
+
+          if (staleProducts.length === 0 || PRUNE_DRYRUN) break;
+
+          const toDelete = staleProducts.slice(0, PRUNE_MAX_DELETES);
+
+          // Delete concurrently in chunks of 10 for speed
+          const CHUNK = 10;
+          for (let i = 0; i < toDelete.length; i += CHUNK) {
+            const chunk = toDelete.slice(i, i + CHUNK);
+            const results = await Promise.all(
+              chunk.map(sp => deleteGoogleProduct(accessToken, merchantId, sp.id))
+            );
+            for (const r of results) {
+              if (r.ok) totalDeleted++;
+              else {
+                totalDelErrors++;
+                console.error(`[merchant-sync] PRUNE delete failed: ${r.error}`);
+              }
+            }
+            // Brief pause every 50 deletes to avoid rate limits
+            if ((i + CHUNK) % 50 === 0) await new Promise(r => setTimeout(r, 300));
+          }
+
+          remainingStale = remainingStale - toDelete.length;
+          console.log(`[merchant-sync] PRUNE pass=${pass} done: deleted=${totalDeleted} errors=${totalDelErrors} estRemaining=${remainingStale}`);
+
+        } while (FULL_CLEANUP && remainingStale > 0 && pass < 10);
+
+        pruneSummary.deletedCount = totalDeleted;
+        pruneSummary.deleteErrors = totalDelErrors;
+        pruneSummary.passes = pass;
+        pruneSummary.remainingOldItems = remainingStale;
+
+        console.log(`[merchant-sync] PRUNE COMPLETE: totalDeleted=${totalDeleted} errors=${totalDelErrors} passes=${pass} remaining=${remainingStale}`);
       } catch (e) {
         console.error("[merchant-sync] PRUNE error:", e);
         pruneSummary.error = (e as Error).message;
