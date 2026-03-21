@@ -331,8 +331,10 @@ Deno.serve(async (req: Request) => {
     // ── PRUNE CONFIG: DEFAULT TO LIVE (not dryrun) ────────────────
     const PRUNE_ENABLED = body.prune_enabled !== false && (Deno.env.get("PRUNE_ENABLED") !== "false");
     const PRUNE_DRYRUN = body.prune_dryrun === true; // DEFAULT FALSE — prune is live by default now
-    const PRUNE_MAX_DELETES = body.prune_max_deletes || 100; // Safety cap per run
+    const PRUNE_MAX_DELETES = body.prune_max_deletes || 1000; // Raised for full cleanup
     const PRUNE_PREFIXES = (body.prune_prefixes || Deno.env.get("PRUNE_PREFIXES") || "getpawsy_").split(",").map((s: string) => s.trim()).filter(Boolean);
+    // FULL CLEANUP MODE: loop deletion until 0 remaining, then re-sync
+    const FULL_CLEANUP = body.full_cleanup === true;
     
     // Image config
     const SEND_ADDITIONAL_IMAGES = body.send_additional_images !== false && Deno.env.get("SEND_ADDITIONAL_IMAGES") !== "false";
