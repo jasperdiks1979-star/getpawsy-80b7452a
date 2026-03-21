@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-03-20T06:34:25.042Z" total_products="366">
+<merchant_diagnostics generated="2026-03-21T12:38:51.370Z" total_products="368">
   <summary>
-    <missing_gtin>42</missing_gtin>
+    <missing_gtin>44</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>1</overlength_title>
     <short_title>3</short_title>
-    <out_of_stock>61</out_of_stock>
+    <out_of_stock>59</out_of_stock>
     <duplicate_titles>6</duplicate_titles>
     <duplicate_images>0</duplicate_images>
     <missing_compare_at_price>0</missing_compare_at_price>
   </summary>
   <issues>
+    <issue type="missing_gtin" product_id="ba5771b4-10d2-4866-97f4-4176c1e210f1" name="Dog Liquid Lick Bow Dog Slow-Feeding Plate Non-Slip Spherical Pet Licking Bowl" />
+    <issue type="out_of_stock" product_id="ba5771b4-10d2-4866-97f4-4176c1e210f1" name="Dog Liquid Lick Bow Dog Slow-Feeding Plate Non-Slip Spherical Pet Licking Bowl" stock="0" />
+    <issue type="missing_gtin" product_id="24dbca64-88ba-4c15-b3a9-4b057ca5a5b7" name="Long-lasting Fragrance Fun And Interactive Cat Spray For Pets." />
+    <issue type="out_of_stock" product_id="24dbca64-88ba-4c15-b3a9-4b057ca5a5b7" name="Long-lasting Fragrance Fun And Interactive Cat Spray For Pets." stock="0" />
     <issue type="missing_gtin" product_id="d7baf590-affa-403f-ba96-58b298ba652d" name="Dog Outdoor Leash High-density Nylon" />
     <issue type="short_title" product_id="d7baf590-affa-403f-ba96-58b298ba652d" name="Dog Outdoor Leash High-density Nylon" length="36" />
     <issue type="out_of_stock" product_id="d7baf590-affa-403f-ba96-58b298ba652d" name="Dog Outdoor Leash High-density Nylon" stock="0" />
@@ -25,7 +29,6 @@
     <issue type="out_of_stock" product_id="fcd6bda3-636e-466c-876d-e9e6812618bb" name="Dog Skin Insect Bite Dog Skin Structure Anatomical Model" stock="0" />
     <issue type="missing_gtin" product_id="74e9c23c-d2d3-478a-82bd-e912e85bcc39" name="Cat Stainless Steel Cat Litter Box For Big Cats With Flip Cover" />
     <issue type="missing_gtin" product_id="06f5e022-4ce1-4d6d-bb68-b4d9b05e96c8" name="Wooden Pet House Cat Litter Box Enclosure With Drawer, Side Table, Indoor Pet..." />
-    <issue type="out_of_stock" product_id="06f5e022-4ce1-4d6d-bb68-b4d9b05e96c8" name="Wooden Pet House Cat Litter Box Enclosure With Drawer, Side Table, Indoor Pet..." stock="0" />
     <issue type="missing_gtin" product_id="417336ad-6576-451c-9fda-d514a759e0b5" name="PawHut Wooden Dog Agility Seesaw For Balance Training And Exercise, Platform ..." />
     <issue type="overlength_title" product_id="417336ad-6576-451c-9fda-d514a759e0b5" name="PawHut Wooden Dog Agility Seesaw For Balance Training And Exercise, Platform ..." length="153" />
     <issue type="missing_gtin" product_id="c23f5c47-731e-4e24-8fe6-71df2baf5117" name="Summer Cartoon Pet Ice Bib For Cats And Dogs" />
@@ -67,14 +70,14 @@
     <issue type="missing_gtin" product_id="64b2bb00-2064-4992-9c06-bdc263421dc3" name="Dog &amp; Cat Plaid Bandana Collar – Double Layer Bib Collar" />
     <issue type="out_of_stock" product_id="c93b54f0-dc2b-40fa-a9a8-c4e07e1c751e" name="Durable Dog Chew Toy – Squeaking Corn Cob for Strong Chewers" stock="0" />
     <issue type="out_of_stock" product_id="fe0003f6-33bd-4406-8697-3e50ca3f368c" name="Freestanding Wooden Dog Gate – Non-Slip Safety Barrier for Stairs &amp; Doorways" stock="0" />
-    <issue type="out_of_stock" product_id="1e7c2953-152a-4b06-b179-f3528729716a" name="Hamster Habitat Cage – Spacious Enclosure for Hamsters" stock="0" />
     <issue type="out_of_stock" product_id="ac4210bc-e871-47e1-bbc6-fc04df6afe80" name="Chicken Coop – Wooden Free-Range House with Asphalt Roof &amp; Nesting Box" stock="0" />
-    <issue type="out_of_stock" product_id="0387d0d4-3d31-4581-959b-ab7430ae09ab" name="Bird Feeder – Decorative Iron Courtyard Design with Four Hooks" stock="0" />
+    <issue type="out_of_stock" product_id="1e7c2953-152a-4b06-b179-f3528729716a" name="Hamster Habitat Cage – Spacious Enclosure for Hamsters" stock="0" />
     <issue type="out_of_stock" product_id="287f6134-d8f6-425a-bd1d-83aae3791e57" name="Interactive Cat Teaser Toy – Flying Bird Design with Catnip" stock="0" />
     <issue type="out_of_stock" product_id="2638726f-a3b9-4801-8af1-06249106ac75" name="Squirrel-Proof Bird Feeder – Durable Metal Chew-Proof Seed Feeder" stock="0" />
+    <issue type="out_of_stock" product_id="0387d0d4-3d31-4581-959b-ab7430ae09ab" name="Bird Feeder – Decorative Iron Courtyard Design with Four Hooks" stock="0" />
     <issue type="out_of_stock" product_id="e6a4387a-478e-44fe-b054-10fc716db377" name="Dog Carrier Stroller – 3-in-1 Foldable &amp; Detachable Stroller for Small Dogs" stock="0" />
     <issue type="out_of_stock" product_id="8130a517-c525-47dc-b298-b0fb7696d6a7" name="Cat Tree Condo – Wooden Furniture with Scratching Posts, Beds &amp; Balls for Cats" stock="0" />
-    <issue type="out_of_stock" product_id="11758292-6f06-492c-88a7-0acdeb5e417e" name="Cat Tree – Multi-Level Natural Pear Wood with Sisal Scratching Posts" stock="0" />
+    <issue type="out_of_stock" product_id="7cb2dfcb-955b-4f7b-859c-172351c3084f" name="Hamster Habitat Playpen – Portable Enclosure with Wheels &amp; Water Bottle for H..." stock="0" />
     <issue type="out_of_stock" product_id="ca1da661-c5c5-4f6f-92c4-81cc3743913d" name="No-Pull Pet Harness &amp; Leash Set – Reflective Training for Dogs &amp; Cats" stock="0" />
     <issue type="out_of_stock" product_id="93359f8a-bd1f-44b8-b9b1-ebf624b4b34b" name="Ultrasonic Dog Training Collar – 3-Mode Anti-Barking Deterrent for Dogs" stock="0" />
     <issue type="out_of_stock" product_id="1ac09fcd-5b4f-4d2f-ac6d-7cb597234e33" name="Rabbit Hutch – Wooden Enclosure with Openable Roof &amp; Double Doors" stock="0" />
@@ -83,46 +86,43 @@
     <issue type="out_of_stock" product_id="6e9dd10c-3b5d-4bd7-a037-0ac29fb039eb" name="Rechargeable Pet Nail Clippers – USB LED Light &amp; Safety Guard for Dogs &amp; Cats" stock="0" />
     <issue type="out_of_stock" product_id="98b38d93-007e-442e-b1fc-aec871b899c7" name="Cat Tree Condo – Multi-Level 65-Inch with Sisal Scratching Posts for Cats" stock="0" />
     <issue type="out_of_stock" product_id="67a410ef-a3aa-4c2d-ba7f-8b264c3f5f6d" name="GPS Dog Tracker – Real-Time Anti-Lost Pet Locator with Geofence &amp; Alarm" stock="0" />
-    <issue type="out_of_stock" product_id="047dd523-57d3-46ca-82f3-0885b0fc1667" name="Tactical Dog Harness Set – Car Seat Belt, Collapsible Bowl &amp; Waste Bags for Dogs" stock="0" />
     <issue type="out_of_stock" product_id="dd22e0bb-2e11-4508-b56c-79221fc13bd0" name="Cat Litter Mat – Double-Layer Rice Design for Easy Cleaning" stock="0" />
     <issue type="out_of_stock" product_id="b9958119-bd7b-47f5-86f1-b02159309bed" name="Elevated Dog Car Seat – Booster Pet Carrier for Small to Medium Dogs" stock="0" />
     <issue type="out_of_stock" product_id="d3898f50-8438-4531-bcb2-130bddbcd3be" name="Cat Bed – Fluffy Plush Round Faux Fur Anti-Slip Bed for Cats" stock="0" />
-    <issue type="out_of_stock" product_id="d48b48b6-fa99-44aa-b6f8-4dfe48474cd0" name="Dog Potty Training Pad – Artificial Grass Pet Toilet Mat for Puppies" stock="0" />
     <issue type="out_of_stock" product_id="876b7030-a6de-4ab0-aa2b-9292bc361b64" name="Durable Dog Chew Toy – Christmas Themed Training Rope Set for Puppies" stock="0" />
-    <issue type="out_of_stock" product_id="d7c682d3-6f7a-42dd-8a47-ab977b918058" name="Open Cat Litter Box – Easy Clean Litter Pan with Scoop" stock="0" />
+    <issue type="out_of_stock" product_id="d48b48b6-fa99-44aa-b6f8-4dfe48474cd0" name="Dog Potty Training Pad – Artificial Grass Pet Toilet Mat for Puppies" stock="0" />
     <issue type="out_of_stock" product_id="31e46b70-cf1c-4d5b-99db-3350b12380db" name="Cat Litter Box Enclosure – Barn Door Furniture Style with Cat Hole" stock="0" />
+    <issue type="out_of_stock" product_id="d7c682d3-6f7a-42dd-8a47-ab977b918058" name="Open Cat Litter Box – Easy Clean Litter Pan with Scoop" stock="0" />
     <issue type="out_of_stock" product_id="e4b8bb3e-7f42-42dd-a0bf-c741eb48e478" name="Extra Tall Dog Safety Gate – 59-Inch Pet Barrier with Cat Door for Doorways &amp;..." stock="0" />
-    <issue type="out_of_stock" product_id="287e6282-0c3a-410a-84e0-e37d9536e3a8" name="Outdoor Dog Bed – Raised Wicker Rattan Canopy for Small &amp; Medium Dogs" stock="0" />
-    <issue type="out_of_stock" product_id="2c67afc3-51bc-44bb-90fa-1229a82df579" name="Elevated Dog Bed – Breathable Raised Cot with Carry Bag for Dogs" stock="0" />
     <issue type="out_of_stock" product_id="eb6e4932-29f8-48dd-82ae-89123a159e8d" name="Elevated Dog Bed – Solid Wood Leg Sofa Pet Cushion for Large Dogs" stock="0" />
     <issue type="out_of_stock" product_id="5b0545dd-0cd1-4387-9cde-827864522cad" name="Furniture Style Dog Crate Bed – End Table with Removable Panel &amp; Cushion" stock="0" />
+    <issue type="out_of_stock" product_id="287e6282-0c3a-410a-84e0-e37d9536e3a8" name="Outdoor Dog Bed – Raised Wicker Rattan Canopy for Small &amp; Medium Dogs" stock="0" />
+    <issue type="out_of_stock" product_id="2c67afc3-51bc-44bb-90fa-1229a82df579" name="Elevated Dog Bed – Breathable Raised Cot with Carry Bag for Dogs" stock="0" />
+    <issue type="out_of_stock" product_id="f6753e66-6aef-4a36-b9e2-52cc1d65c574" name="Soft Dog Bed – Washable Sofa Cushion with Non-Slip Pads for Small Dogs" stock="0" />
     <issue type="out_of_stock" product_id="8a7cad9a-edfb-443d-a8c8-dad93a349c66" name="Elevated Dog Bed – Portable Cooling Cot with UV Protection Canopy for Dogs" stock="0" />
-    <issue type="out_of_stock" product_id="3bd37fe7-7d53-449d-81a5-a3435a2d7f68" name="Soft-Sided Pet Carrier – Portable Travel Kennel with Divider for Cats &amp; Dogs" stock="0" />
     <issue type="out_of_stock" product_id="9ce41cfa-7d97-418f-bd89-c630da6b225d" name="Foldable Pet Carrier – Soft Travel Bag for Dogs &amp; Cats" stock="0" />
+    <issue type="out_of_stock" product_id="3bd37fe7-7d53-449d-81a5-a3435a2d7f68" name="Soft-Sided Pet Carrier – Portable Travel Kennel with Divider for Cats &amp; Dogs" stock="0" />
     <issue type="out_of_stock" product_id="379def88-7cbc-4536-a4a0-feccaf43e84c" name="Extra Large Hamster Cage – 45-Inch Small Animal Habitat Enclosure" stock="0" />
     <issue type="out_of_stock" product_id="f33ae4a9-347b-4a90-872d-597036e6e973" name="Hooded Cat Litter Box – Enclosed Design with Litter Mat" stock="0" />
     <issue type="out_of_stock" product_id="52b04c49-287f-478a-8d35-b7b048d9a844" name="Outdoor Dog Bed – Raised Wicker Rattan Canopy for Small &amp; Medium Dogs" stock="0" />
     <issue type="out_of_stock" product_id="b265edbf-fe68-461a-9d00-73c90e5f114b" name="Interactive Dog Water Fountain – Outdoor Paw Pedal Sprinkler Toy for Dogs" stock="0" />
-    <issue type="out_of_stock" product_id="6b229a90-b51e-428a-a00e-db6f98893fd5" name="Durable Dog Chew Toy – Natural Rubber Toy for Aggressive Chewers" stock="0" />
-    <issue type="out_of_stock" product_id="4cee1de1-bad2-449c-afad-94a482394545" name="Durable Dog Ramp – Wooden Non-Slip with Removable Guardrails for Dogs" stock="0" />
     <issue type="out_of_stock" product_id="0d81c870-510a-47f7-9407-b8b7d18a7b43" name="Durable Dog Ramp – Wooden Non-Slip with Removable Guardrails for Dogs" stock="0" />
+    <issue type="out_of_stock" product_id="4cee1de1-bad2-449c-afad-94a482394545" name="Durable Dog Ramp – Wooden Non-Slip with Removable Guardrails for Dogs" stock="0" />
+    <issue type="out_of_stock" product_id="6b229a90-b51e-428a-a00e-db6f98893fd5" name="Durable Dog Chew Toy – Natural Rubber Toy for Aggressive Chewers" stock="0" />
     <issue type="out_of_stock" product_id="e579e3f7-ded3-45ad-86c5-3d1039039ba7" name="Rolling Bird Cage – Large Enclosure with Storage Shelf &amp; Wood Perch for Birds" stock="0" />
     <issue type="out_of_stock" product_id="44d5d61b-9abf-4ee9-b38e-18c2ef569002" name="Cat Steam Grooming Brush – 4-in-1 De-Shedding &amp; Anti-Static Spray Comb for Cats" stock="0" />
     <issue type="out_of_stock" product_id="f5ed4c9c-2743-4541-a396-61183c0c9bbe" name="Extra Large Small Animal Habitat – 3-Layer Wooden Enclosure with Opening Roof..." stock="0" />
     <issue type="out_of_stock" product_id="71fcd5bf-2d13-4749-9c66-a4c910087218" name="Interactive Dog Toy – Automatic Moving Ball with LED Lights for Enrichment" stock="0" />
     <issue type="out_of_stock" product_id="9030e572-c1ee-4082-b1d4-8886aac6d567" name="Gothic Cat Tree Tower – Halloween Condo with Branch Scratch Post" stock="0" />
-    <issue type="out_of_stock" product_id="133cdc48-0117-40d5-9aaf-1a81131ca9bb" name="Modern Cat Tree &amp; Condo – 35&quot; Wooden Scratching Post &amp; Bed for Cats" stock="0" />
-    <issue type="out_of_stock" product_id="07507c96-a445-431f-9724-340ee01d818f" name="Elevated Cat Tree &amp; Condo – 28&quot; Sisal Scratching Post with Bed &amp; Basket" stock="0" />
     <issue type="out_of_stock" product_id="4f2f57da-15d5-4503-b426-0bd0b1d7a46b" name="Bird Perch Stand – Playstand with Toy Hook &amp; Ladders for Parrots" stock="0" />
+    <issue type="out_of_stock" product_id="133cdc48-0117-40d5-9aaf-1a81131ca9bb" name="Modern Cat Tree &amp; Condo – 35&quot; Wooden Scratching Post &amp; Bed for Cats" stock="0" />
     <issue type="out_of_stock" product_id="af86afc6-dadb-48bf-89e8-ed8b3dfc5b14" name="Rabbit Hutch – Wooden Indoor Outdoor Enclosure with Ramp for Small Animals" stock="0" />
-    <issue type="out_of_stock" product_id="0ea308d2-5e80-4a8e-9505-8c6cf7ca3aba" name="Dog Potty Training Tray – Stainless Steel Toilet for Small &amp; Medium Dogs" stock="0" />
     <issue type="out_of_stock" product_id="c0502467-6d81-4a0a-9d7f-c6c0f52f9330" name="Outdoor Cat Enclosure – Weather Protection Cage for Cats" stock="0" />
-    <issue type="out_of_stock" product_id="05fd6d82-3061-4b74-a00d-5fb74026e896" name="Non-Slip Pet Ramp – Carpeted White Ramp for Dogs &amp; Cats" stock="0" />
     <issue type="duplicate_title" product_ids="539df59c-f25d-45aa-8257-634a3e4a5743,00996613-2cdc-41ae-87a0-6e9248293d75" count="2" />
     <issue type="duplicate_title" product_ids="3e16b666-187a-4a60-afe4-55adea8d06c4,6f44ee1c-251c-4895-b281-50f3320eb98b" count="2" />
     <issue type="duplicate_title" product_ids="c15e7914-ab30-4b05-a8bd-2b94a056e00f,d5046917-bdb3-49fd-88ac-850e639d283c" count="2" />
     <issue type="duplicate_title" product_ids="287e6282-0c3a-410a-84e0-e37d9536e3a8,52b04c49-287f-478a-8d35-b7b048d9a844" count="2" />
-    <issue type="duplicate_title" product_ids="dd370d50-f6a9-4d8f-b44c-06295cb7cd1a,d20bbcc2-007b-486d-89c3-635e0ce7cda8" count="2" />
-    <issue type="duplicate_title" product_ids="4cee1de1-bad2-449c-afad-94a482394545,0d81c870-510a-47f7-9407-b8b7d18a7b43" count="2" />
+    <issue type="duplicate_title" product_ids="d20bbcc2-007b-486d-89c3-635e0ce7cda8,dd370d50-f6a9-4d8f-b44c-06295cb7cd1a" count="2" />
+    <issue type="duplicate_title" product_ids="0d81c870-510a-47f7-9407-b8b7d18a7b43,4cee1de1-bad2-449c-afad-94a482394545" count="2" />
   </issues>
 </merchant_diagnostics>
