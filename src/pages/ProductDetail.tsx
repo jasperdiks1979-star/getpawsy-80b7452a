@@ -43,6 +43,7 @@ import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCa
 import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBoughtTogether';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
+import NotFound from '@/pages/NotFound';
 
 
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
@@ -66,7 +67,6 @@ import {
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
 } from '@/lib/shipping-constants';
-import { isAdTraffic } from '@/lib/ad-traffic';
 import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import {
   Breadcrumb,
@@ -87,6 +87,84 @@ interface ProductVariant {
   variantWeight: number;
   variantSellPrice: number;
   variantCostPrice?: number; // Original cost price from CJ
+}
+
+type ProductRecord = Record<string, any>;
+
+async function fetchExistingProduct(productIdentifier: string): Promise<ProductRecord | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productIdentifier);
+
+  const fetchPublicBy = async (column: 'id' | 'slug', value: string) => {
+    const { data, error } = await supabase
+      .from('products_public')
+      .select('*')
+      .eq(column, value)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchBaseBy = async (column: 'id' | 'slug', value: string) => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq(column, value)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const resolveDuplicateRedirect = async (column: 'id' | 'slug', value: string) => {
+    const { data } = await supabase
+      .from('products')
+      .select('is_duplicate, canonical_product_id')
+      .eq(column, value)
+      .maybeSingle();
+
+    if (data?.is_duplicate && data?.canonical_product_id) {
+      const canonical = await fetchPublicBy('id', data.canonical_product_id);
+      if (canonical) return { ...canonical, _redirect: true };
+    }
+
+    return null;
+  };
+
+  if (isUuid) {
+    const publicById = await fetchPublicBy('id', productIdentifier);
+    if (publicById) return publicById;
+
+    const duplicateRedirect = await resolveDuplicateRedirect('id', productIdentifier);
+    if (duplicateRedirect) return duplicateRedirect;
+
+    const baseById = await fetchBaseBy('id', productIdentifier);
+    if (baseById) return baseById;
+
+    return null;
+  }
+
+  const publicBySlug = await fetchPublicBy('slug', productIdentifier);
+  if (publicBySlug?.is_active) return publicBySlug;
+
+  const duplicateRedirect = await resolveDuplicateRedirect('slug', productIdentifier);
+  if (duplicateRedirect) return duplicateRedirect;
+
+  const baseBySlug = await fetchBaseBy('slug', productIdentifier);
+  if (baseBySlug) return baseBySlug;
+
+  const searchName = productIdentifier.replace(/-/g, ' ').toLowerCase();
+  const { data, error } = await supabase
+    .from('products_public')
+    .select('*')
+    .ilike('name', `%${searchName}%`)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
 }
 
 const ProductDetail = () => {
@@ -161,85 +239,7 @@ const ProductDetail = () => {
     queryKey: ['product', id],
     queryFn: async () => {
       if (!id) return null;
-
-      // If it's a valid UUID, query by id
-      if (isValidUUID(id)) {
-        const { data, error } = await supabase
-          .from('products_public')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
-        
-        if (error) throw error;
-        
-        // If not found in view, check if it's a duplicate product
-        if (!data) {
-          const { data: dupData } = await supabase
-            .from('products')
-            .select('is_duplicate, canonical_product_id')
-            .eq('id', id)
-            .maybeSingle();
-          
-          if (dupData?.is_duplicate && dupData?.canonical_product_id) {
-            // Fetch canonical product's slug for redirect
-            const { data: canonical } = await supabase
-              .from('products_public')
-              .select('slug, id')
-              .eq('id', dupData.canonical_product_id)
-              .maybeSingle();
-            
-            if (canonical) {
-              return { ...canonical, _redirect: true } as any;
-            }
-          }
-        }
-        
-        return data;
-      }
-
-      // Otherwise, try to find by slug first
-      const { data: slugData, error: slugError } = await supabase
-        .from('products_public')
-        .select('*')
-        .eq('slug', id)
-        .maybeSingle();
-      
-      if (slugError) throw slugError;
-      if (slugData && slugData.is_active) return slugData;
-
-      // If slug not found in view, check if it's a duplicate
-      if (!slugData) {
-        const { data: dupBySlug } = await supabase
-          .from('products')
-          .select('is_duplicate, canonical_product_id')
-          .eq('slug', id)
-          .maybeSingle();
-        
-        if (dupBySlug?.is_duplicate && dupBySlug?.canonical_product_id) {
-          const { data: canonical } = await supabase
-            .from('products_public')
-            .select('slug, id')
-            .eq('id', dupBySlug.canonical_product_id)
-            .maybeSingle();
-          
-          if (canonical) {
-            return { ...canonical, _redirect: true } as any;
-          }
-        }
-      }
-
-      // Fallback: try to find by name (for legacy URLs)
-      const searchName = id.replace(/-/g, ' ').toLowerCase();
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('*')
-        .ilike('name', `%${searchName}%`)
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
+      return fetchExistingProduct(id);
     },
     enabled: !!id,
   });
@@ -525,26 +525,6 @@ const ProductDetail = () => {
     return () => observer.disconnect();
   }, [product]);
 
-  // Redirect to products page with search parameter if product not found
-  // LANDING INTENT LOCK: Do NOT redirect ad traffic — show stable "Not Found" UI instead
-  // This prevents Pinterest in-app browser issues (blank screens, content switching)
-  useEffect(() => {
-    if (!isLoading && !product && id) {
-      // Never redirect ad traffic — stability > helpfulness for paid visitors
-      if (isAdTraffic()) return;
-      
-      // Extract keywords from the slug/id for search
-      const searchKeywords = id
-        .replace(/-/g, ' ')  // Convert hyphens to spaces
-        .replace(/[^a-zA-Z\s]/g, '')  // Remove non-letter characters
-        .trim();
-      
-      const searchParam = searchKeywords ? `?search=${encodeURIComponent(searchKeywords)}` : '';
-      toast.info('Product not found. Searching for similar products...');
-      navigate(`/products${searchParam}`, { replace: true });
-    }
-  }, [isLoading, product, navigate, id]);
-
   if (isLoading) {
     return (
       <Layout>
@@ -554,36 +534,7 @@ const ProductDetail = () => {
   }
 
   if (!product) {
-    return (
-      <Layout>
-        <Helmet>
-          <meta name="robots" content="noindex" />
-        </Helmet>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-md px-4"
-          >
-            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-              <Package className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <h1 className="text-xl font-semibold mb-2">Product Not Available</h1>
-            <p className="text-muted-foreground mb-6">
-              This product may have been renamed or is no longer available.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={() => navigate('/bestsellers')}>
-                View Bestsellers
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/products')}>
-                Browse All Products
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </Layout>
-    );
+    return <NotFound />;
   }
 
   // Use centralized availability logic (real supplier stock)
@@ -661,10 +612,10 @@ const ProductDetail = () => {
 
   return (
     <Layout>
-      {/* Explicit robots policy: Tier C = noindex,follow; all others = index,follow */}
+      {/* Existing product pages must always be indexable for Google Merchant + Search */}
       <Helmet>
-        <meta name="robots" content={((product as any).seo_tier === 'C') ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
-        <meta name="googlebot" content={((product as any).seo_tier === 'C') ? 'noindex, follow' : 'index, follow'} />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <meta name="googlebot" content="index, follow" />
       </Helmet>
       <ProductSchema 
         product={{
