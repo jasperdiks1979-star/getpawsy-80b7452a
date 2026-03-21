@@ -346,7 +346,7 @@ Deno.serve(async (req: Request) => {
     const MAX_EXPORT_PRODUCTS = 25;
     const syncStartTime = Date.now();
 
-    console.log(`[merchant-sync] START runId=${runId} mode=${modeEffective} prune=${PRUNE_ENABLED} prune_dryrun=${PRUNE_DRYRUN} prune_max=${PRUNE_MAX_DELETES}`);
+    console.log(`[merchant-sync] START runId=${runId} mode=${modeEffective} prune=${PRUNE_ENABLED} prune_dryrun=${PRUNE_DRYRUN} prune_max=${PRUNE_MAX_DELETES} full_cleanup=${FULL_CLEANUP}`);
 
     // ── Rate limit ────────────────────────────────────────────────
     const { data: recentSync } = await supabase
