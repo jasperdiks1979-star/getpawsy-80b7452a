@@ -67,7 +67,6 @@ import {
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
 } from '@/lib/shipping-constants';
-import { isAdTraffic } from '@/lib/ad-traffic';
 import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import {
   Breadcrumb,
