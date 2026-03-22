@@ -345,6 +345,7 @@ const AffiliateDisclosure = lazyWithRetry(() => import("./pages/AffiliateDisclos
 const DogBedSizeChart = lazyWithRetry(() => import("./pages/DogBedSizeChart"));
 const IndoorCatCareResource = lazyWithRetry(() => import("./pages/IndoorCatCareResource"));
 const TrainingLandingPage = lazyWithRetry(() => import("./pages/landing/TrainingLandingPage"));
+const PinterestLandingPage = lazyWithRetry(() => import("./pages/landing/PinterestLandingPage"));
 
 // Generic SEO pages — wrapper components that pass namespace prop
 // Generic SEO pages — lazy-loaded wrapper components
