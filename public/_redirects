@@ -107,6 +107,7 @@
 /collections/       /products   301
 
 # ═══ Prerendered guides — serve static HTML before SPA fallback ═══
+/product/:slug /product/:slug.html 200
 /guides/:slug  /guides/:slug.html  200
 
 # ═══ Static XML sitemaps — MUST match before SPA fallback ═══
@@ -114,6 +115,7 @@
 /sitemap-pages.xml         /sitemap-pages.xml         200
 /sitemap-products-*.xml    /sitemap-products-*.xml    200
 /sitemap-collections.xml   /sitemap-collections.xml   200
+/sitemap-guides.xml        /sitemap-guides.xml        200
 /robots.txt                /robots.txt                200
 /merchant-diagnostics.xml  /merchant-diagnostics.xml  200
 

@@ -98,14 +98,10 @@ async function main() {
   const safeRead = (p, fallback) => { try { return readJson(p); } catch { return fallback; } };
 
   // ══════════════════════════════════════════════════════════════════════
-  // LEAN SITEMAP — Only high-value money pages for new-store trust
-  // Max 50 products, max 10 collections, homepage only. No blog/guides.
+  // FULL INDEXABLE SITEMAP — products + collections + guides/clusters
   // ══════════════════════════════════════════════════════════════════════
 
-  const MAX_PRODUCTS = 50;
-  const MAX_COLLECTIONS = 10;
-
-  // ── PRODUCTS (top 50 by recency) ──
+  // ── PRODUCTS (all active canonical products) ──
   let productsRaw = await fetchAllPages(
     "products_public",
     "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
@@ -120,13 +116,11 @@ async function main() {
         seen.add(p.slug);
         return true;
       })
-      .slice(0, MAX_PRODUCTS)
       .map((p) => ({ path: `/product/${p.slug}`, lastmod: p.updated_at }));
-    console.log(`[sitemaps] Products: ${products.length} (capped at ${MAX_PRODUCTS})`);
+    console.log(`[sitemaps] Products: ${products.length}`);
   } else {
     products = (safeRead(joinRoot("data", "products.json"), [])
-      .filter(e => e && e.path && !e.noindex))
-      .slice(0, MAX_PRODUCTS);
+      .filter(e => e && e.path && !e.noindex));
     console.log(`[sitemaps] Products from JSON fallback: ${products.length}`);
   }
 
@@ -135,7 +129,7 @@ async function main() {
     process.exit(1);
   }
 
-  // ── COLLECTIONS (top 10 by recency) ──
+  // ── COLLECTIONS (all valid SEO collections) ──
   let collectionsRaw = await fetchAllPages(
     "seo_collections",
     "select=slug,updated_at,product_keyword_filter,product_category_filter&is_active=eq.true&order=updated_at.desc"
@@ -153,14 +147,37 @@ async function main() {
       candidates, productCatalog, { minProducts: COLLECTION_MIN_PRODUCTS }
     );
     collections = validCollections
-      .slice(0, MAX_COLLECTIONS)
       .map((c) => ({ path: c.path, lastmod: c.updated_at }));
-    console.log(`[sitemaps] Collections: ${collections.length} (capped at ${MAX_COLLECTIONS})`);
+    console.log(`[sitemaps] Collections: ${collections.length}`);
   } else {
     collections = safeRead(joinRoot("data", "collections.json"), [])
-      .filter(e => e && e.path)
-      .slice(0, MAX_COLLECTIONS);
+      .filter(e => e && e.path);
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
+  }
+
+  // ── GUIDES + CLUSTERS ──
+  let guidesRaw = await fetchAllPages(
+    "published_guides",
+    "select=slug,updated_at,published_at,is_published&is_published=eq.true&slug=not.is.null&order=updated_at.desc"
+  );
+
+  let guideEntriesRaw = [];
+  if (guidesRaw && guidesRaw.length > 0) {
+    const seenGuides = new Set();
+    guideEntriesRaw = guidesRaw
+      .filter((g) => {
+        const guidePath = `/guides/${g.slug}`;
+        if (!g.slug || isExcluded(guidePath) || seenGuides.has(guidePath)) return false;
+        seenGuides.add(guidePath);
+        return true;
+      })
+      .map((g) => ({ path: `/guides/${g.slug}`, lastmod: g.updated_at || g.published_at || today }));
+    console.log(`[sitemaps] Guides from REST: ${guideEntriesRaw.length}`);
+  } else {
+    const guidesFallback = safeRead(joinRoot("data", "guides.json"), []).filter((e) => e && e.path);
+    const clustersFallback = safeRead(joinRoot("data", "clusters.json"), []).filter((e) => e && e.path);
+    guideEntriesRaw = [...guidesFallback, ...clustersFallback];
+    console.log(`[sitemaps] Guides/clusters from JSON fallback: ${guideEntriesRaw.length}`);
   }
 
   // ── Sort alphabetically ──
@@ -178,10 +195,13 @@ async function main() {
     };
   });
 
-  // ── Static pages — ONLY homepage + essential trust pages ──
+  // ── Static pages ──
   const staticPages = [
     { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
+    { path: "/shop", priority: 0.95, changefreq: "daily", lastmod: today },
     { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
+    { path: "/site-map", priority: 0.6, changefreq: "weekly", lastmod: today },
+    { path: "/guides", priority: 0.8, changefreq: "weekly", lastmod: today },
     { path: "/about", priority: 0.50, changefreq: "monthly", lastmod: today },
     { path: "/contact", priority: 0.40, changefreq: "monthly", lastmod: today },
     { path: "/shipping", priority: 0.30, changefreq: "monthly", lastmod: today },
@@ -193,9 +213,10 @@ async function main() {
 
   const productEntries = makeDelta(products, { changefreq: "weekly", priority: 0.70 });
   const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.80 });
+  const guideEntries = makeDelta(guideEntriesRaw, { changefreq: "weekly", priority: 0.65 });
 
   // ── Record history ──
-  const allEntries = [...staticPages, ...productEntries, ...collectionEntries];
+  const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries];
   for (const e of allEntries) newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
 
   const clean = (entries) => entries.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
@@ -207,7 +228,7 @@ async function main() {
   };
 
   // ══════════════════════════════════════════════════════════════════════
-  // WRITE SITEMAPS (lean: pages + products + collections only)
+  // WRITE SITEMAPS
   // ══════════════════════════════════════════════════════════════════════
   const sitemapIndexItems = [];
 
@@ -215,21 +236,31 @@ async function main() {
   writeChecked("sitemap-pages.xml", renderUrlset(clean(staticPages)), ["<urlset", "</urlset>"]);
   sitemapIndexItems.push({ loc: `${BASE}/sitemap-pages.xml`, lastmod: today });
 
-  // 2. Products (single file, max 50)
-  writeChecked("sitemap-products-1.xml", renderUrlset(clean(productEntries)), ["<urlset", "</urlset>"]);
-  sitemapIndexItems.push({ loc: `${BASE}/sitemap-products-1.xml`, lastmod: today });
+  // 2. Products (chunked if needed)
+  const productChunks = chunk(clean(productEntries), PRODUCTS_CHUNK_SIZE);
+  productChunks.forEach((entries, index) => {
+    const filename = `sitemap-products-${index + 1}.xml`;
+    writeChecked(filename, renderUrlset(entries), ["<urlset", "</urlset>"]);
+    sitemapIndexItems.push({ loc: `${BASE}/${filename}`, lastmod: today });
+  });
 
-  // 3. Collections (max 10)
+  // 3. Collections
   if (collectionEntries.length > 0) {
     writeChecked("sitemap-collections.xml", renderUrlset(clean(collectionEntries)), ["<urlset", "</urlset>"]);
     sitemapIndexItems.push({ loc: `${BASE}/sitemap-collections.xml`, lastmod: today });
+  }
+
+  // 4. Guides + clusters
+  if (guideEntries.length > 0) {
+    writeChecked("sitemap-guides.xml", renderUrlset(clean(guideEntries)), ["<urlset", "</urlset>"]);
+    sitemapIndexItems.push({ loc: `${BASE}/sitemap-guides.xml`, lastmod: today });
   }
 
   // ── Remove stale/excluded sitemap files ──
   const legacyFiles = [
     "sitemap-static.xml", "sitemap-index.xml", "sitemap_index.xml",
     "sitemap-core-products.xml", "sitemap-secondary-products.xml", "sitemap-clusters.xml",
-    "sitemap-guides.xml", "sitemap-blog.xml",
+    "sitemap-blog.xml",
   ];
   for (let i = 2; i <= 20; i++) legacyFiles.push(`sitemap-products-${i}.xml`);
   for (const name of legacyFiles) {
@@ -264,12 +295,13 @@ async function main() {
 
   saveHistory(newHistory);
 
-  const totalUrls = staticPages.length + productEntries.length + collectionEntries.length;
+  const totalUrls = staticPages.length + productEntries.length + collectionEntries.length + guideEntries.length;
   console.log(`\n[sitemaps] ══════════════════════════════════════`);
-  console.log(`[sitemaps] LEAN sitemap generation complete`);
+  console.log(`[sitemaps] Full sitemap generation complete`);
   console.log(`[sitemaps] Pages:       ${staticPages.length}`);
   console.log(`[sitemaps] Products:    ${productEntries.length}`);
   console.log(`[sitemaps] Collections: ${collectionEntries.length}`);
+  console.log(`[sitemaps] Guides:      ${guideEntries.length}`);
   console.log(`[sitemaps] Total URLs:  ${totalUrls}`);
   console.log(`[sitemaps] ══════════════════════════════════════\n`);
 }
