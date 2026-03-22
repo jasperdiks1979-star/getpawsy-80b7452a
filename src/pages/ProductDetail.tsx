@@ -60,6 +60,8 @@ import { ProductHowItWorks } from '@/components/products/ProductHowItWorks';
 import { ProductUseCases } from '@/components/products/ProductUseCases';
 import { ProductVsAlternatives } from '@/components/products/ProductVsAlternatives';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
+import { WhyCustomersChoose } from '@/components/products/WhyCustomersChoose';
+import { CrawlableRelatedLinks } from '@/components/products/CrawlableRelatedLinks';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
