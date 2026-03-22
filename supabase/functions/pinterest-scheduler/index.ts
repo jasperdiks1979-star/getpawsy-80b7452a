@@ -28,6 +28,10 @@ const BOARDS: Record<string, string> = {
   pet: "Smart Pet Gadgets",
 };
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function detectBoard(name: string, category: string): string {
   const lower = (name + " " + category).toLowerCase();
   if (lower.includes("cat") || lower.includes("kitten") || lower.includes("litter")) return BOARDS.cat;
