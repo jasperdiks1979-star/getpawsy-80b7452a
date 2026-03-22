@@ -697,6 +697,7 @@ const App = () => {
                         <Route path="merchant-compliance" element={<Suspense fallback={<RouteLoader />}><MerchantComplianceReport /></Suspense>} />
                         <Route path="winning-products" element={<Suspense fallback={<RouteLoader />}><WinningProductFinder /></Suspense>} />
                         <Route path="pinterest-traffic" element={<Suspense fallback={<RouteLoader />}><PinterestTrafficMachinePage /></Suspense>} />
+                        <Route path="pinterest-scale" element={<Suspense fallback={<RouteLoader />}><PinterestScaleModePage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
