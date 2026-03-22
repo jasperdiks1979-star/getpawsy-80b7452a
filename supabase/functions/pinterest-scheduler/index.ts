@@ -64,7 +64,7 @@ function generatePinVariants(product: {
   const BASE_URL = "https://getpawsy.pet";
   const board = detectBoard(product.name, product.category);
   const shortName = product.name.length > 60 ? product.name.slice(0, 57) + "..." : product.name;
-  const desc = (product.description || "").slice(0, 200);
+  const desc = stripHtml(product.description || "").slice(0, 200);
   const category = (product.category || "pet products").toLowerCase();
 
   const hashtags = [
