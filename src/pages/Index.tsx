@@ -6,6 +6,7 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
 // ── Lazy-loaded below-fold sections ──
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
+const TopProductsGrid = lazy(() => import('@/components/home/TopProductsGrid'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 
 // ── SEO schemas ──
