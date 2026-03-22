@@ -48,12 +48,7 @@ const PinterestLandingPage = () => {
 
   useEffect(() => {
     if (product) {
-      trackViewItem({
-        item_id: product.id,
-        item_name: product.name,
-        price: sellingPrice,
-        item_category: product.category || '',
-      });
+      trackViewItem(product.id, product.name, sellingPrice, product.category || '');
     }
   }, [product, sellingPrice]);
 
