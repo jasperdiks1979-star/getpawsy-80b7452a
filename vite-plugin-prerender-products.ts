@@ -371,6 +371,60 @@ function buildProductPage(product: ProductRecord, related: ProductRecord[], spaH
 </html>`;
 }
 
+function buildNotFoundPage(spaHtml: string): string {
+  const headMatch = spaHtml.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+  const headContent = headMatch ? headMatch[1] : '';
+  const scriptTags = (spaHtml.match(/<script[^>]*src="[^"]*"[^>]*><\/script>/g) || []).join('\n');
+  const assetTags = (headContent.match(/<link[^>]*>|<style[^>]*>[\s\S]*?<\/style>/gi) || []).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | GetPawsy</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="prerender-status-code" content="404">
+  <link rel="canonical" href="${SITE}/404">
+  ${assetTags}
+</head>
+<body>
+  <div id="root">
+    <main style="max-width:720px;margin:0 auto;padding:80px 20px;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;line-height:1.6">
+      <p style="text-transform:uppercase;letter-spacing:.08em;color:#6b7280;font-size:12px">404</p>
+      <h1 style="font-size:clamp(2rem,4vw,3rem);margin:0 0 12px;color:#111827">Page Not Found</h1>
+      <p style="margin:0 0 24px;color:#374151">The requested page does not exist or is no longer available.</p>
+      <a href="/products" style="display:inline-flex;padding:12px 18px;border-radius:999px;background:#111827;color:#fff;text-decoration:none;font-weight:600">Browse products</a>
+    </main>
+  </div>
+  ${scriptTags}
+</body>
+</html>`;
+}
+
+function updateRedirectsManifest(distDir: string, slugs: string[]) {
+  const redirectsPath = path.join(distDir, '_redirects');
+  if (!fs.existsSync(redirectsPath)) {
+    console.warn('[prerender-products] dist/_redirects not found, skipping redirect manifest update');
+    return;
+  }
+
+  const redirects = fs.readFileSync(redirectsPath, 'utf-8').split(/\r?\n/);
+  const filtered = redirects.filter((line) => !line.includes('/product/:slug /product/:slug.html 200') && !line.includes('/product/* /404.html 404'));
+  const fallbackIndex = filtered.findIndex((line) => line.trim() === '/* /index.html 200');
+  const insertIndex = fallbackIndex === -1 ? filtered.length : fallbackIndex;
+
+  const explicitRules = [
+    '# ═══ Generated product prerender routes — exact-match static HTML before SPA fallback ═══',
+    ...slugs.map((slug) => `/product/${slug} /product/${slug}.html 200`),
+    '/product/* /404.html 404',
+  ];
+
+  filtered.splice(insertIndex, 0, ...explicitRules);
+  fs.writeFileSync(redirectsPath, `${filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`, 'utf-8');
+}
+
 export default function prerenderProductsPlugin(): Plugin {
   return {
     name: 'prerender-products',
@@ -393,6 +447,7 @@ export default function prerenderProductsPlugin(): Plugin {
 
       const spaHtml = fs.readFileSync(spaHtmlPath, 'utf-8');
       fs.mkdirSync(distProductDir, { recursive: true });
+      fs.writeFileSync(path.join(distDir, '404.html'), buildNotFoundPage(spaHtml), 'utf-8');
 
       let count = 0;
       for (const product of products) {
@@ -404,6 +459,16 @@ export default function prerenderProductsPlugin(): Plugin {
         fs.writeFileSync(path.join(distProductDir, `${slug}.html`), html, 'utf-8');
         count += 1;
       }
+
+      updateRedirectsManifest(distDir, products.map((product) => product.slug || product.id));
+
+      const validationReport = {
+        generatedAt: new Date().toISOString(),
+        productCount: count,
+        sampleSlugs: products.slice(0, 5).map((product) => product.slug || product.id),
+        redirectMode: 'exact-static-routes-before-spa-fallback',
+      };
+      fs.writeFileSync(path.join(distDir, 'prerender-validation.json'), JSON.stringify(validationReport, null, 2), 'utf-8');
 
       const sample = products.slice(0, 3).map((product) => product.slug || product.id);
       console.log(`[prerender-products] ✅ Prerendered ${count} product pages`);
