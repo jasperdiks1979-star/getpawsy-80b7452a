@@ -233,10 +233,18 @@ export function ProductSchema({
 
   const productUrl = `${baseUrl}/product/${productPath}`;
 
+  // CTR-optimized title: benefit-driven, under 60 chars
+  const categoryHint = product.category?.toLowerCase() || '';
+  const isCat = categoryHint.includes('cat');
+  const isDog = categoryHint.includes('dog');
+  const petType = isCat ? 'Cat' : isDog ? 'Dog' : 'Pet';
+  const shortName = product.name.length > 45 ? product.name.slice(0, 42) + '…' : product.name;
+  const seoTitle = `${shortName} – ${petType} Essentials | GetPawsy`;
+
   return (
     <Helmet>
       {/* Primary Meta Tags */}
-      <title>{`${product.name} | GetPawsy - Premium Pet Products`}</title>
+      <title>{seoTitle}</title>
       <meta name="description" content={metaDescription} />
       <meta name="keywords" content={keywords.join(', ')} />
       <link rel="canonical" href={productUrl} />
