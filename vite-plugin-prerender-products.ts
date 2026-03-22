@@ -3,8 +3,8 @@ import path from 'path';
 import type { Plugin } from 'vite';
 
 const SITE = 'https://getpawsy.pet';
-const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
 
 interface ProductRecord {
   id: string;
@@ -208,16 +208,26 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
   let offset = 0;
   const all: ProductRecord[] = [];
 
-  while (true) {
-    const page = await supaRest<ProductRecord>(
-      'products_public',
-      `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc&limit=${pageSize}&offset=${offset}`,
-    );
+  const fetchPaged = async (table: 'products_public' | 'products') => {
+    offset = 0;
+    while (true) {
+      const duplicateFilter = table === 'products_public' ? '&is_duplicate=eq.false' : '&is_duplicate=eq.false';
+      const page = await supaRest<ProductRecord>(
+        table,
+        `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at&is_active=eq.true${duplicateFilter}&slug=not.is.null&order=updated_at.desc&limit=${pageSize}&offset=${offset}`,
+      );
 
-    if (!page.length) break;
-    all.push(...page.filter((product) => product.slug));
-    if (page.length < pageSize) break;
-    offset += pageSize;
+      if (!page.length) break;
+      all.push(...page.filter((product) => product.slug));
+      if (page.length < pageSize) break;
+      offset += pageSize;
+    }
+  };
+
+  await fetchPaged('products_public');
+
+  if (!all.length) {
+    await fetchPaged('products');
   }
 
   const seen = new Set<string>();
@@ -378,8 +388,7 @@ export default function prerenderProductsPlugin(): Plugin {
 
       const products = await fetchAllProducts();
       if (!products.length) {
-        console.warn('[prerender-products] no products fetched, skipping');
-        return;
+        throw new Error('[prerender-products] No active products were fetched, aborting build to prevent SPA-only product pages.');
       }
 
       const spaHtml = fs.readFileSync(spaHtmlPath, 'utf-8');
@@ -396,7 +405,9 @@ export default function prerenderProductsPlugin(): Plugin {
         count += 1;
       }
 
+      const sample = products.slice(0, 3).map((product) => product.slug || product.id);
       console.log(`[prerender-products] ✅ Prerendered ${count} product pages`);
+      console.log(`[prerender-products] Sample slugs: ${sample.join(', ')}`);
     },
   };
 }
