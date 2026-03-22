@@ -1516,6 +1516,9 @@ const ProductDetail = () => {
           </div>
         )}
 
+        {/* Why Customers Choose GetPawsy — trust section */}
+        <WhyCustomersChoose />
+
         {/* Related Products */}
         <div className="mt-16">
           <RelatedProductsCarousel 
@@ -1530,6 +1533,20 @@ const ProductDetail = () => {
             crossSellType="related_products"
           />
         </div>
+
+        {/* Crawlable related product links — visible to search engines */}
+        {relatedProducts && relatedProducts.length > 0 && (
+          <CrawlableRelatedLinks
+            products={relatedProducts.map(p => ({
+              id: p.id,
+              name: p.name,
+              slug: (p as any).slug || null,
+              price: Number(p.price),
+              category: p.category,
+            }))}
+            currentCategory={product.category}
+          />
+        )}
 
         {/* Recently Viewed Products Carousel */}
         {(recentlyViewedLoading || (recentlyViewedProducts && recentlyViewedProducts.length > 0)) && (
