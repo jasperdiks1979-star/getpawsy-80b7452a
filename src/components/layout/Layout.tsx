@@ -15,10 +15,9 @@ import { OrganizationSchema } from '../seo/OrganizationSchema';
 import { SitewiseTrustBar } from './SitewiseTrustBar';
 
 // Lazy-load all non-critical marketing/overlay widgets
-// Aggressive popups REMOVED for Google Merchant Center compliance:
-// - WelcomePopup (discount code without verifiable checkout integration)
-// - ExitIntentPopup (fake urgency, aggressive overlay)
-// - SlowFeederLeadMagnet (aggressive popup with unverifiable discount)
+// WelcomePopup / SlowFeederLeadMagnet REMOVED for Google Merchant Center compliance
+// ExitIntentPopup re-enabled — rewritten to be compliant (no fake urgency, no unverifiable discounts)
+const ExitIntentPopup = lazy(() => import('../marketing/ExitIntentPopup').then(m => ({ default: m.ExitIntentPopup })).catch(() => ({ default: () => null })));
 const CookieConsent = lazy(() => import('../marketing/CookieConsent').then(m => ({ default: m.CookieConsent })).catch(() => ({ default: () => null })));
 const ChatWidgetWrapper = lazy(() => import('../chat/ChatWidgetWrapper').then(m => ({ default: m.ChatWidgetWrapper })).catch(() => ({ default: () => null })));
 
