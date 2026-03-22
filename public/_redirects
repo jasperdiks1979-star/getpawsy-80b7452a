@@ -136,6 +136,8 @@
 /api/product-opportunities https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=opportunities 200
 /api/revenue-insights https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=insights 200
 /api/merchant-compliance-check https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-health 200
+/api/pinterest-feed https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-feed 200
+/api/pinterest-zap https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-zap 200
 
 # ═══ SPA FALLBACK ═══
 /* /index.html 200
