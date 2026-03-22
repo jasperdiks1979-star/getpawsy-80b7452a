@@ -149,30 +149,65 @@ export function ExitIntentPopup() {
 
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const shouldDisable = (isMobile && isCheckoutRoute) || isAdminRoute;
+  const shouldDisable = isAdminRoute || isCheckoutRoute;
 
-  const handleExitIntent = useCallback((e: MouseEvent) => {
-    if (e.clientY <= 5 && !hasTriggered) {
-      const hasSeenPopup = localStorage.getItem(EXIT_POPUP_STORAGE_KEY);
-      if (!hasSeenPopup) {
-        setIsOpen(true);
-        setHasTriggered(true);
-      }
+  const tryOpen = useCallback(() => {
+    if (hasTriggered) return;
+    const hasSeenPopup = localStorage.getItem(EXIT_POPUP_STORAGE_KEY);
+    if (!hasSeenPopup) {
+      setIsOpen(true);
+      setHasTriggered(true);
     }
   }, [hasTriggered]);
 
+  // Desktop: mouseleave (exit intent)
   useEffect(() => {
     const isMobileDevice = window.matchMedia('(max-width: 768px)').matches;
-    if (!isMobileDevice) {
-      const timer = setTimeout(() => {
-        document.addEventListener('mouseleave', handleExitIntent);
-      }, 8000);
-      return () => {
-        clearTimeout(timer);
-        document.removeEventListener('mouseleave', handleExitIntent);
-      };
-    }
-  }, [handleExitIntent]);
+    if (isMobileDevice) return;
+
+    const handler = (e: MouseEvent) => {
+      if (e.clientY <= 5) tryOpen();
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener('mouseleave', handler);
+    }, 8000);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mouseleave', handler);
+    };
+  }, [tryOpen]);
+
+  // Mobile: 70% scroll depth OR 45-second delay
+  useEffect(() => {
+    const isMobileDevice = window.matchMedia('(max-width: 768px)').matches;
+    if (!isMobileDevice) return;
+
+    let scrollFired = false;
+    const onScroll = () => {
+      if (scrollFired) return;
+      const scrollPct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
+      if (scrollPct >= 0.7) {
+        scrollFired = true;
+        tryOpen();
+      }
+    };
+
+    // Delay adding scroll listener to avoid early triggers
+    const scrollTimer = setTimeout(() => {
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }, 10000);
+
+    // Fallback: 45s delay
+    const delayTimer = setTimeout(() => {
+      tryOpen();
+    }, 45000);
+
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(delayTimer);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [tryOpen]);
 
   const handleClose = () => {
     setIsOpen(false);
