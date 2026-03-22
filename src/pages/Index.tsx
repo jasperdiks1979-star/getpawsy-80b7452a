@@ -6,6 +6,7 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
 // ── Lazy-loaded below-fold sections ──
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
+const TopProductsGrid = lazy(() => import('@/components/home/TopProductsGrid'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 
 // ── SEO schemas ──
@@ -287,6 +288,13 @@ const Index = () => {
           </Suspense>
         </SectionErrorBoundary>
       </div>
+
+      {/* ═══ TOP PRODUCTS — crawlable product links for SEO ═══ */}
+      <SectionErrorBoundary sectionName="Top Products">
+        <Suspense fallback={null}>
+          <TopProductsGrid />
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* CTA block removed — reduces repetitive conversion pressure */}
 
