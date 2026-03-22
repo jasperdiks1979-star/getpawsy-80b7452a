@@ -4478,6 +4478,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pin_queue: {
+        Row: {
+          board_name: string
+          created_at: string
+          destination_link: string
+          error_message: string | null
+          hashtags: string[] | null
+          id: string
+          pin_description: string
+          pin_image_url: string | null
+          pin_title: string
+          pin_variant: string
+          posted_at: string | null
+          priority: string
+          product_id: string
+          product_name: string
+          product_slug: string
+          scheduled_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          board_name?: string
+          created_at?: string
+          destination_link: string
+          error_message?: string | null
+          hashtags?: string[] | null
+          id?: string
+          pin_description: string
+          pin_image_url?: string | null
+          pin_title: string
+          pin_variant: string
+          posted_at?: string | null
+          priority?: string
+          product_id: string
+          product_name: string
+          product_slug: string
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          board_name?: string
+          created_at?: string
+          destination_link?: string
+          error_message?: string | null
+          hashtags?: string[] | null
+          id?: string
+          pin_description?: string
+          pin_image_url?: string | null
+          pin_title?: string
+          pin_variant?: string
+          posted_at?: string | null
+          priority?: string
+          product_id?: string
+          product_name?: string
+          product_slug?: string
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_pins: {
         Row: {
           created_at: string
