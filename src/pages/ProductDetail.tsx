@@ -1399,6 +1399,18 @@ const ProductDetail = () => {
         {/* 3. Feature Grid — detailed benefits */}
         <ProductFeatureGrid productName={product.name} category={product.category || ''} />
 
+        {/* Internal link to collection — SEO authority flow */}
+        {product.category && (
+          <div className="mt-8 text-center">
+            <Link
+              to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, '-'))}`}
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors underline underline-offset-4"
+            >
+              Browse all {safeString(product.category)} products →
+            </Link>
+          </div>
+        )}
+
         {/* 4. How It Works — step-by-step */}
         <ProductHowItWorks productName={product.name} category={product.category || ''} />
 
