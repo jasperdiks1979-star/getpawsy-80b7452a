@@ -19,8 +19,8 @@ const PRODUCTS_CHUNK_SIZE = 45000;
 const COLLECTION_MIN_PRODUCTS = Number(process.env.SITEMAP_COLLECTION_MIN_PRODUCTS || 4);
 const HISTORY_PATH = joinRoot("data", "sitemap-history.json");
 
-const SUPABASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc";
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://nojvgfbcjgipjxpfatmm.supabase.co";
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc";
 
 async function fetchFromSupabase(table, params) {
   try {
@@ -106,6 +106,13 @@ async function main() {
     "products_public",
     "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
   );
+
+  if (!productsRaw || productsRaw.length === 0) {
+    productsRaw = await fetchAllPages(
+      "products",
+      "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
+    );
+  }
   let products;
   if (productsRaw && productsRaw.length > 0) {
     const seen = new Set();
@@ -138,6 +145,12 @@ async function main() {
     "products_public",
     "select=name,slug,category&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null"
   );
+  if (!productCatalog || productCatalog.length === 0) {
+    productCatalog = await fetchAllPages(
+      "products",
+      "select=name,slug,category&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null"
+    );
+  }
   if (!productCatalog) productCatalog = [];
 
   let collections;
@@ -296,6 +309,14 @@ async function main() {
   saveHistory(newHistory);
 
   const totalUrls = staticPages.length + productEntries.length + collectionEntries.length + guideEntries.length;
+  writeFile(path.join(OUT_DIR, "sitemap-coverage.json"), JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    productCount: productEntries.length,
+    collectionCount: collectionEntries.length,
+    guideCount: guideEntries.length,
+    staticCount: staticPages.length,
+    totalUrls,
+  }, null, 2));
   console.log(`\n[sitemaps] ══════════════════════════════════════`);
   console.log(`[sitemaps] Full sitemap generation complete`);
   console.log(`[sitemaps] Pages:       ${staticPages.length}`);
