@@ -4376,6 +4376,108 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_keyword_performance: {
+        Row: {
+          avg_ctr: number | null
+          created_at: string | null
+          id: string
+          keyword: string
+          long_tail_variants: Json | null
+          pin_count: number | null
+          total_clicks: number | null
+          total_impressions: number | null
+          total_saves: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_ctr?: number | null
+          created_at?: string | null
+          id?: string
+          keyword: string
+          long_tail_variants?: Json | null
+          pin_count?: number | null
+          total_clicks?: number | null
+          total_impressions?: number | null
+          total_saves?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_ctr?: number | null
+          created_at?: string | null
+          id?: string
+          keyword?: string
+          long_tail_variants?: Json | null
+          pin_count?: number | null
+          total_clicks?: number | null
+          total_impressions?: number | null
+          total_saves?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_pin_performance: {
+        Row: {
+          clicks: number | null
+          created_at: string | null
+          ctr: number | null
+          generation_batch: string | null
+          hook_angle: string | null
+          id: string
+          impressions: number | null
+          keywords: string[] | null
+          parent_pin_id: string | null
+          performance_score: number | null
+          pin_description: string | null
+          pin_id: string
+          pin_title: string | null
+          product_id: string
+          product_url: string | null
+          saves: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          clicks?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          generation_batch?: string | null
+          hook_angle?: string | null
+          id?: string
+          impressions?: number | null
+          keywords?: string[] | null
+          parent_pin_id?: string | null
+          performance_score?: number | null
+          pin_description?: string | null
+          pin_id: string
+          pin_title?: string | null
+          product_id: string
+          product_url?: string | null
+          saves?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          clicks?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          generation_batch?: string | null
+          hook_angle?: string | null
+          id?: string
+          impressions?: number | null
+          keywords?: string[] | null
+          parent_pin_id?: string | null
+          performance_score?: number | null
+          pin_description?: string | null
+          pin_id?: string
+          pin_title?: string | null
+          product_id?: string
+          product_url?: string | null
+          saves?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pinterest_pins: {
         Row: {
           created_at: string
@@ -4426,6 +4528,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_publish_queue: {
+        Row: {
+          created_at: string | null
+          hashtags: string | null
+          hook_angle: string | null
+          id: string
+          image_prompt: string | null
+          overlay_text: string | null
+          pin_description: string
+          pin_id_external: string | null
+          pin_title: string
+          posting_slot: string | null
+          product_id: string
+          product_url: string
+          published_at: string | null
+          scheduled_for: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          hashtags?: string | null
+          hook_angle?: string | null
+          id?: string
+          image_prompt?: string | null
+          overlay_text?: string | null
+          pin_description: string
+          pin_id_external?: string | null
+          pin_title: string
+          posting_slot?: string | null
+          product_id: string
+          product_url: string
+          published_at?: string | null
+          scheduled_for?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          hashtags?: string | null
+          hook_angle?: string | null
+          id?: string
+          image_prompt?: string | null
+          overlay_text?: string | null
+          pin_description?: string
+          pin_id_external?: string | null
+          pin_title?: string
+          posting_slot?: string | null
+          product_id?: string
+          product_url?: string
+          published_at?: string | null
+          scheduled_for?: string | null
+          status?: string | null
+        }
+        Relationships: []
       }
       product_bundles: {
         Row: {
