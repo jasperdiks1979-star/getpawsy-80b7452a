@@ -265,7 +265,8 @@ export function ProductSchema({
       <meta name="twitter:image" content={primaryImage} />
 
       {/* Robots — ALL products must be indexable for Google Merchant Center compliance */}
-      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+      <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
       {/* JSON-LD Structured Data */}
       <script type="application/ld+json">
