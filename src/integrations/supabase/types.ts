@@ -4376,6 +4376,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pins: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          pin_data: Json
+          product_id: string
+          product_name: string
+          product_slug: string
+          product_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          pin_data?: Json
+          product_id: string
+          product_name: string
+          product_slug: string
+          product_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          pin_data?: Json
+          product_id?: string
+          product_name?: string
+          product_slug?: string
+          product_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_bundles: {
         Row: {
           created_at: string
