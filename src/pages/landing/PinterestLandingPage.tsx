@@ -5,10 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/ui/optimized-image';
-import { calculateSellingPrice } from '@/lib/pricing';
 import { computeAvailability } from '@/lib/availability';
 import { trackViewItem } from '@/lib/analytics';
-import { ShoppingCart, Truck, RotateCcw, ShieldCheck, Check, Star, ArrowRight, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Truck, RotateCcw, ShieldCheck, Check, ArrowRight } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { ProductSchema } from '@/components/seo/ProductSchema';
@@ -23,7 +22,6 @@ const PinterestLandingPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const { data: product, isLoading } = useQuery({
@@ -41,14 +39,11 @@ const PinterestLandingPage = () => {
     enabled: !!slug,
   });
 
-  const sellingPrice = useMemo(() => {
-    if (!product) return 0;
-    return calculateSellingPrice(product.cost_price ?? 0, product.price ?? 0, product.compare_at_price);
-  }, [product]);
-
+  const sellingPrice = product?.price ?? 0;
+  const compareAtPrice = product?.compare_at_price ?? null;
   const availability = useMemo(() => {
-    if (!product) return { available: false, label: '', schema: 'OutOfStock' as const };
-    return computeAvailability(product.stock, product.is_active);
+    if (!product) return { isInStock: false, reason: 'No product' };
+    return computeAvailability(product);
   }, [product]);
 
   useEffect(() => {
@@ -69,7 +64,7 @@ const PinterestLandingPage = () => {
       name: product.name,
       price: sellingPrice,
       image: product.image_url || '',
-      quantity,
+      quantity: 1,
     });
     toast.success('Added to cart!');
   };
@@ -97,27 +92,24 @@ const PinterestLandingPage = () => {
     );
   }
 
-  const hasDiscount = product.compare_at_price && product.compare_at_price > sellingPrice;
-  const discountPct = hasDiscount ? Math.round((1 - sellingPrice / product.compare_at_price!) * 100) : 0;
-  const canonicalUrl = `https://getpawsy.pet/pin/${product.slug}`;
+  const hasDiscount = compareAtPrice && compareAtPrice > sellingPrice;
+  const discountPct = hasDiscount ? Math.round((1 - sellingPrice / compareAtPrice!) * 100) : 0;
 
   return (
     <>
       <Helmet>
         <title>{product.name} | GetPawsy</title>
         <meta name="description" content={product.meta_description || product.description?.substring(0, 155) || ''} />
-        <link rel="canonical" href={canonicalUrl} />
+        <link rel="canonical" href={`https://getpawsy.pet/product/${product.slug}`} />
         <meta name="robots" content="noindex, follow" />
       </Helmet>
 
-      <ProductSchema product={product} sellingPrice={sellingPrice} />
+      <ProductSchema product={product} />
 
-      {/* Minimal header — brand only */}
+      {/* Minimal header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="font-display text-xl font-bold text-primary">
-            GetPawsy
-          </Link>
+          <Link to="/" className="font-display text-xl font-bold text-primary">GetPawsy</Link>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Truck className="w-3.5 h-3.5 text-primary" />
             <span>Free US Shipping $35+</span>
@@ -126,7 +118,6 @@ const PinterestLandingPage = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* Hero section — image + CTA */}
         <div className="grid md:grid-cols-2 gap-6 md:gap-10">
           {/* Product image */}
           <motion.div
@@ -154,51 +145,32 @@ const PinterestLandingPage = () => {
               {product.name}
             </h1>
 
-            {/* Price */}
             <div className="flex items-baseline gap-3 mb-4">
               <span className="text-3xl font-bold text-primary">${sellingPrice.toFixed(2)}</span>
               {hasDiscount && (
-                <span className="text-lg text-muted-foreground line-through">${product.compare_at_price!.toFixed(2)}</span>
+                <span className="text-lg text-muted-foreground line-through">${compareAtPrice!.toFixed(2)}</span>
               )}
             </div>
 
-            {/* Quick benefits */}
             <div className="space-y-2 mb-6">
-              {[
-                'Saves you time every day',
-                'Designed for real pet owners',
-                'Premium quality materials',
-                'Easy to set up and use',
-              ].map(benefit => (
-                <div key={benefit} className="flex items-center gap-2 text-sm text-foreground">
+              {['Saves you time every day', 'Designed for real pet owners', 'Premium quality materials', 'Easy to set up and use'].map(b => (
+                <div key={b} className="flex items-center gap-2 text-sm text-foreground">
                   <Check className="w-4 h-4 text-primary shrink-0" />
-                  <span>{benefit}</span>
+                  <span>{b}</span>
                 </div>
               ))}
             </div>
 
-            {/* CTA buttons */}
             <div className="space-y-3 mb-5">
-              <Button
-                onClick={handleBuyNow}
-                disabled={!availability.available}
-                className="w-full h-14 text-base font-semibold rounded-xl"
-                size="lg"
-              >
+              <Button onClick={handleBuyNow} disabled={!availability.isInStock} className="w-full h-14 text-base font-semibold rounded-xl" size="lg">
                 <ShoppingCart className="w-5 h-5 mr-2" />
                 Buy Now — Free US Shipping
               </Button>
-              <Button
-                onClick={handleAddToCart}
-                disabled={!availability.available}
-                variant="outline"
-                className="w-full h-12 rounded-xl"
-              >
+              <Button onClick={handleAddToCart} disabled={!availability.isInStock} variant="outline" className="w-full h-12 rounded-xl">
                 Add to Cart
               </Button>
             </div>
 
-            {/* Trust strip */}
             <div className="grid grid-cols-3 gap-2">
               {[
                 { icon: Truck, label: '3–7 Day\nUS Delivery' },
@@ -214,11 +186,9 @@ const PinterestLandingPage = () => {
           </div>
         </div>
 
-        {/* Why choose this product — simple, scannable */}
+        {/* Why choose section */}
         <section className="mt-12 mb-8">
-          <h2 className="text-xl font-display font-bold text-foreground mb-4">
-            Why Pet Owners Choose This
-          </h2>
+          <h2 className="text-xl font-display font-bold text-foreground mb-4">Why Pet Owners Choose This</h2>
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { title: 'Saves Time', desc: 'Spend less time on pet maintenance and more time enjoying your pet.' },
@@ -233,43 +203,32 @@ const PinterestLandingPage = () => {
           </div>
         </section>
 
-        {/* Product description */}
         {product.description && (
           <section className="mb-8">
             <h2 className="text-xl font-display font-bold text-foreground mb-3">Product Details</h2>
-            <div className="prose prose-sm text-muted-foreground max-w-none">
-              <p>{product.description}</p>
-            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
           </section>
         )}
 
-        {/* CTA repeat */}
+        {/* Final CTA */}
         <section className="bg-gradient-to-br from-primary/5 to-secondary/10 rounded-2xl p-6 md:p-8 text-center mb-8">
-          <h2 className="text-xl font-display font-bold text-foreground mb-2">
-            Ready to Make Life Easier?
-          </h2>
+          <h2 className="text-xl font-display font-bold text-foreground mb-2">Ready to Make Life Easier?</h2>
           <p className="text-muted-foreground text-sm mb-5 max-w-md mx-auto">
-            Join thousands of pet owners who upgraded their routine with GetPawsy products.
+            Join pet owners who upgraded their routine with GetPawsy products.
           </p>
-          <Button onClick={handleBuyNow} disabled={!availability.available} size="lg" className="h-13 px-8 rounded-xl text-base font-semibold">
+          <Button onClick={handleBuyNow} disabled={!availability.isInStock} size="lg" className="px-8 rounded-xl text-base font-semibold">
             Buy Now — Free US Shipping
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </section>
 
-        {/* Link to full product page */}
         <div className="text-center mb-12">
-          <Link
-            to={`/product/${product.slug}`}
-            className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-          >
-            View full product details
-            <ArrowRight className="w-3.5 h-3.5" />
+          <Link to={`/product/${product.slug}`} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+            View full product details <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </main>
 
-      {/* Minimal footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
         <p>© {new Date().getFullYear()} GetPawsy — Smart Pet Products for Modern Pet Owners</p>
         <div className="flex justify-center gap-4 mt-2">
@@ -281,12 +240,8 @@ const PinterestLandingPage = () => {
       </footer>
 
       {/* Sticky mobile CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-background/95 backdrop-blur-sm border-t border-border p-3 safe-area-bottom">
-        <Button
-          onClick={handleBuyNow}
-          disabled={!availability.available}
-          className="w-full h-12 rounded-xl text-sm font-semibold"
-        >
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-background/95 backdrop-blur-sm border-t border-border p-3">
+        <Button onClick={handleBuyNow} disabled={!availability.isInStock} className="w-full h-12 rounded-xl text-sm font-semibold">
           <ShoppingCart className="w-4 h-4 mr-2" />
           Buy Now — ${sellingPrice.toFixed(2)}
         </Button>
