@@ -62,56 +62,56 @@ function extractProductType(name: string, category: string): ProductType {
  */
 const clarityIntros: Record<ProductType, ClarityIntro> = {
   bed: {
-    intro: "Designed for pet parents who want their furry friend to have a dedicated, comfortable space to rest. This bed helps reduce joint pressure and provides a cozy retreat for better sleep and relaxation.",
-    shortBenefits: ['Supports restful sleep', 'Easy to clean', 'Fits into any room'],
+    intro: "Many pets sleep on worn-out beds that offer zero joint support — leading to stiffness, restless nights, and low energy. This orthopedic pet bed relieves pressure on hips and joints with high-density foam that adapts to your dog's body. Perfect for senior dogs, active breeds, and any pet that deserves deeper, more restorative sleep.",
+    shortBenefits: ['Relieves joint pressure overnight', 'Breathable, machine-washable cover', 'Non-slip base for all floors'],
   },
   bowl: {
-    intro: "For pet parents looking to simplify mealtime and promote healthier eating habits. This bowl helps keep feeding routines clean, organized, and stress-free for both you and your pet.",
-    shortBenefits: ['Encourages slower eating', 'Easy to clean', 'Stable design'],
+    intro: "Pets that eat too fast risk bloating, vomiting, and poor digestion — while lightweight bowls slide across the floor creating mess at every meal. This feeding bowl promotes healthier eating habits with a stable, non-slip design that keeps mealtimes clean and calm. Ideal for dogs and cats of all sizes who need a slower, safer feeding routine.",
+    shortBenefits: ['Promotes slower, safer eating', 'Non-slip stable base', 'Dishwasher safe for easy cleaning'],
   },
   harness: {
-    intro: "Perfect for pet parents who want more control and comfort during walks. This harness distributes pressure evenly, reducing strain on your pet's neck and making outdoor time safer and more enjoyable.",
-    shortBenefits: ['Even pressure distribution', 'Secure fit', 'Easy to put on'],
+    intro: "Traditional collars put dangerous pressure on your pet's throat, causing neck strain and making walks stressful for both of you. This no-pull harness distributes force evenly across the chest, eliminating choking while giving you better control. Built for daily walks, training sessions, and outdoor adventures with padded comfort that prevents rubbing.",
+    shortBenefits: ['No-choke chest distribution', 'Padded anti-rub straps', 'Reflective trim for safety'],
   },
   leash: {
-    intro: "For pet parents who enjoy daily walks and outdoor adventures. This leash offers reliable control and comfort, making every outing with your pet feel safe and relaxed.",
-    shortBenefits: ['Comfortable grip', 'Durable construction', 'Secure attachment'],
+    intro: "A flimsy leash with a weak clasp can lead to accidental escapes — putting your pet in danger every time you walk. This heavy-duty leash combines a reinforced rotating clasp with a padded ergonomic grip for all-day comfort. Whether you're on city sidewalks or hiking trails, it gives you reliable control in any situation.",
+    shortBenefits: ['Heavy-duty secure clasp', 'Padded ergonomic grip', 'All-weather durable materials'],
   },
   collar: {
-    intro: "A practical everyday essential for pet parents who want their pet to look good and stay safe. This collar combines comfort with durability for all-day wear.",
-    shortBenefits: ['Comfortable fit', 'Adjustable sizing', 'Durable materials'],
+    intro: "Poorly fitted collars slip off, chafe skin, or cause matting — and an uncomfortable collar means your pet resists wearing it, creating a safety risk outdoors. This adjustable collar is built for all-day comfort with breathable material and a secure quick-release buckle. Perfect for everyday wear during walks, play, and rest.",
+    shortBenefits: ['Adjustable perfect fit', 'Breathable materials', 'Secure quick-release buckle'],
   },
   toy: {
-    intro: "For pet parents looking to keep their furry friend entertained and mentally stimulated. This toy helps reduce boredom and encourages healthy play, making daily life more fun.",
-    shortBenefits: ['Encourages active play', 'Reduces boredom', 'Safe materials'],
+    intro: "Bored pets turn to destructive behavior — chewing furniture, excessive barking, and anxious habits that frustrate everyone. This interactive toy channels that energy into healthy play with durable, non-toxic materials that withstand daily use. Designed to mentally stimulate your pet while keeping your home intact and your pet happier.",
+    shortBenefits: ['Durable for aggressive chewers', 'Non-toxic safe materials', 'Reduces destructive behavior'],
   },
   carrier: {
-    intro: "Designed for pet parents who travel with their furry companion. This carrier provides a secure, comfortable space during vet visits, road trips, or flights.",
-    shortBenefits: ['Secure travel', 'Good ventilation', 'Easy access'],
+    intro: "Traveling with a loose pet is unsafe, and poorly ventilated carriers cause anxiety and overheating during vet visits or road trips. This pet carrier provides a secure, well-ventilated space with easy-access openings that reduce loading stress. Airline-compatible and sturdy enough for confident travel anywhere.",
+    shortBenefits: ['Multi-point ventilation', 'Airline-compatible size', 'Secure anti-escape zippers'],
   },
   grooming: {
-    intro: "For pet parents who want to keep their pet's coat healthy without the hassle. This grooming tool makes at-home care easier, reducing shedding and keeping your pet looking their best.",
-    shortBenefits: ['Reduces shedding', 'Gentle on skin', 'Easy to use'],
+    intro: "Shedding fur covers your furniture, clothes, and car seats — and without regular grooming, painful mats and tangles develop that lead to skin irritation. This grooming tool removes loose undercoat effectively while being gentle on sensitive skin. Professional-quality results at home, saving hundreds per year on salon visits.",
+    shortBenefits: ['Reduces shedding up to 90%', 'Gentle on sensitive skin', 'Self-cleaning mechanism'],
   },
   clothing: {
-    intro: "For pet parents who want to keep their furry friend comfortable in any weather. This piece is easy to put on and provides cozy protection without restricting movement.",
-    shortBenefits: ['Weather protection', 'Easy on/off', 'Comfortable fit'],
+    intro: "Short-haired and small breeds struggle in cold weather, shivering through winter walks while ill-fitting pet clothes restrict their movement. This pet clothing provides warmth without bulk, with a stretch-friendly design that lets your pet move naturally. Easy on-off fastening means less fussing and more time enjoying the outdoors together.",
+    shortBenefits: ['Warmth without restricting movement', 'Easy on/off design', 'Machine washable'],
   },
   mat: {
-    intro: "A versatile solution for pet parents who need a dedicated spot for their pet anywhere in the home. This mat provides comfort and is easy to move, clean, and maintain.",
-    shortBenefits: ['Portable comfort', 'Easy to clean', 'Non-slip backing'],
+    intro: "Without a consistent resting spot, pets claim your furniture or develop anxiety from not having their own space. This portable pet mat gives your furry friend a non-slip surface they can call their own — at home, traveling, or at the vet. Machine washable and built to provide familiar comfort wherever you go.",
+    shortBenefits: ['Non-slip portable comfort', 'Machine washable', 'Works anywhere — home or travel'],
   },
   fountain: {
-    intro: "For pet parents concerned about their pet's hydration. This fountain encourages more water intake with fresh, filtered water, promoting better health and well-being.",
-    shortBenefits: ['Encourages hydration', 'Filtered water', 'Quiet operation'],
+    intro: "Still water in bowls collects bacteria within hours, and many pets refuse to drink stale water — leading to chronic dehydration that damages kidney and urinary health. This pet water fountain circulates and triple-filters water continuously, keeping it fresh and appealing around the clock. Ultra-quiet operation means your pet always has access to clean, flowing water.",
+    shortBenefits: ['Triple filtration system', 'Ultra-quiet pump', 'Encourages healthy hydration'],
   },
   food: {
-    intro: "Selected for pet parents who care about what goes into their pet's bowl. A quality choice for everyday nutrition that fits seamlessly into your feeding routine.",
-    shortBenefits: ['Quality ingredients', 'Everyday nutrition', 'Convenient packaging'],
+    intro: "Low-quality pet food packed with fillers and artificial additives leads to poor coat condition, low energy, and digestive problems over time. This carefully selected formula provides balanced daily nutrition with natural ingredients and zero artificial preservatives. Wholesome fuel for an active, healthy life your pet deserves.",
+    shortBenefits: ['Natural quality ingredients', 'Complete balanced nutrition', 'Supports coat and digestive health'],
   },
   accessory: {
-    intro: "A practical addition for pet parents looking to make daily life with their furry friend easier. Designed with quality and convenience in mind.",
-    shortBenefits: ['Practical design', 'Quality materials', 'Easy to use'],
+    intro: "Finding pet accessories that actually work is frustrating — many products look good online but break easily or aren't safe for daily use. This product is built with premium, pet-safe materials and practical design tested for real-world pet ownership. It integrates seamlessly into your daily routine, making life easier for both you and your pet.",
+    shortBenefits: ['Premium durable materials', 'Practical daily-use design', 'Built for real pet life'],
   },
 };
 
