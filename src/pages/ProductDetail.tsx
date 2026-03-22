@@ -146,7 +146,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
   }
 
   const publicBySlug = await fetchPublicBy('slug', productIdentifier);
-  if (publicBySlug?.is_active) return publicBySlug;
+  if (publicBySlug) return publicBySlug;
 
   const duplicateRedirect = await resolveDuplicateRedirect('slug', productIdentifier);
   if (duplicateRedirect) return duplicateRedirect;
