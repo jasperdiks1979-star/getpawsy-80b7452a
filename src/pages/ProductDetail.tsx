@@ -146,7 +146,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
   }
 
   const publicBySlug = await fetchPublicBy('slug', productIdentifier);
-  if (publicBySlug?.is_active) return publicBySlug;
+  if (publicBySlug) return publicBySlug;
 
   const duplicateRedirect = await resolveDuplicateRedirect('slug', productIdentifier);
   if (duplicateRedirect) return duplicateRedirect;
@@ -235,13 +235,15 @@ const ProductDetail = () => {
   // Fetch product from database - supports both UUID and slug
   // Uses products_public view which filters out duplicates automatically
   // If product not found in view, checks if it's a duplicate and redirects to canonical
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
       if (!id) return null;
       return fetchExistingProduct(id);
     },
     enabled: !!id,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
   });
 
   // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
@@ -525,14 +527,53 @@ const ProductDetail = () => {
     return () => observer.disconnect();
   }, [product]);
 
+  // SEO-safe loading state: emit proper head tags so crawlers never see
+  // noindex or 404 signals while product data is still resolving.
   if (isLoading) {
+    const slugName = id
+      ? id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      : 'Product';
+    const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + '...' : slugName;
+    const loadingCanonical = `https://getpawsy.pet/product/${id || ''}`;
+
     return (
       <Layout>
+        <Helmet>
+          <title>{`${truncatedSlugName} | GetPawsy - Premium Pet Products`}</title>
+          <meta name="description" content={`Shop ${truncatedSlugName} at GetPawsy. Premium quality, fast US shipping & 30-day returns.`} />
+          <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          <link rel="canonical" href={loadingCanonical} />
+        </Helmet>
         <ProductDetailSkeleton />
       </Layout>
     );
   }
 
+  // On network/query error, show skeleton with retry — do NOT render NotFound
+  // so crawlers don't see a false 404 for a valid product URL.
+  if (isError) {
+    const slugName = id
+      ? id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      : 'Product';
+    const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + '...' : slugName;
+    const errorCanonical = `https://getpawsy.pet/product/${id || ''}`;
+
+    return (
+      <Layout>
+        <Helmet>
+          <title>{`${truncatedSlugName} | GetPawsy - Premium Pet Products`}</title>
+          <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          <link rel="canonical" href={errorCanonical} />
+        </Helmet>
+        <ProductDetailSkeleton />
+      </Layout>
+    );
+  }
+
+  // TRUE 404: loading is complete, no error, and no product found.
+  // Only now is it safe to render NotFound with noindex.
   if (!product) {
     return <NotFound />;
   }
@@ -614,8 +655,8 @@ const ProductDetail = () => {
     <Layout>
       {/* Existing product pages must always be indexable for Google Merchant + Search */}
       <Helmet>
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta name="googlebot" content="index, follow" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
       </Helmet>
       <ProductSchema 
         product={{
