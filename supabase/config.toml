@@ -242,3 +242,12 @@ verify_jwt = false
 
 [functions.product-optimizer-pipeline]
 verify_jwt = false
+
+[functions.pinterest-feed]
+verify_jwt = false
+
+[functions.pinterest-zap]
+verify_jwt = false
+
+[functions.pinterest-scheduler]
+verify_jwt = false
