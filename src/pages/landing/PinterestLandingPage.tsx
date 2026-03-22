@@ -59,7 +59,6 @@ const PinterestLandingPage = () => {
       name: product.name,
       price: sellingPrice,
       image: product.image_url || '',
-      quantity: 1,
     });
     toast.success('Added to cart!');
   };
