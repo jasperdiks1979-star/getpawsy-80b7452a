@@ -289,6 +289,13 @@ const Index = () => {
         </SectionErrorBoundary>
       </div>
 
+      {/* ═══ TOP PRODUCTS — crawlable product links for SEO ═══ */}
+      <SectionErrorBoundary sectionName="Top Products">
+        <Suspense fallback={null}>
+          <TopProductsGrid />
+        </Suspense>
+      </SectionErrorBoundary>
+
       {/* CTA block removed — reduces repetitive conversion pressure */}
 
       {/* (How It Works moved above bestsellers) */}
