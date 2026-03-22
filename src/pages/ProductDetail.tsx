@@ -235,13 +235,15 @@ const ProductDetail = () => {
   // Fetch product from database - supports both UUID and slug
   // Uses products_public view which filters out duplicates automatically
   // If product not found in view, checks if it's a duplicate and redirects to canonical
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
       if (!id) return null;
       return fetchExistingProduct(id);
     },
     enabled: !!id,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
   });
 
   // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
