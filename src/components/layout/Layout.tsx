@@ -116,11 +116,12 @@ export const Layout = ({ children }: LayoutProps) => {
           <CookieConsent />
         </Suspense>
       </MarketingErrorBoundary>
-      {/* Chat widget deferred until after grid paint / interaction / 5s */}
+      {/* Chat widget + exit intent deferred until after grid paint / interaction / 5s */}
       {widgetsReady && (
         <MarketingErrorBoundary>
           <Suspense fallback={null}>
             <ChatWidgetWrapper />
+            <ExitIntentPopup />
           </Suspense>
         </MarketingErrorBoundary>
       )}
