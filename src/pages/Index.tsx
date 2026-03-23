@@ -297,6 +297,13 @@ const Index = () => {
         </Suspense>
       </SectionErrorBoundary>
 
+      {/* ═══ FEATURED PRODUCTS — contextual SEO links ═══ */}
+      <SectionErrorBoundary sectionName="Featured Products">
+        <Suspense fallback={null}>
+          <FeaturedProductsSection />
+        </Suspense>
+      </SectionErrorBoundary>
+
       {/* CTA block removed — reduces repetitive conversion pressure */}
 
       {/* (How It Works moved above bestsellers) */}
