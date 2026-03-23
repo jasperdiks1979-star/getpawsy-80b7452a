@@ -716,7 +716,7 @@ const App = () => {
             </CartAnimationProvider>
           </CartProvider>
         </AuthProvider>
-      </TooltipProvider>
+      </TooltipProvider></Suspense>
     </QueryClientProvider>
     {WebVitalsPanel && (
       <Suspense fallback={null}><WebVitalsPanel /></Suspense>
