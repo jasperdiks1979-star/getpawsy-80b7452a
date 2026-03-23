@@ -26,8 +26,8 @@ export const categories = [
 export const products: Product[] = [
   {
     id: 'prod-001',
-    name: 'Premium Orthopedic Dog Bed',
-    description: 'Memory foam dog bed with waterproof liner and removable washable cover. Perfect for dogs of all sizes with joint support technology.',
+    name: 'GetPawsy Orthopedic Dog Bed – Memory Foam Joint Support',
+    description: 'Memory foam dog bed with waterproof liner and removable washable cover. Designed to support joints for dogs of all sizes. Helps reduce pressure on hips and joints.',
     price: 79.99,
     comparePrice: 99.99,
     image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80',
@@ -44,8 +44,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-002',
-    name: 'Interactive Cat Puzzle Feeder',
-    description: 'Stimulate your cats mind with this engaging puzzle feeder. Multiple difficulty levels to keep your cat entertained and mentally sharp.',
+    name: 'GetPawsy Interactive Cat Puzzle Feeder – Mental Stimulation Toy',
+    description: 'Stimulate your cat\'s mind with this engaging puzzle feeder. Features multiple difficulty levels to encourage natural foraging behavior and slow down eating.',
     price: 24.99,
     image: 'https://images.unsplash.com/photo-1545249390-6bdfa286032f?w=600&q=80',
     images: [
@@ -60,8 +60,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-003',
-    name: 'Durable Rope Tug Toy',
-    description: 'Heavy-duty rope toy perfect for tug-of-war. Made from natural cotton fibers, safe for your dogs teeth and gums.',
+    name: 'GetPawsy Durable Rope Tug Toy – Natural Cotton Fibers',
+    description: 'Heavy-duty rope toy suitable for tug-of-war play. Made from natural cotton fibers that are gentle on teeth and gums.',
     price: 14.99,
     image: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?w=600&q=80',
     images: [
@@ -75,8 +75,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-004',
-    name: 'Organic Chicken Training Treats',
-    description: 'All-natural, organic chicken treats perfect for training. Low calorie, high protein, and irresistible to dogs.',
+    name: 'GetPawsy Organic Chicken Training Treats – Low Calorie',
+    description: 'All-natural organic chicken treats designed for training sessions. Low calorie and high protein, made with simple ingredients dogs love.',
     price: 18.99,
     comparePrice: 22.99,
     image: 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=600&q=80',
@@ -92,8 +92,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-005',
-    name: 'Adjustable LED Safety Collar',
-    description: 'Keep your pet visible at night with this rechargeable LED collar. Multiple light modes and adjustable sizing.',
+    name: 'GetPawsy Adjustable LED Safety Collar – Rechargeable',
+    description: 'Rechargeable LED collar designed to improve visibility during nighttime walks. Features multiple light modes and adjustable sizing for a comfortable fit.',
     price: 29.99,
     image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&q=80',
     images: [
@@ -107,8 +107,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-006',
-    name: 'Calming Hemp Oil for Pets',
-    description: 'Natural hemp oil to help reduce anxiety and promote relaxation in dogs and cats. Vet-approved formula.',
+    name: 'GetPawsy Calming Hemp Oil for Pets – Vet-Approved Formula',
+    description: 'Natural hemp oil formulated to help support relaxation in dogs and cats. Vet-approved formula designed to promote calmness during stressful situations.',
     price: 34.99,
     image: 'https://images.unsplash.com/photo-1512438248247-f0f2a5a8b7f0?w=600&q=80',
     images: [
@@ -122,8 +122,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-007',
-    name: 'Self-Cleaning Cat Litter Box',
-    description: 'Automatic self-cleaning litter box with odor control. Works with most clumping litters. Quiet motor operation.',
+    name: 'GetPawsy Self-Cleaning Cat Litter Box – Automatic Odor Control',
+    description: 'Automatic self-cleaning litter box with built-in odor control system. Works with most clumping litters and features a quiet motor for minimal disruption.',
     price: 149.99,
     comparePrice: 189.99,
     image: 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?w=600&q=80',
@@ -139,8 +139,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-008',
-    name: 'Retractable Dog Leash - 26ft',
-    description: 'Premium retractable leash with ergonomic handle and one-button brake system. Perfect for walks and outdoor adventures.',
+    name: 'GetPawsy Retractable Dog Leash – 26ft Heavy Duty',
+    description: 'Retractable leash with ergonomic handle and one-button brake system. Extends up to 26 feet for comfortable walks and outdoor use.',
     price: 32.99,
     image: 'https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=600&q=80',
     images: [

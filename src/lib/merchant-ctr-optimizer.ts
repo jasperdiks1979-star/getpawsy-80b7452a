@@ -97,19 +97,19 @@ export function generateTitleVariants(
       variant: 'A',
       format: 'Brand + Primary Keyword + Feature + Variant',
       example: `${brand} ${primaryKeyword} – ${feature}${variant ? ` | ${variant}` : ''}`,
-      strategy: 'Brand recognition + keyword relevance. Best for branded search queries.',
+      strategy: 'Brand-first for trust and recognition. Clear product function in title.',
     },
     {
       variant: 'B',
-      format: 'Primary Problem + Solution + Feature',
-      example: `${primaryKeyword} for ${category} – ${feature}${variant ? `, ${variant}` : ''}`,
-      strategy: 'Problem-solution framing. Best for non-branded, high-intent queries.',
+      format: 'Brand + Category Solution + Feature',
+      example: `${brand} ${primaryKeyword} for ${category} – ${feature}${variant ? `, ${variant}` : ''}`,
+      strategy: 'Brand + category context. Factual, no keyword stuffing.',
     },
     {
       variant: 'C',
-      format: 'Emotional Hook + Category + Feature',
-      example: `Best ${primaryKeyword} for Your ${category} – ${feature}${variant ? ` (${variant})` : ''}`,
-      strategy: 'Emotional trigger + category context. Best for broad match and discovery.',
+      format: 'Brand + Keyword + Use Case',
+      example: `${brand} ${primaryKeyword} – ${feature}${variant ? ` (${variant})` : ''} | Pet Supplies`,
+      strategy: 'Brand-first with category suffix for broad discovery.',
     },
   ];
 }
