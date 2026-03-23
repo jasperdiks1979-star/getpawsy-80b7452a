@@ -4,6 +4,7 @@ import { Check, Star, Truck, RotateCcw, ShieldCheck, Home } from 'lucide-react';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
+import { PinThisButton } from '@/components/seo/PinThisButton';
 
 const Accordion = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.Accordion })));
 const AccordionContent = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionContent })));
