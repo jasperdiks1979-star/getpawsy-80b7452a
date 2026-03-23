@@ -2,7 +2,9 @@ import { lazy, Suspense, Component, ReactNode, useState, useEffect } from "react
 // ⚡ Toaster/Sonner deferred — not needed for first paint
 const Toaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
 const Sonner = lazy(() => import("@/components/ui/sonner").then(m => ({ default: m.Toaster })));
-import { TooltipProvider } from "@/components/ui/tooltip";
+// ⚡ TooltipProvider lazy-loaded — Radix tooltip is never needed for first paint
+const TooltipProvider = lazy(() => import("@/components/ui/tooltip").then(m => ({ default: m.TooltipProvider })));
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
