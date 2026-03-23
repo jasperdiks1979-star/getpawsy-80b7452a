@@ -209,8 +209,8 @@ const Index = () => {
                   <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1.5">No Scooping Ever</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">Fully automatic self-cleaning cycle handles everything.</p>
+              <h3 className="text-sm font-semibold text-foreground mb-1.5">Reduces Daily Scooping</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Automatic self-cleaning cycle reduces daily litter maintenance.</p>
             </div>
             <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
