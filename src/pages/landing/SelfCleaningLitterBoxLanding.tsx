@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Check, Star, Truck, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Check, Star, Truck, RotateCcw, ShieldCheck, Flame } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import {
   Accordion,
@@ -17,14 +17,6 @@ const REAL_PRODUCT = {
   mechanism: 'https://cf.cjdropshipping.com/c887b0aa-7ff1-4aad-9fbf-903f3eb0a2f6.png',
   angle: 'https://cf.cjdropshipping.com/e4454bbe-8555-4938-97e7-9c25acf0bb2a.png',
   detail: 'https://cf.cjdropshipping.com/da3626ae-df14-47d8-b202-1e4f9c1f7a50.png',
-};
-
-const LP_IMAGES = {
-  hero: REAL_PRODUCT.main,           // Real product — hero
-  happyCat: '/lp/litter-box-happy-cat.webp', // Lifestyle OK for desire section
-  solution: REAL_PRODUCT.mechanism,  // Real product — how it works
-  scrollStopper: REAL_PRODUCT.angle, // Real product — scroll stopper
-  trust: REAL_PRODUCT.detail,        // Real product — lower CTA
 };
 
 const PAIN_POINTS = [
@@ -57,7 +49,7 @@ const FAQS = [
 const CtaButton = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <Link
     to={PRODUCT_LINK}
-    className={`inline-block rounded-full bg-[hsl(24,95%,53%)] px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200 text-center ${className}`}
+    className={`inline-block rounded-full bg-[hsl(24,95%,53%)] px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-[hsl(24,95%,47%)] hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-center animate-[pulse_3s_ease-in-out_infinite] hover:animate-none ${className}`}
   >
     {children}
   </Link>
@@ -96,48 +88,41 @@ export default function SelfCleaningLitterBoxLanding() {
 
       <div className="min-h-screen bg-[#FDFAF6]">
         {/* ─── HERO ─── */}
-        <section className="px-4 pt-10 pb-12 max-w-xl mx-auto text-center">
+        <section className="px-4 pt-10 pb-8 max-w-xl mx-auto text-center">
           <img
-            src={LP_IMAGES.hero}
-            alt="Self-cleaning litter box in a cozy living room with cat inside"
-            className="w-full max-w-md mx-auto rounded-2xl shadow-lg mb-8"
+            src={REAL_PRODUCT.main}
+            alt="60L automatic self-cleaning cat litter box — smart app control"
+            className="w-full max-w-sm mx-auto rounded-2xl mb-8 bg-white"
             loading="eager"
             fetchPriority="high"
             width={1200}
             height={1200}
-            style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+            style={{ aspectRatio: '1/1', objectFit: 'contain' }}
           />
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#1a1a1a] leading-tight mb-4">
-            Self-Cleaning Litter Box —<br />No Scooping Ever
+            Stop Scooping Your Cat's Litter Forever 😺
           </h1>
           <p className="text-base md:text-lg text-[#555] mb-6 max-w-md mx-auto">
-            Stop cleaning your cat's litter every day. This smart litter box does it for you.
+            No smell. No mess. Fully automatic cleaning — every single day.
           </p>
-          <CtaButton>Shop Now</CtaButton>
+          <CtaButton>Get Yours Now</CtaButton>
           <p className="mt-4 text-xs text-[#888]">
             Free US shipping over $35 • 30-day returns
           </p>
         </section>
 
-        {/* ─── EMOTIONAL DESIRE (NEW) ─── */}
-        <section className="px-4 py-12">
-          <div className="max-w-xl mx-auto text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[hsl(24,95%,53%)] mb-3">Trending</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1a1a1a] mb-4">
-              Cat owners are switching fast...
-            </h2>
-            <p className="text-[#555] mb-8 max-w-md mx-auto">
-              A clean home, a happy cat, and zero effort. That's what thousands of cat owners now enjoy every single day.
+        {/* ─── URGENCY BANNER ─── */}
+        <section className="px-4 pb-6">
+          <div className="max-w-xl mx-auto">
+            <div className="flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-center">
+              <Flame className="w-4 h-4 text-orange-500 shrink-0 animate-pulse" />
+              <p className="text-sm font-semibold text-[#333]">
+                Limited stock available — selling out fast in the US
+              </p>
+            </div>
+            <p className="text-xs text-center text-[#999] mt-2">
+              Thousands of cat owners are switching this month
             </p>
-            <img
-              src={LP_IMAGES.happyCat}
-              alt="Happy relaxed cat lounging in a clean modern home"
-              className="w-full max-w-md mx-auto rounded-2xl shadow-md"
-              loading="lazy"
-              width={1200}
-              height={768}
-              style={{ aspectRatio: '16/10', objectFit: 'cover' }}
-            />
           </div>
         </section>
 
@@ -168,28 +153,28 @@ export default function SelfCleaningLitterBoxLanding() {
               After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment. No scooping, no smell, no effort.
             </p>
             <img
-              src={LP_IMAGES.solution}
-              alt="Modern self-cleaning litter box open and clean in a bright home"
-              className="w-full max-w-sm mx-auto rounded-2xl shadow-sm"
+              src={REAL_PRODUCT.mechanism}
+              alt="Self-cleaning litter box internal mechanism and cleaning system"
+              className="w-full max-w-sm mx-auto rounded-2xl bg-white"
               loading="lazy"
               width={1200}
               height={960}
-              style={{ aspectRatio: '5/4', objectFit: 'cover' }}
+              style={{ aspectRatio: '5/4', objectFit: 'contain' }}
             />
           </div>
         </section>
 
-        {/* ─── SCROLL STOPPER (NEW) ─── */}
+        {/* ─── SCROLL STOPPER ─── */}
         <section className="px-4 py-10">
           <div className="max-w-xl mx-auto text-center">
             <img
-              src={LP_IMAGES.scrollStopper}
-              alt="Cat stepping into a self-cleaning litter box in a warm home"
-              className="w-full max-w-md mx-auto rounded-2xl shadow-lg mb-6"
+              src={REAL_PRODUCT.angle}
+              alt="Self-cleaning litter box — alternate angle showing full product"
+              className="w-full max-w-md mx-auto rounded-2xl mb-6 bg-white"
               loading="lazy"
               width={1200}
               height={800}
-              style={{ aspectRatio: '3/2', objectFit: 'cover' }}
+              style={{ aspectRatio: '3/2', objectFit: 'contain' }}
             />
             <p className="text-2xl md:text-3xl font-extrabold text-[#1a1a1a]">
               Never scoop again.
@@ -210,7 +195,7 @@ export default function SelfCleaningLitterBoxLanding() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <CtaButton>Shop Now</CtaButton>
+              <CtaButton>Get Yours Now</CtaButton>
             </div>
           </div>
         </section>
@@ -228,20 +213,36 @@ export default function SelfCleaningLitterBoxLanding() {
                 </div>
               ))}
             </div>
+            <div className="text-center mt-8">
+              <CtaButton>Get Yours Now</CtaButton>
+            </div>
           </div>
         </section>
 
-        {/* ─── PRODUCT + CTA (trust lifestyle image) ─── */}
+        {/* ─── SOCIAL MOMENTUM ─── */}
+        <section className="px-4 py-10">
+          <div className="max-w-xl mx-auto text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[hsl(24,95%,53%)] mb-3">Trending</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1a1a1a] mb-4">
+              Join 10,000+ cat owners who stopped scooping forever
+            </h2>
+            <p className="text-[#555] max-w-md mx-auto">
+              A clean home, a happy cat, and zero effort. That's what thousands of cat owners now enjoy every single day.
+            </p>
+          </div>
+        </section>
+
+        {/* ─── PRODUCT + CTA ─── */}
         <section className="bg-white px-4 py-12">
           <div className="max-w-xl mx-auto text-center">
             <img
-              src={LP_IMAGES.trust}
-              alt="Woman relaxing on sofa with happy cat and self-cleaning litter box in background"
-              className="w-full max-w-md mx-auto rounded-2xl shadow-md mb-6"
+              src={REAL_PRODUCT.detail}
+              alt="Self-cleaning litter box product detail view"
+              className="w-full max-w-md mx-auto rounded-2xl mb-6 bg-white"
               loading="lazy"
               width={1200}
               height={800}
-              style={{ aspectRatio: '3/2', objectFit: 'cover' }}
+              style={{ aspectRatio: '3/2', objectFit: 'contain' }}
             />
             <CtaButton className="text-lg px-10 py-5">Get Yours Now</CtaButton>
           </div>
@@ -249,17 +250,21 @@ export default function SelfCleaningLitterBoxLanding() {
 
         {/* ─── TRUST ─── */}
         <section className="px-4 py-10">
-          <div className="max-w-xl mx-auto flex flex-wrap justify-center gap-6">
-            {[
-              { icon: RotateCcw, label: '30-Day Returns' },
-              { icon: ShieldCheck, label: 'Secure Checkout' },
-              { icon: Truck, label: 'Fast US Shipping' },
-            ].map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-2 text-sm text-[#555]">
-                <Icon className="w-5 h-5 text-[hsl(24,95%,53%)]" />
-                <span className="font-medium">{label}</span>
-              </div>
-            ))}
+          <div className="max-w-xl mx-auto">
+            <div className="flex justify-center gap-8">
+              {[
+                { icon: RotateCcw, label: '30-Day Returns' },
+                { icon: ShieldCheck, label: 'Secure Checkout' },
+                { icon: Truck, label: 'Fast US Shipping' },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="flex flex-col items-center gap-1.5 text-center">
+                  <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-[hsl(24,95%,53%)]" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#444]">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -300,7 +305,7 @@ export default function SelfCleaningLitterBoxLanding() {
               to={PRODUCT_LINK}
               className="rounded-full px-6 py-2.5 text-sm font-bold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all"
             >
-              Shop Now
+              Buy Now — Free US Shipping
             </Link>
           </div>
         </div>
