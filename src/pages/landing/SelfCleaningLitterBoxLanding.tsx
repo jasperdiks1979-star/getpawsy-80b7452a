@@ -172,21 +172,18 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── 3. OFFER BLOCK ─── */}
+        {/* ─── 3. PRODUCT HIGHLIGHTS ─── */}
         <section className="px-4 pb-6">
           <div className="max-w-xl mx-auto">
-            <div className="bg-foreground text-background rounded-2xl px-6 py-6 text-center">
-              <p className="text-2xl md:text-3xl font-extrabold mb-2">
-                50% OFF Today Only
+            <div className="bg-card border border-border/50 rounded-2xl px-6 py-5 text-center">
+              <p className="text-lg font-bold text-foreground mb-2">
+                60L Automatic Self-Cleaning Litter Box
               </p>
-              <div className="flex flex-col items-center gap-1 text-sm">
-                <span>🚚 Free US Shipping</span>
-                <span>🛡️ 30-Day Risk-Free Trial</span>
+              <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
+                <span>Smart app control · Infrared safety sensors</span>
+                <span>Suitable for multiple cats · Built-in deodorizer</span>
               </div>
-              <div className="mt-3 inline-flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-4 py-1.5 text-xs font-bold">
-                <Clock className="w-3.5 h-3.5" />
-                ⚠️ Only 12 units left in stock
-              </div>
+              <p className="mt-3 text-xs text-muted-foreground">Popular choice among cat owners</p>
             </div>
           </div>
         </section>
