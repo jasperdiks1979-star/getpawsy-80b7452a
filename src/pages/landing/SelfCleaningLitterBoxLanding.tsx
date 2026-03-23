@@ -126,10 +126,10 @@ export default function SelfCleaningLitterBoxLanding() {
             style={{ aspectRatio: '1/1', objectFit: 'contain' }}
           />
           <h1 className="text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-3">
-            Stop Scooping Your Cat's Litter 😺
+            Automatic Self-Cleaning Litter Box
           </h1>
           <p className="text-base md:text-lg text-muted-foreground mb-4 max-w-md mx-auto">
-            Helps reduce odor. No mess. Automatically cleans after every use.
+            Helps control odor and reduces daily litter cleaning effort. 60L capacity with smart app control.
           </p>
 
           {/* Hero trust signals */}
@@ -140,14 +140,12 @@ export default function SelfCleaningLitterBoxLanding() {
                   <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <span className="font-semibold text-foreground">4.8/5</span>
-              <span>from 2,100+ cat owners</span>
+              <span className="text-muted-foreground">Highly rated by customers</span>
             </div>
-            <p className="text-xs">🚚 Free US shipping · 30-day returns</p>
-            <p className="text-xs font-semibold text-primary">🔥 Limited stock available</p>
+            <p className="text-xs">🚚 Free US shipping on orders $35+ · 30-day returns</p>
           </div>
 
-          <CtaButton>Stop Scooping Forever</CtaButton>
+          <CtaButton>View Product Details</CtaButton>
           <MicroTrust />
           <p className="text-[10px] text-muted-foreground/60 mt-3">
             *Results may vary depending on usage and environment
