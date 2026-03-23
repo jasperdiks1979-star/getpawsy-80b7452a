@@ -2,9 +2,10 @@ import { Layout } from '@/components/layout/Layout';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Shield, Mail } from 'lucide-react';
+import { SITE_LAST_UPDATED } from '@/lib/shipping-constants';
 
 const PrivacyPolicy = () => {
-  const lastUpdated = 'January 16, 2026';
+  const lastUpdated = SITE_LAST_UPDATED;
 
   return (
     <Layout>

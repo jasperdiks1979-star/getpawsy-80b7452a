@@ -7,10 +7,11 @@ import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
   US_FULFILLMENT_NOTE,
+  SITE_LAST_UPDATED,
 } from '@/lib/shipping-constants';
 
 const TermsOfService = () => {
-  const lastUpdated = 'January 16, 2026';
+  const lastUpdated = SITE_LAST_UPDATED;
 
   return (
     <Layout>
