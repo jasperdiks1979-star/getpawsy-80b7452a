@@ -193,6 +193,28 @@ async function main() {
     console.log(`[sitemaps] Guides/clusters from JSON fallback: ${guideEntriesRaw.length}`);
   }
 
+  // ── BLOG POSTS ──
+  let blogRaw = await fetchAllPages(
+    "blog_posts",
+    "select=slug,updated_at,published_at&is_published=eq.true&is_noindexed=eq.false&slug=not.is.null&order=updated_at.desc"
+  );
+  let blogEntries = [];
+  if (blogRaw && blogRaw.length > 0) {
+    const seenBlogs = new Set();
+    blogEntries = blogRaw
+      .filter((b) => {
+        const blogPath = `/blog/${b.slug}`;
+        if (!b.slug || isExcluded(blogPath) || seenBlogs.has(blogPath)) return false;
+        seenBlogs.add(blogPath);
+        return true;
+      })
+      .map((b) => ({ path: `/blog/${b.slug}`, lastmod: b.updated_at || b.published_at || today }));
+    console.log(`[sitemaps] Blog posts from REST: ${blogEntries.length}`);
+  } else {
+    blogEntries = safeRead(joinRoot("data", "blog.json"), []).filter((e) => e && e.path);
+    console.log(`[sitemaps] Blog posts from JSON fallback: ${blogEntries.length}`);
+  }
+
   // ── Sort alphabetically ──
   products.sort((a, b) => a.path.localeCompare(b.path));
   collections.sort((a, b) => a.path.localeCompare(b.path));
