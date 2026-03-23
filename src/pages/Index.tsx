@@ -50,6 +50,17 @@ const GUIDES = [
   { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes', desc: 'Automatic litter box guide with odor-control and safety considerations.' },
 ] as const;
 
+const LITTER_BOX_GUIDES = [
+  { path: '/guides/best-self-cleaning-litter-box-2026', title: 'Best Self-Cleaning Litter Box 2026', desc: 'Top automatic picks tested and ranked for odor control and reliability.' },
+  { path: '/guides/how-does-self-cleaning-litter-box-work', title: 'How Self-Cleaning Litter Boxes Work', desc: 'Rake, rotating, and sifting mechanisms explained with safety features.' },
+  { path: '/guides/self-cleaning-litter-box-pros-cons', title: 'Self-Cleaning Litter Box: Pros & Cons', desc: 'Honest cost, maintenance, and cat acceptance breakdown.' },
+  { path: '/guides/litter-box-odor-control-solutions', title: 'Litter Box Odor Control Solutions', desc: 'Proven methods to eliminate cat litter smell, ranked by effectiveness.' },
+  { path: '/guides/best-litter-box-for-multiple-cats', title: 'Best Litter Box for Multiple Cats', desc: 'Multi-cat tested picks with proper quantity and placement rules.' },
+  { path: '/guides/automatic-vs-manual-litter-box', title: 'Automatic vs Manual Litter Box', desc: 'Real cost comparison and convenience trade-offs over 3 years.' },
+  { path: '/guides/how-to-train-cat-to-use-automatic-litter-box', title: 'Train Your Cat to Use Automatic Box', desc: '14-day transition plan with tips for nervous cats.' },
+  { path: '/guides/is-self-cleaning-litter-box-safe', title: 'Is a Self-Cleaning Litter Box Safe?', desc: 'Safety sensors, injury risks, and what features to look for.' },
+] as const;
+
 const HOW_IT_WORKS_STEPS = [
   { step: '1', title: 'Browse & Choose', desc: 'Find the right product for your pet\'s specific needs — from litter solutions to travel gear.' },
   { step: '2', title: 'Fast US Delivery', desc: 'Every order ships with tracking. Free shipping on orders over $35. Delivered in 3–7 business days.' },
