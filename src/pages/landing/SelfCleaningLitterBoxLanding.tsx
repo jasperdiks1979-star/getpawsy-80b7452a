@@ -61,7 +61,7 @@ const MicroTrust = () => (
 const CtaButton = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <Link
     to={PRODUCT_LINK}
-    className={`inline-block rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-center animate-[pulse_5s_ease-in-out_infinite] hover:animate-none ${className}`}
+    className={`inline-block rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-center ${className}`}
   >
     {children}
   </Link>
