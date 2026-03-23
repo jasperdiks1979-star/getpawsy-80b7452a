@@ -122,8 +122,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-007',
-    name: 'GetPawsy Self-Cleaning Cat Litter Box – Automatic Odor Control',
-    description: 'Automatic self-cleaning litter box with built-in odor control system. Works with most clumping litters and features a quiet motor for minimal disruption.',
+    name: 'GetPawsy Self-Cleaning Cat Litter Box – Automatic Cleaning System',
+    description: 'Automatic self-cleaning litter box with built-in deodorizer designed to help control odor. Works with clumping clay litter and features a quiet motor (under 50 dB).',
     price: 149.99,
     comparePrice: 189.99,
     image: 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?w=600&q=80',

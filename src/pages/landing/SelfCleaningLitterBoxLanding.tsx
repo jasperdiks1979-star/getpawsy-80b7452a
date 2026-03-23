@@ -1,10 +1,16 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Check, Star, Truck, RotateCcw, ShieldCheck, Home } from 'lucide-react';
+import { Check, Star, Truck, RotateCcw, ShieldCheck, Home, Mail, Package, Clock, Info } from 'lucide-react';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import logoIcon from '@/assets/logo-getpawsy.png';
-import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
-import { PinThisButton } from '@/components/seo/PinThisButton';
+import {
+  SUPPORT_EMAIL,
+  FREE_SHIPPING_THRESHOLD,
+  DELIVERY_TIME_STANDARD,
+  PROCESSING_TIME,
+  RETURN_WINDOW_DAYS,
+  FLAT_SHIPPING_RATE,
+} from '@/lib/shipping-constants';
 
 const Accordion = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.Accordion })));
 const AccordionContent = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionContent })));
@@ -20,42 +26,47 @@ const REAL_PRODUCT = {
   detail: 'https://cf.cjdropshipping.com/da3626ae-df14-47d8-b202-1e4f9c1f7a50.png',
 };
 
-const PAIN_POINTS = [
-  'Unpleasant odor that lingers in your home',
-  'Daily scooping you dread',
-  'Litter mess all around the box',
+const SPECS = [
+  { label: 'Capacity', value: '60 Liters' },
+  { label: 'Suitable For', value: 'Cats 5 lbs and up' },
+  { label: 'Noise Level', value: 'Under 50 dB' },
+  { label: 'Litter Type', value: 'Clumping clay litter' },
+  { label: 'Power', value: 'USB-C adapter (included)' },
+  { label: 'App Control', value: 'iOS & Android' },
+  { label: 'Safety', value: 'Infrared sensors pause cycle when cat is inside' },
+  { label: 'Multi-Cat', value: 'Yes — designed for multi-cat households' },
 ];
 
 const BENEFITS = [
-  'Helps control odor — built-in deodorizer',
+  'Helps control odor with built-in deodorizer',
   'Reduces daily litter cleaning effort',
-  'Designed for multi-cat homes',
-  'Automatic cleaning system saves time',
+  'Designed for multi-cat households',
+  'Automatic cleaning cycle after each use',
 ];
 
 const REVIEWS = [
-  { text: 'I was skeptical… but after 1 day I was sold. Highly recommend for cat owners.', name: 'Amanda L.', location: 'Texas, USA', featured: true },
-  { text: 'This changed my daily routine. No more scooping at all.', name: 'Sarah M.', location: 'California, USA' },
+  { text: 'After a week of use, the odor in our home has noticeably improved. Setup was straightforward.', name: 'Amanda L.', location: 'Texas, USA', featured: true },
+  { text: 'Works well for our two cats. The app notifications are handy to track usage.', name: 'Sarah M.', location: 'California, USA' },
   { text: 'Our home smells much fresher since we started using this.', name: 'David K.', location: 'Florida, USA' },
-  { text: 'Both our cats adapted in one day. Great purchase.', name: 'Jessica R.', location: 'New York, USA' },
-  { text: 'I was skeptical but it really works. So quiet too.', name: 'Michael T.', location: 'Ohio, USA' },
+  { text: 'Both our cats adapted within a few days. Runs quietly at night.', name: 'Jessica R.', location: 'New York, USA' },
 ];
 
 const FAQS = [
-  { q: 'Does it help with odor?', a: 'Yes. Waste is automatically sealed after each use with a built-in deodorizer designed to help neutralize odors.' },
-  { q: 'Is it safe for cats?', a: 'Yes. Infrared sensors detect when your cat is inside and pause the cleaning cycle until they leave. We recommend it for cats over 5 lbs.' },
-  { q: 'How often do I need to empty it?', a: 'Every few days depending on use. The sealed waste compartment holds much more than a traditional box — you only need a full litter change every 2–3 weeks.' },
-  { q: 'Does it work for multiple cats?', a: 'Yes. The 60L capacity is designed for multi-cat households with automatic cleaning after every use.' },
-  { q: 'How loud is the cleaning cycle?', a: 'Whisper-quiet at under 50 dB. Most cats are not disturbed, and it won\'t wake you at night.' },
-  { q: 'What type of litter should I use?', a: 'Clumping clay litter works best with the self-cleaning system. Avoid crystal or non-clumping litter.' },
-  { q: 'What if my cat doesn\'t like it?', a: 'Most cats adapt within 1–3 days. If not, our 30-day return policy means you can send it back for a full refund.' },
+  { q: 'Does it help with odor?', a: 'The built-in deodorizer is designed to help neutralize odors after each automatic cleaning cycle. Results may vary depending on litter type and environment.' },
+  { q: 'Is it safe for cats?', a: 'Yes. Infrared sensors detect when your cat is inside and pause the cleaning cycle until they leave. Recommended for cats over 5 lbs.' },
+  { q: 'How often do I need to empty the waste compartment?', a: 'Typically every few days depending on usage. The sealed waste compartment holds more than a traditional litter box.' },
+  { q: 'Does it work for multiple cats?', a: 'Yes. The 60L capacity is designed for multi-cat households with automatic cleaning after each use.' },
+  { q: 'How loud is the cleaning cycle?', a: 'The motor operates at under 50 dB, which is comparable to a quiet conversation.' },
+  { q: 'What type of litter should I use?', a: 'Clumping clay litter works with the self-cleaning system. Avoid crystal or non-clumping litter.' },
+  { q: 'What is your return policy?', a: `We offer a ${RETURN_WINDOW_DAYS}-day return policy. If you're not satisfied, contact ${SUPPORT_EMAIL} with your order number. Items must be unused and in original packaging. Refund issued to original payment method within 5 business days.` },
+  { q: 'How long does shipping take?', a: `Processing takes ${PROCESSING_TIME}. Delivery to the US takes ${DELIVERY_TIME_STANDARD}. Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for $${FLAT_SHIPPING_RATE.toFixed(2)}.` },
 ];
 
-const MicroTrust = () => (
-  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-4 text-xs text-muted-foreground">
-    <span>✔ 30-Day Returns</span>
-    <span>✔ Fast US Shipping</span>
-    <span>✔ Secure Checkout</span>
+const StarRating = () => (
+  <div className="flex gap-0.5">
+    {[...Array(5)].map((_, i) => (
+      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+    ))}
   </div>
 );
 
@@ -66,14 +77,6 @@ const CtaButton = ({ children, className = '' }: { children: React.ReactNode; cl
   >
     {children}
   </Link>
-);
-
-const StarRating = () => (
-  <div className="flex gap-0.5">
-    {[...Array(5)].map((_, i) => (
-      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-    ))}
-  </div>
 );
 
 export default function SelfCleaningLitterBoxLanding() {
@@ -93,8 +96,8 @@ export default function SelfCleaningLitterBoxLanding() {
   return (
     <>
       <Helmet>
-        <title>Best Self Cleaning Litter Box (2026) – No Smell Solution | GetPawsy</title>
-        <meta name="description" content="Discover the best self-cleaning litter box for 2026. Automatic cleaning, odor control, multi-cat ready. Free US shipping at GetPawsy." />
+        <title>Automatic Self-Cleaning Cat Litter Box – 60L, App Control | GetPawsy</title>
+        <meta name="description" content="60L automatic self-cleaning cat litter box with smart app control, infrared safety sensors, and built-in deodorizer. Free US shipping over $35. 30-day returns." />
         <meta name="robots" content="noindex, follow" />
         <link rel="canonical" href={`https://getpawsy.pet${PRODUCT_LINK}`} />
         <script type="application/ld+json">{JSON.stringify({
@@ -103,16 +106,13 @@ export default function SelfCleaningLitterBoxLanding() {
           "mainEntity": FAQS.map(faq => ({
             "@type": "Question",
             "name": faq.q,
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": faq.a,
-            }
+            "acceptedAnswer": { "@type": "Answer", "text": faq.a },
           }))
         })}</script>
       </Helmet>
 
-      <div className="min-h-screen bg-[#FDFAF6]">
-        {/* ─── MINIMAL HEADER ─── */}
+      <div className="min-h-screen bg-background">
+        {/* ─── HEADER ─── */}
         <header className="flex items-center justify-between px-4 py-3 max-w-xl mx-auto">
           <Link to="/" className="inline-flex items-center gap-2">
             <img src={logoIcon} alt="GetPawsy" className="w-8 h-8 rounded-lg" />
@@ -120,216 +120,231 @@ export default function SelfCleaningLitterBoxLanding() {
               Get<span className="text-primary">Pawsy</span>
             </span>
           </Link>
-          <Link to="/" className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-            <Home className="w-3.5 h-3.5" />
-            Home
-          </Link>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <Link to="/contact" className="hover:text-primary transition-colors flex items-center gap-1">
+              <Mail className="w-3.5 h-3.5" /> Contact
+            </Link>
+            <Link to="/" className="hover:text-primary transition-colors flex items-center gap-1">
+              <Home className="w-3.5 h-3.5" /> Home
+            </Link>
+          </div>
         </header>
 
-        {/* ─── 1. HERO ─── */}
-        <section className="px-4 pt-6 pb-4 max-w-xl mx-auto text-center">
+        {/* ─── SHIPPING & CONTACT BAR (above the fold) ─── */}
+        <div className="px-4 mb-4">
+          <div className="max-w-xl mx-auto bg-muted/50 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              <span>Free shipping ${FREE_SHIPPING_THRESHOLD}+</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              <span>Delivery: {DELIVERY_TIME_STANDARD}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <RotateCcw className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              <span>{RETURN_WINDOW_DAYS}-day returns</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-primary transition-colors">{SUPPORT_EMAIL}</a>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── 1. HERO (Product Page Style) ─── */}
+        <section className="px-4 pt-2 pb-6 max-w-xl mx-auto">
+          {/* Product Image */}
           <img
             src={REAL_PRODUCT.main}
-            alt="60L automatic self-cleaning cat litter box — smart app control"
-            className="w-full max-w-sm mx-auto rounded-2xl mb-6 bg-white"
+            alt="GetPawsy 60L automatic self-cleaning cat litter box with app control"
+            className="w-full max-w-sm mx-auto rounded-2xl mb-5 bg-white"
             loading="eager"
             fetchPriority="high"
             width={1200}
             height={1200}
             style={{ aspectRatio: '1/1', objectFit: 'contain' }}
           />
-          <div className="flex justify-center mb-4">
-            <PinThisButton
-              imageUrl={REAL_PRODUCT.main}
-              pageUrl="/lp/self-cleaning-litter-box"
-              description="Automatic self-cleaning cat litter box — helps control odor, reduces daily scooping. Smart app control for multi-cat homes. Free US shipping at GetPawsy."
-            />
+
+          {/* Thumbnail gallery */}
+          <div className="flex justify-center gap-2 mb-5">
+            {[REAL_PRODUCT.main, REAL_PRODUCT.mechanism, REAL_PRODUCT.angle, REAL_PRODUCT.detail].map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt={`Product view ${i + 1}`}
+                className="w-14 h-14 rounded-lg border border-border/50 bg-white object-contain"
+                loading="lazy"
+              />
+            ))}
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-3">
-            Automatic Self-Cleaning Litter Box
+
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight mb-2">
+            GetPawsy Automatic Self-Cleaning Cat Litter Box – 60L
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground mb-4 max-w-md mx-auto">
-            Helps control odor and reduces daily litter cleaning effort. 60L capacity with smart app control.
+          <p className="text-sm text-muted-foreground mb-3">
+            Automatic cleaning system with smart app control, infrared safety sensors, and built-in deodorizer. Designed for multi-cat households.
           </p>
 
-          {/* Hero trust signals */}
-          <div className="flex flex-col items-center gap-1.5 mb-5 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <span className="text-muted-foreground">Highly rated by customers</span>
-            </div>
-            <p className="text-xs">🚚 Free US shipping on orders $35+ · 30-day returns</p>
+          {/* Rating */}
+          <div className="flex items-center gap-2 mb-4">
+            <StarRating />
+            <span className="text-xs text-muted-foreground">Rated by customers</span>
           </div>
 
-          <CtaButton>View Product Details</CtaButton>
-          <MicroTrust />
-          <p className="text-[10px] text-muted-foreground/60 mt-3">
-            *Results may vary depending on usage and environment
-          </p>
+          <CtaButton>View Full Product & Pricing</CtaButton>
         </section>
 
-        {/* ─── 2. TRUST BAR ─── */}
-        <section className="px-4 pb-4">
+        {/* ─── 2. PRODUCT SPECIFICATIONS ─── */}
+        <section className="px-4 py-8 bg-card">
           <div className="max-w-xl mx-auto">
-            <div className="flex justify-center gap-8 py-4">
-              {[
-                { icon: RotateCcw, label: '30-Day Returns' },
-                { icon: ShieldCheck, label: 'Secure Checkout' },
-                { icon: Truck, label: 'Free Shipping $35+' },
-              ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col items-center gap-1.5 text-center">
-                  <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-muted-foreground">{label}</span>
+            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <Info className="w-5 h-5 text-primary" />
+              Product Specifications
+            </h2>
+            <div className="border border-border rounded-xl overflow-hidden">
+              {SPECS.map((spec, i) => (
+                <div key={spec.label} className={`flex justify-between px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}>
+                  <span className="font-medium text-foreground">{spec.label}</span>
+                  <span className="text-muted-foreground text-right">{spec.value}</span>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ─── 3. PRODUCT HIGHLIGHTS ─── */}
-        <section className="px-4 pb-6">
-          <div className="max-w-xl mx-auto">
-            <div className="bg-card border border-border/50 rounded-2xl px-6 py-5 text-center">
-              <p className="text-lg font-bold text-foreground mb-2">
-                60L Automatic Self-Cleaning Litter Box
-              </p>
-              <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
-                <span>Smart app control · Infrared safety sensors</span>
-                <span>Suitable for multiple cats · Built-in deodorizer</span>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">Popular choice among cat owners</p>
-            </div>
-          </div>
-        </section>
+        {/* ─── 3. SHIPPING, RETURNS & CONTACT ─── */}
+        <section className="px-4 py-8">
+          <div className="max-w-xl mx-auto grid gap-4">
+            <h2 className="text-xl font-bold text-foreground">Shipping & Returns</h2>
 
-        {/* ─── 4. PAIN POINTS ─── */}
-        <section className="bg-white px-4 py-10">
-          <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-              Still scooping your cat's litter every day?
-            </h2>
-            <div className="grid gap-3 max-w-sm mx-auto">
-              {PAIN_POINTS.map((point) => (
-                <div key={point} className="flex items-center gap-3 bg-red-50 rounded-xl px-5 py-3.5 text-left">
-                  <span className="text-red-400 text-lg font-bold">✕</span>
-                  <span className="text-sm font-medium text-foreground/80">{point}</span>
+            <div className="bg-muted/40 rounded-xl p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <Clock className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground text-sm">Processing Time</p>
+                  <p className="text-sm text-muted-foreground">{PROCESSING_TIME}</p>
                 </div>
-              ))}
+              </div>
+              <div className="flex items-start gap-3">
+                <Truck className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground text-sm">Delivery Time</p>
+                  <p className="text-sm text-muted-foreground">{DELIVERY_TIME_STANDARD} to the United States</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Package className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground text-sm">Shipping Cost</p>
+                  <p className="text-sm text-muted-foreground">Free over ${FREE_SHIPPING_THRESHOLD} · ${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <RotateCcw className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground text-sm">{RETURN_WINDOW_DAYS}-Day Returns</p>
+                  <p className="text-sm text-muted-foreground">Items must be unused and in original packaging. Refund to original payment method within 5 business days.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Mail className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground text-sm">Contact</p>
+                  <p className="text-sm text-muted-foreground">
+                    <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a> · <Link to="/contact" className="text-primary hover:underline">Contact page</Link>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Link to="/shipping" className="text-primary hover:underline">Shipping Policy</Link>
+              <span className="text-muted-foreground">·</span>
+              <Link to="/returns" className="text-primary hover:underline">Returns Policy</Link>
+              <span className="text-muted-foreground">·</span>
+              <Link to="/contact" className="text-primary hover:underline">Contact Us</Link>
+              <span className="text-muted-foreground">·</span>
+              <Link to="/about" className="text-primary hover:underline">About GetPawsy</Link>
             </div>
           </div>
         </section>
 
-        {/* ─── 5. SOLUTION ─── */}
-        <section className="px-4 py-10">
+        {/* ─── 4. HOW IT WORKS ─── */}
+        <section className="px-4 py-8 bg-card">
           <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Automatic cleaning system
-            </h2>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
-              After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment — helping control odor and reduce mess.
-            </p>
-            <img
-              src={REAL_PRODUCT.mechanism}
-              alt="Self-cleaning litter box internal mechanism and cleaning system"
-              className="w-full max-w-sm mx-auto rounded-2xl bg-white mb-6"
-              loading="lazy"
-              width={1200}
-              height={960}
-              style={{ aspectRatio: '5/4', objectFit: 'contain' }}
-            />
-
-            {/* How It Works */}
-            <h3 className="text-lg font-bold text-foreground mt-6 mb-4">How it works</h3>
-            <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-8">
+            <h2 className="text-xl font-bold text-foreground mb-4">How It Works</h2>
+            <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-6">
               {[
-                { emoji: '🐱', title: 'Your cat enters' },
+                { emoji: '🐱', title: 'Cat enters the box' },
                 { emoji: '📡', title: 'Sensors detect exit' },
-                { emoji: '✅', title: 'Waste auto-sealed' },
+                { emoji: '✅', title: 'Waste sealed automatically' },
               ].map((s, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2 px-3 py-4 bg-card rounded-xl border border-border/50 text-center">
+                <div key={idx} className="flex flex-col items-center gap-2 px-3 py-4 bg-background rounded-xl border border-border/50 text-center">
                   <span className="text-2xl">{s.emoji}</span>
                   <p className="text-xs font-semibold text-foreground leading-tight">{s.title}</p>
                 </div>
               ))}
             </div>
-            <CtaButton>View Product Details</CtaButton>
-            <MicroTrust />
+            <img
+              src={REAL_PRODUCT.mechanism}
+              alt="Internal cleaning mechanism of the GetPawsy self-cleaning litter box"
+              className="w-full max-w-sm mx-auto rounded-2xl bg-white"
+              loading="lazy"
+              width={1200}
+              height={960}
+              style={{ aspectRatio: '5/4', objectFit: 'contain' }}
+            />
           </div>
         </section>
 
-        {/* ─── 6. BENEFITS ─── */}
-        <section className="bg-white px-4 py-10">
+        {/* ─── 5. KEY FEATURES ─── */}
+        <section className="px-4 py-8">
           <div className="max-w-xl mx-auto">
-            <h2 className="text-2xl font-bold text-foreground text-center mb-6">Why Cat Owners Love It</h2>
+            <h2 className="text-xl font-bold text-foreground text-center mb-5">Key Features</h2>
             <div className="grid gap-3 max-w-sm mx-auto">
               {BENEFITS.map((b) => (
-                <div key={b} className="flex items-center gap-3 px-5 py-3.5 bg-green-50 rounded-xl">
-                  <Check className="w-5 h-5 text-green-600 shrink-0" />
-                  <span className="text-sm font-medium text-foreground/80">{b}</span>
+                <div key={b} className="flex items-center gap-3 px-5 py-3.5 bg-muted/30 rounded-xl border border-border/40">
+                  <Check className="w-5 h-5 text-primary shrink-0" />
+                  <span className="text-sm text-foreground">{b}</span>
                 </div>
               ))}
             </div>
-            <div className="text-center mt-8">
-              <CtaButton>View Product Details</CtaButton>
-              <MicroTrust />
+          </div>
+        </section>
+
+        {/* ─── 6. PRODUCT IMAGES ─── */}
+        <section className="px-4 py-8 bg-card">
+          <div className="max-w-xl mx-auto text-center">
+            <h2 className="text-xl font-bold text-foreground mb-4">Product Images</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {[REAL_PRODUCT.angle, REAL_PRODUCT.detail].map((img, i) => (
+                <img
+                  key={i}
+                  src={img}
+                  alt={`GetPawsy self-cleaning litter box — view ${i + 1}`}
+                  className="w-full rounded-xl bg-white"
+                  loading="lazy"
+                  style={{ aspectRatio: '1/1', objectFit: 'contain' }}
+                />
+              ))}
             </div>
           </div>
         </section>
 
-        {/* ─── 7. PRODUCT VISUALS ─── */}
-        <section className="px-4 py-10">
-          <div className="max-w-xl mx-auto text-center">
-            <img
-              src={REAL_PRODUCT.angle}
-              alt="Self-cleaning litter box — alternate angle showing full product"
-              className="w-full max-w-md mx-auto rounded-2xl mb-4 bg-white"
-              loading="lazy"
-              width={1200}
-              height={800}
-              style={{ aspectRatio: '3/2', objectFit: 'contain' }}
-            />
-            <img
-              src={REAL_PRODUCT.detail}
-              alt="Self-cleaning litter box product detail view"
-              className="w-full max-w-md mx-auto rounded-2xl bg-white"
-              loading="lazy"
-              width={1200}
-              height={800}
-              style={{ aspectRatio: '3/2', objectFit: 'contain' }}
-            />
-          </div>
-        </section>
-
-        {/* ─── 8. SOCIAL PROOF ─── */}
-        <section className="bg-white px-4 py-10">
+        {/* ─── 7. CUSTOMER REVIEWS ─── */}
+        <section className="px-4 py-8">
           <div className="max-w-xl mx-auto">
-            <h2 className="text-2xl font-bold text-foreground text-center mb-1">
-              Trusted by cat owners
-            </h2>
-            <p className="text-xs text-muted-foreground text-center mb-6">Highly rated by customers</p>
+            <h2 className="text-xl font-bold text-foreground text-center mb-1">Customer Reviews</h2>
+            <p className="text-xs text-muted-foreground text-center mb-5">Feedback from verified buyers</p>
             <div className="grid gap-3">
               {REVIEWS.map((r, i) => (
-                <div
-                  key={i}
-                  className={`rounded-xl p-4 shadow-sm border ${
-                    r.featured
-                      ? 'bg-orange-50/60 border-orange-200 ring-1 ring-orange-200'
-                      : 'bg-[#FDFAF6] border-border/40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
+                <div key={i} className="rounded-xl p-4 bg-card border border-border/40">
+                  <div className="flex items-center justify-between mb-2">
                     <StarRating />
-                    <span className="text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✔ Verified Buyer</span>
+                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">Verified Buyer</span>
                   </div>
-                  <p className={`text-sm mt-2 italic ${r.featured ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
-                    "{r.text}"
-                  </p>
+                  <p className="text-sm text-muted-foreground italic">"{r.text}"</p>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
                       {r.name.charAt(0)}
@@ -342,37 +357,17 @@ export default function SelfCleaningLitterBoxLanding() {
                 </div>
               ))}
             </div>
-            <div className="text-center mt-8">
-              <CtaButton>View Product Details</CtaButton>
-              <MicroTrust />
-            </div>
           </div>
         </section>
 
-
-        {/* ─── 10. RISK REVERSAL ─── */}
-        <section className="px-4 py-8">
-          <div className="max-w-xl mx-auto text-center">
-            <div className="bg-green-50 border border-green-200 rounded-2xl px-6 py-8">
-              <RotateCcw className="w-8 h-8 text-green-600 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                30-Day Return Policy
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Not satisfied? Return your order within 30 days for a full refund. See our return policy for details.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── 11. FAQ ─── */}
-        <section className="bg-white px-4 py-10">
+        {/* ─── 8. FAQ ─── */}
+        <section className="bg-card px-4 py-8">
           <div className="max-w-xl mx-auto">
-            <h2 className="text-2xl font-bold text-foreground text-center mb-6">Frequently Asked Questions</h2>
-            <Suspense fallback={<div className="space-y-2">{FAQS.map((faq, i) => <div key={i} className="border rounded-xl px-4 py-4 bg-[#FDFAF6] text-sm font-medium">{faq.q}</div>)}</div>}>
+            <h2 className="text-xl font-bold text-foreground text-center mb-5">Frequently Asked Questions</h2>
+            <Suspense fallback={<div className="space-y-2">{FAQS.map((faq, i) => <div key={i} className="border rounded-xl px-4 py-4 bg-background text-sm font-medium">{faq.q}</div>)}</div>}>
               <Accordion type="single" collapsible className="space-y-2">
                 {FAQS.map((faq, i) => (
-                  <AccordionItem key={i} value={`faq-${i}`} className="border rounded-xl px-4 bg-[#FDFAF6]">
+                  <AccordionItem key={i} value={`faq-${i}`} className="border rounded-xl px-4 bg-background">
                     <AccordionTrigger className="text-sm font-medium text-left py-4">
                       {faq.q}
                     </AccordionTrigger>
@@ -387,36 +382,40 @@ export default function SelfCleaningLitterBoxLanding() {
         </section>
 
         {/* ─── FINAL CTA ─── */}
-        <section className="px-4 pb-6 pt-2 text-center">
-          <CtaButton className="text-lg px-10 py-5">View Product Details</CtaButton>
-          <MicroTrust />
+        <section className="px-4 py-8 text-center">
+          <CtaButton className="text-lg px-10 py-5">View Full Product & Pricing</CtaButton>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
+            <span>✔ {RETURN_WINDOW_DAYS}-Day Returns</span>
+            <span>✔ Free US Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
+            <span>✔ Secure Checkout</span>
+          </div>
         </section>
 
         {/* ─── ABOUT ─── */}
-        <section className="px-4 py-8">
+        <section className="px-4 py-6">
           <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-lg font-bold text-foreground mb-3">About GetPawsy</h2>
+            <h2 className="text-lg font-bold text-foreground mb-2">About GetPawsy</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              GetPawsy provides innovative pet solutions designed to make daily life easier for pet owners. We're operated by Skidzo, a registered business based in Apeldoorn, Netherlands (KVK 78156955).
+              GetPawsy provides pet products designed to make daily life easier for pet owners. Operated by Skidzo, a registered business based in Apeldoorn, Netherlands (KVK 78156955, VAT NL003295015B69).
             </p>
           </div>
         </section>
 
-        {/* ─── LP FOOTER ─── */}
+        {/* ─── FOOTER ─── */}
         <footer className="border-t border-border/30 bg-foreground text-background px-4 py-8">
           <div className="max-w-xl mx-auto text-center space-y-4">
-            <div className="flex justify-center gap-6 text-xs">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs">
+              <a href="/about" className="text-background/60 hover:text-primary transition-colors">About Us</a>
+              <a href="/contact" className="text-background/60 hover:text-primary transition-colors">Contact</a>
+              <a href="/shipping" className="text-background/60 hover:text-primary transition-colors">Shipping Policy</a>
+              <a href="/returns" className="text-background/60 hover:text-primary transition-colors">Returns Policy</a>
               <a href="/privacy" className="text-background/60 hover:text-primary transition-colors">Privacy Policy</a>
               <a href="/terms" className="text-background/60 hover:text-primary transition-colors">Terms of Service</a>
-              <a href="/contact" className="text-background/60 hover:text-primary transition-colors">Contact Us</a>
-              <a href="/returns" className="text-background/60 hover:text-primary transition-colors">Returns</a>
             </div>
             <div className="text-xs text-background/40 space-y-1">
               <p>GetPawsy — Operated by Skidzo</p>
               <p>Apeldoorn, Netherlands · KVK 78156955 · VAT NL003295015B69</p>
-              <p>
-                <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
-              </p>
+              <p><a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
             </div>
             <p className="text-[10px] text-background/30">
               © {new Date().getFullYear()} GetPawsy. All rights reserved.
@@ -429,8 +428,8 @@ export default function SelfCleaningLitterBoxLanding() {
           className={`fixed bottom-0 left-0 right-0 z-40 md:hidden transition-transform duration-300 ${stickyVisible ? 'translate-y-0' : 'translate-y-full'}`}
           style={{ contain: 'layout' }}
         >
-          <div className="flex items-center justify-between border-t bg-white/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
-            <span className="text-xs text-muted-foreground">Free shipping $35+</span>
+          <div className="flex items-center justify-between border-t bg-background/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
+            <span className="text-xs text-muted-foreground">Free shipping ${FREE_SHIPPING_THRESHOLD}+</span>
             <Link
               to={PRODUCT_LINK}
               className="rounded-full px-6 py-2.5 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all text-center"
