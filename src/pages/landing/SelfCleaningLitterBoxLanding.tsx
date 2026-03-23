@@ -315,11 +315,22 @@ export default function SelfCleaningLitterBoxLanding() {
                       : 'bg-[#FDFAF6] border-border/40'
                   }`}
                 >
-                  <StarRating />
+                  <div className="flex items-center justify-between">
+                    <StarRating />
+                    <span className="text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✔ Verified Buyer</span>
+                  </div>
                   <p className={`text-sm mt-2 italic ${r.featured ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
                     "{r.text}"
                   </p>
-                  <p className="text-xs font-semibold text-foreground mt-2">— {r.name}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                      {r.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{r.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.location}</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
