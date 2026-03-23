@@ -348,10 +348,6 @@ async function main() {
     blogCount: blogPageEntries.length,
     staticCount: staticPages.length,
     totalUrls,
-    collectionCount: collectionEntries.length,
-    guideCount: guideEntries.length,
-    staticCount: staticPages.length,
-    totalUrls,
   }, null, 2));
   console.log(`\n[sitemaps] ══════════════════════════════════════`);
   console.log(`[sitemaps] Full sitemap generation complete`);
@@ -359,6 +355,7 @@ async function main() {
   console.log(`[sitemaps] Products:    ${productEntries.length}`);
   console.log(`[sitemaps] Collections: ${collectionEntries.length}`);
   console.log(`[sitemaps] Guides:      ${guideEntries.length}`);
+  console.log(`[sitemaps] Blog:        ${blogPageEntries.length}`);
   console.log(`[sitemaps] Total URLs:  ${totalUrls}`);
   console.log(`[sitemaps] ══════════════════════════════════════\n`);
 }
