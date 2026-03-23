@@ -159,7 +159,7 @@ export default function SelfCleaningLitterBoxLanding() {
               {[
                 { icon: RotateCcw, label: '30-Day Returns' },
                 { icon: ShieldCheck, label: 'Secure Checkout' },
-                { icon: Truck, label: 'Free US Shipping' },
+                { icon: Truck, label: 'Free Shipping $35+' },
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="flex flex-col items-center gap-1.5 text-center">
                   <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
