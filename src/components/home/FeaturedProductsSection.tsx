@@ -49,7 +49,7 @@ export function FeaturedProductsSection() {
         <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
           Featured links to key product pages and product overviews from the GetPawsy catalog.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl mx-auto">
           {FEATURED_PRODUCTS.map((p) => (
             <Link
               key={p.path}
