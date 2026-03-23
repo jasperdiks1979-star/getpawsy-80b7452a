@@ -188,13 +188,14 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="bg-white px-4 py-12">
           <div className="max-w-xl mx-auto text-center">
             <img
-              src="https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/litter-box-hero.webp"
-              alt="Self-cleaning litter box product"
-              className="w-full max-w-xs mx-auto rounded-2xl shadow-md mb-6"
+              src={PRODUCT_IMAGES.product}
+              alt="Self-cleaning cat litter box — shop now at GetPawsy"
+              className="w-full max-w-xs mx-auto rounded-2xl shadow-md mb-6 bg-white"
               loading="lazy"
               width={400}
               height={400}
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=400&fit=crop'; }}
+              style={{ aspectRatio: '1/1', objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
             />
             <CtaButton className="text-lg px-10 py-5">Get Yours Now</CtaButton>
           </div>
