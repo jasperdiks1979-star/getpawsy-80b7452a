@@ -408,18 +408,20 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="bg-white px-4 py-12">
           <div className="max-w-xl mx-auto">
             <h2 className="text-2xl font-bold text-foreground text-center mb-8">Frequently Asked Questions</h2>
-            <Accordion type="single" collapsible className="space-y-2">
-              {FAQS.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border rounded-xl px-4 bg-[#FDFAF6]">
-                  <AccordionTrigger className="text-sm font-medium text-left py-4">
-                    {faq.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-4">
-                    {faq.a}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <Suspense fallback={<div className="space-y-2">{FAQS.map((faq, i) => <div key={i} className="border rounded-xl px-4 py-4 bg-[#FDFAF6] text-sm font-medium">{faq.q}</div>)}</div>}>
+              <Accordion type="single" collapsible className="space-y-2">
+                {FAQS.map((faq, i) => (
+                  <AccordionItem key={i} value={`faq-${i}`} className="border rounded-xl px-4 bg-[#FDFAF6]">
+                    <AccordionTrigger className="text-sm font-medium text-left py-4">
+                      {faq.q}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm text-muted-foreground pb-4">
+                      {faq.a}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </Suspense>
           </div>
         </section>
 
