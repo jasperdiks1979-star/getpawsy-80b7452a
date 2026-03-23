@@ -193,6 +193,20 @@ async function main() {
     console.log(`[sitemaps] Guides/clusters from JSON fallback: ${guideEntriesRaw.length}`);
   }
 
+  // ── Ensure static JSON guides are always in sitemap (even if not in DB yet) ──
+  const staticGuideIndex = safeRead(joinRoot("public", "data", "guides", "index.json"), []);
+  if (Array.isArray(staticGuideIndex)) {
+    const existingSlugs = new Set(guideEntriesRaw.map(g => g.path));
+    for (const g of staticGuideIndex) {
+      const gPath = `/guides/${g.slug}`;
+      if (g.slug && !existingSlugs.has(gPath) && !isExcluded(gPath)) {
+        guideEntriesRaw.push({ path: gPath, lastmod: g.updatedAt || g.publishedAt || today });
+        existingSlugs.add(gPath);
+      }
+    }
+    console.log(`[sitemaps] Guides after static merge: ${guideEntriesRaw.length}`);
+  }
+
   // ── BLOG POSTS ──
   let blogRaw = await fetchAllPages(
     "blog_posts",
