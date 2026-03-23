@@ -138,13 +138,14 @@ export default function SelfCleaningLitterBoxLanding() {
               After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment. No scooping, no smell, no effort.
             </p>
             <img
-              src="https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/litter-box-mechanism.webp"
-              alt="Self-cleaning mechanism diagram"
-              className="w-full max-w-sm mx-auto rounded-2xl shadow-sm"
+              src={PRODUCT_IMAGES.mechanism}
+              alt="Self-cleaning litter box automatic cleaning mechanism"
+              className="w-full max-w-sm mx-auto rounded-2xl shadow-sm bg-white"
               loading="lazy"
               width={500}
               height={400}
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?w=500&h=400&fit=crop'; }}
+              style={{ aspectRatio: '5/4', objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
             />
           </div>
         </section>
