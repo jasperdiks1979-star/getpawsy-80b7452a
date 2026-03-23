@@ -341,12 +341,11 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── 9. TRENDING / SOCIAL PROOF BOOST ─── */}
-        <section className="px-4 py-8">
-          <div className="max-w-xl mx-auto text-center">
-            <p className="text-lg font-extrabold text-foreground mb-1">🔥 Going viral right now</p>
-            <p className="text-sm text-muted-foreground">Thousands of cat owners are switching this month</p>
-            <p className="text-xs text-primary font-semibold mt-1">Limited stock available</p>
+        {/* ─── 9. TRENDING ─── */}
+        <section className="px-4 py-6">
+          <div className="max-w-xl mx-auto text-center bg-amber-50 border border-amber-200 rounded-2xl px-5 py-5">
+            <p className="text-lg font-extrabold text-foreground mb-1">🔥 127 sold today</p>
+            <p className="text-sm text-muted-foreground">Cat owners are switching fast</p>
           </div>
         </section>
 
