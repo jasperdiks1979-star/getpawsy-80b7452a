@@ -93,10 +93,22 @@ export default function SelfCleaningLitterBoxLanding() {
   return (
     <>
       <Helmet>
-        <title>Self Cleaning Litter Box | GetPawsy</title>
-        <meta name="description" content="Automatically cleans after use. Discover a smarter self-cleaning litter box for your cat." />
+        <title>Best Self Cleaning Litter Box (2026) – No Smell Solution | GetPawsy</title>
+        <meta name="description" content="Discover the best self-cleaning litter box for 2026. Automatic cleaning, odor control, multi-cat ready. Free US shipping at GetPawsy." />
         <meta name="robots" content="noindex, follow" />
         <link rel="canonical" href={`https://getpawsy.pet${PRODUCT_LINK}`} />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": FAQS.map(faq => ({
+            "@type": "Question",
+            "name": faq.q,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": faq.a,
+            }
+          }))
+        })}</script>
       </Helmet>
 
       <div className="min-h-screen bg-[#FDFAF6]">

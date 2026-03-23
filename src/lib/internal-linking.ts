@@ -158,7 +158,9 @@ const seoCollectionKeywords: Record<string, string[]> = {
   ],
   'self-cleaning-litter-box-guide': [
     'self cleaning litter box', 'automatic litter box for multiple cats',
-    'best self cleaning litter box', 'robot litter box', 'hands free litter box'
+    'best self cleaning litter box', 'robot litter box', 'hands free litter box',
+    'automatic cat litter solution', 'reduce litter smell at home',
+    'smart litter box', 'no scoop litter box', 'self cleaning cat litter'
   ],
   'best-cat-litter-boxes': [
     'best cat litter box', 'top rated litter boxes', 'litter box for odor control',
