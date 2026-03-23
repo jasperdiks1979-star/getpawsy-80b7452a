@@ -32,6 +32,7 @@ const BENEFITS = [
 ];
 
 const REVIEWS = [
+  { text: 'I was skeptical… but after 1 day I was sold. Best thing I ever bought for my cats.', name: 'Amanda L.', rating: 5, featured: true },
   { text: 'This changed my life. No more scooping at all.', name: 'Sarah M.', rating: 5 },
   { text: 'Our home smells fresh for the first time since we got cats.', name: 'David K.', rating: 5 },
   { text: 'Both our cats adapted in one day. Best purchase this year.', name: 'Jessica R.', rating: 5 },
@@ -53,10 +54,10 @@ const MicroTrust = () => (
   </div>
 );
 
-const CtaButton = ({ children, className = '', variant = 'primary' }: { children: React.ReactNode; className?: string; variant?: 'primary' | 'final' }) => (
+const CtaButton = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <Link
     to={PRODUCT_LINK}
-    className={`inline-block rounded-full bg-[hsl(24,95%,53%)] px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-[hsl(24,95%,47%)] hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-center animate-[pulse_4s_ease-in-out_infinite] hover:animate-none ${className}`}
+    className={`inline-block rounded-full bg-[hsl(24,95%,53%)] px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-[hsl(24,95%,47%)] hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-center animate-[pulse_5s_ease-in-out_infinite] hover:animate-none ${className}`}
   >
     {children}
   </Link>
@@ -134,18 +135,35 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── URGENCY BANNER ─── */}
-        <section className="px-4 pb-8">
-          <div className="max-w-xl mx-auto">
-            <div className="flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-center">
-              <Flame className="w-4 h-4 text-orange-500 shrink-0 animate-pulse" />
-              <p className="text-sm font-semibold text-[#333]">
-                Limited stock available — selling out fast in the US
-              </p>
+        {/* ─── EMOTIONAL TRIGGER ─── */}
+        <section className="px-4 py-10">
+          <div className="max-w-xl mx-auto text-center bg-white rounded-2xl border border-[#eee] px-6 py-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1a1a1a] mb-6 italic">
+              "Imagine never scooping again."
+            </h2>
+            <div className="space-y-2 text-base text-[#555] max-w-sm mx-auto">
+              <p>No smell in your home.</p>
+              <p>No daily cleaning.</p>
+              <p>No stress.</p>
+              <p className="font-semibold text-[#1a1a1a] pt-2">Just a clean litter box — automatically.</p>
             </div>
-            <p className="text-xs text-center text-[#999] mt-2">
-              Thousands of cat owners are switching this month
-            </p>
+          </div>
+        </section>
+
+        {/* ─── SCROLL STOPPER ─── */}
+        <section className="px-4 py-8">
+          <div className="max-w-xl mx-auto text-center">
+            <h2 className="text-xl md:text-2xl font-extrabold text-[#1a1a1a] mb-5">
+              This is why cat owners switch instantly
+            </h2>
+            <div className="grid gap-3 max-w-sm mx-auto text-left">
+              {['No more daily scooping', 'No more bad smell', 'No effort — fully automatic'].map((line) => (
+                <div key={line} className="flex items-center gap-3 px-5 py-3.5 bg-green-50 rounded-xl">
+                  <Check className="w-5 h-5 text-green-600 shrink-0" />
+                  <span className="text-sm font-bold text-[#1a1a1a]">{line}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -185,13 +203,13 @@ export default function SelfCleaningLitterBoxLanding() {
               style={{ aspectRatio: '5/4', objectFit: 'contain' }}
             />
             <div className="mt-8">
-              <CtaButton>Get Yours Now</CtaButton>
+              <CtaButton>Get Yours Now — Before It Sells Out</CtaButton>
               <MicroTrust />
             </div>
           </div>
         </section>
 
-        {/* ─── SCROLL STOPPER ─── */}
+        {/* ─── PRODUCT VISUAL ─── */}
         <section className="px-4 py-10">
           <div className="max-w-xl mx-auto text-center">
             <img
@@ -222,34 +240,27 @@ export default function SelfCleaningLitterBoxLanding() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <CtaButton>Stop Scooping Forever</CtaButton>
+              <CtaButton>Get Yours Now — Before It Sells Out</CtaButton>
               <MicroTrust />
             </div>
           </div>
         </section>
 
-        {/* ─── WHY BUY NOW ─── */}
-        <section className="px-4 py-12">
+        {/* ─── BUY NOW TRIGGER ─── */}
+        <section className="px-4 py-10">
           <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1a1a1a] mb-6">
-              Why cat owners are switching right now
-            </h2>
-            <div className="grid gap-3 max-w-sm mx-auto text-left">
-              {[
-                'No more daily scooping',
-                'No more bad smell',
-                'Saves 30+ minutes every day',
-                'Works for multiple cats',
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-3 px-5 py-3.5 bg-green-50/80 rounded-xl">
-                  <Check className="w-5 h-5 text-green-600 shrink-0" />
-                  <span className="text-sm font-medium text-[#333]">{item}</span>
-                </div>
-              ))}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-2xl px-6 py-6">
+              <p className="text-lg font-extrabold text-[#1a1a1a] mb-1">
+                🔥 Going viral right now
+              </p>
+              <p className="text-sm text-[#555] mb-2">
+                Thousands of cat owners are switching this month
+              </p>
+              <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-orange-600">
+                <Flame className="w-3.5 h-3.5 animate-pulse" />
+                <span>Limited stock available</span>
+              </div>
             </div>
-            <p className="text-xs font-semibold text-orange-600 mt-5">
-              Thousands sold this month
-            </p>
           </div>
         </section>
 
@@ -259,15 +270,24 @@ export default function SelfCleaningLitterBoxLanding() {
             <h2 className="text-2xl font-bold text-[#1a1a1a] text-center mb-8">What Cat Owners Say</h2>
             <div className="grid gap-4">
               {REVIEWS.map((r, i) => (
-                <div key={i} className="bg-[#FDFAF6] rounded-xl p-5 shadow-sm border border-[#eee]">
+                <div
+                  key={i}
+                  className={`rounded-xl p-5 shadow-sm border ${
+                    r.featured
+                      ? 'bg-orange-50/60 border-orange-200 ring-1 ring-orange-200'
+                      : 'bg-[#FDFAF6] border-[#eee]'
+                  }`}
+                >
                   <StarRating />
-                  <p className="text-sm text-[#444] mt-2 italic">"{r.text}"</p>
+                  <p className={`text-sm mt-2 italic ${r.featured ? 'text-[#1a1a1a] font-semibold' : 'text-[#444]'}`}>
+                    "{r.text}"
+                  </p>
                   <p className="text-xs font-semibold text-[#222] mt-2">— {r.name}</p>
                 </div>
               ))}
             </div>
             <div className="text-center mt-8">
-              <CtaButton>Stop Scooping Forever</CtaButton>
+              <CtaButton>Get Yours Now — Before It Sells Out</CtaButton>
               <MicroTrust />
             </div>
           </div>
@@ -298,7 +318,7 @@ export default function SelfCleaningLitterBoxLanding() {
               height={800}
               style={{ aspectRatio: '3/2', objectFit: 'contain' }}
             />
-            <CtaButton className="text-lg px-10 py-5">Stop Scooping Forever</CtaButton>
+            <CtaButton className="text-lg px-10 py-5">Get Yours Now — Before It Sells Out</CtaButton>
             <MicroTrust />
           </div>
         </section>
@@ -357,8 +377,16 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
+        {/* ─── FINAL URGENCY ─── */}
+        <section className="px-4 pt-10 pb-4">
+          <div className="max-w-xl mx-auto text-center">
+            <p className="text-sm font-bold text-[#1a1a1a]">🔥 Only a few units left in stock</p>
+            <p className="text-xs text-[#888] mt-1">Once it's gone, it's gone</p>
+          </div>
+        </section>
+
         {/* ─── FINAL CTA ─── */}
-        <section className="px-4 py-14 text-center">
+        <section className="px-4 pb-14 pt-4 text-center">
           <CtaButton className="text-lg px-10 py-5">Stop Scooping Forever</CtaButton>
           <MicroTrust />
         </section>
