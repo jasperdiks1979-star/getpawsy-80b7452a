@@ -177,16 +177,17 @@ export default function SelfCleaningLitterBoxLanding() {
         {/* ─── 3. OFFER BLOCK ─── */}
         <section className="px-4 pb-6">
           <div className="max-w-xl mx-auto">
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-2xl px-6 py-5 text-center">
-              <p className="text-lg md:text-xl font-extrabold text-foreground mb-1">
-                🔥 Today Only: 40% OFF + Free US Shipping
+            <div className="bg-foreground text-background rounded-2xl px-6 py-6 text-center">
+              <p className="text-2xl md:text-3xl font-extrabold mb-2">
+                50% OFF Today Only
               </p>
-              <p className="text-sm text-muted-foreground mb-2">
-                Limited stock available — while supplies last
-              </p>
-              <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary">
+              <div className="flex flex-col items-center gap-1 text-sm">
+                <span>🚚 Free US Shipping</span>
+                <span>🛡️ 30-Day Risk-Free Trial</span>
+              </div>
+              <div className="mt-3 inline-flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-4 py-1.5 text-xs font-bold">
                 <Clock className="w-3.5 h-3.5" />
-                <span>⏳ Sale ends tonight</span>
+                ⚠️ Only 12 units left in stock
               </div>
             </div>
           </div>
