@@ -1411,6 +1411,14 @@ const ProductDetail = () => {
           </Tabs>
         </motion.div>
 
+        {/* 0. Full Specifications Table — unique structured content for indexing */}
+        <ProductSpecsTable product={{
+          name: product.name,
+          category: product.category,
+          weight: product.weight ? Number(product.weight) : null,
+          sku: product.sku,
+        }} />
+
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ''} />
 

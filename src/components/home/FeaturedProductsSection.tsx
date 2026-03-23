@@ -2,28 +2,40 @@ import { Link } from 'react-router-dom';
 
 const FEATURED_PRODUCTS = [
   {
-    name: 'Automatic Cat Litter Box Overview',
+    name: 'Automatic Self-Cleaning Litter Box',
     path: '/lp/self-cleaning-litter-box',
-    description: 'Hybrid product overview with specifications, shipping details, returns, and FAQs.',
+    description: 'Infrared-sensor litter box with automatic cleaning cycle, odor control, and app connectivity.',
     badge: 'Featured',
   },
   {
-    name: 'Orthopedic Dog Bed',
+    name: 'Orthopedic Dog Bed – Memory Foam',
     path: '/product/orthopedic-dog-bed-memory-foam',
-    description: 'Memory foam dog bed with practical support details and product-specific information.',
+    description: 'Vet-style memory foam bed with removable washable cover for senior and large-breed dogs.',
     badge: 'Popular',
   },
   {
-    name: 'Cat Tree & Condo',
+    name: 'Multi-Level Cat Tree & Condo',
     path: '/product/large-cat-tree-multi-level-activity-center',
-    description: 'Multi-level cat furniture with sisal scratching posts and stable climbing surfaces.',
+    description: 'Sisal-wrapped cat tree with hammock, perches, and enclosed condo for multi-cat homes.',
     badge: 'Popular',
   },
   {
-    name: 'Dog Car Seat',
+    name: 'Dog Car Seat with Safety Harness',
     path: '/product/dog-car-seat-booster-safety-harness',
-    description: 'Travel seat with safety harness details for small to medium dogs.',
+    description: 'Crash-tested booster seat with adjustable harness for small to medium dogs up to 30 lbs.',
     badge: 'Safety Pick',
+  },
+  {
+    name: 'Interactive Cat Toys Bundle',
+    path: '/collections/cat-interactive-toys',
+    description: 'Feather wands, laser toys, and puzzle feeders to keep indoor cats active and stimulated.',
+    badge: 'New',
+  },
+  {
+    name: 'Dog Grooming Essentials',
+    path: '/collections/best-dog-grooming-tools',
+    description: 'Self-cleaning brushes, nail grinders, and deshedding tools for all coat types.',
+    badge: 'Top Pick',
   },
 ] as const;
 
