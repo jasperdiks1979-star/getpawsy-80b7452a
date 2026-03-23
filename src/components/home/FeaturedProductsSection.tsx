@@ -2,27 +2,27 @@ import { Link } from 'react-router-dom';
 
 const FEATURED_PRODUCTS = [
   {
-    name: 'Self-Cleaning Cat Litter Box',
-    slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-    description: 'Automatic cleaning system that helps reduce odor and daily maintenance.',
-    badge: 'Best Seller',
+    name: 'Automatic Cat Litter Box Overview',
+    path: '/lp/self-cleaning-litter-box',
+    description: 'Hybrid product overview with specifications, shipping details, returns, and FAQs.',
+    badge: 'Featured',
   },
   {
     name: 'Orthopedic Dog Bed',
-    slug: 'orthopedic-dog-bed-memory-foam',
-    description: 'Memory foam support for dogs of all sizes — ideal for joint relief.',
+    path: '/product/orthopedic-dog-bed-memory-foam',
+    description: 'Memory foam dog bed with practical support details and product-specific information.',
     badge: 'Popular',
   },
   {
     name: 'Cat Tree & Condo',
-    slug: 'large-cat-tree-multi-level-activity-center',
-    description: 'Multi-level climbing furniture with sisal scratching posts.',
-    badge: 'Top Rated',
+    path: '/product/large-cat-tree-multi-level-activity-center',
+    description: 'Multi-level cat furniture with sisal scratching posts and stable climbing surfaces.',
+    badge: 'Popular',
   },
   {
     name: 'Dog Car Seat',
-    slug: 'dog-car-seat-booster-safety-harness',
-    description: 'Crash-tested car seat with safety harness for small to medium dogs.',
+    path: '/product/dog-car-seat-booster-safety-harness',
+    description: 'Travel seat with safety harness details for small to medium dogs.',
     badge: 'Safety Pick',
   },
 ] as const;
@@ -35,13 +35,13 @@ export function FeaturedProductsSection() {
           Featured Products
         </h2>
         <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-          Our most popular picks — trusted by thousands of US pet owners.
+          Featured links to key product pages and product overviews from the GetPawsy catalog.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
           {FEATURED_PRODUCTS.map((p) => (
             <Link
-              key={p.slug}
-              to={`/product/${p.slug}`}
+              key={p.path}
+              to={p.path}
               className="group relative rounded-xl border border-border/40 bg-card p-4 hover:border-primary/40 hover:shadow-md transition-all"
             >
               <span className="absolute top-2 right-2 text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
@@ -51,7 +51,7 @@ export function FeaturedProductsSection() {
                 {p.name}
               </h3>
               <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{p.description}</p>
-              <span className="text-xs font-medium text-primary mt-2 inline-block">View Product →</span>
+              <span className="text-xs font-medium text-primary mt-2 inline-block">View Details →</span>
             </Link>
           ))}
         </div>

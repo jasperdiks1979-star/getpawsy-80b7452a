@@ -31,6 +31,9 @@ const BANNED_PHRASES: RegExp[] = [
   /we\s*love\s*pets?/gi, /pawsy\s*promise/gi, /join\s*\d+\s*happy/gi,
   /customers?\s*love/gi, /pet\s*parents?\s*agree/gi, /vet[-\s]*recommended/gi,
   /vet[-\s]*approved/gi,
+  /no\s*smell(?:\s*guaranteed)?/gi, /no\s*scooping\s*ever/gi,
+  /fully\s*automatic/gi, /100%\s*automatic/gi,
+  /eliminates?\s*odou?rs?\s*instantly/gi,
 ];
 
 const BANNED_TITLE_WORDS: RegExp[] = [
@@ -222,11 +225,19 @@ const FEATURE_KEYWORDS: Array<[RegExp, string]> = [
  * Ensures primary keyword is in the first 40 characters.
  */
 function restructureTitleForShopping(title: string): string {
-  // Skip if already has our brand suffix or follows the pattern
-  if (/\|\s*GetPawsy\s*$/i.test(title)) return title;
+  if (/^GetPawsy\b/i.test(title)) return title.substring(0, 150).trim();
+
+  const normalizedTitle = title
+    .replace(/\|\s*GetPawsy\s*$/i, "")
+    .replace(/^GetPawsy\s+/i, "")
+    .trim();
+
+  if (normalizedTitle.length >= 10 && normalizedTitle.length <= 120) {
+    return `GetPawsy ${normalizedTitle}`.substring(0, 150).trim();
+  }
   
-  const productType = guessProductType(title);
-  const animal = guessAnimal(title);
+  const productType = guessProductType(normalizedTitle || title);
+  const animal = guessAnimal(normalizedTitle || title);
 
   // Extract up to 2 features
   const features: string[] = [];
@@ -259,11 +270,10 @@ function restructureTitleForShopping(title: string): string {
   // Use original title if it's already well-structured (starts with keyword, good length)
   const startsWithKeyword = /^(dog|cat|pet|puppy|kitten)\s/i.test(title);
   
-  if (startsWithKeyword && title.length >= 40 && title.length <= 120) {
-    // Just append brand
+  if (startsWithKeyword && normalizedTitle.length >= 40 && normalizedTitle.length <= 120) {
     const featureSuffix = features.length > 0 ? ` – ${features.join(" ")}` : "";
-    const branded = `${title}${featureSuffix} | GetPawsy`;
-    return branded.length <= 150 ? branded : `${title} | GetPawsy`;
+    const branded = `GetPawsy ${normalizedTitle}${featureSuffix}`;
+    return branded.length <= 150 ? branded : `GetPawsy ${normalizedTitle}`;
   }
   
   // Restructure: [Primary keyword] for [Pet] – [Feature] | GetPawsy
@@ -271,20 +281,19 @@ function restructureTitleForShopping(title: string): string {
   const featureStr = features.length > 0 ? ` – ${features.join(" ")}` : "";
   
   // Try to keep original name context but restructured
-  const cleanTitle = title
+  const cleanTitle = normalizedTitle
     .replace(/\b(dog|cat|pet|puppy|kitten)s?\b/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim();
   
   // If clean title is still meaningful, use it as the primary keyword
   if (cleanTitle.length >= 10 && cleanTitle.length <= 60) {
-    const restructured = `${cleanTitle}${animalLabel}${featureStr} | GetPawsy`;
+    const restructured = `GetPawsy ${cleanTitle}${animalLabel}${featureStr}`;
     if (restructured.length <= 150) return restructured;
   }
   
-  // Fallback: use detected type
-  const fallback = `${keyword}${animalLabel}${featureStr} | GetPawsy`;
-  return fallback.length <= 150 ? fallback : `${title} | GetPawsy`.substring(0, 150);
+  const fallback = `GetPawsy ${keyword}${animalLabel}${featureStr}`;
+  return fallback.length <= 150 ? fallback : `GetPawsy ${keyword}${animalLabel}`.substring(0, 150);
 }
 
 // ── Dropship title cleanup patterns ───────────────────────────────
@@ -352,6 +361,9 @@ export function rewriteCloudinaryUrl(url: string): { url: string; rewritten: boo
 
 // ── Fallback description generator ───────────────────────────────
 export function generateSafeDescription(productName: string): string {
+  if (/litter/i.test(productName)) {
+    return `${productName} is an automatic cleaning system designed to help reduce odor and reduce daily litter cleaning effort. It is intended for routine home use, with product-specific features, size details, and compatibility shown on the product page.`;
+  }
   const animal = guessAnimal(productName);
   const productType = guessProductType(productName);
   const material = guessMaterial(productName);

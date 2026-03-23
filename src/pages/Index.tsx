@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Layout } from '@/components/layout/Layout';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
+import {
+  BUSINESS_LOCATION,
+  BUSINESS_OPERATOR,
+  BUSINESS_REGISTRATION,
+  BUSINESS_VAT_ID,
+  DELIVERY_TIME_STANDARD,
+  RETURN_WINDOW_DAYS,
+  SITE_LAST_UPDATED,
+  SUPPORT_EMAIL,
+} from '@/lib/shipping-constants';
 
 // ── Lazy-loaded below-fold sections ──
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
@@ -37,7 +47,7 @@ const GUIDES = [
   { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', desc: 'Safety-rated picks for travel with your dog.' },
   { path: '/guides/complete-dog-training-guide-2026', title: 'Dog Training Toys Guide', desc: 'Expert-tested methods for any breed or age.' },
   { path: '/guides/best-cat-trees-and-condos-2026', title: 'Best Cat Trees 2026', desc: 'Stability-tested picks for every home size.' },
-  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes', desc: 'No more scooping — tested for odor & safety.' },
+  { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes', desc: 'Automatic litter box guide with odor-control and safety considerations.' },
 ] as const;
 
 const HOW_IT_WORKS_STEPS = [
@@ -104,30 +114,30 @@ const Index = () => {
             {/* Left — copy */}
             <div className="space-y-4 order-2 md:order-1">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary">
-                Popular Choice — Automatic Cat Litter Box
+                Featured Product — Automatic Cat Litter Box
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-display font-bold text-foreground leading-[1.1] tracking-tight" style={{ textWrap: 'balance' as any }}>
-                Never Scoop Litter Again
-                <span className="text-primary"> — Automatic Cleaning</span>
+                Automatic Cat Litter Box
+                <span className="text-primary"> for Easier Daily Cleaning</span>
               </h1>
 
               <p className="text-sm md:text-base text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
-                A smart litter box that cleans automatically, helps reduce odor, and works while you sleep. App-controlled for multiple cats.
+                Automatic cleaning system designed to help reduce odor and reduce daily litter cleaning effort for multi-cat households.
               </p>
 
               <ul className="space-y-2 text-sm text-foreground/90">
                 <li className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
-                  Reduces daily scooping — automatic cleaning system
+                  Reduces daily litter cleaning effort
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
-                  Helps reduce odor with sealed deodorizing design
+                  Helps reduce odor with enclosed waste handling
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
-                  Smart app control — works while you sleep
+                  Infrared safety sensors pause cleaning while your cat is inside
                 </li>
               </ul>
 
@@ -136,16 +146,16 @@ const Index = () => {
                 <div className="flex items-center gap-1.5">
                   <span className="text-amber-400">★★★★★</span>
                   <span className="font-semibold text-foreground">4.8/5</span>
-                  <span className="text-muted-foreground text-xs">Highly rated by customers</span>
+                  <span className="text-muted-foreground text-xs">Transparent product information</span>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
                 <Link
                   to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
-                  className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white shadow-lg hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
+                  className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
                 >
-                  Buy Now — Free US Shipping
+                  View Product Details
                 </Link>
                 <a
                   href="#how-it-works"
@@ -159,15 +169,25 @@ const Index = () => {
                 </a>
               </div>
 
-              <p className="text-base font-bold text-foreground pt-1">
-                Only $268.99 — <span className="font-normal text-sm text-muted-foreground">Free US Shipping</span>
-              </p>
+              <p className="text-base font-bold text-foreground pt-1">View live pricing, shipping, and availability on the product page</p>
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span>🛡️ 30-Day Return Policy</span>
+                <span>🛡️ {RETURN_WINDOW_DAYS}-Day Returns</span>
                 <span>·</span>
                 <span>🔒 Secure checkout</span>
                 <span>·</span>
-                <span>📦 Ships from US warehouse</span>
+                <span>📦 US delivery: {DELIVERY_TIME_STANDARD}</span>
+              </div>
+              <div className="rounded-xl border border-border/40 bg-card/70 p-4 text-xs text-muted-foreground max-w-md">
+                <p><span className="font-medium text-foreground">Last updated:</span> {SITE_LAST_UPDATED}</p>
+                <p className="mt-1"><span className="font-medium text-foreground">Business:</span> GetPawsy · {BUSINESS_OPERATOR} · {BUSINESS_LOCATION}</p>
+                <p className="mt-1">{BUSINESS_REGISTRATION} · {BUSINESS_VAT_ID}</p>
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                  <Link to="/contact" className="text-primary hover:underline">Contact</Link>
+                  <Link to="/about" className="text-primary hover:underline">About</Link>
+                  <Link to="/shipping" className="text-primary hover:underline">Shipping</Link>
+                  <Link to="/returns" className="text-primary hover:underline">Returns</Link>
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
+                </div>
               </div>
             </div>
 
@@ -176,20 +196,19 @@ const Index = () => {
               <div className="relative w-full max-w-sm md:max-w-md">
                 <div className="aspect-square rounded-2xl overflow-hidden bg-muted border border-border/30 shadow-lg">
                   <img
-                    src="/hero/cat-litter-box-hero.webp"
-                    alt="Automatic Self-Cleaning Cat Litter Box"
+                    src="https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png"
+                    alt="GetPawsy automatic self-cleaning cat litter box"
                     width={600}
                     height={600}
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://cf.cjdropshipping.com/d37e59ba-54ea-41e7-8b7a-04b2088d37f4.jpg'; }}
+                    className="w-full h-full object-contain bg-white"
                   />
                 </div>
                 {/* Floating badge */}
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-card border border-border rounded-full px-4 py-1.5 shadow-md text-xs font-semibold text-foreground whitespace-nowrap">
-                  ⭐ Popular among pet owners
+                  ⭐ Exact product shown
                 </div>
               </div>
             </div>
@@ -235,9 +254,9 @@ const Index = () => {
           <div className="text-center mt-5">
             <Link
               to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
             >
-              Buy Now — Free US Shipping
+              View Product Overview
             </Link>
           </div>
         </div>
@@ -396,10 +415,10 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="max-w-md mx-auto text-center">
             <h2 className="text-lg font-display font-semibold text-foreground mb-2">
-              Get 10% Off Your First Order
+                Get product updates & pet care tips
             </h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Join thousands of pet parents. Get exclusive deals & tips.
+                Subscribe for new product updates, care tips, and order-related announcements.
             </p>
             <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
               <input
@@ -415,7 +434,7 @@ const Index = () => {
                 className="rounded-full px-6 py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 disabled={isSubscribing}
               >
-                {isSubscribing ? '...' : 'Get 10% Off'}
+                  {isSubscribing ? '...' : 'Subscribe'}
               </button>
             </form>
           </div>
