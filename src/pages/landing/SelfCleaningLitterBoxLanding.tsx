@@ -26,10 +26,10 @@ const PAIN_POINTS = [
 ];
 
 const BENEFITS = [
-  'Helps reduce odor — built-in deodorizer',
-  'No more daily scooping — automatically cleans after use',
+  'Helps control odor — built-in deodorizer',
+  'Reduces daily litter cleaning effort',
   'Designed for multi-cat homes',
-  'Saves you time every day',
+  'Automatic cleaning system saves time',
 ];
 
 const REVIEWS = [
