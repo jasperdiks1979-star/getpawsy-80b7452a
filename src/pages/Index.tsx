@@ -8,6 +8,7 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
 const TopProductsGrid = lazy(() => import('@/components/home/TopProductsGrid'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
+const FeaturedProductsSection = lazy(() => import('@/components/home/FeaturedProductsSection'));
 
 // ── SEO schemas ──
 const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
