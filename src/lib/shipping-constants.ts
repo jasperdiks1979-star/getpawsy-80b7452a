@@ -52,6 +52,9 @@ export const DELIVERY_TIME_STANDARD = '3–7 business days';
 /** Processing time before shipping */
 export const PROCESSING_TIME = '1–2 business days';
 
+/** Sitewide trust freshness timestamp */
+export const SITE_LAST_UPDATED = 'March 23, 2026';
+
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
 export const US_FULFILLMENT_NOTE = 'Orders ship directly to customers across the United States';
 
@@ -67,10 +70,10 @@ export const DELIVERY_TIME_INTERNATIONAL = '10-20 business days';
 export const RETURN_WINDOW_DAYS = 30;
 
 /** Returns policy short description */
-export const RETURNS_POLICY_SHORT = '30-day hassle-free returns';
+export const RETURNS_POLICY_SHORT = '30-day returns';
 
 /** Returns policy detailed */
-export const RETURNS_POLICY_DETAILED = 'Not satisfied? Return within 30 days for a full refund.';
+export const RETURNS_POLICY_DETAILED = 'Return eligible items within 30 days according to our return policy.';
 
 /** How to initiate returns */
 export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order number and photos of any issues.';
@@ -91,6 +94,18 @@ export const BUSINESS_LOCATION = 'Apeldoorn, Netherlands';
 
 /** Business name */
 export const BUSINESS_NAME = 'GetPawsy';
+
+/** Legal operator name */
+export const BUSINESS_OPERATOR = 'Skidzo';
+
+/** Business registration */
+export const BUSINESS_REGISTRATION = 'KVK 78156955';
+
+/** Business VAT ID */
+export const BUSINESS_VAT_ID = 'NL003295015B69';
+
+/** Service area */
+export const BUSINESS_SERVICE_AREA = 'Serving customers across the United States';
 
 /** Operating country display */
 export const OPERATING_COUNTRY = 'Apeldoorn, Netherlands (serving US customers)';
@@ -149,6 +164,6 @@ export const PRODUCT_SHIPPING_INFO = {
 
 export const FAQ_SHIPPING_ANSWER = `We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship directly to customers across the United States.`;
 
-export const FAQ_RETURNS_ANSWER = `We offer a ${RETURN_WINDOW_DAYS}-day money-back guarantee on all products. If you're not satisfied, contact us at ${SUPPORT_EMAIL} with your order number for a hassle-free return.`;
+export const FAQ_RETURNS_ANSWER = `We offer a ${RETURN_WINDOW_DAYS}-day return window on eligible products. Contact us at ${SUPPORT_EMAIL} with your order number to start a return according to our return policy.`;
 
 export const FAQ_INTERNATIONAL_ANSWER = 'We primarily serve US customers with fast domestic shipping. International orders may have longer delivery times (10-20 business days) and may be subject to customs fees.';

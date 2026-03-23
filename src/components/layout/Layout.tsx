@@ -15,9 +15,7 @@ import { OrganizationSchema } from '../seo/OrganizationSchema';
 import { SitewiseTrustBar } from './SitewiseTrustBar';
 
 // Lazy-load all non-critical marketing/overlay widgets
-// WelcomePopup / SlowFeederLeadMagnet REMOVED for Google Merchant Center compliance
-// ExitIntentPopup re-enabled — rewritten to be compliant (no fake urgency, no unverifiable discounts)
-const ExitIntentPopup = lazy(() => import('../marketing/ExitIntentPopup').then(m => ({ default: m.ExitIntentPopup })).catch(() => ({ default: () => null })));
+// WelcomePopup / SlowFeederLeadMagnet / ExitIntentPopup disabled for Merchant recovery mode
 const CookieConsent = lazy(() => import('../marketing/CookieConsent').then(m => ({ default: m.CookieConsent })).catch(() => ({ default: () => null })));
 const ChatWidgetWrapper = lazy(() => import('../chat/ChatWidgetWrapper').then(m => ({ default: m.ChatWidgetWrapper })).catch(() => ({ default: () => null })));
 
@@ -116,12 +114,11 @@ export const Layout = ({ children }: LayoutProps) => {
           <CookieConsent />
         </Suspense>
       </MarketingErrorBoundary>
-      {/* Chat widget + exit intent deferred until after grid paint / interaction / 5s */}
+      {/* Chat widget deferred until after grid paint / interaction / 5s */}
       {widgetsReady && (
         <MarketingErrorBoundary>
           <Suspense fallback={null}>
             <ChatWidgetWrapper />
-            <ExitIntentPopup />
           </Suspense>
         </MarketingErrorBoundary>
       )}

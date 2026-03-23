@@ -4,12 +4,17 @@ import { Check, Star, Truck, RotateCcw, ShieldCheck, Home, Mail, Package, Clock,
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import {
+  BUSINESS_LOCATION,
+  BUSINESS_OPERATOR,
+  BUSINESS_REGISTRATION,
+  BUSINESS_VAT_ID,
   SUPPORT_EMAIL,
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_TIME_STANDARD,
   PROCESSING_TIME,
   RETURN_WINDOW_DAYS,
   FLAT_SHIPPING_RATE,
+  SITE_LAST_UPDATED,
 } from '@/lib/shipping-constants';
 
 const Accordion = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.Accordion })));
@@ -149,6 +154,14 @@ export default function SelfCleaningLitterBoxLanding() {
               <Mail className="w-3.5 h-3.5 text-primary flex-shrink-0" />
               <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-primary transition-colors">{SUPPORT_EMAIL}</a>
             </div>
+          </div>
+        </div>
+
+        <div className="px-4 mb-4">
+          <div className="max-w-xl mx-auto rounded-xl border border-border/40 bg-card/80 p-3 text-xs text-muted-foreground">
+            <p><span className="font-medium text-foreground">Last updated:</span> {SITE_LAST_UPDATED}</p>
+            <p className="mt-1"><span className="font-medium text-foreground">Business:</span> GetPawsy · {BUSINESS_OPERATOR} · {BUSINESS_LOCATION}</p>
+            <p className="mt-1">{BUSINESS_REGISTRATION} · {BUSINESS_VAT_ID}</p>
           </div>
         </div>
 
@@ -385,9 +398,11 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="px-4 py-8 text-center">
           <CtaButton className="text-lg px-10 py-5">View Full Product & Pricing</CtaButton>
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
-            <span>✔ {RETURN_WINDOW_DAYS}-Day Returns</span>
-            <span>✔ Free US Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
-            <span>✔ Secure Checkout</span>
+            <span>{RETURN_WINDOW_DAYS}-Day Returns</span>
+            <span>•</span>
+            <span>Free US Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
+            <span>•</span>
+            <span>Secure Checkout</span>
           </div>
         </section>
 
