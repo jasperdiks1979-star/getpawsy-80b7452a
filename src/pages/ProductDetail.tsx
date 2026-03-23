@@ -656,10 +656,19 @@ const ProductDetail = () => {
 
   return (
     <Layout>
-      {/* Existing product pages must always be indexable for Google Merchant + Search */}
+      {/* Tier C products get noindex to preserve crawl budget; all others stay indexable */}
       <Helmet>
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        {(product as any).seo_tier === 'C' ? (
+          <>
+            <meta name="robots" content="noindex, follow" />
+            <meta name="googlebot" content="noindex, follow" />
+          </>
+        ) : (
+          <>
+            <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+            <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          </>
+        )}
       </Helmet>
       <ProductSchema 
         product={{
