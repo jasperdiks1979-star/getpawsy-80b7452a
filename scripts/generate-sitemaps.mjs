@@ -241,6 +241,9 @@ async function main() {
     { path: "/contact", priority: 0.40, changefreq: "monthly", lastmod: today },
     { path: "/shipping", priority: 0.30, changefreq: "monthly", lastmod: today },
     { path: "/returns", priority: 0.30, changefreq: "monthly", lastmod: today },
+    { path: "/blog", priority: 0.70, changefreq: "daily", lastmod: today },
+    { path: "/lp/self-cleaning-litter-box", priority: 0.90, changefreq: "weekly", lastmod: today },
+    { path: "/lp/cat-litter-box", priority: 0.90, changefreq: "weekly", lastmod: today },
   ].map((e) => ({
     loc: absUrl(BASE, e.path), lastmod: e.lastmod, changefreq: e.changefreq, priority: e.priority,
     _path: e.path, _updatedAt: e.lastmod,
