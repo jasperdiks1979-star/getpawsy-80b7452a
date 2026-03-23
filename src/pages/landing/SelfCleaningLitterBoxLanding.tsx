@@ -89,14 +89,15 @@ export default function SelfCleaningLitterBoxLanding() {
         {/* ─── HERO ─── */}
         <section className="px-4 pt-10 pb-12 max-w-xl mx-auto text-center">
           <img
-            src="https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/litter-box-hero.webp"
-            alt="Cat sitting inside a modern self-cleaning litter box"
-            className="w-full max-w-md mx-auto rounded-2xl shadow-md mb-8"
+            src={PRODUCT_IMAGES.hero}
+            alt="60L Automatic Self-Cleaning Cat Litter Box with Smart App Control"
+            className="w-full max-w-md mx-auto rounded-2xl shadow-md mb-8 bg-white"
             loading="eager"
             fetchPriority="high"
             width={600}
             height={600}
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=600&fit=crop'; }}
+            style={{ aspectRatio: '1/1', objectFit: 'contain' }}
+            onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
           />
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#1a1a1a] leading-tight mb-4">
             Self-Cleaning Litter Box —<br />No Scooping Ever
