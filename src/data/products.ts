@@ -27,7 +27,7 @@ export const products: Product[] = [
   {
     id: 'prod-001',
     name: 'GetPawsy Orthopedic Dog Bed – Memory Foam Joint Support',
-    description: 'Memory foam dog bed with waterproof liner and removable washable cover. Designed to support joints for dogs of all sizes. Helps reduce pressure on hips and joints.',
+    description: 'Memory foam dog bed with waterproof liner and removable washable cover. Designed to help support joints for dogs of all sizes. Features a pressure-relieving foam layer.',
     price: 79.99,
     comparePrice: 99.99,
     image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80',
@@ -107,8 +107,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-006',
-    name: 'GetPawsy Calming Hemp Oil for Pets – Vet-Approved Formula',
-    description: 'Natural hemp oil formulated to help support relaxation in dogs and cats. Vet-approved formula designed to promote calmness during stressful situations.',
+    name: 'GetPawsy Calming Hemp Oil for Pets – Relaxation Support',
+    description: 'Natural hemp oil designed to help support relaxation in dogs and cats. May promote calmness during stressful situations such as travel or loud noises.',
     price: 34.99,
     image: 'https://images.unsplash.com/photo-1512438248247-f0f2a5a8b7f0?w=600&q=80',
     images: [
@@ -122,8 +122,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-007',
-    name: 'GetPawsy Self-Cleaning Cat Litter Box – Automatic Odor Control',
-    description: 'Automatic self-cleaning litter box with built-in odor control system. Works with most clumping litters and features a quiet motor for minimal disruption.',
+    name: 'GetPawsy Self-Cleaning Cat Litter Box – Automatic Cleaning System',
+    description: 'Automatic self-cleaning litter box with built-in deodorizer designed to help control odor. Works with clumping clay litter and features a quiet motor (under 50 dB).',
     price: 149.99,
     comparePrice: 189.99,
     image: 'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?w=600&q=80',
