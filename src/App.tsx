@@ -467,6 +467,7 @@ const App = () => {
                       <Route path="/landing/:slug" element={<Suspense fallback={<RouteLoader />}><TrainingLandingPage /></Suspense>} />
                       <Route path="/pin/:slug" element={<Suspense fallback={<RouteLoader />}><PinterestLandingPage /></Suspense>} />
                       <Route path="/lp/cat-litter-box" element={<Suspense fallback={<RouteLoader />}><CatLitterBoxLanding /></Suspense>} />
+                      <Route path="/lp/self-cleaning-litter-box" element={<Suspense fallback={<RouteLoader />}><SelfCleaningLitterBoxLanding /></Suspense>} />
                       <Route path="/why-trust-our-reviews" element={<Suspense fallback={<RouteLoader />}><WhyTrustOurReviews /></Suspense>} />
                       <Route path="/about-the-author" element={<Suspense fallback={<RouteLoader />}><AboutTheAuthor /></Suspense>} />
                       <Route path="/how-we-test-products" element={<Suspense fallback={<RouteLoader />}><HowWeTestProducts /></Suspense>} />
