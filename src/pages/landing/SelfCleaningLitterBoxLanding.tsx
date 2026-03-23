@@ -448,15 +448,12 @@ export default function SelfCleaningLitterBoxLanding() {
           className={`fixed bottom-0 left-0 right-0 z-40 md:hidden transition-transform duration-300 ${stickyVisible ? 'translate-y-0' : 'translate-y-full'}`}
           style={{ contain: 'layout' }}
         >
-          <div className="flex items-center justify-between border-t bg-white/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-muted-foreground">Free US Shipping</span>
-            </div>
+          <div className="border-t bg-white/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
             <Link
               to={PRODUCT_LINK}
-              className="rounded-full px-5 py-2.5 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all"
+              className="block w-full rounded-full px-5 py-3 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all text-center"
             >
-              Stop Scooping Forever
+              🛒 Stop Scooping Forever — 50% OFF Today
             </Link>
           </div>
         </div>
