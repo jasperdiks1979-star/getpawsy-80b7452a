@@ -366,29 +366,9 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── WHY BUY NOW ─── */}
-        <section className="px-4 py-8">
-          <div className="max-w-xl mx-auto">
-            <h2 className="text-xl font-bold text-foreground text-center mb-4">Why buy today?</h2>
-            <div className="grid gap-2.5 max-w-sm mx-auto">
-              {[
-                '50% launch discount — today only',
-                'Limited stock available',
-                'Free shipping ends soon',
-              ].map((line) => (
-                <div key={line} className="flex items-center gap-3 px-5 py-3 bg-orange-50 rounded-xl">
-                  <Check className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-sm font-medium text-foreground">{line}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ─── FINAL CTA ─── */}
         <section className="px-4 pb-6 pt-2 text-center">
-          <p className="text-sm font-semibold text-primary mb-3">⚠️ Only 12 units left in stock</p>
-          <CtaButton className="text-lg px-10 py-5">Stop Scooping Forever</CtaButton>
+          <CtaButton className="text-lg px-10 py-5">View Product Details</CtaButton>
           <MicroTrust />
         </section>
 
