@@ -68,7 +68,7 @@ export function FeaturedProductsSection() {
           ))}
         </div>
 
-        {/* Contextual SEO anchor links */}
+        {/* Contextual SEO anchor links — keyword-rich internal links to money pages */}
         <div className="mt-8 max-w-3xl mx-auto text-center">
           <p className="text-sm text-muted-foreground leading-relaxed">
             Looking for the{' '}
@@ -85,11 +85,23 @@ export function FeaturedProductsSection() {
             </Link>
             . For dog owners, explore our{' '}
             <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary hover:underline font-medium">
-              orthopedic dog beds
-            </Link>{' '}
-            and{' '}
+              orthopedic dog beds for large breeds
+            </Link>
+            ,{' '}
             <Link to="/collections/best-dog-car-seats" className="text-primary hover:underline font-medium">
               crash-tested dog car seats
+            </Link>
+            , and{' '}
+            <Link to="/collections/best-dog-grooming-tools" className="text-primary hover:underline font-medium">
+              professional dog grooming tools
+            </Link>
+            . Browse our{' '}
+            <Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline font-medium">
+              cat trees and condos
+            </Link>{' '}
+            for multi-cat households or check out the latest{' '}
+            <Link to="/trending-pet-products" className="text-primary hover:underline font-medium">
+              trending pet products
             </Link>
             .
           </p>
