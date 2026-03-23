@@ -230,20 +230,16 @@ export default function SelfCleaningLitterBoxLanding() {
             />
 
             {/* How It Works */}
-            <div className="grid gap-3 max-w-sm mx-auto mt-4 mb-8">
+            <h3 className="text-lg font-bold text-foreground mt-6 mb-4">How it works</h3>
+            <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-8">
               {[
-                { step: '1', title: 'Detects when your cat leaves', desc: 'Infrared sensors identify when the box is empty.' },
-                { step: '2', title: 'Triggers cleaning cycle', desc: 'The mechanism separates waste from clean litter.' },
-                { step: '3', title: 'Seals waste into compartment', desc: 'Waste is stored in a sealed drawer, helping reduce odor.' },
-              ].map((s) => (
-                <div key={s.step} className="flex items-start gap-3 px-5 py-3.5 bg-card rounded-xl border border-border/50">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-xs font-bold text-primary">{s.step}</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{s.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
-                  </div>
+                { emoji: '🐱', title: 'Your cat enters' },
+                { emoji: '📡', title: 'Sensors detect exit' },
+                { emoji: '✅', title: 'Waste auto-sealed' },
+              ].map((s, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-2 px-3 py-4 bg-card rounded-xl border border-border/50 text-center">
+                  <span className="text-2xl">{s.emoji}</span>
+                  <p className="text-xs font-semibold text-foreground leading-tight">{s.title}</p>
                 </div>
               ))}
             </div>
