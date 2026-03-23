@@ -421,6 +421,41 @@ const Index = () => {
         </div>
       </section>
 
+      {/* ═══ LITTER BOX AUTHORITY HUB — topical cluster links ═══ */}
+      <section className="py-10 md:py-12">
+        <div className="container px-4 md:px-6">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
+            Self-Cleaning Litter Box Guides
+          </h2>
+          <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
+            Everything you need to know about automatic litter boxes — from how they work to which one is right for your home.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
+            {LITTER_BOX_GUIDES.map((g) => (
+              <Link
+                key={g.path}
+                to={g.path}
+                className="group rounded-xl border border-border/40 bg-card p-4 hover:border-primary/40 hover:shadow-md transition-all"
+              >
+                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2">
+                  {g.title}
+                </h3>
+                <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{g.desc}</p>
+                <span className="text-xs font-medium text-primary mt-2 inline-block">Read Guide →</span>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-5">
+            <Link
+              to="/lp/self-cleaning-litter-box"
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
+            >
+              View Our Top Pick — Automatic Litter Box
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ 9. NEWSLETTER ═══ */}
       <section className="py-10 md:py-12">
         <div className="container px-4 md:px-6">
