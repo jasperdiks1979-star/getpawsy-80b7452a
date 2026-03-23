@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Check, Star, Truck, RotateCcw, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Check, Star, Truck, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import {
   Accordion,
@@ -11,11 +11,12 @@ import {
 
 const PRODUCT_LINK = '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
 
-const PRODUCT_IMAGES = {
-  hero: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
-  mechanism: 'https://cf.cjdropshipping.com/c887b0aa-7ff1-4aad-9fbf-903f3eb0a2f6.png',
-  product: 'https://cf.cjdropshipping.com/e4454bbe-8555-4938-97e7-9c25acf0bb2a.png',
-  fallback: 'https://cf.cjdropshipping.com/da3626ae-df14-47d8-b202-1e4f9c1f7a50.png',
+const LP_IMAGES = {
+  hero: '/lp/litter-box-hero-lifestyle.webp',
+  happyCat: '/lp/litter-box-happy-cat.webp',
+  solution: '/lp/litter-box-clean-solution.webp',
+  scrollStopper: '/lp/litter-box-scroll-stopper.webp',
+  trust: '/lp/litter-box-trust-scene.webp',
 };
 
 const PAIN_POINTS = [
@@ -89,15 +90,14 @@ export default function SelfCleaningLitterBoxLanding() {
         {/* ─── HERO ─── */}
         <section className="px-4 pt-10 pb-12 max-w-xl mx-auto text-center">
           <img
-            src={PRODUCT_IMAGES.hero}
-            alt="60L Automatic Self-Cleaning Cat Litter Box with Smart App Control"
-            className="w-full max-w-md mx-auto rounded-2xl shadow-md mb-8 bg-white"
+            src={LP_IMAGES.hero}
+            alt="Self-cleaning litter box in a cozy living room with cat inside"
+            className="w-full max-w-md mx-auto rounded-2xl shadow-lg mb-8"
             loading="eager"
             fetchPriority="high"
-            width={600}
-            height={600}
-            style={{ aspectRatio: '1/1', objectFit: 'contain' }}
-            onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
+            width={1200}
+            height={1200}
+            style={{ aspectRatio: '1/1', objectFit: 'cover' }}
           />
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#1a1a1a] leading-tight mb-4">
             Self-Cleaning Litter Box —<br />No Scooping Ever
@@ -109,6 +109,28 @@ export default function SelfCleaningLitterBoxLanding() {
           <p className="mt-4 text-xs text-[#888]">
             Free US shipping over $35 • 30-day returns
           </p>
+        </section>
+
+        {/* ─── EMOTIONAL DESIRE (NEW) ─── */}
+        <section className="px-4 py-12">
+          <div className="max-w-xl mx-auto text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[hsl(24,95%,53%)] mb-3">Trending</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1a1a1a] mb-4">
+              Cat owners are switching fast...
+            </h2>
+            <p className="text-[#555] mb-8 max-w-md mx-auto">
+              A clean home, a happy cat, and zero effort. That's what thousands of cat owners now enjoy every single day.
+            </p>
+            <img
+              src={LP_IMAGES.happyCat}
+              alt="Happy relaxed cat lounging in a clean modern home"
+              className="w-full max-w-md mx-auto rounded-2xl shadow-md"
+              loading="lazy"
+              width={1200}
+              height={768}
+              style={{ aspectRatio: '16/10', objectFit: 'cover' }}
+            />
+          </div>
         </section>
 
         {/* ─── PROBLEM ─── */}
@@ -138,15 +160,32 @@ export default function SelfCleaningLitterBoxLanding() {
               After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment. No scooping, no smell, no effort.
             </p>
             <img
-              src={PRODUCT_IMAGES.mechanism}
-              alt="Self-cleaning litter box automatic cleaning mechanism"
-              className="w-full max-w-sm mx-auto rounded-2xl shadow-sm bg-white"
+              src={LP_IMAGES.solution}
+              alt="Modern self-cleaning litter box open and clean in a bright home"
+              className="w-full max-w-sm mx-auto rounded-2xl shadow-sm"
               loading="lazy"
-              width={500}
-              height={400}
-              style={{ aspectRatio: '5/4', objectFit: 'contain' }}
-              onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
+              width={1200}
+              height={960}
+              style={{ aspectRatio: '5/4', objectFit: 'cover' }}
             />
+          </div>
+        </section>
+
+        {/* ─── SCROLL STOPPER (NEW) ─── */}
+        <section className="px-4 py-10">
+          <div className="max-w-xl mx-auto text-center">
+            <img
+              src={LP_IMAGES.scrollStopper}
+              alt="Cat stepping into a self-cleaning litter box in a warm home"
+              className="w-full max-w-md mx-auto rounded-2xl shadow-lg mb-6"
+              loading="lazy"
+              width={1200}
+              height={800}
+              style={{ aspectRatio: '3/2', objectFit: 'cover' }}
+            />
+            <p className="text-2xl md:text-3xl font-extrabold text-[#1a1a1a]">
+              Never scoop again.
+            </p>
           </div>
         </section>
 
@@ -184,18 +223,17 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── PRODUCT + CTA ─── */}
+        {/* ─── PRODUCT + CTA (trust lifestyle image) ─── */}
         <section className="bg-white px-4 py-12">
           <div className="max-w-xl mx-auto text-center">
             <img
-              src={PRODUCT_IMAGES.product}
-              alt="Self-cleaning cat litter box — shop now at GetPawsy"
-              className="w-full max-w-xs mx-auto rounded-2xl shadow-md mb-6 bg-white"
+              src={LP_IMAGES.trust}
+              alt="Woman relaxing on sofa with happy cat and self-cleaning litter box in background"
+              className="w-full max-w-md mx-auto rounded-2xl shadow-md mb-6"
               loading="lazy"
-              width={400}
-              height={400}
-              style={{ aspectRatio: '1/1', objectFit: 'contain' }}
-              onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
+              width={1200}
+              height={800}
+              style={{ aspectRatio: '3/2', objectFit: 'cover' }}
             />
             <CtaButton className="text-lg px-10 py-5">Get Yours Now</CtaButton>
           </div>
