@@ -272,13 +272,32 @@
       to prevent "Cannot access uninitialized variable" TDZ errors on iOS Safari.
     -->
 
-    <!-- Preload LCP hero image — separate mobile/desktop preloads for <picture> -->
-    <link rel="preload" as="image" fetchpriority="high"
-      href="/hero/dog-training-hero-mobile.webp"
-      media="(max-width: 768px)">
-    <link rel="preload" as="image" fetchpriority="high"
-      href="/hero/dog-training-hero-desktop.webp"
-      media="(min-width: 769px)">
+    <!-- Preload LCP hero image — route-aware: homepage vs landing pages -->
+    <script>
+      (function(){
+        var p = location.pathname;
+        if (p.indexOf('/lp/') === 0) {
+          // Landing pages use CJ product images — preconnect + preload hero
+          var pc = document.createElement('link');
+          pc.rel = 'preconnect'; pc.href = 'https://cf.cjdropshipping.com'; pc.crossOrigin = '';
+          document.head.appendChild(pc);
+          var pl = document.createElement('link');
+          pl.rel = 'preload'; pl.as = 'image'; pl.fetchPriority = 'high';
+          pl.href = 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png';
+          document.head.appendChild(pl);
+        } else {
+          // Homepage hero preloads
+          var m = document.createElement('link');
+          m.rel = 'preload'; m.as = 'image'; m.fetchPriority = 'high';
+          m.href = '/hero/dog-training-hero-mobile.webp'; m.media = '(max-width: 768px)';
+          document.head.appendChild(m);
+          var d = document.createElement('link');
+          d.rel = 'preload'; d.as = 'image'; d.fetchPriority = 'high';
+          d.href = '/hero/dog-training-hero-desktop.webp'; d.media = '(min-width: 769px)';
+          document.head.appendChild(d);
+        }
+      })();
+    </script>
     <!-- Inline critical hero layout to guarantee paint before CSS parse -->
     <style>
       .hero-lcp-section { position:relative; overflow:hidden; display:flex; align-items:center; min-height:calc(85vh - 148px); contain:layout style; content-visibility:visible; }
@@ -292,6 +311,7 @@
     <!-- DNS Prefetch / preconnect — only critical origins (Cloudinary demoted to dns-prefetch since hero is now origin-served) -->
     <link rel="preconnect" href="https://nojvgfbcjgipjxpfatmm.supabase.co" crossorigin>
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    <link rel="dns-prefetch" href="https://cf.cjdropshipping.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
     <!-- Preload primary font files for fastest LCP text paint -->

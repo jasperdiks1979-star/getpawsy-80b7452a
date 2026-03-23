@@ -1,15 +1,15 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Check, Star, Truck, RotateCcw, ShieldCheck, Clock, Home } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
+
+// ⚡ Accordion lazy-loaded — only used in FAQ at bottom of page
+const Accordion = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.Accordion })));
+const AccordionContent = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionContent })));
+const AccordionItem = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionItem })));
+const AccordionTrigger = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionTrigger })));
 
 const PRODUCT_LINK = '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
 
@@ -408,18 +408,20 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="bg-white px-4 py-12">
           <div className="max-w-xl mx-auto">
             <h2 className="text-2xl font-bold text-foreground text-center mb-8">Frequently Asked Questions</h2>
-            <Accordion type="single" collapsible className="space-y-2">
-              {FAQS.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border rounded-xl px-4 bg-[#FDFAF6]">
-                  <AccordionTrigger className="text-sm font-medium text-left py-4">
-                    {faq.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-4">
-                    {faq.a}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <Suspense fallback={<div className="space-y-2">{FAQS.map((faq, i) => <div key={i} className="border rounded-xl px-4 py-4 bg-[#FDFAF6] text-sm font-medium">{faq.q}</div>)}</div>}>
+              <Accordion type="single" collapsible className="space-y-2">
+                {FAQS.map((faq, i) => (
+                  <AccordionItem key={i} value={`faq-${i}`} className="border rounded-xl px-4 bg-[#FDFAF6]">
+                    <AccordionTrigger className="text-sm font-medium text-left py-4">
+                      {faq.q}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm text-muted-foreground pb-4">
+                      {faq.a}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </Suspense>
           </div>
         </section>
 
