@@ -136,9 +136,14 @@ export const BLOG_CORNERSTONE_TRIGGERS: Record<string, { cornerstoneId: string; 
   // Cat litter keywords
   'cat litter': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
   'litter box': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
-  'self-cleaning litter': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
+  'self-cleaning litter': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
+  'self cleaning litter': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
+  'automatic litter': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
   'litter odor': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
+  'litter smell': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
   'multi-cat litter': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
+  'robot litter box': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
+  'smart litter box': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
 
   // Dog toy keywords
   'dog toy': [{ cornerstoneId: 'best-interactive-dog-toys', minWords: 600 }],

@@ -63,6 +63,16 @@ export const CAT_LITTER_CLUSTER: ClusterDefinition = {
     'best-litter-box-kittens', 'best-low-tracking-litter-box',
     'automatic-vs-manual-litter-box', 'litter-box-placement-guide',
     'best-litter-box-odor-bathroom',
+    // Self-cleaning litter box sub-cluster
+    'how-to-reduce-cat-litter-smell',
+    'do-automatic-litter-boxes-work',
+    'self-cleaning-vs-traditional-litter-box',
+    'litter-box-for-multiple-cats',
+    'how-often-to-clean-litter-box',
+    'cat-litter-smell-solutions',
+    'smart-litter-box-review',
+    'is-automatic-litter-box-safe',
+    'litter-box-cleaning-tips',
   ],
   microSlugs: [
     'litter-box-for-studio-apartment', 'best-litter-box-for-multiple-cats',
