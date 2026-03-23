@@ -290,16 +290,9 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="bg-white px-4 py-10">
           <div className="max-w-xl mx-auto">
             <h2 className="text-2xl font-bold text-foreground text-center mb-1">
-              Join 10,000+ cat owners who stopped scooping forever
+              Trusted by cat owners
             </h2>
-            <div className="flex items-center justify-center gap-1.5 mb-6">
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground">4.8/5 · 2,100+ reviews</span>
-            </div>
+            <p className="text-xs text-muted-foreground text-center mb-6">Highly rated by customers</p>
             <div className="grid gap-3">
               {REVIEWS.map((r, i) => (
                 <div
