@@ -85,6 +85,17 @@ export const PRIORITY_CORNERSTONES = [
     tier: 2 as const,
   },
   {
+    id: 'self-cleaning-litter-box-guide',
+    path: '/guides/self-cleaning-litter-box-guide',
+    label: 'Self-Cleaning Litter Box Guide 2026',
+    anchors: {
+      exact: ['self-cleaning litter box', 'automatic litter box guide'],
+      partial: ['self-cleaning litter box guide', 'how automatic litter boxes work', 'best automatic litter solutions'],
+      branded: ['GetPawsy litter box guide', 'our self-cleaning litter guide'],
+    },
+    tier: 1 as const,
+  },
+  {
     id: 'best-interactive-dog-toys',
     path: '/collections/best-interactive-dog-toys',
     label: 'Best Interactive Dog Toys',
