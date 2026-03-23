@@ -107,8 +107,8 @@ export const products: Product[] = [
   },
   {
     id: 'prod-006',
-    name: 'GetPawsy Calming Hemp Oil for Pets – Vet-Approved Formula',
-    description: 'Natural hemp oil formulated to help support relaxation in dogs and cats. Vet-approved formula designed to promote calmness during stressful situations.',
+    name: 'GetPawsy Calming Hemp Oil for Pets – Relaxation Support',
+    description: 'Natural hemp oil designed to help support relaxation in dogs and cats. May promote calmness during stressful situations such as travel or loud noises.',
     price: 34.99,
     image: 'https://images.unsplash.com/photo-1512438248247-f0f2a5a8b7f0?w=600&q=80',
     images: [
