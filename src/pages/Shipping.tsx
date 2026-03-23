@@ -10,10 +10,11 @@ import {
   DELIVERY_TIME_STANDARD,
   PROCESSING_TIME,
   SUPPORT_EMAIL,
+  SITE_LAST_UPDATED,
 } from '@/lib/shipping-constants';
 
 const Shipping = () => {
-  const lastUpdated = 'February 6, 2026';
+  const lastUpdated = SITE_LAST_UPDATED;
 
   return (
     <Layout>

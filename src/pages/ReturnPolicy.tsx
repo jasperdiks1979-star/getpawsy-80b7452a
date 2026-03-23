@@ -5,10 +5,10 @@ import { RotateCcw, Mail, Clock, Package, AlertCircle, CheckCircle, XCircle, Hel
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { SUPPORT_EMAIL, RETURN_WINDOW_DAYS } from '@/lib/shipping-constants';
+import { SUPPORT_EMAIL, RETURN_WINDOW_DAYS, SITE_LAST_UPDATED } from '@/lib/shipping-constants';
 
 const ReturnPolicy = () => {
-  const lastUpdated = 'February 6, 2026';
+  const lastUpdated = SITE_LAST_UPDATED;
 
   const eligibleReturns = [
     'Products that are unused, in their original condition, and in original packaging',
