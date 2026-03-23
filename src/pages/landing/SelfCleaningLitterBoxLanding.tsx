@@ -33,11 +33,11 @@ const BENEFITS = [
 ];
 
 const REVIEWS = [
-  { text: 'I was skeptical… but after 1 day I was sold. Highly recommend for cat owners.', name: 'Amanda L.', rating: 5, featured: true },
-  { text: 'This changed my daily routine. No more scooping at all.', name: 'Sarah M.', rating: 5 },
-  { text: 'Our home smells much fresher since we started using this.', name: 'David K.', rating: 5 },
-  { text: 'Both our cats adapted in one day. Great purchase.', name: 'Jessica R.', rating: 5 },
-  { text: 'I was skeptical but it really works. So quiet too.', name: 'Michael T.', rating: 5 },
+  { text: 'I was skeptical… but after 1 day I was sold. Highly recommend for cat owners.', name: 'Amanda L.', location: 'Texas, USA', featured: true },
+  { text: 'This changed my daily routine. No more scooping at all.', name: 'Sarah M.', location: 'California, USA' },
+  { text: 'Our home smells much fresher since we started using this.', name: 'David K.', location: 'Florida, USA' },
+  { text: 'Both our cats adapted in one day. Great purchase.', name: 'Jessica R.', location: 'New York, USA' },
+  { text: 'I was skeptical but it really works. So quiet too.', name: 'Michael T.', location: 'Ohio, USA' },
 ];
 
 const FAQS = [
@@ -177,16 +177,17 @@ export default function SelfCleaningLitterBoxLanding() {
         {/* ─── 3. OFFER BLOCK ─── */}
         <section className="px-4 pb-6">
           <div className="max-w-xl mx-auto">
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-2xl px-6 py-5 text-center">
-              <p className="text-lg md:text-xl font-extrabold text-foreground mb-1">
-                🔥 Today Only: 40% OFF + Free US Shipping
+            <div className="bg-foreground text-background rounded-2xl px-6 py-6 text-center">
+              <p className="text-2xl md:text-3xl font-extrabold mb-2">
+                50% OFF Today Only
               </p>
-              <p className="text-sm text-muted-foreground mb-2">
-                Limited stock available — while supplies last
-              </p>
-              <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary">
+              <div className="flex flex-col items-center gap-1 text-sm">
+                <span>🚚 Free US Shipping</span>
+                <span>🛡️ 30-Day Risk-Free Trial</span>
+              </div>
+              <div className="mt-3 inline-flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-4 py-1.5 text-xs font-bold">
                 <Clock className="w-3.5 h-3.5" />
-                <span>⏳ Sale ends tonight</span>
+                ⚠️ Only 12 units left in stock
               </div>
             </div>
           </div>
@@ -229,20 +230,16 @@ export default function SelfCleaningLitterBoxLanding() {
             />
 
             {/* How It Works */}
-            <div className="grid gap-3 max-w-sm mx-auto mt-4 mb-8">
+            <h3 className="text-lg font-bold text-foreground mt-6 mb-4">How it works</h3>
+            <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-8">
               {[
-                { step: '1', title: 'Detects when your cat leaves', desc: 'Infrared sensors identify when the box is empty.' },
-                { step: '2', title: 'Triggers cleaning cycle', desc: 'The mechanism separates waste from clean litter.' },
-                { step: '3', title: 'Seals waste into compartment', desc: 'Waste is stored in a sealed drawer, helping reduce odor.' },
-              ].map((s) => (
-                <div key={s.step} className="flex items-start gap-3 px-5 py-3.5 bg-card rounded-xl border border-border/50">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-xs font-bold text-primary">{s.step}</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{s.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
-                  </div>
+                { emoji: '🐱', title: 'Your cat enters' },
+                { emoji: '📡', title: 'Sensors detect exit' },
+                { emoji: '✅', title: 'Waste auto-sealed' },
+              ].map((s, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-2 px-3 py-4 bg-card rounded-xl border border-border/50 text-center">
+                  <span className="text-2xl">{s.emoji}</span>
+                  <p className="text-xs font-semibold text-foreground leading-tight">{s.title}</p>
                 </div>
               ))}
             </div>
@@ -318,11 +315,22 @@ export default function SelfCleaningLitterBoxLanding() {
                       : 'bg-[#FDFAF6] border-border/40'
                   }`}
                 >
-                  <StarRating />
+                  <div className="flex items-center justify-between">
+                    <StarRating />
+                    <span className="text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✔ Verified Buyer</span>
+                  </div>
                   <p className={`text-sm mt-2 italic ${r.featured ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
                     "{r.text}"
                   </p>
-                  <p className="text-xs font-semibold text-foreground mt-2">— {r.name}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                      {r.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{r.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.location}</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -333,12 +341,11 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── 9. TRENDING / SOCIAL PROOF BOOST ─── */}
-        <section className="px-4 py-8">
-          <div className="max-w-xl mx-auto text-center">
-            <p className="text-lg font-extrabold text-foreground mb-1">🔥 Going viral right now</p>
-            <p className="text-sm text-muted-foreground">Thousands of cat owners are switching this month</p>
-            <p className="text-xs text-primary font-semibold mt-1">Limited stock available</p>
+        {/* ─── 9. TRENDING ─── */}
+        <section className="px-4 py-6">
+          <div className="max-w-xl mx-auto text-center bg-amber-50 border border-amber-200 rounded-2xl px-5 py-5">
+            <p className="text-lg font-extrabold text-foreground mb-1">🔥 127 sold today</p>
+            <p className="text-sm text-muted-foreground">Cat owners are switching fast</p>
           </div>
         </section>
 
@@ -378,9 +385,28 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── 12. FINAL CTA + URGENCY ─── */}
-        <section className="px-4 pb-6 pt-8 text-center">
-          <p className="text-sm font-semibold text-primary mb-3">🔥 Only a few units left in stock</p>
+        {/* ─── WHY BUY NOW ─── */}
+        <section className="px-4 py-8">
+          <div className="max-w-xl mx-auto">
+            <h2 className="text-xl font-bold text-foreground text-center mb-4">Why buy today?</h2>
+            <div className="grid gap-2.5 max-w-sm mx-auto">
+              {[
+                '50% launch discount — today only',
+                'Limited stock available',
+                'Free shipping ends soon',
+              ].map((line) => (
+                <div key={line} className="flex items-center gap-3 px-5 py-3 bg-orange-50 rounded-xl">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium text-foreground">{line}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── FINAL CTA ─── */}
+        <section className="px-4 pb-6 pt-2 text-center">
+          <p className="text-sm font-semibold text-primary mb-3">⚠️ Only 12 units left in stock</p>
           <CtaButton className="text-lg px-10 py-5">Stop Scooping Forever</CtaButton>
           <MicroTrust />
         </section>
@@ -422,15 +448,12 @@ export default function SelfCleaningLitterBoxLanding() {
           className={`fixed bottom-0 left-0 right-0 z-40 md:hidden transition-transform duration-300 ${stickyVisible ? 'translate-y-0' : 'translate-y-full'}`}
           style={{ contain: 'layout' }}
         >
-          <div className="flex items-center justify-between border-t bg-white/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-muted-foreground">Free US Shipping</span>
-            </div>
+          <div className="border-t bg-white/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
             <Link
               to={PRODUCT_LINK}
-              className="rounded-full px-5 py-2.5 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all"
+              className="block w-full rounded-full px-5 py-3 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all text-center"
             >
-              Stop Scooping Forever
+              🛒 Stop Scooping Forever — 50% OFF Today
             </Link>
           </div>
         </div>
