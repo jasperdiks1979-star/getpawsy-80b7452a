@@ -85,6 +85,17 @@ export const PRIORITY_CORNERSTONES = [
     tier: 2 as const,
   },
   {
+    id: 'self-cleaning-litter-box-guide',
+    path: '/guides/self-cleaning-litter-box-guide',
+    label: 'Self-Cleaning Litter Box Guide 2026',
+    anchors: {
+      exact: ['self-cleaning litter box', 'automatic litter box guide'],
+      partial: ['self-cleaning litter box guide', 'how automatic litter boxes work', 'best automatic litter solutions'],
+      branded: ['GetPawsy litter box guide', 'our self-cleaning litter guide'],
+    },
+    tier: 1 as const,
+  },
+  {
     id: 'best-interactive-dog-toys',
     path: '/collections/best-interactive-dog-toys',
     label: 'Best Interactive Dog Toys',
@@ -125,9 +136,14 @@ export const BLOG_CORNERSTONE_TRIGGERS: Record<string, { cornerstoneId: string; 
   // Cat litter keywords
   'cat litter': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
   'litter box': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
-  'self-cleaning litter': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
+  'self-cleaning litter': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
+  'self cleaning litter': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
+  'automatic litter': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
   'litter odor': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
+  'litter smell': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
   'multi-cat litter': [{ cornerstoneId: 'best-cat-litter-boxes', minWords: 600 }],
+  'robot litter box': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
+  'smart litter box': [{ cornerstoneId: 'self-cleaning-litter-box-guide', minWords: 400 }],
 
   // Dog toy keywords
   'dog toy': [{ cornerstoneId: 'best-interactive-dog-toys', minWords: 600 }],
