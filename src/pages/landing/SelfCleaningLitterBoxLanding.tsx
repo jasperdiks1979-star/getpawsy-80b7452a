@@ -4,6 +4,7 @@ import { Check, Star, Truck, RotateCcw, ShieldCheck, Home } from 'lucide-react';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
+import { PinThisButton } from '@/components/seo/PinThisButton';
 
 const Accordion = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.Accordion })));
 const AccordionContent = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionContent })));
@@ -125,6 +126,13 @@ export default function SelfCleaningLitterBoxLanding() {
             height={1200}
             style={{ aspectRatio: '1/1', objectFit: 'contain' }}
           />
+          <div className="flex justify-center mb-4">
+            <PinThisButton
+              imageUrl={REAL_PRODUCT.main}
+              pageUrl="/lp/self-cleaning-litter-box"
+              description="Automatic self-cleaning cat litter box — helps control odor, reduces daily scooping. Smart app control for multi-cat homes. Free US shipping at GetPawsy."
+            />
+          </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-3">
             Automatic Self-Cleaning Litter Box
           </h1>

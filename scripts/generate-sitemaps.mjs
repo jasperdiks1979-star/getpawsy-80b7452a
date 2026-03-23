@@ -193,6 +193,28 @@ async function main() {
     console.log(`[sitemaps] Guides/clusters from JSON fallback: ${guideEntriesRaw.length}`);
   }
 
+  // ── BLOG POSTS ──
+  let blogRaw = await fetchAllPages(
+    "blog_posts",
+    "select=slug,updated_at,published_at&is_published=eq.true&is_noindexed=eq.false&slug=not.is.null&order=updated_at.desc"
+  );
+  let blogEntries = [];
+  if (blogRaw && blogRaw.length > 0) {
+    const seenBlogs = new Set();
+    blogEntries = blogRaw
+      .filter((b) => {
+        const blogPath = `/blog/${b.slug}`;
+        if (!b.slug || isExcluded(blogPath) || seenBlogs.has(blogPath)) return false;
+        seenBlogs.add(blogPath);
+        return true;
+      })
+      .map((b) => ({ path: `/blog/${b.slug}`, lastmod: b.updated_at || b.published_at || today }));
+    console.log(`[sitemaps] Blog posts from REST: ${blogEntries.length}`);
+  } else {
+    blogEntries = safeRead(joinRoot("data", "blog.json"), []).filter((e) => e && e.path);
+    console.log(`[sitemaps] Blog posts from JSON fallback: ${blogEntries.length}`);
+  }
+
   // ── Sort alphabetically ──
   products.sort((a, b) => a.path.localeCompare(b.path));
   collections.sort((a, b) => a.path.localeCompare(b.path));
@@ -219,17 +241,21 @@ async function main() {
     { path: "/contact", priority: 0.40, changefreq: "monthly", lastmod: today },
     { path: "/shipping", priority: 0.30, changefreq: "monthly", lastmod: today },
     { path: "/returns", priority: 0.30, changefreq: "monthly", lastmod: today },
+    { path: "/blog", priority: 0.70, changefreq: "daily", lastmod: today },
+    { path: "/lp/self-cleaning-litter-box", priority: 0.90, changefreq: "weekly", lastmod: today },
+    { path: "/lp/cat-litter-box", priority: 0.90, changefreq: "weekly", lastmod: today },
   ].map((e) => ({
     loc: absUrl(BASE, e.path), lastmod: e.lastmod, changefreq: e.changefreq, priority: e.priority,
     _path: e.path, _updatedAt: e.lastmod,
   }));
 
-  const productEntries = makeDelta(products, { changefreq: "weekly", priority: 0.70 });
-  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.80 });
+  const productEntries = makeDelta(products, { changefreq: "weekly", priority: 0.80 });
+  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.70 });
   const guideEntries = makeDelta(guideEntriesRaw, { changefreq: "weekly", priority: 0.65 });
+  const blogPageEntries = makeDelta(blogEntries, { changefreq: "weekly", priority: 0.60 });
 
   // ── Record history ──
-  const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries];
+  const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries, ...blogPageEntries];
   for (const e of allEntries) newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
 
   const clean = (entries) => entries.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
@@ -269,11 +295,16 @@ async function main() {
     sitemapIndexItems.push({ loc: `${BASE}/sitemap-guides.xml`, lastmod: today });
   }
 
+  // 5. Blog posts
+  if (blogPageEntries.length > 0) {
+    writeChecked("sitemap-blog.xml", renderUrlset(clean(blogPageEntries)), ["<urlset", "</urlset>"]);
+    sitemapIndexItems.push({ loc: `${BASE}/sitemap-blog.xml`, lastmod: today });
+  }
+
   // ── Remove stale/excluded sitemap files ──
   const legacyFiles = [
     "sitemap-static.xml", "sitemap-index.xml", "sitemap_index.xml",
     "sitemap-core-products.xml", "sitemap-secondary-products.xml", "sitemap-clusters.xml",
-    "sitemap-blog.xml",
   ];
   for (let i = 2; i <= 20; i++) legacyFiles.push(`sitemap-products-${i}.xml`);
   for (const name of legacyFiles) {
@@ -308,12 +339,13 @@ async function main() {
 
   saveHistory(newHistory);
 
-  const totalUrls = staticPages.length + productEntries.length + collectionEntries.length + guideEntries.length;
+  const totalUrls = staticPages.length + productEntries.length + collectionEntries.length + guideEntries.length + blogPageEntries.length;
   writeFile(path.join(OUT_DIR, "sitemap-coverage.json"), JSON.stringify({
     generatedAt: new Date().toISOString(),
     productCount: productEntries.length,
     collectionCount: collectionEntries.length,
     guideCount: guideEntries.length,
+    blogCount: blogPageEntries.length,
     staticCount: staticPages.length,
     totalUrls,
   }, null, 2));
@@ -323,6 +355,7 @@ async function main() {
   console.log(`[sitemaps] Products:    ${productEntries.length}`);
   console.log(`[sitemaps] Collections: ${collectionEntries.length}`);
   console.log(`[sitemaps] Guides:      ${guideEntries.length}`);
+  console.log(`[sitemaps] Blog:        ${blogPageEntries.length}`);
   console.log(`[sitemaps] Total URLs:  ${totalUrls}`);
   console.log(`[sitemaps] ══════════════════════════════════════\n`);
 }

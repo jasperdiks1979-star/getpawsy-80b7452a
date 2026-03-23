@@ -8,6 +8,7 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
 const TopProductsGrid = lazy(() => import('@/components/home/TopProductsGrid'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
+const FeaturedProductsSection = lazy(() => import('@/components/home/FeaturedProductsSection'));
 
 // ── SEO schemas ──
 const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
@@ -108,7 +109,7 @@ const Index = () => {
 
               <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-display font-bold text-foreground leading-[1.1] tracking-tight" style={{ textWrap: 'balance' as any }}>
                 Never Scoop Litter Again
-                <span className="text-primary"> — Fully Automatic</span>
+                <span className="text-primary"> — Automatic Cleaning</span>
               </h1>
 
               <p className="text-sm md:text-base text-muted-foreground max-w-md leading-relaxed" style={{ textWrap: 'pretty' as any }}>
@@ -118,7 +119,7 @@ const Index = () => {
               <ul className="space-y-2 text-sm text-foreground/90">
                 <li className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
-                  No more scooping — fully automatic cleaning
+                  Reduces daily scooping — automatic cleaning system
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">✓</span>
@@ -209,8 +210,8 @@ const Index = () => {
                   <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1.5">No Scooping Ever</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">Fully automatic self-cleaning cycle handles everything.</p>
+              <h3 className="text-sm font-semibold text-foreground mb-1.5">Reduces Daily Scooping</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Automatic self-cleaning cycle reduces daily litter maintenance.</p>
             </div>
             <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
@@ -293,6 +294,13 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Top Products">
         <Suspense fallback={null}>
           <TopProductsGrid />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══ FEATURED PRODUCTS — contextual SEO links ═══ */}
+      <SectionErrorBoundary sectionName="Featured Products">
+        <Suspense fallback={null}>
+          <FeaturedProductsSection />
         </Suspense>
       </SectionErrorBoundary>
 
