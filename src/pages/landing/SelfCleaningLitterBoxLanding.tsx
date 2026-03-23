@@ -33,11 +33,11 @@ const BENEFITS = [
 ];
 
 const REVIEWS = [
-  { text: 'I was skeptical… but after 1 day I was sold. Highly recommend for cat owners.', name: 'Amanda L.', rating: 5, featured: true },
-  { text: 'This changed my daily routine. No more scooping at all.', name: 'Sarah M.', rating: 5 },
-  { text: 'Our home smells much fresher since we started using this.', name: 'David K.', rating: 5 },
-  { text: 'Both our cats adapted in one day. Great purchase.', name: 'Jessica R.', rating: 5 },
-  { text: 'I was skeptical but it really works. So quiet too.', name: 'Michael T.', rating: 5 },
+  { text: 'I was skeptical… but after 1 day I was sold. Highly recommend for cat owners.', name: 'Amanda L.', location: 'Texas, USA', featured: true },
+  { text: 'This changed my daily routine. No more scooping at all.', name: 'Sarah M.', location: 'California, USA' },
+  { text: 'Our home smells much fresher since we started using this.', name: 'David K.', location: 'Florida, USA' },
+  { text: 'Both our cats adapted in one day. Great purchase.', name: 'Jessica R.', location: 'New York, USA' },
+  { text: 'I was skeptical but it really works. So quiet too.', name: 'Michael T.', location: 'Ohio, USA' },
 ];
 
 const FAQS = [
