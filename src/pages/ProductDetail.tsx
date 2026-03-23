@@ -59,6 +59,7 @@ import { ProductWhyChoose } from '@/components/products/ProductWhyChoose';
 import { ProductHowItWorks } from '@/components/products/ProductHowItWorks';
 import { ProductUseCases } from '@/components/products/ProductUseCases';
 import { ProductVsAlternatives } from '@/components/products/ProductVsAlternatives';
+import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { WhyCustomersChoose } from '@/components/products/WhyCustomersChoose';
 import { CrawlableRelatedLinks } from '@/components/products/CrawlableRelatedLinks';
@@ -655,10 +656,19 @@ const ProductDetail = () => {
 
   return (
     <Layout>
-      {/* Existing product pages must always be indexable for Google Merchant + Search */}
+      {/* Tier C products get noindex to preserve crawl budget; all others stay indexable */}
       <Helmet>
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        {(product as any).seo_tier === 'C' ? (
+          <>
+            <meta name="robots" content="noindex, follow" />
+            <meta name="googlebot" content="noindex, follow" />
+          </>
+        ) : (
+          <>
+            <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+            <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          </>
+        )}
       </Helmet>
       <ProductSchema 
         product={{
@@ -1400,6 +1410,14 @@ const ProductDetail = () => {
             )}
           </Tabs>
         </motion.div>
+
+        {/* 0. Full Specifications Table — unique structured content for indexing */}
+        <ProductSpecsTable product={{
+          name: product.name,
+          category: product.category,
+          weight: product.weight ? Number(product.weight) : null,
+          sku: product.sku,
+        }} />
 
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ''} />

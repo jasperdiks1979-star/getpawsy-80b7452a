@@ -2,28 +2,40 @@ import { Link } from 'react-router-dom';
 
 const FEATURED_PRODUCTS = [
   {
-    name: 'Automatic Cat Litter Box Overview',
+    name: 'Automatic Self-Cleaning Litter Box',
     path: '/lp/self-cleaning-litter-box',
-    description: 'Hybrid product overview with specifications, shipping details, returns, and FAQs.',
+    description: 'Infrared-sensor litter box with automatic cleaning cycle, odor control, and app connectivity.',
     badge: 'Featured',
   },
   {
-    name: 'Orthopedic Dog Bed',
+    name: 'Orthopedic Dog Bed – Memory Foam',
     path: '/product/orthopedic-dog-bed-memory-foam',
-    description: 'Memory foam dog bed with practical support details and product-specific information.',
+    description: 'Vet-style memory foam bed with removable washable cover for senior and large-breed dogs.',
     badge: 'Popular',
   },
   {
-    name: 'Cat Tree & Condo',
+    name: 'Multi-Level Cat Tree & Condo',
     path: '/product/large-cat-tree-multi-level-activity-center',
-    description: 'Multi-level cat furniture with sisal scratching posts and stable climbing surfaces.',
+    description: 'Sisal-wrapped cat tree with hammock, perches, and enclosed condo for multi-cat homes.',
     badge: 'Popular',
   },
   {
-    name: 'Dog Car Seat',
+    name: 'Dog Car Seat with Safety Harness',
     path: '/product/dog-car-seat-booster-safety-harness',
-    description: 'Travel seat with safety harness details for small to medium dogs.',
+    description: 'Crash-tested booster seat with adjustable harness for small to medium dogs up to 30 lbs.',
     badge: 'Safety Pick',
+  },
+  {
+    name: 'Interactive Cat Toys Bundle',
+    path: '/collections/cat-interactive-toys',
+    description: 'Feather wands, laser toys, and puzzle feeders to keep indoor cats active and stimulated.',
+    badge: 'New',
+  },
+  {
+    name: 'Dog Grooming Essentials',
+    path: '/collections/best-dog-grooming-tools',
+    description: 'Self-cleaning brushes, nail grinders, and deshedding tools for all coat types.',
+    badge: 'Top Pick',
   },
 ] as const;
 
@@ -37,7 +49,7 @@ export function FeaturedProductsSection() {
         <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
           Featured links to key product pages and product overviews from the GetPawsy catalog.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl mx-auto">
           {FEATURED_PRODUCTS.map((p) => (
             <Link
               key={p.path}
@@ -56,7 +68,7 @@ export function FeaturedProductsSection() {
           ))}
         </div>
 
-        {/* Contextual SEO anchor links */}
+        {/* Contextual SEO anchor links — keyword-rich internal links to money pages */}
         <div className="mt-8 max-w-3xl mx-auto text-center">
           <p className="text-sm text-muted-foreground leading-relaxed">
             Looking for the{' '}
@@ -73,11 +85,23 @@ export function FeaturedProductsSection() {
             </Link>
             . For dog owners, explore our{' '}
             <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary hover:underline font-medium">
-              orthopedic dog beds
-            </Link>{' '}
-            and{' '}
+              orthopedic dog beds for large breeds
+            </Link>
+            ,{' '}
             <Link to="/collections/best-dog-car-seats" className="text-primary hover:underline font-medium">
               crash-tested dog car seats
+            </Link>
+            , and{' '}
+            <Link to="/collections/best-dog-grooming-tools" className="text-primary hover:underline font-medium">
+              professional dog grooming tools
+            </Link>
+            . Browse our{' '}
+            <Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline font-medium">
+              cat trees and condos
+            </Link>{' '}
+            for multi-cat households or check out the latest{' '}
+            <Link to="/trending-pet-products" className="text-primary hover:underline font-medium">
+              trending pet products
             </Link>
             .
           </p>
