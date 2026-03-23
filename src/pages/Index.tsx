@@ -50,6 +50,17 @@ const GUIDES = [
   { path: '/best-cat-litter-box-2026', title: 'Best Self-Cleaning Litter Boxes', desc: 'Automatic litter box guide with odor-control and safety considerations.' },
 ] as const;
 
+const LITTER_BOX_GUIDES = [
+  { path: '/guides/best-self-cleaning-litter-box-2026', title: 'Best Self-Cleaning Litter Box 2026', desc: 'Top automatic picks tested and ranked for odor control and reliability.' },
+  { path: '/guides/how-does-self-cleaning-litter-box-work', title: 'How Self-Cleaning Litter Boxes Work', desc: 'Rake, rotating, and sifting mechanisms explained with safety features.' },
+  { path: '/guides/self-cleaning-litter-box-pros-cons', title: 'Self-Cleaning Litter Box: Pros & Cons', desc: 'Honest cost, maintenance, and cat acceptance breakdown.' },
+  { path: '/guides/litter-box-odor-control-solutions', title: 'Litter Box Odor Control Solutions', desc: 'Proven methods to eliminate cat litter smell, ranked by effectiveness.' },
+  { path: '/guides/best-litter-box-for-multiple-cats', title: 'Best Litter Box for Multiple Cats', desc: 'Multi-cat tested picks with proper quantity and placement rules.' },
+  { path: '/guides/automatic-vs-manual-litter-box', title: 'Automatic vs Manual Litter Box', desc: 'Real cost comparison and convenience trade-offs over 3 years.' },
+  { path: '/guides/how-to-train-cat-to-use-automatic-litter-box', title: 'Train Your Cat to Use Automatic Box', desc: '14-day transition plan with tips for nervous cats.' },
+  { path: '/guides/is-self-cleaning-litter-box-safe', title: 'Is a Self-Cleaning Litter Box Safe?', desc: 'Safety sensors, injury risks, and what features to look for.' },
+] as const;
+
 const HOW_IT_WORKS_STEPS = [
   { step: '1', title: 'Browse & Choose', desc: 'Find the right product for your pet\'s specific needs — from litter solutions to travel gear.' },
   { step: '2', title: 'Fast US Delivery', desc: 'Every order ships with tracking. Free shipping on orders over $35. Delivered in 3–7 business days.' },
@@ -405,6 +416,41 @@ const Index = () => {
           <div className="text-center mt-5">
             <Link to="/guides" className="text-sm font-medium text-primary hover:underline">
               View all guides →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ LITTER BOX AUTHORITY HUB — topical cluster links ═══ */}
+      <section className="py-10 md:py-12">
+        <div className="container px-4 md:px-6">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
+            Self-Cleaning Litter Box Guides
+          </h2>
+          <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
+            Everything you need to know about automatic litter boxes — from how they work to which one is right for your home.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
+            {LITTER_BOX_GUIDES.map((g) => (
+              <Link
+                key={g.path}
+                to={g.path}
+                className="group rounded-xl border border-border/40 bg-card p-4 hover:border-primary/40 hover:shadow-md transition-all"
+              >
+                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2">
+                  {g.title}
+                </h3>
+                <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{g.desc}</p>
+                <span className="text-xs font-medium text-primary mt-2 inline-block">Read Guide →</span>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-5">
+            <Link
+              to="/lp/self-cleaning-litter-box"
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
+            >
+              View Our Top Pick — Automatic Litter Box
             </Link>
           </div>
         </div>

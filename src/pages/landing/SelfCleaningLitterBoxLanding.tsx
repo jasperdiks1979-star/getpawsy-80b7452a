@@ -394,6 +394,34 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
+        {/* ─── RELATED GUIDES — topical cluster interlinking ─── */}
+        <section className="px-4 py-10">
+          <div className="max-w-xl mx-auto">
+            <h2 className="text-lg font-bold text-foreground mb-4 text-center">Learn More About Self-Cleaning Litter Boxes</h2>
+            <div className="grid gap-2">
+              {[
+                { path: '/guides/best-self-cleaning-litter-box-2026', title: 'Best Self-Cleaning Litter Box 2026 — Top Picks Tested' },
+                { path: '/guides/how-does-self-cleaning-litter-box-work', title: 'How Do Self-Cleaning Litter Boxes Work?' },
+                { path: '/guides/self-cleaning-litter-box-pros-cons', title: 'Self-Cleaning Litter Box: Pros & Cons' },
+                { path: '/guides/litter-box-odor-control-solutions', title: 'Litter Box Odor Control Solutions' },
+                { path: '/guides/best-litter-box-for-multiple-cats', title: 'Best Litter Box for Multiple Cats' },
+                { path: '/guides/automatic-vs-manual-litter-box', title: 'Automatic vs Manual Litter Box' },
+                { path: '/guides/how-to-train-cat-to-use-automatic-litter-box', title: 'How to Train Your Cat to Use an Automatic Litter Box' },
+                { path: '/guides/is-self-cleaning-litter-box-safe', title: 'Is a Self-Cleaning Litter Box Safe?' },
+              ].map((g) => (
+                <Link
+                  key={g.path}
+                  to={g.path}
+                  className="flex items-center justify-between rounded-lg border border-border/40 bg-card px-4 py-3 hover:border-primary/40 hover:shadow-sm transition-all group"
+                >
+                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{g.title}</span>
+                  <span className="text-xs text-primary ml-2 shrink-0">→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ─── FINAL CTA ─── */}
         <section className="px-4 py-8 text-center">
           <CtaButton className="text-lg px-10 py-5">View Full Product & Pricing</CtaButton>
