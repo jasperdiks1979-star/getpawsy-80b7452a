@@ -11,6 +11,13 @@ import {
 
 const PRODUCT_LINK = '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
 
+const PRODUCT_IMAGES = {
+  hero: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
+  mechanism: 'https://cf.cjdropshipping.com/c887b0aa-7ff1-4aad-9fbf-903f3eb0a2f6.png',
+  product: 'https://cf.cjdropshipping.com/e4454bbe-8555-4938-97e7-9c25acf0bb2a.png',
+  fallback: 'https://cf.cjdropshipping.com/da3626ae-df14-47d8-b202-1e4f9c1f7a50.png',
+};
+
 const PAIN_POINTS = [
   'Bad smell that fills your home',
   'Daily scooping you dread',
@@ -82,14 +89,15 @@ export default function SelfCleaningLitterBoxLanding() {
         {/* ─── HERO ─── */}
         <section className="px-4 pt-10 pb-12 max-w-xl mx-auto text-center">
           <img
-            src="https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/litter-box-hero.webp"
-            alt="Cat sitting inside a modern self-cleaning litter box"
-            className="w-full max-w-md mx-auto rounded-2xl shadow-md mb-8"
+            src={PRODUCT_IMAGES.hero}
+            alt="60L Automatic Self-Cleaning Cat Litter Box with Smart App Control"
+            className="w-full max-w-md mx-auto rounded-2xl shadow-md mb-8 bg-white"
             loading="eager"
             fetchPriority="high"
             width={600}
             height={600}
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=600&fit=crop'; }}
+            style={{ aspectRatio: '1/1', objectFit: 'contain' }}
+            onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
           />
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#1a1a1a] leading-tight mb-4">
             Self-Cleaning Litter Box —<br />No Scooping Ever
@@ -130,13 +138,14 @@ export default function SelfCleaningLitterBoxLanding() {
               After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment. No scooping, no smell, no effort.
             </p>
             <img
-              src="https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/litter-box-mechanism.webp"
-              alt="Self-cleaning mechanism diagram"
-              className="w-full max-w-sm mx-auto rounded-2xl shadow-sm"
+              src={PRODUCT_IMAGES.mechanism}
+              alt="Self-cleaning litter box automatic cleaning mechanism"
+              className="w-full max-w-sm mx-auto rounded-2xl shadow-sm bg-white"
               loading="lazy"
               width={500}
               height={400}
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?w=500&h=400&fit=crop'; }}
+              style={{ aspectRatio: '5/4', objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
             />
           </div>
         </section>
@@ -179,13 +188,14 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="bg-white px-4 py-12">
           <div className="max-w-xl mx-auto text-center">
             <img
-              src="https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/litter-box-hero.webp"
-              alt="Self-cleaning litter box product"
-              className="w-full max-w-xs mx-auto rounded-2xl shadow-md mb-6"
+              src={PRODUCT_IMAGES.product}
+              alt="Self-cleaning cat litter box — shop now at GetPawsy"
+              className="w-full max-w-xs mx-auto rounded-2xl shadow-md mb-6 bg-white"
               loading="lazy"
               width={400}
               height={400}
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=400&fit=crop'; }}
+              style={{ aspectRatio: '1/1', objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_IMAGES.fallback; }}
             />
             <CtaButton className="text-lg px-10 py-5">Get Yours Now</CtaButton>
           </div>
