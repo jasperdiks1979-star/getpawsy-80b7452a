@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Check, Star, Truck, RotateCcw, ShieldCheck, Clock, Home } from 'lucide-react';
+import { Check, Star, Truck, RotateCcw, ShieldCheck, Home } from 'lucide-react';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
@@ -26,10 +26,10 @@ const PAIN_POINTS = [
 ];
 
 const BENEFITS = [
-  'Helps reduce odor — built-in deodorizer',
-  'No more daily scooping — automatically cleans after use',
+  'Helps control odor — built-in deodorizer',
+  'Reduces daily litter cleaning effort',
   'Designed for multi-cat homes',
-  'Saves you time every day',
+  'Automatic cleaning system saves time',
 ];
 
 const REVIEWS = [
@@ -61,7 +61,7 @@ const MicroTrust = () => (
 const CtaButton = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <Link
     to={PRODUCT_LINK}
-    className={`inline-block rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-center animate-[pulse_5s_ease-in-out_infinite] hover:animate-none ${className}`}
+    className={`inline-block rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-center ${className}`}
   >
     {children}
   </Link>
@@ -126,10 +126,10 @@ export default function SelfCleaningLitterBoxLanding() {
             style={{ aspectRatio: '1/1', objectFit: 'contain' }}
           />
           <h1 className="text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-3">
-            Stop Scooping Your Cat's Litter 😺
+            Automatic Self-Cleaning Litter Box
           </h1>
           <p className="text-base md:text-lg text-muted-foreground mb-4 max-w-md mx-auto">
-            Helps reduce odor. No mess. Automatically cleans after every use.
+            Helps control odor and reduces daily litter cleaning effort. 60L capacity with smart app control.
           </p>
 
           {/* Hero trust signals */}
@@ -140,14 +140,12 @@ export default function SelfCleaningLitterBoxLanding() {
                   <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <span className="font-semibold text-foreground">4.8/5</span>
-              <span>from 2,100+ cat owners</span>
+              <span className="text-muted-foreground">Highly rated by customers</span>
             </div>
-            <p className="text-xs">🚚 Free US shipping · 30-day returns</p>
-            <p className="text-xs font-semibold text-primary">🔥 Limited stock available</p>
+            <p className="text-xs">🚚 Free US shipping on orders $35+ · 30-day returns</p>
           </div>
 
-          <CtaButton>Stop Scooping Forever</CtaButton>
+          <CtaButton>View Product Details</CtaButton>
           <MicroTrust />
           <p className="text-[10px] text-muted-foreground/60 mt-3">
             *Results may vary depending on usage and environment
@@ -161,7 +159,7 @@ export default function SelfCleaningLitterBoxLanding() {
               {[
                 { icon: RotateCcw, label: '30-Day Returns' },
                 { icon: ShieldCheck, label: 'Secure Checkout' },
-                { icon: Truck, label: 'Free US Shipping' },
+                { icon: Truck, label: 'Free Shipping $35+' },
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="flex flex-col items-center gap-1.5 text-center">
                   <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
@@ -174,21 +172,18 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── 3. OFFER BLOCK ─── */}
+        {/* ─── 3. PRODUCT HIGHLIGHTS ─── */}
         <section className="px-4 pb-6">
           <div className="max-w-xl mx-auto">
-            <div className="bg-foreground text-background rounded-2xl px-6 py-6 text-center">
-              <p className="text-2xl md:text-3xl font-extrabold mb-2">
-                50% OFF Today Only
+            <div className="bg-card border border-border/50 rounded-2xl px-6 py-5 text-center">
+              <p className="text-lg font-bold text-foreground mb-2">
+                60L Automatic Self-Cleaning Litter Box
               </p>
-              <div className="flex flex-col items-center gap-1 text-sm">
-                <span>🚚 Free US Shipping</span>
-                <span>🛡️ 30-Day Risk-Free Trial</span>
+              <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
+                <span>Smart app control · Infrared safety sensors</span>
+                <span>Suitable for multiple cats · Built-in deodorizer</span>
               </div>
-              <div className="mt-3 inline-flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-4 py-1.5 text-xs font-bold">
-                <Clock className="w-3.5 h-3.5" />
-                ⚠️ Only 12 units left in stock
-              </div>
+              <p className="mt-3 text-xs text-muted-foreground">Popular choice among cat owners</p>
             </div>
           </div>
         </section>
@@ -214,10 +209,10 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="px-4 py-10">
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Automatically cleans after every use
+              Automatic cleaning system
             </h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
-              After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment — helping reduce odor and mess.
+              After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment — helping control odor and reduce mess.
             </p>
             <img
               src={REAL_PRODUCT.mechanism}
@@ -243,7 +238,7 @@ export default function SelfCleaningLitterBoxLanding() {
                 </div>
               ))}
             </div>
-            <CtaButton>Stop Scooping Forever</CtaButton>
+            <CtaButton>View Product Details</CtaButton>
             <MicroTrust />
           </div>
         </section>
@@ -261,7 +256,7 @@ export default function SelfCleaningLitterBoxLanding() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <CtaButton>Stop Scooping Forever</CtaButton>
+              <CtaButton>View Product Details</CtaButton>
               <MicroTrust />
             </div>
           </div>
@@ -295,16 +290,9 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="bg-white px-4 py-10">
           <div className="max-w-xl mx-auto">
             <h2 className="text-2xl font-bold text-foreground text-center mb-1">
-              Join 10,000+ cat owners who stopped scooping forever
+              Trusted by cat owners
             </h2>
-            <div className="flex items-center justify-center gap-1.5 mb-6">
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground">4.8/5 · 2,100+ reviews</span>
-            </div>
+            <p className="text-xs text-muted-foreground text-center mb-6">Highly rated by customers</p>
             <div className="grid gap-3">
               {REVIEWS.map((r, i) => (
                 <div
@@ -335,19 +323,12 @@ export default function SelfCleaningLitterBoxLanding() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <CtaButton>Stop Scooping Forever</CtaButton>
+              <CtaButton>View Product Details</CtaButton>
               <MicroTrust />
             </div>
           </div>
         </section>
 
-        {/* ─── 9. TRENDING ─── */}
-        <section className="px-4 py-6">
-          <div className="max-w-xl mx-auto text-center bg-amber-50 border border-amber-200 rounded-2xl px-5 py-5">
-            <p className="text-lg font-extrabold text-foreground mb-1">🔥 127 sold today</p>
-            <p className="text-sm text-muted-foreground">Cat owners are switching fast</p>
-          </div>
-        </section>
 
         {/* ─── 10. RISK REVERSAL ─── */}
         <section className="px-4 py-8">
@@ -385,29 +366,9 @@ export default function SelfCleaningLitterBoxLanding() {
           </div>
         </section>
 
-        {/* ─── WHY BUY NOW ─── */}
-        <section className="px-4 py-8">
-          <div className="max-w-xl mx-auto">
-            <h2 className="text-xl font-bold text-foreground text-center mb-4">Why buy today?</h2>
-            <div className="grid gap-2.5 max-w-sm mx-auto">
-              {[
-                '50% launch discount — today only',
-                'Limited stock available',
-                'Free shipping ends soon',
-              ].map((line) => (
-                <div key={line} className="flex items-center gap-3 px-5 py-3 bg-orange-50 rounded-xl">
-                  <Check className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-sm font-medium text-foreground">{line}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ─── FINAL CTA ─── */}
         <section className="px-4 pb-6 pt-2 text-center">
-          <p className="text-sm font-semibold text-primary mb-3">⚠️ Only 12 units left in stock</p>
-          <CtaButton className="text-lg px-10 py-5">Stop Scooping Forever</CtaButton>
+          <CtaButton className="text-lg px-10 py-5">View Product Details</CtaButton>
           <MicroTrust />
         </section>
 
@@ -448,12 +409,13 @@ export default function SelfCleaningLitterBoxLanding() {
           className={`fixed bottom-0 left-0 right-0 z-40 md:hidden transition-transform duration-300 ${stickyVisible ? 'translate-y-0' : 'translate-y-full'}`}
           style={{ contain: 'layout' }}
         >
-          <div className="border-t bg-white/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
+          <div className="flex items-center justify-between border-t bg-white/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
+            <span className="text-xs text-muted-foreground">Free shipping $35+</span>
             <Link
               to={PRODUCT_LINK}
-              className="block w-full rounded-full px-5 py-3 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all text-center"
+              className="rounded-full px-6 py-2.5 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all text-center"
             >
-              🛒 Stop Scooping Forever — 50% OFF Today
+              View Product
             </Link>
           </div>
         </div>
