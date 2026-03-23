@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Check, Star, Truck, RotateCcw, ShieldCheck, Clock, Home } from 'lucide-react';
+import { Check, Star, Truck, RotateCcw, ShieldCheck, Home } from 'lucide-react';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
