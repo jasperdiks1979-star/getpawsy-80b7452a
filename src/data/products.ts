@@ -27,7 +27,7 @@ export const products: Product[] = [
   {
     id: 'prod-001',
     name: 'GetPawsy Orthopedic Dog Bed – Memory Foam Joint Support',
-    description: 'Memory foam dog bed with waterproof liner and removable washable cover. Designed to support joints for dogs of all sizes. Helps reduce pressure on hips and joints.',
+    description: 'Memory foam dog bed with waterproof liner and removable washable cover. Designed to help support joints for dogs of all sizes. Features a pressure-relieving foam layer.',
     price: 79.99,
     comparePrice: 99.99,
     image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80',
