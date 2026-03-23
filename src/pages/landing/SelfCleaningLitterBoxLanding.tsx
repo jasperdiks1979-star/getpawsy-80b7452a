@@ -11,12 +11,20 @@ import {
 
 const PRODUCT_LINK = '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
 
+// Real CJ product images — must match the exact product shipped
+const REAL_PRODUCT = {
+  main: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
+  mechanism: 'https://cf.cjdropshipping.com/c887b0aa-7ff1-4aad-9fbf-903f3eb0a2f6.png',
+  angle: 'https://cf.cjdropshipping.com/e4454bbe-8555-4938-97e7-9c25acf0bb2a.png',
+  detail: 'https://cf.cjdropshipping.com/da3626ae-df14-47d8-b202-1e4f9c1f7a50.png',
+};
+
 const LP_IMAGES = {
-  hero: '/lp/litter-box-hero-lifestyle.webp',
-  happyCat: '/lp/litter-box-happy-cat.webp',
-  solution: '/lp/litter-box-clean-solution.webp',
-  scrollStopper: '/lp/litter-box-scroll-stopper.webp',
-  trust: '/lp/litter-box-trust-scene.webp',
+  hero: REAL_PRODUCT.main,           // Real product — hero
+  happyCat: '/lp/litter-box-happy-cat.webp', // Lifestyle OK for desire section
+  solution: REAL_PRODUCT.mechanism,  // Real product — how it works
+  scrollStopper: REAL_PRODUCT.angle, // Real product — scroll stopper
+  trust: REAL_PRODUCT.detail,        // Real product — lower CTA
 };
 
 const PAIN_POINTS = [
