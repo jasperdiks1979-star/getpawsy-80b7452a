@@ -209,10 +209,10 @@ export default function SelfCleaningLitterBoxLanding() {
         <section className="px-4 py-10">
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Automatically cleans after every use
+              Automatic cleaning system
             </h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
-              After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment — helping reduce odor and mess.
+              After your cat leaves, infrared sensors trigger an automatic cycle that separates waste into a sealed compartment — helping control odor and reduce mess.
             </p>
             <img
               src={REAL_PRODUCT.mechanism}
