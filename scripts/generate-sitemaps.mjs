@@ -255,7 +255,7 @@ async function main() {
   const blogPageEntries = makeDelta(blogEntries, { changefreq: "weekly", priority: 0.60 });
 
   // ── Record history ──
-  const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries];
+  const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries, ...blogPageEntries];
   for (const e of allEntries) newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
 
   const clean = (entries) => entries.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
