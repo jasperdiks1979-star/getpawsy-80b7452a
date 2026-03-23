@@ -404,7 +404,7 @@ const App = () => {
   return (
     <AppErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <Suspense fallback={null}><TooltipProvider>
         <AuthProvider>
           <CartProvider>
             <CartAnimationProvider>
