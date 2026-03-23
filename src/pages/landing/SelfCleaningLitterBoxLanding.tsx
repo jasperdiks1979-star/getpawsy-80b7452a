@@ -323,7 +323,7 @@ export default function SelfCleaningLitterBoxLanding() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <CtaButton>Stop Scooping Forever</CtaButton>
+              <CtaButton>View Product Details</CtaButton>
               <MicroTrust />
             </div>
           </div>
