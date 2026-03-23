@@ -339,10 +339,15 @@ async function main() {
 
   saveHistory(newHistory);
 
-  const totalUrls = staticPages.length + productEntries.length + collectionEntries.length + guideEntries.length;
+  const totalUrls = staticPages.length + productEntries.length + collectionEntries.length + guideEntries.length + blogPageEntries.length;
   writeFile(path.join(OUT_DIR, "sitemap-coverage.json"), JSON.stringify({
     generatedAt: new Date().toISOString(),
     productCount: productEntries.length,
+    collectionCount: collectionEntries.length,
+    guideCount: guideEntries.length,
+    blogCount: blogPageEntries.length,
+    staticCount: staticPages.length,
+    totalUrls,
     collectionCount: collectionEntries.length,
     guideCount: guideEntries.length,
     staticCount: staticPages.length,
