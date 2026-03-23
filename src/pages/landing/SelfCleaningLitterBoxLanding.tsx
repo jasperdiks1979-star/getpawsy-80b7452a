@@ -238,7 +238,7 @@ export default function SelfCleaningLitterBoxLanding() {
                 </div>
               ))}
             </div>
-            <CtaButton>Stop Scooping Forever</CtaButton>
+            <CtaButton>View Product Details</CtaButton>
             <MicroTrust />
           </div>
         </section>
