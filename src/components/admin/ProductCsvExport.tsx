@@ -4,7 +4,7 @@ import { FileDown, Loader2, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-type ExportMode = "full" | "canonical";
+type ExportMode = "full" | "canonical" | "merchant";
 
 async function downloadCsv(mode: ExportMode) {
   const {
@@ -13,15 +13,15 @@ async function downloadCsv(mode: ExportMode) {
   if (!session?.access_token) throw new Error("Not authenticated");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const res = await fetch(
-    `${supabaseUrl}/functions/v1/export-products-csv?mode=${mode}`,
-    {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    }
-  );
+  const endpoint = mode === "merchant"
+    ? `${supabaseUrl}/functions/v1/export-merchant-feed?format=csv`
+    : `${supabaseUrl}/functions/v1/export-products-csv?mode=${mode}`;
+  const res = await fetch(endpoint, {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+  });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Export failed" }));
@@ -38,9 +38,11 @@ async function downloadCsv(mode: ExportMode) {
   const today = new Date().toISOString().split("T")[0];
   a.href = url;
   a.download =
-    mode === "canonical"
-      ? `getpawsy_canonical_product_export_${today}.csv`
-      : `getpawsy_full_product_export_${today}.csv`;
+    mode === "merchant"
+      ? `getpawsy_merchant_feed_${today}.csv`
+      : mode === "canonical"
+        ? `getpawsy_canonical_product_export_${today}.csv`
+        : `getpawsy_full_product_export_${today}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -52,16 +54,19 @@ async function downloadCsv(mode: ExportMode) {
 export const ProductCsvExport = () => {
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingCanonical, setLoadingCanonical] = useState(false);
+  const [loadingMerchant, setLoadingMerchant] = useState(false);
 
   const handleExport = async (mode: ExportMode) => {
-    const setLoading = mode === "full" ? setLoadingFull : setLoadingCanonical;
+    const setLoading = mode === "merchant" ? setLoadingMerchant : mode === "full" ? setLoadingFull : setLoadingCanonical;
     setLoading(true);
     try {
       const { total, duplicates, inactive } = await downloadCsv(mode);
       toast.success(
-        mode === "full"
-          ? `Full export: ${total} products (${duplicates} duplicates, ${inactive} inactive)`
-          : `Canonical export: ${total} storefront-visible products`
+        mode === "merchant"
+          ? `Merchant feed: ${total} Google-optimized products exported`
+          : mode === "full"
+            ? `Full export: ${total} products (${duplicates} duplicates, ${inactive} inactive)`
+            : `Canonical export: ${total} storefront-visible products`
       );
     } catch (error: any) {
       console.error("CSV export error:", error);
@@ -89,7 +94,7 @@ export const ProductCsvExport = () => {
       </Button>
       <Button
         onClick={() => handleExport("canonical")}
-        disabled={loadingFull || loadingCanonical}
+        disabled={loadingFull || loadingCanonical || loadingMerchant}
         variant="outline"
         size="sm"
         className="gap-2"
@@ -100,6 +105,20 @@ export const ProductCsvExport = () => {
           <Filter className="h-4 w-4" />
         )}
         Canonical CSV
+      </Button>
+      <Button
+        onClick={() => handleExport("merchant")}
+        disabled={loadingFull || loadingCanonical || loadingMerchant}
+        variant="default"
+        size="sm"
+        className="gap-2"
+      >
+        {loadingMerchant ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <FileDown className="h-4 w-4" />
+        )}
+        Google Merchant Feed
       </Button>
     </div>
   );
