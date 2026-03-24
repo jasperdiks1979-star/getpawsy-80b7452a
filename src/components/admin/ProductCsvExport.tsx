@@ -13,15 +13,15 @@ async function downloadCsv(mode: ExportMode) {
   if (!session?.access_token) throw new Error("Not authenticated");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const res = await fetch(
-    `${supabaseUrl}/functions/v1/export-products-csv?mode=${mode}`,
-    {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    }
-  );
+  const endpoint = mode === "merchant"
+    ? `${supabaseUrl}/functions/v1/export-merchant-feed?format=csv`
+    : `${supabaseUrl}/functions/v1/export-products-csv?mode=${mode}`;
+  const res = await fetch(endpoint, {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+  });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Export failed" }));
