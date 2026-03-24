@@ -2,18 +2,14 @@ import { useLocation, Link } from "react-router-dom";
 import { useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { Layout } from "@/components/layout/Layout";
-import { Home, Search, BookOpen, ShoppingBag } from "lucide-react";
+import { Home, Search, BookOpen, ShoppingBag, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/** Log 404 events for admin diagnostics (best-effort, non-blocking) */
 function log404(pathname: string, referrer: string) {
   try {
-    const key = `__404_log`;
-    const existing: Array<{ path: string; ref: string; ts: string }> = JSON.parse(
-      localStorage.getItem(key) || "[]"
-    );
+    const key = "__404_log";
+    const existing: Array<{ path: string; ref: string; ts: string }> = JSON.parse(localStorage.getItem(key) || "[]");
     existing.unshift({ path: pathname, ref: referrer, ts: new Date().toISOString() });
-    // Keep last 100
     localStorage.setItem(key, JSON.stringify(existing.slice(0, 100)));
   } catch {
     // non-critical
@@ -21,18 +17,19 @@ function log404(pathname: string, referrer: string) {
 }
 
 const SUGGESTED_LINKS = [
-  { label: "Dog Training Gear", href: "/collections/dog-leash-control", icon: ShoppingBag },
-  { label: "Cat Essentials", href: "/collections/cat", icon: ShoppingBag },
-  { label: "Dog Potty Training", href: "/collections/dog-potty-training", icon: ShoppingBag },
+  { label: "All Products", href: "/products", icon: ShoppingBag },
+  { label: "Best Cat Litter Boxes", href: "/collections/best-cat-litter-boxes", icon: ShoppingBag },
+  { label: "Dog Training Accessories", href: "/collections/dog-training-accessories", icon: ShoppingBag },
   { label: "All Guides", href: "/guides", icon: BookOpen },
-  { label: "All Products", href: "/products", icon: Search },
-];
+  { label: "Help Center", href: "/help", icon: HelpCircle },
+] as const;
 
 const NotFound = () => {
   const location = useLocation();
 
   const isGuidePath = location.pathname.startsWith("/guides/");
   const isCollectionPath = location.pathname.startsWith("/collections/");
+  const isProductPath = location.pathname.startsWith("/product/") || location.pathname.startsWith("/products/");
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
@@ -40,10 +37,17 @@ const NotFound = () => {
   }, [location.pathname]);
 
   const contextMessage = useMemo(() => {
-    if (isGuidePath) return "This guide may have been moved or consolidated into another article.";
-    if (isCollectionPath) return "This collection may have been reorganized. Try one of these popular collections:";
+    if (isProductPath) {
+      return "This product page may have moved or the product may no longer be available. Try browsing all products or one of the collections below.";
+    }
+    if (isGuidePath) {
+      return "This guide may have been moved or consolidated into another article.";
+    }
+    if (isCollectionPath) {
+      return "This collection may have been reorganized. Try one of these popular destinations.";
+    }
     return "The page you're looking for doesn't exist or has been moved.";
-  }, [isGuidePath, isCollectionPath]);
+  }, [isGuidePath, isCollectionPath, isProductPath]);
 
   return (
     <Layout>
@@ -52,12 +56,15 @@ const NotFound = () => {
         <meta name="robots" content="noindex, nofollow" />
         <meta name="prerender-status-code" content="404" />
       </Helmet>
+
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center max-w-lg mx-auto px-4">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
             <span className="text-4xl">🐾</span>
           </div>
+
           <h1 className="mb-3 text-3xl font-display font-bold text-foreground">Page Not Found</h1>
+
           <p className="mb-6 text-muted-foreground leading-relaxed">{contextMessage}</p>
 
           <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -71,12 +78,21 @@ const NotFound = () => {
             ))}
           </div>
 
-          <Link to="/">
-            <Button className="gap-2">
-              <Home className="w-4 h-4" />
-              Return to Home
-            </Button>
-          </Link>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link to="/">
+              <Button className="gap-2">
+                <Home className="w-4 h-4" />
+                Return to Home
+              </Button>
+            </Link>
+
+            <Link to="/products">
+              <Button variant="secondary" className="gap-2">
+                <Search className="w-4 h-4" />
+                Browse Products
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </Layout>
