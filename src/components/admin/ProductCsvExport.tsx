@@ -54,6 +54,7 @@ async function downloadCsv(mode: ExportMode) {
 export const ProductCsvExport = () => {
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingCanonical, setLoadingCanonical] = useState(false);
+  const [loadingMerchant, setLoadingMerchant] = useState(false);
 
   const handleExport = async (mode: ExportMode) => {
     const setLoading = mode === "full" ? setLoadingFull : setLoadingCanonical;
