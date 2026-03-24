@@ -51,6 +51,7 @@ import { trackViewItem } from "@/lib/analytics";
 import { calculateSellingPrice } from "@/lib/pricing";
 import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
+import { getProductBySlugOrId } from "@/data/products";
 import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
 import { TrustMicrocopy } from "@/components/products/TrustMicrocopy";
@@ -116,6 +117,29 @@ type ProductRecord = Record<string, any>;
 async function fetchExistingProduct(productIdentifier: string): Promise<ProductRecord | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productIdentifier);
 
+  const mapLocalProduct = (localProduct: any): ProductRecord => ({
+    id: localProduct.id,
+    slug: localProduct.slug,
+    name: localProduct.name,
+    description: localProduct.description,
+    price: localProduct.price,
+    compare_at_price: localProduct.comparePrice ?? null,
+    image_url: localProduct.image,
+    images: localProduct.images ?? [localProduct.image],
+    category: localProduct.category,
+    sku: localProduct.id,
+    stock: localProduct.inStock ? 999 : 0,
+    is_active: true,
+    weight: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  const getLocalFallback = () => {
+    const localProduct = getProductBySlugOrId(productIdentifier);
+    return localProduct ? mapLocalProduct(localProduct) : null;
+  };
+
   const fetchPublicBy = async (column: "id" | "slug", value: string) => {
     const { data, error } = await supabase.from("products_public").select("*").eq(column, value).maybeSingle();
 
@@ -150,43 +174,49 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     return null;
   };
 
-  if (isUuid) {
-    const publicById = await fetchPublicBy("id", productIdentifier);
-    if (publicById) return publicById;
+  try {
+    if (isUuid) {
+      const publicById = await fetchPublicBy("id", productIdentifier);
+      if (publicById) return publicById;
 
-    const duplicateRedirect = await resolveDuplicateRedirect("id", productIdentifier);
+      const duplicateRedirect = await resolveDuplicateRedirect("id", productIdentifier);
+      if (duplicateRedirect) return duplicateRedirect;
+
+      const baseById = await fetchBaseBy("id", productIdentifier);
+      if (baseById) return baseById;
+
+      return getLocalFallback();
+    }
+
+    const publicBySlug = await fetchPublicBy("slug", productIdentifier);
+    if (publicBySlug) return publicBySlug;
+
+    const duplicateRedirect = await resolveDuplicateRedirect("slug", productIdentifier);
     if (duplicateRedirect) return duplicateRedirect;
 
-    const baseById = await fetchBaseBy("id", productIdentifier);
-    if (baseById) return baseById;
+    const baseBySlug = await fetchBaseBy("slug", productIdentifier);
+    if (baseBySlug) return baseBySlug;
 
-    return null;
+    const searchName = productIdentifier.replace(/-/g, " ").toLowerCase();
+    const { data, error } = await supabase
+      .from("products_public")
+      .select("*")
+      .ilike("name", `%${searchName}%`)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return data;
+
+    return getLocalFallback();
+  } catch {
+    return getLocalFallback();
   }
-
-  const publicBySlug = await fetchPublicBy("slug", productIdentifier);
-  if (publicBySlug) return publicBySlug;
-
-  const duplicateRedirect = await resolveDuplicateRedirect("slug", productIdentifier);
-  if (duplicateRedirect) return duplicateRedirect;
-
-  const baseBySlug = await fetchBaseBy("slug", productIdentifier);
-  if (baseBySlug) return baseBySlug;
-
-  const searchName = productIdentifier.replace(/-/g, " ").toLowerCase();
-  const { data, error } = await supabase
-    .from("products_public")
-    .select("*")
-    .ilike("name", `%${searchName}%`)
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
 }
 
 const ProductDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addItem } = useCart();
@@ -258,14 +288,16 @@ const ProductDetail = () => {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["product", id],
+    queryKey: ["product", slug],
     queryFn: async () => {
-      if (!id) return null;
-      return fetchExistingProduct(id);
+      if (!slug) return null;
+      return fetchExistingProduct(slug);
     },
-    enabled: !!id,
+    enabled: !!slug,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
   });
 
   // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
@@ -274,14 +306,14 @@ const ProductDetail = () => {
       navigate(`/product/${product.slug || product.id}`, { replace: true });
       return;
     }
-    if (product?.slug && id && isValidUUID(id)) {
+    if (product?.slug && slug && isValidUUID(slug)) {
       navigate(`/product/${product.slug}`, { replace: true });
     }
-  }, [product, id, navigate]);
+  }, [product, slug, navigate]);
 
   // Get recently viewed product IDs ONCE at the top level
   // This prevents duplicate useRecentlyViewed hook calls in child hooks
-  const recentlyViewedIds = useMemo(() => getRecentlyViewedIds(id), [getRecentlyViewedIds, id]);
+  const recentlyViewedIds = useMemo(() => getRecentlyViewedIds(product?.id), [getRecentlyViewedIds, product?.id]);
 
   // Fetch related products with enhanced category and keyword matching
   // Pass recentlyViewedIds to avoid duplicate hook calls
@@ -336,23 +368,25 @@ const ProductDetail = () => {
 
   // Fetch product reviews
   const { data: reviews = [] } = useQuery({
-    queryKey: ["product-reviews", id],
+    queryKey: ["product-reviews", product?.id],
     queryFn: async () => {
+      if (!product?.id) return [];
       const { data, error } = await supabase
         .from("product_reviews")
         .select("*")
-        .eq("product_id", id)
+        .eq("product_id", product.id)
         .eq("is_approved", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!id,
+    enabled: !!product?.id,
   });
 
   const handleReviewsRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["product-reviews", id] });
+    if (!product?.id) return;
+    queryClient.invalidateQueries({ queryKey: ["product-reviews", product.id] });
   };
 
   // Parse variants from JSON and ensure prices are calculated correctly
@@ -442,7 +476,7 @@ const ProductDetail = () => {
   // Scroll to top when navigating to product page
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [slug]);
 
   // Track product views in visitor analytics
   const { trackProductView } = useVisitorTracking();
@@ -454,13 +488,13 @@ const ProductDetail = () => {
     setSelectedVariant(null);
 
     // Add current product to recently viewed and track view
-    if (id && product) {
-      addToRecentlyViewed(id);
-      trackViewItem(id, product.name || "", product.price || 0, product.category || undefined);
+    if (product?.id && product) {
+      addToRecentlyViewed(product.id);
+      trackViewItem(product.id, product.name || "", product.price || 0, product.category || undefined);
       // Track in visitor analytics for enhanced product view insights
       trackProductView(product.id, product.name || "");
     }
-  }, [id, product, addToRecentlyViewed, trackProductView]);
+  }, [product?.id, product, addToRecentlyViewed, trackProductView]);
 
   // Auto-select first variant when variants are available and none selected
   useEffect(() => {
@@ -563,9 +597,9 @@ const ProductDetail = () => {
   // SEO-safe loading state: emit proper head tags so crawlers never see
   // noindex or 404 signals while product data is still resolving.
   if (isLoading) {
-    const slugName = id ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
+    const slugName = slug ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
     const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
-    const loadingCanonical = `https://getpawsy.pet/product/${id || ""}`;
+    const loadingCanonical = `https://getpawsy.pet/product/${slug || ""}`;
 
     return (
       <Layout>
@@ -590,9 +624,9 @@ const ProductDetail = () => {
   // On network/query error, show skeleton with retry — do NOT render NotFound
   // so crawlers don't see a false 404 for a valid product URL.
   if (isError) {
-    const slugName = id ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
+    const slugName = slug ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
     const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
-    const errorCanonical = `https://getpawsy.pet/product/${id || ""}`;
+    const errorCanonical = `https://getpawsy.pet/product/${slug || ""}`;
 
     return (
       <Layout>
