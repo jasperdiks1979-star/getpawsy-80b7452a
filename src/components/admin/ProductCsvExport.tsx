@@ -62,9 +62,11 @@ export const ProductCsvExport = () => {
     try {
       const { total, duplicates, inactive } = await downloadCsv(mode);
       toast.success(
-        mode === "full"
-          ? `Full export: ${total} products (${duplicates} duplicates, ${inactive} inactive)`
-          : `Canonical export: ${total} storefront-visible products`
+        mode === "merchant"
+          ? `Merchant feed: ${total} Google-optimized products exported`
+          : mode === "full"
+            ? `Full export: ${total} products (${duplicates} duplicates, ${inactive} inactive)`
+            : `Canonical export: ${total} storefront-visible products`
       );
     } catch (error: any) {
       console.error("CSV export error:", error);
