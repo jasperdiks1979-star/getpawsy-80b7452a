@@ -1,618 +1,166 @@
-import { useState, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
-import { Layout } from "@/components/layout/Layout";
-import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
-import {
-  BUSINESS_LOCATION,
-  BUSINESS_OPERATOR,
-  BUSINESS_REGISTRATION,
-  BUSINESS_VAT_ID,
-  DELIVERY_TIME_STANDARD,
-  RETURN_WINDOW_DAYS,
-  SITE_LAST_UPDATED,
-  SUPPORT_EMAIL,
-} from "@/lib/shipping-constants";
+export interface Product {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  comparePrice?: number;
+  image: string;
+  images: string[];
+  category: string;
+  tags: string[];
+  rating: number;
+  reviews: number;
+  inStock: boolean;
+  featured?: boolean;
+}
 
-const TrendingProducts = lazy(() => import("@/components/home/TrendingProducts"));
-const TopProductsGrid = lazy(() => import("@/components/home/TopProductsGrid"));
-const StickyMobileCta = lazy(() => import("@/components/home/StickyMobileCta"));
-const FeaturedProductsSection = lazy(() => import("@/components/home/FeaturedProductsSection"));
-
-const WebsiteSchema = lazy(() => import("@/components/seo/WebsiteSchema").then((m) => ({ default: m.WebsiteSchema })));
-const LocalBusinessSchema = lazy(() =>
-  import("@/components/seo/LocalBusinessSchema").then((m) => ({ default: m.LocalBusinessSchema })),
-);
-
-const showToast = (type: "success" | "error" | "info", msg: string) => import("sonner").then((m) => m.toast[type](msg));
-const getSupabase = () => import("@/integrations/supabase/client").then((m) => m.supabase);
-
-const FEATURED_PRODUCT_PATH =
-  "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat";
-
-const CATEGORIES = [
-  { name: "Cat Litter Boxes", href: "/collections/best-cat-litter-boxes", emoji: "🐱" },
-  { name: "Cat Trees & Condos", href: "/collections/cat-trees-and-condos", emoji: "🏠" },
-  { name: "Dog Beds", href: "/collections/orthopedic-calming-dog-beds", emoji: "🛏️" },
-  { name: "Dog Car Seats", href: "/collections/best-dog-car-seats", emoji: "🚗" },
-  { name: "Training Essentials", href: "/collections/dog-training-accessories", emoji: "🎯" },
+export const categories = [
+  { id: "dogs", name: "Dogs", icon: "🐕", description: "Everything for your canine companion" },
+  { id: "cats", name: "Cats", icon: "🐈", description: "Purrfect products for feline friends" },
+  { id: "toys", name: "Toys", icon: "🎾", description: "Fun toys for endless playtime" },
+  { id: "food", name: "Food & Treats", icon: "🦴", description: "Nutritious meals and tasty treats" },
+  { id: "accessories", name: "Accessories", icon: "🎀", description: "Collars, leashes, and more" },
+  { id: "health", name: "Health & Wellness", icon: "💊", description: "Keep your pets healthy and happy" },
 ] as const;
 
-const BUYING_GUIDES = [
-  { path: "/best-cat-litter-box-2026", title: "Best Self-Cleaning Litter Boxes 2026", badge: "Top Guide" },
-  { path: "/best-dog-car-seat-safety", title: "Best Dog Car Seats (Crash-Tested)", badge: "Top Guide" },
-  { path: "/guides/best-cat-trees-and-condos-2026", title: "Best Cat Trees & Condos 2026", badge: "Top Guide" },
-  { path: "/guides/best-dog-anxiety-solutions-2026", title: "Best Dog Anxiety Solutions 2026", badge: "Top Guide" },
-] as const;
-
-const GUIDES = [
+export const products: Product[] = [
   {
-    path: "/best-dog-car-seat-safety",
-    title: "Best Dog Car Seats (Crash-Tested)",
-    desc: "Safety-rated picks for travel with your dog.",
+    id: "prod-001",
+    slug: "getpawsy-orthopedic-dog-bed-memory-foam-joint-support",
+    name: "GetPawsy Orthopedic Dog Bed – Memory Foam Joint Support",
+    description:
+      "Memory foam dog bed with waterproof liner and removable washable cover. Designed to help support joints for dogs of all sizes. Features a pressure-relieving foam layer.",
+    price: 79.99,
+    comparePrice: 99.99,
+    image: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80",
+      "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&q=80",
+    ],
+    category: "dogs",
+    tags: ["bed", "comfort", "orthopedic"],
+    rating: 4.8,
+    reviews: 234,
+    inStock: true,
+    featured: true,
   },
   {
-    path: "/guides/complete-dog-training-guide-2026",
-    title: "Dog Training Toys Guide",
-    desc: "Expert-tested methods for any breed or age.",
+    id: "prod-002",
+    slug: "getpawsy-interactive-cat-puzzle-feeder-mental-stimulation-toy",
+    name: "GetPawsy Interactive Cat Puzzle Feeder – Mental Stimulation Toy",
+    description:
+      "Stimulate your cat's mind with this engaging puzzle feeder. Features multiple difficulty levels to encourage natural foraging behavior and slow down eating.",
+    price: 24.99,
+    image: "https://images.unsplash.com/photo-1545249390-6bdfa286032f?w=600&q=80",
+    images: ["https://images.unsplash.com/photo-1545249390-6bdfa286032f?w=600&q=80"],
+    category: "cats",
+    tags: ["puzzle", "feeder", "interactive"],
+    rating: 4.6,
+    reviews: 156,
+    inStock: true,
+    featured: true,
   },
   {
-    path: "/guides/best-cat-trees-and-condos-2026",
-    title: "Best Cat Trees 2026",
-    desc: "Stability-tested picks for every home size.",
+    id: "prod-003",
+    slug: "getpawsy-durable-rope-tug-toy-natural-cotton-fibers",
+    name: "GetPawsy Durable Rope Tug Toy – Natural Cotton Fibers",
+    description:
+      "Heavy-duty rope toy suitable for tug-of-war play. Made from natural cotton fibers that are gentle on teeth and gums.",
+    price: 14.99,
+    image: "https://images.unsplash.com/photo-1535294435445-d7249524ef2e?w=600&q=80",
+    images: ["https://images.unsplash.com/photo-1535294435445-d7249524ef2e?w=600&q=80"],
+    category: "toys",
+    tags: ["rope", "tug", "durable"],
+    rating: 4.5,
+    reviews: 89,
+    inStock: true,
   },
   {
-    path: "/best-cat-litter-box-2026",
-    title: "Best Self-Cleaning Litter Boxes",
-    desc: "Automatic litter box guide with odor-control and safety considerations.",
-  },
-] as const;
-
-const LITTER_BOX_GUIDES = [
-  {
-    path: "/guides/best-self-cleaning-litter-box-2026",
-    title: "Best Self-Cleaning Litter Box 2026",
-    desc: "Top automatic picks tested and ranked for odor control and reliability.",
-  },
-  {
-    path: "/guides/how-does-self-cleaning-litter-box-work",
-    title: "How Self-Cleaning Litter Boxes Work",
-    desc: "Rake, rotating, and sifting mechanisms explained with safety features.",
-  },
-  {
-    path: "/guides/self-cleaning-litter-box-pros-cons",
-    title: "Self-Cleaning Litter Box: Pros & Cons",
-    desc: "Honest cost, maintenance, and cat acceptance breakdown.",
+    id: "prod-004",
+    slug: "getpawsy-organic-chicken-training-treats-low-calorie",
+    name: "GetPawsy Organic Chicken Training Treats – Low Calorie",
+    description:
+      "All-natural organic chicken treats designed for training sessions. Low calorie and high protein, made with simple ingredients dogs love.",
+    price: 18.99,
+    comparePrice: 22.99,
+    image: "https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=600&q=80",
+    images: ["https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=600&q=80"],
+    category: "food",
+    tags: ["treats", "organic", "training"],
+    rating: 4.9,
+    reviews: 312,
+    inStock: true,
+    featured: true,
   },
   {
-    path: "/guides/litter-box-odor-control-solutions",
-    title: "Litter Box Odor Control Solutions",
-    desc: "Proven methods to eliminate cat litter smell, ranked by effectiveness.",
+    id: "prod-005",
+    slug: "getpawsy-adjustable-led-safety-collar-rechargeable",
+    name: "GetPawsy Adjustable LED Safety Collar – Rechargeable",
+    description:
+      "Rechargeable LED collar designed to improve visibility during nighttime walks. Features multiple light modes and adjustable sizing for a comfortable fit.",
+    price: 29.99,
+    image: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&q=80",
+    images: ["https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&q=80"],
+    category: "accessories",
+    tags: ["collar", "LED", "safety"],
+    rating: 4.7,
+    reviews: 178,
+    inStock: true,
   },
   {
-    path: "/guides/best-litter-box-for-multiple-cats",
-    title: "Best Litter Box for Multiple Cats",
-    desc: "Multi-cat tested picks with proper quantity and placement rules.",
+    id: "prod-006",
+    slug: "getpawsy-calming-hemp-oil-for-pets-relaxation-support",
+    name: "GetPawsy Calming Hemp Oil for Pets – Relaxation Support",
+    description:
+      "Natural hemp oil designed to help support relaxation in dogs and cats. May promote calmness during stressful situations such as travel or loud noises.",
+    price: 34.99,
+    image: "https://images.unsplash.com/photo-1512438248247-f0f2a5a8b7f0?w=600&q=80",
+    images: ["https://images.unsplash.com/photo-1512438248247-f0f2a5a8b7f0?w=600&q=80"],
+    category: "health",
+    tags: ["hemp", "calming", "wellness"],
+    rating: 4.4,
+    reviews: 98,
+    inStock: true,
   },
   {
-    path: "/guides/automatic-vs-manual-litter-box",
-    title: "Automatic vs Manual Litter Box",
-    desc: "Real cost comparison and convenience trade-offs over 3 years.",
+    id: "prod-007",
+    slug: "getpawsy-self-cleaning-cat-litter-box-automatic-cleaning-system",
+    name: "GetPawsy Self-Cleaning Cat Litter Box – Automatic Cleaning System",
+    description:
+      "Automatic self-cleaning litter box with built-in deodorizer designed to help control odor. Works with clumping clay litter and features a quiet motor (under 50 dB).",
+    price: 149.99,
+    comparePrice: 189.99,
+    image: "https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?w=600&q=80",
+    images: ["https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?w=600&q=80"],
+    category: "cats",
+    tags: ["litter box", "automatic", "self-cleaning"],
+    rating: 4.3,
+    reviews: 267,
+    inStock: true,
+    featured: true,
   },
   {
-    path: "/guides/how-to-train-cat-to-use-automatic-litter-box",
-    title: "Train Your Cat to Use Automatic Box",
-    desc: "14-day transition plan with tips for nervous cats.",
+    id: "prod-008",
+    slug: "getpawsy-retractable-dog-leash-26ft-heavy-duty",
+    name: "GetPawsy Retractable Dog Leash – 26ft Heavy Duty",
+    description:
+      "Retractable leash with ergonomic handle and one-button brake system. Extends up to 26 feet for comfortable walks and outdoor use.",
+    price: 32.99,
+    image: "https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=600&q=80",
+    images: ["https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=600&q=80"],
+    category: "accessories",
+    tags: ["leash", "retractable", "walking"],
+    rating: 4.6,
+    reviews: 145,
+    inStock: true,
   },
-  {
-    path: "/guides/is-self-cleaning-litter-box-safe",
-    title: "Is a Self-Cleaning Litter Box Safe?",
-    desc: "Safety sensors, injury risks, and what features to look for.",
-  },
-] as const;
+];
 
-const HOW_IT_WORKS_STEPS = [
-  {
-    step: "1",
-    title: "Browse & Choose",
-    desc: "Find the right product for your pet's specific needs — from litter solutions to travel gear.",
-  },
-  {
-    step: "2",
-    title: "Fast US Delivery",
-    desc: "Every order ships with tracking. Free shipping on orders over $35. Delivered in 3–7 business days.",
-  },
-  {
-    step: "3",
-    title: "Happier Pet, Easier Life",
-    desc: "Smart products that solve real problems — less mess, less stress, more quality time with your pet.",
-  },
-] as const;
+export const getFeaturedProducts = () => products.filter((p) => p.featured);
+export const getProductsByCategory = (category: string) => products.filter((p) => p.category === category);
+export const getProductById = (id: string) => products.find((p) => p.id === id);
 
-const Index = () => {
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [isSubscribing, setIsSubscribing] = useState(false);
+export const getProductBySlug = (slug: string) => products.find((p) => p.slug === slug);
 
-  const handleNewsletterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newsletterEmail || !newsletterEmail.includes("@")) {
-      showToast("error", "Please enter a valid email address");
-      return;
-    }
-
-    setIsSubscribing(true);
-
-    try {
-      const supabase = await getSupabase();
-      const { error } = await supabase.from("newsletter_subscribers").insert({ email: newsletterEmail });
-
-      if (error) {
-        if (error.code === "23505") {
-          showToast("info", "You're already subscribed!");
-        } else {
-          throw error;
-        }
-      } else {
-        showToast("success", "Thanks for signing up!");
-      }
-
-      setNewsletterEmail("");
-    } catch {
-      showToast("error", "Something went wrong. Please try again.");
-    } finally {
-      setIsSubscribing(false);
-    }
-  };
-
-  return (
-    <Layout>
-      <Helmet>
-        <title>Upgrade Your Pet&apos;s Life — Smart Cat & Dog Essentials | GetPawsy</title>
-        <meta
-          name="description"
-          content="Smart solutions for happier cats & dogs. Self-cleaning litter boxes, orthopedic dog beds, cat trees & more. Free US shipping $35+."
-        />
-        <link rel="canonical" href="https://getpawsy.pet/" />
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Upgrade Your Pet's Life — Smart Cat & Dog Essentials | GetPawsy" />
-        <meta
-          property="og:description"
-          content="Smart solutions for happier cats & dogs. Free US shipping $35+, 30-day returns."
-        />
-        <meta property="og:url" content="https://getpawsy.pet/" />
-        <meta property="og:type" content="website" />
-      </Helmet>
-
-      <Suspense fallback={null}>
-        <WebsiteSchema />
-        <LocalBusinessSchema />
-      </Suspense>
-
-      <section className="relative overflow-hidden" style={{ contain: "layout style" }}>
-        <div className="container px-4 md:px-6 py-10 md:py-16">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4 order-2 md:order-1">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary">
-                Featured Product — Automatic Cat Litter Box
-              </div>
-
-              <h1
-                className="text-2xl sm:text-3xl md:text-[2.5rem] font-display font-bold text-foreground leading-[1.1] tracking-tight"
-                style={{ textWrap: "balance" as any }}
-              >
-                Automatic Cat Litter Box
-                <span className="text-primary"> for Easier Daily Cleaning</span>
-              </h1>
-
-              <p
-                className="text-sm md:text-base text-muted-foreground max-w-md leading-relaxed"
-                style={{ textWrap: "pretty" as any }}
-              >
-                Automatic cleaning system designed to help reduce odor and reduce daily litter cleaning effort for
-                multi-cat households.
-              </p>
-
-              <ul className="space-y-2 text-sm text-foreground/90">
-                <li className="flex items-center gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                    ✓
-                  </span>
-                  Reduces daily litter cleaning effort
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                    ✓
-                  </span>
-                  Helps reduce odor with enclosed waste handling
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                    ✓
-                  </span>
-                  Infrared safety sensors pause cleaning while your cat is inside
-                </li>
-              </ul>
-
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-amber-400">★★★★★</span>
-                  <span className="font-semibold text-foreground">4.8/5</span>
-                  <span className="text-muted-foreground text-xs">Transparent product information</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Link
-                  to={FEATURED_PRODUCT_PATH}
-                  className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
-                >
-                  View Product Details
-                </Link>
-                <a
-                  href="#how-it-works"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-200"
-                >
-                  See How It Works
-                </a>
-              </div>
-
-              <p className="text-base font-bold text-foreground pt-1">
-                View live pricing, shipping, and availability on the product page
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span>🛡️ {RETURN_WINDOW_DAYS}-Day Returns</span>
-                <span>·</span>
-                <span>🔒 Secure checkout</span>
-                <span>·</span>
-                <span>📦 US delivery: {DELIVERY_TIME_STANDARD}</span>
-              </div>
-
-              <div className="rounded-xl border border-border/40 bg-card/70 p-4 text-xs text-muted-foreground max-w-md">
-                <p>
-                  <span className="font-medium text-foreground">Last updated:</span> {SITE_LAST_UPDATED}
-                </p>
-                <p className="mt-1">
-                  <span className="font-medium text-foreground">Business:</span> GetPawsy · {BUSINESS_OPERATOR} ·{" "}
-                  {BUSINESS_LOCATION}
-                </p>
-                <p className="mt-1">
-                  {BUSINESS_REGISTRATION} · {BUSINESS_VAT_ID}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                  <Link to="/contact" className="text-primary hover:underline">
-                    Contact
-                  </Link>
-                  <Link to="/about" className="text-primary hover:underline">
-                    About
-                  </Link>
-                  <Link to="/shipping" className="text-primary hover:underline">
-                    Shipping
-                  </Link>
-                  <Link to="/returns" className="text-primary hover:underline">
-                    Returns
-                  </Link>
-                  <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">
-                    {SUPPORT_EMAIL}
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="order-1 md:order-2 flex justify-center">
-              <div className="relative w-full max-w-sm md:max-w-md">
-                <div className="aspect-square rounded-2xl overflow-hidden bg-muted border border-border/30 shadow-lg">
-                  <img
-                    src="https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png"
-                    alt="GetPawsy automatic self-cleaning cat litter box"
-                    width={600}
-                    height={600}
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                    className="w-full h-full object-contain bg-white"
-                  />
-                </div>
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-card border border-border rounded-full px-4 py-1.5 shadow-md text-xs font-semibold text-foreground whitespace-nowrap">
-                  ⭐ Exact product shown
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-8 md:py-10 bg-secondary/20">
-        <div className="container px-4 md:px-6 max-w-3xl mx-auto">
-          <h2 className="text-lg md:text-xl font-display font-bold text-foreground text-center mb-5">
-            Why Pet Owners Love This
-          </h2>
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-6 h-6 text-primary"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1.5">Reduces Daily Scooping</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Automatic self-cleaning cycle reduces daily litter maintenance.
-              </p>
-            </div>
-            <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-6 h-6 text-primary"
-                  aria-hidden="true"
-                >
-                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                  <path d="m9 12 2 2 4-4" />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1.5">Helps Reduce Odors</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Sealed deodorizing design helps trap unwanted smells.
-              </p>
-            </div>
-            <div className="bg-card rounded-xl border border-border/40 p-6 text-center shadow-sm">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-6 h-6 text-primary"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1.5">Saves Time Daily</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Reclaim 15+ minutes every day — it works while you sleep.
-              </p>
-            </div>
-          </div>
-          <div className="text-center mt-5">
-            <Link
-              to={FEATURED_PRODUCT_PATH}
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
-            >
-              View Product Overview
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section id="how-it-works" className="py-12 md:py-16 scroll-mt-20 bg-muted/20">
-        <div className="container px-4 md:px-6">
-          <div className="text-center mb-8">
-            <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">How GetPawsy Works</h2>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              From browsing to unboxing — simple, fast, and transparent.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5 max-w-3xl mx-auto">
-            {HOW_IT_WORKS_STEPS.map((s) => (
-              <article key={s.step} className="relative bg-card rounded-xl p-6 border border-border/50 text-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-sm font-bold text-primary">{s.step}</span>
-                </div>
-                <h3 className="text-sm font-semibold text-foreground mb-2">{s.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div id="bestsellers">
-        <SectionErrorBoundary sectionName="Trending Products">
-          <Suspense
-            fallback={
-              <section className="py-10">
-                <div className="container px-4 md:px-6">
-                  <div className="h-7 w-48 bg-muted rounded mb-6 animate-pulse" />
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: "3/4" }} />
-                    ))}
-                  </div>
-                </div>
-              </section>
-            }
-          >
-            <TrendingProducts />
-          </Suspense>
-        </SectionErrorBoundary>
-      </div>
-
-      <SectionErrorBoundary sectionName="Top Products">
-        <Suspense fallback={null}>
-          <TopProductsGrid />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      <SectionErrorBoundary sectionName="Featured Products">
-        <Suspense fallback={null}>
-          <FeaturedProductsSection />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      <section className="py-10 md:py-12">
-        <div className="container px-4 md:px-6">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
-            Shop by Category
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {CATEGORIES.map((cat) => (
-              <Link
-                key={cat.href}
-                to={cat.href}
-                className="group flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-card p-5 hover:border-primary/50 hover:shadow-md transition-all text-center"
-              >
-                <span className="text-2xl">{cat.emoji}</span>
-                <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {cat.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-10 md:py-12 bg-muted/20">
-        <div className="container px-4 md:px-6">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
-            Buying Guides 2026
-          </h2>
-          <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-            Read before you buy: expert-tested comparisons to help you choose the right product.
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-            {BUYING_GUIDES.map((g) => (
-              <Link
-                key={g.path}
-                to={g.path}
-                className="group relative rounded-xl border border-border/40 bg-card p-5 hover:border-primary/40 hover:shadow-md transition-all"
-              >
-                <span className="absolute top-3 right-3 text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                  {g.badge}
-                </span>
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors pr-20 mb-1">
-                  {g.title}
-                </h3>
-                <span className="text-xs font-medium text-primary">View Best Picks →</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-10 md:py-12 bg-muted/20">
-        <div className="container px-4 md:px-6">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
-            Expert Pet Guides
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-            {GUIDES.map((g) => (
-              <Link
-                key={g.path}
-                to={g.path}
-                className="group rounded-xl border border-border/40 bg-card p-5 hover:border-primary/40 hover:shadow-md transition-all"
-              >
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors mb-1">
-                  {g.title}
-                </h3>
-                <p className="text-xs text-muted-foreground line-clamp-2">{g.desc}</p>
-              </Link>
-            ))}
-          </div>
-          <div className="text-center mt-5">
-            <Link to="/guides" className="text-sm font-medium text-primary hover:underline">
-              View all guides →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-10 md:py-12">
-        <div className="container px-4 md:px-6">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
-            Self-Cleaning Litter Box Guides
-          </h2>
-          <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-            Everything you need to know about automatic litter boxes — from how they work to which one is right for your
-            home.
-          </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
-            {LITTER_BOX_GUIDES.map((g) => (
-              <Link
-                key={g.path}
-                to={g.path}
-                className="group rounded-xl border border-border/40 bg-card p-4 hover:border-primary/40 hover:shadow-md transition-all"
-              >
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2">
-                  {g.title}
-                </h3>
-                <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{g.desc}</p>
-                <span className="text-xs font-medium text-primary mt-2 inline-block">Read Guide →</span>
-              </Link>
-            ))}
-          </div>
-          <div className="text-center mt-5">
-            <Link
-              to="/lp/self-cleaning-litter-box"
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
-            >
-              View Our Top Pick — Automatic Litter Box
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-10 md:py-12">
-        <div className="container px-4 md:px-6">
-          <div className="max-w-md mx-auto text-center">
-            <h2 className="text-lg font-display font-semibold text-foreground mb-2">
-              Get product updates & pet care tips
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Subscribe for new product updates, care tips, and order-related announcements.
-            </p>
-            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Your email"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-full border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                disabled={isSubscribing}
-              />
-              <button
-                type="submit"
-                className="rounded-full px-6 py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                disabled={isSubscribing}
-              >
-                {isSubscribing ? "..." : "Subscribe"}
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <Suspense fallback={null}>
-        <StickyMobileCta />
-      </Suspense>
-    </Layout>
-  );
-};
-
-export default Index;
+export const getProductBySlugOrId = (value: string) => getProductBySlug(value) ?? getProductById(value);
