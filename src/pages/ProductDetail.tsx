@@ -425,6 +425,7 @@ const ProductDetail = () => {
   // Reset selected image when product changes and add to recently viewed
   useEffect(() => {
     setSelectedImage(0);
+    // Auto-select first variant as source of truth (instead of null)
     setSelectedVariant(null);
     
     // Add current product to recently viewed and track view
@@ -435,6 +436,13 @@ const ProductDetail = () => {
       trackProductView(product.id, product.name || '');
     }
   }, [id, product, addToRecentlyViewed, trackProductView]);
+
+  // Auto-select first variant when variants are available and none selected
+  useEffect(() => {
+    if (variants.length > 0 && !selectedVariant) {
+      setSelectedVariant(variants[0]);
+    }
+  }, [variants, selectedVariant]);
 
   // Update selected image when variant is selected
   useEffect(() => {
