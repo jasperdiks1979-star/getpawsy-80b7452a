@@ -887,7 +887,7 @@ const ProductDetail = () => {
             </motion.div>
 
             {/* Variants - PRIORITY: Show immediately after price for visibility */}
-            {variants.length > 0 && (
+            {variants.length > 1 && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
