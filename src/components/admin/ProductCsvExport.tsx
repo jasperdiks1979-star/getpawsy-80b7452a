@@ -4,7 +4,7 @@ import { FileDown, Loader2, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-type ExportMode = "full" | "canonical";
+type ExportMode = "full" | "canonical" | "merchant";
 
 async function downloadCsv(mode: ExportMode) {
   const {
