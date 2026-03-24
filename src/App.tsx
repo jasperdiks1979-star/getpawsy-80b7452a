@@ -536,8 +536,9 @@ const App = () => {
                               </Suspense>
                             }
                           />
+                          <Route path="/products/:slug" element={<ProductRouteRedirect />} />
                           <Route
-                            path="/product/:id"
+                            path="/product/:slug"
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <ProductDetail />
