@@ -425,6 +425,7 @@ const ProductDetail = () => {
   // Reset selected image when product changes and add to recently viewed
   useEffect(() => {
     setSelectedImage(0);
+    // Auto-select first variant as source of truth (instead of null)
     setSelectedVariant(null);
     
     // Add current product to recently viewed and track view
@@ -435,6 +436,13 @@ const ProductDetail = () => {
       trackProductView(product.id, product.name || '');
     }
   }, [id, product, addToRecentlyViewed, trackProductView]);
+
+  // Auto-select first variant when variants are available and none selected
+  useEffect(() => {
+    if (variants.length > 0 && !selectedVariant) {
+      setSelectedVariant(variants[0]);
+    }
+  }, [variants, selectedVariant]);
 
   // Update selected image when variant is selected
   useEffect(() => {
@@ -635,8 +643,14 @@ const ProductDetail = () => {
     }
   };
 
-  const discount = product.compare_at_price
-    ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
+  // Derive active price from variant (source of truth) and validate compare-at
+  const activePrice = selectedVariant?.variantSellPrice 
+    ? Number(selectedVariant.variantSellPrice) 
+    : Number(product.price);
+  const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
+  const validCompareAt = compareAtPrice && compareAtPrice > activePrice ? compareAtPrice : null;
+  const discount = validCompareAt
+    ? Math.round((1 - activePrice / validCompareAt) * 100)
     : null;
 
   // Check if description contains HTML
@@ -838,14 +852,15 @@ const ProductDetail = () => {
               className="bg-muted/50 rounded-2xl p-5"
             >
               {(() => {
+                // VARIANT PRICE = single source of truth
                 const displayPrice = selectedVariant?.variantSellPrice 
                   ? Number(selectedVariant.variantSellPrice) 
                   : Number(product.price);
-                const originalPrice = product.compare_at_price 
-                  ? Number(product.compare_at_price) 
-                  : (selectedVariant?.variantSellPrice ? Number(product.price) : null);
-                const currentDiscount = originalPrice 
-                  ? Math.round((1 - displayPrice / originalPrice) * 100) 
+                const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
+                // Only show compare-at if it's strictly greater than display price
+                const showCompare = compareAt !== null && compareAt > displayPrice;
+                const currentDiscount = showCompare
+                  ? Math.round((1 - displayPrice / compareAt!) * 100) 
                   : null;
                 
                 return (
@@ -853,10 +868,10 @@ const ProductDetail = () => {
                     <span className="text-3xl md:text-4xl font-display font-bold text-primary">
                       ${displayPrice.toFixed(2)}
                     </span>
-                    {originalPrice && originalPrice > displayPrice && (
+                    {showCompare && (
                       <>
                         <span className="text-xl text-muted-foreground line-through">
-                          ${originalPrice.toFixed(2)}
+                          ${compareAt!.toFixed(2)}
                         </span>
                         {currentDiscount && currentDiscount > 0 && (
                           <Badge className="bg-accent/20 text-accent-foreground border-accent/30">
@@ -878,7 +893,7 @@ const ProductDetail = () => {
             </motion.div>
 
             {/* Variants - PRIORITY: Show immediately after price for visibility */}
-            {variants.length > 0 && (
+            {variants.length > 1 && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1459,8 +1474,8 @@ const ProductDetail = () => {
         <FinalCtaBlock
           onAddToCart={handleAddToCart}
           inStock={inStock}
-          price={Number(product.price)}
-          compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : null}
+          price={selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)}
+          compareAtPrice={product.compare_at_price && Number(product.compare_at_price) > (selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)) ? Number(product.compare_at_price) : null}
           productName={product.name}
           category={product.category || ''}
         />
