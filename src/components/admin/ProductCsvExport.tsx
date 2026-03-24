@@ -57,7 +57,7 @@ export const ProductCsvExport = () => {
   const [loadingMerchant, setLoadingMerchant] = useState(false);
 
   const handleExport = async (mode: ExportMode) => {
-    const setLoading = mode === "full" ? setLoadingFull : setLoadingCanonical;
+    const setLoading = mode === "merchant" ? setLoadingMerchant : mode === "full" ? setLoadingFull : setLoadingCanonical;
     setLoading(true);
     try {
       const { total, duplicates, inactive } = await downloadCsv(mode);
