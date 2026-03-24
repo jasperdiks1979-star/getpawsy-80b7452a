@@ -846,14 +846,15 @@ const ProductDetail = () => {
               className="bg-muted/50 rounded-2xl p-5"
             >
               {(() => {
+                // VARIANT PRICE = single source of truth
                 const displayPrice = selectedVariant?.variantSellPrice 
                   ? Number(selectedVariant.variantSellPrice) 
                   : Number(product.price);
-                const originalPrice = product.compare_at_price 
-                  ? Number(product.compare_at_price) 
-                  : (selectedVariant?.variantSellPrice ? Number(product.price) : null);
-                const currentDiscount = originalPrice 
-                  ? Math.round((1 - displayPrice / originalPrice) * 100) 
+                const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
+                // Only show compare-at if it's strictly greater than display price
+                const showCompare = compareAt !== null && compareAt > displayPrice;
+                const currentDiscount = showCompare
+                  ? Math.round((1 - displayPrice / compareAt!) * 100) 
                   : null;
                 
                 return (
@@ -861,10 +862,10 @@ const ProductDetail = () => {
                     <span className="text-3xl md:text-4xl font-display font-bold text-primary">
                       ${displayPrice.toFixed(2)}
                     </span>
-                    {originalPrice && originalPrice > displayPrice && (
+                    {showCompare && (
                       <>
                         <span className="text-xl text-muted-foreground line-through">
-                          ${originalPrice.toFixed(2)}
+                          ${compareAt!.toFixed(2)}
                         </span>
                         {currentDiscount && currentDiscount > 0 && (
                           <Badge className="bg-accent/20 text-accent-foreground border-accent/30">
