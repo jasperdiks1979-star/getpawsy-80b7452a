@@ -38,9 +38,11 @@ async function downloadCsv(mode: ExportMode) {
   const today = new Date().toISOString().split("T")[0];
   a.href = url;
   a.download =
-    mode === "canonical"
-      ? `getpawsy_canonical_product_export_${today}.csv`
-      : `getpawsy_full_product_export_${today}.csv`;
+    mode === "merchant"
+      ? `getpawsy_merchant_feed_${today}.csv`
+      : mode === "canonical"
+        ? `getpawsy_canonical_product_export_${today}.csv`
+        : `getpawsy_full_product_export_${today}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
