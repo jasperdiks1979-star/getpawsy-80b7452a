@@ -1,76 +1,95 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, Heart, Truck, Shield, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info, Home } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileProductGallery } from '@/components/products/MobileProductGallery';
-import { DesktopProductGallery } from '@/components/products/DesktopProductGallery';
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Layout } from '@/components/layout/Layout';
-import { ProductCard } from '@/components/products/ProductCard';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { OptimizedImage } from '@/components/ui/optimized-image';
-import { PinchZoomImage } from '@/components/ui/pinch-zoom-image';
-import { useCart } from '@/contexts/CartContext';
-import { useCartAnimation } from '@/contexts/CartAnimationContext';
-import { useWishlist } from '@/contexts/WishlistContext';
-import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
-import { useVisitorTracking } from '@/hooks/useVisitorTracking';
-import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
-import { useHaptic } from '@/hooks/useHaptic';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { ImageLightbox } from '@/components/ui/image-lightbox';
-import { ReviewForm } from '@/components/reviews/ReviewForm';
-import { ReviewsList } from '@/components/reviews/ReviewsList';
-import { sanitizeHtml } from '@/lib/sanitize';
-import { trackViewItem } from '@/lib/analytics';
-import { calculateSellingPrice } from '@/lib/pricing';
-import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
-import { computeAvailability } from '@/lib/availability';
-import USProductDescription from '@/components/products/USProductDescription';
-import { generateClarityIntro } from '@/components/products/ClarityIntro';
-import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
-import { ProductSchema } from '@/components/seo/ProductSchema';
-import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
-import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
-import { StockNotificationForm } from '@/components/products/StockNotificationForm';
-import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
-import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
-import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBoughtTogether';
-import { useRelatedProducts } from '@/hooks/useRelatedProducts';
-import { RelatedGuides } from '@/components/guides/RelatedGuides';
-import NotFound from '@/pages/NotFound';
-
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import {
+  ShoppingCart,
+  Heart,
+  Truck,
+  Shield,
+  Minus,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  Package,
+  Award,
+  Star,
+  Clock,
+  MessageSquare,
+  Ruler,
+  Weight,
+  Box,
+  Info,
+  Home,
+} from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileProductGallery } from "@/components/products/MobileProductGallery";
+import { DesktopProductGallery } from "@/components/products/DesktopProductGallery";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { Layout } from "@/components/layout/Layout";
+import { ProductCard } from "@/components/products/ProductCard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OptimizedImage } from "@/components/ui/optimized-image";
+import { PinchZoomImage } from "@/components/ui/pinch-zoom-image";
+import { useCart } from "@/contexts/CartContext";
+import { useCartAnimation } from "@/contexts/CartAnimationContext";
+import { useWishlist } from "@/contexts/WishlistContext";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
+import { useRecentlyViewedProducts } from "@/hooks/useRecentlyViewedProducts";
+import { useHaptic } from "@/hooks/useHaptic";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { ReviewsList } from "@/components/reviews/ReviewsList";
+import { sanitizeHtml } from "@/lib/sanitize";
+import { trackViewItem } from "@/lib/analytics";
+import { calculateSellingPrice } from "@/lib/pricing";
+import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
+import { computeAvailability } from "@/lib/availability";
+import USProductDescription from "@/components/products/USProductDescription";
+import { generateClarityIntro } from "@/components/products/ClarityIntro";
+import { TrustMicrocopy } from "@/components/products/TrustMicrocopy";
+import { ProductSchema } from "@/components/seo/ProductSchema";
+import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
+import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
+import { StockNotificationForm } from "@/components/products/StockNotificationForm";
+import { RecentlyViewedCarousel } from "@/components/products/RecentlyViewedCarousel";
+import { RelatedProductsCarousel } from "@/components/products/RelatedProductsCarousel";
+import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
+import { useRelatedProducts } from "@/hooks/useRelatedProducts";
+import { RelatedGuides } from "@/components/guides/RelatedGuides";
+import NotFound from "@/pages/NotFound";
 
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 
-import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
-import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
-import { ProductSocialProof } from '@/components/products/ProductSocialProof';
+import { ProductFAQAccordion } from "@/components/products/ProductFAQAccordion";
+import { ProductProblemSolution } from "@/components/products/ProductProblemSolution";
+import { ProductSocialProof } from "@/components/products/ProductSocialProof";
 
-import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
+import { FinalCtaBlock } from "@/components/products/FinalCtaBlock";
 
-import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
-import { ProductWhyChoose } from '@/components/products/ProductWhyChoose';
-import { ProductHowItWorks } from '@/components/products/ProductHowItWorks';
-import { ProductUseCases } from '@/components/products/ProductUseCases';
-import { ProductVsAlternatives } from '@/components/products/ProductVsAlternatives';
-import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
-import { LowStockBadge } from '@/components/products/LowStockBadge';
-import { WhyCustomersChoose } from '@/components/products/WhyCustomersChoose';
-import { CrawlableRelatedLinks } from '@/components/products/CrawlableRelatedLinks';
-import { useGuidesList } from '@/hooks/useGuides';
+import { ProductFeatureGrid } from "@/components/products/ProductFeatureGrid";
+import { ProductWhyChoose } from "@/components/products/ProductWhyChoose";
+import { ProductHowItWorks } from "@/components/products/ProductHowItWorks";
+import { ProductUseCases } from "@/components/products/ProductUseCases";
+import { ProductVsAlternatives } from "@/components/products/ProductVsAlternatives";
+import { ProductSpecsTable } from "@/components/products/ProductSpecsTable";
+import { LowStockBadge } from "@/components/products/LowStockBadge";
+import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
+import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
+import { useGuidesList } from "@/hooks/useGuides";
 import {
   DELIVERY_TIME_STANDARD,
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
-} from '@/lib/shipping-constants';
-import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
+} from "@/lib/shipping-constants";
+import { VolumeDiscountSelector } from "@/components/products/VolumeDiscountSelector";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -78,7 +97,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+} from "@/components/ui/breadcrumb";
 
 interface ProductVariant {
   vid: string;
@@ -97,38 +116,34 @@ type ProductRecord = Record<string, any>;
 async function fetchExistingProduct(productIdentifier: string): Promise<ProductRecord | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productIdentifier);
 
-  const fetchPublicBy = async (column: 'id' | 'slug', value: string) => {
+  const fetchPublicBy = async (column: "id" | "slug", value: string) => {
+    const { data, error } = await supabase.from("products_public").select("*").eq(column, value).maybeSingle();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchBaseBy = async (column: "id" | "slug", value: string) => {
     const { data, error } = await supabase
-      .from('products_public')
-      .select('*')
+      .from("products")
+      .select("*")
       .eq(column, value)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   };
 
-  const fetchBaseBy = async (column: 'id' | 'slug', value: string) => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq(column, value)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data;
-  };
-
-  const resolveDuplicateRedirect = async (column: 'id' | 'slug', value: string) => {
+  const resolveDuplicateRedirect = async (column: "id" | "slug", value: string) => {
     const { data } = await supabase
-      .from('products')
-      .select('is_duplicate, canonical_product_id')
+      .from("products")
+      .select("is_duplicate, canonical_product_id")
       .eq(column, value)
       .maybeSingle();
 
     if (data?.is_duplicate && data?.canonical_product_id) {
-      const canonical = await fetchPublicBy('id', data.canonical_product_id);
+      const canonical = await fetchPublicBy("id", data.canonical_product_id);
       if (canonical) return { ...canonical, _redirect: true };
     }
 
@@ -136,33 +151,33 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
   };
 
   if (isUuid) {
-    const publicById = await fetchPublicBy('id', productIdentifier);
+    const publicById = await fetchPublicBy("id", productIdentifier);
     if (publicById) return publicById;
 
-    const duplicateRedirect = await resolveDuplicateRedirect('id', productIdentifier);
+    const duplicateRedirect = await resolveDuplicateRedirect("id", productIdentifier);
     if (duplicateRedirect) return duplicateRedirect;
 
-    const baseById = await fetchBaseBy('id', productIdentifier);
+    const baseById = await fetchBaseBy("id", productIdentifier);
     if (baseById) return baseById;
 
     return null;
   }
 
-  const publicBySlug = await fetchPublicBy('slug', productIdentifier);
+  const publicBySlug = await fetchPublicBy("slug", productIdentifier);
   if (publicBySlug) return publicBySlug;
 
-  const duplicateRedirect = await resolveDuplicateRedirect('slug', productIdentifier);
+  const duplicateRedirect = await resolveDuplicateRedirect("slug", productIdentifier);
   if (duplicateRedirect) return duplicateRedirect;
 
-  const baseBySlug = await fetchBaseBy('slug', productIdentifier);
+  const baseBySlug = await fetchBaseBy("slug", productIdentifier);
   if (baseBySlug) return baseBySlug;
 
-  const searchName = productIdentifier.replace(/-/g, ' ').toLowerCase();
+  const searchName = productIdentifier.replace(/-/g, " ").toLowerCase();
   const { data, error } = await supabase
-    .from('products_public')
-    .select('*')
-    .ilike('name', `%${searchName}%`)
-    .eq('is_active', true)
+    .from("products_public")
+    .select("*")
+    .ilike("name", `%${searchName}%`)
+    .eq("is_active", true)
     .limit(1)
     .maybeSingle();
 
@@ -201,19 +216,19 @@ const ProductDetail = () => {
 
   const handleDragEnd = (imagesLength: number, offsetX: number, velocityX: number) => {
     const swipe = offsetX + velocityX * 50; // Factor in velocity for snappier feel
-    
+
     if (swipe < -minSwipeDistance) {
       // Swiped left - next image
-      setSelectedImage(prev => prev === imagesLength - 1 ? 0 : prev + 1);
+      setSelectedImage((prev) => (prev === imagesLength - 1 ? 0 : prev + 1));
       haptic.lightTap(); // Haptic feedback on swipe
       pauseAutoplay();
     } else if (swipe > minSwipeDistance) {
       // Swiped right - previous image
-      setSelectedImage(prev => prev === 0 ? imagesLength - 1 : prev - 1);
+      setSelectedImage((prev) => (prev === 0 ? imagesLength - 1 : prev - 1));
       haptic.lightTap(); // Haptic feedback on swipe
       pauseAutoplay();
     }
-    
+
     setDragX(0);
     setIsDragging(false);
   };
@@ -238,8 +253,12 @@ const ProductDetail = () => {
   // Fetch product from database - supports both UUID and slug
   // Uses products_public view which filters out duplicates automatically
   // If product not found in view, checks if it's a duplicate and redirects to canonical
-  const { data: product, isLoading, isError } = useQuery({
-    queryKey: ['product', id],
+  const {
+    data: product,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["product", id],
     queryFn: async () => {
       if (!id) return null;
       return fetchExistingProduct(id);
@@ -267,14 +286,13 @@ const ProductDetail = () => {
   // Fetch related products with enhanced category and keyword matching
   // Pass recentlyViewedIds to avoid duplicate hook calls
   const { data: relatedProducts, isLoading: relatedLoading } = useRelatedProducts({
-    productId: product?.id || '',
+    productId: product?.id || "",
     category: product?.category || null,
-    productName: product?.name || '',
+    productName: product?.name || "",
     maxItems: 8,
     enabled: !!product?.id,
     recentlyViewedIds,
   });
-
 
   // Fetch recently viewed products with React Query caching
   // Pass recentlyViewedIds to avoid duplicate hook calls
@@ -286,45 +304,47 @@ const ProductDetail = () => {
   const { data: allGuides } = useGuidesList();
   const relatedGuides = useMemo(() => {
     if (!allGuides || !product?.category) return [];
-    const cat = product.category.toLowerCase().replace(/-/g, ' ');
-    const animalType = cat.includes('dog') ? 'dog' : cat.includes('cat') ? 'cat' : '';
+    const cat = product.category.toLowerCase().replace(/-/g, " ");
+    const animalType = cat.includes("dog") ? "dog" : cat.includes("cat") ? "cat" : "";
 
-    return allGuides.filter((g) => {
-      // Match by relatedCategories (strongest signal)
-      const catMatch = g.relatedCategories?.some((rc) => {
-        const rcNorm = rc.replace(/-/g, ' ').toLowerCase();
-        return cat.includes(rcNorm) || rcNorm.includes(cat);
-      });
-      if (catMatch) return true;
+    return allGuides
+      .filter((g) => {
+        // Match by relatedCategories (strongest signal)
+        const catMatch = g.relatedCategories?.some((rc) => {
+          const rcNorm = rc.replace(/-/g, " ").toLowerCase();
+          return cat.includes(rcNorm) || rcNorm.includes(cat);
+        });
+        if (catMatch) return true;
 
-      // Match by keywords against product category
-      const kwMatch = g.keywords?.some((kw) => {
-        const kwNorm = kw.toLowerCase();
-        return cat.split(' ').some((w) => w.length > 3 && kwNorm.includes(w));
-      });
-      if (kwMatch) return true;
+        // Match by keywords against product category
+        const kwMatch = g.keywords?.some((kw) => {
+          const kwNorm = kw.toLowerCase();
+          return cat.split(" ").some((w) => w.length > 3 && kwNorm.includes(w));
+        });
+        if (kwMatch) return true;
 
-      // Match by animal type + guide category
-      if (animalType && g.category?.toLowerCase().includes(animalType)) {
-        const guideCategory = g.category.toLowerCase();
-        return cat.split(' ').some((w) => w.length > 3 && guideCategory.includes(w));
-      }
+        // Match by animal type + guide category
+        if (animalType && g.category?.toLowerCase().includes(animalType)) {
+          const guideCategory = g.category.toLowerCase();
+          return cat.split(" ").some((w) => w.length > 3 && guideCategory.includes(w));
+        }
 
-      return false;
-    }).slice(0, 4);
+        return false;
+      })
+      .slice(0, 4);
   }, [allGuides, product?.category]);
 
   // Fetch product reviews
   const { data: reviews = [] } = useQuery({
-    queryKey: ['product-reviews', id],
+    queryKey: ["product-reviews", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('product_reviews')
-        .select('*')
-        .eq('product_id', id)
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false });
-      
+        .from("product_reviews")
+        .select("*")
+        .eq("product_id", id)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
       return data || [];
     },
@@ -332,7 +352,7 @@ const ProductDetail = () => {
   });
 
   const handleReviewsRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ['product-reviews', id] });
+    queryClient.invalidateQueries({ queryKey: ["product-reviews", id] });
   };
 
   // Parse variants from JSON and ensure prices are calculated correctly
@@ -341,77 +361,82 @@ const ProductDetail = () => {
   // as it may contain nested objects (inventories, combineVariants, etc.) that cause React #310
   const variants: ProductVariant[] = useMemo(() => {
     if (!product?.variants || !Array.isArray(product.variants)) return [];
-    
+
     const productPrice = Number(product.price) || 0;
     const productWeight = Number(product.weight) || 200;
-    
-    return (product.variants as unknown[]).map((rawVariant) => {
-      // Type guard - ensure we have an object
-      if (!rawVariant || typeof rawVariant !== 'object') return null;
-      
-      const variant = rawVariant as Record<string, unknown>;
-      
-      const variantPrice = Number(variant.variantSellPrice) || 0;
-      const variantWeight = Number(variant.variantWeight) || productWeight;
-      
-      // CRITICAL: Helper to safely extract string - converts null/undefined/objects to empty string
-      // This prevents React error #310 "Objects are not valid as a React child"
-      const extractString = (val: unknown): string => {
-        if (val === null || val === undefined) return '';
-        if (typeof val === 'object') return '';
-        return String(val);
-      };
-      
-      // Extract ONLY the fields we need - never spread the raw variant
-      const vid = extractString(variant.vid);
-      const pid = extractString(variant.pid);
-      const safeVariantKey = extractString(variant.variantKey);
-      const safeVariantNameEn = extractString(variant.variantNameEn);
-      const safeVariantSku = extractString(variant.variantSku);
-      const variantImage = extractString(variant.variantImage) || undefined;
-      
-      // Generate a display-friendly name, prioritizing variantKey or variantNameEn
-      const displayName = safeVariantKey || safeVariantNameEn || safeVariantSku || 'Option';
-      
-      // Check if the variant price seems like a cost price (much lower than product selling price)
-      // If variantSellPrice is less than 40% of product price, it's likely still the cost price
-      const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
-      
-      // Build a clean variant object with ONLY the fields we need
-      const cleanVariant: ProductVariant = {
-        vid,
-        pid,
-        variantKey: displayName,
-        variantNameEn: safeVariantNameEn || displayName,
-        variantSku: safeVariantSku,
-        variantImage,
-        variantWeight,
-        variantSellPrice: isProbablyCostPrice 
-          ? calculateSellingPrice(variantPrice, variantWeight).sellingPrice 
-          : variantPrice,
-        variantCostPrice: isProbablyCostPrice ? variantPrice : undefined,
-      };
-      
-      return cleanVariant;
-    }).filter((v): v is ProductVariant => v !== null);
+
+    return (product.variants as unknown[])
+      .map((rawVariant) => {
+        // Type guard - ensure we have an object
+        if (!rawVariant || typeof rawVariant !== "object") return null;
+
+        const variant = rawVariant as Record<string, unknown>;
+
+        const variantPrice = Number(variant.variantSellPrice) || 0;
+        const variantWeight = Number(variant.variantWeight) || productWeight;
+
+        // CRITICAL: Helper to safely extract string - converts null/undefined/objects to empty string
+        // This prevents React error #310 "Objects are not valid as a React child"
+        const extractString = (val: unknown): string => {
+          if (val === null || val === undefined) return "";
+          if (typeof val === "object") return "";
+          return String(val);
+        };
+
+        // Extract ONLY the fields we need - never spread the raw variant
+        const vid = extractString(variant.vid);
+        const pid = extractString(variant.pid);
+        const safeVariantKey = extractString(variant.variantKey);
+        const safeVariantNameEn = extractString(variant.variantNameEn);
+        const safeVariantSku = extractString(variant.variantSku);
+        const variantImage = extractString(variant.variantImage) || undefined;
+
+        // Generate a display-friendly name, prioritizing variantKey or variantNameEn
+        const displayName = safeVariantKey || safeVariantNameEn || safeVariantSku || "Option";
+
+        // Check if the variant price seems like a cost price (much lower than product selling price)
+        // If variantSellPrice is less than 40% of product price, it's likely still the cost price
+        const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
+
+        // Build a clean variant object with ONLY the fields we need
+        const cleanVariant: ProductVariant = {
+          vid,
+          pid,
+          variantKey: displayName,
+          variantNameEn: safeVariantNameEn || displayName,
+          variantSku: safeVariantSku,
+          variantImage,
+          variantWeight,
+          variantSellPrice: isProbablyCostPrice
+            ? calculateSellingPrice(variantPrice, variantWeight).sellingPrice
+            : variantPrice,
+          variantCostPrice: isProbablyCostPrice ? variantPrice : undefined,
+        };
+
+        return cleanVariant;
+      })
+      .filter((v): v is ProductVariant => v !== null);
   }, [product]);
 
   // Group variants - CJ uses variantKey as the display name
   // CRITICAL: Must be wrapped in useMemo to ensure stable hook count
   const variantGroups = useMemo(() => {
-    return variants.reduce((groups, variant) => {
-      const groupName = 'Option';
-      
-      if (!groups[groupName]) {
-        groups[groupName] = [];
-      }
-      
-      if (!groups[groupName].find(v => v.vid === variant.vid)) {
-        groups[groupName].push(variant);
-      }
-      
-      return groups;
-    }, {} as Record<string, ProductVariant[]>);
+    return variants.reduce(
+      (groups, variant) => {
+        const groupName = "Option";
+
+        if (!groups[groupName]) {
+          groups[groupName] = [];
+        }
+
+        if (!groups[groupName].find((v) => v.vid === variant.vid)) {
+          groups[groupName].push(variant);
+        }
+
+        return groups;
+      },
+      {} as Record<string, ProductVariant[]>,
+    );
   }, [variants]);
 
   // Scroll to top when navigating to product page
@@ -427,13 +452,13 @@ const ProductDetail = () => {
     setSelectedImage(0);
     // Auto-select first variant as source of truth (instead of null)
     setSelectedVariant(null);
-    
+
     // Add current product to recently viewed and track view
     if (id && product) {
       addToRecentlyViewed(id);
-      trackViewItem(id, product.name || '', product.price || 0, product.category || undefined);
+      trackViewItem(id, product.name || "", product.price || 0, product.category || undefined);
       // Track in visitor analytics for enhanced product view insights
-      trackProductView(product.id, product.name || '');
+      trackProductView(product.id, product.name || "");
     }
   }, [id, product, addToRecentlyViewed, trackProductView]);
 
@@ -448,10 +473,8 @@ const ProductDetail = () => {
   useEffect(() => {
     if (selectedVariant?.variantImage) {
       const productImages = Array.isArray(product?.images) ? product.images : [];
-      const images = productImages.length > 0 
-        ? productImages 
-        : [product?.image_url || '/placeholder.svg'];
-      const variantImageIndex = images.findIndex(img => img === selectedVariant.variantImage);
+      const images = productImages.length > 0 ? productImages : [product?.image_url || "/placeholder.svg"];
+      const variantImageIndex = images.findIndex((img) => img === selectedVariant.variantImage);
       if (variantImageIndex !== -1) {
         setSelectedImage(variantImageIndex);
       }
@@ -468,13 +491,13 @@ const ProductDetail = () => {
       isAutoplayChangeRef.current = false;
       return;
     }
-    
+
     const thumbnail = thumbnailRefs.current[selectedImage];
     if (thumbnail) {
       thumbnail.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
       });
     }
   }, [selectedImage]);
@@ -483,18 +506,17 @@ const ProductDetail = () => {
   // CRITICAL: Must be wrapped in useMemo for stable hook count across renders
   const images = useMemo(() => {
     const productImagesArray = Array.isArray(product?.images) ? product.images : [];
-    const rawImages = productImagesArray.length > 0 
-      ? productImagesArray.flat().filter((img): img is string => 
-          typeof img === 'string' && 
-          img.startsWith('http') && 
-          !img.includes('undefined')
-        )
-      : [];
-    
+    const rawImages =
+      productImagesArray.length > 0
+        ? productImagesArray
+            .flat()
+            .filter(
+              (img): img is string => typeof img === "string" && img.startsWith("http") && !img.includes("undefined"),
+            )
+        : [];
+
     // Use image_url as fallback if no valid images
-    return rawImages.length > 0 
-      ? rawImages 
-      : (product?.image_url ? [product.image_url] : ['/placeholder.svg']);
+    return rawImages.length > 0 ? rawImages : product?.image_url ? [product.image_url] : ["/placeholder.svg"];
   }, [product?.images, product?.image_url]);
 
   // Auto-slideshow effect - moved before early returns to follow hooks rules
@@ -503,7 +525,7 @@ const ProductDetail = () => {
 
     const interval = setInterval(() => {
       isAutoplayChangeRef.current = true; // Mark as autoplay change to prevent scroll
-      setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
+      setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
     }, 5000);
 
     return () => clearInterval(interval);
@@ -529,8 +551,8 @@ const ProductDetail = () => {
       },
       {
         threshold: 0,
-        rootMargin: '-100px 0px 0px 0px', // Trigger a bit before it's completely out of view
-      }
+        rootMargin: "-100px 0px 0px 0px", // Trigger a bit before it's completely out of view
+      },
     );
 
     observer.observe(mainAddToCartRef.current);
@@ -541,19 +563,23 @@ const ProductDetail = () => {
   // SEO-safe loading state: emit proper head tags so crawlers never see
   // noindex or 404 signals while product data is still resolving.
   if (isLoading) {
-    const slugName = id
-      ? id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-      : 'Product';
-    const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + '...' : slugName;
-    const loadingCanonical = `https://getpawsy.pet/product/${id || ''}`;
+    const slugName = id ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
+    const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
+    const loadingCanonical = `https://getpawsy.pet/product/${id || ""}`;
 
     return (
       <Layout>
         <Helmet>
           <title>{`${truncatedSlugName} | GetPawsy - Premium Pet Products`}</title>
-          <meta name="description" content={`Shop ${truncatedSlugName} at GetPawsy. Premium quality, fast US shipping & 30-day returns.`} />
+          <meta
+            name="description"
+            content={`Shop ${truncatedSlugName} at GetPawsy. Premium quality, fast US shipping & 30-day returns.`}
+          />
           <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-          <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          <meta
+            name="googlebot"
+            content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+          />
           <link rel="canonical" href={loadingCanonical} />
         </Helmet>
         <ProductDetailSkeleton />
@@ -564,18 +590,19 @@ const ProductDetail = () => {
   // On network/query error, show skeleton with retry — do NOT render NotFound
   // so crawlers don't see a false 404 for a valid product URL.
   if (isError) {
-    const slugName = id
-      ? id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-      : 'Product';
-    const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + '...' : slugName;
-    const errorCanonical = `https://getpawsy.pet/product/${id || ''}`;
+    const slugName = id ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
+    const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
+    const errorCanonical = `https://getpawsy.pet/product/${id || ""}`;
 
     return (
       <Layout>
         <Helmet>
           <title>{`${truncatedSlugName} | GetPawsy - Premium Pet Products`}</title>
           <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-          <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          <meta
+            name="googlebot"
+            content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+          />
           <link rel="canonical" href={errorCanonical} />
         </Helmet>
         <ProductDetailSkeleton />
@@ -596,39 +623,38 @@ const ProductDetail = () => {
   const handleAddToCart = () => {
     // Prevent adding out-of-stock items
     if (!inStock) {
-      toast.error('This product is out of stock');
+      toast.error("This product is out of stock");
       return;
     }
-    
+
     haptic.success(); // Success haptic on add to cart
-    
+
     // Trigger flying animation
     triggerAddToCart(
-      selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
-      addToCartButtonRef.current
+      selectedVariant?.variantImage || product.image_url || "/placeholder.svg",
+      addToCartButtonRef.current,
     );
-    
+
     // Use variant price if selected, otherwise use product price
-    const basePrice = selectedVariant?.variantSellPrice 
-      ? Number(selectedVariant.variantSellPrice) 
+    const basePrice = selectedVariant?.variantSellPrice
+      ? Number(selectedVariant.variantSellPrice)
       : Number(product.price);
-    
+
     // Apply volume discount
-    const cartPrice = volumeDiscount > 0 
-      ? basePrice * (1 - volumeDiscount / 100) 
-      : basePrice;
-    
+    const cartPrice = volumeDiscount > 0 ? basePrice * (1 - volumeDiscount / 100) : basePrice;
+
     for (let i = 0; i < quantity; i++) {
       addItem({
-        id: product.id + (selectedVariant ? `-${selectedVariant.vid}` : ''),
-        name: product.name + (selectedVariant ? ` - ${selectedVariant.variantKey || selectedVariant.variantNameEn}` : ''),
+        id: product.id + (selectedVariant ? `-${selectedVariant.vid}` : ""),
+        name:
+          product.name + (selectedVariant ? ` - ${selectedVariant.variantKey || selectedVariant.variantNameEn}` : ""),
         price: Math.round(cartPrice * 100) / 100,
-        image: selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
+        image: selectedVariant?.variantImage || product.image_url || "/placeholder.svg",
         variant: selectedVariant?.variantKey || selectedVariant?.variantNameEn,
       });
     }
-    
-    const savings = volumeDiscount > 0 ? ` (${volumeDiscount}% off!)` : '';
+
+    const savings = volumeDiscount > 0 ? ` (${volumeDiscount}% off!)` : "";
     toast.success(`${quantity}x ${product.name} added to cart!${savings}`);
   };
 
@@ -636,34 +662,32 @@ const ProductDetail = () => {
     haptic.selection(); // Selection haptic on wishlist toggle
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
-      toast.info('Removed from wishlist');
+      toast.info("Removed from wishlist");
     } else {
       addToWishlist(product.id);
-      toast.success('Added to wishlist!');
+      toast.success("Added to wishlist!");
     }
   };
 
   // Derive active price from variant (source of truth) and validate compare-at
-  const activePrice = selectedVariant?.variantSellPrice 
-    ? Number(selectedVariant.variantSellPrice) 
+  const activePrice = selectedVariant?.variantSellPrice
+    ? Number(selectedVariant.variantSellPrice)
     : Number(product.price);
   const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
   const validCompareAt = compareAtPrice && compareAtPrice > activePrice ? compareAtPrice : null;
-  const discount = validCompareAt
-    ? Math.round((1 - activePrice / validCompareAt) * 100)
-    : null;
+  const discount = validCompareAt ? Math.round((1 - activePrice / validCompareAt) * 100) : null;
 
   // Check if description contains HTML
-  const descriptionHasHtml = product.description?.includes('<') && product.description?.includes('>');
+  const descriptionHasHtml = product.description?.includes("<") && product.description?.includes(">");
 
   const handlePrevImage = () => {
     pauseAutoplay();
-    setSelectedImage(prev => prev === 0 ? images.length - 1 : prev - 1);
+    setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
   const handleNextImage = () => {
     pauseAutoplay();
-    setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
+    setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
   const inWishlist = isInWishlist(product.id);
@@ -672,22 +696,28 @@ const ProductDetail = () => {
     <Layout>
       {/* Tier C products get noindex to preserve crawl budget; all others stay indexable */}
       <Helmet>
-        {(product as any).seo_tier === 'C' ? (
+        {(product as any).seo_tier === "C" ? (
           <>
             <meta name="robots" content="noindex, follow" />
             <meta name="googlebot" content="noindex, follow" />
           </>
         ) : (
           <>
-            <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-            <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+            <meta
+              name="robots"
+              content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+            />
+            <meta
+              name="googlebot"
+              content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+            />
           </>
         )}
       </Helmet>
-      <ProductSchema 
+      <ProductSchema
         product={{
           id: product.id,
-          name: product.name || '',
+          name: product.name || "",
           slug: product.slug,
           description: product.description,
           price: Number(product.price),
@@ -703,8 +733,8 @@ const ProductDetail = () => {
         }}
         reviews={reviews}
       />
-      <FAQSchema 
-        faqs={generateProductFAQs(product.name || '', product.category || undefined)}
+      <FAQSchema
+        faqs={generateProductFAQs(product.name || "", product.category || undefined)}
         pageUrl={`https://getpawsy.pet/product/${product.slug || product.id}`}
       />
       {/* Decorative background - hidden on mobile to prevent overflow */}
@@ -742,7 +772,9 @@ const ProductDetail = () => {
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, '-'))}`}>
+                      <Link
+                        to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, "-"))}`}
+                      >
                         {safeString(product.category)}
                       </Link>
                     </BreadcrumbLink>
@@ -759,7 +791,7 @@ const ProductDetail = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16 3xl:gap-24 ultrawide:gap-32 w-full">
           {/* Image Gallery */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -792,7 +824,7 @@ const ProductDetail = () => {
           </motion.div>
 
           {/* Product Details */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -806,11 +838,11 @@ const ProductDetail = () => {
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   {(product.stock ?? 0) <= 10
                     ? `Only ${product.stock} left — Popular among pet owners`
-                    : 'Popular Choice — High Demand Product'}
+                    : "Popular Choice — High Demand Product"}
                 </div>
               )}
               {product.category && (
-                <motion.p 
+                <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-sm text-primary font-medium uppercase tracking-wider mb-2"
@@ -823,9 +855,9 @@ const ProductDetail = () => {
               </h1>
               {/* Benefit subline — 1-sentence value prop */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
-                {generateClarityIntro(product.name, product.category || '')}
+                {generateClarityIntro(product.name, product.category || "")}
               </p>
-              
+
               {/* Rating — only shown when real verified reviews exist */}
               {reviews.length > 0 && (
                 <div className="flex items-center gap-2 mt-3">
@@ -833,19 +865,22 @@ const ProductDetail = () => {
                     {[...Array(5)].map((_, i) => {
                       const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
                       return (
-                        <Star key={i} className={`w-4 h-4 ${i < Math.round(avgRating) ? 'text-warning fill-warning' : 'text-muted'}`} />
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < Math.round(avgRating) ? "text-warning fill-warning" : "text-muted"}`}
+                        />
                       );
                     })}
                   </div>
                   <a href="#reviews" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    ({reviews.length} verified review{reviews.length !== 1 ? 's' : ''})
+                    ({reviews.length} verified review{reviews.length !== 1 ? "s" : ""})
                   </a>
                 </div>
               )}
             </div>
 
             {/* Price */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -853,16 +888,14 @@ const ProductDetail = () => {
             >
               {(() => {
                 // VARIANT PRICE = single source of truth
-                const displayPrice = selectedVariant?.variantSellPrice 
-                  ? Number(selectedVariant.variantSellPrice) 
+                const displayPrice = selectedVariant?.variantSellPrice
+                  ? Number(selectedVariant.variantSellPrice)
                   : Number(product.price);
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
                 // Only show compare-at if it's strictly greater than display price
                 const showCompare = compareAt !== null && compareAt > displayPrice;
-                const currentDiscount = showCompare
-                  ? Math.round((1 - displayPrice / compareAt!) * 100) 
-                  : null;
-                
+                const currentDiscount = showCompare ? Math.round((1 - displayPrice / compareAt!) * 100) : null;
+
                 return (
                   <div className="flex items-baseline gap-3 flex-wrap">
                     <span className="text-3xl md:text-4xl font-display font-bold text-primary">
@@ -870,9 +903,7 @@ const ProductDetail = () => {
                     </span>
                     {showCompare && (
                       <>
-                        <span className="text-xl text-muted-foreground line-through">
-                          ${compareAt!.toFixed(2)}
-                        </span>
+                        <span className="text-xl text-muted-foreground line-through">${compareAt!.toFixed(2)}</span>
                         {currentDiscount && currentDiscount > 0 && (
                           <Badge className="bg-accent/20 text-accent-foreground border-accent/30">
                             Save {currentDiscount}%
@@ -883,7 +914,7 @@ const ProductDetail = () => {
                   </div>
                 );
               })()}
-              
+
               {/* Selected variant badge */}
               {selectedVariant && (
                 <Badge variant="outline" className="mt-3">
@@ -894,7 +925,7 @@ const ProductDetail = () => {
 
             {/* Variants - PRIORITY: Show immediately after price for visibility */}
             {variants.length > 1 && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
@@ -902,38 +933,72 @@ const ProductDetail = () => {
               >
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Package className="w-4 h-4 text-primary" />
-                  Choose your option: <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : 'Select one'}</span>
+                  Choose your option:{" "}
+                  <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : "Select one"}</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {variants.map((variant) => {
                     const isSelected = selectedVariant?.vid === variant.vid;
-                    const displayValue = variant.variantKey || variant.variantNameEn || 'Option';
-                    
+                    const displayValue = variant.variantKey || variant.variantNameEn || "Option";
+
                     // Detect if this is a color variant
                     const colorMap: Record<string, string> = {
                       // Basic colors
-                      'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e', 'yellow': '#eab308',
-                      'orange': '#f97316', 'purple': '#a855f7', 'pink': '#ec4899', 'black': '#000000',
-                      'white': '#ffffff', 'gray': '#6b7280', 'grey': '#6b7280', 'brown': '#92400e',
-                      'beige': '#d4a574', 'navy': '#1e3a5a', 'teal': '#14b8a6', 'cyan': '#06b6d4',
-                      'gold': '#fbbf24', 'silver': '#9ca3af', 'rose': '#fb7185', 'coral': '#f97171',
-                      'mint': '#6ee7b7', 'lavender': '#c4b5fd', 'burgundy': '#7f1d1d', 'khaki': '#c9b896',
-                      'cream': '#fffdd0', 'ivory': '#fffff0', 'tan': '#d2b48c', 'chocolate': '#7b3f00',
+                      red: "#ef4444",
+                      blue: "#3b82f6",
+                      green: "#22c55e",
+                      yellow: "#eab308",
+                      orange: "#f97316",
+                      purple: "#a855f7",
+                      pink: "#ec4899",
+                      black: "#000000",
+                      white: "#ffffff",
+                      gray: "#6b7280",
+                      grey: "#6b7280",
+                      brown: "#92400e",
+                      beige: "#d4a574",
+                      navy: "#1e3a5a",
+                      teal: "#14b8a6",
+                      cyan: "#06b6d4",
+                      gold: "#fbbf24",
+                      silver: "#9ca3af",
+                      rose: "#fb7185",
+                      coral: "#f97171",
+                      mint: "#6ee7b7",
+                      lavender: "#c4b5fd",
+                      burgundy: "#7f1d1d",
+                      khaki: "#c9b896",
+                      cream: "#fffdd0",
+                      ivory: "#fffff0",
+                      tan: "#d2b48c",
+                      chocolate: "#7b3f00",
                       // Extended colors
-                      'maroon': '#800000', 'olive': '#808000', 'lime': '#00ff00', 'aqua': '#00ffff',
-                      'magenta': '#ff00ff', 'violet': '#ee82ee', 'indigo': '#4b0082', 'turquoise': '#40e0d0',
-                      'salmon': '#fa8072', 'peach': '#ffdab9', 'plum': '#dda0dd', 'charcoal': '#36454f',
-                      'wine': '#722f37', 'mustard': '#ffdb58', 'sand': '#c2b280', 'rust': '#b7410e',
+                      maroon: "#800000",
+                      olive: "#808000",
+                      lime: "#00ff00",
+                      aqua: "#00ffff",
+                      magenta: "#ff00ff",
+                      violet: "#ee82ee",
+                      indigo: "#4b0082",
+                      turquoise: "#40e0d0",
+                      salmon: "#fa8072",
+                      peach: "#ffdab9",
+                      plum: "#dda0dd",
+                      charcoal: "#36454f",
+                      wine: "#722f37",
+                      mustard: "#ffdb58",
+                      sand: "#c2b280",
+                      rust: "#b7410e",
                     };
-                    
+
                     const lowerValue = displayValue.toLowerCase();
-                    const detectedColor = Object.keys(colorMap).find(color => 
-                      lowerValue.includes(color) || lowerValue === color
+                    const detectedColor = Object.keys(colorMap).find(
+                      (color) => lowerValue.includes(color) || lowerValue === color,
                     );
                     const isColorVariant = !!detectedColor;
                     const colorHex = detectedColor ? colorMap[detectedColor] : null;
                     const hasImage = !!variant.variantImage;
-                    
+
                     return (
                       <motion.button
                         key={variant.vid}
@@ -942,25 +1007,25 @@ const ProductDetail = () => {
                         whileTap={{ scale: 0.98 }}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
                           isSelected
-                            ? 'border-primary bg-primary/10 text-primary shadow-soft ring-2 ring-primary/20'
-                            : 'border-border hover:border-primary/50 bg-background'
+                            ? "border-primary bg-primary/10 text-primary shadow-soft ring-2 ring-primary/20"
+                            : "border-border hover:border-primary/50 bg-background"
                         }`}
                       >
                         {/* Color indicator dot if color detected */}
                         {isColorVariant && colorHex && (
-                          <span 
+                          <span
                             className={`w-4 h-4 rounded-full flex-shrink-0 ${
-                              ['white', 'ivory', 'cream', 'beige'].includes(detectedColor!) 
-                                ? 'border border-border' 
-                                : ''
+                              ["white", "ivory", "cream", "beige"].includes(detectedColor!)
+                                ? "border border-border"
+                                : ""
                             }`}
                             style={{ backgroundColor: colorHex }}
                           />
                         )}
                         {/* Image thumbnail if available (and no color) */}
                         {hasImage && !isColorVariant && (
-                          <img 
-                            src={variant.variantImage} 
+                          <img
+                            src={variant.variantImage}
                             alt=""
                             className="w-6 h-6 rounded object-cover flex-shrink-0"
                           />
@@ -984,62 +1049,62 @@ const ProductDetail = () => {
             <div className="space-y-2">
               <ul className="space-y-2">
                 {(() => {
-                  const cat = (product.category || '').toLowerCase();
-                  const n = (product.name || '').toLowerCase();
+                  const cat = (product.category || "").toLowerCase();
+                  const n = (product.name || "").toLowerCase();
                   const bullets: string[] = [];
-                  
+
                   // Category-aware benefit bullets (problem → outcome)
-                  if (n.includes('bed') || cat.includes('bed')) {
+                  if (n.includes("bed") || cat.includes("bed")) {
                     bullets.push(
-                      'Relieves joint pain and stiffness overnight',
-                      'Improves sleep quality from the first night',
-                      'Supports older, injured, and active dogs',
-                      'Ultra-soft, breathable cover stays cool',
+                      "Relieves joint pain and stiffness overnight",
+                      "Improves sleep quality from the first night",
+                      "Supports older, injured, and active dogs",
+                      "Ultra-soft, breathable cover stays cool",
                     );
-                  } else if (n.includes('harness') || cat.includes('harness')) {
+                  } else if (n.includes("harness") || cat.includes("harness")) {
                     bullets.push(
-                      'Stops pulling without choking or neck strain',
-                      'Padded straps prevent rubbing and chafing',
-                      'Reflective trim for safe evening walks',
-                      'Quick-snap buckle for easy on/off',
+                      "Stops pulling without choking or neck strain",
+                      "Padded straps prevent rubbing and chafing",
+                      "Reflective trim for safe evening walks",
+                      "Quick-snap buckle for easy on/off",
                     );
-                  } else if (/cat\s*tree|cat\s*condo|scratching/i.test(n + ' ' + cat)) {
+                  } else if (/cat\s*tree|cat\s*condo|scratching/i.test(n + " " + cat)) {
                     bullets.push(
-                      'Saves your furniture with dedicated scratching posts',
-                      'Multi-level design keeps cats mentally stimulated',
-                      'Supports cats up to 25+ lbs safely',
-                      'Sturdy base prevents tipping during play',
+                      "Saves your furniture with dedicated scratching posts",
+                      "Multi-level design keeps cats mentally stimulated",
+                      "Supports cats up to 25+ lbs safely",
+                      "Sturdy base prevents tipping during play",
                     );
-                  } else if (/litter/i.test(n + ' ' + cat)) {
+                  } else if (/litter/i.test(n + " " + cat)) {
                     bullets.push(
-                      'Fully automatic cleaning system',
-                      'Eliminates odors instantly',
-                      'Smart sensors for safety',
-                      'Perfect for multi-cat homes',
+                      "Fully automatic cleaning system",
+                      "Eliminates odors instantly",
+                      "Smart sensors for safety",
+                      "Perfect for multi-cat homes",
                     );
-                  } else if (n.includes('toy') || cat.includes('toy')) {
+                  } else if (n.includes("toy") || cat.includes("toy")) {
                     bullets.push(
-                      'Channels energy away from furniture destruction',
-                      'Durable build withstands aggressive chewers',
-                      'Non-toxic, pet-safe materials throughout',
-                      'Engages natural problem-solving instincts',
+                      "Channels energy away from furniture destruction",
+                      "Durable build withstands aggressive chewers",
+                      "Non-toxic, pet-safe materials throughout",
+                      "Engages natural problem-solving instincts",
                     );
-                  } else if (n.includes('carrier') || cat.includes('carrier')) {
+                  } else if (n.includes("carrier") || cat.includes("carrier")) {
                     bullets.push(
-                      'Reduces travel anxiety with ventilated comfort',
-                      'Fits under most airline cabin seats',
-                      'Secure zippers prevent escape attempts',
-                      'Padded base cushions bumpy rides',
+                      "Reduces travel anxiety with ventilated comfort",
+                      "Fits under most airline cabin seats",
+                      "Secure zippers prevent escape attempts",
+                      "Padded base cushions bumpy rides",
                     );
                   } else {
                     bullets.push(
-                      'Premium materials built for daily pet life',
-                      'Designed for comfort and ease of use',
-                      'Fast shipping to the United States',
-                      'Backed by 30-day satisfaction guarantee',
+                      "Premium materials built for daily pet life",
+                      "Designed for comfort and ease of use",
+                      "Fast shipping to the United States",
+                      "Backed by 30-day satisfaction guarantee",
                     );
                   }
-                  
+
                   return bullets.slice(0, 5).map((b, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
                       <span className="text-primary mt-0.5 flex-shrink-0">✓</span>
@@ -1057,9 +1122,9 @@ const ProductDetail = () => {
             {/* Stock Status & Subtle Social Proof */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success' : 'bg-destructive'}`} />
+                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success" : "bg-destructive"}`} />
                 <span className="font-medium text-foreground">
-                  {inStock ? 'In Stock — Ready to ship' : 'Out of Stock'}
+                  {inStock ? "In Stock — Ready to ship" : "Out of Stock"}
                 </span>
               </div>
               {inStock && (
@@ -1073,25 +1138,20 @@ const ProductDetail = () => {
             <LowStockBadge stock={product.stock} threshold={10} />
 
             {/* Stock Notification Form - Show when out of stock */}
-            {!inStock && (
-              <StockNotificationForm 
-                productId={product.id} 
-                productName={product.name || ''} 
-              />
-            )}
+            {!inStock && <StockNotificationForm productId={product.id} productName={product.name || ""} />}
 
             {/* Shipping Info - Calm, factual delivery estimate */}
             <div className="flex items-center gap-2 text-muted-foreground">
               <Truck className="w-4 h-4 text-primary" />
-              <span className="text-sm">
-                Estimated delivery: {DELIVERY_TIME_STANDARD}
-              </span>
+              <span className="text-sm">Estimated delivery: {DELIVERY_TIME_STANDARD}</span>
             </div>
 
             {/* Volume Discount — Buy More Save More */}
             {inStock && (
               <VolumeDiscountSelector
-                basePrice={selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)}
+                basePrice={
+                  selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)
+                }
                 onQuantityChange={(newQty, discountPct) => {
                   setQuantity(newQty);
                   setVolumeDiscount(discountPct);
@@ -1101,7 +1161,7 @@ const ProductDetail = () => {
             )}
 
             {/* Quantity & Actions - tracked for sticky bar visibility */}
-            <motion.div 
+            <motion.div
               ref={mainAddToCartRef}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1136,40 +1196,33 @@ const ProductDetail = () => {
                 className="flex-1 h-12 gap-2 text-base font-semibold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
-               >
+              >
                 <ShoppingCart className="w-5 h-5" />
                 Add to Cart – Secure Checkout
               </Button>
 
               {/* Wishlist */}
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="lg"
-                className={`h-12 w-12 rounded-xl border-2 ${inWishlist ? 'border-accent bg-accent/10 text-accent' : ''}`}
+                className={`h-12 w-12 rounded-xl border-2 ${inWishlist ? "border-accent bg-accent/10 text-accent" : ""}`}
                 onClick={handleWishlistToggle}
               >
-                <Heart className={`w-5 h-5 ${inWishlist ? 'fill-current' : ''}`} />
+                <Heart className={`w-5 h-5 ${inWishlist ? "fill-current" : ""}`} />
               </Button>
             </motion.div>
 
             {/* Trust Microcopy - 3 bullets only */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="pt-3"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
               <TrustMicrocopy />
             </motion.div>
-
-
           </motion.div>
         </div>
 
         {/* Emotional trigger + delivery info consolidated */}
 
         {/* Tabs Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -1177,32 +1230,32 @@ const ProductDetail = () => {
         >
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="w-full justify-start border-b border-border/50 bg-transparent p-0 h-auto flex-wrap">
-              <TabsTrigger 
-                value="description" 
+              <TabsTrigger
+                value="description"
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
                 Description
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="specifications"
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
                 Specifications
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="size-guide"
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
                 Size Guide
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="shipping"
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
                 Shipping
               </TabsTrigger>
               {variants.length > 0 && (
-                <TabsTrigger 
+                <TabsTrigger
                   value="variants"
                   className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
                 >
@@ -1210,16 +1263,16 @@ const ProductDetail = () => {
                 </TabsTrigger>
               )}
             </TabsList>
-            
+
             <TabsContent value="description" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
-                <USProductDescription 
-                  description={product.description || 'No description available.'}
+                <USProductDescription
+                  description={product.description || "No description available."}
                   productName={product.name}
                 />
               </div>
             </TabsContent>
-            
+
             {/* Specifications Tab */}
             <TabsContent value="specifications" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
@@ -1249,8 +1302,8 @@ const ProductDetail = () => {
                       )}
                       <div className="flex justify-between items-center py-2 border-b border-border/50">
                         <span className="text-muted-foreground">Availability</span>
-                        <span className={`font-medium ${inStock ? 'text-success' : 'text-destructive'}`}>
-                          {inStock ? 'In Stock' : 'Out of Stock'}
+                        <span className={`font-medium ${inStock ? "text-success" : "text-destructive"}`}>
+                          {inStock ? "In Stock" : "Out of Stock"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-border/50">
@@ -1268,13 +1321,13 @@ const ProductDetail = () => {
                     </h3>
                     <ul className="space-y-3">
                       {[
-                        'Premium quality materials',
-                        'Safe for all pets',
-                        'Easy to clean and maintain',
-                        'Durable construction',
-                        'Eco-friendly packaging',
+                        "Premium quality materials",
+                        "Safe for all pets",
+                        "Easy to clean and maintain",
+                        "Durable construction",
+                        "Eco-friendly packaging",
                       ].map((feature, idx) => (
-                        <motion.li 
+                        <motion.li
                           key={idx}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -1290,7 +1343,7 @@ const ProductDetail = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
             {/* Size Guide Tab */}
             <TabsContent value="size-guide" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
@@ -1299,11 +1352,12 @@ const ProductDetail = () => {
                     <Ruler className="w-5 h-5 text-primary" />
                     <h3 className="font-display font-semibold text-lg">Pet Size Guide</h3>
                   </div>
-                  
+
                   <p className="text-muted-foreground">
-                    Use this guide to find the perfect size for your pet. Measure your pet and compare with the chart below.
+                    Use this guide to find the perfect size for your pet. Measure your pet and compare with the chart
+                    below.
                   </p>
-                  
+
                   {/* Size Chart Table */}
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1318,14 +1372,14 @@ const ProductDetail = () => {
                       </thead>
                       <tbody>
                         {[
-                          { size: 'XS', weight: 'Up to 5 lbs', neck: '6-8"', chest: '10-12"', back: '8-10"' },
-                          { size: 'S', weight: '5-10 lbs', neck: '8-10"', chest: '12-15"', back: '10-12"' },
-                          { size: 'M', weight: '10-25 lbs', neck: '10-14"', chest: '15-20"', back: '12-16"' },
-                          { size: 'L', weight: '25-50 lbs', neck: '14-18"', chest: '20-26"', back: '16-20"' },
-                          { size: 'XL', weight: '50-80 lbs', neck: '18-22"', chest: '26-32"', back: '20-24"' },
-                          { size: 'XXL', weight: '80+ lbs', neck: '22-26"', chest: '32-38"', back: '24-28"' },
+                          { size: "XS", weight: "Up to 5 lbs", neck: '6-8"', chest: '10-12"', back: '8-10"' },
+                          { size: "S", weight: "5-10 lbs", neck: '8-10"', chest: '12-15"', back: '10-12"' },
+                          { size: "M", weight: "10-25 lbs", neck: '10-14"', chest: '15-20"', back: '12-16"' },
+                          { size: "L", weight: "25-50 lbs", neck: '14-18"', chest: '20-26"', back: '16-20"' },
+                          { size: "XL", weight: "50-80 lbs", neck: '18-22"', chest: '26-32"', back: '20-24"' },
+                          { size: "XXL", weight: "80+ lbs", neck: '22-26"', chest: '32-38"', back: '24-28"' },
                         ].map((row, idx) => (
-                          <motion.tr 
+                          <motion.tr
                             key={row.size}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -1342,30 +1396,39 @@ const ProductDetail = () => {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   {/* Measuring Tips */}
                   <div className="bg-secondary/30 rounded-xl p-4 mt-4">
                     <h4 className="font-semibold text-foreground mb-2">📏 How to Measure Your Pet</h4>
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li><strong>Neck:</strong> Measure around the base of the neck where the collar sits</li>
-                      <li><strong>Chest:</strong> Measure the widest part of the chest, behind the front legs</li>
-                      <li><strong>Back Length:</strong> Measure from the base of the neck to the base of the tail</li>
+                      <li>
+                        <strong>Neck:</strong> Measure around the base of the neck where the collar sits
+                      </li>
+                      <li>
+                        <strong>Chest:</strong> Measure the widest part of the chest, behind the front legs
+                      </li>
+                      <li>
+                        <strong>Back Length:</strong> Measure from the base of the neck to the base of the tail
+                      </li>
                     </ul>
                   </div>
                 </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="shipping" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <div className="grid md:grid-cols-2 gap-6">
-                {[
-                    { emoji: '🚚', text: US_FULFILLMENT_NOTE },
-                    { emoji: '📦', text: `Standard delivery: ${DELIVERY_TIME_STANDARD}` },
-                    { emoji: '✨', text: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}` },
-                    { emoji: '💰', text: `$${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under $${FREE_SHIPPING_THRESHOLD}` },
+                  {[
+                    { emoji: "🚚", text: US_FULFILLMENT_NOTE },
+                    { emoji: "📦", text: `Standard delivery: ${DELIVERY_TIME_STANDARD}` },
+                    { emoji: "✨", text: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}` },
+                    {
+                      emoji: "💰",
+                      text: `$${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under $${FREE_SHIPPING_THRESHOLD}`,
+                    },
                   ].map((item, idx) => (
-                    <motion.div 
+                    <motion.div
                       key={idx}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -1379,7 +1442,7 @@ const ProductDetail = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
             {variants.length > 0 && (
               <TabsContent value="variants" className="mt-6">
                 <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
@@ -1392,25 +1455,25 @@ const ProductDetail = () => {
                         onClick={() => {
                           setSelectedVariant(variant);
                           if (variant.variantImage) {
-                            const idx = images.findIndex(img => img === variant.variantImage);
+                            const idx = images.findIndex((img) => img === variant.variantImage);
                             if (idx !== -1) setSelectedImage(idx);
                           }
                         }}
                         className={`p-4 rounded-xl border-2 text-center transition-all ${
                           selectedVariant?.vid === variant.vid
-                            ? 'border-primary bg-primary/10 shadow-soft'
-                            : 'border-border hover:border-primary/50 bg-background'
+                            ? "border-primary bg-primary/10 shadow-soft"
+                            : "border-border hover:border-primary/50 bg-background"
                         }`}
                       >
                         {variant.variantImage && (
-                          <img 
-                            src={variant.variantImage} 
-                            alt={variant.variantNameEn || variant.variantKey || 'Product variant'}
+                          <img
+                            src={variant.variantImage}
+                            alt={variant.variantNameEn || variant.variantKey || "Product variant"}
                             className="w-full aspect-square rounded-lg object-cover mb-3"
                           />
                         )}
                         <p className="text-sm font-medium line-clamp-2 text-foreground">
-                          {variant.variantNameEn || variant.variantKey || 'Option'}
+                          {variant.variantNameEn || variant.variantKey || "Option"}
                         </p>
                         {variant.variantSellPrice && (
                           <p className="text-xs text-primary mt-1 font-semibold">
@@ -1427,27 +1490,29 @@ const ProductDetail = () => {
         </motion.div>
 
         {/* 0. Full Specifications Table — unique structured content for indexing */}
-        <ProductSpecsTable product={{
-          name: product.name,
-          category: product.category,
-          weight: product.weight ? Number(product.weight) : null,
-          sku: product.sku,
-        }} />
+        <ProductSpecsTable
+          product={{
+            name: product.name,
+            category: product.category,
+            weight: product.weight ? Number(product.weight) : null,
+            sku: product.sku,
+          }}
+        />
 
         {/* 1. Problem → Solution Block */}
-        <ProductProblemSolution productName={product.name} category={product.category || ''} />
+        <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
         {/* 2. Why Choose — 300+ words unique content (prevents Soft 404) */}
-        <ProductWhyChoose productName={product.name} category={product.category || ''} />
+        <ProductWhyChoose productName={product.name} category={product.category || ""} />
 
         {/* 3. Feature Grid — detailed benefits */}
-        <ProductFeatureGrid productName={product.name} category={product.category || ''} />
+        <ProductFeatureGrid productName={product.name} category={product.category || ""} />
 
         {/* Internal link to collection — SEO authority flow */}
         {product.category && (
           <div className="mt-8 text-center">
             <Link
-              to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, '-'))}`}
+              to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, "-"))}`}
               className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors underline underline-offset-4"
             >
               Browse all {safeString(product.category)} products →
@@ -1456,16 +1521,16 @@ const ProductDetail = () => {
         )}
 
         {/* 4. How It Works — step-by-step */}
-        <ProductHowItWorks productName={product.name} category={product.category || ''} />
+        <ProductHowItWorks productName={product.name} category={product.category || ""} />
 
         {/* 5. Real-Life Use Cases — who is this for */}
-        <ProductUseCases productName={product.name} category={product.category || ''} />
+        <ProductUseCases productName={product.name} category={product.category || ""} />
 
         {/* 6. Why This vs Alternatives — comparison table */}
-        <ProductVsAlternatives productName={product.name} category={product.category || ''} />
+        <ProductVsAlternatives productName={product.name} category={product.category || ""} />
 
         {/* 7. Social Proof — category-aware review quotes */}
-        <ProductSocialProof productName={product.name} category={product.category || ''} />
+        <ProductSocialProof productName={product.name} category={product.category || ""} />
 
         {/* 8. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
@@ -1475,9 +1540,15 @@ const ProductDetail = () => {
           onAddToCart={handleAddToCart}
           inStock={inStock}
           price={selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)}
-          compareAtPrice={product.compare_at_price && Number(product.compare_at_price) > (selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)) ? Number(product.compare_at_price) : null}
+          compareAtPrice={
+            product.compare_at_price &&
+            Number(product.compare_at_price) >
+              (selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price))
+              ? Number(product.compare_at_price)
+              : null
+          }
           productName={product.name}
-          category={product.category || ''}
+          category={product.category || ""}
         />
 
         {/* Reviews Section */}
@@ -1493,12 +1564,10 @@ const ProductDetail = () => {
               <MessageSquare className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-                Customer Reviews
-              </h2>
+              <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">Customer Reviews</h2>
               {reviews.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  {reviews.length} review{reviews.length !== 1 ? 's' : ''} from our customers
+                  {reviews.length} review{reviews.length !== 1 ? "s" : ""} from our customers
                 </p>
               )}
             </div>
@@ -1507,26 +1576,18 @@ const ProductDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 w-full">
             {/* Review Form */}
             <div className="lg:col-span-1">
-              <ReviewForm 
-                productId={product.id} 
-                onReviewSubmitted={handleReviewsRefresh} 
-              />
+              <ReviewForm productId={product.id} onReviewSubmitted={handleReviewsRefresh} />
             </div>
 
             {/* Reviews List */}
             <div className="lg:col-span-2">
-              <ReviewsList 
-                reviews={reviews} 
-                onReviewDeleted={handleReviewsRefresh} 
-              />
+              <ReviewsList reviews={reviews} onReviewDeleted={handleReviewsRefresh} />
             </div>
           </div>
         </motion.section>
 
         {/* Related Guides — max 3 */}
-        {relatedGuides.length > 0 && (
-          <RelatedGuides guides={relatedGuides} />
-        )}
+        {relatedGuides.length > 0 && <RelatedGuides guides={relatedGuides} />}
 
         {/* Frequently Bought Together */}
         {(relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
@@ -1541,7 +1602,7 @@ const ProductDetail = () => {
                 slug: product.slug,
                 category: product.category,
               }}
-              relatedProducts={(relatedProducts || []).map(p => ({
+              relatedProducts={(relatedProducts || []).map((p) => ({
                 id: p.id,
                 name: p.name,
                 price: Number(p.price),
@@ -1563,7 +1624,7 @@ const ProductDetail = () => {
 
         {/* Related Products */}
         <div className="mt-16">
-          <RelatedProductsCarousel 
+          <RelatedProductsCarousel
             products={relatedProducts || []}
             isLoading={relatedLoading}
             title="You May Also Like"
@@ -1579,7 +1640,7 @@ const ProductDetail = () => {
         {/* Crawlable related product links — visible to search engines */}
         {relatedProducts && relatedProducts.length > 0 && (
           <CrawlableRelatedLinks
-            products={relatedProducts.map(p => ({
+            products={relatedProducts.map((p) => ({
               id: p.id,
               name: p.name,
               slug: (p as any).slug || null,
@@ -1593,12 +1654,12 @@ const ProductDetail = () => {
         {/* Recently Viewed Products Carousel */}
         {(recentlyViewedLoading || (recentlyViewedProducts && recentlyViewedProducts.length > 0)) && (
           <div className="mt-16">
-            <RecentlyViewedCarousel 
-              products={(recentlyViewedProducts || []).map(p => ({
+            <RecentlyViewedCarousel
+              products={(recentlyViewedProducts || []).map((p) => ({
                 ...p,
                 created_at: p.created_at || new Date().toISOString(),
                 updated_at: p.updated_at || new Date().toISOString(),
-              }))} 
+              }))}
               isLoading={recentlyViewedLoading}
             />
           </div>
@@ -1628,9 +1689,7 @@ const ProductDetail = () => {
               {/* Price */}
               <div className="flex-shrink-0">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-xl font-bold text-primary">
-                    ${Number(product.price).toFixed(2)}
-                  </span>
+                  <span className="text-xl font-bold text-primary">${Number(product.price).toFixed(2)}</span>
                   {product.compare_at_price && (
                     <span className="text-xs text-muted-foreground line-through">
                       ${Number(product.compare_at_price).toFixed(2)}
@@ -1687,7 +1746,7 @@ const ProductDetail = () => {
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
-               >
+              >
                 <ShoppingCart className="w-4 h-4" />
                 Add to Cart – Secure Checkout
               </Button>
@@ -1699,7 +1758,9 @@ const ProductDetail = () => {
                 className="h-11 w-11 flex-shrink-0 rounded-full border-2"
                 onClick={handleWishlistToggle}
               >
-                <Heart className={`w-5 h-5 transition-colors ${inWishlist ? 'fill-destructive text-destructive' : ''}`} />
+                <Heart
+                  className={`w-5 h-5 transition-colors ${inWishlist ? "fill-destructive text-destructive" : ""}`}
+                />
               </Button>
             </div>
           </motion.div>
@@ -1707,7 +1768,7 @@ const ProductDetail = () => {
       </AnimatePresence>
 
       {/* Spacer for sticky bar */}
-      <div className={`transition-all ${showStickyBar ? 'h-20' : 'h-0'}`} />
+      <div className={`transition-all ${showStickyBar ? "h-20" : "h-0"}`} />
     </Layout>
   );
 };
