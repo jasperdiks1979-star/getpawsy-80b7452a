@@ -643,8 +643,14 @@ const ProductDetail = () => {
     }
   };
 
-  const discount = product.compare_at_price
-    ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
+  // Derive active price from variant (source of truth) and validate compare-at
+  const activePrice = selectedVariant?.variantSellPrice 
+    ? Number(selectedVariant.variantSellPrice) 
+    : Number(product.price);
+  const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
+  const validCompareAt = compareAtPrice && compareAtPrice > activePrice ? compareAtPrice : null;
+  const discount = validCompareAt
+    ? Math.round((1 - activePrice / validCompareAt) * 100)
     : null;
 
   // Check if description contains HTML
