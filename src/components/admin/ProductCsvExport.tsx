@@ -94,7 +94,7 @@ export const ProductCsvExport = () => {
       </Button>
       <Button
         onClick={() => handleExport("canonical")}
-        disabled={loadingFull || loadingCanonical}
+        disabled={loadingFull || loadingCanonical || loadingMerchant}
         variant="outline"
         size="sm"
         className="gap-2"
@@ -105,6 +105,20 @@ export const ProductCsvExport = () => {
           <Filter className="h-4 w-4" />
         )}
         Canonical CSV
+      </Button>
+      <Button
+        onClick={() => handleExport("merchant")}
+        disabled={loadingFull || loadingCanonical || loadingMerchant}
+        variant="default"
+        size="sm"
+        className="gap-2"
+      >
+        {loadingMerchant ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <FileDown className="h-4 w-4" />
+        )}
+        Google Merchant Feed
       </Button>
     </div>
   );
