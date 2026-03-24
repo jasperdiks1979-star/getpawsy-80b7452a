@@ -1,18 +1,97 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { sanitizeProduct, mapGoogleCategory, rewriteCloudinaryUrl, generateSafeDescription } from "../merchant-sync/compliance-sanitizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const BASE_URL = "https://getpawsy.pet";
 const BRAND = "GetPawsy";
 const YEAR = new Date().getFullYear();
 
-// Google Product Category numeric IDs
-const CATEGORY_MAP: Record<string, number> = {
+// ── Compliance sanitizer (inlined) ──────────────────────────────
+
+const BANNED_PHRASES: RegExp[] = [
+  /free\s*shipping/gi, /ships?\s*from/gi, /fast\s*delivery/gi,
+  /\d+[-–]\d+\s*business\s*days?/gi, /\d+[-–]?\s*day\s*returns?/gi,
+  /hassle[-\s]*free\s*returns?/gi, /money\s*back/gi, /satisfaction\s*guarantee[d]?/gi,
+  /risk[-\s]*free/gi, /no\s*questions?\s*asked/gi, /trusted\s*by/gi,
+  /best\s*seller/gi, /bestseller/gi, /top[-\s]*rated/gi, /premium\s*quality/gi,
+  /limited\s*(time\s*)?offer/gi, /shop\s*now/gi, /order\s*today/gi,
+  /exclusive\s*(deal|offer|price)?/gi, /must[-\s]*have/gi,
+  /your\s*pet\s*deserves/gi, /perfect\s*for/gi, /amazing/gi, /incredible/gi,
+  /guaranteed/gi, /act\s*now/gi, /don'?t\s*miss/gi, /hurry/gi,
+  /while\s*supplies?\s*last/gi, /limited\s*stock/gi, /only\s*\d+\s*left/gi,
+  /sale\s*ends?/gi, /save\s*\d+%/gi, /\d+%\s*off/gi, /buy\s*now/gi, /add\s*to\s*cart/gi,
+  /no\s*smell(?:\s*guaranteed)?/gi, /no\s*scooping\s*ever/gi,
+  /fully\s*automatic/gi, /100%\s*automatic/gi,
+  /✔/g, /✓/g, /★+/g, /⭐+/g, /🏆/g, /🥇/g, /💯/g, /🔥/g, /✅/g, /🎉/g, /🚚/g, /📦/g,
+  /vet[-\s]*recommended/gi, /vet[-\s]*approved/gi,
+];
+
+const BANNED_TITLE_WORDS: RegExp[] = [
+  /\bbest\b/gi, /\bpremium\b/gi, /\b(amazing|incredible|fantastic|awesome)\b/gi,
+  /\bexclusive\b/gi, /\bluxury\b/gi, /\bultimate\b/gi, /\bhot\s*sale\b/gi, /\b(free|gratis)\b/gi,
+];
+
+const EMOJI_RE = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+const HTML_TAG_RE = /<\/?[a-z][^>]*>/gi;
+
+function sanitizeTitle(title: string): string {
+  let r = title;
+  r = r.replace(EMOJI_RE, "");
+  for (const re of BANNED_TITLE_WORDS) r = r.replace(re, "");
+  for (const re of BANNED_PHRASES) r = r.replace(re, "");
+  r = r.replace(/\b([A-Z]{5,})\b/g, (m) => m.charAt(0) + m.slice(1).toLowerCase());
+  r = r.replace(/\s{2,}/g, " ").trim();
+  r = r.replace(/^[,.\-–—:;|]+\s*/, "").replace(/\s*[,.\-–—:;|]+$/, "");
+  // Brand prefix
+  if (!/^GetPawsy\b/i.test(r)) r = `GetPawsy ${r}`;
+  return r.substring(0, 150).trim();
+}
+
+function sanitizeDescription(desc: string): string {
+  let r = desc;
+  r = r.replace(HTML_TAG_RE, " ");
+  r = r.replace(EMOJI_RE, "");
+  for (const re of BANNED_PHRASES) r = r.replace(re, "");
+  r = r.replace(/[•●◦▪▸►➤➜→←↓↑⇒⇨※☆♦♥♠♣✔✓✅☑]/g, "");
+  r = r.replace(/\s{2,}/g, " ").trim();
+  return r.substring(0, 5000);
+}
+
+function guessAnimal(text: string): string {
+  if (/\bdog\b/i.test(text)) return "dogs";
+  if (/\bcat\b/i.test(text)) return "cats";
+  if (/\bbird\b/i.test(text)) return "birds";
+  if (/\b(hamster|guinea\s*pig|rabbit)\b/i.test(text)) return "small animals";
+  if (/\b(fish|aquarium)\b/i.test(text)) return "fish";
+  if (/\breptile\b/i.test(text)) return "reptiles";
+  return "pets";
+}
+
+function guessType(name: string): string {
+  if (/\b(bed|mat|cushion)\b/i.test(name)) return "pet bed";
+  if (/\b(collar|harness)\b/i.test(name)) return "collar/harness";
+  if (/\b(leash|lead)\b/i.test(name)) return "leash";
+  if (/\b(toy|ball|chew|squeaky)\b/i.test(name)) return "pet toy";
+  if (/\b(bowl|feeder|fountain)\b/i.test(name)) return "feeding accessory";
+  if (/\b(brush|grooming|trimmer)\b/i.test(name)) return "grooming tool";
+  if (/\b(carrier|crate|cage)\b/i.test(name)) return "pet carrier";
+  if (/\b(sweater|jacket|coat|bandana|hood)\b/i.test(name)) return "pet apparel";
+  if (/\b(tree|tower|scratcher)\b/i.test(name)) return "cat furniture";
+  if (/\b(litter)\b/i.test(name)) return "litter box";
+  return "pet accessory";
+}
+
+function generateDescription(name: string): string {
+  const animal = guessAnimal(name);
+  const type = guessType(name);
+  return `${name} is a ${type} designed for ${animal}. Built for everyday comfort and practical use. Check product listing for available sizes and options. Suitable for ${animal} depending on the selected size.`;
+}
+
+// Google Product Category IDs
+const GCAT: Record<string, number> = {
   "Dog Beds": 4985, "Dog Toys": 5004, "Dog Collars & Leashes": 5001,
   "Dog Food & Treats": 4989, "Dog Grooming": 4993, "Dog Clothing": 5003,
   "Dog Bowls & Feeders": 4997, "Dog Carriers": 6981, "Dog Training": 5005,
@@ -31,81 +110,20 @@ const CATEGORY_MAP: Record<string, number> = {
   "Pet Collars & Leashes": 5001, "Pet Bags": 6978,
 };
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string | null;
-  sku: string | null;
-  category: string | null;
-  price: number;
-  compare_at_price: number | null;
-  description: string | null;
-  image_url: string | null;
-  images: string[] | null;
-  stock: number | null;
-  is_active: boolean | null;
-  weight: number | null;
-  is_duplicate: boolean;
-}
-
-function normalizeWeight(rawGrams: number | null): number {
-  let grams = rawGrams ?? 0;
-  if (!grams || isNaN(grams)) return 0.2;
-  let kg: number;
-  if (grams > 50) kg = grams / 1000;
-  else kg = grams;
+function normalizeWeight(grams: number | null): number {
+  let g = grams ?? 0;
+  if (!g || isNaN(g)) return 0.2;
+  let kg = g > 50 ? g / 1000 : g;
   if (kg < 0.05) kg = 0.2;
   if (kg > 25) kg = 25;
   return Math.round(kg * 100) / 100;
 }
 
-function buildGoogleTitle(name: string, category: string | null): string {
-  const compliance = sanitizeProduct({
-    title: name, description: "", category, weightKg: null,
-  });
-  let title = compliance.sanitizedTitle;
-  // Add year if not already present
-  if (!title.includes(String(YEAR))) {
-    if (title.length + 7 <= 150) title += ` ${YEAR}`;
-  }
-  return title.substring(0, 150);
-}
-
-function buildGoogleDescription(name: string, rawDesc: string | null, category: string | null): string {
-  let desc = rawDesc || "";
-  if (desc.length < 50) desc = generateSafeDescription(name);
-  const compliance = sanitizeProduct({
-    title: name, description: desc, category, weightKg: null,
-  });
-  return compliance.sanitizedDescription.substring(0, 5000);
-}
-
-interface FeedItem {
-  id: string;
-  title: string;
-  description: string;
-  link: string;
-  image_link: string;
-  additional_image_link: string[];
-  availability: string;
-  condition: string;
-  price: string;
-  sale_price: string;
-  brand: string;
-  google_product_category: number | null;
-  product_type: string;
-  identifier_exists: string;
-  shipping_weight: string;
-  // audit
-  _audit: {
-    original_title: string;
-    title_changed: boolean;
-    description_length: number;
-    has_sale_price: boolean;
-    image_count: number;
-    category_mapped: boolean;
-    issues: string[];
-  };
+interface Product {
+  id: string; name: string; slug: string | null; sku: string | null;
+  category: string | null; price: number; compare_at_price: number | null;
+  description: string | null; image_url: string | null; images: string[] | null;
+  stock: number | null; weight: number | null;
 }
 
 Deno.serve(async (req) => {
@@ -120,7 +138,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify admin
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -135,159 +152,99 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Admin required" }, { status: 403, headers: corsHeaders });
 
     const url = new URL(req.url);
-    const format = url.searchParams.get("format") || "json"; // json | csv | audit
+    const format = url.searchParams.get("format") || "json";
 
-    // Fetch all feed-eligible products
+    // Fetch feed-eligible products
     const allProducts: Product[] = [];
     let from = 0;
-    const pageSize = 1000;
     while (true) {
       const { data, error } = await supabase.from("products")
-        .select("id, name, slug, sku, category, price, compare_at_price, description, image_url, images, stock, is_active, weight, is_duplicate")
+        .select("id, name, slug, sku, category, price, compare_at_price, description, image_url, images, stock, weight")
         .eq("is_active", true).eq("is_duplicate", false).gt("stock", 0)
-        .order("stock", { ascending: false }).range(from, from + pageSize - 1);
+        .order("stock", { ascending: false }).range(from, from + 999);
       if (error) throw new Error(`DB: ${error.message}`);
       if (!data || data.length === 0) break;
       allProducts.push(...(data as Product[]));
-      if (data.length < pageSize) break;
-      from += pageSize;
+      if (data.length < 1000) break;
+      from += 1000;
     }
 
-    // Build feed items
-    const feedItems: FeedItem[] = [];
-    const auditSummary = {
-      total_scanned: allProducts.length,
-      included: 0, excluded: 0,
+    const audit = {
+      total_scanned: allProducts.length, included: 0, excluded: 0,
       titles_optimized: 0, descriptions_generated: 0,
       missing_image: 0, missing_slug: 0, missing_price: 0,
       categories_mapped: 0, categories_unmapped: 0,
-      with_sale_price: 0, avg_title_length: 0, avg_desc_length: 0,
-      issues_by_type: {} as Record<string, number>,
+      with_sale_price: 0, avg_title_len: 0, avg_desc_len: 0,
+      issues: {} as Record<string, number>,
     };
 
+    const feedItems: Array<Record<string, unknown>> = [];
+
     for (const p of allProducts) {
-      const issues: string[] = [];
+      if (!p.slug) { audit.missing_slug++; audit.excluded++; continue; }
+      if (!p.price || p.price <= 0) { audit.missing_price++; audit.excluded++; continue; }
+      if (!p.image_url) { audit.missing_image++; audit.excluded++; continue; }
 
-      if (!p.slug) { auditSummary.missing_slug++; auditSummary.excluded++; issues.push("missing_slug"); continue; }
-      if (!p.price || p.price <= 0) { auditSummary.missing_price++; auditSummary.excluded++; issues.push("missing_price"); continue; }
-      if (!p.image_url) { auditSummary.missing_image++; auditSummary.excluded++; issues.push("missing_image"); continue; }
-
-      // Title optimization
-      const optimizedTitle = buildGoogleTitle(p.name, p.category);
-      const titleChanged = optimizedTitle !== p.name;
-      if (titleChanged) auditSummary.titles_optimized++;
+      // Title
+      let title = sanitizeTitle(p.name);
+      const titleChanged = title !== p.name;
+      if (titleChanged) audit.titles_optimized++;
+      if (!title.includes(String(YEAR)) && title.length + 7 <= 150) title += ` ${YEAR}`;
 
       // Description
-      const optimizedDesc = buildGoogleDescription(p.name, p.description, p.category);
-      if (!p.description || p.description.length < 50) auditSummary.descriptions_generated++;
+      let desc = p.description || "";
+      desc = sanitizeDescription(desc);
+      if (desc.length < 100) { desc = generateDescription(p.name); audit.descriptions_generated++; }
 
       // Pricing
       const hasSale = p.compare_at_price !== null && p.compare_at_price > p.price;
-      if (hasSale) auditSummary.with_sale_price++;
+      if (hasSale) audit.with_sale_price++;
 
       // Category
-      const googleCat = CATEGORY_MAP[p.category || ""] || mapGoogleCategory(p.category, p.name);
-      if (googleCat) auditSummary.categories_mapped++;
-      else { auditSummary.categories_unmapped++; issues.push("no_google_category"); }
+      const gcat = GCAT[p.category || ""] || null;
+      if (gcat) audit.categories_mapped++; else { audit.categories_unmapped++; audit.issues["no_category"] = (audit.issues["no_category"] || 0) + 1; }
 
       // Images
-      const cld = rewriteCloudinaryUrl(p.image_url);
-      const primaryImg = cld.url;
       const additionalImgs = (p.images || [])
         .filter((img: string) => img && img !== p.image_url && img.startsWith("http"))
-        .slice(0, 4)
-        .map((img: string) => rewriteCloudinaryUrl(img).url);
+        .slice(0, 4);
+      if (additionalImgs.length === 0) audit.issues["single_image"] = (audit.issues["single_image"] || 0) + 1;
 
-      if (additionalImgs.length === 0) issues.push("only_1_image");
-      if (optimizedTitle.length < 40) issues.push("short_title");
-      if (optimizedDesc.length < 100) issues.push("short_description");
-
-      // Weight
       const weightKg = normalizeWeight(p.weight);
-
-      // Product type
       const productType = p.category ? `Pet Supplies > ${p.category}` : "Pet Supplies";
-
-      for (const iss of issues) {
-        auditSummary.issues_by_type[iss] = (auditSummary.issues_by_type[iss] || 0) + 1;
-      }
 
       feedItems.push({
         id: `getpawsy_${p.id}`,
-        title: optimizedTitle,
-        description: optimizedDesc,
+        title,
+        description: desc,
         link: `${BASE_URL}/product/${p.slug}`,
-        image_link: primaryImg,
-        additional_image_link: additionalImgs,
+        image_link: p.image_url,
+        additional_image_link: additionalImgs.join(","),
         availability: "in stock",
         condition: "new",
         price: hasSale ? `${p.compare_at_price!.toFixed(2)} USD` : `${p.price.toFixed(2)} USD`,
         sale_price: hasSale ? `${p.price.toFixed(2)} USD` : "",
         brand: BRAND,
-        google_product_category: googleCat,
+        google_product_category: gcat ?? "",
         product_type: productType,
         identifier_exists: "no",
         shipping_weight: `${weightKg} kg`,
-        _audit: {
-          original_title: p.name,
-          title_changed: titleChanged,
-          description_length: optimizedDesc.length,
-          has_sale_price: hasSale,
-          image_count: 1 + additionalImgs.length,
-          category_mapped: !!googleCat,
-          issues,
-        },
       });
-      auditSummary.included++;
+      audit.included++;
     }
 
-    // Compute averages
     if (feedItems.length > 0) {
-      auditSummary.avg_title_length = Math.round(
-        feedItems.reduce((sum, f) => sum + f.title.length, 0) / feedItems.length
-      );
-      auditSummary.avg_desc_length = Math.round(
-        feedItems.reduce((sum, f) => sum + f.description.length, 0) / feedItems.length
-      );
+      audit.avg_title_len = Math.round(feedItems.reduce((s, f) => s + String(f.title).length, 0) / feedItems.length);
+      audit.avg_desc_len = Math.round(feedItems.reduce((s, f) => s + String(f.description).length, 0) / feedItems.length);
     }
 
-    // Return based on format
-    if (format === "audit") {
-      return Response.json({
-        ok: true,
-        audit: auditSummary,
-        sample_items: feedItems.slice(0, 10).map(f => ({
-          id: f.id, title: f.title, link: f.link, price: f.price,
-          sale_price: f.sale_price, category: f.google_product_category,
-          image_count: f._audit.image_count, issues: f._audit.issues,
-          original_title: f._audit.original_title, title_changed: f._audit.title_changed,
-        })),
-      }, { headers: corsHeaders });
-    }
-
+    // CSV format
     if (format === "csv") {
-      const csvColumns = [
-        "id", "title", "description", "link", "image_link", "additional_image_link",
-        "availability", "condition", "price", "sale_price", "brand",
-        "google_product_category", "product_type", "identifier_exists", "shipping_weight",
-      ];
-      const esc = (v: unknown) => {
-        const s = String(v ?? "");
-        return s.includes(",") || s.includes('"') || s.includes("\n")
-          ? '"' + s.replace(/"/g, '""') + '"' : s;
-      };
-      const lines = [csvColumns.join(",")];
-      for (const f of feedItems) {
-        lines.push([
-          f.id, f.title, f.description, f.link, f.image_link,
-          f.additional_image_link.join("|"), f.availability, f.condition,
-          f.price, f.sale_price, f.brand,
-          f.google_product_category ?? "", f.product_type,
-          f.identifier_exists, f.shipping_weight,
-        ].map(esc).join(","));
-      }
-      const csv = "\uFEFF" + lines.join("\n");
-      return new Response(csv, {
+      const cols = ["id","title","description","link","image_link","additional_image_link","availability","condition","price","sale_price","brand","google_product_category","product_type","identifier_exists","shipping_weight"];
+      const esc = (v: unknown) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const lines = [cols.join(",")];
+      for (const f of feedItems) lines.push(cols.map(c => esc(f[c])).join(","));
+      return new Response("\uFEFF" + lines.join("\n"), {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
           "Content-Disposition": `attachment; filename="getpawsy_merchant_feed_${new Date().toISOString().split("T")[0]}.csv"`,
@@ -297,26 +254,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Default: JSON (Google Merchant compatible)
-    const jsonFeed = feedItems.map(({ _audit, ...item }) => item);
+    // Audit format
+    if (format === "audit") {
+      return Response.json({
+        ok: true, audit,
+        sample: feedItems.slice(0, 15).map(f => ({ id: f.id, title: f.title, link: f.link, price: f.price, sale_price: f.sale_price, category: f.google_product_category })),
+      }, { headers: corsHeaders });
+    }
+
+    // JSON feed
     return Response.json({
       ok: true,
-      feed_info: {
-        brand: BRAND,
-        total_products: jsonFeed.length,
-        generated_at: new Date().toISOString(),
-        target_country: "US",
-        content_language: "en",
-      },
-      audit: auditSummary,
-      products: jsonFeed,
+      feed_info: { brand: BRAND, total_products: feedItems.length, generated_at: new Date().toISOString(), target_country: "US", content_language: "en" },
+      audit,
+      products: feedItems,
     }, { headers: corsHeaders });
 
   } catch (err) {
     console.error("Feed export error:", err);
-    return Response.json(
-      { ok: false, error: (err as Error).message },
-      { status: 500, headers: corsHeaders }
-    );
+    return Response.json({ ok: false, error: (err as Error).message }, { status: 500, headers: corsHeaders });
   }
 });
