@@ -117,7 +117,7 @@ export const products: Product[] = [
   {
     id: 'getpawsy_0c484864-54ef-4068-a223-62fe828f7569',
     slug: 'foldable-pet-stroller-for-small-dogs-cats',
-    name: 'Foldable Stroller – & Carrier for Small for Dogs – Foldable Compact',
+    name: 'GetPawsy Foldable Pet Stroller – Carrier for Small Dogs & Cats',
     description: 'Foldable pet stroller and carrier for small dogs and cats. Lightweight, compact, and easy to store for outdoor adventures.',
     price: 150.99,
     image: 'https://cf.cjdropshipping.com/bdc5471c-702f-4f83-a399-6d69a3ee3187.jpg',
