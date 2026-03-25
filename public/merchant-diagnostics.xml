@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-03-25T12:37:00.289Z" total_products="255">
+<merchant_diagnostics generated="2026-03-25T16:22:24.652Z" total_products="254">
   <summary>
-    <missing_gtin>40</missing_gtin>
+    <missing_gtin>39</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>1</overlength_title>
     <short_title>5</short_title>
@@ -27,7 +27,7 @@
     <issue type="missing_gtin" product_id="24dbca64-88ba-4c15-b3a9-4b057ca5a5b7" name="Long-lasting Fragrance Fun And Interactive Cat Spray For Pets." />
     <issue type="missing_gtin" product_id="d7baf590-affa-403f-ba96-58b298ba652d" name="Dog Outdoor Leash High-density Nylon" />
     <issue type="short_title" product_id="d7baf590-affa-403f-ba96-58b298ba652d" name="Dog Outdoor Leash High-density Nylon" length="36" />
-    <issue type="missing_gtin" product_id="12a3f51c-5872-4544-a690-43cbbc8fb5f0" name="Dog And Cat Grooming Trimmer Professional Pet Salon Tool For Trimming Dog Fur..." />
+    <issue type="missing_gtin" product_id="12a3f51c-5872-4544-a690-43cbbc8fb5f0" name="GetPawsy Pet Grooming Trimmer – Rechargeable Clipper for Dogs &amp; Cats" />
     <issue type="missing_gtin" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes" />
     <issue type="short_title" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes" length="18" />
     <issue type="missing_gtin" product_id="d2482798-f8c2-4096-b568-f366365b5a2e" name="Pet Water Fountain 304 Stainless Steel Cat Water Dispenser" />
@@ -46,23 +46,22 @@
     <issue type="missing_gtin" product_id="51d08cc0-d431-4121-a409-6f21c57a9d03" name="Pet Skin &amp; Wound Care Essence – Moisturizing Fur Cleaner for Pets" />
     <issue type="missing_gtin" product_id="5fbe1444-0287-4f83-ba82-3a2396e58bfc" name="Ultrasonic Pest Repellent – Rechargeable Indoor Outdoor Device for Pets" />
     <issue type="missing_gtin" product_id="42eddd95-6d8f-438c-a8ff-c1b320ccdd76" name="Moisturizing Paw Balm – Protects &amp; Hydrates Paw Pads for Cats &amp; Dogs" />
-    <issue type="missing_gtin" product_id="2bf9d939-bf2c-4382-a8e2-3c60c6795b72" name="Durable Dog Training Collar – Anti-Explosion Chain with Stimulation" />
     <issue type="missing_gtin" product_id="6555456c-cb10-44c3-9a3c-0703bef6bc10" name="Enrichment Dog Puzzle Bowl – Slow Feeding Training Mat" />
     <issue type="missing_gtin" product_id="32e50b79-e2bc-4895-a7c2-5534dd9095a0" name="Enclosed Cat Litter Box – Top Entry Spaceship Design with Odor Locking" />
     <issue type="missing_gtin" product_id="e265e7fe-af60-4efc-b927-5c4f79fc1bf0" name="Enclosed Cat Litter Box – Dual Opening Anti-Splash Odor-Locking for Cats" />
-    <issue type="missing_gtin" product_id="156ed3db-e926-482c-951a-4c1fcb61779d" name="Enclosed Cat Litter Box – Extra Large Flip-Top Anti-Splash Odor Locking for Cats" />
+    <issue type="missing_gtin" product_id="156ed3db-e926-482c-951a-4c1fcb61779d" name="GetPawsy Enclosed Cat Litter Box – Extra Large Flip-Top Design" />
     <issue type="missing_gtin" product_id="dcc0a412-adfe-49b3-8f26-ad8382f3a2d9" name="Automatic Pet Water Fountain – 4.5L Cordless Rechargeable Dispenser for Dogs ..." />
     <issue type="missing_gtin" product_id="2b61b25d-75a2-4fec-a1fd-8b7de3b916cb" name="Portable Pet Water Bottle – Squeeze Drinking Fountain for Dogs" />
     <issue type="missing_gtin" product_id="5183cd99-f966-414a-8d18-34bc9b0152e3" name="Washable Dog Training Pad – Artificial Grass Potty Mat for Dogs" />
     <issue type="missing_gtin" product_id="534cfdbe-cb9a-4587-954b-6619b5a038d8" name="Stainless Steel Pet Bowl – Double Macaron Feeder Dish for Pets" />
     <issue type="missing_gtin" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Perch – Wooden Wall or Door Mounted Climbing Perch" />
     <issue type="missing_gtin" product_id="1338e81b-5de4-4e47-8f95-ad6bb69c3b4c" name="Interactive Cat Teaser Wand – Reflective Enrichment Toy for Cats" />
-    <issue type="missing_gtin" product_id="33ad17c0-b009-4df5-8e45-265fcb78bdbc" name="Dog Harness – Minimalist Outdoor Design for Dogs" />
+    <issue type="missing_gtin" product_id="33ad17c0-b009-4df5-8e45-265fcb78bdbc" name="GetPawsy Minimalist Dog Harness – Outdoor Adjustable Design" />
     <issue type="missing_gtin" product_id="64b2bb00-2064-4992-9c06-bdc263421dc3" name="Dog &amp; Cat Plaid Bandana Collar – Double Layer Bib Collar" />
     <issue type="out_of_stock" product_id="a73edc37-b23f-4a01-8af0-102ef2ac2a84" name="Cat Tree – Multi-Level Tower with Plush Perches &amp; Jute Scratch Posts" stock="0" />
     <issue type="out_of_stock" product_id="d3898f50-8438-4531-bcb2-130bddbcd3be" name="Cat Bed – Fluffy Plush Round Faux Fur Anti-Slip Bed for Cats" stock="0" />
-    <issue type="out_of_stock" product_id="f6753e66-6aef-4a36-b9e2-52cc1d65c574" name="Soft Dog Bed – Washable Sofa Cushion with Non-Slip Pads for Small Dogs" stock="0" />
     <issue type="out_of_stock" product_id="5b0545dd-0cd1-4387-9cde-827864522cad" name="Furniture Style Dog Crate Bed – End Table with Removable Panel &amp; Cushion" stock="0" />
+    <issue type="out_of_stock" product_id="f6753e66-6aef-4a36-b9e2-52cc1d65c574" name="Soft Dog Bed – Washable Sofa Cushion with Non-Slip Pads for Small Dogs" stock="0" />
     <issue type="out_of_stock" product_id="eb6e4932-29f8-48dd-82ae-89123a159e8d" name="Elevated Dog Bed – Solid Wood Leg Sofa Pet Cushion for Large Dogs" stock="0" />
     <issue type="out_of_stock" product_id="b265edbf-fe68-461a-9d00-73c90e5f114b" name="Interactive Dog Water Fountain – Outdoor Paw Pedal Sprinkler Toy for Dogs" stock="0" />
     <issue type="out_of_stock" product_id="a59f49ad-b9ee-47ce-a16d-74c2ab61b900" name="Cat Tree Bed – 4-in-1 Self-Grooming &amp; Scratching Post with Plush Bed for Cats" stock="0" />

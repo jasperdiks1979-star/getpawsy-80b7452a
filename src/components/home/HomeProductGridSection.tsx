@@ -20,7 +20,9 @@ interface HomeProductGridSectionProps {
 }
 
 /**
- * SEO-safe homepage product grid with CTA buttons on each card.
+ * SEO-safe homepage product grid.
+ * No fake badges, no fabricated ratings, no urgency tags.
+ * Google Merchant compliant — factual presentation only.
  */
 export function HomeProductGridSection({
   title,
@@ -74,10 +76,6 @@ export function HomeProductGridSection({
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
                 />
-                {/* Best Seller badge */}
-                <span className="absolute top-2 left-2 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-full shadow-sm">
-                  ⭐ Best Seller
-                </span>
               </div>
               <div className="p-3 flex flex-col flex-1">
                 {product.category && (
@@ -93,20 +91,14 @@ export function HomeProductGridSection({
                     {product.benefit}
                   </p>
                 )}
-                {/* Stars + price */}
-                <div className="flex items-center gap-1 mt-1.5 text-amber-400 text-[11px]" aria-label="5 star rating">
-                  ★★★★★
-                  <span className="text-muted-foreground text-[10px] ml-0.5">(4.8)</span>
-                </div>
                 <div className="flex items-center justify-between mt-auto pt-2">
                   <span className="text-primary font-bold text-sm">
                     ${product.price.toFixed(2)}
                   </span>
                   <span className="text-[10px] font-semibold text-primary">
-                    Shop Now →
+                    View →
                   </span>
                 </div>
-                <p className="text-[10px] text-amber-600 font-medium mt-1">🔥 Limited stock</p>
               </div>
             </a>
           ))}

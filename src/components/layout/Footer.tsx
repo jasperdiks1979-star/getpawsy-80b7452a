@@ -48,10 +48,9 @@ const FooterSection = ({ title, children, className }: { title: string; children
 const footerLinks = {
   shop: [
     { label: 'All Products', href: '/products' },
-    { label: 'Potty Training', href: '/collections/dog-potty-training' },
-    { label: 'Leash & Control', href: '/collections/dog-leash-control' },
-    { label: 'Anti-Bark', href: '/collections/dog-anti-bark' },
-    { label: 'Puppy Essentials', href: '/collections/puppy-training-essentials' },
+    { label: 'Dog Beds', href: '/collections/dog-beds' },
+    { label: 'Dog Harnesses', href: '/collections/dog-harness' },
+    { label: 'Dog Toys', href: '/collections/dog-toys' },
     { label: 'Bestsellers', href: '/bestsellers' },
   ],
   more: [
@@ -59,7 +58,7 @@ const footerLinks = {
     { label: 'Dog Grooming', href: '/collections/best-dog-grooming-kits' },
     { label: 'Cat Trees', href: '/collections/cat-trees-and-condos' },
     { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-    { label: 'Pet Strollers', href: '/collections/best-pet-strollers' },
+    { label: 'Pet Travel', href: '/collections/pet-travel-accessories' },
   ],
   guides: [
     { label: 'Dog Training Guide', href: '/guides/complete-dog-training-guide-2026' },

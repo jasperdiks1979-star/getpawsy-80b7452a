@@ -1,41 +1,45 @@
 import { Link } from 'react-router-dom';
 
+/**
+ * Featured Products Section — all paths DB-verified.
+ * Product slugs and collection slugs confirmed in seo_collections + products tables.
+ */
 const FEATURED_PRODUCTS = [
   {
-    name: 'Automatic Self-Cleaning Litter Box',
-    path: '/lp/self-cleaning-litter-box',
-    description: 'Infrared-sensor litter box with automatic cleaning cycle, odor control, and app connectivity.',
+    name: 'Self-Cleaning Cat Litter Box',
+    path: '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
+    description: 'Automatic cat litter box with app control and infrared sensor. Helps reduce odor and daily cleaning effort.',
     badge: 'Featured',
   },
   {
-    name: 'Orthopedic Dog Bed – Memory Foam',
-    path: '/product/orthopedic-dog-bed-memory-foam',
-    description: 'Vet-style memory foam bed with removable washable cover for senior and large-breed dogs.',
+    name: 'Elevated Cooling Dog Bed',
+    path: '/product/dog-cot-cooling-pet-bed-3',
+    description: 'Elevated dog bed with breathable mesh surface for comfortable rest. Suitable for indoor and outdoor use.',
     badge: 'Popular',
   },
   {
     name: 'Multi-Level Cat Tree & Condo',
-    path: '/product/large-cat-tree-multi-level-activity-center',
-    description: 'Sisal-wrapped cat tree with hammock, perches, and enclosed condo for multi-cat homes.',
+    path: '/product/44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
+    description: 'Sisal-wrapped cat tree with hammock, perches, and enclosed condo for indoor cats.',
     badge: 'Popular',
   },
   {
-    name: 'Dog Car Seat with Safety Harness',
-    path: '/product/dog-car-seat-booster-safety-harness',
-    description: 'Crash-tested booster seat with adjustable harness for small to medium dogs up to 30 lbs.',
-    badge: 'Safety Pick',
+    name: 'Cat Trees & Condos Collection',
+    path: '/collections/cat-trees-and-condos',
+    description: 'Browse all cat trees, towers, and condos designed for climbing, scratching, and lounging.',
+    badge: 'Collection',
   },
   {
-    name: 'Interactive Cat Toys Bundle',
-    path: '/collections/cat-interactive-toys',
-    description: 'Feather wands, laser toys, and puzzle feeders to keep indoor cats active and stimulated.',
-    badge: 'New',
+    name: 'Best Cat Litter Boxes',
+    path: '/collections/best-cat-litter-boxes',
+    description: 'Compare self-cleaning, enclosed, and furniture-style litter box options for indoor cats.',
+    badge: 'Collection',
   },
   {
-    name: 'Dog Grooming Essentials',
-    path: '/collections/best-dog-grooming-tools',
-    description: 'Self-cleaning brushes, nail grinders, and deshedding tools for all coat types.',
-    badge: 'Top Pick',
+    name: 'Dog Grooming Tools',
+    path: '/collections/dog-grooming-tools',
+    description: 'Brushes, trimmers, and grooming kits for routine coat care at home.',
+    badge: 'Collection',
   },
 ] as const;
 
@@ -47,7 +51,7 @@ export function FeaturedProductsSection() {
           Featured Products
         </h2>
         <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-          Featured links to key product pages and product overviews from the GetPawsy catalog.
+          Hand-picked products and collections from the GetPawsy catalog.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl mx-auto">
           {FEATURED_PRODUCTS.map((p) => (
@@ -68,40 +72,36 @@ export function FeaturedProductsSection() {
           ))}
         </div>
 
-        {/* Contextual SEO anchor links — keyword-rich internal links to money pages */}
+        {/* Contextual SEO anchor links — verified collection slugs only */}
         <div className="mt-8 max-w-3xl mx-auto text-center">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Looking for the{' '}
-            <Link to="/best-cat-litter-box-2026" className="text-primary hover:underline font-medium">
-              best self-cleaning litter box
-            </Link>
-            ? Compare our top-rated{' '}
+            Looking for the best litter solution? Compare our{' '}
             <Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline font-medium">
-              automatic cat litter solutions
+              automatic cat litter boxes
             </Link>{' '}
-            designed to help{' '}
-            <Link to="/guides/best-cat-litter-box-2026" className="text-primary hover:underline font-medium">
-              reduce litter smell at home
+            or explore{' '}
+            <Link to="/collections/self-cleaning-litter-box" className="text-primary hover:underline font-medium">
+              self-cleaning litter boxes
             </Link>
-            . For dog owners, explore our{' '}
+            . For dog owners, browse our{' '}
             <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary hover:underline font-medium">
-              orthopedic dog beds for large breeds
+              orthopedic dog beds
             </Link>
             ,{' '}
             <Link to="/collections/best-dog-car-seats" className="text-primary hover:underline font-medium">
-              crash-tested dog car seats
+              dog car seats
             </Link>
             , and{' '}
-            <Link to="/collections/best-dog-grooming-tools" className="text-primary hover:underline font-medium">
-              professional dog grooming tools
+            <Link to="/collections/dog-grooming-tools" className="text-primary hover:underline font-medium">
+              grooming tools
             </Link>
-            . Browse our{' '}
+            . See all{' '}
             <Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline font-medium">
               cat trees and condos
-            </Link>{' '}
-            for multi-cat households or check out the latest{' '}
-            <Link to="/trending-pet-products" className="text-primary hover:underline font-medium">
-              trending pet products
+            </Link>
+            {' '}or{' '}
+            <Link to="/products" className="text-primary hover:underline font-medium">
+              browse all products
             </Link>
             .
           </p>
