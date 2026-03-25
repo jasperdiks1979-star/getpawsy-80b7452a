@@ -471,10 +471,17 @@ export default function prerenderProductsPlugin(): Plugin {
       fs.mkdirSync(distProductDir, { recursive: true });
       fs.writeFileSync(path.join(distDir, '404.html'), buildNotFoundPage(spaHtml), 'utf-8');
 
+      // Filter out non-pet and policy-unsafe products
+      const safeProducts = products.filter(p => !isExcludedProduct(p));
+      const excludedCount = products.length - safeProducts.length;
+      if (excludedCount > 0) {
+        console.log(`[prerender-products] Excluded ${excludedCount} non-pet/unsafe products`);
+      }
+
       let count = 0;
-      for (const product of products) {
+      for (const product of safeProducts) {
         const slug = product.slug || product.id;
-        const related = products
+        const related = safeProducts
           .filter((candidate) => candidate.id !== product.id && candidate.category && candidate.category === product.category)
           .slice(0, 4);
         const html = buildProductPage(product, related, spaHtml);
