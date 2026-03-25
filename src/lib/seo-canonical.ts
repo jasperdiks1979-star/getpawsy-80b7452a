@@ -43,6 +43,10 @@ export const NOINDEX_PATHS = new Set([
   '/admin',
   '/dashboard',
   '/diagnostics',
+  '/debug',
+  '/__ops',
+  '/healthz',
+  '/founder-mode',
   '/wishlist',
   '/payment-success',
   '/thank-you',
@@ -60,6 +64,8 @@ export const NOINDEX_PATHS = new Set([
   '/security',
   '/privacy-policy-iframe',
   '/terms-iframe',
+  '/merchant-fix-checklist',
+  '/api',
 ]);
 
 /**
