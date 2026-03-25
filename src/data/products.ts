@@ -102,8 +102,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_0139036c-d1b8-4b8a-996b-1ec8d5c0a908',
     slug: 'dog-anti-pull-automatic-retractable-leash-auto-retracting',
-    name: 'Leash for Dogs – Automatic Retractable',
-    description: 'Automatic retractable dog leash with anti-pull design. Comfortable grip and reliable locking mechanism for safe walks.',
+    name: 'GetPawsy Retractable Dog Leash – Anti-Tangle Walking Lead',
+    description: 'Retractable dog leash with anti-tangle design and one-button lock control for daily walks. Ergonomic handle for comfortable grip and smooth extension. Suitable for routine outdoor use.',
     price: 47.99,
     image: 'https://oss-cf.cjdropshipping.com/product/2026/01/16/02/331ccf3d-dd92-482a-b0f5-b94c02db254e_fine.jpeg',
     images: ['https://oss-cf.cjdropshipping.com/product/2026/01/16/02/331ccf3d-dd92-482a-b0f5-b94c02db254e_fine.jpeg'],
