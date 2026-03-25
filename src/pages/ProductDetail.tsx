@@ -1235,7 +1235,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart – Ships from USA 🇺🇸
+                Add to Cart – Ships in 3–7 Days 🇺🇸
               </Button>
 
               {/* Wishlist */}
