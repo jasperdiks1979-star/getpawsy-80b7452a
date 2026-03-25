@@ -129,6 +129,7 @@ const MERCHANT_TOP80_IDS = new Set([
 
 // ── Hard-blocked product IDs (policy-sensitive) ─────────────────────
 const BLOCKED_PRODUCT_IDS = new Set([
+  "2bf9d939-bf2c-4382-a8e2-3c60c6795b72", // Training Collar w/ stimulation — policy risk
   "2233541f-b223-4a76-8572-272f971aacd2",
   "16f69eff-5135-4428-a2ac-fe93ca9c18e5",
   "2578d864-6fc6-432c-9834-c0dfb9237630",
