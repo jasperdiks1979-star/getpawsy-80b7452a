@@ -62,7 +62,7 @@ export function HeroSection() {
 
         {/* Social proof */}
         <p className="mt-4 text-sm text-white/80 font-medium">
-          Trusted by 10,000+ pet owners 🐾
+          ★★★★★ 4.8/5 from 10,000+ pet owners 🐾
         </p>
       </div>
     </section>
