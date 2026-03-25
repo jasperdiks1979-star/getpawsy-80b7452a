@@ -1,17 +1,16 @@
 import { Link } from 'react-router-dom';
-import categoryDog from '@/assets/category-dog.jpg';
-import categoryCat from '@/assets/category-cat.jpg';
+import categoryDogs from '@/assets/category-dogs.jpg';
+import categoryCats from '@/assets/category-cats.jpg';
+import categoryBestsellers from '@/assets/category-bestsellers.jpg';
+import categoryNew from '@/assets/category-new.jpg';
 
 const CATEGORIES = [
-  { label: 'Dog Essentials', href: '/dog', image: categoryDog },
-  { label: 'Cat Essentials', href: '/cat', image: categoryCat },
-  { label: 'Bestsellers', href: '/bestsellers', image: categoryDog },
-  { label: 'New Arrivals', href: '/products', image: categoryCat },
+  { label: 'For Happy, Active Dogs', href: '/dog', image: categoryDogs },
+  { label: 'Comfort & Play for Cats', href: '/cat', image: categoryCats },
+  { label: 'Most Loved Products', href: '/bestsellers', image: categoryBestsellers },
+  { label: 'Just Arrived', href: '/products', image: categoryNew },
 ] as const;
 
-/**
- * Clean 4-card category grid — simplified for premium feel.
- */
 export function ShopByCategoryLinks() {
   return (
     <section className="py-12 md:py-16">
@@ -25,20 +24,20 @@ export function ShopByCategoryLinks() {
             <Link
               key={cat.href}
               to={cat.href}
-              className="group relative rounded-2xl overflow-hidden aspect-square"
+              className="group relative rounded-2xl overflow-hidden aspect-square shadow-sm hover:shadow-lg transition-shadow duration-300"
             >
               <img
                 src={cat.image}
                 alt={cat.label}
-                width={300}
-                height={300}
+                width={640}
+                height={640}
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-3 md:p-4">
-                <span className="text-sm md:text-base font-semibold text-white drop-shadow-md">
+                <span className="text-sm md:text-base font-semibold text-white drop-shadow-lg">
                   {cat.label}
                 </span>
               </div>
