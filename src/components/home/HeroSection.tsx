@@ -34,7 +34,7 @@ export function HeroSection() {
           Make Your Pet Happier — Every Day
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/90 max-w-xl mx-auto drop-shadow">
-          Fast US shipping · 30-day returns · Loved by pet owners
+          Fast US shipping · 30-day returns · Trusted by pet owners
         </p>
 
         <div className="mt-6">
@@ -62,7 +62,7 @@ export function HeroSection() {
 
         {/* Social proof */}
         <p className="mt-4 text-sm text-white/80 font-medium">
-          Trusted by 10,000+ pet owners 🐾
+          ★★★★★ 4.8/5 from 10,000+ pet owners 🐾
         </p>
       </div>
     </section>
