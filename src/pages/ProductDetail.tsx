@@ -597,7 +597,7 @@ const ProductDetail = () => {
   // SEO-safe loading state: emit proper head tags so crawlers never see
   // noindex or 404 signals while product data is still resolving.
   if (isLoading) {
-    const slugName = slug ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
+    const slugName = slug ? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
     const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
     const loadingCanonical = `https://getpawsy.pet/product/${slug || ""}`;
 
