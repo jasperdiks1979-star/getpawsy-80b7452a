@@ -43,6 +43,8 @@ const POLICY_UNSAFE_PATTERNS: RegExp[] = [
   /prong\s*collar/i,
   /choke\s*chain/i,
   /gps\s*fence/i,
+  /stimulation\s*(chain|collar)/i,
+  /explosion[-\s]*proof/i,
 ];
 
 /**

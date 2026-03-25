@@ -106,9 +106,11 @@ export const MERCHANT_TOP80_IDS: ReadonlySet<string> = new Set([
   // ── Cat Grooming (1) ──────────────────────────────
   '67f40a1b-595e-4fcf-a4b5-ab141b224ed7', // Steam Grooming Brush
 
-  // ── Dog Bowls & Feeders (2) ───────────────────────
+  // ── Dog Bowls & Feeders (1) ───────────────────────
   '7b540a34-7048-4f10-8c91-118b86278571', // Food Storage Container
-  '047dd523-57d3-46ca-82f3-0885b0fc1667', // Tactical Harness Bundle
+
+  // ── Dog Harnesses (1) ─────────────────────────────
+  '047dd523-57d3-46ca-82f3-0885b0fc1667', // Tactical Harness Set (recategorized)
 
   // ── Dog Feeding Supplies (2) ──────────────────────
   '9aa33c0c-e455-4477-85f3-83873360c777', // 3.2L Stainless Fountain
