@@ -1249,8 +1249,13 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Trust Microcopy - 3 bullets only */}
+            {/* Trust Stack — social proof + trust badges */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
+              <TrustStack />
+            </motion.div>
+
+            {/* Trust Microcopy — compliance links */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="pt-1">
               <TrustMicrocopy />
             </motion.div>
           </motion.div>
