@@ -40,6 +40,24 @@ export function HeroSection() {
             Secure checkout
           </span>
         </div>
+
+        {/* Priority category nav — SEO internal link boost */}
+        <nav className="mt-6 flex flex-wrap justify-center gap-2 md:gap-3" aria-label="Top categories">
+          {[
+            { label: 'Bestsellers', href: '/bestsellers' },
+            { label: 'Trending Products', href: '/trending-pet-products' },
+            { label: 'Shop Dogs', href: '/dog' },
+            { label: 'Shop Cats', href: '/cat' },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              to={link.href}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </section>
   );
