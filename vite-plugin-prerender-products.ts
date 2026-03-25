@@ -489,7 +489,7 @@ export default function prerenderProductsPlugin(): Plugin {
         count += 1;
       }
 
-      updateRedirectsManifest(distDir, products.map((product) => product.slug || product.id));
+      updateRedirectsManifest(distDir, safeProducts.map((product) => product.slug || product.id));
 
       const validationReport = {
         generatedAt: new Date().toISOString(),
