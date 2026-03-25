@@ -134,6 +134,7 @@ async function main() {
     products = productsRaw
       .filter((p) => {
         if (!p.slug || p.slug.trim() === "" || isExcluded(`/product/${p.slug}`)) return false;
+        if (isNonPetSlugOrName(p.slug, p.name)) return false;
         if (seen.has(p.slug)) return false;
         seen.add(p.slug);
         return true;
