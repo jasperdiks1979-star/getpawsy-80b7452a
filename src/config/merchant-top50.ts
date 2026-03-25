@@ -1,6 +1,6 @@
 /**
  * ─────────────────────────────────────────────────────────
- *  MERCHANT TOP 50 — Google-Safe Primary Export Set
+ *  MERCHANT TOP 80 — Google-Safe Primary Export Set
  * ─────────────────────────────────────────────────────────
  *
  *  This is the deterministic, curated set of product IDs
@@ -19,18 +19,23 @@
  *   - Conversion readiness (10%)— price sweet spot $25–$200
  *   - Trustworthiness (5%)      — consistent site/feed data
  *
- *  Categories represented:
- *   Cat Litter Boxes (7), Cat Trees & Condos (8), Dog Beds (5),
- *   Dog Carriers (4), Cat Scratching Posts (3), Dog Collars & Leashes (3),
- *   Cat Bowls & Feeders (3), Dog Grooming (3), Cat Houses (2),
- *   Cat Furniture (2), Dog Bowls & Feeders (2), Dog Feeding Supplies (2),
+ *  Categories represented (80 products):
+ *   Cat Litter Boxes (12), Cat Trees & Condos (16), Dog Beds (8),
+ *   Dog Carriers (6), Cat Scratching Posts (5), Dog Collars & Leashes (3),
+ *   Cat Bowls & Feeders (3), Dog Grooming (3), Cat Houses (3),
+ *   Cat Furniture (2), Dog Bowls & Feeders (4), Dog Feeding Supplies (3),
  *   Cat Carriers (2), Pet Carriers (1), Cat Grooming (1),
- *   Dog Crates & Kennels (1), Pet Houses (1)
+ *   Dog Crates & Kennels (3), Pet Houses (2), Dog Safety Gates (1),
+ *   Dog Training (1), Dog Toys (1)
  *
  *  Last updated: 2026-03-25
  */
 
-export const MERCHANT_TOP50_IDS: ReadonlySet<string> = new Set([
+export const MERCHANT_TOP80_IDS: ReadonlySet<string> = new Set([
+  // ══════════════════════════════════════════════════════
+  //  ORIGINAL TOP 50 (unchanged)
+  // ══════════════════════════════════════════════════════
+
   // ── Cat Litter Boxes (7) ──────────────────────────
   '31e46b70-cf1c-4d5b-99db-3350b12380db', // Barn Door Furniture Enclosure
   '1a1302e7-939f-4c94-96b7-d4e0c9d34a37', // Hidden Enclosure w/ Tall Legs
@@ -114,12 +119,84 @@ export const MERCHANT_TOP50_IDS: ReadonlySet<string> = new Set([
 
   // ── Pet Houses (1) ────────────────────────────────
   '7c77be17-e070-45d5-82a6-d14635693f31', // Folding Dog Ramp
+
+  // ══════════════════════════════════════════════════════
+  //  EXPANSION +30 (added 2026-03-25)
+  // ══════════════════════════════════════════════════════
+
+  // ── Cat Litter Boxes +5 ───────────────────────────
+  '128e0207-8a94-4d71-b428-5b7f5002528f', // Automatic Smart App Control
+  'e4474637-f447-4503-a342-5667c4c546a8', // Covered Privacy Hood w/ Scoop
+  'e265e7fe-af60-4efc-b927-5c4f79fc1bf0', // Dual Opening Anti-Splash
+  '156ed3db-e926-482c-951a-4c1fcb61779d', // Extra Large Flip-Top
+  'dd22e0bb-2e11-4508-b56c-79221fc13bd0', // Double-Layer Litter Mat
+
+  // ── Cat Trees & Condos +8 ─────────────────────────
+  '74259a91-2759-4ae6-9dae-1c1423ec99f7', // Flower Design Multi-Level
+  'b460b81e-d8d7-4adf-8263-a56c54f4a7ea', // 4.6 ft Dark Gray Tower
+  '11758292-6f06-492c-88a7-0acdeb5e417e', // Natural Pear Wood w/ Sisal
+  '352ddb8f-89f6-41b1-86b8-25af8ab1adb1', // 49-Inch UFO Top Perch
+  '5a5756d8-0ba2-40a3-bc69-ee5646dd566b', // 84.6" Light Gray Tower
+  '7caac9df-339a-4c62-b240-940de7bc4149', // Multi-Level w/ Hammock
+  '292d5788-3404-4ac3-87e9-faa1c4982a12', // Moon & Star Jute Post
+  '62732903-ee38-467c-9518-33fb1b9ffc64', // Cactus All-in-One Condo
+
+  // ── Dog Beds +3 ───────────────────────────────────
+  'd964894c-9abc-4fd7-b4aa-bba910a64ae6', // Comfortable Pet Sofa
+  '2c67afc3-51bc-44bb-90fa-1229a82df579', // Elevated Breathable Cot
+  '5a1c6f69-ef5d-4fb3-aee4-dd31dd569d58', // Extra-Thick Plush Sofa
+
+  // ── Dog Crates & Kennels +2 ───────────────────────
+  'ecef0b61-7c26-40de-a493-21fbb097e5c1', // Wooden Double Kennel Den
+  '51c901f4-cd73-4a51-98ce-41f8f3759bf5', // Whelping Box Two-Room
+
+  // ── Dog Carriers +2 ──────────────────────────────
+  '18028997-901a-40b8-8790-9e7b3ec558bf', // Portable Dog Stroller
+  '39bb08f6-dfa6-40ec-8b5a-d929d6270842', // Aluminum Travel Case
+
+  // ── Cat Scratching Posts +2 ───────────────────────
+  '3d009b65-2200-41fb-b229-cc73ae57a02d', // 3-in-1 Tunnel & Wooden Lounge
+  '2a89050a-e339-4b6b-b831-e6c9136e49c8', // Sisal Money Tree w/ Spring Ball
+
+  // ── Cat Houses +1 ────────────────────────────────
+  'f828d5b0-f583-4435-ab1e-27104da5fae6', // 2-Tier Indoor Playpen
+
+  // ── Dog Safety Gates +1 ──────────────────────────
+  'fe0003f6-33bd-4406-8697-3e50ca3f368c', // Freestanding Wooden Gate
+
+  // ── Dog Training +1 ──────────────────────────────
+  'cbfd4540-cbb3-449d-aaa1-a3ebb5a8bef3', // Wooden Agility Seesaw
+
+  // ── Dog Bowls & Feeders +2 ────────────────────────
+  '29d9d63f-8728-4ac1-a2f8-83a5b2b0f1c1', // 3-in-1 Slow Feeder & Lick Mat
+  '62a59e26-a6dd-4ddf-80c9-af48da4d78ed', // Portable Travel Water Bowl
+
+  // ── Dog Toys +1 ──────────────────────────────────
+  '990120b5-7d3d-442e-bf2f-19d6845ab2d4', // Interactive Treat Puzzle
+
+  // ── Pet Houses +1 ────────────────────────────────
+  'c955d810-9fff-4c6a-9fc4-1c38c90370f9', // Foldable Pet Tent
+
+  // ── Dog Feeding Supplies +1 ──────────────────────
+  '2c9a5bfd-b2a0-4d0b-80ac-26ea19e3bca5', // Automatic Visible Dispenser
 ]);
 
-/** Check if a product ID is in the Top 50 set */
-export function isMerchantTop50(productId: string): boolean {
-  return MERCHANT_TOP50_IDS.has(productId);
+// ── Legacy aliases ──────────────────────────────────────
+/** @deprecated Use MERCHANT_TOP80_IDS */
+export const MERCHANT_TOP50_IDS = MERCHANT_TOP80_IDS;
+
+/** Check if a product ID is in the Top 80 set */
+export function isMerchantTop80(productId: string): boolean {
+  return MERCHANT_TOP80_IDS.has(productId);
 }
 
-/** Total count of Top 50 products */
-export const MERCHANT_TOP50_COUNT = MERCHANT_TOP50_IDS.size;
+/** @deprecated Use isMerchantTop80 */
+export function isMerchantTop50(productId: string): boolean {
+  return MERCHANT_TOP80_IDS.has(productId);
+}
+
+/** Total count of Top 80 products */
+export const MERCHANT_TOP80_COUNT = MERCHANT_TOP80_IDS.size;
+
+/** @deprecated Use MERCHANT_TOP80_COUNT */
+export const MERCHANT_TOP50_COUNT = MERCHANT_TOP80_IDS.size;
