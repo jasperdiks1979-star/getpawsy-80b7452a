@@ -148,8 +148,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_156ed3db-e926-482c-951a-4c1fcb61779d',
     slug: 'extra-large-fully-enclosed-flip-top-cat-litter-box-anti-splash-anti-tracking-odor-locking-cat-toilet',
-    name: 'Litter Box for Cats – Large',
-    description: 'Extra-large enclosed flip-top cat litter box with anti-splash and odor-locking design. Easy to clean with flip-top lid access.',
+    name: 'GetPawsy Enclosed Cat Litter Box – Extra Large Flip-Top Design',
+    description: 'Extra-large enclosed cat litter box with flip-top access and odor-containment design. Built to help reduce litter scatter and provide privacy for indoor cats. Suitable for everyday home use.',
     price: 74.97,
     image: 'https://cf.cjdropshipping.com/0a1c6804-660e-4a52-990e-d428c5a6cfad.jpg',
     images: ['https://cf.cjdropshipping.com/0a1c6804-660e-4a52-990e-d428c5a6cfad.jpg'],

@@ -206,13 +206,15 @@ const MARKDOWN_RE = /\*{1,2}([^*]+)\*{1,2}/g;
 const SMART_QUOTES_RE = /[""'']/g;
 
 const TITLE_BANNED = [
-  /\b(best|premium|amazing|incredible|fantastic|awesome|exclusive|luxury|ultimate)\b/gi,
-  /\b(hot\s*sale|free|gratis|limited\s*(time\s*)?(offer)?|buy\s*now|shop\s*now|order\s*(now|today))\b/gi,
+  /\b(best|premium|amazing|incredible|fantastic|awesome|exclusive|luxury|ultimate|revolutionary|purr-?fect)\b/gi,
+  /\b(hot\s*sale|free|gratis|limited\s*(time\s*)?(offer)?|buy\s*now|shop\s*now|order\s*(now|today)|click)\b/gi,
   /\b(top[-\s]*rated|must[-\s]*have|bestseller|best\s*seller|guaranteed)\b/gi,
   /\bfree\s*shipping\b/gi,
   /\bno\s*\d+\b/gi,
   /\d+%\s*off/gi,
   /sale\s*ends?/gi,
+  /\bexplosion[-\s]*proof\b/gi,
+  /\bstimulation\b/gi,
 ];
 
 function sanitizeTitle(raw: string): string {
