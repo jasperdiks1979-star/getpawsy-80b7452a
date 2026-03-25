@@ -8,10 +8,11 @@ const corsHeaders = {
 const BASE_URL = "https://getpawsy.pet";
 const BRAND = "GetPawsy";
 
-// ── TOP 50 Google-Safe Primary Export Set ────────────────────────────
-// Only these product IDs are exported in the primary "top50" feed mode.
+// ── TOP 80 Google-Safe Primary Export Set ────────────────────────────
+// Only these product IDs are exported in the primary "top80" feed mode.
 // All others go to a holdout/review queue.
-const MERCHANT_TOP50_IDS = new Set([
+const MERCHANT_TOP80_IDS = new Set([
+  // ── Original Top 50 ───────────────────────────────
   // Cat Litter Boxes (7)
   '31e46b70-cf1c-4d5b-99db-3350b12380db',
   '1a1302e7-939f-4c94-96b7-d4e0c9d34a37',
@@ -79,6 +80,51 @@ const MERCHANT_TOP50_IDS = new Set([
   'c43193ad-d4e0-4247-ad53-0d77fe038c9f',
   // Pet Houses (1)
   '7c77be17-e070-45d5-82a6-d14635693f31',
+
+  // ── Expansion +30 (2026-03-25) ────────────────────
+  // Cat Litter Boxes +5
+  '128e0207-8a94-4d71-b428-5b7f5002528f',
+  'e4474637-f447-4503-a342-5667c4c546a8',
+  'e265e7fe-af60-4efc-b927-5c4f79fc1bf0',
+  '156ed3db-e926-482c-951a-4c1fcb61779d',
+  'dd22e0bb-2e11-4508-b56c-79221fc13bd0',
+  // Cat Trees & Condos +8
+  '74259a91-2759-4ae6-9dae-1c1423ec99f7',
+  'b460b81e-d8d7-4adf-8263-a56c54f4a7ea',
+  '11758292-6f06-492c-88a7-0acdeb5e417e',
+  '352ddb8f-89f6-41b1-86b8-25af8ab1adb1',
+  '5a5756d8-0ba2-40a3-bc69-ee5646dd566b',
+  '7caac9df-339a-4c62-b240-940de7bc4149',
+  '292d5788-3404-4ac3-87e9-faa1c4982a12',
+  '62732903-ee38-467c-9518-33fb1b9ffc64',
+  // Dog Beds +3
+  'd964894c-9abc-4fd7-b4aa-bba910a64ae6',
+  '2c67afc3-51bc-44bb-90fa-1229a82df579',
+  '5a1c6f69-ef5d-4fb3-aee4-dd31dd569d58',
+  // Dog Crates & Kennels +2
+  'ecef0b61-7c26-40de-a493-21fbb097e5c1',
+  '51c901f4-cd73-4a51-98ce-41f8f3759bf5',
+  // Dog Carriers +2
+  '18028997-901a-40b8-8790-9e7b3ec558bf',
+  '39bb08f6-dfa6-40ec-8b5a-d929d6270842',
+  // Cat Scratching Posts +2
+  '3d009b65-2200-41fb-b229-cc73ae57a02d',
+  '2a89050a-e339-4b6b-b831-e6c9136e49c8',
+  // Cat Houses +1
+  'f828d5b0-f583-4435-ab1e-27104da5fae6',
+  // Dog Safety Gates +1
+  'fe0003f6-33bd-4406-8697-3e50ca3f368c',
+  // Dog Training +1
+  'cbfd4540-cbb3-449d-aaa1-a3ebb5a8bef3',
+  // Dog Bowls & Feeders +2
+  '29d9d63f-8728-4ac1-a2f8-83a5b2b0f1c1',
+  '62a59e26-a6dd-4ddf-80c9-af48da4d78ed',
+  // Dog Toys +1
+  '990120b5-7d3d-442e-bf2f-19d6845ab2d4',
+  // Pet Houses +1
+  'c955d810-9fff-4c6a-9fc4-1c38c90370f9',
+  // Dog Feeding Supplies +1
+  '2c9a5bfd-b2a0-4d0b-80ac-26ea19e3bca5',
 ]);
 
 // ── Hard-blocked product IDs (policy-sensitive) ─────────────────────
@@ -566,8 +612,8 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const format = url.searchParams.get("format") || "json";
-    // Feed mode: "top50" (default, Google-safe primary set) or "all" (full catalog)
-    const feedMode = url.searchParams.get("mode") || "top50";
+    // Feed mode: "top80" (default, Google-safe primary set) or "all" (full catalog)
+    const feedMode = url.searchParams.get("mode") || "top80";
 
     // Fetch all active, non-duplicate, in-stock products
     const allProducts: RawProduct[] = [];
@@ -592,7 +638,7 @@ Deno.serve(async (req) => {
       included_in_feed: 0,
       excluded_policy: 0,
       excluded_quality: 0,
-      excluded_not_top50: 0,
+      excluded_not_top80: 0,
       holdout_review_queue: 0,
       exclusion_reasons: {} as Record<string, number>,
       titles_cleaned: 0,
@@ -601,7 +647,7 @@ Deno.serve(async (req) => {
       with_sale_price: 0,
       avg_title_len: 0,
       avg_desc_len: 0,
-      top50_ids: [] as string[],
+      top80_ids: [] as string[],
       holdout_ids: [] as string[],
     };
 
@@ -628,12 +674,12 @@ Deno.serve(async (req) => {
       if (result.categoryOverridden) audit.categories_overridden++;
       if (result.product.sale_price) audit.with_sale_price++;
 
-      // Top 50 gating
-      if (feedMode === "top50") {
-        if (MERCHANT_TOP50_IDS.has(p.id)) {
+      // Top 80 gating
+      if (feedMode === "top80") {
+        if (MERCHANT_TOP80_IDS.has(p.id)) {
           feedItems.push(result.product);
           audit.included_in_feed++;
-          audit.top50_ids.push(p.id);
+          audit.top80_ids.push(p.id);
         } else {
           holdoutItems.push(result.product);
           audit.holdout_review_queue++;
@@ -646,7 +692,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    audit.excluded_not_top50 = audit.holdout_review_queue;
+    audit.excluded_not_top80 = audit.holdout_review_queue;
 
     // Compute averages
     if (feedItems.length > 0) {
