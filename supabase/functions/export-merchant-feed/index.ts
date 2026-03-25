@@ -579,6 +579,14 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
     return { ...result, excluded: true, reason: "blocked_id" };
   }
 
+  // 1b. Apply product-specific overrides before sanitization
+  const override = PRODUCT_OVERRIDES[p.id];
+  if (override) {
+    if (override.title) p = { ...p, name: override.title };
+    if (override.description) p = { ...p, description: override.description };
+    if (override.category) p = { ...p, category: override.category };
+  }
+
   // 2. Block by policy-unsafe keywords
   if (isPolicySensitive(p.name, p.description || "")) {
     return { ...result, excluded: true, reason: "policy_unsafe_keywords" };
@@ -604,11 +612,16 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
   const cleanTitle = sanitizeTitle(p.name);
   result.titleChanged = cleanTitle !== p.name;
 
-  // 5. Sanitize description
-  let cleanDesc = sanitizeDescription(p.description || "");
-  if (cleanDesc.length < 80) {
-    cleanDesc = generateFallbackDescription(p.name);
-    result.descGenerated = true;
+  // 5. Sanitize description — use override directly if available (already clean)
+  let cleanDesc: string;
+  if (override?.description) {
+    cleanDesc = override.description;
+  } else {
+    cleanDesc = sanitizeDescription(p.description || "");
+    if (cleanDesc.length < 80) {
+      cleanDesc = generateFallbackDescription(p.name);
+      result.descGenerated = true;
+    }
   }
 
   // 6. Correct category
