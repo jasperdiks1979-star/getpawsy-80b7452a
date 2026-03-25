@@ -1230,12 +1230,12 @@ const ProductDetail = () => {
               <Button
                 ref={addToCartButtonRef}
                 size="lg"
-                className="flex-1 h-12 gap-2 text-base font-semibold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg"
+                className="flex-1 h-14 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg rounded-xl"
                 onClick={handleAddToCart}
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart – Secure Checkout
+                Add to Cart – Ships from USA 🇺🇸
               </Button>
 
               {/* Wishlist */}
