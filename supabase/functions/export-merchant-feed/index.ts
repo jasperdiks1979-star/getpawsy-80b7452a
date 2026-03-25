@@ -647,7 +647,7 @@ Deno.serve(async (req) => {
       with_sale_price: 0,
       avg_title_len: 0,
       avg_desc_len: 0,
-      top50_ids: [] as string[],
+      top80_ids: [] as string[],
       holdout_ids: [] as string[],
     };
 
