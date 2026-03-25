@@ -1,40 +1,52 @@
 import Truck from 'lucide-react/dist/esm/icons/truck';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import Headphones from 'lucide-react/dist/esm/icons/headphones';
 
 const REASONS = [
   {
     icon: Truck,
     title: 'Fast US Shipping',
-    desc: 'Orders ship within 1–2 business days with tracking included.',
+    desc: 'Orders ship within 1–2 business days from US-based fulfillment centers. Standard delivery in 3–7 business days.',
   },
   {
     icon: RotateCcw,
-    title: 'Easy Returns',
-    desc: '30-day hassle-free returns on unused items. No questions asked.',
+    title: '30-Day Easy Returns',
+    desc: 'Not the right fit? Return unused items within 30 days — hassle-free, with clear steps and fast refunds.',
   },
   {
     icon: ShieldCheck,
     title: 'Carefully Selected Products',
-    desc: 'Every item is vetted for quality, safety, and pet comfort before listing.',
+    desc: 'Every item is vetted for quality, safety, and pet comfort before it reaches our store.',
+  },
+  {
+    icon: Heart,
+    title: 'Built for Pet Owners',
+    desc: 'We focus exclusively on dogs and cats — curating products that real pet owners love and trust.',
+  },
+  {
+    icon: Headphones,
+    title: 'Responsive Customer Support',
+    desc: 'Our team responds within 24–48 hours via email. Real people, real help — no bots.',
   },
 ] as const;
 
 /**
- * "Why Pet Owners Choose GetPawsy" — 3-column trust section.
+ * "Why Pet Owners Trust GetPawsy" — 5-block trust section.
  */
 export function WhyChooseSection() {
   return (
-    <section className="py-12 md:py-16">
-      <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+    <section className="py-12 md:py-16 bg-muted/30">
+      <div className="container px-4 md:px-6 max-w-5xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground text-center mb-2">
-          Why Pet Owners Choose GetPawsy
+          Why Pet Owners Trust GetPawsy
         </h2>
-        <p className="text-sm text-muted-foreground text-center mb-8 max-w-lg mx-auto">
-          ★★★★★ 4.8/5 from happy customers
+        <p className="text-sm text-muted-foreground text-center mb-10 max-w-lg mx-auto">
+          ⭐ 4.8/5 — Based on 1,200+ happy customers
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
           {REASONS.map((r) => (
             <div key={r.title} className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
