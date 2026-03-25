@@ -176,6 +176,22 @@ const POLICY_UNSAFE_PATTERNS = [
   /gps\s*fence/i,
 ];
 
+// ── Non-pet exclusion patterns (only cats & dogs allowed) ───────────
+const NON_PET_PATTERNS = [
+  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
+  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
+  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
+  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage|hamster\s*wheel)\b/i,
+  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
+  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+  /\b(sunglasses|nail\s*art|fashion\s*accessor|jewelry|bracelet|necklace|earring)\b/i,
+];
+
+function isNonPetProduct(name: string, desc: string): boolean {
+  const text = `${name} ${desc}`.toLowerCase();
+  return NON_PET_PATTERNS.some(p => p.test(text));
+}
+
 function isPolicySensitive(name: string, desc: string): boolean {
   const text = `${name} ${desc}`.toLowerCase();
   return POLICY_UNSAFE_PATTERNS.some(p => p.test(text));
