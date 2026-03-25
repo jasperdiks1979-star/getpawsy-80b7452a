@@ -97,7 +97,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <Suspense fallback={<div style={{ height: navbarFallbackHeight }} aria-hidden="true" />}>
         <Navbar />
       </Suspense>
-      <TrendingNowStrip />
+      {/* TrendingNowStrip removed for cleaner homepage */}
       <PageTransition>
         <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden pb-safe">{children}</main>
       </PageTransition>

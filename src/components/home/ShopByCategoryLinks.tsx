@@ -1,75 +1,49 @@
-import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import { Link } from 'react-router-dom';
+import categoryDog from '@/assets/category-dog.jpg';
+import categoryCat from '@/assets/category-cat.jpg';
 
-const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
-
-interface SeoCollection {
-  id: string;
-  slug: string;
-  name: string;
-}
+const CATEGORIES = [
+  { label: 'Dog Essentials', href: '/dog', image: categoryDog },
+  { label: 'Cat Essentials', href: '/cat', image: categoryCat },
+  { label: 'Bestsellers', href: '/bestsellers', image: categoryDog },
+  { label: 'New Arrivals', href: '/products', image: categoryCat },
+] as const;
 
 /**
- * Compact "Shop by Category" link grid for mid-page crawl discovery.
- * Renders 8–12 real <a href="/collections/..."> links.
+ * Clean 4-card category grid — simplified for premium feel.
  */
 export function ShopByCategoryLinks() {
-  // Only show collections related to Cat Trees/Condos and Small Animal Cages
-  const FOCUS_SLUGS = [
-    'cat-trees-and-condos', 'cat-scratching-posts', 'cat-toys',
-    'cat-litter-boxes', 'automatic-cat-feeders',
-    'dog-toys', 'dog-beds', 'dog-harness',
-    'pet-grooming-tools', 'modern-cat-trees',
-  ];
-  const { data: collections } = useQuery<SeoCollection[]>({
-    queryKey: ['homepage-seo-collections-links-focused'],
-    queryFn: async () => {
-      const supabase = await getSupabase();
-      const { data, error } = await supabase
-        .from('seo_collections')
-        .select('id, slug, name')
-        .in('slug', FOCUS_SLUGS)
-        .order('name', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 15 * 60 * 1000,
-  });
-
-  const items = useMemo(() => (collections || []).slice(0, 12), [collections]);
-
-  if (items.length < 3) return null;
-
-  if (items.length < 6) {
-    console.warn(`ShopByCategoryLinks: only ${items.length} collections (target: 6+)`);
-  }
-
   return (
-    <section className="py-10 md:py-12 bg-muted/30" data-seo-section="category-discovery">
+    <section className="py-12 md:py-16">
       <div className="container px-4 md:px-6">
-        <h2 className="text-xl md:text-2xl font-display font-bold text-center mb-6">
+        <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground text-center mb-8">
           Shop by Category
         </h2>
-        <div className="flex flex-wrap justify-center gap-2 md:gap-3">
-          {items.map((col) => (
-            <a
-              key={col.id}
-              href={`/collections/${col.slug}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors duration-200"
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
+          {CATEGORIES.map((cat) => (
+            <Link
+              key={cat.href}
+              to={cat.href}
+              className="group relative rounded-2xl overflow-hidden aspect-square"
             >
-              {col.name}
-            </a>
+              <img
+                src={cat.image}
+                alt={cat.label}
+                width={300}
+                height={300}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-3 md:p-4">
+                <span className="text-sm md:text-base font-semibold text-white drop-shadow-md">
+                  {cat.label}
+                </span>
+              </div>
+            </Link>
           ))}
-        </div>
-        <div className="text-center mt-5">
-          <a
-            href="/products"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-          >
-            Browse All Products
-            <ArrowRight className="w-4 h-4" />
-          </a>
         </div>
       </div>
     </section>
