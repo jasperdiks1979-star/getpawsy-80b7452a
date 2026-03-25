@@ -591,10 +591,10 @@ const Bestsellers = () => {
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: BadgeCheck, title: 'Every Product Tested', desc: 'We evaluate materials, durability, and pet safety before listing any item.' },
-              { icon: Users, title: 'Real Owner Reviews', desc: 'All reviews come from verified purchasers. We never remove honest feedback.' },
-              { icon: BarChart3, title: 'Data-Driven Rankings', desc: 'Rankings are based on sales, reviews, and return rates — not paid placements.' },
-              { icon: ThumbsUp, title: 'Satisfaction Guarantee', desc: '30-day hassle-free returns on every product, no questions asked.' },
+              { icon: BadgeCheck, title: 'Curated Selection', desc: 'We evaluate materials, durability, and pet safety before listing any item.' },
+              { icon: Users, title: 'Customer Feedback', desc: 'We value honest customer feedback to continuously improve our product selection.' },
+              { icon: BarChart3, title: 'Data-Driven Rankings', desc: 'Rankings are based on sales data and customer interest — not paid placements.' },
+              { icon: ThumbsUp, title: '30-Day Returns', desc: 'Return eligible items within 30 days per our return policy.' },
             ].map((item) => (
               <div key={item.title} className="text-center">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
