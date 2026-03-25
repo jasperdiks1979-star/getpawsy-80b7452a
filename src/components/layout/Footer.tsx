@@ -118,7 +118,7 @@ export const Footer = () => {
                 {SUPPORT_EMAIL}
               </a>
               <p className="text-xs text-background/40 mt-2 leading-relaxed">
-                GetPawsy is operated by Skidzo, a Netherlands-based ecommerce business serving customers in the United States through trusted fulfillment partners and warehouses.
+                GetPawsy is a Netherlands-based company serving customers in the United States via US-based fulfillment partners.
               </p>
             </div>
 
