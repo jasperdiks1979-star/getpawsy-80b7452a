@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
-import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
+import { SUPPORT_EMAIL, INFO_EMAIL, RESPONSE_TIME } from '@/lib/shipping-constants';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -92,7 +92,7 @@ const Contact = () => {
       icon: Mail,
       title: 'Email Us',
       content: SUPPORT_EMAIL,
-      description: 'We respond within 24 hours',
+      description: RESPONSE_TIME,
       href: `mailto:${SUPPORT_EMAIL}`,
     },
     {
@@ -167,7 +167,8 @@ const Contact = () => {
               Fill out the form below and we will get back to you as soon as possible.
             </p>
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              We typically respond within 24 hours. Our support team is here to help with any questions about your order, shipping, returns, or products.
+              {RESPONSE_TIME}. Our support team is here to help with any questions about your order, shipping, returns, or products. You can also reach us at{' '}
+              <a href={`mailto:${INFO_EMAIL}`} className="text-primary hover:underline">{INFO_EMAIL}</a>.
             </p>
           </motion.div>
 

@@ -53,7 +53,7 @@ export const DELIVERY_TIME_STANDARD = '3–7 business days';
 export const PROCESSING_TIME = '1–2 business days';
 
 /** Sitewide trust freshness timestamp */
-export const SITE_LAST_UPDATED = 'March 23, 2026';
+export const SITE_LAST_UPDATED = 'March 25, 2026';
 
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
 export const US_FULFILLMENT_NOTE = 'Orders ship directly to customers across the United States';
@@ -83,8 +83,11 @@ export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order num
 /** Support email */
 export const SUPPORT_EMAIL = 'support@getpawsy.pet';
 
+/** General info email */
+export const INFO_EMAIL = 'info@getpawsy.pet';
+
 /** Response time promise */
-export const RESPONSE_TIME = 'We respond within 24 hours';
+export const RESPONSE_TIME = 'We typically respond within 24–48 hours';
 
 /** Business hours */
 export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET';
@@ -131,7 +134,7 @@ export const TRUST_BADGES = {
   },
   quality: {
     title: 'Customer Support',
-    subtitle: 'We respond within 24 hours',
+    subtitle: 'Response within 24–48 hours',
   },
 } as const;
 
