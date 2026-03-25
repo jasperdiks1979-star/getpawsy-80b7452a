@@ -160,21 +160,6 @@ export const products: Product[] = [
     reviews: 87,
     inStock: true,
   },
-  {
-    id: 'getpawsy_16f69eff-5135-4428-a2ac-fe93ca9c18e5',
-    slug: '2-in-1-wireless-electric-dog-fence-waterproof-pet-shock-boundary-containment-system-electric-trainin-2',
-    name: 'Dog Training Fence – Wireless Waterproof Electric Boundary Collar System for Dogs – Waterproof',
-    description: '2-in-1 wireless electric dog fence and training collar system. Waterproof, rechargeable, and adjustable for customizable boundary containment.',
-    price: 116.99,
-    image: 'https://cf.cjdropshipping.com/17633376/ed18334b-50e6-41f4-bb05-ea570bb993ad.jpg',
-    images: ['https://cf.cjdropshipping.com/17633376/ed18334b-50e6-41f4-bb05-ea570bb993ad.jpg'],
-    category: 'dogs',
-    productType: 'Pet Supplies > Dog Grooming',
-    tags: ['fence', 'wireless', 'training'],
-    rating: 4.2,
-    reviews: 74,
-    inStock: true,
-  },
 ];
 
 export const getFeaturedProducts = () => products.filter(p => p.featured);
