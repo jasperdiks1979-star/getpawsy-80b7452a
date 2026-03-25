@@ -109,8 +109,9 @@ export const MERCHANT_TOP80_IDS: ReadonlySet<string> = new Set([
   // ── Dog Bowls & Feeders (1) ───────────────────────
   '7b540a34-7048-4f10-8c91-118b86278571', // Food Storage Container
 
-  // ── Dog Harnesses (1) ─────────────────────────────
-  '047dd523-57d3-46ca-82f3-0885b0fc1667', // Tactical Harness Set (recategorized)
+  // ── Dog Harnesses / Collars & Leashes (2) ────────
+  '047dd523-57d3-46ca-82f3-0885b0fc1667', // Tactical Harness Set
+  '314fa804-996c-45f1-a073-f268833bbc43', // Dog Car Safety Seat Belt
 
   // ── Dog Feeding Supplies (2) ──────────────────────
   '9aa33c0c-e455-4477-85f3-83873360c777', // 3.2L Stainless Fountain

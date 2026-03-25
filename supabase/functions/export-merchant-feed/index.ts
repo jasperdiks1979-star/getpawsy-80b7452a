@@ -125,11 +125,60 @@ const MERCHANT_TOP80_IDS = new Set([
   'c955d810-9fff-4c6a-9fc4-1c38c90370f9',
   // Dog Feeding Supplies +1
   '2c9a5bfd-b2a0-4d0b-80ac-26ea19e3bca5',
+  // Dog Collars & Leashes (added)
+  '314fa804-996c-45f1-a073-f268833bbc43',
 ]);
+
+// ── Product-specific overrides (hardcoded clean copy) ───────────────
+// These override DB values during export to guarantee feed quality.
+const PRODUCT_OVERRIDES: Record<string, { title?: string; description?: string; category?: string }> = {
+  '047dd523-57d3-46ca-82f3-0885b0fc1667': {
+    title: 'GetPawsy Tactical Dog Harness Set – Harness, Seat Belt, Bowl & Waste Bags',
+    description: 'Dog harness set with adjustable vest, car seat belt, collapsible bowl, and waste bags. Designed for daily walks, car travel, and outdoor use. Practical bundle for active dog owners.',
+    category: 'Dog Collars & Leashes',
+  },
+  '314fa804-996c-45f1-a073-f268833bbc43': {
+    title: 'GetPawsy Adjustable Dog Car Safety Seat Belt – Nylon Travel Leash',
+    description: 'Adjustable nylon dog safety seat belt designed to help keep dogs secure during car travel. Clips to a harness for controlled movement in the vehicle. Suitable for everyday travel use.',
+    category: 'Dog Collars & Leashes',
+  },
+  '31e46b70-cf1c-4d5b-99db-3350b12380db': {
+    description: 'Furniture-style cat litter box enclosure with barn door design and side cat entry. Helps conceal the litter area while providing privacy for indoor cats. Sturdy structure with a top surface suitable for home placement.',
+  },
+  '020d9b4a-3ad2-4ed5-b1c0-d5183b93f425': {
+    description: 'Portable cat carrier trolley bag with shoulder straps and breathable design for everyday travel. Suitable for vet visits, outings, and short-distance transport. Designed to provide enclosed support and ventilation for cats.',
+  },
+  '292d5788-3404-4ac3-87e9-faa1c4982a12': {
+    description: '4-level cat tree with moon and star design, jute scratching posts, and elevated platforms. Includes multiple rest and play areas for indoor cats. Stable structure with anti-tipping support.',
+  },
+  '41e1a8e0-a059-4002-b3ab-0d4270030d93': {
+    description: '41-inch cat tree with water hyacinth elements, multiple levels, and sisal scratching posts. Designed for indoor cats that enjoy climbing, scratching, and resting. Suitable for everyday enrichment and activity.',
+  },
+  '39bb08f6-dfa6-40ec-8b5a-d929d6270842': {
+    description: 'Aluminum pet transport case designed for dog travel and secure enclosed transport. Durable frame with ventilated construction for routine travel use. Suitable for car trips and practical pet handling.',
+  },
+  '3bfd8f1a-c2d5-4703-bfd7-1dfc5a07adf3': {
+    description: 'Dog grooming brush with flexible massage-style surface for bathing and coat care. Helps remove loose hair and supports routine cleaning during wash sessions. Designed for regular home grooming use.',
+  },
+  '352ddb8f-89f6-41b1-86b8-25af8ab1adb1': {
+    title: 'GetPawsy UFO Cat Tree Condo – 49 Inch Activity Center with Sisal Posts',
+    description: '49-inch cat activity center with elevated perch, enclosed capsule-style rest area, hammock, and sisal scratching posts. Designed for climbing, scratching, and lounging indoors. Multi-level structure for active cats.',
+  },
+  '33ad17c0-b009-4df5-8e45-265fcb78bdbc': {
+    title: 'GetPawsy Minimalist Dog Harness – Outdoor Adjustable Design',
+    description: 'Adjustable dog harness with lightweight outdoor design and secure buckle closure. Built for daily walks and routine use. Suitable for dogs needing a simple vest-style harness.',
+  },
+  '0441e51b-d537-468b-8938-66b2dee6e6c9': {
+    description: '44-inch cat tree with spacious perch, enclosed condo, hammock, and scratching areas. Designed for indoor cats that enjoy climbing, resting, and daily activity. Stable multi-level layout for home use.',
+  },
+  '32e50b79-e2bc-4895-a7c2-5534dd9095a0': {
+    description: 'Top-entry enclosed cat litter box with odor-locking design and included litter mat. Built to help reduce litter scatter and provide privacy for indoor cats. Suitable for everyday home litter use.',
+  },
+};
 
 // ── Hard-blocked product IDs (policy-sensitive) ─────────────────────
 const BLOCKED_PRODUCT_IDS = new Set([
-  "2bf9d939-bf2c-4382-a8e2-3c60c6795b72", // Training Collar w/ stimulation — policy risk
+  "2bf9d939-bf2c-4382-a8e2-3c60c6795b72",
   "2233541f-b223-4a76-8572-272f971aacd2",
   "16f69eff-5135-4428-a2ac-fe93ca9c18e5",
   "2578d864-6fc6-432c-9834-c0dfb9237630",
@@ -153,6 +202,7 @@ const BLOCKED_PRODUCT_IDS = new Set([
   "1cebc2d5-1e84-4002-a062-4b747c36cab4",
   "42823f27-f3ec-4494-a081-73c7fbc029e0",
   "303c9938-3c45-4ce7-b925-61786b69c5f7",
+  "294e3350-430d-4191-acb3-05ee2e533d1d", // explosion-proof slug — excluded until slug is safe
 ]);
 
 // ── Policy-unsafe keyword patterns ──────────────────────────────────
@@ -529,6 +579,14 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
     return { ...result, excluded: true, reason: "blocked_id" };
   }
 
+  // 1b. Apply product-specific overrides before sanitization
+  const override = PRODUCT_OVERRIDES[p.id];
+  if (override) {
+    if (override.title) p = { ...p, name: override.title };
+    if (override.description) p = { ...p, description: override.description };
+    if (override.category) p = { ...p, category: override.category };
+  }
+
   // 2. Block by policy-unsafe keywords
   if (isPolicySensitive(p.name, p.description || "")) {
     return { ...result, excluded: true, reason: "policy_unsafe_keywords" };
@@ -554,11 +612,16 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
   const cleanTitle = sanitizeTitle(p.name);
   result.titleChanged = cleanTitle !== p.name;
 
-  // 5. Sanitize description
-  let cleanDesc = sanitizeDescription(p.description || "");
-  if (cleanDesc.length < 80) {
-    cleanDesc = generateFallbackDescription(p.name);
-    result.descGenerated = true;
+  // 5. Sanitize description — use override directly if available (already clean)
+  let cleanDesc: string;
+  if (override?.description) {
+    cleanDesc = override.description;
+  } else {
+    cleanDesc = sanitizeDescription(p.description || "");
+    if (cleanDesc.length < 80) {
+      cleanDesc = generateFallbackDescription(p.name);
+      result.descGenerated = true;
+    }
   }
 
   // 6. Correct category
