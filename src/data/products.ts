@@ -26,8 +26,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_128e0207-8a94-4d71-b428-5b7f5002528f',
     slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-    name: 'Litter Box for Cats – Smart Motion Sensor Automatic',
-    description: '60L automatic cat litter box with smart app control and deodorizing infrared sensor. Suitable for multiple cats, this self-cleaning litter box reduces daily maintenance and helps control odor automatically.',
+    name: 'GetPawsy Automatic Cat Litter Box – App-Controlled Self-Cleaning Design',
+    description: 'Automatic cat litter box with app control, deodorizing support, and infrared sensor-based operation. Designed to reduce manual cleaning and maintain a cleaner litter area. Suitable for multi-cat households.',
     price: 268.99,
     image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
     images: ['https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png'],
