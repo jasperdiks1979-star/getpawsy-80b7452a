@@ -223,7 +223,7 @@ export default function SlowFeederOffer() {
                       </Button>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Join 10,000+ happy pet parents. No spam, unsubscribe anytime.
+                      Join pet owners across the US. No spam, unsubscribe anytime.
                     </p>
                   </form>
                 ) : (
