@@ -45,7 +45,7 @@ const About = () => {
               </h1>
               
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals.
+                GetPawsy is an independent online store focused on high-quality products for dogs and cats — carefully selected for comfort, safety, and everyday joy.
               </p>
             </motion.div>
           </div>
