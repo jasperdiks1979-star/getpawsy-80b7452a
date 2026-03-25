@@ -368,6 +368,7 @@ async function main() {
   const legacyFiles = [
     "sitemap-static.xml", "sitemap-index.xml", "sitemap_index.xml",
     "sitemap-core-products.xml", "sitemap-secondary-products.xml", "sitemap-clusters.xml",
+    "sitemap-seo-pages.xml",
   ];
   for (let i = 2; i <= 20; i++) legacyFiles.push(`sitemap-products-${i}.xml`);
   for (const name of legacyFiles) {
