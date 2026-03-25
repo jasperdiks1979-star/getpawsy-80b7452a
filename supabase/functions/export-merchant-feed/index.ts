@@ -528,6 +528,11 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
     return { ...result, excluded: true, reason: "policy_unsafe_keywords" };
   }
 
+  // 2b. Block non-pet products (birds, reptiles, chickens, hamsters, fish)
+  if (isNonPetProduct(p.name, p.description || "")) {
+    return { ...result, excluded: true, reason: "non_pet_product" };
+  }
+
   // 3. Required fields
   if (!p.slug || !p.slug.trim()) {
     return { ...result, excluded: true, reason: "missing_slug" };
