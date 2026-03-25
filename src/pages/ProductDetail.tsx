@@ -624,7 +624,7 @@ const ProductDetail = () => {
   // On network/query error, show skeleton with retry — do NOT render NotFound
   // so crawlers don't see a false 404 for a valid product URL.
   if (isError) {
-    const slugName = slug ? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
+    const slugName = slug ? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
     const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
     const errorCanonical = `https://getpawsy.pet/product/${slug || ""}`;
 
