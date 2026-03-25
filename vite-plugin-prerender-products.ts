@@ -371,6 +371,28 @@ function buildProductPage(product: ProductRecord, related: ProductRecord[], spaH
 </html>`;
 }
 
+/** Non-pet exclusion patterns — only cats & dogs allowed */
+const NON_PET_RE: RegExp[] = [
+  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
+  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
+  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
+  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage|hamster\s*wheel)\b/i,
+  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
+  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+  /\b(sunglasses|nail\s*art|fashion\s*accessor|jewelry|bracelet|necklace|earring)\b/i,
+];
+const POLICY_UNSAFE_RE: RegExp[] = [
+  /shock\s*(collar|training|correction)?/i, /static\s*correction/i,
+  /electric\s*(fence|collar|training)/i, /aversive\s*training/i,
+  /wireless\s*fence/i, /training\s*collar/i, /prong\s*collar/i, /choke\s*chain/i,
+];
+function isExcludedProduct(product: ProductRecord): boolean {
+  const text = `${product.name} ${product.category || ''} ${product.description || ''}`;
+  if (NON_PET_RE.some(p => p.test(text))) return true;
+  if (POLICY_UNSAFE_RE.some(p => p.test(text))) return true;
+  return false;
+}
+
 function buildNotFoundPage(spaHtml: string): string {
   const headMatch = spaHtml.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
   const headContent = headMatch ? headMatch[1] : '';
@@ -449,10 +471,17 @@ export default function prerenderProductsPlugin(): Plugin {
       fs.mkdirSync(distProductDir, { recursive: true });
       fs.writeFileSync(path.join(distDir, '404.html'), buildNotFoundPage(spaHtml), 'utf-8');
 
+      // Filter out non-pet and policy-unsafe products
+      const safeProducts = products.filter(p => !isExcludedProduct(p));
+      const excludedCount = products.length - safeProducts.length;
+      if (excludedCount > 0) {
+        console.log(`[prerender-products] Excluded ${excludedCount} non-pet/unsafe products`);
+      }
+
       let count = 0;
-      for (const product of products) {
+      for (const product of safeProducts) {
         const slug = product.slug || product.id;
-        const related = products
+        const related = safeProducts
           .filter((candidate) => candidate.id !== product.id && candidate.category && candidate.category === product.category)
           .slice(0, 4);
         const html = buildProductPage(product, related, spaHtml);
@@ -460,12 +489,14 @@ export default function prerenderProductsPlugin(): Plugin {
         count += 1;
       }
 
-      updateRedirectsManifest(distDir, products.map((product) => product.slug || product.id));
+      updateRedirectsManifest(distDir, safeProducts.map((product) => product.slug || product.id));
 
       const validationReport = {
         generatedAt: new Date().toISOString(),
         productCount: count,
-        sampleSlugs: products.slice(0, 5).map((product) => product.slug || product.id),
+        excludedNonPet: excludedCount,
+        totalFetched: products.length,
+        sampleSlugs: safeProducts.slice(0, 5).map((product) => product.slug || product.id),
         redirectMode: 'exact-static-routes-before-spa-fallback',
       };
       fs.writeFileSync(path.join(distDir, 'prerender-validation.json'), JSON.stringify(validationReport, null, 2), 'utf-8');

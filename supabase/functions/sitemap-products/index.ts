@@ -33,11 +33,22 @@ serve(async (req) => {
       );
     }
 
-    // Filter: non-duplicate, has slug, active
+    // Non-pet exclusion patterns (only cats & dogs)
+    const NON_PET_RE = [
+      /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary)\b/i,
+      /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium)\b/i,
+      /\b(chicken|poultry|hen|rooster|coop)\b/i,
+      /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent)\b/i,
+      /\b(fish\s*tank|aquarium|fish\s*food|betta|goldfish)\b/i,
+      /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+    ];
+
+    // Filter: non-duplicate, has slug, active, cats & dogs only
     const indexable = (products || []).filter(p =>
       !p.is_duplicate &&
       p.slug &&
-      p.slug.trim() !== ""
+      p.slug.trim() !== "" &&
+      !NON_PET_RE.some(re => re.test(p.name))
     );
 
     // Deduplicate by slug (keep most recently updated)

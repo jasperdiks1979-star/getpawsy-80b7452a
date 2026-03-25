@@ -66,6 +66,21 @@ const EXCLUDED_PATHS = new Set([
   "/login", "/register", "/admin", "/dashboard", "/404",
 ]);
 
+/** Non-pet exclusion — only cats & dogs allowed */
+const NON_PET_RE = [
+  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
+  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
+  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
+  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage)\b/i,
+  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
+  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+];
+
+function isNonPetSlugOrName(slug, name) {
+  const text = `${slug || ''} ${name || ''}`;
+  return NON_PET_RE.some(re => re.test(text));
+}
+
 function isExcluded(p) {
   if (!p) return true;
   if (EXCLUDED_PATHS.has(p)) return true;
@@ -104,13 +119,13 @@ async function main() {
   // ── PRODUCTS (all active canonical products) ──
   let productsRaw = await fetchAllPages(
     "products_public",
-    "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
+    "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
   );
 
   if (!productsRaw || productsRaw.length === 0) {
     productsRaw = await fetchAllPages(
       "products",
-      "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
+      "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
     );
   }
   let products;
@@ -119,6 +134,7 @@ async function main() {
     products = productsRaw
       .filter((p) => {
         if (!p.slug || p.slug.trim() === "" || isExcluded(`/product/${p.slug}`)) return false;
+        if (isNonPetSlugOrName(p.slug, p.name)) return false;
         if (seen.has(p.slug)) return false;
         seen.add(p.slug);
         return true;
