@@ -41,24 +41,24 @@ export interface CuratedProduct {
 
 export const MANUAL_PRODUCTS: CuratedProduct[] = [
   {
-    slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-    displayName: '🏆 Smart Self-Cleaning Litter Box — #1 Best Seller',
-    benefit: 'Fully automatic. No scooping, no odor. App-controlled.',
+    slug: '60l-automatic-cat-litter-box-smart-app-control-deo',
+    displayName: 'Smart Self-Cleaning Litter Box',
+    benefit: 'Automatic cleaning system with app control. Helps reduce odor.',
   },
   {
     slug: 'dog-cot-cooling-pet-bed-3',
-    displayName: 'End Joint Pain — Orthopedic Cooling Dog Bed',
-    benefit: 'Elevated airflow design. Instant relief for achy joints.',
+    displayName: 'Orthopedic Cooling Dog Bed',
+    benefit: 'Elevated airflow design for comfortable rest.',
   },
   {
-    slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-beige',
-    displayName: 'No More Furniture Scratching — Sturdy Cat Tree',
-    benefit: 'Multi-level tower with anti-tip base. Built to last.',
+    slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-gray',
+    displayName: 'Multi-Level Cat Tree with Hammock',
+    benefit: 'Sturdy multi-level tower with sisal scratching posts.',
   },
   {
-    slug: 'transparent-and-visible-pet-feeding-and-drinking-dispenser-automatically-refilling-food-and-water-ca',
-    displayName: 'Never Miss a Meal — Auto Pet Feeder & Water Station',
-    benefit: 'Self-refilling food & water. Perfect for busy owners.',
+    slug: 'cat-litter-box-enclosure-with-barn-door-cat-hole-3',
+    displayName: 'Cat Litter Box Furniture Enclosure',
+    benefit: 'Barn door style enclosure that blends with home decor.',
   },
 ];
 
