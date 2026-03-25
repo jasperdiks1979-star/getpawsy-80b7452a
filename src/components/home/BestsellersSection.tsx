@@ -5,7 +5,7 @@ import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useCart } from '@/hooks/use-cart';
+import { useCart } from '@/contexts/CartContext';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 
 /**
