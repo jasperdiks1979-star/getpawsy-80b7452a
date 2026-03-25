@@ -9,7 +9,50 @@ const BASE_URL = "https://getpawsy.pet";
 const BRAND = "GetPawsy";
 const YEAR = new Date().getFullYear();
 
-// ── Compliance sanitizer (inlined) ──────────────────────────────
+// ── Policy-sensitive product blocklist ──────────────────────────────
+const BLOCKED_PRODUCT_IDS = new Set([
+  "2233541f-b223-4a76-8572-272f971aacd2",
+  "16f69eff-5135-4428-a2ac-fe93ca9c18e5",
+  "2578d864-6fc6-432c-9834-c0dfb9237630",
+  "cf85b323-66fd-4dd1-acb5-1c145b7a183b",
+  "3aa3fe57-9c05-49ff-92de-3af0b924d5c6",
+  "3eebf00e-d074-49f4-927c-9f68540de056",
+  "46d3a6e0-4252-4480-bea3-2f179ffed8bb",
+  "2de6f9bd-b9b9-4dd6-8f66-2a2654c418bc",
+  "d578c6e1-eeb8-4129-8412-f5fbdae3479b",
+  "b1f32db4-baa7-46df-aa74-2462974f74f5",
+  "45b9c1dd-b459-458b-a78a-fe6b8fc7e179",
+  "63b6933b-c43c-46fb-a41f-99304b42c083",
+  "b29264c0-aab5-485f-844f-e649767dacda",
+  "87725039-fcfd-4505-b8b8-660974478cae",
+  "3587a2ea-4721-4ad1-8390-93b5a891261e",
+  "8db4321c-896f-4341-aaca-80adc2241b1f",
+  "274d17f0-2928-431d-9ff5-a1573cefe353",
+  "b9a3b924-2683-4e76-8a8c-9c00410562a3",
+  "58764079-8a5a-47f9-ba9e-772d412eb0a9",
+  "eb8e67d1-06b9-48d9-a939-d76d50ce5633",
+  "1cebc2d5-1e84-4002-a062-4b747c36cab4",
+  "42823f27-f3ec-4494-a081-73c7fbc029e0",
+  "303c9938-3c45-4ce7-b925-61786b69c5f7",
+]);
+
+// Policy-unsafe keywords — exclude any product matching these
+const POLICY_UNSAFE_PATTERNS = [
+  /shock\s*(collar|training|correction|system|fence|boundary)/i,
+  /static\s*correction/i,
+  /electric\s*(fence|collar|training|shock|boundary)/i,
+  /boundary\s*shock/i,
+  /e-shock/i,
+  /bark\s*(shock|static)/i,
+  /aversive\s*training/i,
+];
+
+function isPolicySensitive(name: string, desc: string): boolean {
+  const text = `${name} ${desc}`;
+  return POLICY_UNSAFE_PATTERNS.some(p => p.test(text));
+}
+
+// ── Compliance sanitizer ──────────────────────────────────────────
 
 const BANNED_PHRASES: RegExp[] = [
   /free\s*shipping/gi, /ships?\s*from/gi, /fast\s*delivery/gi,
@@ -27,6 +70,8 @@ const BANNED_PHRASES: RegExp[] = [
   /fully\s*automatic/gi, /100%\s*automatic/gi,
   /✔/g, /✓/g, /★+/g, /⭐+/g, /🏆/g, /🥇/g, /💯/g, /🔥/g, /✅/g, /🎉/g, /🚚/g, /📦/g,
   /vet[-\s]*recommended/gi, /vet[-\s]*approved/gi,
+  /click\s*here/gi, /order\s*now/gi, /product\s*image:/gi,
+  /please\s*note/gi, /if\s*you'?d\s*like/gi,
 ];
 
 const BANNED_TITLE_WORDS: RegExp[] = [
@@ -36,16 +81,18 @@ const BANNED_TITLE_WORDS: RegExp[] = [
 
 const EMOJI_RE = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
 const HTML_TAG_RE = /<\/?[a-z][^>]*>/gi;
+const MARKDOWN_RE = /\*{1,2}([^*]+)\*{1,2}/g;
 
 function sanitizeTitle(title: string): string {
   let r = title;
   r = r.replace(EMOJI_RE, "");
   for (const re of BANNED_TITLE_WORDS) r = r.replace(re, "");
   for (const re of BANNED_PHRASES) r = r.replace(re, "");
+  // Fix double words like "Ret retractable"
+  r = r.replace(/\b(\w+)\s+\1\b/gi, "$1");
   r = r.replace(/\b([A-Z]{5,})\b/g, (m) => m.charAt(0) + m.slice(1).toLowerCase());
   r = r.replace(/\s{2,}/g, " ").trim();
   r = r.replace(/^[,.\-–—:;|]+\s*/, "").replace(/\s*[,.\-–—:;|]+$/, "");
-  // Brand prefix
   if (!/^GetPawsy\b/i.test(r)) r = `GetPawsy ${r}`;
   return r.substring(0, 150).trim();
 }
@@ -54,8 +101,14 @@ function sanitizeDescription(desc: string): string {
   let r = desc;
   r = r.replace(HTML_TAG_RE, " ");
   r = r.replace(EMOJI_RE, "");
+  r = r.replace(MARKDOWN_RE, "$1"); // strip markdown bold/italic
   for (const re of BANNED_PHRASES) r = r.replace(re, "");
   r = r.replace(/[•●◦▪▸►➤➜→←↓↑⇒⇨※☆♦♥♠♣✔✓✅☑]/g, "");
+  r = r.replace(/&nbsp;/gi, " ");
+  r = r.replace(/&amp;/gi, "&");
+  r = r.replace(/&lt;/gi, "<");
+  r = r.replace(/&gt;/gi, ">");
+  r = r.replace(/&quot;/gi, '"');
   r = r.replace(/\s{2,}/g, " ").trim();
   return r.substring(0, 5000);
 }
@@ -66,48 +119,72 @@ function guessAnimal(text: string): string {
   if (/\bbird\b/i.test(text)) return "birds";
   if (/\b(hamster|guinea\s*pig|rabbit)\b/i.test(text)) return "small animals";
   if (/\b(fish|aquarium)\b/i.test(text)) return "fish";
-  if (/\breptile\b/i.test(text)) return "reptiles";
   return "pets";
 }
 
 function guessType(name: string): string {
   if (/\b(bed|mat|cushion)\b/i.test(name)) return "pet bed";
   if (/\b(collar|harness)\b/i.test(name)) return "collar/harness";
-  if (/\b(leash|lead)\b/i.test(name)) return "leash";
-  if (/\b(toy|ball|chew|squeaky)\b/i.test(name)) return "pet toy";
-  if (/\b(bowl|feeder|fountain)\b/i.test(name)) return "feeding accessory";
-  if (/\b(brush|grooming|trimmer)\b/i.test(name)) return "grooming tool";
-  if (/\b(carrier|crate|cage)\b/i.test(name)) return "pet carrier";
-  if (/\b(sweater|jacket|coat|bandana|hood)\b/i.test(name)) return "pet apparel";
-  if (/\b(tree|tower|scratcher)\b/i.test(name)) return "cat furniture";
+  if (/\b(leash|lead|rope)\b/i.test(name)) return "leash";
+  if (/\b(toy|ball|chew|squeaky|laser)\b/i.test(name)) return "pet toy";
+  if (/\b(bowl|feeder|fountain|dispenser)\b/i.test(name)) return "feeding accessory";
+  if (/\b(brush|grooming|trimmer|grinder|comb)\b/i.test(name)) return "grooming tool";
+  if (/\b(carrier|crate|cage|stroller|trolley)\b/i.test(name)) return "pet carrier";
+  if (/\b(sweater|jacket|coat|bandana|hood|apparel)\b/i.test(name)) return "pet apparel";
+  if (/\b(tree|tower|scratcher|condo)\b/i.test(name)) return "cat furniture";
   if (/\b(litter)\b/i.test(name)) return "litter box";
+  if (/\b(gate|barrier)\b/i.test(name)) return "pet gate";
+  if (/\b(bag|waste|poop)\b/i.test(name)) return "waste management accessory";
   return "pet accessory";
 }
 
 function generateDescription(name: string): string {
   const animal = guessAnimal(name);
   const type = guessType(name);
-  return `${name} is a ${type} designed for ${animal}. Built for everyday comfort and practical use. Check product listing for available sizes and options. Suitable for ${animal} depending on the selected size.`;
+  return `${name} – a ${type} designed for ${animal}. Built for everyday comfort and practical use. Check product listing for available sizes and options.`;
 }
 
-// Google Product Category IDs
+// Google Product Category IDs (numeric)
 const GCAT: Record<string, number> = {
-  "Dog Beds": 4985, "Dog Toys": 5004, "Dog Collars & Leashes": 5001,
-  "Dog Food & Treats": 4989, "Dog Grooming": 4993, "Dog Clothing": 5003,
-  "Dog Bowls & Feeders": 4997, "Dog Carriers": 6981, "Dog Training": 5005,
-  "Dog Houses": 6981, "Pet Houses": 6981, "Pet Beds": 4516,
-  "Cat Beds": 5008, "Cat Toys": 5019, "Cat Trees & Condos": 5020,
-  "Cat Scratching Posts": 5020, "Cat Litter Boxes": 5010,
-  "Cat Bowls & Feeders": 5017, "Cat Carriers": 6983, "Cat Grooming": 5015,
-  "Cat Houses": 5007, "Cat Furniture": 5007, "Cat Hammocks": 5007,
-  "Cat Collars & Accessories": 5016, "Cat Food & Treats": 5013,
-  "Bird Cages": 5022, "Bird Toys": 5024, "Bird Bowls & Feeders": 5023,
-  "Bird Houses": 5022, "Bird Perches": 5022, "Bird Nests": 5022,
-  "Fish Tanks": 5040, "Hamster Cages": 5045, "Hamster Wheels": 5045,
-  "Rabbit Cages": 5045, "Guinea Pig Cages": 5045, "Guinea Pig Toys": 5045,
-  "Reptile Terrariums": 5054, "Reptile Lighting": 5054,
-  "Small Pet Accessories": 5045, "Pet Training": 5005,
-  "Pet Collars & Leashes": 5001, "Pet Bags": 6978,
+  "Dog Beds": 4985,
+  "Dog Toys": 5004,
+  "Dog Collars & Leashes": 5001,
+  "Dog Food & Treats": 4989,
+  "Dog Grooming": 4993,
+  "Dog Clothing": 5003,
+  "Dog Bowls & Feeders": 4997,
+  "Dog Carriers": 6981,
+  "Dog Training": 5005,
+  "Dog Houses": 6981,
+  "Dog Crates & Kennels": 6981,
+  "Dog Feeding Supplies": 4997,
+  "Dog Waste Management": 8069,
+  "Dog Safety Gates": 6383,
+  "Pet Houses": 6981,
+  "Pet Beds": 4516,
+  "Pet Carriers": 6978,
+  "Pet Feeding Supplies": 4997,
+  "Cat Beds": 5008,
+  "Cat Toys": 5019,
+  "Cat Trees & Condos": 5020,
+  "Cat Scratching Posts": 5020,
+  "Cat Litter Boxes": 5010,
+  "Cat Bowls & Feeders": 5017,
+  "Cat Carriers": 6983,
+  "Cat Grooming": 5015,
+  "Cat Houses": 5007,
+  "Cat Furniture": 5007,
+  "Cat Hammocks": 5007,
+  "Cat Collars & Accessories": 5016,
+  "Cat Food & Treats": 5013,
+  "Bird Cages": 5022,
+  "Bird Toys": 5024,
+  "Bird Bowls & Feeders": 5023,
+  "Fish Tanks": 5040,
+  "Small Pet Accessories": 5045,
+  "Pet Training": 5005,
+  "Pet Collars & Leashes": 5001,
+  "Pet Bags": 6978,
 };
 
 function normalizeWeight(grams: number | null): number {
@@ -154,7 +231,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const format = url.searchParams.get("format") || "json";
 
-    // Fetch feed-eligible products
+    // Fetch feed-eligible products (active, non-duplicate, in stock)
     const allProducts: Product[] = [];
     let from = 0;
     while (true) {
@@ -171,6 +248,7 @@ Deno.serve(async (req) => {
 
     const audit = {
       total_scanned: allProducts.length, included: 0, excluded: 0,
+      policy_blocked: 0,
       titles_optimized: 0, descriptions_generated: 0,
       missing_image: 0, missing_slug: 0, missing_price: 0,
       categories_mapped: 0, categories_unmapped: 0,
@@ -181,6 +259,13 @@ Deno.serve(async (req) => {
     const feedItems: Array<Record<string, unknown>> = [];
 
     for (const p of allProducts) {
+      // Block policy-sensitive products
+      if (BLOCKED_PRODUCT_IDS.has(p.id) || isPolicySensitive(p.name, p.description || "")) {
+        audit.policy_blocked++;
+        audit.excluded++;
+        continue;
+      }
+
       if (!p.slug) { audit.missing_slug++; audit.excluded++; continue; }
       if (!p.price || p.price <= 0) { audit.missing_price++; audit.excluded++; continue; }
       if (!p.image_url) { audit.missing_image++; audit.excluded++; continue; }
@@ -249,6 +334,9 @@ Deno.serve(async (req) => {
           "Content-Type": "text/csv; charset=utf-8",
           "Content-Disposition": `attachment; filename="getpawsy_merchant_feed_${new Date().toISOString().split("T")[0]}.csv"`,
           "X-Feed-Total": String(feedItems.length),
+          "X-Export-Total": String(feedItems.length),
+          "X-Export-Duplicates": "0",
+          "X-Export-Inactive": "0",
           ...corsHeaders,
         },
       });
