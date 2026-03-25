@@ -1,63 +1,69 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import Truck from 'lucide-react/dist/esm/icons/truck';
-import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import heroDesktop from '@/assets/hero-lifestyle.jpg';
+import heroMobile from '@/assets/hero-lifestyle-mobile.jpg';
 
 /**
- * Homepage Hero — conversion-first above-the-fold.
- * Clean headline, trust signals, single CTA. No fake urgency.
+ * Premium lifestyle hero — single CTA, trust row, social proof.
+ * LCP-optimized with art-directed <picture>.
  */
 export function HeroSection() {
   return (
-    <section className="relative bg-gradient-to-b from-card to-background pt-10 pb-8 md:pt-16 md:pb-12">
-      <div className="container px-4 md:px-6 text-center">
-        <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-tight max-w-2xl mx-auto">
-          Premium Pet Essentials for Dogs & Cats
+    <section className="relative w-full overflow-hidden">
+      {/* Background image with overlay */}
+      <picture>
+        <source media="(min-width: 768px)" srcSet={heroDesktop} />
+        <img
+          src={heroMobile}
+          alt="Happy dog and cat relaxing together in a cozy home"
+          width={750}
+          height={1000}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      </picture>
+
+      {/* Dark overlay for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
+
+      {/* Content */}
+      <div className="relative z-10 container px-4 md:px-6 py-20 md:py-32 lg:py-40 text-center">
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
+          Make Your Pet Happier — Every Day
         </h1>
-        <p className="mt-3 text-base md:text-lg text-muted-foreground max-w-xl mx-auto">
-          Fast US shipping · 30-day returns · Trusted quality
+        <p className="mt-3 text-base md:text-lg text-white/90 max-w-xl mx-auto drop-shadow">
+          Fast US shipping · 30-day returns · Loved by pet owners
         </p>
 
         <div className="mt-6">
-          <Button asChild size="lg" className="rounded-full px-8 text-base font-semibold">
-            <Link to="/products">Shop Now</Link>
+          <Button
+            asChild
+            size="lg"
+            className="rounded-full px-10 py-3 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+          >
+            <Link to="/bestsellers">Shop Bestsellers</Link>
           </Button>
         </div>
 
-        {/* Trust strip */}
-        <div className="mt-8 flex flex-wrap justify-center gap-4 md:gap-8 text-xs md:text-sm text-muted-foreground">
+        {/* Trust row */}
+        <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs md:text-sm text-white/90">
           <span className="inline-flex items-center gap-1.5">
-            <Truck className="w-4 h-4 text-primary" />
-            Free shipping over $35
+            ✔ Free US shipping over $35
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <RotateCcw className="w-4 h-4 text-primary" />
-            30-day returns
+            ✔ 30-day hassle-free returns
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            Secure checkout
+            ✔ Secure checkout
           </span>
         </div>
 
-        {/* Priority category nav — SEO internal link boost */}
-        <nav className="mt-6 flex flex-wrap justify-center gap-2 md:gap-3" aria-label="Top categories">
-          {[
-            { label: 'Bestsellers', href: '/bestsellers' },
-            { label: 'Trending Products', href: '/trending-pet-products' },
-            { label: 'Shop Dogs', href: '/dog' },
-            { label: 'Shop Cats', href: '/cat' },
-          ].map((link) => (
-            <Link
-              key={link.href}
-              to={link.href}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Social proof */}
+        <p className="mt-4 text-sm text-white/80 font-medium">
+          Trusted by 10,000+ pet owners 🐾
+        </p>
       </div>
     </section>
   );

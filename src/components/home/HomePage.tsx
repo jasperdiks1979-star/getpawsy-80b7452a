@@ -5,8 +5,8 @@ import { HeroSection } from "@/components/home/HeroSection";
 
 const BestsellersSection = lazy(() => import("@/components/home/BestsellersSection").then(m => ({ default: m.BestsellersSection })));
 const ShopByCategoryLinks = lazy(() => import("@/components/home/ShopByCategoryLinks").then(m => ({ default: m.default ?? m.ShopByCategoryLinks })));
+const WhyChooseSection = lazy(() => import("@/components/home/WhyChooseSection").then(m => ({ default: m.default ?? m.WhyChooseSection })));
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
-const FeaturedProductsSection = lazy(() => import("@/components/home/FeaturedProductsSection").then(m => ({ default: m.default ?? m.FeaturedProductsSection })));
 
 const HomePage = () => {
   return (
@@ -20,25 +20,25 @@ const HomePage = () => {
         <link rel="canonical" href="https://getpawsy.pet/" />
       </Helmet>
 
-      {/* 1. Hero — above the fold, conversion CTA */}
+      {/* 1. Hero — lifestyle, single CTA, trust row */}
       <HeroSection />
 
-      {/* 2. Bestsellers — strongest products */}
+      {/* 2. Bestsellers — horizontal scroll carousel */}
       <Suspense fallback={null}>
         <BestsellersSection />
       </Suspense>
 
-      {/* 3. Category discovery */}
+      {/* 3. Category discovery — 4 clean cards */}
       <Suspense fallback={null}>
         <ShopByCategoryLinks />
       </Suspense>
 
-      {/* 4. Featured / premium items */}
+      {/* 4. Why choose — trust/social proof */}
       <Suspense fallback={null}>
-        <FeaturedProductsSection />
+        <WhyChooseSection />
       </Suspense>
 
-      {/* 5. Trust & transparency */}
+      {/* 5. Business transparency */}
       <Suspense fallback={null}>
         <TrustTransparencySection />
       </Suspense>

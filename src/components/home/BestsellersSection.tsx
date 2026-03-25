@@ -1,17 +1,20 @@
-import { useMemo } from 'react';
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useCart } from '@/contexts/CartContext';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 
 /**
- * Bestsellers Section — clean grid of top-ranked products.
- * No fake badges, no 3D effects, no fabricated ratings.
- * Mobile-first: stable 2-col grid, no layout shifts.
+ * Customer Favorites — horizontal scroll carousel with Add to Cart.
  */
 export const BestsellersSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { addItem } = useCart();
+
   const { data: bestsellers, isLoading } = useQuery({
     queryKey: ['homepage-bestsellers'],
     queryFn: async () => {
@@ -35,7 +38,6 @@ export const BestsellersSection = () => {
 
       if (error) throw error;
 
-      // Filter: must have product, valid image, in stock, reasonable price
       return (data || []).filter(b => {
         const p = b.products;
         if (!p) return false;
@@ -47,102 +49,109 @@ export const BestsellersSection = () => {
     },
   });
 
-  if (!isLoading && (!bestsellers || bestsellers.length === 0)) {
-    return null;
-  }
+  if (!isLoading && (!bestsellers || bestsellers.length === 0)) return null;
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const amount = scrollRef.current.clientWidth * 0.7;
+    scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+  };
 
   return (
-    <section className="pt-10 pb-12 md:pt-14 md:pb-16">
+    <section className="py-12 md:py-16 bg-muted/30">
       <div className="container px-4 md:px-6">
-        {/* Header */}
-        <div className="text-center mb-8">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-            Bestsellers
+            Customer Favorites
           </h2>
-          <p className="text-sm text-muted-foreground mt-1 max-w-lg mx-auto">
-            Our most popular products — trusted by pet owners across the US.
-          </p>
+          <div className="hidden md:flex gap-2">
+            <button
+              onClick={() => scroll('left')}
+              className="w-9 h-9 rounded-full border border-border bg-card flex items-center justify-center hover:bg-accent transition-colors"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="w-9 h-9 rounded-full border border-border bg-card flex items-center justify-center hover:bg-accent transition-colors"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Loading State */}
         {isLoading && <BestsellersGridSkeleton count={4} />}
 
-        {/* Product Grid */}
         {!isLoading && bestsellers && bestsellers.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 max-w-6xl mx-auto">
-            {bestsellers.slice(0, 8).map((bestseller, idx) => {
+          <div
+            ref={scrollRef}
+            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 -mx-4 px-4"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {bestsellers.slice(0, 8).map((bestseller) => {
               const product = bestseller.products;
               if (!product) return null;
 
               const price = typeof product.price === 'number' ? product.price : 0;
-              const comparePrice = typeof product.compare_at_price === 'number' ? product.compare_at_price : 0;
-              const hasDiscount = comparePrice > price && comparePrice > 0;
-              const discount = hasDiscount ? Math.round((1 - price / comparePrice) * 100) : 0;
               const imageUrl = product.image_url || '/placeholder.svg';
-              const productName = product.name || 'Product';
+              const productName = bestseller.hero_headline || product.name || 'Product';
               const slug = bestseller.slug || product.id;
 
               return (
-                <Link
+                <div
                   key={bestseller.id}
-                  to={`/bestseller/${slug}`}
-                  className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-shadow duration-300"
+                  className="flex-shrink-0 w-[160px] md:w-[220px] snap-start"
                 >
-                  {/* Image */}
-                  <div className="relative aspect-square overflow-hidden bg-muted">
-                    <img
-                      src={imageUrl}
-                      alt={productName}
-                      width={400}
-                      height={400}
-                      loading={idx < 4 ? 'eager' : 'lazy'}
-                      decoding="async"
-                      fetchPriority={idx === 0 ? 'high' : 'auto'}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
-                    />
-                    {discount > 0 && (
-                      <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
-                        -{discount}%
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-3 flex flex-col flex-1">
-                    {product.category && (
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
-                        {product.category}
-                      </span>
-                    )}
-                    <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                      {bestseller.hero_headline || productName}
-                    </h3>
-                    <div className="flex items-baseline gap-1.5 mt-auto pt-2">
-                      <span className="text-sm font-bold text-primary">
-                        ${price.toFixed(2)}
-                      </span>
-                      {hasDiscount && (
-                        <span className="text-[10px] text-muted-foreground line-through">
-                          ${comparePrice.toFixed(2)}
-                        </span>
-                      )}
+                  <Link
+                    to={`/bestseller/${slug}`}
+                    className="group flex flex-col rounded-2xl border border-border/40 bg-card overflow-hidden hover:shadow-md transition-shadow"
+                  >
+                    <div className="aspect-square overflow-hidden bg-muted">
+                      <img
+                        src={imageUrl}
+                        alt={productName}
+                        width={220}
+                        height={220}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                      />
                     </div>
-                  </div>
-                </Link>
+                    <div className="p-3 flex flex-col flex-1">
+                      <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                        {productName}
+                      </h3>
+                      <p className="text-sm font-bold text-primary mt-1">
+                        ${price.toFixed(2)}
+                      </p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      addItem({
+                        id: product.id,
+                        name: product.name || 'Product',
+                        price,
+                        image: imageUrl,
+                      });
+                    }}
+                    className="w-full mt-2 py-2 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
               );
             })}
           </div>
         )}
 
-        {/* CTA */}
         {!isLoading && bestsellers && bestsellers.length > 0 && (
           <div className="text-center mt-8">
-            <Button asChild variant="outline" className="gap-2 rounded-full">
-              <Link to="/products">
-                View All Products
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/bestsellers">View All Bestsellers</Link>
             </Button>
           </div>
         )}
