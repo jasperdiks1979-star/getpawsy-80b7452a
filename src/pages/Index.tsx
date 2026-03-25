@@ -165,5 +165,4 @@ export const getProductBySlug = (slug: string) => products.find((p) => p.slug ==
 
 export const getProductBySlugOrId = (value: string) => getProductBySlug(value) ?? getProductById(value);
 
-// Default export required for lazy loading in App.tsx
 export { default } from "@/components/home/HomePage";

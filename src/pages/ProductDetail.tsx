@@ -51,7 +51,7 @@ import { trackViewItem } from "@/lib/analytics";
 import { calculateSellingPrice } from "@/lib/pricing";
 import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
-import { getProductById } from "@/data/products";
+import { getProductBySlugOrId } from "@/data/products";
 import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
 import { TrustMicrocopy } from "@/components/products/TrustMicrocopy";
