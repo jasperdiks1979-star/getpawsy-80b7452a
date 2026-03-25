@@ -1,135 +1,109 @@
 /**
- * ULTRA GROWTH TRINITY — Sprint Products Config
- * 
- * Top 10 easiest-to-convert products selected by:
- * Margin × Emotional Appeal × Low Competition × Simple Purchase Decision
- * 
- * Each product gets maximum internal link weight, HeroProductBoost,
- * and dedicated content clusters.
+ * Sprint Products — DB-verified product slugs for Trending Now strip.
+ * Every slug here has been validated against the active product catalog.
+ * No slug may be added without confirming it exists in the products table.
  */
 
 export interface SprintProduct {
   slug: string;
   name: string;
   price: number;
-  margin: number;          // gross margin %
+  margin: number;
   emotionalTrigger: string;
   primaryKeyword: string;
-  conversionScore: number; // 1-100
+  conversionScore: number;
   contentCluster: string;
   image: string;
 }
 
 export const SPRINT_PRODUCTS: SprintProduct[] = [
   {
-    slug: 'memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner',
-    name: 'Orthopedic Memory Foam Pet Bed',
-    price: 69.49,
-    margin: 58,
-    emotionalTrigger: 'Joint pain relief for aging pets',
-    primaryKeyword: 'orthopedic dog bed',
+    slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
+    name: 'Self-Cleaning Litter Box',
+    price: 268.99,
+    margin: 55,
+    emotionalTrigger: 'Automatic cleaning with app control',
+    primaryKeyword: 'automatic cat litter box',
     conversionScore: 95,
-    contentCluster: 'orthopedic-beds',
-    image: 'https://cf.cjdropshipping.com/c8296810-eabc-444b-8b13-9cd466c098a6.jpg',
-  },
-  {
-    slug: 'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo',
-    name: 'Tactical Dog Harness & Safety Bundle',
-    price: 63.99,
-    margin: 62,
-    emotionalTrigger: 'Keep your dog safe during car travel',
-    primaryKeyword: 'dog car harness',
-    conversionScore: 90,
-    contentCluster: 'dog-car-safety',
-    image: 'https://cf.cjdropshipping.com/63d3145a-4458-422e-9fe5-b63fc51ad711.jpg',
+    contentCluster: 'litter-boxes',
+    image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
   },
   {
     slug: 'all-in-one-cactus-cat-tree-with-climbing-frame-and-cozy-nest',
-    name: 'Cactus Cat Tree with Climbing Frame',
+    name: 'Cactus Cat Tree',
     price: 88.99,
     margin: 55,
     emotionalTrigger: 'Adorable design cats actually use',
     primaryKeyword: 'cat tree cactus',
-    conversionScore: 88,
+    conversionScore: 90,
     contentCluster: 'cat-trees',
     image: 'https://oss-cf.cjdropshipping.com/product/2026/01/15/06/41c2bcde-5615-4832-8d42-0b10485bc94c_trans.jpeg',
   },
   {
     slug: 'dog-cot-cooling-pet-bed-3',
     name: 'Elevated Cooling Dog Bed',
-    price: 54.99,
+    price: 127.99,
     margin: 60,
-    emotionalTrigger: 'Beat the summer heat for your pup',
+    emotionalTrigger: 'Comfortable elevated rest for dogs',
     primaryKeyword: 'elevated cooling dog bed',
-    conversionScore: 86,
+    conversionScore: 88,
     contentCluster: 'dog-beds',
-    image: '',
+    image: 'https://cf.cjdropshipping.com/17695584/cea797a4-58d8-4007-be42-58c3eeaa8723.jpg',
   },
   {
-    slug: 'automatic-pet-feeder-6l-smart-food-dispenser',
-    name: 'Smart Automatic Pet Feeder 6L',
-    price: 72.99,
+    slug: 'cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white',
+    name: 'Litter Box Furniture',
+    price: 176.99,
     margin: 52,
-    emotionalTrigger: 'Never worry about feeding times again',
-    primaryKeyword: 'automatic pet feeder',
+    emotionalTrigger: 'Discreet litter enclosure for home',
+    primaryKeyword: 'cat litter box furniture',
+    conversionScore: 86,
+    contentCluster: 'litter-boxes',
+    image: 'https://cf.cjdropshipping.com/17664480/f56eb834-2643-4b70-884a-fbf1330a1d82.jpg',
+  },
+  {
+    slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
+    name: 'Multi-Level Cat Tree',
+    price: 128.99,
+    margin: 54,
+    emotionalTrigger: 'Multi-level tower for active indoor cats',
+    primaryKeyword: 'multi level cat tree',
     conversionScore: 84,
-    contentCluster: 'pet-feeders',
-    image: '',
+    contentCluster: 'cat-trees',
+    image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
   },
   {
-    slug: 'pet-grooming-vacuum-kit-5-in-1',
-    name: '5-in-1 Pet Grooming Vacuum Kit',
-    price: 79.99,
-    margin: 56,
-    emotionalTrigger: 'Salon grooming without the mess',
-    primaryKeyword: 'pet grooming vacuum',
+    slug: 'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
+    name: 'Hidden Litter Box Enclosure',
+    price: 176.99,
+    margin: 50,
+    emotionalTrigger: 'Furniture-style privacy for cats',
+    primaryKeyword: 'hidden litter box',
     conversionScore: 82,
-    contentCluster: 'grooming',
-    image: '',
+    contentCluster: 'litter-boxes',
+    image: 'https://cf.cjdropshipping.com/8c7d9c65-6f57-40ac-b639-1ac694c256f0.jpg',
   },
   {
-    slug: 'indestructible-dog-chew-toy-heavy-chewers',
-    name: 'Indestructible Dog Chew Toy',
-    price: 24.99,
-    margin: 68,
-    emotionalTrigger: 'Finally a toy that survives power chewers',
-    primaryKeyword: 'indestructible dog toy',
+    slug: '35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c',
+    name: 'Modern Cat Tree',
+    price: 158.99,
+    margin: 53,
+    emotionalTrigger: 'Clean modern design for home',
+    primaryKeyword: 'modern cat tree',
     conversionScore: 80,
-    contentCluster: 'dog-toys',
-    image: '',
+    contentCluster: 'cat-trees',
+    image: 'https://cf.cjdropshipping.com/17664480/e75f68d4-a5f5-46e0-ae2d-217cc563ed2f.jpg',
   },
   {
-    slug: 'calming-donut-dog-bed-anti-anxiety',
-    name: 'Calming Donut Dog Bed',
-    price: 49.99,
-    margin: 61,
-    emotionalTrigger: 'Reduce anxiety and help them sleep',
-    primaryKeyword: 'calming dog bed',
+    slug: 'dog-bed-pet-sofa',
+    name: 'Dog Sofa Bed',
+    price: 282.99,
+    margin: 58,
+    emotionalTrigger: 'Comfortable sofa-style bed for dogs',
+    primaryKeyword: 'dog sofa bed',
     conversionScore: 78,
-    contentCluster: 'calming-beds',
-    image: '',
-  },
-  {
-    slug: 'interactive-cat-toy-laser-feather-usb',
-    name: 'Interactive Cat Toy Combo',
-    price: 29.99,
-    margin: 65,
-    emotionalTrigger: 'Keep bored indoor cats entertained for hours',
-    primaryKeyword: 'interactive cat toy',
-    conversionScore: 76,
-    contentCluster: 'cat-toys',
-    image: '',
-  },
-  {
-    slug: 'portable-dog-water-bottle-travel',
-    name: 'Portable Dog Water Bottle',
-    price: 19.99,
-    margin: 70,
-    emotionalTrigger: 'Hydration on every walk and hike',
-    primaryKeyword: 'dog water bottle',
-    conversionScore: 74,
-    contentCluster: 'dog-travel',
-    image: '',
+    contentCluster: 'dog-beds',
+    image: 'https://cf.cjdropshipping.com/17666208/4c6af75c-de5c-4718-a2cd-3ae575466415.jpg',
   },
 ];
 
