@@ -674,12 +674,12 @@ Deno.serve(async (req) => {
       if (result.categoryOverridden) audit.categories_overridden++;
       if (result.product.sale_price) audit.with_sale_price++;
 
-      // Top 50 gating
-      if (feedMode === "top50") {
-        if (MERCHANT_TOP50_IDS.has(p.id)) {
+      // Top 80 gating
+      if (feedMode === "top80") {
+        if (MERCHANT_TOP80_IDS.has(p.id)) {
           feedItems.push(result.product);
           audit.included_in_feed++;
-          audit.top50_ids.push(p.id);
+          audit.top80_ids.push(p.id);
         } else {
           holdoutItems.push(result.product);
           audit.holdout_review_queue++;
