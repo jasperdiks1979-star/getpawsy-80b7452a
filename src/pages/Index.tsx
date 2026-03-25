@@ -164,3 +164,5 @@ export const getProductById = (id: string) => products.find((p) => p.id === id);
 export const getProductBySlug = (slug: string) => products.find((p) => p.slug === slug);
 
 export const getProductBySlugOrId = (value: string) => getProductBySlug(value) ?? getProductById(value);
+
+export { default } from "@/components/home/HomePage";

@@ -1,5 +1,6 @@
 export interface Product {
   id: string;
+  slug?: string;
   name: string;
   description: string;
   price: number;
@@ -157,3 +158,5 @@ export const products: Product[] = [
 export const getFeaturedProducts = () => products.filter(p => p.featured);
 export const getProductsByCategory = (category: string) => products.filter(p => p.category === category);
 export const getProductById = (id: string) => products.find(p => p.id === id);
+export const getProductBySlug = (slug: string) => products.find(p => p.slug === (slug as any));
+export const getProductBySlugOrId = (value: string) => getProductBySlug(value) ?? getProductById(value);
