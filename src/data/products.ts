@@ -133,8 +133,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_1a1302e7-939f-4c94-96b7-d4e0c9d34a37',
     slug: 'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
-    name: 'Litter Box for Cats',
-    description: 'Furniture-style cat litter box enclosure with tall legs and built-in scratching board. Blends with home decor while providing privacy for your cat.',
+    name: 'GetPawsy Hidden Cat Litter Box Enclosure – Furniture with Tall Legs & Scratching Board',
+    description: 'Furniture-style cat litter box enclosure with tall legs, interior privacy space, and side scratching board. Helps keep litter areas more discreet while providing a practical indoor setup for cats.',
     price: 176.99,
     image: 'https://cf.cjdropshipping.com/8c7d9c65-6f57-40ac-b639-1ac694c256f0.jpg',
     images: ['https://cf.cjdropshipping.com/8c7d9c65-6f57-40ac-b639-1ac694c256f0.jpg'],
