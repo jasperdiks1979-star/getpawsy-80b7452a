@@ -55,6 +55,7 @@ import { getProductBySlugOrId } from "@/data/products";
 import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
 import { TrustMicrocopy } from "@/components/products/TrustMicrocopy";
+import { TrustStack } from "@/components/products/TrustStack";
 import { ProductSchema } from "@/components/seo/ProductSchema";
 import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
@@ -1153,17 +1154,19 @@ const ProductDetail = () => {
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
-            {/* Stock Status & Subtle Social Proof */}
+            {/* Stock Status & Urgency */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success" : "bg-destructive"}`} />
-                <span className="font-medium text-foreground">
-                  {inStock ? "In Stock — Ready to ship" : "Out of Stock"}
+                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success animate-pulse" : "bg-destructive"}`} />
+                <span className="font-semibold text-foreground">
+                  {inStock ? "In Stock – Ready to Ship" : "Out of Stock"}
                 </span>
               </div>
               {inStock && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  Popular choice among US pet owners · Ships within 24 hours
+                  {(product.stock ?? 0) > 0 && (product.stock ?? 0) <= 15
+                    ? "Only a few left in stock – order soon"
+                    : "Ships from USA within 24 hours"}
                 </p>
               )}
             </div>
@@ -1227,12 +1230,12 @@ const ProductDetail = () => {
               <Button
                 ref={addToCartButtonRef}
                 size="lg"
-                className="flex-1 h-12 gap-2 text-base font-semibold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg"
+                className="flex-1 h-14 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg rounded-xl"
                 onClick={handleAddToCart}
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart – Secure Checkout
+                Add to Cart – Ships from USA 🇺🇸
               </Button>
 
               {/* Wishlist */}
@@ -1246,8 +1249,13 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Trust Microcopy - 3 bullets only */}
+            {/* Trust Stack — social proof + trust badges */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
+              <TrustStack />
+            </motion.div>
+
+            {/* Trust Microcopy — compliance links */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="pt-1">
               <TrustMicrocopy />
             </motion.div>
           </motion.div>
@@ -1523,23 +1531,10 @@ const ProductDetail = () => {
           </Tabs>
         </motion.div>
 
-        {/* 0. Full Specifications Table — unique structured content for indexing */}
-        <ProductSpecsTable
-          product={{
-            name: product.name,
-            category: product.category,
-            weight: product.weight ? Number(product.weight) : null,
-            sku: product.sku,
-          }}
-        />
-
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
-        {/* 2. Why Choose — 300+ words unique content (prevents Soft 404) */}
-        <ProductWhyChoose productName={product.name} category={product.category || ""} />
-
-        {/* 3. Feature Grid — detailed benefits */}
+        {/* 2. Feature Grid — detailed benefits */}
         <ProductFeatureGrid productName={product.name} category={product.category || ""} />
 
         {/* Internal link to collection — SEO authority flow */}
@@ -1554,19 +1549,10 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* 4. How It Works — step-by-step */}
-        <ProductHowItWorks productName={product.name} category={product.category || ""} />
-
-        {/* 5. Real-Life Use Cases — who is this for */}
-        <ProductUseCases productName={product.name} category={product.category || ""} />
-
-        {/* 6. Why This vs Alternatives — comparison table */}
-        <ProductVsAlternatives productName={product.name} category={product.category || ""} />
-
-        {/* 7. Social Proof — category-aware review quotes */}
+        {/* 3. Social Proof — category-aware review quotes */}
         <ProductSocialProof productName={product.name} category={product.category || ""} />
 
-        {/* 8. Visible FAQ Accordion */}
+        {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
         {/* 9. Final CTA Block — conversion closer */}
@@ -1776,13 +1762,13 @@ const ProductDetail = () => {
 
               {/* Add to Cart Button */}
               <Button
-                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-semibold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
+                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-bold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                Add to Cart – Secure Checkout
+                Add to Cart – Ships from USA 🇺🇸
               </Button>
 
               {/* Wishlist Button */}

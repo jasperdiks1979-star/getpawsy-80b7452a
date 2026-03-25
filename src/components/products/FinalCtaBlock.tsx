@@ -58,12 +58,12 @@ export function FinalCtaBlock({ onAddToCart, inStock, price, compareAtPrice, pro
 
         <Button
           size="lg"
-          className="h-12 px-10 gap-2 text-base font-semibold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
+          className="h-14 px-10 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white rounded-xl"
           onClick={onAddToCart}
           disabled={!inStock}
         >
           <ShoppingCart className="w-5 h-5" />
-          Add to Cart – Secure Checkout
+          Add to Cart – Ships from USA 🇺🇸
         </Button>
 
         <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
