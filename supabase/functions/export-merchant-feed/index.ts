@@ -612,8 +612,8 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const format = url.searchParams.get("format") || "json";
-    // Feed mode: "top50" (default, Google-safe primary set) or "all" (full catalog)
-    const feedMode = url.searchParams.get("mode") || "top50";
+    // Feed mode: "top80" (default, Google-safe primary set) or "all" (full catalog)
+    const feedMode = url.searchParams.get("mode") || "top80";
 
     // Fetch all active, non-duplicate, in-stock products
     const allProducts: RawProduct[] = [];
