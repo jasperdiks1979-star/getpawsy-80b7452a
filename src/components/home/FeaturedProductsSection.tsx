@@ -2,30 +2,29 @@ import { Link } from 'react-router-dom';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 
 /**
- * Featured Products & Collections Section — verified paths only.
- * Clean card layout with product images for product entries.
- * No fake badges, no fabricated social proof.
+ * Featured Products — higher-value curated items.
+ * Only verified product/collection paths. No fake badges.
  */
 const FEATURED_ITEMS = [
   {
-    name: 'Self-Cleaning Cat Litter Box',
+    name: 'Self-Cleaning Cat Litter Box – Smart App Control & Odor Lock',
     path: '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
     image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
-    description: 'Automatic cat litter box with app control and infrared sensor.',
+    description: 'Automatic 60L litter box with app control, infrared sensor, and deodorizing system.',
     type: 'product' as const,
   },
   {
-    name: 'Elevated Cooling Dog Bed',
+    name: 'Elevated Cooling Dog Bed – Breathable Mesh for All Seasons',
     path: '/product/dog-cot-cooling-pet-bed-3',
     image: 'https://cf.cjdropshipping.com/17695584/cea797a4-58d8-4007-be42-58c3eeaa8723.jpg',
-    description: 'Elevated dog bed with breathable mesh for indoor or outdoor use.',
+    description: 'Raised mesh dog bed for airflow and comfort. Indoor or outdoor use.',
     type: 'product' as const,
   },
   {
-    name: 'Multi-Level Cat Tree & Condo',
+    name: '44" Multi-Level Cat Tree – Condo, Hammock & Scratching Posts',
     path: '/product/44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
     image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
-    description: 'Sisal-wrapped cat tree with hammock and enclosed condo.',
+    description: 'Sisal-wrapped cat tree with hammock, enclosed condo, and perch for indoor cats.',
     type: 'product' as const,
   },
   {
@@ -35,15 +34,15 @@ const FEATURED_ITEMS = [
     type: 'collection' as const,
   },
   {
-    name: 'Best Cat Litter Boxes',
-    path: '/collections/best-cat-litter-boxes',
-    description: 'Compare self-cleaning, enclosed, and furniture-style litter boxes.',
+    name: 'Dog Beds & Cots',
+    path: '/collections/dog-beds',
+    description: 'Cooling, orthopedic, and elevated dog beds for every breed.',
     type: 'collection' as const,
   },
   {
-    name: 'Dog Grooming Tools',
-    path: '/collections/dog-grooming-tools',
-    description: 'Brushes, trimmers, and grooming kits for routine coat care.',
+    name: 'Pet Grooming Tools',
+    path: '/collections/pet-grooming-tools',
+    description: 'Brushes, trimmers, and grooming kits for dogs and cats.',
     type: 'collection' as const,
   },
 ] as const;
@@ -56,7 +55,7 @@ export function FeaturedProductsSection() {
           Featured Products & Collections
         </h2>
         <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
-          Hand-picked products and collections from the GetPawsy catalog.
+          Hand-picked premium items from the GetPawsy catalog.
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl mx-auto">
@@ -66,7 +65,6 @@ export function FeaturedProductsSection() {
               to={item.path}
               className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-shadow duration-300"
             >
-              {/* Product image for product items */}
               {'image' in item && item.image && (
                 <div className="aspect-square overflow-hidden bg-muted">
                   <img
@@ -93,46 +91,12 @@ export function FeaturedProductsSection() {
                   {item.description}
                 </p>
                 <span className="text-xs font-medium text-primary mt-auto inline-flex items-center gap-1">
-                  View Details <ArrowRight className="w-3 h-3" />
+                  {item.type === 'collection' ? 'Browse' : 'View Details'}
+                  <ArrowRight className="w-3 h-3" />
                 </span>
               </div>
             </Link>
           ))}
-        </div>
-
-        {/* SEO anchor links */}
-        <div className="mt-8 max-w-3xl mx-auto text-center">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Compare our{' '}
-            <Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline font-medium">
-              automatic cat litter boxes
-            </Link>{' '}
-            or explore{' '}
-            <Link to="/collections/self-cleaning-litter-box" className="text-primary hover:underline font-medium">
-              self-cleaning litter boxes
-            </Link>
-            . For dog owners, browse our{' '}
-            <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary hover:underline font-medium">
-              orthopedic dog beds
-            </Link>
-            ,{' '}
-            <Link to="/collections/best-dog-car-seats" className="text-primary hover:underline font-medium">
-              dog car seats
-            </Link>
-            , and{' '}
-            <Link to="/collections/dog-grooming-tools" className="text-primary hover:underline font-medium">
-              grooming tools
-            </Link>
-            . See all{' '}
-            <Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline font-medium">
-              cat trees and condos
-            </Link>
-            {' '}or{' '}
-            <Link to="/products" className="text-primary hover:underline font-medium">
-              browse all products
-            </Link>
-            .
-          </p>
         </div>
       </div>
     </section>
