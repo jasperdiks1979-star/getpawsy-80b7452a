@@ -8,6 +8,79 @@ const corsHeaders = {
 const BASE_URL = "https://getpawsy.pet";
 const BRAND = "GetPawsy";
 
+// ── TOP 50 Google-Safe Primary Export Set ────────────────────────────
+// Only these product IDs are exported in the primary "top50" feed mode.
+// All others go to a holdout/review queue.
+const MERCHANT_TOP50_IDS = new Set([
+  // Cat Litter Boxes (7)
+  '31e46b70-cf1c-4d5b-99db-3350b12380db',
+  '1a1302e7-939f-4c94-96b7-d4e0c9d34a37',
+  '74e9c23c-d2d3-478a-82bd-e912e85bcc39',
+  '501e9150-42e0-42d7-8031-a7225a718558',
+  'f33ae4a9-347b-4a90-872d-597036e6e973',
+  '32e50b79-e2bc-4895-a7c2-5534dd9095a0',
+  'fe5ed2d6-0230-4c5a-8313-235a28ef4f21',
+  // Cat Trees & Condos (8)
+  '41e1a8e0-a059-4002-b3ab-0d4270030d93',
+  'fdcb9c5f-8a50-46e7-9cb0-8ecf5a03b8bf',
+  'e08f6c35-b3b1-4f2d-b78e-37fc107f4357',
+  '133cdc48-0117-40d5-9aaf-1a81131ca9bb',
+  '80ca3336-49a8-44a9-8b2d-fbfe1288cb28',
+  '035a85cb-f867-4f64-94e8-a6c71ab16b18',
+  '07507c96-a445-431f-9724-340ee01d818f',
+  '0441e51b-d537-468b-8938-66b2dee6e6c9',
+  // Dog Beds (5)
+  '52b04c49-287f-478a-8d35-b7b048d9a844',
+  'ecf613cb-2160-4842-9438-91d19b3a1967',
+  '19390342-4534-47ef-a77d-2e3dcce6c737',
+  'c7177ee4-5509-492f-965f-617402968f5c',
+  '08856bd3-3842-4058-ba44-f1927ae59f2e',
+  // Cat Scratching Posts (3)
+  'a7ee6fb7-885a-4a5f-9dc9-df2231f9504b',
+  '84b33906-87dd-4d91-b79b-667519248013',
+  '112c4e1b-869d-4ed9-95c4-002d7425968d',
+  // Dog Carriers (4)
+  '530a4583-ce42-49d7-8d56-64aa0914256f',
+  'a1c89f7f-a1d1-4607-a72a-d4f9da8b4ceb',
+  '0381585e-8b6b-48a8-b541-c7298f99b0c9',
+  '490014d4-0ab8-44c9-bd3a-fdc226020a11',
+  // Cat Carriers (2)
+  '020d9b4a-3ad2-4ed5-b1c0-d5183b93f425',
+  'c6cc84bb-3990-4671-a06d-53dc283565b7',
+  // Pet Carriers (1)
+  '5ed1f216-9686-4d30-a6f9-9938a420d06e',
+  // Cat Houses (2)
+  '8cc4e183-430c-4ccd-9b5c-b6056bafd262',
+  '3019dc01-9281-4d77-9383-af6453b93895',
+  // Dog Collars & Leashes (3)
+  '9204b6cb-d895-4b0d-8883-e43049fee3a1',
+  '0139036c-d1b8-4b8a-996b-1ec8d5c0a908',
+  '0e223939-77b4-417b-8bec-5da31de0a726',
+  // Cat Bowls & Feeders (3)
+  '685f7faf-7809-4962-b408-c2ced99dd178',
+  'dcc0a412-adfe-49b3-8f26-ad8382f3a2d9',
+  'b476d7d3-bf0f-4318-9968-606e0e3e0c3f',
+  // Dog Grooming (3)
+  '142f56ba-1326-4e3b-9d0c-0d79321f1671',
+  'e71ba404-4aff-48a6-9681-e0297b727292',
+  '3bfd8f1a-c2d5-4703-bfd7-1dfc5a07adf3',
+  // Cat Furniture (2)
+  '0b041496-f7a3-480c-83bb-fdba8ae840f3',
+  'ca67d0d6-4ced-40ab-80ee-443b1021ab92',
+  // Cat Grooming (1)
+  '67f40a1b-595e-4fcf-a4b5-ab141b224ed7',
+  // Dog Bowls & Feeders (2)
+  '7b540a34-7048-4f10-8c91-118b86278571',
+  '047dd523-57d3-46ca-82f3-0885b0fc1667',
+  // Dog Feeding Supplies (2)
+  '9aa33c0c-e455-4477-85f3-83873360c777',
+  'ddf8f410-a77a-4bd0-89f1-36e1b04dec51',
+  // Dog Crates & Kennels (1)
+  'c43193ad-d4e0-4247-ad53-0d77fe038c9f',
+  // Pet Houses (1)
+  '7c77be17-e070-45d5-82a6-d14635693f31',
+]);
+
 // ── Hard-blocked product IDs (policy-sensitive) ─────────────────────
 const BLOCKED_PRODUCT_IDS = new Set([
   "2233541f-b223-4a76-8572-272f971aacd2",
@@ -54,6 +127,7 @@ const POLICY_UNSAFE_PATTERNS = [
   /zap/i,
   /prong\s*collar/i,
   /choke\s*chain/i,
+  /gps\s*fence/i,
 ];
 
 function isPolicySensitive(name: string, desc: string): boolean {
@@ -80,17 +154,15 @@ const TITLE_BANNED = [
 
 function sanitizeTitle(raw: string): string {
   let t = raw;
-  // Strip HTML, markdown, emojis, smart quotes
   t = t.replace(HTML_TAG_RE, " ");
   t = t.replace(MARKDOWN_RE, "$1");
   t = t.replace(EMOJI_RE, "");
   t = t.replace(SMART_QUOTES_RE, "");
   t = t.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "").replace(/&gt;/gi, "").replace(/&quot;/gi, "");
 
-  // Remove banned promotional words
   for (const re of TITLE_BANNED) t = t.replace(re, "");
 
-  // Fix duplicate consecutive words: "Ret retractable" → "retractable", "Dog Dog" → "Dog"
+  // Fix duplicate consecutive words: "Dog Dog" → "Dog"
   t = t.replace(/\b(\w+)\s+\1\b/gi, "$1");
 
   // Fix partial-duplicate like "Ret retractable" (partial prefix then full word)
@@ -99,7 +171,10 @@ function sanitizeTitle(raw: string): string {
     return `${prefix} ${full}`;
   });
 
-  // Remove duplicate "GetPawsy" if present
+  // Fix "Cat Stainless Steel Cat Litter Box" → "Stainless Steel Cat Litter Box"
+  t = t.replace(/\bCat\s+(Stainless\s+Steel\s+Cat\b)/gi, "$1");
+
+  // Remove duplicate "GetPawsy"
   t = t.replace(/GetPawsy\s+GetPawsy/gi, "GetPawsy");
 
   // Fix ALL CAPS words (5+ chars)
@@ -108,7 +183,7 @@ function sanitizeTitle(raw: string): string {
   // Clean up whitespace and trailing punctuation
   t = t.replace(/\s{2,}/g, " ").trim();
   t = t.replace(/^[,.\-–—:;|/]+\s*/, "").replace(/\s*[,.\-–—:;|/]+$/, "");
-  t = t.replace(/\s*–\s*–\s*/g, " – "); // double dashes
+  t = t.replace(/\s*–\s*–\s*/g, " – ");
 
   // Brand prefix (only once, only if missing)
   if (!/^GetPawsy\b/i.test(t)) t = `GetPawsy ${t}`;
@@ -130,7 +205,7 @@ const DESC_STRIP_PHRASES: RegExp[] = [
   /if\s*you'?d\s*like\b[^.]*\./gi,
   /product\s*image\s*:?\s*/gi,
   /note\s*:\s*this\s*(category|product)\s*(was|is)\s*[^.]*\./gi,
-  /\*\*[^*]+\*\*/g, // markdown bold blocks
+  /\*\*[^*]+\*\*/g,
   /free\s*shipping\b[^.]*\./gi,
   /\d+[-–]\s*day\s*returns?\b[^.]*\./gi,
   /money[-\s]*back\s*guarantee\b[^.]*\./gi,
@@ -154,7 +229,7 @@ const DESC_STRIP_PHRASES: RegExp[] = [
   /no\s*smell\s*guaranteed\b/gi,
   /no\s*scooping\s*ever\b/gi,
   /your\s*pet\s*deserves\b[^.]*\./gi,
-  /tired\s*of\b[^.]*\?\s*/gi,  // "Tired of X?" rhetorical openers
+  /tired\s*of\b[^.]*\?\s*/gi,
   /say\s*goodbye\s*to\b[^.]*\./gi,
   /introducing\b[^.]*\./gi,
 ];
@@ -163,18 +238,12 @@ const DESC_BANNED_CHARS = /[✔✓★⭐🏆🥇💯🔥✅🎉🚚📦•●◦
 
 function sanitizeDescription(desc: string): string {
   let d = desc;
-
-  // Strip HTML tags
   d = d.replace(HTML_TAG_RE, " ");
-  // Strip markdown
   d = d.replace(MARKDOWN_RE, "$1");
   d = d.replace(/\*+/g, "");
-  // Strip emojis + special chars
   d = d.replace(EMOJI_RE, "");
   d = d.replace(DESC_BANNED_CHARS, "");
   d = d.replace(SMART_QUOTES_RE, '"');
-
-  // HTML entities
   d = d.replace(/&nbsp;/gi, " ");
   d = d.replace(/&amp;/gi, "&");
   d = d.replace(/&lt;/gi, "<");
@@ -182,18 +251,13 @@ function sanitizeDescription(desc: string): string {
   d = d.replace(/&quot;/gi, '"');
   d = d.replace(/&#\d+;/g, " ");
 
-  // Remove banned phrase patterns
   for (const re of DESC_STRIP_PHRASES) d = d.replace(re, " ");
-
-  // Remove any remaining promotional words inline
   d = d.replace(/\b(amazing|incredible|fantastic|awesome|exclusive|ultimate|luxury|premium)\b/gi, "");
 
-  // Normalize whitespace
   d = d.replace(/\n{3,}/g, "\n\n");
   d = d.replace(/\s{2,}/g, " ");
   d = d.trim();
 
-  // Cap at 1000 chars for Merchant (Google allows 5000 but clean+short is better)
   if (d.length > 1000) {
     d = d.substring(0, 997).replace(/\s+\S*$/, "") + "...";
   }
@@ -237,75 +301,44 @@ function generateFallbackDescription(name: string): string {
 }
 
 // ── Category correction engine ──────────────────────────────────────
-// This overrides whatever category is stored in DB with the CORRECT one
-// based on actual product name keywords
 
 function correctCategory(name: string, dbCategory: string | null): string {
   const n = name.toLowerCase();
 
-  // Leashes
   if (/\b(leash|lead|traction\s*rope)\b/.test(n)) return "Dog Collars & Leashes";
-  // Harnesses
   if (/\bharness\b/.test(n)) return "Dog Collars & Leashes";
-  // Collars (non-shock)
   if (/\bcollar\b/.test(n) && !/shock|electric|training/i.test(n)) return "Dog Collars & Leashes";
-
-  // Cat trees / towers / condos / scratching posts
   if (/\b(cat\s*tree|cat\s*tower|cat\s*condo|scratching\s*post|cat\s*scratcher|climbing\s*frame)\b/.test(n)) return "Cat Trees & Condos";
-
-  // Cat litter boxes
   if (/\b(litter\s*box|litter\s*tray|cat\s*toilet|cat\s*litter)\b/.test(n)) return "Cat Litter Boxes";
-
-  // Carriers, strollers, backpacks
   if (/\b(carrier|stroller|trolley|travel\s*bag|pet\s*backpack)\b/.test(n)) {
     if (/\bcat\b/.test(n)) return "Cat Carriers";
     if (/\bdog\b/.test(n)) return "Dog Carriers";
     return "Pet Carriers";
   }
-
-  // Grooming
   if (/\b(grooming|trimmer|brush|comb|deshed|nail\s*(grinder|clipper)|glove)\b/.test(n)) {
     if (/\bcat\b/.test(n)) return "Cat Grooming";
     return "Dog Grooming";
   }
-
-  // Beds
   if (/\b(bed|mat|cushion|pillow|blanket)\b/.test(n)) {
     if (/\bcat\b/.test(n)) return "Cat Beds";
     return "Dog Beds";
   }
-
-  // Toys
   if (/\b(toy|ball|squeaky|chew|teaser|laser|feather\s*wand)\b/.test(n)) {
     if (/\bcat\b/.test(n)) return "Cat Toys";
     return "Dog Toys";
   }
-
-  // Bowls / Feeders / Water
   if (/\b(bowl|feeder|fountain|water\s*dispenser|food\s*dispenser)\b/.test(n)) {
     if (/\bcat\b/.test(n)) return "Cat Bowls & Feeders";
     return "Dog Bowls & Feeders";
   }
-
-  // Apparel
   if (/\b(sweater|jacket|coat|bandana|vest|costume|raincoat|hoodie)\b/.test(n)) return "Dog Clothing";
-
-  // Gates
   if (/\b(gate|barrier|playpen)\b/.test(n)) return "Dog Safety Gates";
-
-  // Training (safe only)
   if (/\b(training\s*pad|potty|puppy\s*pad)\b/.test(n)) return "Dog Training";
-
-  // Cat furniture / hammocks / houses
   if (/\bcat\s*(house|hammock|shelf|perch|window)\b/.test(n)) return "Cat Furniture";
-
-  // Waste
   if (/\b(poop|waste|bag\s*dispenser)\b/.test(n)) return "Dog Waste Management";
 
-  // If DB has a valid category in our map, trust it
   if (dbCategory && GCAT[dbCategory]) return dbCategory;
-
-  return "Pet Carriers"; // safe default
+  return "Pet Carriers";
 }
 
 // ── Google Product Category IDs ─────────────────────────────────────
@@ -356,8 +389,6 @@ const GCAT: Record<string, number> = {
 function detectAnimalMismatch(title: string, description: string): boolean {
   const titleAnimal = guessAnimal(title);
   const descAnimal = guessAnimal(description);
-
-  // If both mention specific but different animals → mismatch
   if (titleAnimal !== "pets" && descAnimal !== "pets" && titleAnimal !== descAnimal) {
     return true;
   }
@@ -375,7 +406,7 @@ function normalizeWeight(grams: number | null): number {
   return Math.round(kg * 100) / 100;
 }
 
-// ── Central sanitizer: the single gate for all products ─────────────
+// ── Central sanitizer ───────────────────────────────────────────────
 
 interface RawProduct {
   id: string;
@@ -462,9 +493,8 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
   result.categoryOverridden = correctedCategory !== p.category;
   const gcatId = GCAT[correctedCategory] || "";
 
-  // 7. Consistency check: animal mismatch
+  // 7. Consistency check: animal mismatch → auto-fix
   if (detectAnimalMismatch(cleanTitle, cleanDesc)) {
-    // Auto-fix: regenerate description from title
     cleanDesc = generateFallbackDescription(p.name);
     result.descGenerated = true;
   }
@@ -536,6 +566,8 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const format = url.searchParams.get("format") || "json";
+    // Feed mode: "top50" (default, Google-safe primary set) or "all" (full catalog)
+    const feedMode = url.searchParams.get("mode") || "top50";
 
     // Fetch all active, non-duplicate, in-stock products
     const allProducts: RawProduct[] = [];
@@ -554,9 +586,14 @@ Deno.serve(async (req) => {
 
     // ── Run every product through the sanitizer ──
     const audit = {
+      feed_mode: feedMode,
       total_scanned: allProducts.length,
-      included: 0,
-      excluded: 0,
+      total_sanitized: 0,
+      included_in_feed: 0,
+      excluded_policy: 0,
+      excluded_quality: 0,
+      excluded_not_top50: 0,
+      holdout_review_queue: 0,
       exclusion_reasons: {} as Record<string, number>,
       titles_cleaned: 0,
       descriptions_generated: 0,
@@ -564,34 +601,60 @@ Deno.serve(async (req) => {
       with_sale_price: 0,
       avg_title_len: 0,
       avg_desc_len: 0,
+      top50_ids: [] as string[],
+      holdout_ids: [] as string[],
     };
 
     const feedItems: SanitizedProduct[] = [];
+    const holdoutItems: SanitizedProduct[] = [];
 
     for (const p of allProducts) {
       const result = sanitizeProductForMerchant(p);
 
       if (result.excluded || !result.product) {
-        audit.excluded++;
         const reason = result.reason || "unknown";
         audit.exclusion_reasons[reason] = (audit.exclusion_reasons[reason] || 0) + 1;
+        if (reason === "policy_unsafe_keywords" || reason === "blocked_id") {
+          audit.excluded_policy++;
+        } else {
+          audit.excluded_quality++;
+        }
         continue;
       }
 
+      audit.total_sanitized++;
       if (result.titleChanged) audit.titles_cleaned++;
       if (result.descGenerated) audit.descriptions_generated++;
       if (result.categoryOverridden) audit.categories_overridden++;
       if (result.product.sale_price) audit.with_sale_price++;
 
-      feedItems.push(result.product);
-      audit.included++;
+      // Top 50 gating
+      if (feedMode === "top50") {
+        if (MERCHANT_TOP50_IDS.has(p.id)) {
+          feedItems.push(result.product);
+          audit.included_in_feed++;
+          audit.top50_ids.push(p.id);
+        } else {
+          holdoutItems.push(result.product);
+          audit.holdout_review_queue++;
+          audit.holdout_ids.push(p.id);
+        }
+      } else {
+        // "all" mode — export everything that passes sanitization
+        feedItems.push(result.product);
+        audit.included_in_feed++;
+      }
     }
+
+    audit.excluded_not_top50 = audit.holdout_review_queue;
 
     // Compute averages
     if (feedItems.length > 0) {
       audit.avg_title_len = Math.round(feedItems.reduce((s, f) => s + f.title.length, 0) / feedItems.length);
       audit.avg_desc_len = Math.round(feedItems.reduce((s, f) => s + f.description.length, 0) / feedItems.length);
     }
+
+    console.log(`[Merchant Feed] mode=${feedMode} scanned=${audit.total_scanned} sanitized=${audit.total_sanitized} exported=${audit.included_in_feed} holdout=${audit.holdout_review_queue} policy_excluded=${audit.excluded_policy} quality_excluded=${audit.excluded_quality}`);
 
     // ── CSV format ──
     if (format === "csv") {
@@ -609,8 +672,9 @@ Deno.serve(async (req) => {
       return new Response("\uFEFF" + lines.join("\n"), {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="getpawsy_merchant_feed_${new Date().toISOString().split("T")[0]}.csv"`,
+          "Content-Disposition": `attachment; filename="getpawsy_merchant_feed_${feedMode}_${new Date().toISOString().split("T")[0]}.csv"`,
           "X-Feed-Total": String(feedItems.length),
+          "X-Feed-Mode": feedMode,
           ...corsHeaders,
         },
       });
@@ -621,12 +685,16 @@ Deno.serve(async (req) => {
       return Response.json({
         ok: true,
         audit,
-        sample: feedItems.slice(0, 20).map(f => ({
+        included_sample: feedItems.slice(0, 20).map(f => ({
           id: f.id, title: f.title, link: f.link, price: f.price,
           sale_price: f.sale_price, category: f.google_product_category,
           product_type: f.product_type,
           title_len: f.title.length,
           desc_len: f.description.length,
+        })),
+        holdout_sample: holdoutItems.slice(0, 10).map(f => ({
+          id: f.id, title: f.title, link: f.link,
+          category: f.google_product_category,
         })),
       }, { headers: corsHeaders });
     }
@@ -636,7 +704,9 @@ Deno.serve(async (req) => {
       ok: true,
       feed_info: {
         brand: BRAND,
+        feed_mode: feedMode,
         total_products: feedItems.length,
+        holdout_count: holdoutItems.length,
         generated_at: new Date().toISOString(),
         target_country: "US",
         content_language: "en",
