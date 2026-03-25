@@ -1,45 +1,50 @@
 import { Link } from 'react-router-dom';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 
 /**
- * Featured Products Section — all paths DB-verified.
- * Product slugs and collection slugs confirmed in seo_collections + products tables.
+ * Featured Products & Collections Section — verified paths only.
+ * Clean card layout with product images for product entries.
+ * No fake badges, no fabricated social proof.
  */
-const FEATURED_PRODUCTS = [
+const FEATURED_ITEMS = [
   {
     name: 'Self-Cleaning Cat Litter Box',
     path: '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
-    description: 'Automatic cat litter box with app control and infrared sensor. Helps reduce odor and daily cleaning effort.',
-    badge: 'Featured',
+    image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
+    description: 'Automatic cat litter box with app control and infrared sensor.',
+    type: 'product' as const,
   },
   {
     name: 'Elevated Cooling Dog Bed',
     path: '/product/dog-cot-cooling-pet-bed-3',
-    description: 'Elevated dog bed with breathable mesh surface for comfortable rest. Suitable for indoor and outdoor use.',
-    badge: 'Popular',
+    image: 'https://cf.cjdropshipping.com/17695584/cea797a4-58d8-4007-be42-58c3eeaa8723.jpg',
+    description: 'Elevated dog bed with breathable mesh for indoor or outdoor use.',
+    type: 'product' as const,
   },
   {
     name: 'Multi-Level Cat Tree & Condo',
     path: '/product/44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
-    description: 'Sisal-wrapped cat tree with hammock, perches, and enclosed condo for indoor cats.',
-    badge: 'Popular',
+    image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
+    description: 'Sisal-wrapped cat tree with hammock and enclosed condo.',
+    type: 'product' as const,
   },
   {
-    name: 'Cat Trees & Condos Collection',
+    name: 'Cat Trees & Condos',
     path: '/collections/cat-trees-and-condos',
-    description: 'Browse all cat trees, towers, and condos designed for climbing, scratching, and lounging.',
-    badge: 'Collection',
+    description: 'Browse all cat trees, towers, and condos for climbing and scratching.',
+    type: 'collection' as const,
   },
   {
     name: 'Best Cat Litter Boxes',
     path: '/collections/best-cat-litter-boxes',
-    description: 'Compare self-cleaning, enclosed, and furniture-style litter box options for indoor cats.',
-    badge: 'Collection',
+    description: 'Compare self-cleaning, enclosed, and furniture-style litter boxes.',
+    type: 'collection' as const,
   },
   {
     name: 'Dog Grooming Tools',
     path: '/collections/dog-grooming-tools',
-    description: 'Brushes, trimmers, and grooming kits for routine coat care at home.',
-    badge: 'Collection',
+    description: 'Brushes, trimmers, and grooming kits for routine coat care.',
+    type: 'collection' as const,
   },
 ] as const;
 
@@ -48,34 +53,57 @@ export function FeaturedProductsSection() {
     <section className="py-10 md:py-12">
       <div className="container px-4 md:px-6">
         <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-2">
-          Featured Products
+          Featured Products & Collections
         </h2>
         <p className="text-sm text-muted-foreground text-center mb-6 max-w-lg mx-auto">
           Hand-picked products and collections from the GetPawsy catalog.
         </p>
+
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl mx-auto">
-          {FEATURED_PRODUCTS.map((p) => (
+          {FEATURED_ITEMS.map((item) => (
             <Link
-              key={p.path}
-              to={p.path}
-              className="group relative rounded-xl border border-border/40 bg-card p-4 hover:border-primary/40 hover:shadow-md transition-all"
+              key={item.path}
+              to={item.path}
+              className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-shadow duration-300"
             >
-              <span className="absolute top-2 right-2 text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {p.badge}
-              </span>
-              <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors mb-1 pr-14 line-clamp-2">
-                {p.name}
-              </h3>
-              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{p.description}</p>
-              <span className="text-xs font-medium text-primary mt-2 inline-block">View Details →</span>
+              {/* Product image for product items */}
+              {'image' in item && item.image && (
+                <div className="aspect-square overflow-hidden bg-muted">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    width={300}
+                    height={300}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                  />
+                </div>
+              )}
+
+              <div className="p-3 flex flex-col flex-1">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                  {item.type === 'collection' ? 'Collection' : 'Product'}
+                </span>
+                <h3 className="font-semibold text-xs md:text-sm text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-1">
+                  {item.name}
+                </h3>
+                <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 mb-2">
+                  {item.description}
+                </p>
+                <span className="text-xs font-medium text-primary mt-auto inline-flex items-center gap-1">
+                  View Details <ArrowRight className="w-3 h-3" />
+                </span>
+              </div>
             </Link>
           ))}
         </div>
 
-        {/* Contextual SEO anchor links — verified collection slugs only */}
+        {/* SEO anchor links */}
         <div className="mt-8 max-w-3xl mx-auto text-center">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Looking for the best litter solution? Compare our{' '}
+            Compare our{' '}
             <Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline font-medium">
               automatic cat litter boxes
             </Link>{' '}
