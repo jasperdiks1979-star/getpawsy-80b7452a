@@ -1531,23 +1531,10 @@ const ProductDetail = () => {
           </Tabs>
         </motion.div>
 
-        {/* 0. Full Specifications Table — unique structured content for indexing */}
-        <ProductSpecsTable
-          product={{
-            name: product.name,
-            category: product.category,
-            weight: product.weight ? Number(product.weight) : null,
-            sku: product.sku,
-          }}
-        />
-
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
-        {/* 2. Why Choose — 300+ words unique content (prevents Soft 404) */}
-        <ProductWhyChoose productName={product.name} category={product.category || ""} />
-
-        {/* 3. Feature Grid — detailed benefits */}
+        {/* 2. Feature Grid — detailed benefits */}
         <ProductFeatureGrid productName={product.name} category={product.category || ""} />
 
         {/* Internal link to collection — SEO authority flow */}
@@ -1562,19 +1549,10 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* 4. How It Works — step-by-step */}
-        <ProductHowItWorks productName={product.name} category={product.category || ""} />
-
-        {/* 5. Real-Life Use Cases — who is this for */}
-        <ProductUseCases productName={product.name} category={product.category || ""} />
-
-        {/* 6. Why This vs Alternatives — comparison table */}
-        <ProductVsAlternatives productName={product.name} category={product.category || ""} />
-
-        {/* 7. Social Proof — category-aware review quotes */}
+        {/* 3. Social Proof — category-aware review quotes */}
         <ProductSocialProof productName={product.name} category={product.category || ""} />
 
-        {/* 8. Visible FAQ Accordion */}
+        {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
         {/* 9. Final CTA Block — conversion closer */}
