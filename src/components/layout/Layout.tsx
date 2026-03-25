@@ -9,8 +9,6 @@ import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 const Navbar = lazy(() => import('./Navbar').then(m => ({ default: m.Navbar })));
 const Footer = lazy(() => import('./Footer').then(m => ({ default: m.Footer })));
 
-// TrendingNowStrip is tiny (~1KB), static data, above-the-fold — NOT lazy to prevent CLS
-import { TrendingNowStrip } from '../marketing/TrendingNowStrip';
 import { OrganizationSchema } from '../seo/OrganizationSchema';
 import { SitewiseTrustBar } from './SitewiseTrustBar';
 
