@@ -72,7 +72,7 @@ export const products: Product[] = [
   {
     id: 'getpawsy_0441e51b-d537-468b-8938-66b2dee6e6c9',
     slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-gray',
-    name: 'Cat Tree – Multi-Level 44 Inch Condo with Spacious Perch & Hammock for Cats',
+    name: 'GetPawsy Cat Tree – 44 Inch Multi-Level Condo with Perch & Hammock',
     description: '44-inch multi-level cat tree condo with spacious top perch, condo, and hammock. Sturdy construction for indoor cats who love to climb and relax.',
     price: 128.99,
     image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
