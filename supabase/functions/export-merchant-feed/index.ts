@@ -638,7 +638,7 @@ Deno.serve(async (req) => {
       included_in_feed: 0,
       excluded_policy: 0,
       excluded_quality: 0,
-      excluded_not_top50: 0,
+      excluded_not_top80: 0,
       holdout_review_queue: 0,
       exclusion_reasons: {} as Record<string, number>,
       titles_cleaned: 0,
