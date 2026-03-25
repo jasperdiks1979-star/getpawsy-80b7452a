@@ -129,6 +129,7 @@ const MERCHANT_TOP80_IDS = new Set([
 
 // ── Hard-blocked product IDs (policy-sensitive) ─────────────────────
 const BLOCKED_PRODUCT_IDS = new Set([
+  "2bf9d939-bf2c-4382-a8e2-3c60c6795b72", // Training Collar w/ stimulation — policy risk
   "2233541f-b223-4a76-8572-272f971aacd2",
   "16f69eff-5135-4428-a2ac-fe93ca9c18e5",
   "2578d864-6fc6-432c-9834-c0dfb9237630",
@@ -174,6 +175,8 @@ const POLICY_UNSAFE_PATTERNS = [
   /prong\s*collar/i,
   /choke\s*chain/i,
   /gps\s*fence/i,
+  /stimulation\s*(chain|collar)/i,
+  /explosion[-\s]*proof/i,
 ];
 
 // ── Non-pet exclusion patterns (only cats & dogs allowed) ───────────
@@ -184,6 +187,7 @@ const NON_PET_PATTERNS = [
   /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage|hamster\s*wheel)\b/i,
   /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
   /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+  /\b(rabbit|bunny|rabbits)\b/i,
   /\b(sunglasses|nail\s*art|fashion\s*accessor|jewelry|bracelet|necklace|earring)\b/i,
 ];
 
@@ -205,13 +209,15 @@ const MARKDOWN_RE = /\*{1,2}([^*]+)\*{1,2}/g;
 const SMART_QUOTES_RE = /[""'']/g;
 
 const TITLE_BANNED = [
-  /\b(best|premium|amazing|incredible|fantastic|awesome|exclusive|luxury|ultimate)\b/gi,
-  /\b(hot\s*sale|free|gratis|limited\s*(time\s*)?(offer)?|buy\s*now|shop\s*now|order\s*(now|today))\b/gi,
+  /\b(best|premium|amazing|incredible|fantastic|awesome|exclusive|luxury|ultimate|revolutionary|purr-?fect)\b/gi,
+  /\b(hot\s*sale|free|gratis|limited\s*(time\s*)?(offer)?|buy\s*now|shop\s*now|order\s*(now|today)|click)\b/gi,
   /\b(top[-\s]*rated|must[-\s]*have|bestseller|best\s*seller|guaranteed)\b/gi,
   /\bfree\s*shipping\b/gi,
   /\bno\s*\d+\b/gi,
   /\d+%\s*off/gi,
   /sale\s*ends?/gi,
+  /\bexplosion[-\s]*proof\b/gi,
+  /\bstimulation\b/gi,
 ];
 
 function sanitizeTitle(raw: string): string {

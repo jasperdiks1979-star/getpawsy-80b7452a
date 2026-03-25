@@ -26,8 +26,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_128e0207-8a94-4d71-b428-5b7f5002528f',
     slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-    name: 'Litter Box for Cats – Smart Motion Sensor Automatic',
-    description: '60L automatic cat litter box with smart app control and deodorizing infrared sensor. Suitable for multiple cats, this self-cleaning litter box reduces daily maintenance and helps control odor automatically.',
+    name: 'GetPawsy Automatic Cat Litter Box – App-Controlled Self-Cleaning Design',
+    description: 'Automatic cat litter box with app control, deodorizing support, and infrared sensor-based operation. Designed to reduce manual cleaning and maintain a cleaner litter area. Suitable for multi-cat households.',
     price: 268.99,
     image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
     images: ['https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png'],
@@ -42,7 +42,7 @@ export const products: Product[] = [
   {
     id: 'getpawsy_05556879-2201-4d30-8373-4eded8e7dcb8',
     slug: 'covered-cat-litter-box-with-lid-scoop-deodorizing-bags-for-odor-control-privacy-easy-to-clean-green',
-    name: 'Litter Box for Cats',
+    name: 'GetPawsy Enclosed Cat Litter Box – Covered Design with Scoop & Odor Control',
     description: 'Enclosed cat litter box with flap door, scoop, and deodorizing bags for odor control and privacy. Easy to clean with removable lid.',
     price: 98.99,
     image: 'https://cf.cjdropshipping.com/41c43a7d-1ba5-4eaa-801f-ac5407d34421.jpg',
@@ -57,8 +57,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_1454395a-9a13-4c93-94a5-4264cb44434d',
     slug: 'flower-cat-tree-no-shipments-on-weekends-1',
-    name: 'Cat Tree Condo – Flower Design Multi-Level with Scratching Posts for Cats',
-    description: 'Flower-themed multi-level cat tree condo with scratching posts and plush comfort areas. Provides exercise, play, and rest for indoor cats.',
+    name: 'GetPawsy Flower Cat Tree Condo – Multi-Level Scratching Post for Cats',
+    description: 'Flower-themed cat tree condo with multiple levels, scratching surfaces, and soft resting areas. Designed for indoor cats that like to climb, scratch, and lounge. Decorative style with practical play and rest functions.',
     price: 604.99,
     image: 'https://cf.cjdropshipping.com/17689536/fa631739-871c-4f92-94a0-1a2d4163c7a0.jpg',
     images: ['https://cf.cjdropshipping.com/17689536/fa631739-871c-4f92-94a0-1a2d4163c7a0.jpg'],
@@ -72,7 +72,7 @@ export const products: Product[] = [
   {
     id: 'getpawsy_0441e51b-d537-468b-8938-66b2dee6e6c9',
     slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-gray',
-    name: 'Cat Tree – Multi-Level 44 Inch Condo with Spacious Perch & Hammock for Cats',
+    name: 'GetPawsy Cat Tree – 44 Inch Multi-Level Condo with Perch & Hammock',
     description: '44-inch multi-level cat tree condo with spacious top perch, condo, and hammock. Sturdy construction for indoor cats who love to climb and relax.',
     price: 128.99,
     image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
@@ -102,8 +102,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_0139036c-d1b8-4b8a-996b-1ec8d5c0a908',
     slug: 'dog-anti-pull-automatic-retractable-leash-auto-retracting',
-    name: 'Leash for Dogs – Automatic Retractable',
-    description: 'Automatic retractable dog leash with anti-pull design. Comfortable grip and reliable locking mechanism for safe walks.',
+    name: 'GetPawsy Retractable Dog Leash – Anti-Tangle Walking Lead',
+    description: 'Retractable dog leash with anti-tangle design and one-button lock control for daily walks. Ergonomic handle for comfortable grip and smooth extension. Suitable for routine outdoor use.',
     price: 47.99,
     image: 'https://oss-cf.cjdropshipping.com/product/2026/01/16/02/331ccf3d-dd92-482a-b0f5-b94c02db254e_fine.jpeg',
     images: ['https://oss-cf.cjdropshipping.com/product/2026/01/16/02/331ccf3d-dd92-482a-b0f5-b94c02db254e_fine.jpeg'],
@@ -117,7 +117,7 @@ export const products: Product[] = [
   {
     id: 'getpawsy_0c484864-54ef-4068-a223-62fe828f7569',
     slug: 'foldable-pet-stroller-for-small-dogs-cats',
-    name: 'Foldable Stroller – & Carrier for Small for Dogs – Foldable Compact',
+    name: 'GetPawsy Foldable Pet Stroller – Carrier for Small Dogs & Cats',
     description: 'Foldable pet stroller and carrier for small dogs and cats. Lightweight, compact, and easy to store for outdoor adventures.',
     price: 150.99,
     image: 'https://cf.cjdropshipping.com/bdc5471c-702f-4f83-a399-6d69a3ee3187.jpg',
@@ -133,8 +133,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_1a1302e7-939f-4c94-96b7-d4e0c9d34a37',
     slug: 'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
-    name: 'Litter Box for Cats',
-    description: 'Furniture-style cat litter box enclosure with tall legs and built-in scratching board. Blends with home decor while providing privacy for your cat.',
+    name: 'GetPawsy Hidden Cat Litter Box Enclosure – Furniture with Tall Legs & Scratching Board',
+    description: 'Furniture-style cat litter box enclosure with tall legs, interior privacy space, and side scratching board. Helps keep litter areas more discreet while providing a practical indoor setup for cats.',
     price: 176.99,
     image: 'https://cf.cjdropshipping.com/8c7d9c65-6f57-40ac-b639-1ac694c256f0.jpg',
     images: ['https://cf.cjdropshipping.com/8c7d9c65-6f57-40ac-b639-1ac694c256f0.jpg'],
@@ -148,8 +148,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_156ed3db-e926-482c-951a-4c1fcb61779d',
     slug: 'extra-large-fully-enclosed-flip-top-cat-litter-box-anti-splash-anti-tracking-odor-locking-cat-toilet',
-    name: 'Litter Box for Cats – Large',
-    description: 'Extra-large enclosed flip-top cat litter box with anti-splash and odor-locking design. Easy to clean with flip-top lid access.',
+    name: 'GetPawsy Enclosed Cat Litter Box – Extra Large Flip-Top Design',
+    description: 'Extra-large enclosed cat litter box with flip-top access and odor-containment design. Built to help reduce litter scatter and provide privacy for indoor cats. Suitable for everyday home use.',
     price: 74.97,
     image: 'https://cf.cjdropshipping.com/0a1c6804-660e-4a52-990e-d428c5a6cfad.jpg',
     images: ['https://cf.cjdropshipping.com/0a1c6804-660e-4a52-990e-d428c5a6cfad.jpg'],
