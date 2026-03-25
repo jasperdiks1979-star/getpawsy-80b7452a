@@ -41,7 +41,7 @@ export interface CuratedProduct {
 
 export const MANUAL_PRODUCTS: CuratedProduct[] = [
   {
-    slug: '60l-automatic-cat-litter-box-smart-app-control-deo',
+    slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
     displayName: 'Smart Self-Cleaning Litter Box',
     benefit: 'Automatic cleaning system with app control. Helps reduce odor.',
   },
