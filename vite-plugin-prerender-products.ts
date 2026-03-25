@@ -494,7 +494,9 @@ export default function prerenderProductsPlugin(): Plugin {
       const validationReport = {
         generatedAt: new Date().toISOString(),
         productCount: count,
-        sampleSlugs: products.slice(0, 5).map((product) => product.slug || product.id),
+        excludedNonPet: excludedCount,
+        totalFetched: products.length,
+        sampleSlugs: safeProducts.slice(0, 5).map((product) => product.slug || product.id),
         redirectMode: 'exact-static-routes-before-spa-fallback',
       };
       fs.writeFileSync(path.join(distDir, 'prerender-validation.json'), JSON.stringify(validationReport, null, 2), 'utf-8');
