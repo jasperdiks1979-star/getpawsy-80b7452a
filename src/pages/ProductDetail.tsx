@@ -1549,6 +1549,22 @@ const ProductDetail = () => {
           </div>
         )}
 
+        {/* Priority internal links — SEO link equity to key pages */}
+        <nav className="mt-6 flex flex-wrap justify-center gap-3" aria-label="Explore more">
+          <Link to="/bestsellers" className="text-sm text-primary hover:underline font-medium">Bestsellers</Link>
+          <span className="text-border">·</span>
+          <Link to="/trending-pet-products" className="text-sm text-primary hover:underline font-medium">Trending Products</Link>
+          <span className="text-border">·</span>
+          <Link to="/dog" className="text-sm text-primary hover:underline font-medium">Shop Dogs</Link>
+          <span className="text-border">·</span>
+          <Link to="/cat" className="text-sm text-primary hover:underline font-medium">Shop Cats</Link>
+        </nav>
+
+        {/* Social proof line — compliant, no fake reviews */}
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Trusted by pet owners across the United States
+        </p>
+
         {/* 3. Social Proof — category-aware review quotes */}
         <ProductSocialProof productName={product.name} category={product.category || ""} />
 

@@ -48,14 +48,14 @@ const FooterSection = ({ title, children, className }: { title: string; children
 const footerLinks = {
   shop: [
     { label: 'All Products', href: '/products' },
-    { label: 'Dog Beds', href: '/collections/dog-beds' },
-    { label: 'Dog Harnesses', href: '/collections/dog-harness' },
-    { label: 'Dog Toys', href: '/collections/dog-toys' },
     { label: 'Bestsellers', href: '/bestsellers' },
+    { label: 'Trending Products', href: '/trending-pet-products' },
+    { label: 'Shop Dogs', href: '/dog' },
+    { label: 'Shop Cats', href: '/cat' },
   ],
   more: [
-    { label: 'Dog Car Seats', href: '/collections/best-dog-car-seats' },
-    { label: 'Dog Grooming', href: '/collections/best-dog-grooming-kits' },
+    { label: 'Dog Beds', href: '/collections/dog-beds' },
+    { label: 'Dog Harnesses', href: '/collections/dog-harness' },
     { label: 'Cat Trees', href: '/collections/cat-trees-and-condos' },
     { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
     { label: 'Pet Travel', href: '/collections/pet-travel-accessories' },
