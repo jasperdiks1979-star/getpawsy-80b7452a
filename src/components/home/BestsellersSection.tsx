@@ -130,14 +130,12 @@ export const BestsellersSection = () => {
                     </div>
                   </Link>
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
                       addItem({
                         id: product.id,
                         name: product.name || 'Product',
                         price,
                         image: imageUrl,
-                        quantity: 1,
                       });
                     }}
                     className="w-full mt-2 py-2 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
