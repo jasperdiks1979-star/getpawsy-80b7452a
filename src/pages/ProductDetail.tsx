@@ -1154,17 +1154,19 @@ const ProductDetail = () => {
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
-            {/* Stock Status & Subtle Social Proof */}
+            {/* Stock Status & Urgency */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success" : "bg-destructive"}`} />
-                <span className="font-medium text-foreground">
-                  {inStock ? "In Stock — Ready to ship" : "Out of Stock"}
+                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success animate-pulse" : "bg-destructive"}`} />
+                <span className="font-semibold text-foreground">
+                  {inStock ? "In Stock – Ready to Ship" : "Out of Stock"}
                 </span>
               </div>
               {inStock && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  Popular choice among US pet owners · Ships within 24 hours
+                  {(product.stock ?? 0) > 0 && (product.stock ?? 0) <= 15
+                    ? "Only a few left in stock – order soon"
+                    : "Ships from USA within 24 hours"}
                 </p>
               )}
             </div>
