@@ -1,56 +1,27 @@
 import { memo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export const BestsellerCardSkeleton = memo(() => {
-  return (
-    <div className="bg-card rounded-2xl overflow-hidden shadow-soft">
-      {/* Image - same aspect ratio as ProductCard */}
-      <Skeleton className="aspect-square w-full" />
-      
-      {/* Content */}
-      <div className="p-4 space-y-3">
-        {/* Category */}
-        <Skeleton className="h-3 w-16" />
-        
-        {/* Title */}
-        <div className="space-y-1.5">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
-        
-        {/* Rating */}
-        <div className="flex items-center gap-1">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-3 w-3 rounded-full" />
-          ))}
-          <Skeleton className="h-3 w-6 ml-1" />
-        </div>
-        
-        {/* Price */}
-        <div className="flex items-baseline gap-2">
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-4 w-12" />
-        </div>
+export const BestsellerCardSkeleton = memo(() => (
+  <div className="rounded-xl overflow-hidden border border-border/50 bg-card">
+    <Skeleton className="aspect-square w-full" />
+    <div className="p-3 space-y-2">
+      <Skeleton className="h-3 w-14" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <div className="flex items-baseline gap-2 pt-1">
+        <Skeleton className="h-5 w-14" />
+        <Skeleton className="h-3 w-10" />
       </div>
     </div>
-  );
-});
-
+  </div>
+));
 BestsellerCardSkeleton.displayName = 'BestsellerCardSkeleton';
 
-/**
- * IMPORTANT: This skeleton MUST match the carousel layout exactly to prevent CLS
- * Carousel uses: basis-[92%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4
- * So skeleton uses the same responsive grid: 1 col mobile, 2 col sm, 3 col lg, 4 col xl
- */
-export const BestsellersGridSkeleton = memo(({ count = 4 }: { count?: number }) => {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {Array.from({ length: count }).map((_, i) => (
-        <BestsellerCardSkeleton key={i} />
-      ))}
-    </div>
-  );
-});
-
+export const BestsellersGridSkeleton = memo(({ count = 4 }: { count?: number }) => (
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 max-w-6xl mx-auto">
+    {Array.from({ length: count }).map((_, i) => (
+      <BestsellerCardSkeleton key={i} />
+    ))}
+  </div>
+));
 BestsellersGridSkeleton.displayName = 'BestsellersGridSkeleton';
