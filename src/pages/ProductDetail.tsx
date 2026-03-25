@@ -1730,21 +1730,17 @@ const ProductDetail = () => {
             className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-bottom"
           >
             <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-              {/* Price */}
-              <div className="flex-shrink-0">
+              {/* Product name + Price */}
+              <div className="flex-shrink-0 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate max-w-[120px] md:max-w-none">{safeString(product.name)}</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-xl font-bold text-primary">${Number(product.price).toFixed(2)}</span>
+                  <span className="text-lg font-bold text-primary">${Number(product.price).toFixed(2)}</span>
                   {product.compare_at_price && (
                     <span className="text-xs text-muted-foreground line-through">
                       ${Number(product.compare_at_price).toFixed(2)}
                     </span>
                   )}
                 </div>
-                {inStock ? (
-                  <span className="text-xs text-success">In Stock</span>
-                ) : (
-                  <span className="text-xs text-destructive">Out of Stock</span>
-                )}
               </div>
 
               {/* Trust badge - desktop only */}
