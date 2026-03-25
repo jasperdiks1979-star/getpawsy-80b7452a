@@ -42,7 +42,7 @@ export const products: Product[] = [
   {
     id: 'getpawsy_05556879-2201-4d30-8373-4eded8e7dcb8',
     slug: 'covered-cat-litter-box-with-lid-scoop-deodorizing-bags-for-odor-control-privacy-easy-to-clean-green',
-    name: 'Litter Box for Cats',
+    name: 'GetPawsy Enclosed Cat Litter Box – Covered Design with Scoop & Odor Control',
     description: 'Enclosed cat litter box with flap door, scoop, and deodorizing bags for odor control and privacy. Easy to clean with removable lid.',
     price: 98.99,
     image: 'https://cf.cjdropshipping.com/41c43a7d-1ba5-4eaa-801f-ac5407d34421.jpg',
