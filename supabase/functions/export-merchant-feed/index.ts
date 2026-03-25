@@ -692,7 +692,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    audit.excluded_not_top50 = audit.holdout_review_queue;
+    audit.excluded_not_top80 = audit.holdout_review_queue;
 
     // Compute averages
     if (feedItems.length > 0) {
