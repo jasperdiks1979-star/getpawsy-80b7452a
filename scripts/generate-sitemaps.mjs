@@ -119,13 +119,13 @@ async function main() {
   // ── PRODUCTS (all active canonical products) ──
   let productsRaw = await fetchAllPages(
     "products_public",
-    "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
+    "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
   );
 
   if (!productsRaw || productsRaw.length === 0) {
     productsRaw = await fetchAllPages(
       "products",
-      "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
+      "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
     );
   }
   let products;
