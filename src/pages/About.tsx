@@ -300,7 +300,7 @@ const About = () => {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                     <p className="text-foreground">
-                      <strong>{RETURN_WINDOW_DAYS}-day hassle-free return policy</strong> on all orders.
+                      <strong>{RETURN_WINDOW_DAYS}-day return policy</strong> on all orders.
                     </p>
                   </div>
                 </div>

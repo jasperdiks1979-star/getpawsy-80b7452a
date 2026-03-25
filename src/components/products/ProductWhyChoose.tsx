@@ -123,7 +123,7 @@ function generateContent(name: string, cat: string): ContentBlock {
       'Premium, pet-safe materials throughout',
       'Designed for daily use and durability',
       'Fast US shipping with tracking',
-      '30-day hassle-free return policy',
+      '30-day return policy',
       'Responsive customer support team',
     ],
   };

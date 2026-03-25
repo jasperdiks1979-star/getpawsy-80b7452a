@@ -106,7 +106,7 @@ export function ProductSpecsTable({ product }: ProductSpecsTableProps) {
     rows.push(
       { label: 'Brand', value: 'GetPawsy' },
       { label: 'Shipping', value: `Free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}` },
-      { label: 'Returns', value: `${RETURN_WINDOW_DAYS}-day hassle-free returns` },
+      { label: 'Returns', value: `${RETURN_WINDOW_DAYS}-day return policy` },
     );
 
     return rows;

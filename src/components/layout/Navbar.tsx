@@ -52,6 +52,7 @@ const navLinks = [
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
   { href: '/collections/cat-scratching-posts', label: 'Scratching' },
   { href: '/guides', label: 'Guides' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 const promoItems = [

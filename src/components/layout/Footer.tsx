@@ -117,7 +117,9 @@ export const Footer = () => {
               <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline block">
                 {SUPPORT_EMAIL}
               </a>
-              <p className="text-xs text-background/40">Serving customers across the United States</p>
+              <p className="text-xs text-background/40 mt-2 leading-relaxed">
+                GetPawsy is operated by Skidzo, a Netherlands-based ecommerce business serving customers in the United States through trusted fulfillment partners and warehouses.
+              </p>
             </div>
 
             {/* Shop */}

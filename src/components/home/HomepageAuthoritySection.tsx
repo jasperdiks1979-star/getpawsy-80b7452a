@@ -86,7 +86,7 @@ export function HomepageAuthoritySection() {
             <Link to="/collections/dog-training-accessories" className="text-primary hover:underline font-medium">
               training accessories
             </Link>,
-            we offer free US shipping on orders over $35 with 3–7 day delivery and a 30-day hassle-free return policy.
+            we offer free US shipping on orders over $35 with 3–7 day delivery and a 30-day return policy.
             Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">
               expert pet guides

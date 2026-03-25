@@ -591,10 +591,10 @@ const Bestsellers = () => {
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: BadgeCheck, title: 'Every Product Tested', desc: 'We evaluate materials, durability, and pet safety before listing any item.' },
-              { icon: Users, title: 'Real Owner Reviews', desc: 'All reviews come from verified purchasers. We never remove honest feedback.' },
-              { icon: BarChart3, title: 'Data-Driven Rankings', desc: 'Rankings are based on sales, reviews, and return rates — not paid placements.' },
-              { icon: ThumbsUp, title: 'Satisfaction Guarantee', desc: '30-day hassle-free returns on every product, no questions asked.' },
+              { icon: BadgeCheck, title: 'Curated Selection', desc: 'We evaluate materials, durability, and pet safety before listing any item.' },
+              { icon: Users, title: 'Customer Feedback', desc: 'We value honest customer feedback to continuously improve our product selection.' },
+              { icon: BarChart3, title: 'Data-Driven Rankings', desc: 'Rankings are based on sales data and customer interest — not paid placements.' },
+              { icon: ThumbsUp, title: '30-Day Returns', desc: 'Return eligible items within 30 days per our return policy.' },
             ].map((item) => (
               <div key={item.title} className="text-center">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -618,14 +618,14 @@ const Bestsellers = () => {
                 <Truck className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-semibold mb-2">Free US Shipping</h3>
-              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 7–15 business days.</p>
+              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 3–7 business days.</p>
             </div>
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <RotateCcw className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-semibold mb-2">30-Day Returns</h3>
-              <p className="text-sm text-muted-foreground">Not happy? Return any product within 30 days for a full refund — no questions asked. Contact support@getpawsy.pet.</p>
+              <p className="text-sm text-muted-foreground">Return eligible items within 30 days per our return policy. Contact support@getpawsy.pet to start a return.</p>
             </div>
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">

@@ -34,7 +34,7 @@ const UPSELL_BENEFITS: Record<string, string> = {
   default: 'Perfect companion for your purchase',
   collar: 'Complete the look with matching style',
   leash: 'Perfect for safe adventures together',
-  bed: 'Give your pet the ultimate rest spot',
+  bed: 'Give your pet a comfortable rest spot',
   toy: 'Keep your furry friend entertained',
   carrier: 'Travel safely with your companion',
   harness: 'Comfortable walks, no pulling',

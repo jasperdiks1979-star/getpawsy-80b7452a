@@ -122,7 +122,7 @@ const Shipping = () => {
                 </p>
                 <div className="p-4 bg-muted/50 rounded-xl mt-4">
                   <p className="text-sm text-muted-foreground">
-                    GetPawsy partners with global pet suppliers and fulfillment centers to deliver products efficiently.
+                    Orders are fulfilled through US-based and international partner warehouses. Delivery times may vary depending on warehouse location and product availability.
                   </p>
                 </div>
               </div>

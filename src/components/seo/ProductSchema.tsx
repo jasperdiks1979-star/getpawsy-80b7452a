@@ -43,7 +43,7 @@ export function ProductSchema({
   // Ensure description is always populated with benefit-driven copy
   const cleanDescription = rawDescription && rawDescription.length > 50 
     ? rawDescription 
-    : `Shop ${product.name} at GetPawsy. Premium quality pet product designed for comfort and durability. Fast US shipping, 30-day hassle-free returns.`;
+    : `Shop ${product.name} at GetPawsy. Quality pet product designed for comfort and durability. Fast US shipping, 30-day return policy.`;
 
   // Build review structured data ONLY from real approved reviews — no placeholders
   const hasRealReviews = reviews.length > 0;
