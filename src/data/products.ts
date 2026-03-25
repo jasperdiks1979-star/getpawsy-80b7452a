@@ -57,8 +57,8 @@ export const products: Product[] = [
   {
     id: 'getpawsy_1454395a-9a13-4c93-94a5-4264cb44434d',
     slug: 'flower-cat-tree-no-shipments-on-weekends-1',
-    name: 'Cat Tree Condo – Flower Design Multi-Level with Scratching Posts for Cats',
-    description: 'Flower-themed multi-level cat tree condo with scratching posts and plush comfort areas. Provides exercise, play, and rest for indoor cats.',
+    name: 'GetPawsy Flower Cat Tree Condo – Multi-Level Scratching Post for Cats',
+    description: 'Flower-themed cat tree condo with multiple levels, scratching surfaces, and soft resting areas. Designed for indoor cats that like to climb, scratch, and lounge. Decorative style with practical play and rest functions.',
     price: 604.99,
     image: 'https://cf.cjdropshipping.com/17689536/fa631739-871c-4f92-94a0-1a2d4163c7a0.jpg',
     images: ['https://cf.cjdropshipping.com/17689536/fa631739-871c-4f92-94a0-1a2d4163c7a0.jpg'],
