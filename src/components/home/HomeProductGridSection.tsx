@@ -23,6 +23,7 @@ interface HomeProductGridSectionProps {
  * SEO-safe homepage product grid.
  * No fake badges, no fabricated ratings, no urgency tags.
  * Google Merchant compliant — factual presentation only.
+ * Mobile-first: stable 2-col grid with no layout shifts.
  */
 export function HomeProductGridSection({
   title,
@@ -32,7 +33,12 @@ export function HomeProductGridSection({
   seeAllHref,
   seeAllLabel = 'View All',
 }: HomeProductGridSectionProps) {
-  if (products.length === 0) return null;
+  // Filter out products with missing/placeholder images
+  const validProducts = products.filter(
+    p => p.image_url && p.image_url !== '/placeholder.svg' && p.price > 0
+  );
+
+  if (validProducts.length === 0) return null;
 
   return (
     <section className="py-10 md:py-14" data-seo-section={trackingKey}>
@@ -58,11 +64,11 @@ export function HomeProductGridSection({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-          {products.map((product, idx) => (
+          {validProducts.map((product, idx) => (
             <a
               key={product.id}
               href={`/product/${product.slug}`}
-              className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+              className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-shadow duration-300"
               data-seo-slot={`${trackingKey}-${idx}`}
             >
               <div className="relative aspect-square overflow-hidden bg-muted">

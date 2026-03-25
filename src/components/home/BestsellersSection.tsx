@@ -1,353 +1,16 @@
-import { useMemo, useCallback, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import Award from 'lucide-react/dist/esm/icons/award';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { StarRating } from '@/components/ui/star-rating';
 import { supabase } from '@/integrations/supabase/client';
-import { useProductRatings } from '@/hooks/useProductRatings';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
-import { safeString, safePrice } from '@/lib/safe-render';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
-} from '@/components/ui/carousel';
-import { useIsMobile } from '@/hooks/use-mobile';
-import Autoplay from 'embla-carousel-autoplay';
 
-// Carousel item animation variants - staggered entrance
-const cardVariants = {
-  hidden: { 
-    opacity: 0, 
-    y: 30,
-    scale: 0.9,
-  },
-  visible: (index: number) => ({ 
-    opacity: 1, 
-    y: 0,
-    scale: 1,
-    transition: {
-      delay: index * 0.15,
-      duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-    },
-  }),
-};
-
-interface BestsellersCarouselProps {
-  bestsellers: any[];
-  ratingsMap: Record<string, { averageRating: number; reviewCount: number }> | undefined;
-}
-
-const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselProps) => {
-  const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
-  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
-  const isMobile = useIsMobile();
-
-  useEffect(() => {
-    if (!api) return;
-
-    const onSelect = () => {
-      setCurrent(api.selectedScrollSnap());
-    };
-
-    setScrollSnaps(api.scrollSnapList());
-    api.on('select', onSelect);
-    api.on('reInit', () => {
-      setScrollSnaps(api.scrollSnapList());
-      onSelect();
-    });
-    
-    return () => {
-      api.off('select', onSelect);
-    };
-  }, [api]);
-
-  const scrollPrev = useCallback(() => api?.scrollPrev(), [api]);
-  const scrollNext = useCallback(() => api?.scrollNext(), [api]);
-
-  // Calculate the visual state for each card based on distance from center
-  const getCardStyle = (index: number) => {
-    const totalItems = bestsellers.length;
-    
-    // Calculate distance from current slide (accounting for loop)
-    let distance = index - current;
-    if (distance > totalItems / 2) distance -= totalItems;
-    if (distance < -totalItems / 2) distance += totalItems;
-    
-    const absDistance = Math.abs(distance);
-    
-    // On mobile: only show the active card prominently, hide others more
-    if (isMobile) {
-      const scale = absDistance === 0 ? 1 : absDistance === 1 ? 0.7 : 0.5;
-      const zIndex = 10 - absDistance;
-      const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.4 : 0.2;
-      // No 3D rotation on mobile to prevent overlap
-      const rotateY = 0;
-      const translateY = 0;
-      
-      return {
-        scale,
-        zIndex,
-        opacity,
-        rotateY,
-        translateY,
-        isActive: absDistance === 0,
-        isAdjacent: absDistance === 1,
-      };
-    }
-    
-    // Desktop: full 3D coverflow effect - no negative translateY to prevent clipping
-    const scale = absDistance === 0 ? 1.08 : absDistance === 1 ? 0.82 : 0.68;
-    const zIndex = 10 - absDistance;
-    const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.85 : 0.6;
-    const rotateY = distance * -12;
-    const translateY = absDistance === 0 ? 0 : absDistance === 1 ? 8 : 16;
-    
-    return {
-      scale,
-      zIndex,
-      opacity,
-      rotateY,
-      translateY,
-      isActive: absDistance === 0,
-      isAdjacent: absDistance === 1,
-    };
-  };
-
-  return (
-    <div className="relative pt-8 pb-4 md:pt-10 md:pb-6">
-      {/* Carousel Controls - Desktop */}
-      <div className="hidden md:flex absolute -left-6 -right-6 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-20">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={scrollPrev}
-          className="pointer-events-auto rounded-full shadow-2xl bg-white/90 backdrop-blur-md hover:bg-white border-0 h-14 w-14 hover:scale-110 transition-all duration-300 ring-1 ring-black/5"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={scrollNext}
-          className="pointer-events-auto rounded-full shadow-2xl bg-white/90 backdrop-blur-md hover:bg-white border-0 h-14 w-14 hover:scale-110 transition-all duration-300 ring-1 ring-black/5"
-        >
-          <ChevronRight className="w-6 h-6" />
-        </Button>
-      </div>
-
-      <Carousel
-        setApi={setApi}
-        opts={{
-          align: 'center',
-          loop: true,
-          skipSnaps: false,
-        }}
-        plugins={[
-          Autoplay({
-            delay: 4000,
-            stopOnInteraction: false,
-            stopOnMouseEnter: true,
-          }),
-        ]}
-        className="w-full"
-      >
-        <CarouselContent className="-ml-4 md:-ml-4" style={{ perspective: '1200px' }}>
-            {bestsellers.map((bestseller, index) => {
-              const product = bestseller.products;
-              if (!product) return null;
-              
-              const productPrice = typeof product.price === 'number' ? product.price : 0;
-              const comparePrice = typeof product.compare_at_price === 'number' ? product.compare_at_price : 0;
-              const discount = comparePrice > 0
-                ? Math.round((1 - productPrice / comparePrice) * 100)
-                : 0;
-
-              const productRating = ratingsMap?.[product.id];
-              
-              const safeName = safeString(product.name);
-              const safeHeadline = safeString(bestseller.hero_headline);
-              const safeCategory = safeString(product.category);
-              const safeImageUrl = safeString(product.image_url) || '/placeholder.svg';
-              const safeSlug = safeString(bestseller.slug);
-
-              const cardStyle = getCardStyle(index);
-
-              return (
-                <CarouselItem 
-                  key={bestseller.id} 
-                  className="pl-4 md:pl-4 basis-[92%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
-                  style={{ zIndex: cardStyle.zIndex }}
-                >
-                  {/* CSS fade-in on view — replaces framer whileInView */}
-                  <div
-                    className="animate-[fadeSlideUp_0.6s_ease-out_both]"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    {/* CSS transform for coverflow — replaces framer motion.div animate */}
-                    <div
-                      className="relative transition-all duration-300 ease-out hover:scale-[1.02]"
-                      style={{
-                        transform: `scale(${cardStyle.scale}) rotateY(${cardStyle.rotateY}deg) translateY(${cardStyle.translateY}px)`,
-                        opacity: cardStyle.opacity,
-                        transformStyle: 'preserve-3d',
-                        transformOrigin: 'center top',
-                      }}
-                    >
-                      {/* Glow effect for active card */}
-                      {cardStyle.isActive && (
-                        <>
-                          <div className="absolute -inset-6 bg-gradient-to-br from-amber-400/30 via-orange-500/25 to-rose-400/20 rounded-[2rem] blur-3xl -z-10 animate-[fadeIn_0.3s_ease-out]" />
-                          <div className="absolute -inset-3 bg-gradient-to-tr from-primary/20 to-amber-300/20 rounded-3xl blur-xl -z-10 animate-[fadeIn_0.3s_ease-out]" />
-                        </>
-                      )}
-                      
-                      <Link
-                        to={`/bestseller/${safeSlug}`}
-                        className={`group block overflow-hidden transition-all duration-500 ${
-                          cardStyle.isActive 
-                            ? 'rounded-2xl bg-card ring-2 ring-amber-200/60 shadow-[0_20px_60px_-15px_rgba(251,146,60,0.35)]' 
-                            : cardStyle.isAdjacent 
-                              ? 'rounded-xl bg-card/80 shadow-lg ring-1 ring-black/5' 
-                              : 'rounded-xl bg-card/60 shadow-md'
-                        }`}
-                      >
-                        {/* Image Container */}
-                        <div className="relative aspect-square overflow-hidden">
-                          {cardStyle.isActive && (
-                            <div className="absolute inset-0 z-[1] pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-transparent" />
-                          )}
-                          
-                          {/* Rank Badge */}
-                          <div className="absolute top-3 left-3 z-10">
-                            <Badge className={`px-3 py-1.5 text-xs font-bold transition-all duration-300 ${
-                              cardStyle.isActive 
-                                ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white border-0 scale-110 shadow-lg shadow-orange-500/40' 
-                                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-md'
-                            }`}>
-                              <Award className="w-3.5 h-3.5 mr-1" />
-                              #{bestseller.rank}
-                            </Badge>
-                          </div>
-
-                          {/* Discount Badge */}
-                          {discount > 0 && (
-                            <div className="absolute top-3 right-3 z-10">
-                              <Badge className={`px-2.5 py-1 text-xs font-bold transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 ${
-                                cardStyle.isActive ? 'scale-110 shadow-lg shadow-red-500/30' : 'shadow-md'
-                              }`}>
-                                -{discount}%
-                              </Badge>
-                            </div>
-                          )}
-
-                          {/* Product Image */}
-                          <img
-                            src={safeImageUrl}
-                            alt={safeName}
-                            width={400}
-                            height={400}
-                            loading={index < 3 ? "eager" : "lazy"}
-                            decoding="async"
-                            fetchPriority={index === 0 ? "high" : "auto"}
-                            className={`w-full h-full object-cover transition-all duration-700 ${
-                              cardStyle.isActive 
-                                ? 'group-hover:scale-110 saturate-105' 
-                                : 'filter brightness-90 saturate-90'
-                            }`}
-                          />
-
-                          {/* Overlay on hover — active card only */}
-                          {cardStyle.isActive && (
-                            <>
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                              <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-                                <span className="bg-card/95 backdrop-blur-sm text-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-xl flex items-center gap-2 ring-1 ring-border/20 hover:scale-105 transition-transform duration-150">
-                                  See Details & Price
-                                  <ArrowRight className="w-4 h-4" />
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className={`p-4 transition-all duration-300 ${
-                          cardStyle.isActive ? 'bg-card' : 'bg-muted/30'
-                        }`}>
-                          {safeCategory && (
-                            <p className={`text-xs font-medium mb-1 truncate transition-colors duration-300 ${
-                              cardStyle.isActive ? 'text-primary' : 'text-muted-foreground'
-                            }`}>
-                              {safeCategory}
-                            </p>
-                          )}
-                          <h3 className={`font-semibold text-sm mb-2 line-clamp-2 transition-colors duration-300 ${
-                            cardStyle.isActive ? 'group-hover:text-primary' : ''
-                          }`}>
-                            {safeHeadline || safeName}
-                          </h3>
-                          {productRating && productRating.reviewCount > 0 ? (
-                            <div className="mb-2">
-                              <StarRating 
-                                rating={productRating.averageRating} 
-                                reviewCount={productRating.reviewCount}
-                                size="sm"
-                              />
-                            </div>
-                          ) : null}
-                          <div className="flex items-baseline gap-2">
-                            <span className={`text-lg font-bold transition-colors duration-300 ${
-                              cardStyle.isActive ? 'text-primary' : 'text-foreground'
-                            }`}>
-                              ${safePrice(productPrice)}
-                            </span>
-                            {comparePrice > 0 && (
-                              <span className="text-sm text-muted-foreground line-through">
-                                ${safePrice(comparePrice)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                </CarouselItem>
-              );
-            })}
-        </CarouselContent>
-      </Carousel>
-
-      {/* Dots Indicator — CSS width transition replaces framer animate */}
-      <div className="flex justify-center items-center gap-2 mt-8">
-        {bestsellers.map((_, index) => {
-          const isActiveDot = current === index;
-          return (
-            <button
-              key={index}
-              onClick={() => api?.scrollTo(index)}
-              className={`rounded-full transition-all duration-300 h-[10px] hover:scale-125 ${
-                isActiveDot
-                  ? 'bg-gradient-to-r from-primary to-amber-500 w-8'
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50 w-[10px]'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
+/**
+ * Bestsellers Section — clean grid of top-ranked products.
+ * No fake badges, no 3D effects, no fabricated ratings.
+ * Mobile-first: stable 2-col grid, no layout shifts.
+ */
 export const BestsellersSection = () => {
   const { data: bestsellers, isLoading } = useQuery({
     queryKey: ['homepage-bestsellers'],
@@ -368,58 +31,119 @@ export const BestsellersSection = () => {
         `)
         .eq('is_active', true)
         .order('rank', { ascending: true })
-        .limit(50);
+        .limit(8);
 
       if (error) throw error;
-      return data?.filter(b => b.products) || [];
+
+      // Filter: must have product, valid image, in stock, reasonable price
+      return (data || []).filter(b => {
+        const p = b.products;
+        if (!p) return false;
+        if (!p.image_url || p.image_url === '/placeholder.svg') return false;
+        if (typeof p.stock === 'number' && p.stock <= 0) return false;
+        if (typeof p.price !== 'number' || p.price <= 5 || p.price > 1500) return false;
+        return true;
+      });
     },
   });
 
-  // Get product IDs for ratings
-  const productIds = useMemo(() => 
-    bestsellers?.map(b => b.products?.id).filter((id): id is string => !!id) || [], 
-    [bestsellers]
-  );
-  
-  // Fetch ratings
-  const { data: ratingsMap } = useProductRatings(productIds);
-
-  // Don't render if no bestsellers
   if (!isLoading && (!bestsellers || bestsellers.length === 0)) {
     return null;
   }
 
   return (
-    <section className="pt-12 pb-16 bg-gradient-to-b from-primary/5 via-accent/5 to-background overflow-visible">
-      <div className="container px-4 md:px-6 overflow-visible">
+    <section className="pt-10 pb-12 md:pt-14 md:pb-16">
+      <div className="container px-4 md:px-6">
         {/* Header */}
-        <div className="text-center mb-2 animate-[fadeSlideUp_0.5s_ease-out_both]">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium mb-1">
-            <Award className="w-3 h-3" />
-            Top Products
-          </div>
-          <h2 className="text-2xl md:text-3xl font-display font-bold">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
             Bestsellers
           </h2>
+          <p className="text-sm text-muted-foreground mt-1 max-w-lg mx-auto">
+            Our most popular products — trusted by pet owners across the US.
+          </p>
         </div>
 
         {/* Loading State */}
         {isLoading && <BestsellersGridSkeleton count={4} />}
 
-        {/* Bestsellers Carousel */}
+        {/* Product Grid */}
         {!isLoading && bestsellers && bestsellers.length > 0 && (
-          <BestsellersCarousel bestsellers={bestsellers} ratingsMap={ratingsMap} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 max-w-6xl mx-auto">
+            {bestsellers.slice(0, 8).map((bestseller, idx) => {
+              const product = bestseller.products;
+              if (!product) return null;
+
+              const price = typeof product.price === 'number' ? product.price : 0;
+              const comparePrice = typeof product.compare_at_price === 'number' ? product.compare_at_price : 0;
+              const hasDiscount = comparePrice > price && comparePrice > 0;
+              const discount = hasDiscount ? Math.round((1 - price / comparePrice) * 100) : 0;
+              const imageUrl = product.image_url || '/placeholder.svg';
+              const productName = product.name || 'Product';
+              const slug = bestseller.slug || product.id;
+
+              return (
+                <Link
+                  key={bestseller.id}
+                  to={`/bestseller/${slug}`}
+                  className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-shadow duration-300"
+                >
+                  {/* Image */}
+                  <div className="relative aspect-square overflow-hidden bg-muted">
+                    <img
+                      src={imageUrl}
+                      alt={productName}
+                      width={400}
+                      height={400}
+                      loading={idx < 4 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      fetchPriority={idx === 0 ? 'high' : 'auto'}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                    />
+                    {discount > 0 && (
+                      <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        -{discount}%
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-3 flex flex-col flex-1">
+                    {product.category && (
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                        {product.category}
+                      </span>
+                    )}
+                    <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                      {bestseller.hero_headline || productName}
+                    </h3>
+                    <div className="flex items-baseline gap-1.5 mt-auto pt-2">
+                      <span className="text-sm font-bold text-primary">
+                        ${price.toFixed(2)}
+                      </span>
+                      {hasDiscount && (
+                        <span className="text-[10px] text-muted-foreground line-through">
+                          ${comparePrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         )}
 
         {/* CTA */}
         {!isLoading && bestsellers && bestsellers.length > 0 && (
-          <div className="text-center mt-12 animate-[fadeSlideUp_0.5s_ease-out_both]" style={{ animationDelay: '0.3s' }}>
-            <Link to="/products">
-              <Button size="lg" variant="outline" className="gap-2 rounded-full px-8">
+          <div className="text-center mt-8">
+            <Button asChild variant="outline" className="gap-2 rounded-full">
+              <Link to="/products">
                 View All Products
                 <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
       </div>
