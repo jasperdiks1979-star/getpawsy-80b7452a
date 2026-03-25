@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
-import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
+import { SUPPORT_EMAIL, INFO_EMAIL, RESPONSE_TIME } from '@/lib/shipping-constants';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
