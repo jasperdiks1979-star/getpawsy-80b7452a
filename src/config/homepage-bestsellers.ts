@@ -51,7 +51,7 @@ export const MANUAL_PRODUCTS: CuratedProduct[] = [
     benefit: 'Elevated airflow design for comfortable rest.',
   },
   {
-    slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-gray',
+    slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
     displayName: 'Multi-Level Cat Tree with Hammock',
     benefit: 'Sturdy multi-level tower with sisal scratching posts.',
   },
