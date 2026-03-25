@@ -24,7 +24,7 @@ const MONEY_HUBS: Array<{
     href: '/collections/best-cat-litter-boxes',
     anchor: 'best cat litter boxes',
     content:
-      'Finding the right litter box means balancing odor control, ease of cleaning, and your cat\'s comfort. Our expert-tested collection features self-cleaning systems that reduce daily scooping by 90%, enclosed boxes that trap odors with activated carbon filters, and extra-large options designed for cats over 15 lbs. We also carry furniture-style enclosures that blend into your living room décor. Every litter box is tested for splash resistance, entry height accessibility, and long-term durability. Free US shipping over $35 and a 30-day hassle-free return policy.',
+      'Finding the right litter box means balancing odor control, ease of cleaning, and your cat\'s comfort. Our expert-tested collection features self-cleaning systems that reduce daily scooping by 90%, enclosed boxes that trap odors with activated carbon filters, and extra-large options designed for cats over 15 lbs. We also carry furniture-style enclosures that blend into your living room décor. Every litter box is tested for splash resistance, entry height accessibility, and long-term durability. Free US shipping over $35 and a 30-day return policy.',
     badges: ['Odor Control', 'Self-Cleaning', 'Large Cat Friendly'],
     guideLink: '/guides/best-cat-litter-box-2026',
   },

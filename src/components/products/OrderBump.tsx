@@ -30,7 +30,7 @@ const BUMP_BENEFITS: Record<string, string> = {
   mat: 'Keeps your car clean and scratch-free',
   blanket: 'Adds extra comfort and warmth',
   liner: 'Easy to clean, perfect for messy trips',
-  guard: 'Ultimate protection for your vehicle',
+  guard: 'Added protection for your vehicle',
   accessory: 'The perfect companion for your purchase',
 };
 
