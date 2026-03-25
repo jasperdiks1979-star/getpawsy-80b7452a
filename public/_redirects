@@ -1,8 +1,67 @@
-# Canonical product URL redirect
+# ═══════════════════════════════════════════════════════════════
+# GetPawsy 301 Redirects — Single-hop, no chains
+# ═══════════════════════════════════════════════════════════════
+
+# ── Canonical product URL redirect (plural → singular) ──
 /products/:slug /product/:slug 301
 
-# Canonical product prerender route
+# ── Legacy collection singular → plural ──
+/collection/:slug /collections/:slug 301
+
+# ── Policy URL aliases ──
+/shipping-policy /shipping 301
+/refund-policy /returns 301
+/returns-policy /returns 301
+/return-policy /returns 301
+/policies/returns /returns 301
+/privacy-policy /privacy 301
+/terms-of-service /terms 301
+
+# ── Legacy category redirects ──
+/dogs /collections/dog 301
+/cats /collections/cat 301
+/dogs/dog-beds /collections/orthopedic-calming-dog-beds 301
+/dogs/dog-toys /collections/dog-toys 301
+/dogs/chew-toys /collections/dog-toys 301
+/dogs/dog-collars-leashes /collections/dog-collars-leashes 301
+/dogs/dog-carriers /collections/dog-carriers 301
+/dogs/dog-grooming /collections/best-dog-grooming-kits 301
+/cats/cat-toys /collections/cat-toys 301
+/cats/cat-litter /collections/best-cat-litter-boxes 301
+/cats/litter-boxes /collections/best-cat-litter-boxes 301
+/cats/cat-trees /collections/cat-trees-and-condos 301
+/cats/cat-carriers /collections/best-cat-carriers 301
+/cats/automatic-feeders /collections/automatic-cat-feeders 301
+/category/:slug /products 301
+
+# ── Legacy cluster → namespaced redirects ──
+/orthopedic-dog-beds /dog/orthopedic-dog-beds 301
+/cat-trees-for-large-cats /cat/cat-trees-for-large-cats 301
+/dog-car-travel-safety /dog/dog-car-travel-safety 301
+/collections/orthopedic-dog-beds /dog/orthopedic-dog-beds 301
+/collections/cat-trees-for-large-cats /cat/cat-trees-for-large-cats 301
+/collections/dog-car-travel-safety /dog/dog-car-travel-safety 301
+/collections/best-orthopedic-dog-bed-large-dogs /dog/orthopedic-dog-beds/best-for-large-dogs 301
+/collections/waterproof-orthopedic-dog-bed /dog/orthopedic-dog-beds/waterproof 301
+/collections/memory-foam-dog-beds /dog/orthopedic-dog-beds/memory-foam 301
+/collections/cat-tree-for-maine-coon /cat/cat-trees-for-large-cats/for-maine-coon 301
+/collections/heavy-duty-cat-tree /cat/cat-trees-for-large-cats/heavy-duty 301
+/collections/cat-condos-for-large-cats /cat/cat-trees-for-large-cats/large-cat-condos 301
+/collections/dog-car-seats /dog/dog-car-travel-safety/car-seats 301
+/collections/dog-booster-seat /dog/dog-car-travel-safety/booster-seats 301
+/collections/dog-car-harness /dog/dog-car-travel-safety/harness-safety 301
+
+# ── Non-pet category 404 catchers → redirect to /products ──
+/collections/bird-* /products 301
+/collections/reptile-* /products 301
+/collections/hamster-* /products 301
+/collections/guinea-pig-* /products 301
+/collections/rabbit-* /products 301
+/collections/fish-* /products 301
+/collections/chicken-* /products 301
+
+# ── Canonical product prerender route ──
 /product/:slug /product/:slug.html 200
 
-# SPA fallback
+# ── SPA fallback ──
 /* /index.html 200
