@@ -167,7 +167,8 @@ const Contact = () => {
               Fill out the form below and we will get back to you as soon as possible.
             </p>
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              We typically respond within 24 hours. Our support team is here to help with any questions about your order, shipping, returns, or products.
+              {RESPONSE_TIME}. Our support team is here to help with any questions about your order, shipping, returns, or products. You can also reach us at{' '}
+              <a href={`mailto:${INFO_EMAIL}`} className="text-primary hover:underline">{INFO_EMAIL}</a>.
             </p>
           </motion.div>
 

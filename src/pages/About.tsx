@@ -76,7 +76,7 @@ const About = () => {
                   Our mission is to make everyday pet care easier by offering practical, affordable, and thoughtfully selected pet products.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  We carefully select our pet products to ensure quality and comfort for your pets. Finding quality pet products online often means sifting through endless options, unclear sizing, and questionable quality. We set out to change that.
+                  We carefully select and test products before offering them to ensure quality, safety, and comfort for your pets. Finding quality pet products online often means sifting through endless options, unclear sizing, and questionable quality. We set out to change that.
                 </p>
                 <p className="text-muted-foreground">
                   GetPawsy is operated by Skidzo, based in Apeldoorn, Netherlands. We serve customers in the United States and internationally with a smooth, reliable shopping experience from browse to delivery. Our mission is to offer practical and reliable pet products.
