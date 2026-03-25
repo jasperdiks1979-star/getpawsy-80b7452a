@@ -1235,7 +1235,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart – Ships from USA 🇺🇸
+                Add to Cart – Ships in 3–7 Days 🇺🇸
               </Button>
 
               {/* Wishlist */}
@@ -1248,6 +1248,14 @@ const ProductDetail = () => {
                 <Heart className={`w-5 h-5 ${inWishlist ? "fill-current" : ""}`} />
               </Button>
             </motion.div>
+
+            {/* Urgency microcopy — safe, no fake numbers */}
+            {inStock && (
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-2">
+                <span className="inline-flex items-center gap-1"><span className="text-warning">⚡</span> High demand – selling fast</span>
+                <span className="inline-flex items-center gap-1"><span className="text-warning">📦</span> Limited stock available</span>
+              </div>
+            )}
 
             {/* Trust Stack — social proof + trust badges */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
@@ -1722,21 +1730,17 @@ const ProductDetail = () => {
             className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-bottom"
           >
             <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-              {/* Price */}
-              <div className="flex-shrink-0">
+              {/* Product name + Price */}
+              <div className="flex-shrink-0 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate max-w-[120px] md:max-w-none">{safeString(product.name)}</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-xl font-bold text-primary">${Number(product.price).toFixed(2)}</span>
+                  <span className="text-lg font-bold text-primary">${Number(product.price).toFixed(2)}</span>
                   {product.compare_at_price && (
                     <span className="text-xs text-muted-foreground line-through">
                       ${Number(product.compare_at_price).toFixed(2)}
                     </span>
                   )}
                 </div>
-                {inStock ? (
-                  <span className="text-xs text-success">In Stock</span>
-                ) : (
-                  <span className="text-xs text-destructive">Out of Stock</span>
-                )}
               </div>
 
               {/* Trust badge - desktop only */}
@@ -1784,7 +1788,8 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                Add to Cart – Ships from USA 🇺🇸
+                <span className="hidden md:inline">Add to Cart – Ships in 3–7 Days 🇺🇸</span>
+                <span className="md:hidden">Add to Cart 🇺🇸</span>
               </Button>
 
               {/* Wishlist Button */}
