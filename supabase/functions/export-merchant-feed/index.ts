@@ -7,9 +7,8 @@ const corsHeaders = {
 
 const BASE_URL = "https://getpawsy.pet";
 const BRAND = "GetPawsy";
-const YEAR = new Date().getFullYear();
 
-// ── Policy-sensitive product blocklist ──────────────────────────────
+// ── Hard-blocked product IDs (policy-sensitive) ─────────────────────
 const BLOCKED_PRODUCT_IDS = new Set([
   "2233541f-b223-4a76-8572-272f971aacd2",
   "16f69eff-5135-4428-a2ac-fe93ca9c18e5",
@@ -36,115 +35,280 @@ const BLOCKED_PRODUCT_IDS = new Set([
   "303c9938-3c45-4ce7-b925-61786b69c5f7",
 ]);
 
-// Policy-unsafe keywords — exclude any product matching these
+// ── Policy-unsafe keyword patterns ──────────────────────────────────
 const POLICY_UNSAFE_PATTERNS = [
-  /shock\s*(collar|training|correction|system|fence|boundary)/i,
+  /shock\s*(collar|training|correction|system|fence|boundary)?/i,
   /static\s*correction/i,
   /electric\s*(fence|collar|training|shock|boundary)/i,
   /boundary\s*shock/i,
   /e-shock/i,
   /bark\s*(shock|static)/i,
   /aversive\s*training/i,
+  /wireless\s*fence/i,
+  /training\s*collar/i,
+  /electric\s*collar/i,
+  /containment\s*system/i,
+  /anti[-\s]*bark\s*(shock|static|electric)/i,
+  /correction\s*collar/i,
+  /pet\s*shock/i,
+  /zap/i,
+  /prong\s*collar/i,
+  /choke\s*chain/i,
 ];
 
 function isPolicySensitive(name: string, desc: string): boolean {
-  const text = `${name} ${desc}`;
+  const text = `${name} ${desc}`.toLowerCase();
   return POLICY_UNSAFE_PATTERNS.some(p => p.test(text));
 }
 
-// ── Compliance sanitizer ──────────────────────────────────────────
+// ── Title cleaning ──────────────────────────────────────────────────
 
-const BANNED_PHRASES: RegExp[] = [
-  /free\s*shipping/gi, /ships?\s*from/gi, /fast\s*delivery/gi,
-  /\d+[-–]\d+\s*business\s*days?/gi, /\d+[-–]?\s*day\s*returns?/gi,
-  /hassle[-\s]*free\s*returns?/gi, /money\s*back/gi, /satisfaction\s*guarantee[d]?/gi,
-  /risk[-\s]*free/gi, /no\s*questions?\s*asked/gi, /trusted\s*by/gi,
-  /best\s*seller/gi, /bestseller/gi, /top[-\s]*rated/gi, /premium\s*quality/gi,
-  /limited\s*(time\s*)?offer/gi, /shop\s*now/gi, /order\s*today/gi,
-  /exclusive\s*(deal|offer|price)?/gi, /must[-\s]*have/gi,
-  /your\s*pet\s*deserves/gi, /perfect\s*for/gi, /amazing/gi, /incredible/gi,
-  /guaranteed/gi, /act\s*now/gi, /don'?t\s*miss/gi, /hurry/gi,
-  /while\s*supplies?\s*last/gi, /limited\s*stock/gi, /only\s*\d+\s*left/gi,
-  /sale\s*ends?/gi, /save\s*\d+%/gi, /\d+%\s*off/gi, /buy\s*now/gi, /add\s*to\s*cart/gi,
-  /no\s*smell(?:\s*guaranteed)?/gi, /no\s*scooping\s*ever/gi,
-  /fully\s*automatic/gi, /100%\s*automatic/gi,
-  /✔/g, /✓/g, /★+/g, /⭐+/g, /🏆/g, /🥇/g, /💯/g, /🔥/g, /✅/g, /🎉/g, /🚚/g, /📦/g,
-  /vet[-\s]*recommended/gi, /vet[-\s]*approved/gi,
-  /click\s*here/gi, /order\s*now/gi, /product\s*image:/gi,
-  /please\s*note/gi, /if\s*you'?d\s*like/gi,
-];
-
-const BANNED_TITLE_WORDS: RegExp[] = [
-  /\bbest\b/gi, /\bpremium\b/gi, /\b(amazing|incredible|fantastic|awesome)\b/gi,
-  /\bexclusive\b/gi, /\bluxury\b/gi, /\bultimate\b/gi, /\bhot\s*sale\b/gi, /\b(free|gratis)\b/gi,
-];
-
-const EMOJI_RE = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+const EMOJI_RE = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu;
 const HTML_TAG_RE = /<\/?[a-z][^>]*>/gi;
 const MARKDOWN_RE = /\*{1,2}([^*]+)\*{1,2}/g;
+const SMART_QUOTES_RE = /[""'']/g;
 
-function sanitizeTitle(title: string): string {
-  let r = title;
-  r = r.replace(EMOJI_RE, "");
-  for (const re of BANNED_TITLE_WORDS) r = r.replace(re, "");
-  for (const re of BANNED_PHRASES) r = r.replace(re, "");
-  // Fix double words like "Ret retractable"
-  r = r.replace(/\b(\w+)\s+\1\b/gi, "$1");
-  r = r.replace(/\b([A-Z]{5,})\b/g, (m) => m.charAt(0) + m.slice(1).toLowerCase());
-  r = r.replace(/\s{2,}/g, " ").trim();
-  r = r.replace(/^[,.\-–—:;|]+\s*/, "").replace(/\s*[,.\-–—:;|]+$/, "");
-  if (!/^GetPawsy\b/i.test(r)) r = `GetPawsy ${r}`;
-  return r.substring(0, 150).trim();
+const TITLE_BANNED = [
+  /\b(best|premium|amazing|incredible|fantastic|awesome|exclusive|luxury|ultimate)\b/gi,
+  /\b(hot\s*sale|free|gratis|limited\s*(time\s*)?(offer)?|buy\s*now|shop\s*now|order\s*(now|today))\b/gi,
+  /\b(top[-\s]*rated|must[-\s]*have|bestseller|best\s*seller|guaranteed)\b/gi,
+  /\bfree\s*shipping\b/gi,
+  /\bno\s*\d+\b/gi,
+  /\d+%\s*off/gi,
+  /sale\s*ends?/gi,
+];
+
+function sanitizeTitle(raw: string): string {
+  let t = raw;
+  // Strip HTML, markdown, emojis, smart quotes
+  t = t.replace(HTML_TAG_RE, " ");
+  t = t.replace(MARKDOWN_RE, "$1");
+  t = t.replace(EMOJI_RE, "");
+  t = t.replace(SMART_QUOTES_RE, "");
+  t = t.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "").replace(/&gt;/gi, "").replace(/&quot;/gi, "");
+
+  // Remove banned promotional words
+  for (const re of TITLE_BANNED) t = t.replace(re, "");
+
+  // Fix duplicate consecutive words: "Ret retractable" → "retractable", "Dog Dog" → "Dog"
+  t = t.replace(/\b(\w+)\s+\1\b/gi, "$1");
+
+  // Fix partial-duplicate like "Ret retractable" (partial prefix then full word)
+  t = t.replace(/\b([A-Z][a-z]{1,4})\s+([a-z]+)\b/g, (_match, prefix, full) => {
+    if (full.toLowerCase().startsWith(prefix.toLowerCase())) return full;
+    return `${prefix} ${full}`;
+  });
+
+  // Remove duplicate "GetPawsy" if present
+  t = t.replace(/GetPawsy\s+GetPawsy/gi, "GetPawsy");
+
+  // Fix ALL CAPS words (5+ chars)
+  t = t.replace(/\b([A-Z]{5,})\b/g, (m) => m.charAt(0) + m.slice(1).toLowerCase());
+
+  // Clean up whitespace and trailing punctuation
+  t = t.replace(/\s{2,}/g, " ").trim();
+  t = t.replace(/^[,.\-–—:;|/]+\s*/, "").replace(/\s*[,.\-–—:;|/]+$/, "");
+  t = t.replace(/\s*–\s*–\s*/g, " – "); // double dashes
+
+  // Brand prefix (only once, only if missing)
+  if (!/^GetPawsy\b/i.test(t)) t = `GetPawsy ${t}`;
+
+  // Hard cap at 120 chars
+  if (t.length > 120) {
+    t = t.substring(0, 117).replace(/\s+\S*$/, "") + "...";
+  }
+
+  return t.trim();
 }
+
+// ── Description cleaning ────────────────────────────────────────────
+
+const DESC_STRIP_PHRASES: RegExp[] = [
+  /please\s*note\b[^.]*\./gi,
+  /click\s*here\b[^.]*\./gi,
+  /order\s*(now|today)\b[^.]*\./gi,
+  /if\s*you'?d\s*like\b[^.]*\./gi,
+  /product\s*image\s*:?\s*/gi,
+  /note\s*:\s*this\s*(category|product)\s*(was|is)\s*[^.]*\./gi,
+  /\*\*[^*]+\*\*/g, // markdown bold blocks
+  /free\s*shipping\b[^.]*\./gi,
+  /\d+[-–]\s*day\s*returns?\b[^.]*\./gi,
+  /money[-\s]*back\s*guarantee\b[^.]*\./gi,
+  /satisfaction\s*guarantee[d]?\b[^.]*\./gi,
+  /risk[-\s]*free\b[^.]*\./gi,
+  /no\s*questions?\s*asked\b[^.]*\./gi,
+  /trusted\s*by\b[^.]*\./gi,
+  /limited\s*(time\s*)?offer\b[^.]*\./gi,
+  /act\s*now\b[^.]*\./gi,
+  /don'?t\s*miss\b[^.]*\./gi,
+  /hurry\b[^.]*\./gi,
+  /while\s*supplies?\s*last\b[^.]*\./gi,
+  /limited\s*stock\b[^.]*\./gi,
+  /only\s*\d+\s*left\b[^.]*\./gi,
+  /save\s*\d+%\b[^.]*\./gi,
+  /add\s*to\s*cart\b[^.]*\./gi,
+  /buy\s*now\b[^.]*\./gi,
+  /vet[-\s]*(recommended|approved)\b[^.]*\./gi,
+  /100%\s*automatic\b/gi,
+  /fully\s*automatic\b/gi,
+  /no\s*smell\s*guaranteed\b/gi,
+  /no\s*scooping\s*ever\b/gi,
+  /your\s*pet\s*deserves\b[^.]*\./gi,
+  /tired\s*of\b[^.]*\?\s*/gi,  // "Tired of X?" rhetorical openers
+  /say\s*goodbye\s*to\b[^.]*\./gi,
+  /introducing\b[^.]*\./gi,
+];
+
+const DESC_BANNED_CHARS = /[✔✓★⭐🏆🥇💯🔥✅🎉🚚📦•●◦▪▸►➤➜→←↓↑⇒⇨※☆♦♥♠♣☑]/g;
 
 function sanitizeDescription(desc: string): string {
-  let r = desc;
-  r = r.replace(HTML_TAG_RE, " ");
-  r = r.replace(EMOJI_RE, "");
-  r = r.replace(MARKDOWN_RE, "$1"); // strip markdown bold/italic
-  for (const re of BANNED_PHRASES) r = r.replace(re, "");
-  r = r.replace(/[•●◦▪▸►➤➜→←↓↑⇒⇨※☆♦♥♠♣✔✓✅☑]/g, "");
-  r = r.replace(/&nbsp;/gi, " ");
-  r = r.replace(/&amp;/gi, "&");
-  r = r.replace(/&lt;/gi, "<");
-  r = r.replace(/&gt;/gi, ">");
-  r = r.replace(/&quot;/gi, '"');
-  r = r.replace(/\s{2,}/g, " ").trim();
-  return r.substring(0, 5000);
+  let d = desc;
+
+  // Strip HTML tags
+  d = d.replace(HTML_TAG_RE, " ");
+  // Strip markdown
+  d = d.replace(MARKDOWN_RE, "$1");
+  d = d.replace(/\*+/g, "");
+  // Strip emojis + special chars
+  d = d.replace(EMOJI_RE, "");
+  d = d.replace(DESC_BANNED_CHARS, "");
+  d = d.replace(SMART_QUOTES_RE, '"');
+
+  // HTML entities
+  d = d.replace(/&nbsp;/gi, " ");
+  d = d.replace(/&amp;/gi, "&");
+  d = d.replace(/&lt;/gi, "<");
+  d = d.replace(/&gt;/gi, ">");
+  d = d.replace(/&quot;/gi, '"');
+  d = d.replace(/&#\d+;/g, " ");
+
+  // Remove banned phrase patterns
+  for (const re of DESC_STRIP_PHRASES) d = d.replace(re, " ");
+
+  // Remove any remaining promotional words inline
+  d = d.replace(/\b(amazing|incredible|fantastic|awesome|exclusive|ultimate|luxury|premium)\b/gi, "");
+
+  // Normalize whitespace
+  d = d.replace(/\n{3,}/g, "\n\n");
+  d = d.replace(/\s{2,}/g, " ");
+  d = d.trim();
+
+  // Cap at 1000 chars for Merchant (Google allows 5000 but clean+short is better)
+  if (d.length > 1000) {
+    d = d.substring(0, 997).replace(/\s+\S*$/, "") + "...";
+  }
+
+  return d;
 }
 
+// ── Auto-generate fallback description ──────────────────────────────
+
 function guessAnimal(text: string): string {
-  if (/\bdog\b/i.test(text)) return "dogs";
-  if (/\bcat\b/i.test(text)) return "cats";
-  if (/\bbird\b/i.test(text)) return "birds";
-  if (/\b(hamster|guinea\s*pig|rabbit)\b/i.test(text)) return "small animals";
-  if (/\b(fish|aquarium)\b/i.test(text)) return "fish";
+  const t = text.toLowerCase();
+  if (/\bdog\b/.test(t)) return "dogs";
+  if (/\bcat\b/.test(t)) return "cats";
+  if (/\b(bird|parrot)\b/.test(t)) return "birds";
+  if (/\b(hamster|guinea\s*pig|rabbit)\b/.test(t)) return "small animals";
+  if (/\b(fish|aquarium)\b/.test(t)) return "fish";
   return "pets";
 }
 
-function guessType(name: string): string {
-  if (/\b(bed|mat|cushion)\b/i.test(name)) return "pet bed";
-  if (/\b(collar|harness)\b/i.test(name)) return "collar/harness";
-  if (/\b(leash|lead|rope)\b/i.test(name)) return "leash";
-  if (/\b(toy|ball|chew|squeaky|laser)\b/i.test(name)) return "pet toy";
-  if (/\b(bowl|feeder|fountain|dispenser)\b/i.test(name)) return "feeding accessory";
-  if (/\b(brush|grooming|trimmer|grinder|comb)\b/i.test(name)) return "grooming tool";
-  if (/\b(carrier|crate|cage|stroller|trolley)\b/i.test(name)) return "pet carrier";
-  if (/\b(sweater|jacket|coat|bandana|hood|apparel)\b/i.test(name)) return "pet apparel";
-  if (/\b(tree|tower|scratcher|condo)\b/i.test(name)) return "cat furniture";
-  if (/\b(litter)\b/i.test(name)) return "litter box";
-  if (/\b(gate|barrier)\b/i.test(name)) return "pet gate";
-  if (/\b(bag|waste|poop)\b/i.test(name)) return "waste management accessory";
+function guessProductType(name: string): string {
+  const n = name.toLowerCase();
+  if (/\b(leash|lead|rope|traction)\b/.test(n)) return "leash";
+  if (/\b(collar|harness)\b/.test(n)) return "collar/harness";
+  if (/\b(bed|mat|cushion|pillow)\b/.test(n)) return "pet bed";
+  if (/\b(toy|ball|chew|squeaky|laser|teaser)\b/.test(n)) return "toy";
+  if (/\b(bowl|feeder|fountain|dispenser|water)\b/.test(n)) return "feeding accessory";
+  if (/\b(brush|grooming|trimmer|grinder|comb|deshed|glove)\b/.test(n)) return "grooming tool";
+  if (/\b(carrier|crate|cage|stroller|trolley|backpack)\b/.test(n)) return "carrier";
+  if (/\b(sweater|jacket|coat|bandana|hood|apparel|vest|costume)\b/.test(n)) return "pet apparel";
+  if (/\b(tree|tower|scratcher|condo|climbing)\b/.test(n)) return "cat tree";
+  if (/\b(litter)\b/.test(n)) return "litter box";
+  if (/\b(gate|barrier|fence)\b/.test(n)) return "pet gate";
+  if (/\b(bag|waste|poop)\b/.test(n)) return "waste accessory";
   return "pet accessory";
 }
 
-function generateDescription(name: string): string {
+function generateFallbackDescription(name: string): string {
   const animal = guessAnimal(name);
-  const type = guessType(name);
-  return `${name} – a ${type} designed for ${animal}. Built for everyday comfort and practical use. Check product listing for available sizes and options.`;
+  const type = guessProductType(name);
+  return `${name} – a ${type} designed for ${animal}. Built for everyday comfort and practical use. See product listing for available sizes and color options.`;
 }
 
-// Google Product Category IDs (numeric)
+// ── Category correction engine ──────────────────────────────────────
+// This overrides whatever category is stored in DB with the CORRECT one
+// based on actual product name keywords
+
+function correctCategory(name: string, dbCategory: string | null): string {
+  const n = name.toLowerCase();
+
+  // Leashes
+  if (/\b(leash|lead|traction\s*rope)\b/.test(n)) return "Dog Collars & Leashes";
+  // Harnesses
+  if (/\bharness\b/.test(n)) return "Dog Collars & Leashes";
+  // Collars (non-shock)
+  if (/\bcollar\b/.test(n) && !/shock|electric|training/i.test(n)) return "Dog Collars & Leashes";
+
+  // Cat trees / towers / condos / scratching posts
+  if (/\b(cat\s*tree|cat\s*tower|cat\s*condo|scratching\s*post|cat\s*scratcher|climbing\s*frame)\b/.test(n)) return "Cat Trees & Condos";
+
+  // Cat litter boxes
+  if (/\b(litter\s*box|litter\s*tray|cat\s*toilet|cat\s*litter)\b/.test(n)) return "Cat Litter Boxes";
+
+  // Carriers, strollers, backpacks
+  if (/\b(carrier|stroller|trolley|travel\s*bag|pet\s*backpack)\b/.test(n)) {
+    if (/\bcat\b/.test(n)) return "Cat Carriers";
+    if (/\bdog\b/.test(n)) return "Dog Carriers";
+    return "Pet Carriers";
+  }
+
+  // Grooming
+  if (/\b(grooming|trimmer|brush|comb|deshed|nail\s*(grinder|clipper)|glove)\b/.test(n)) {
+    if (/\bcat\b/.test(n)) return "Cat Grooming";
+    return "Dog Grooming";
+  }
+
+  // Beds
+  if (/\b(bed|mat|cushion|pillow|blanket)\b/.test(n)) {
+    if (/\bcat\b/.test(n)) return "Cat Beds";
+    return "Dog Beds";
+  }
+
+  // Toys
+  if (/\b(toy|ball|squeaky|chew|teaser|laser|feather\s*wand)\b/.test(n)) {
+    if (/\bcat\b/.test(n)) return "Cat Toys";
+    return "Dog Toys";
+  }
+
+  // Bowls / Feeders / Water
+  if (/\b(bowl|feeder|fountain|water\s*dispenser|food\s*dispenser)\b/.test(n)) {
+    if (/\bcat\b/.test(n)) return "Cat Bowls & Feeders";
+    return "Dog Bowls & Feeders";
+  }
+
+  // Apparel
+  if (/\b(sweater|jacket|coat|bandana|vest|costume|raincoat|hoodie)\b/.test(n)) return "Dog Clothing";
+
+  // Gates
+  if (/\b(gate|barrier|playpen)\b/.test(n)) return "Dog Safety Gates";
+
+  // Training (safe only)
+  if (/\b(training\s*pad|potty|puppy\s*pad)\b/.test(n)) return "Dog Training";
+
+  // Cat furniture / hammocks / houses
+  if (/\bcat\s*(house|hammock|shelf|perch|window)\b/.test(n)) return "Cat Furniture";
+
+  // Waste
+  if (/\b(poop|waste|bag\s*dispenser)\b/.test(n)) return "Dog Waste Management";
+
+  // If DB has a valid category in our map, trust it
+  if (dbCategory && GCAT[dbCategory]) return dbCategory;
+
+  return "Pet Carriers"; // safe default
+}
+
+// ── Google Product Category IDs ─────────────────────────────────────
 const GCAT: Record<string, number> = {
   "Dog Beds": 4985,
   "Dog Toys": 5004,
@@ -187,6 +351,21 @@ const GCAT: Record<string, number> = {
   "Pet Bags": 6978,
 };
 
+// ── Consistency validation ──────────────────────────────────────────
+
+function detectAnimalMismatch(title: string, description: string): boolean {
+  const titleAnimal = guessAnimal(title);
+  const descAnimal = guessAnimal(description);
+
+  // If both mention specific but different animals → mismatch
+  if (titleAnimal !== "pets" && descAnimal !== "pets" && titleAnimal !== descAnimal) {
+    return true;
+  }
+  return false;
+}
+
+// ── Weight normalization ────────────────────────────────────────────
+
 function normalizeWeight(grams: number | null): number {
   let g = grams ?? 0;
   if (!g || isNaN(g)) return 0.2;
@@ -196,12 +375,139 @@ function normalizeWeight(grams: number | null): number {
   return Math.round(kg * 100) / 100;
 }
 
-interface Product {
-  id: string; name: string; slug: string | null; sku: string | null;
-  category: string | null; price: number; compare_at_price: number | null;
-  description: string | null; image_url: string | null; images: string[] | null;
-  stock: number | null; weight: number | null;
+// ── Central sanitizer: the single gate for all products ─────────────
+
+interface RawProduct {
+  id: string;
+  name: string;
+  slug: string | null;
+  sku: string | null;
+  category: string | null;
+  price: number;
+  compare_at_price: number | null;
+  description: string | null;
+  image_url: string | null;
+  images: string[] | null;
+  stock: number | null;
+  weight: number | null;
 }
+
+interface SanitizedProduct {
+  id: string;
+  title: string;
+  description: string;
+  link: string;
+  image_link: string;
+  additional_image_link: string;
+  availability: string;
+  condition: string;
+  price: string;
+  sale_price: string;
+  brand: string;
+  google_product_category: number | string;
+  product_type: string;
+  identifier_exists: string;
+  shipping_weight: string;
+}
+
+interface SanitizeResult {
+  product: SanitizedProduct | null;
+  excluded: boolean;
+  reason: string | null;
+  titleChanged: boolean;
+  descGenerated: boolean;
+  categoryOverridden: boolean;
+}
+
+function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
+  const result: SanitizeResult = {
+    product: null, excluded: false, reason: null,
+    titleChanged: false, descGenerated: false, categoryOverridden: false,
+  };
+
+  // 1. Block by ID
+  if (BLOCKED_PRODUCT_IDS.has(p.id)) {
+    return { ...result, excluded: true, reason: "blocked_id" };
+  }
+
+  // 2. Block by policy-unsafe keywords
+  if (isPolicySensitive(p.name, p.description || "")) {
+    return { ...result, excluded: true, reason: "policy_unsafe_keywords" };
+  }
+
+  // 3. Required fields
+  if (!p.slug || !p.slug.trim()) {
+    return { ...result, excluded: true, reason: "missing_slug" };
+  }
+  if (!p.price || p.price <= 0) {
+    return { ...result, excluded: true, reason: "missing_price" };
+  }
+  if (!p.image_url || !p.image_url.startsWith("http")) {
+    return { ...result, excluded: true, reason: "missing_image" };
+  }
+
+  // 4. Sanitize title
+  const cleanTitle = sanitizeTitle(p.name);
+  result.titleChanged = cleanTitle !== p.name;
+
+  // 5. Sanitize description
+  let cleanDesc = sanitizeDescription(p.description || "");
+  if (cleanDesc.length < 80) {
+    cleanDesc = generateFallbackDescription(p.name);
+    result.descGenerated = true;
+  }
+
+  // 6. Correct category
+  const correctedCategory = correctCategory(p.name, p.category);
+  result.categoryOverridden = correctedCategory !== p.category;
+  const gcatId = GCAT[correctedCategory] || "";
+
+  // 7. Consistency check: animal mismatch
+  if (detectAnimalMismatch(cleanTitle, cleanDesc)) {
+    // Auto-fix: regenerate description from title
+    cleanDesc = generateFallbackDescription(p.name);
+    result.descGenerated = true;
+  }
+
+  // 8. Build canonical URL
+  const link = `${BASE_URL}/product/${p.slug}`;
+
+  // 9. Pricing
+  const hasSale = p.compare_at_price !== null && p.compare_at_price > p.price;
+
+  // 10. Additional images
+  const additionalImgs = (p.images || [])
+    .filter((img: string) => img && img !== p.image_url && img.startsWith("http"))
+    .slice(0, 4);
+
+  // 11. Weight
+  const weightKg = normalizeWeight(p.weight);
+
+  // 12. Product type path
+  const productType = `Pet Supplies > ${correctedCategory}`;
+
+  result.product = {
+    id: `getpawsy_${p.id}`,
+    title: cleanTitle,
+    description: cleanDesc,
+    link,
+    image_link: p.image_url,
+    additional_image_link: additionalImgs.join(","),
+    availability: "in stock",
+    condition: "new",
+    price: hasSale ? `${p.compare_at_price!.toFixed(2)} USD` : `${p.price.toFixed(2)} USD`,
+    sale_price: hasSale ? `${p.price.toFixed(2)} USD` : "",
+    brand: BRAND,
+    google_product_category: gcatId,
+    product_type: productType,
+    identifier_exists: "no",
+    shipping_weight: `${weightKg} kg`,
+  };
+
+  return result;
+}
+
+// ── Main handler ────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -231,8 +537,8 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const format = url.searchParams.get("format") || "json";
 
-    // Fetch feed-eligible products (active, non-duplicate, in stock)
-    const allProducts: Product[] = [];
+    // Fetch all active, non-duplicate, in-stock products
+    const allProducts: RawProduct[] = [];
     let from = 0;
     while (true) {
       const { data, error } = await supabase.from("products")
@@ -241,92 +547,63 @@ Deno.serve(async (req) => {
         .order("stock", { ascending: false }).range(from, from + 999);
       if (error) throw new Error(`DB: ${error.message}`);
       if (!data || data.length === 0) break;
-      allProducts.push(...(data as Product[]));
+      allProducts.push(...(data as RawProduct[]));
       if (data.length < 1000) break;
       from += 1000;
     }
 
+    // ── Run every product through the sanitizer ──
     const audit = {
-      total_scanned: allProducts.length, included: 0, excluded: 0,
-      policy_blocked: 0,
-      titles_optimized: 0, descriptions_generated: 0,
-      missing_image: 0, missing_slug: 0, missing_price: 0,
-      categories_mapped: 0, categories_unmapped: 0,
-      with_sale_price: 0, avg_title_len: 0, avg_desc_len: 0,
-      issues: {} as Record<string, number>,
+      total_scanned: allProducts.length,
+      included: 0,
+      excluded: 0,
+      exclusion_reasons: {} as Record<string, number>,
+      titles_cleaned: 0,
+      descriptions_generated: 0,
+      categories_overridden: 0,
+      with_sale_price: 0,
+      avg_title_len: 0,
+      avg_desc_len: 0,
     };
 
-    const feedItems: Array<Record<string, unknown>> = [];
+    const feedItems: SanitizedProduct[] = [];
 
     for (const p of allProducts) {
-      // Block policy-sensitive products
-      if (BLOCKED_PRODUCT_IDS.has(p.id) || isPolicySensitive(p.name, p.description || "")) {
-        audit.policy_blocked++;
+      const result = sanitizeProductForMerchant(p);
+
+      if (result.excluded || !result.product) {
         audit.excluded++;
+        const reason = result.reason || "unknown";
+        audit.exclusion_reasons[reason] = (audit.exclusion_reasons[reason] || 0) + 1;
         continue;
       }
 
-      if (!p.slug) { audit.missing_slug++; audit.excluded++; continue; }
-      if (!p.price || p.price <= 0) { audit.missing_price++; audit.excluded++; continue; }
-      if (!p.image_url) { audit.missing_image++; audit.excluded++; continue; }
+      if (result.titleChanged) audit.titles_cleaned++;
+      if (result.descGenerated) audit.descriptions_generated++;
+      if (result.categoryOverridden) audit.categories_overridden++;
+      if (result.product.sale_price) audit.with_sale_price++;
 
-      // Title
-      let title = sanitizeTitle(p.name);
-      const titleChanged = title !== p.name;
-      if (titleChanged) audit.titles_optimized++;
-      if (!title.includes(String(YEAR)) && title.length + 7 <= 150) title += ` ${YEAR}`;
-
-      // Description
-      let desc = p.description || "";
-      desc = sanitizeDescription(desc);
-      if (desc.length < 100) { desc = generateDescription(p.name); audit.descriptions_generated++; }
-
-      // Pricing
-      const hasSale = p.compare_at_price !== null && p.compare_at_price > p.price;
-      if (hasSale) audit.with_sale_price++;
-
-      // Category
-      const gcat = GCAT[p.category || ""] || null;
-      if (gcat) audit.categories_mapped++; else { audit.categories_unmapped++; audit.issues["no_category"] = (audit.issues["no_category"] || 0) + 1; }
-
-      // Images
-      const additionalImgs = (p.images || [])
-        .filter((img: string) => img && img !== p.image_url && img.startsWith("http"))
-        .slice(0, 4);
-      if (additionalImgs.length === 0) audit.issues["single_image"] = (audit.issues["single_image"] || 0) + 1;
-
-      const weightKg = normalizeWeight(p.weight);
-      const productType = p.category ? `Pet Supplies > ${p.category}` : "Pet Supplies";
-
-      feedItems.push({
-        id: `getpawsy_${p.id}`,
-        title,
-        description: desc,
-        link: `${BASE_URL}/product/${p.slug}`,
-        image_link: p.image_url,
-        additional_image_link: additionalImgs.join(","),
-        availability: "in stock",
-        condition: "new",
-        price: hasSale ? `${p.compare_at_price!.toFixed(2)} USD` : `${p.price.toFixed(2)} USD`,
-        sale_price: hasSale ? `${p.price.toFixed(2)} USD` : "",
-        brand: BRAND,
-        google_product_category: gcat ?? "",
-        product_type: productType,
-        identifier_exists: "no",
-        shipping_weight: `${weightKg} kg`,
-      });
+      feedItems.push(result.product);
       audit.included++;
     }
 
+    // Compute averages
     if (feedItems.length > 0) {
-      audit.avg_title_len = Math.round(feedItems.reduce((s, f) => s + String(f.title).length, 0) / feedItems.length);
-      audit.avg_desc_len = Math.round(feedItems.reduce((s, f) => s + String(f.description).length, 0) / feedItems.length);
+      audit.avg_title_len = Math.round(feedItems.reduce((s, f) => s + f.title.length, 0) / feedItems.length);
+      audit.avg_desc_len = Math.round(feedItems.reduce((s, f) => s + f.description.length, 0) / feedItems.length);
     }
 
-    // CSV format
+    // ── CSV format ──
     if (format === "csv") {
-      const cols = ["id","title","description","link","image_link","additional_image_link","availability","condition","price","sale_price","brand","google_product_category","product_type","identifier_exists","shipping_weight"];
-      const esc = (v: unknown) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const cols: (keyof SanitizedProduct)[] = [
+        "id", "title", "description", "link", "image_link", "additional_image_link",
+        "availability", "condition", "price", "sale_price", "brand",
+        "google_product_category", "product_type", "identifier_exists", "shipping_weight",
+      ];
+      const esc = (v: unknown) => {
+        const s = String(v ?? "");
+        return s.includes(",") || s.includes('"') || s.includes("\n") ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
       const lines = [cols.join(",")];
       for (const f of feedItems) lines.push(cols.map(c => esc(f[c])).join(","));
       return new Response("\uFEFF" + lines.join("\n"), {
@@ -334,26 +611,36 @@ Deno.serve(async (req) => {
           "Content-Type": "text/csv; charset=utf-8",
           "Content-Disposition": `attachment; filename="getpawsy_merchant_feed_${new Date().toISOString().split("T")[0]}.csv"`,
           "X-Feed-Total": String(feedItems.length),
-          "X-Export-Total": String(feedItems.length),
-          "X-Export-Duplicates": "0",
-          "X-Export-Inactive": "0",
           ...corsHeaders,
         },
       });
     }
 
-    // Audit format
+    // ── Audit format ──
     if (format === "audit") {
       return Response.json({
-        ok: true, audit,
-        sample: feedItems.slice(0, 15).map(f => ({ id: f.id, title: f.title, link: f.link, price: f.price, sale_price: f.sale_price, category: f.google_product_category })),
+        ok: true,
+        audit,
+        sample: feedItems.slice(0, 20).map(f => ({
+          id: f.id, title: f.title, link: f.link, price: f.price,
+          sale_price: f.sale_price, category: f.google_product_category,
+          product_type: f.product_type,
+          title_len: f.title.length,
+          desc_len: f.description.length,
+        })),
       }, { headers: corsHeaders });
     }
 
-    // JSON feed
+    // ── JSON feed (default) ──
     return Response.json({
       ok: true,
-      feed_info: { brand: BRAND, total_products: feedItems.length, generated_at: new Date().toISOString(), target_country: "US", content_language: "en" },
+      feed_info: {
+        brand: BRAND,
+        total_products: feedItems.length,
+        generated_at: new Date().toISOString(),
+        target_country: "US",
+        content_language: "en",
+      },
       audit,
       products: feedItems,
     }, { headers: corsHeaders });
