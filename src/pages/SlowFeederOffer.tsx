@@ -223,7 +223,7 @@ export default function SlowFeederOffer() {
                       </Button>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Join 10,000+ happy pet parents. No spam, unsubscribe anytime.
+                      Join pet owners across the US. No spam, unsubscribe anytime.
                     </p>
                   </form>
                 ) : (
@@ -345,7 +345,7 @@ export default function SlowFeederOffer() {
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Star className="w-5 h-5" />
-                <span>10,000+ Happy Customers</span>
+                <span>Loved by Pet Owners</span>
               </div>
             </div>
           </div>

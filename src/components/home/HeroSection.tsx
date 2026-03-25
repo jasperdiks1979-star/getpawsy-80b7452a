@@ -34,7 +34,7 @@ export function HeroSection() {
           Premium Pet Essentials, Delivered Fast in the US
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/90 max-w-xl mx-auto drop-shadow">
-          Trusted by thousands of pet owners across the United States
+          Loved by pet owners across the United States
         </p>
 
         <div className="mt-6">
@@ -57,7 +57,7 @@ export function HeroSection() {
 
         {/* Social proof */}
         <p className="mt-4 text-sm text-white/80 font-medium">
-          ⭐ 4.8/5 — Based on 1,200+ happy customers
+          Loved by pet owners across the US 🐾
         </p>
       </div>
     </section>

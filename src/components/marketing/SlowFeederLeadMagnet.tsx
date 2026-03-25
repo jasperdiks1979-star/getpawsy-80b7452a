@@ -331,7 +331,7 @@ export function SlowFeederLeadMagnet({
                     </form>
 
                     <p className="text-xs text-muted-foreground text-center mt-3">
-                      Join 10,000+ happy pet parents. Unsubscribe anytime.
+                      Join pet owners across the US. Unsubscribe anytime.
                     </p>
                   </>
                 ) : (
