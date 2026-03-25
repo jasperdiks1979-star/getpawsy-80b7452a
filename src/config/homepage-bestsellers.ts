@@ -56,7 +56,7 @@ export const MANUAL_PRODUCTS: CuratedProduct[] = [
     benefit: 'Sturdy multi-level tower with sisal scratching posts.',
   },
   {
-    slug: 'cat-litter-box-enclosure-with-barn-door-cat-hole-3',
+    slug: 'cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white',
     displayName: 'Cat Litter Box Furniture Enclosure',
     benefit: 'Barn door style enclosure that blends with home decor.',
   },
