@@ -1054,7 +1054,7 @@ export function generateCategoryMetaDescription(categoryName: string): string {
     }
   }
   
-  return `Shop premium ${categoryName} at GetPawsy. Quality pet products, vet-approved and eco-friendly. Free shipping on orders over $50. Your pet deserves the best!`;
+  return `Shop premium ${categoryName} at GetPawsy. Quality pet products for dogs and cats. Free shipping on orders over $35. 30-day return policy.`;
 }
 
 // Generate blog post meta description
