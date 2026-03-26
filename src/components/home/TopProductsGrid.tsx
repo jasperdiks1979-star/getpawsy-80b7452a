@@ -9,9 +9,9 @@ const TOP_SLUGS = [
   'dog-stroller-pet-stroller',
   'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
   'dog-cot-cooling-pet-bed-3',
-  'getpawsy-ufo-cat-tree-condo-49-inch-activity-center-with-sisal-posts',
-  'getpawsy-expandable-pet-carrier-backpack-breathable-travel-bag-for-small-dogs-cats',
-  'getpawsy-large-cat-tree-tower-4-6-ft-multi-level-condo-with-scratch-posts',
+  '49-inches-tall-cat-tree-with-ufo-top-perch-space-capsule-and-sisal-scratching-352d',
+  'pet-carrier-backpack-expandable-cat-dog-carrier-with-back-extension-breathable-0381',
+  '4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-b460',
 ];
 
 interface TopProduct {
