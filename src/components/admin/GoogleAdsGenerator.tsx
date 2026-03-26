@@ -1419,20 +1419,20 @@ ${keywords.join(", ")}
               {/* Quick Troubleshooting */}
               <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2">
-                  🔧 Veelvoorkomende Problemen
+                  🔧 Common Issues
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Import error:</strong> Controleer of je de CSV's in de juiste volgorde importeert (campagnes → ads → keywords)
+                    <strong className="text-foreground">Import error:</strong> Make sure you import CSVs in the correct order (campaigns → ads → keywords)
                   </div>
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Ad afgekeurd:</strong> Pas headlines aan die claims bevatten en voeg een privacybeleid toe
+                    <strong className="text-foreground">Ad rejected:</strong> Adjust headlines with claims and add a privacy policy
                   </div>
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Geen vertoningen:</strong> Verhoog je dagelijks budget of pas de biedingen aan
+                    <strong className="text-foreground">No impressions:</strong> Increase your daily budget or adjust bids
                   </div>
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Low Quality Score:</strong> Verbeter je landingspagina's met relevante content en snelle laadtijd
+                    <strong className="text-foreground">Low Quality Score:</strong> Improve your landing pages with relevant content and fast load times
                   </div>
                 </div>
               </div>
