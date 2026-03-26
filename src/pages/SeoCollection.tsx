@@ -784,12 +784,34 @@ const SeoCollection = () => {
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-2xl">
               <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                Showing related results for this collection.
+              <h2 className="text-lg font-semibold text-foreground mb-2">
+                We're updating this collection
+              </h2>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                New products are being added to this collection. In the meantime, explore our most popular categories below.
               </p>
-              <Button asChild className="mt-4">
-                <Link to="/products">Browse All Products</Link>
-              </Button>
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button asChild variant="default">
+                  <Link to="/dog">Shop Dog Products</Link>
+                </Button>
+                <Button asChild variant="default">
+                  <Link to="/cat">Shop Cat Products</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/bestsellers">View Bestsellers</Link>
+                </Button>
+              </div>
+              <nav className="mt-8 text-left max-w-md mx-auto" aria-label="Popular collections">
+                <h3 className="text-sm font-medium text-foreground mb-3">Popular Collections</h3>
+                <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  <li><Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline">Cat Trees & Condos</Link></li>
+                  <li><Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline">Cat Litter Boxes</Link></li>
+                  <li><Link to="/collections/dog-beds" className="text-primary hover:underline">Dog Beds</Link></li>
+                  <li><Link to="/collections/dog-travel-accessories" className="text-primary hover:underline">Dog Travel Gear</Link></li>
+                  <li><Link to="/collections/dog-toys" className="text-primary hover:underline">Dog Toys</Link></li>
+                  <li><Link to="/collections/cat-scratching-posts" className="text-primary hover:underline">Cat Scratching Posts</Link></li>
+                </ul>
+              </nav>
             </div>
           )}
         </section>
