@@ -12,8 +12,8 @@ const niches = [
   {
     slug: 'orthopedic-calming-dog-beds',
     title: 'Orthopedic & Calming Dog Beds',
-    benefit: 'Relieve joint pain and anxiety with vet-recommended memory foam beds.',
-    trust: 'Vet-recommended picks • Fast US shipping',
+    benefit: 'Relieve joint pain and anxiety with supportive memory foam beds.',
+    trust: 'Top-rated picks • Fast US shipping',
     image: orthopedicBedsImg,
     alt: 'Senior golden retriever resting on orthopedic memory foam bed in modern living room',
   },
