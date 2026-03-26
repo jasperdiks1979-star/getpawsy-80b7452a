@@ -46,8 +46,6 @@ const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"
 const WarehouseShippingAudit = lazy(() => import("@/components/admin/WarehouseShippingAudit"));
 const OosResyncAudit = lazy(() => import("@/components/admin/OosResyncAudit"));
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
-const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
-const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
 const RunCenterCard = lazy(() => import("@/components/admin/RunCenterCard").then(module => ({ default: module.RunCenterCard })));
 const RunAllControls = lazy(() => import("@/components/admin/RunAllControls").then(module => ({ default: module.RunAllControls })));
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
