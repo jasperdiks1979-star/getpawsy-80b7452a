@@ -1407,18 +1407,6 @@ const Admin = () => {
                   <span className="hidden xs:inline">Keywords</span>
                 </TabsTrigger>
               </TouchTooltip>
-              <TouchTooltip content="Product research van externe URLs">
-                <TabsTrigger value="product-research" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-                  <Globe className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden xs:inline">Research</span>
-                </TabsTrigger>
-              </TouchTooltip>
-              <TouchTooltip content="Content scrapen voor research">
-                <TabsTrigger value="content-scraper" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-                  <FileText className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden xs:inline">Scraper</span>
-                </TabsTrigger>
-              </TouchTooltip>
               <TouchTooltip content="TopDawg & PetDropshipper CSV import">
                 <TabsTrigger value="suppliers" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Upload className="w-3.5 h-3.5 shrink-0" />
