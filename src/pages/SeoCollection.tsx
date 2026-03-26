@@ -585,6 +585,14 @@ const SeoCollection = () => {
         />
         <link rel="canonical" href={`https://getpawsy.pet/collections/${collection.slug}`} />
         
+        {/* Thin collection guard: noindex collections with <3 products */}
+        {products.length < 3 && (
+          <>
+            <meta name="robots" content="noindex, follow" />
+            <meta name="googlebot" content="noindex, follow" />
+          </>
+        )}
+        
         {/* Open Graph */}
         <meta property="og:title" content={collection.meta_title || collection.name} />
         <meta property="og:description" content={collection.meta_description || collection.seo_intro.substring(0, 155)} />
