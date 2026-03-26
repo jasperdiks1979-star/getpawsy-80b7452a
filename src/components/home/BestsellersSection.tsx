@@ -60,10 +60,15 @@ export const BestsellersSection = () => {
   return (
     <section className="py-12 md:py-16 bg-muted/30">
       <div className="container px-4 md:px-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-2">
           <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
             Customer Favorites
           </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Top-rated products chosen by pet owners across the United States — quality-checked and ready to ship.
+          </p>
+        </div>
+        <div className="flex items-center justify-end mb-4">
           <div className="hidden md:flex gap-2">
             <button
               onClick={() => scroll('left')}
