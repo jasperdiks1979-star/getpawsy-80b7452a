@@ -13,7 +13,7 @@ const REASONS = [
   {
     icon: RotateCcw,
     title: '30-Day Easy Returns',
-    desc: 'Not the right fit? Return unused items within 30 days — hassle-free, with clear steps and fast refunds.',
+    desc: 'Not the right fit? Return unused items within 30 days — easy, with clear steps and fast refunds.',
   },
   {
     icon: ShieldCheck,

@@ -128,7 +128,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Cost-per-year is actually lower ($40/yr vs $60/yr)',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping on orders over $35 (3–7 business days)', guarantee: '30-day return policy — full refund if your dog doesn\'t love it', returnPolicy: 'No-hassle returns with prepaid label included' },
+      authorityBlock: { shipping: 'Free US shipping on orders over $35 (3–7 business days)', guarantee: '30-day return policy — full refund if your dog doesn\'t love it', returnPolicy: 'Easy returns with prepaid label included' },
     },
     revenue: {
       currentCtr: getCtr(8),
@@ -176,7 +176,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           '3–5 year lifespan vs 6 months for low-density',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Hassle-free returns' },
+      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns' },
     },
     revenue: {
       currentCtr: getCtr(12),
@@ -224,7 +224,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'XL sizing for full stretch-out comfort',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Full refund, no questions asked' },
+      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Full refund, per our return policy' },
     },
     revenue: {
       currentCtr: getCtr(10),
@@ -320,7 +320,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Vet-recommended as part of arthritis care plans',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'No-hassle returns' },
+      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns' },
     },
     revenue: {
       currentCtr: getCtr(11),

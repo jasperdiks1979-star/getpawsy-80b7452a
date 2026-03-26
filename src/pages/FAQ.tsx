@@ -42,7 +42,7 @@ const FAQ = () => {
       questions: [
         {
           question: 'What is your return policy?',
-          answer: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you are not completely satisfied, we will make it right.`,
+          answer: `We offer a ${RETURN_WINDOW_DAYS}-day easy return policy. If you are not completely satisfied, we will make it right.`,
         },
         {
           question: 'How do I start a return?',

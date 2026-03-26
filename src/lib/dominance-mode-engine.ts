@@ -189,7 +189,7 @@ function generateFaqSchema(slug: string, pageType: MoneyUrl['pageType']): FaqEnt
     faqs.push(
       { question: `What makes this ${kw} the best choice for my pet?`, answer: `Our ${kw} is vet-approved, made with premium materials, and designed for maximum comfort and durability. Thousands of pet owners trust GetPawsy for quality pet products.` },
       { question: `Does this ${kw} come with free shipping?`, answer: `Yes! All GetPawsy orders ship free within the US from our domestic warehouse. Typical delivery is 2-5 business days.` },
-      { question: `Can I return the ${kw} if my pet doesn't like it?`, answer: `Absolutely. We offer a hassle-free 30-day return policy on all products, including this ${kw}. Your satisfaction is guaranteed.` },
+      { question: `Can I return the ${kw} if my pet doesn't like it?`, answer: `Absolutely. We offer a easy 30-day return policy on all products, including this ${kw}. Contact us for assistance.` },
     );
   } else if (pageType === 'collection' || pageType === 'guide') {
     faqs.push(

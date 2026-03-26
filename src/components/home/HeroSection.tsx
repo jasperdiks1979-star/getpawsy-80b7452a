@@ -50,7 +50,7 @@ export function HeroSection() {
         {/* Trust bullets */}
         <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs md:text-sm text-white/90">
           <span className="inline-flex items-center gap-1.5">✔ Free US shipping on orders over $35</span>
-          <span className="inline-flex items-center gap-1.5">✔ 30-day hassle-free returns</span>
+          <span className="inline-flex items-center gap-1.5">✔ 30-day easy returns</span>
           <span className="inline-flex items-center gap-1.5">✔ Secure checkout (Stripe, PayPal, Apple Pay)</span>
           <span className="inline-flex items-center gap-1.5">✔ Ships from US-based fulfillment partners</span>
         </div>

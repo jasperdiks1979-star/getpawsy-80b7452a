@@ -954,7 +954,7 @@ export default function OrthopedicDogBeds() {
           <div className="bg-card border rounded-xl p-5 text-center">
             <RotateCcw className="w-6 h-6 text-primary mx-auto mb-2" />
             <h3 className="font-semibold text-sm mb-1">30-Day Returns</h3>
-            <p className="text-xs text-muted-foreground">Hassle-free, no questions asked</p>
+            <p className="text-xs text-muted-foreground">Easy, per our return policy</p>
           </div>
           <div className="bg-card border rounded-xl p-5 text-center">
             <ShieldCheck className="w-6 h-6 text-primary mx-auto mb-2" />

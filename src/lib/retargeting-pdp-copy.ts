@@ -151,7 +151,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
     variations: {
       reassurance: {
         headline: 'Trusted pet essentials delivered fast',
-        description: 'Ships directly to you. Free shipping over $35. Hassle-free returns.',
+        description: 'Ships directly to you. Free shipping over $35. Easy returns.',
       },
       problem_solution: {
         headline: 'Making pet care easier, every day',

@@ -65,7 +65,7 @@ export const PMAX_LONG_HEADLINES = [
 export const PMAX_DESCRIPTIONS = [
   // Primary descriptions (benefit-first)
   'Shop quality pet products. Free US shipping on orders over $35. Fast 3-7 day delivery.',
-  'Trusted pet supplies for dogs, cats & more. 30-day hassle-free returns on all orders.',
+  'Trusted pet supplies for dogs, cats & more. 30-day easy returns on all orders.',
   'Premium pet essentials designed for comfort. Fast shipping to the United States.',
   
   // Category descriptions

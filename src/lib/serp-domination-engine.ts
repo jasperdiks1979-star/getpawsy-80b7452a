@@ -123,7 +123,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
     title: 'Crash-Tested Dog Car Seats & Safety Gear (2026)',
     metaDescription: 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping.',
     ogTitle: 'Crash-Tested Dog Car Seats & Travel Safety Gear (2026)',
-    ogDescription: 'Certified dog car seats, harnesses & booster seats. Crash-tested for real impact protection. Free US shipping + 30-day safety guarantee.',
+    ogDescription: 'Certified dog car seats, harnesses & booster seats. Crash-tested for real impact protection. Free US shipping + 30-day return policy.',
     h1: 'Crash-Tested Dog Car Seats & Travel Safety Gear',
     faqItems: [
       { question: 'What is the safest dog car seat?', answer: 'The safest dog car seats are those crash-tested at CPS-certified facilities. Look for models that passed the Center for Pet Safety (CPS) certification program — they use weighted crash test dummies in standardized 30 mph sled tests. Products without CPS certification may restrain your dog during normal driving but offer zero protection in a collision. For dogs under 50 lbs, full-enclosure car seats with 5-point harnesses are safest.' },

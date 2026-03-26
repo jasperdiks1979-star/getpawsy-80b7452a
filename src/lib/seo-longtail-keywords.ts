@@ -165,7 +165,7 @@ export function getAllLongTailKeywords(): string[] {
 export const META_TEMPLATES = {
   homepage: {
     title: 'GetPawsy | Trusted Pet Products with Fast US Shipping',
-    description: 'Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns.',
+    description: 'Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day easy returns.',
   },
   
   collection: {
@@ -188,7 +188,7 @@ export const META_TEMPLATES = {
       return `${shortName} for Dogs & Cats | GetPawsy`.slice(0, 60);
     },
     descriptionFormat: () =>
-      'A practical everyday pet product designed for comfort and ease. Fast US shipping and 30-day hassle-free returns.',
+      'A practical everyday pet product designed for comfort and ease. Fast US shipping and 30-day easy returns.',
   },
 } as const;
 
