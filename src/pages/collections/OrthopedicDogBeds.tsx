@@ -185,7 +185,7 @@ export default function OrthopedicDogBeds() {
         <meta property="og:image" content={`${BASE}/og-image.png`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />
-        <meta name="twitter:description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy." />
+        <meta name="twitter:description" content="Dog waking up stiff? Supportive memory foam beds designed to relieve joint pain. Waterproof, washable, 30-day return policy." />
         <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
