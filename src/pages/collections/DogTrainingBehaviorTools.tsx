@@ -104,7 +104,7 @@ export default function DogTrainingBehaviorTools() {
       <ScrollProgressIndicator />
       <Helmet>
         <title>Stop Dog Pulling Fast — Best Training Tools & No-Pull Harnesses (2026) | GetPawsy</title>
-        <meta name="description" content="Trainer-approved no-pull harnesses, recall leashes & positive reinforcement tools. Reduce pulling 40–60% on first walk. Free US shipping over $35. 30-day guarantee." />
+        <meta name="description" content="Trainer-approved no-pull harnesses, recall leashes & positive reinforcement tools. Reduce pulling 40–60% on first walk. Free US shipping over $35. 30-day return policy." />
         <meta name="keywords" content="dog training tools, no pull harness, training leash, dog clicker, treat pouch, recall training, puppy training, dog behavior, positive reinforcement, no pull dog harness, stop dog pulling, best harness for large dogs" />
         <link rel="canonical" href={CANONICAL} />
         <link rel="alternate" hrefLang="en" href={CANONICAL} />
@@ -163,7 +163,7 @@ export default function DogTrainingBehaviorTools() {
         <div className="container py-3">
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /><span>Fast US Shipping</span></div>
-            <div className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /><span>30-Day Guarantee</span></div>
+            <div className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /><span>30-Day Return Policy</span></div>
             <div className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-primary" /><span>Secure Checkout</span></div>
             <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-primary" /><span>Trainer Recommended</span></div>
           </div>

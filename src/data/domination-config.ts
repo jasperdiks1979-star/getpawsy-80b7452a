@@ -60,7 +60,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     bulletUSPs: [
       { icon: '✅', text: 'Vet-recommended memory foam for joint pain relief' },
       { icon: '🇺🇸', text: 'Ships from US warehouses in 3–7 days' },
-      { icon: '🔄', text: '30-day comfort guarantee — full refund if your dog doesn\'t love it' },
+      { icon: '🔄', text: '30-day return policy — full refund if your dog doesn\'t love it' },
     ],
     quickComparison: [
       { model: 'Memory Foam Classic', bestFor: 'Senior dogs, arthritis', keyFeature: '5" high-density foam', price: '$45–$90', badge: 'Most Popular' },
@@ -355,7 +355,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     bulletUSPs: [
       { icon: '✅', text: 'Vet-recommended for mental stimulation & anxiety relief' },
       { icon: '🇺🇸', text: 'US warehouse shipping — 3–7 day delivery' },
-      { icon: '🔄', text: '30-day happiness guarantee on all toys' },
+      { icon: '🔄', text: '30-day return policy on all toys' },
     ],
     quickComparison: [
       { model: 'Puzzle Feeder Board', bestFor: 'Smart breeds, slow feeding', keyFeature: 'Multiple difficulty levels', price: '$15–$30', badge: 'Best for Intelligence' },

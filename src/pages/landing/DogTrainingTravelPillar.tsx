@@ -74,7 +74,7 @@ const DogTrainingTravelPillar = () => {
     <Layout>
       <Helmet>
         <title>Best Dog Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
-        <meta name="description" content="2026 expert guide to the best dog training harnesses, car seats, leashes & travel gear. Tested picks with US 3–7 day shipping. 30-day guarantee." />
+        <meta name="description" content="2026 expert guide to the best dog training harnesses, car seats, leashes & travel gear. Tested picks with US 3–7 day shipping. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/dog/best-dog-training-and-travel-gear-2026" />
         <meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>

@@ -10,7 +10,7 @@ export default function HeavyDutyCatTree() {
       subtitle={'Reinforced cat trees with solid wood frames, 4"+ sisal posts, and wall-anchor stability systems. Built to handle 40–60+ lbs of dynamic cat force.'}
       ctaText="Shop Heavy Duty Trees"
       ctaLink="/collections/cat-trees-and-condos"
-      trustBadges={['40+ lb Weight Rating', 'Solid Wood Frames', '30-Day Guarantee']}
+      trustBadges={['40+ lb Weight Rating', 'Solid Wood Frames', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Cat', href: '/cat/cat-trees-for-large-cats' },

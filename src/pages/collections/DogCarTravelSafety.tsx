@@ -11,7 +11,7 @@ import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
 
 const CANONICAL = 'https://getpawsy.pet/dog/dog-car-travel-safety';
 const PAGE_TITLE = 'Crash-Tested Dog Car Seats & Safety Gear (2026)';
-const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day guarantee + free US shipping.';
+const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping.';
 
 const FAQ_DATA = [
   { question: 'Are dog car seats actually safe?', answer: 'Yes, when properly designed and installed. Crash-tested dog car seats from reputable brands (tested at CPS-certified facilities) reduce injury risk by up to 80% compared to unrestrained dogs. Always look for "crash tested" certification — many budget seats only restrain, they don\'t protect during impact.' },

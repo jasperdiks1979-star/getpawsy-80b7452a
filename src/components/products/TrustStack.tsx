@@ -30,7 +30,7 @@ export const TrustStack: React.FC<TrustStackProps> = ({ className = '' }) => {
         </div>
         <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
           <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="text-xs font-medium text-foreground">30-day money-back guarantee</span>
+          <span className="text-xs font-medium text-foreground">30-day return policy</span>
         </div>
         <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
           <Truck className="w-4 h-4 text-primary flex-shrink-0" />

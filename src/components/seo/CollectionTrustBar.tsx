@@ -9,7 +9,7 @@ export function CollectionTrustBar() {
       </div>
       <div className="flex items-center gap-2 text-sm text-secondary-foreground">
         <RotateCcw className="w-4 h-4 text-primary" />
-        <span className="font-medium">30-Day Guarantee</span>
+        <span className="font-medium">30-Day Return Policy</span>
       </div>
       <div className="flex items-center gap-2 text-sm text-secondary-foreground">
         <ShieldCheck className="w-4 h-4 text-primary" />

@@ -74,7 +74,7 @@ const CatTrainingTravelPillar = () => {
     <Layout>
       <Helmet>
         <title>Best Cat Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
-        <meta name="description" content="2026 expert guide to the best cat trees, carriers, enrichment toys & scratching posts. Tested picks with US 3–7 day shipping. 30-day guarantee." />
+        <meta name="description" content="2026 expert guide to the best cat trees, carriers, enrichment toys & scratching posts. Tested picks with US 3–7 day shipping. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/cat/best-cat-training-and-travel-gear-2026" />
         <meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>

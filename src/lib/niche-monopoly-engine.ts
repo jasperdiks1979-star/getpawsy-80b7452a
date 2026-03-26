@@ -135,7 +135,7 @@ const orthopedicDogBeds: NicheProfile = {
   ],
   revenueScenarios: buildScenarios(14800, 8, 65),
   ctrOptimizations: [
-    { page: '/dog/orthopedic-dog-beds', currentTitle: 'Best Orthopedic Dog Beds 2026', newTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)', currentMeta: 'Shop orthopedic dog beds...', newMeta: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee. Free US shipping over $35.' },
+    { page: '/dog/orthopedic-dog-beds', currentTitle: 'Best Orthopedic Dog Beds 2026', newTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)', currentMeta: 'Shop orthopedic dog beds...', newMeta: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35.' },
     { page: '/dog/orthopedic-dog-beds/memory-foam', currentTitle: 'Memory Foam Dog Beds', newTitle: 'Best Memory Foam Dog Beds — Vet-Tested (2026)', currentMeta: 'Shop memory foam...', newMeta: 'Cheap foam flattens in weeks. Our memory foam beds use 1.8+ lb/ft³ density that lasts 3–5 years. Free US shipping.' },
     { page: '/dog/orthopedic-dog-beds/best-for-large-dogs', currentTitle: 'Orthopedic Beds for Large Dogs', newTitle: 'Best Orthopedic Beds for Large Dogs – 90+ lbs Tested', currentMeta: 'Large dog beds...', newMeta: "Large breed beds that don't flatten. Load-tested for 90+ lb dogs with 6\" foam. Vet-approved, waterproof. Free shipping." },
   ],
@@ -241,7 +241,7 @@ const dogCarSeats: NicheProfile = {
   ],
   revenueScenarios: buildScenarios(6400, 15, 55),
   ctrOptimizations: [
-    { page: '/dog/dog-car-travel-safety', currentTitle: 'Crash-Tested Dog Car Seats & Safety Gear (2026)', newTitle: '6 Safest Dog Car Seats – Crash-Test Rated (2026)', currentMeta: 'Your dog rides unrestrained?...', newMeta: "A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day guarantee + free US shipping." },
+    { page: '/dog/dog-car-travel-safety', currentTitle: 'Crash-Tested Dog Car Seats & Safety Gear (2026)', newTitle: '6 Safest Dog Car Seats – Crash-Test Rated (2026)', currentMeta: 'Your dog rides unrestrained?...', newMeta: "A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping." },
     { page: '/dog/dog-car-travel-safety/car-seats', currentTitle: 'Best Dog Car Seats for Small Dogs', newTitle: 'Best Dog Car Seats for Small Dogs – Under 25 lbs', currentMeta: 'Shop dog car seats...', newMeta: "Small dogs need elevated, padded car seats with harness systems. Crash-test informed picks. Free shipping over $35." },
     { page: '/dog/dog-car-travel-safety/booster-seats', currentTitle: 'Dog Booster Seats', newTitle: 'Dog Booster Seats – Elevated & Safe for Small Breeds', currentMeta: 'Shop booster seats...', newMeta: "Give your small dog a safe window view. Padded, secured booster seats for dogs under 20 lbs. Free US shipping." },
   ],
