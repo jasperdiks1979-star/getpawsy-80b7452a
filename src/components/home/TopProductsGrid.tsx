@@ -4,14 +4,14 @@ import { ShoppingBag } from 'lucide-react';
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 const TOP_SLUGS = [
-  '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat',
-  'large-cat-tree-for-indoor-cats-multi-level-cat-tower-with-hammock-condo-scratching-posts',
-  'orthopedic-calming-dog-bed-anti-anxiety-donut-cuddler-warming-cozy-soft-pet-bed',
-  'dog-car-seat-for-small-medium-dogs-center-console-armrest-pet-booster-seat',
-  'interactive-dog-puzzle-toy-slow-feeder-iq-training-mental-stimulation',
-  'cat-scratching-post-sisal-rope-tall-vertical-scratcher-for-indoor-cats',
-  'retractable-dog-leash-heavy-duty-16ft-tangle-free-one-button-brake-lock',
-  'portable-pet-water-bottle-leak-proof-dog-water-dispenser-for-walking',
+  'flower-cat-tree-no-shipments-on-weekends',
+  '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
+  '63-large-dog-crate-furniture-for-double-dog-wooden-dog-kennel-with-2-drawers-ecef',
+  'dog-stroller-pet-stroller',
+  '4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-b460',
+  'dog-bed-pet-sofa',
+  'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
+  'dog-cot-cooling-pet-bed-3',
 ];
 
 interface TopProduct {
