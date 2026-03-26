@@ -1248,18 +1248,18 @@ ${keywords.join(", ")}
             {/* Critical import order warning */}
             <div className="p-4 border-2 border-amber-300 rounded-lg bg-amber-50 dark:bg-amber-950/30 space-y-2">
               <h4 className="font-semibold text-amber-800 dark:text-amber-200 flex items-center gap-2">
-                ⚠️ BELANGRIJK: Import Volgorde
+                ⚠️ IMPORTANT: Import Order
               </h4>
               <p className="text-sm text-amber-700 dark:text-amber-300">
-                <strong>Campagnes en Ad Groups moeten EERST bestaan</strong> voordat je advertenties, keywords of sitelinks kunt toevoegen. 
-                Importeer altijd in deze volgorde:
+                <strong>Campaigns and Ad Groups must exist FIRST</strong> before you can add ads, keywords, or sitelinks. 
+                Always import in this order:
               </p>
               <ol className="list-decimal list-inside text-sm text-amber-700 dark:text-amber-300 space-y-1">
-                <li><strong>01_campaigns.csv</strong> → Campagne structuur aanmaken</li>
-                <li><strong>02_adgroups.csv</strong> → Ad Groups aanmaken binnen campagnes</li>
-                <li><strong>03_ads.csv</strong> → Ads toevoegen aan ad groups</li>
-                <li><strong>04_keywords.csv</strong> → Keywords toevoegen aan ad groups</li>
-                <li><strong>05_sitelinks.csv</strong> → Sitelinks toevoegen aan campagnes</li>
+                <li><strong>01_campaigns.csv</strong> → Create campaign structure</li>
+                <li><strong>02_adgroups.csv</strong> → Create Ad Groups within campaigns</li>
+                <li><strong>03_ads.csv</strong> → Add ads to ad groups</li>
+                <li><strong>04_keywords.csv</strong> → Add keywords to ad groups</li>
+                <li><strong>05_sitelinks.csv</strong> → Add sitelinks to campaigns</li>
               </ol>
             </div>
 
