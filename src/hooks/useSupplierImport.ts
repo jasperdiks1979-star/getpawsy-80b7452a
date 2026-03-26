@@ -439,56 +439,7 @@ export function useSupplierImport() {
     requiresLogin?: boolean;
     partialData?: { name?: string; sku?: string; images?: string[] };
   }> => {
-    setIsLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-from-url`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            url,
-            addToShop: addToShopNow,
-            priceMultiplier,
-          }),
-        }
-      );
-
-      const result = await response.json();
-      
-      // Check for login-required response (not a standard error)
-      if (!response.ok && result.requiresLogin) {
-        // Don't show toast here - let the UI handle it gracefully
-        return { 
-          success: false, 
-          error: result.error,
-          requiresLogin: true,
-          partialData: result.partialData,
-        };
-      }
-      
-      if (!response.ok) {
-        return { success: false, error: result.error || "Import mislukt" };
-      }
-
-      toast({
-        title: "Product geïmporteerd",
-        description: result.message,
-      });
-
-      return result;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Import mislukt";
-      return { success: false, error: message };
-    } finally {
-      setIsLoading(false);
-    }
+    return { success: false, error: "URL import is no longer available. Please use CSV import instead." };
   };
 
   return {

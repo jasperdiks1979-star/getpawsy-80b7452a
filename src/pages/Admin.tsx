@@ -46,8 +46,6 @@ const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"
 const WarehouseShippingAudit = lazy(() => import("@/components/admin/WarehouseShippingAudit"));
 const OosResyncAudit = lazy(() => import("@/components/admin/OosResyncAudit"));
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
-const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
-const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
 const RunCenterCard = lazy(() => import("@/components/admin/RunCenterCard").then(module => ({ default: module.RunCenterCard })));
 const RunAllControls = lazy(() => import("@/components/admin/RunAllControls").then(module => ({ default: module.RunAllControls })));
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
@@ -1407,18 +1405,6 @@ const Admin = () => {
                 <TabsTrigger value="keywords" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Search className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Keywords</span>
-                </TabsTrigger>
-              </TouchTooltip>
-              <TouchTooltip content="Product research van externe URLs">
-                <TabsTrigger value="product-research" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-                  <Globe className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden xs:inline">Research</span>
-                </TabsTrigger>
-              </TouchTooltip>
-              <TouchTooltip content="Content scrapen voor research">
-                <TabsTrigger value="content-scraper" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-                  <FileText className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden xs:inline">Scraper</span>
                 </TabsTrigger>
               </TouchTooltip>
               <TouchTooltip content="TopDawg & PetDropshipper CSV import">
@@ -3228,37 +3214,6 @@ const Admin = () => {
             </AuthErrorBoundary>
           </TabsContent>
 
-          {/* Product Research Tab */}
-          <TabsContent value="product-research">
-            <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-muted-foreground">Product research laden...</span>
-                  </div>
-                </Card>
-              }>
-                <ProductResearchTool />
-              </Suspense>
-            </AuthErrorBoundary>
-          </TabsContent>
-
-          {/* Content Scraper Tab */}
-          <TabsContent value="content-scraper">
-            <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-muted-foreground">Content scraper laden...</span>
-                  </div>
-                </Card>
-              }>
-                <ContentScraperTool />
-              </Suspense>
-            </AuthErrorBoundary>
-          </TabsContent>
 
           {/* Supplier Import Tab */}
           <TabsContent value="suppliers">
