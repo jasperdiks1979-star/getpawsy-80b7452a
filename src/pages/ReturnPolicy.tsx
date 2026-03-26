@@ -35,7 +35,7 @@ const ReturnPolicy = () => {
     },
     {
       question: 'How long does it take to process a refund?',
-      answer: 'Once your return is approved, refunds are processed within 5–10 business days. The refund will be credited to your original payment method. Your bank or payment provider may take additional time to reflect the credit in your account.',
+      answer: 'Once your return is approved, refunds are processed within 5 business days. The refund will be credited to your original payment method. Your bank or payment provider may take additional time to reflect the credit in your account.',
     },
     {
       question: 'Who pays for return shipping?',

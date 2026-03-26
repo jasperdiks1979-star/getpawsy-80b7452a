@@ -95,7 +95,7 @@ export const RETARGETING_AUDIENCES: RetargetingAudience[] = [
     excludePurchasers: true,
     
     primaryMessage: 'Designed for everyday comfort and care',
-    secondaryMessage: 'Free shipping over $35 • 30-day hassle-free returns',
+    secondaryMessage: 'Free shipping over $35 • 30-day easy returns',
     ctaText: 'View Details',
     destinationPath: '/products/{last_viewed}', // Dynamic
     
@@ -165,7 +165,7 @@ export const AD_COPY_TEMPLATES = {
       'Trusted by Pet Parents',
     ],
     descriptions: [
-      'Continue discovering practical pet essentials. Fast shipping, hassle-free returns.',
+      'Continue discovering practical pet essentials. Fast shipping, easy returns.',
       'Find the right products for your pet. Quality you can trust, delivered fast.',
       'Designed for everyday comfort. Free US shipping on orders over $35.',
     ],
@@ -180,7 +180,7 @@ export const AD_COPY_TEMPLATES = {
     ],
     descriptions: [
       'Quality products designed for everyday life. Free shipping over $35, 30-day returns.',
-      'Trusted by pet parents nationwide. Fast delivery, easy returns guaranteed.',
+      'Trusted by pet parents nationwide. Fast delivery, easy returns available.',
       'Practical solutions for your pet. Quality, comfort, and convenience.',
     ],
   },

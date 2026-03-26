@@ -44,7 +44,7 @@ export function ConversionTrustBlock({ categoryName }: ConversionTrustBlockProps
       <div className="flex flex-wrap justify-center gap-6 py-6 bg-muted/30 rounded-2xl mb-8">
         {[
           { icon: <Truck className="w-5 h-5" />, label: `Free US Shipping Over $${FREE_SHIPPING_THRESHOLD}` },
-          { icon: <RotateCcw className="w-5 h-5" />, label: '30-Day Money-Back Guarantee' },
+          { icon: <RotateCcw className="w-5 h-5" />, label: '30-Day Return Policy' },
           { icon: <Shield className="w-5 h-5" />, label: 'Secure Stripe Checkout' },
           { icon: <CheckCircle className="w-5 h-5" />, label: 'Dedicated Customer Support' },
         ].map(badge => (

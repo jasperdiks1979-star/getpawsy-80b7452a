@@ -40,7 +40,7 @@ const FEATURES = [
       </svg>
     ),
     title: 'Customer-First Support',
-    desc: 'Real humans respond within 24 hours. 30-day hassle-free returns on every order.',
+    desc: 'Real humans respond within 24 hours. 30-day easy returns on every order.',
   },
 ];
 

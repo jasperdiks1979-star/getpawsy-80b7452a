@@ -47,7 +47,7 @@ const DogTravel = () => {
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
               <span>📦 Fast US Shipping 3–7 Days</span>
-              <span>🛡️ 30-Day Guarantee</span>
+              <span>🛡️ 30-Day Return Policy</span>
             </div>
           </FadeInView>
         </div>

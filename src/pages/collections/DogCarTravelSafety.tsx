@@ -11,7 +11,7 @@ import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
 
 const CANONICAL = 'https://getpawsy.pet/dog/dog-car-travel-safety';
 const PAGE_TITLE = 'Crash-Tested Dog Car Seats & Safety Gear (2026)';
-const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day guarantee + free US shipping.';
+const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping.';
 
 const FAQ_DATA = [
   { question: 'Are dog car seats actually safe?', answer: 'Yes, when properly designed and installed. Crash-tested dog car seats from reputable brands (tested at CPS-certified facilities) reduce injury risk by up to 80% compared to unrestrained dogs. Always look for "crash tested" certification — many budget seats only restrain, they don\'t protect during impact.' },
@@ -150,7 +150,7 @@ export default function DogCarTravelSafety() {
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-primary" /> Crash-Test Certified</span>
             <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> 3–7 Day US Shipping</span>
-            <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> 30-Day Safety Guarantee</span>
+            <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> 30-Day Return Policy</span>
           </div>
         </section>
 
@@ -277,7 +277,7 @@ export default function DogCarTravelSafety() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { icon: '🚚', title: 'Fast US Shipping', desc: '3–7 day delivery across the US. Free shipping on orders over $35.' },
-              { icon: '🔄', title: '30-Day Safety Guarantee', desc: 'Not satisfied? Return within 30 days for a full refund.' },
+              { icon: '🔄', title: '30-Day Return Policy', desc: 'Not satisfied? Return within 30 days to arrange a return.' },
               { icon: '🛡️', title: 'Crash-Test Informed', desc: 'We only stock products with documented safety credentials and CPS-level testing.' },
               { icon: '🏥', title: 'Vet-Approved Materials', desc: 'Padded, non-toxic materials safe for dogs of all sizes and breeds.' },
             ].map(item => (

@@ -31,7 +31,7 @@ const DogHub = () => {
     <Layout>
       <Helmet>
         <title>Dog Training & Travel Gear – Fast Shipping to the US | GetPawsy</title>
-        <meta name="description" content="Shop dog training harnesses, travel carriers, leashes & enrichment toys. Fast shipping to the United States in 3–7 days. 30-day guarantee." />
+        <meta name="description" content="Shop dog training harnesses, travel carriers, leashes & enrichment toys. Fast shipping to the United States in 3–7 days. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/dog/" />
         <meta name="robots" content="index, follow" />
       </Helmet>

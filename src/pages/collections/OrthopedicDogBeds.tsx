@@ -51,7 +51,7 @@ const FAQ_DATA = [
   { question: 'Do orthopedic beds help dogs after surgery?', answer: 'Yes. Veterinarians frequently recommend orthopedic memory foam beds for post-surgical recovery, especially after TPLO, FHO, or hip replacement surgery. The foam distributes weight away from surgical sites, reduces pressure on incisions, and supports proper healing alignment. A waterproof liner is essential during the recovery period.' },
   { question: 'What is CertiPUR-US foam certification?', answer: 'CertiPUR-US is an independent certification program that verifies foam is made without harmful chemicals including formaldehyde, heavy metals, phthalates, and ozone depleters. It also tests for low VOC emissions. Always choose CertiPUR-US certified foam for your dog\'s bed — uncertified foam may off-gas toxic chemicals that are harmful to pets.' },
   { question: 'Can I wash the memory foam core of an orthopedic bed?', answer: 'Never machine wash or fully submerge memory foam — it absorbs water, takes days to dry, and can develop mold. For accidents, blot immediately, then spot clean with a mild enzyme cleaner. Sprinkle baking soda on the surface, let sit for 30 minutes, then vacuum. This is why a waterproof liner between the foam and cover is essential.' },
-  { question: 'What\'s the return policy on orthopedic dog beds?', answer: 'We offer a 30-day comfort guarantee on all orthopedic beds. If your dog doesn\'t take to the bed within 30 days, return it for a full refund — no questions asked. We recommend giving your dog at least 7–14 days to adjust, as most dogs show noticeable improvement in mobility within this period.' },
+  { question: 'What\'s the return policy on orthopedic dog beds?', answer: 'We offer a 30-day return policy on all orthopedic beds. If your dog doesn\'t take to the bed within 30 days, contact us to arrange a return. Items must be unused and in original condition. We recommend giving your dog at least 7–14 days to adjust, as most dogs show noticeable improvement in mobility within this period.' },
   { question: 'How long does shipping take for orthopedic beds?', answer: 'Our most popular orthopedic beds ship directly to customers in the United States, with delivery typically within 3–7 business days. Orders over $35 qualify for free standard shipping. We also offer expedited shipping options for urgent needs, such as post-surgery recovery beds.' },
   { question: 'Are heated orthopedic beds safe for dogs?', answer: 'Heated orthopedic beds can benefit dogs with severe arthritis, but should only be used under veterinary guidance. Look for beds with auto-shutoff timers, chew-resistant cords, and low-voltage heating elements. Never leave a heated bed on unsupervised. For most dogs, standard memory foam provides sufficient warmth through body heat retention.' },
 ];
@@ -171,7 +171,7 @@ export default function OrthopedicDogBeds() {
       {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       <Helmet>
         <title>7 Best Orthopedic Dog Beds for Joint Support (2026)</title>
-        <meta name="description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee. Free US shipping over $35." />
+        <meta name="description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35." />
         <meta name="keywords" content="orthopedic dog beds, memory foam dog bed, dog bed for arthritis, orthopedic dog bed large dogs, senior dog bed, joint pain dog bed, waterproof orthopedic dog bed, best orthopedic dog bed 2026" />
         <link rel="canonical" href={CANONICAL} />
         <link rel="alternate" hrefLang="en" href={CANONICAL} />
@@ -185,7 +185,7 @@ export default function OrthopedicDogBeds() {
         <meta property="og:image" content={`${BASE}/og-image.png`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />
-        <meta name="twitter:description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee." />
+        <meta name="twitter:description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy." />
         <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
@@ -813,7 +813,7 @@ export default function OrthopedicDogBeds() {
               { icon: '🔬', title: 'Foam Density Tested', desc: 'Every bed is rated for foam density (lb/ft³) so you know exactly what you\'re getting.' },
               { icon: '💬', title: 'Dedicated Support', desc: 'Real people, real answers. Our customer care team responds within 24 hours.' },
               { icon: '🐕', title: 'Breed-Specific Guidance', desc: 'Size guides and breed recommendations so your dog gets the right fit.' },
-              { icon: '💯', title: '30-Day Guarantee', desc: 'Not the right bed? Return it within 30 days for a full refund. No questions.' },
+              { icon: '💯', title: '30-Day Return Policy', desc: 'Not the right bed? Return it within 30 days to arrange a return. No questions.' },
             ].map(item => (
               <div key={item.title} className="bg-card border rounded-xl p-5 text-center">
                 <span className="text-3xl mb-3 block">{item.icon}</span>
@@ -829,7 +829,7 @@ export default function OrthopedicDogBeds() {
           <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">30-Day Comfort Guarantee</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-            We're confident your dog will love their new orthopedic bed. If it's not the right fit, return it within 30 days for a full refund. No questions asked.
+            We're confident your dog will love their new orthopedic bed. If it's not the right fit, return it within 30 days to arrange a return. No questions asked.
           </p>
           <div className="flex flex-wrap justify-center gap-6">
             {[
@@ -954,7 +954,7 @@ export default function OrthopedicDogBeds() {
           <div className="bg-card border rounded-xl p-5 text-center">
             <RotateCcw className="w-6 h-6 text-primary mx-auto mb-2" />
             <h3 className="font-semibold text-sm mb-1">30-Day Returns</h3>
-            <p className="text-xs text-muted-foreground">Hassle-free, no questions asked</p>
+            <p className="text-xs text-muted-foreground">Easy, per our return policy</p>
           </div>
           <div className="bg-card border rounded-xl p-5 text-center">
             <ShieldCheck className="w-6 h-6 text-primary mx-auto mb-2" />
@@ -996,7 +996,7 @@ export default function OrthopedicDogBeds() {
         <div className="container flex items-center justify-between gap-4">
           <div className="hidden sm:block">
             <p className="text-sm font-semibold">Orthopedic Dog Beds</p>
-            <p className="text-xs text-muted-foreground">Free shipping over $35 · 30-day guarantee</p>
+            <p className="text-xs text-muted-foreground">Free shipping over $35 · 30-day return policy</p>
           </div>
           <Button size="lg" className="w-full sm:w-auto" asChild>
             <a href="#products">Shop Orthopedic Beds <ArrowRight className="w-4 h-4 ml-1" /></a>

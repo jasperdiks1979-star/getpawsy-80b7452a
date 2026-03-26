@@ -141,7 +141,7 @@ function MidCTA({ slug, categories, species }: { slug: string; categories: strin
     <div className="mb-14 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center">
       <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">Found Your Perfect Pick?</h3>
       <p className="text-muted-foreground text-sm mb-4 max-w-xl mx-auto">
-        Browse our expert-tested selection with free shipping on orders over $35 and a 30-day happiness guarantee.
+        Browse our expert-tested selection with free shipping on orders over $35 and a 30-day return policy.
       </p>
       <div className="flex flex-wrap gap-3 justify-center">
         <Link to={`/collections/${categories[0] || (species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
@@ -163,7 +163,7 @@ function TrustStrip() {
         <Truck className="w-4 h-4" /> Free shipping over $35
       </span>
       <span className="flex items-center gap-1.5 text-primary">
-        <Shield className="w-4 h-4" /> 30-day happiness guarantee
+        <Shield className="w-4 h-4" /> 30-day return policy
       </span>
       <span className="flex items-center gap-1.5 text-primary">
         <CheckCircle className="w-4 h-4" /> Expert-reviewed picks
@@ -257,7 +257,7 @@ function BestOverallHero({ pick, products, categories, species }: { pick: BestOv
               </Link>
             )}
             <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Shield className="w-3 h-3" /> 30-day happiness guarantee
+              <Shield className="w-3 h-3" /> 30-day return policy
             </span>
           </div>
 
@@ -891,12 +891,12 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             Ready to Shop?
           </h2>
           <p className="text-muted-foreground mb-3 max-w-xl mx-auto">
-            Browse our hand-picked selection with free shipping on orders over $35 and a 30-day happiness guarantee.
+            Browse our hand-picked selection with free shipping on orders over $35 and a 30-day return policy.
           </p>
           {/* Inline trust signals */}
           <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground mb-5">
             <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> Free Shipping $35+</span>
-            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 30-Day Guarantee</span>
+            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 30-Day Return Policy</span>
             <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Secure Checkout</span>
           </div>
           <Link to={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
@@ -1018,7 +1018,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           <div>
             <Shield className="w-6 h-6 mx-auto mb-2 text-primary" />
             <p className="font-semibold text-foreground">30-Day Returns</p>
-            <p className="text-muted-foreground text-xs">Happiness guarantee</p>
+            <p className="text-muted-foreground text-xs">Easy return process</p>
           </div>
           <div>
             <CheckCircle className="w-6 h-6 mx-auto mb-2 text-primary" />

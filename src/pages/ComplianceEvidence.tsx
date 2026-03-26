@@ -287,7 +287,7 @@ export default function ComplianceEvidence() {
                 <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (3–7 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.
               </li>
               <li>
-                <strong>Check return policy</strong> — Under Shipping and returns → Return policies: 30-day return window, return by mail, full refund within 5–10 business days.
+                <strong>Check return policy</strong> — Under Shipping and returns → Return policies: 30-day return window, return by mail, full refund within 5 business days.
               </li>
               <li>
                 <strong>Re-fetch feed</strong> — If using supplemental RSS feed, trigger a manual fetch under Products → Feeds. Wait for processing to complete.

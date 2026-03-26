@@ -52,7 +52,7 @@ function buildProductFaq(slug: string): Array<{ question: string; answer: string
     },
     {
       question: `Can I return this ${name}?`,
-      answer: `Absolutely. We offer a hassle-free 30-day return policy. If you or your pet aren't completely satisfied, contact our support team for a full refund or exchange — no questions asked.`,
+      answer: `Absolutely. We offer an easy 30-day return policy. If you or your pet aren't completely satisfied, contact our support team to arrange a return per our policy — per our return policy.`,
     },
     {
       question: `Is this ${name} safe for puppies and kittens?`,

@@ -58,7 +58,7 @@ export interface LandingPageData {
 export const NO_PULL_HARNESS_LANDING: LandingPageData = {
   slug: 'no-pull-harness',
   metaTitle: 'Stop Dog Pulling in 7 Days — No-Pull Harness | GetPawsy',
-  metaDescription: 'End leash pulling without choking. Front-clip no-pull harness reduces pulling by 60%. Trainer recommended. Fast US shipping. 30-day guarantee.',
+  metaDescription: 'End leash pulling without choking. Front-clip no-pull harness reduces pulling by 60%. Trainer recommended. Fast US shipping. 30-day return policy.',
   headline: 'Your Dog Pulling You Down the Street?',
   subheadline: 'End the tug-of-war in 7 days — without choke chains, prong collars, or painful corrections.',
   painPoints: [
@@ -95,7 +95,7 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
     { q: 'Will it hurt my dog?', a: 'No. Unlike choke chains and prong collars, this harness distributes all force across the chest — completely bypassing the neck. It\'s the method recommended by veterinary behaviorists.' },
     { q: 'How fast will I see results?', a: 'Most dogs show 40-60% pulling reduction on the first walk. Combined with consistent positive reinforcement, reliable loose-leash walking develops within 2-4 weeks.' },
     { q: 'What sizes are available?', a: 'XS through XXL, fitting chest girths from 12" to 48". Fully adjustable at 4+ points for a secure, custom fit.' },
-    { q: 'What if it doesn\'t work?', a: '30-day return policy. If you\'re not satisfied, return it for a full refund per our return policy.' },
+    { q: 'What if it doesn\'t work?', a: '30-day return policy. If you\'re not satisfied, contact us to arrange a return per our return policy.' },
   ],
   primaryProduct: {
     id: 'c2a8d28b-d564-40d0-8f6a-c8f0ca72f1fc',
@@ -128,7 +128,7 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
     ],
   },
   ctaText: 'Get Your No-Pull Harness',
-  ctaSubtext: 'Free US Shipping over $35 • 30-Day Guarantee',
+  ctaSubtext: 'Free US Shipping over $35 • 30-Day Return Policy',
   adAngle: 'pain',
 };
 
@@ -175,7 +175,7 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
     { q: 'Will this work for my stubborn dog?', a: 'Yes. Recall training works for all breeds and ages. The key is consistent practice with high-value rewards. Our guide covers exact techniques for \'stubborn\' breeds like Huskies and Beagles.' },
     { q: 'How is this different from a retractable leash?', a: 'Retractable leashes teach dogs that pulling = more freedom (the opposite of what you want). A fixed-length long line maintains control while giving enough distance for meaningful recall practice.' },
     { q: 'Can I use this for a puppy?', a: 'Absolutely. Puppies can start recall training as early as 8-10 weeks. Starting early makes the training much faster and easier.' },
-    { q: 'What if it doesn\'t work?', a: '30-day money-back guarantee on all products. If you\'re not satisfied, return for a full refund.' },
+    { q: 'What if it doesn\'t work?', a: '30-day return policy on all products. If you\'re not satisfied, return to arrange a return.' },
   ],
   primaryProduct: {
     id: '4f844f43-f6de-42ba-a79b-30aed6e3b215',
@@ -208,7 +208,7 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
     ],
   },
   ctaText: 'Get Your Recall Training Kit',
-  ctaSubtext: 'Free US Shipping over $35 • 30-Day Guarantee',
+  ctaSubtext: 'Free US Shipping over $35 • 30-Day Return Policy',
   adAngle: 'trainer',
 };
 
@@ -218,7 +218,7 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
 export const STOP_PULLING_LANDING: LandingPageData = {
   slug: 'stop-dog-pulling-fast',
   metaTitle: 'Stop Dog Pulling Fast — Protect Your Dog\'s Neck | GetPawsy',
-  metaDescription: 'Stop leash pulling without choking or pain. Vet-approved no-pull harness protects your dog\'s neck and trachea. Fast US shipping. 30-day guarantee.',
+  metaDescription: 'Stop leash pulling without choking or pain. Vet-approved no-pull harness protects your dog\'s neck and trachea. Fast US shipping. 30-day return policy.',
   headline: 'Stop Choking Your Dog on Every Walk.',
   subheadline: 'Traditional collars put 100% of leash force on your dog\'s neck — damaging their trachea, thyroid, and cervical spine. There\'s a better way.',
   painPoints: [
@@ -243,7 +243,7 @@ export const STOP_PULLING_LANDING: LandingPageData = {
   socialProof: [
     { stat: '0%', label: 'Neck pressure (100% chest-distributed)' },
     { stat: 'Vet-Approved', label: 'Recommended by veterinary behaviorists' },
-    { stat: '30 Days', label: 'Risk-free guarantee' },
+    { stat: '30 Days', label: 'Risk-free returns' },
   ],
   reviews: [
     { name: 'Dr. Lisa P.', location: 'Veterinarian, FL', stars: 5, text: 'I recommend harnesses over collars for every dog that pulls. This one has the best combination of control and comfort I\'ve seen at this price point.', verified: true },
@@ -255,7 +255,7 @@ export const STOP_PULLING_LANDING: LandingPageData = {
     { q: 'Is this harness approved by vets?', a: 'Front-clip harnesses are recommended by the American Veterinary Society of Animal Behavior (AVSAB), ASPCA, and RSPCA as the safest walking tool for dogs who pull.' },
     { q: 'Can my dog still wear a collar?', a: 'Yes! Keep a flat collar for ID tags. Use the harness for all walks. This \'dual system\' provides both safety and identification.' },
     { q: 'Will this work for small dogs and brachycephalic breeds?', a: 'Especially for them. Small breeds and flat-faced dogs (Pugs, Bulldogs, French Bulldogs) are at the highest risk for tracheal collapse from collar pressure. This harness eliminates that risk entirely.' },
-    { q: 'What\'s the return policy?', a: '30-day money-back guarantee. If you\'re not satisfied for any reason, return it for a full refund.' },
+    { q: 'What\'s the return policy?', a: '30-day return policy. If you\'re not satisfied for any reason, return it to arrange a return.' },
   ],
   primaryProduct: {
     id: '91a50d32-4ea3-404d-92db-9f546c4cd901',
@@ -288,7 +288,7 @@ export const STOP_PULLING_LANDING: LandingPageData = {
     ],
   },
   ctaText: 'Protect Your Dog\'s Neck Now',
-  ctaSubtext: 'Free US Shipping over $35 • 30-Day Guarantee',
+  ctaSubtext: 'Free US Shipping over $35 • 30-Day Return Policy',
   adAngle: 'safety',
 };
 

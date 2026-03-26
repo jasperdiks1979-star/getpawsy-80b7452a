@@ -732,7 +732,7 @@ function detectProductType(productName: string, category?: string, description?:
     toy: {
       type: 'toy',
       benefits: ['endless fun', 'mental stimulation', 'exercise', 'boredom buster'],
-      emotionalHooks: ['see their tail wag with joy', 'hours of entertainment guaranteed', 'bring out their playful spirit'],
+      emotionalHooks: ['see their tail wag with joy', 'hours of entertainment', 'bring out their playful spirit'],
       problemSolves: ['boredom', 'destructive behavior', 'excess energy', 'loneliness'],
       targetAudience: ['active pet owners', 'busy professionals', 'playful pups'],
     },
@@ -1054,7 +1054,7 @@ export function generateCategoryMetaDescription(categoryName: string): string {
     }
   }
   
-  return `Shop premium ${categoryName} at GetPawsy. Quality pet products, vet-approved and eco-friendly. Free shipping on orders over $50. Your pet deserves the best!`;
+  return `Shop premium ${categoryName} at GetPawsy. Quality pet products for dogs and cats. Free shipping on orders over $35. 30-day return policy.`;
 }
 
 // Generate blog post meta description

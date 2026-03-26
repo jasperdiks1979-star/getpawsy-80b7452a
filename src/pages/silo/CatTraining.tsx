@@ -30,7 +30,7 @@ const CatTraining = () => {
     <Layout>
       <Helmet>
         <title>Cat Enrichment & Training – Trees, Posts & Toys | GetPawsy</title>
-        <meta name="description" content="Cat trees, scratching posts, interactive toys & enrichment furniture. Keep indoor cats active and happy. US 3–7 day shipping. 30-day guarantee." />
+        <meta name="description" content="Cat trees, scratching posts, interactive toys & enrichment furniture. Keep indoor cats active and happy. US 3–7 day shipping. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/cat/training" />
         <meta name="robots" content="index, follow" />
       </Helmet>
@@ -47,7 +47,7 @@ const CatTraining = () => {
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
               <span>📦 Fast US Shipping 3–7 Days</span>
-              <span>🛡️ 30-Day Guarantee</span>
+              <span>🛡️ 30-Day Return Policy</span>
             </div>
           </FadeInView>
         </div>

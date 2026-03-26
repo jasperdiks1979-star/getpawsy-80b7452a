@@ -106,9 +106,9 @@ function PillarContent({ pillar, namespace }: { pillar: SeoPillar; namespace: Se
           <h1 className="text-3xl md:text-4xl font-display font-bold leading-tight mb-4">{pillar.h1}</h1>
           <p className="text-lg text-muted-foreground max-w-3xl mb-6 leading-relaxed">{pillar.intro}</p>
           <div className="flex flex-wrap gap-4 text-sm">
-            <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> Free shipping $50+</span>
-            <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-primary" /> Quality guaranteed</span>
-            <span className="flex items-center gap-1.5"><RotateCcw className="w-4 h-4 text-primary" /> 30-day returns</span>
+            <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> Free shipping $35+</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-primary" /> Quality checked</span>
+            <span className="flex items-center gap-1.5"><RotateCcw className="w-4 h-4 text-primary" /> 30-day return policy</span>
           </div>
         </section>
 
