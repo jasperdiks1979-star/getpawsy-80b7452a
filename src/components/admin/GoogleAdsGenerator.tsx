@@ -1311,16 +1311,16 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
-                    <h5 className="font-medium">CSV Bestanden Downloaden</h5>
+                    <h5 className="font-medium">Download CSV Files</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Download de CSV bestanden hierboven of gebruik de Complete Package:</p>
+                    <p>Download the CSV files above or use the Complete Package:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li><strong>01_campaigns.csv</strong> - Campagne instellingen</li>
-                      <li><strong>02_adgroups.csv</strong> - Advertentiegroepen</li>
+                      <li><strong>01_campaigns.csv</strong> - Campaign settings</li>
+                      <li><strong>02_adgroups.csv</strong> - Ad Groups</li>
                       <li><strong>03_ads.csv</strong> - Responsive Search Ads</li>
-                      <li><strong>04_keywords.csv</strong> - Zoekwoorden</li>
-                      <li><strong>05_sitelinks.csv</strong> - Sitelink extensies</li>
+                      <li><strong>04_keywords.csv</strong> - Keywords</li>
+                      <li><strong>05_sitelinks.csv</strong> - Sitelink extensions</li>
                     </ol>
                   </div>
                 </div>
