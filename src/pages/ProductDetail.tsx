@@ -71,7 +71,6 @@ import NotFound from "@/pages/NotFound";
 
 import { ProductFAQAccordion } from "@/components/products/ProductFAQAccordion";
 import { ProductProblemSolution } from "@/components/products/ProductProblemSolution";
-import { ProductProblemSolution } from "@/components/products/ProductProblemSolution";
 
 import { FinalCtaBlock } from "@/components/products/FinalCtaBlock";
 
