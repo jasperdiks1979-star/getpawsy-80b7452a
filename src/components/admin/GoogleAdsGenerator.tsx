@@ -1440,7 +1440,7 @@ ${keywords.join(", ")}
 
             {/* Campaign Preview Table */}
             <div className="space-y-3">
-              <h3 className="font-medium">Campagne Overzicht ({campaignData.length} advertenties)</h3>
+              <h3 className="font-medium">Campaign Overview ({campaignData.length} ads)</h3>
               <div className="border rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
