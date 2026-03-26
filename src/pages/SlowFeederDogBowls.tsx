@@ -56,7 +56,7 @@ const PAGE_FAQS = [
   },
   {
     question: 'What is your return policy?',
-    answer: `We offer a ${RETURN_WINDOW_DAYS}-day satisfaction guarantee on all products. If you or your pet aren't happy, contact us for a hassle-free return.`,
+    answer: `We offer a ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original condition. Contact us to start a return.`,
   },
 ];
 
@@ -489,7 +489,7 @@ export default function SlowFeederDogBowls() {
               Ready to Protect Your Dog?
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-              Premium quality. Fair price. {RETURN_WINDOW_DAYS}-day satisfaction guarantee.
+              Premium quality. Fair price. {RETURN_WINDOW_DAYS}-day return policy.
             </p>
             <Button asChild size="lg" className="rounded-full px-8 gap-2 text-base">
               <a href="#products">
@@ -505,7 +505,7 @@ export default function SlowFeederDogBowls() {
           <div className="container mx-auto px-4 max-w-3xl">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
-                { icon: RotateCcw, title: `${RETURN_WINDOW_DAYS}-Day Returns`, desc: 'Satisfaction guaranteed' },
+                { icon: RotateCcw, title: `${RETURN_WINDOW_DAYS}-Day Returns`, desc: '30-day return policy' },
                 { icon: Shield, title: 'Secure Checkout', desc: 'Encrypted payment' },
                 { icon: Headphones, title: 'Dedicated Support', desc: 'We respond within 24h' },
                 { icon: Truck, title: 'Free Shipping', desc: `Orders over $${FREE_SHIPPING_THRESHOLD}` },

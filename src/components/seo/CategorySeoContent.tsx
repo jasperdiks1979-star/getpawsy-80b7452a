@@ -135,7 +135,7 @@ export function CategorySeoContent({ categorySlug }: CategorySeoContentProps) {
               <RotateCcw className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-medium text-foreground text-sm">{RETURN_WINDOW_DAYS}-Day Returns</p>
-                <p className="text-xs text-muted-foreground">Hassle-free returns if not satisfied</p>
+                <p className="text-xs text-muted-foreground">Easy return process</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

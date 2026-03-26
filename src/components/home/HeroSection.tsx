@@ -31,10 +31,10 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative z-10 container px-4 md:px-6 py-20 md:py-32 lg:py-40 text-center">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
-          Premium Pet Essentials, Delivered Fast in the US
+          Premium Pet Essentials for Dogs &amp; Cats — Fast US Delivery
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/90 max-w-xl mx-auto drop-shadow">
-          Loved by pet owners across the United States
+          Trusted by pet owners across the United States. Fast shipping, easy returns, and reliable quality.
         </p>
 
         <div className="mt-6">
@@ -47,18 +47,13 @@ export function HeroSection() {
           </Button>
         </div>
 
-        {/* Trust bar */}
+        {/* Trust bullets */}
         <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs md:text-sm text-white/90">
-          <span className="inline-flex items-center gap-1.5">✔ Free US Shipping $35+</span>
-          <span className="inline-flex items-center gap-1.5">✔ 30-Day Returns</span>
-          <span className="inline-flex items-center gap-1.5">✔ Secure Checkout</span>
-          <span className="inline-flex items-center gap-1.5">✔ US-Based Fulfillment</span>
+          <span className="inline-flex items-center gap-1.5">✔ Free US shipping on orders over $35</span>
+          <span className="inline-flex items-center gap-1.5">✔ 30-day hassle-free returns</span>
+          <span className="inline-flex items-center gap-1.5">✔ Secure checkout (Stripe, PayPal, Apple Pay)</span>
+          <span className="inline-flex items-center gap-1.5">✔ Ships from US-based fulfillment partners</span>
         </div>
-
-        {/* Social proof */}
-        <p className="mt-4 text-sm text-white/80 font-medium">
-          Loved by pet owners across the US 🐾
-        </p>
       </div>
     </section>
   );

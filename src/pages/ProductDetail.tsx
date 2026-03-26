@@ -867,13 +867,11 @@ const ProductDetail = () => {
           >
             {/* Category & Title */}
             <div>
-              {/* Demand badge — inventory-driven, compliant */}
-              {inStock && (product.stock ?? 0) > 0 && (
+              {/* Stock indicator — factual, compliant */}
+              {inStock && (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 10 && (
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary mb-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  {(product.stock ?? 0) <= 10
-                    ? `Only ${product.stock} left — Popular among pet owners`
-                    : "Popular Choice — High Demand Product"}
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  Limited stock available
                 </div>
               )}
               {product.category && (
@@ -1135,8 +1133,8 @@ const ProductDetail = () => {
                     bullets.push(
                       "Premium materials built for daily pet life",
                       "Designed for comfort and ease of use",
-                      "Fast shipping to the United States",
-                      "Backed by 30-day satisfaction guarantee",
+                      "Shipping to the United States in 3–7 business days",
+                      "30-day return policy included",
                     );
                   }
 
@@ -1154,19 +1152,17 @@ const ProductDetail = () => {
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
-            {/* Stock Status & Urgency */}
+            {/* Stock Status */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success animate-pulse" : "bg-destructive"}`} />
+                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success" : "bg-destructive"}`} />
                 <span className="font-semibold text-foreground">
-                  {inStock ? "In Stock – Ready to Ship" : "Out of Stock"}
+                  {inStock ? "In Stock – Ready to Ship" : "Currently Unavailable"}
                 </span>
               </div>
               {inStock && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  {(product.stock ?? 0) > 0 && (product.stock ?? 0) <= 15
-                    ? "Only a few left in stock – order soon"
-                    : "Ships from USA within 24 hours"}
+                  Orders processed within 1–2 business days
                 </p>
               )}
             </div>
@@ -1249,13 +1245,23 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Urgency microcopy — safe, no fake numbers */}
-            {inStock && (
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-2">
-                <span className="inline-flex items-center gap-1"><span className="text-warning">⚡</span> High demand – selling fast</span>
-                <span className="inline-flex items-center gap-1"><span className="text-warning">📦</span> Limited stock available</span>
+            {/* Shipping & Returns Info Block — Google Merchant compliance */}
+            <div className="bg-muted/30 rounded-xl p-4 space-y-3 text-sm">
+              <div className="flex items-start gap-2">
+                <Truck className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">Shipping Information</p>
+                  <p className="text-muted-foreground">Orders processed within 1–2 business days. Delivery: 3–7 business days within the United States.</p>
+                </div>
               </div>
-            )}
+              <div className="flex items-start gap-2">
+                <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">Returns</p>
+                  <p className="text-muted-foreground">30-day return policy. Items must be unused and in original condition.</p>
+                </div>
+              </div>
+            </div>
 
             {/* Trust Stack — social proof + trust badges */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">

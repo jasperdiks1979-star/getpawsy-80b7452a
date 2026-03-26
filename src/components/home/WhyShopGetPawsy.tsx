@@ -13,7 +13,7 @@ const pillars = [
   {
     icon: RotateCcw,
     title: 'Easy Returns',
-    description: `${RETURN_WINDOW_DAYS}-day hassle-free return policy. Not satisfied? We'll make it right — no runaround.`,
+    description: `${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original condition. Contact us to start a return.`,
   },
   {
     icon: ShieldCheck,

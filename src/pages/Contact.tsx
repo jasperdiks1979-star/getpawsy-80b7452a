@@ -327,7 +327,7 @@ const Contact = () => {
                       Skidzo operates and is fully responsible for the GetPawsy webshop, including all orders, payments, shipping, and customer service.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 italic">
-                      GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals.
+                      GetPawsy is an independent online store focused on quality pet products for dogs and cats.
                     </p>
                   </div>
                 </div>
