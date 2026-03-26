@@ -194,7 +194,7 @@ function generateFaqSchema(slug: string, pageType: MoneyUrl['pageType']): FaqEnt
   } else if (pageType === 'collection' || pageType === 'guide') {
     faqs.push(
       { question: `How do I choose the right ${kw} for my pet?`, answer: `Consider your pet's size, breed, and activity level. Our guide covers the top-rated options for 2026 with expert recommendations to help you decide.` },
-      { question: `What are the top-rated ${kw} in 2026?`, answer: `We've tested and reviewed the best ${kw} available. Our expert picks are based on durability, safety, and value for money — all vet-approved.` },
+      { question: `What are the top-rated ${kw} in 2026?`, answer: `We've tested and reviewed the best ${kw} available. Our expert picks are based on durability, safety, and value for money.` },
     );
   } else {
     faqs.push(
