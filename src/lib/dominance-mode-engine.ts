@@ -199,7 +199,7 @@ function generateFaqSchema(slug: string, pageType: MoneyUrl['pageType']): FaqEnt
   } else {
     faqs.push(
       { question: `What should I know about ${kw}?`, answer: `This comprehensive guide covers everything pet owners need to know about ${kw}, including expert tips, product recommendations, and common mistakes to avoid.` },
-      { question: `Is this ${kw} guide updated for 2026?`, answer: `Yes, this guide is fully updated for 2026 with the latest products, research, and vet-approved recommendations.` },
+      { question: `Is this ${kw} guide updated for 2026?`, answer: `Yes, this guide is fully updated for 2026 with the latest products, research, and expert recommendations.` },
     );
   }
 
