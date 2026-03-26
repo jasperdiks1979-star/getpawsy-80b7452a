@@ -1245,13 +1245,23 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Urgency microcopy — safe, no fake numbers */}
-            {inStock && (
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-2">
-                <span className="inline-flex items-center gap-1"><span className="text-warning">⚡</span> High demand – selling fast</span>
-                <span className="inline-flex items-center gap-1"><span className="text-warning">📦</span> Limited stock available</span>
+            {/* Shipping & Returns Info Block — Google Merchant compliance */}
+            <div className="bg-muted/30 rounded-xl p-4 space-y-3 text-sm">
+              <div className="flex items-start gap-2">
+                <Truck className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">Shipping Information</p>
+                  <p className="text-muted-foreground">Orders processed within 1–2 business days. Delivery: 3–7 business days within the United States.</p>
+                </div>
               </div>
-            )}
+              <div className="flex items-start gap-2">
+                <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">Returns</p>
+                  <p className="text-muted-foreground">30-day return policy. Items must be unused and in original condition.</p>
+                </div>
+              </div>
+            </div>
 
             {/* Trust Stack — social proof + trust badges */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">

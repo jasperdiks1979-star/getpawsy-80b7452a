@@ -51,7 +51,7 @@ function generateFAQs(name: string, category?: string) {
       { q: `What type of litter should I use?`, a: `Clumping clay litter works best with the self-cleaning system. Avoid crystal or non-clumping litter as it can jam the mechanism.` },
       { q: `How loud is the cleaning cycle?`, a: `Whisper-quiet at under 50 dB. Most cats are not disturbed by the cleaning cycle, and it won't wake you at night.` },
       { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
-      { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you're not satisfied, contact our support team for a full refund.` },
+      { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original condition. Contact our support team to start a return.` },
       { q: `What maintenance is required?`, a: `Empty the waste compartment every few days, replace carbon filters monthly, and wipe sensors with a dry cloth. Full deep-clean recommended every 3 months.` },
     ];
   }

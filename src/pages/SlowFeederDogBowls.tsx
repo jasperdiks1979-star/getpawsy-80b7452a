@@ -56,7 +56,7 @@ const PAGE_FAQS = [
   },
   {
     question: 'What is your return policy?',
-    answer: `We offer a ${RETURN_WINDOW_DAYS}-day satisfaction guarantee on all products. If you or your pet aren't happy, contact us for a hassle-free return.`,
+    answer: `We offer a ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original condition. Contact us to start a return.`,
   },
 ];
 

@@ -112,13 +112,13 @@ export const Footer = () => {
               <div className="text-sm text-background/60 space-y-1">
                 <p>Operated by Skidzo</p>
                 <p>Apeldoorn, Netherlands</p>
-                <p>KVK 78156955 · VAT NL003295015B69</p>
+                <p>KVK: 78156955 · VAT: NL003295015B69</p>
               </div>
               <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline block">
                 {SUPPORT_EMAIL}
               </a>
               <p className="text-xs text-background/40 mt-2 leading-relaxed">
-                GetPawsy is a Netherlands-based company serving customers in the United States via US-based fulfillment partners.
+                GetPawsy is operated by Skidzo, a registered business based in the Netherlands, serving customers in the United States through trusted logistics partners with fast US delivery.
               </p>
             </div>
 
