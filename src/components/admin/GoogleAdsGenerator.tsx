@@ -1274,18 +1274,18 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
-                    <h5 className="font-medium">Google Ads Account Aanmaken</h5>
+                    <h5 className="font-medium">Create Google Ads Account</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Als je nog geen account hebt:</p>
+                    <p>If you don't have an account yet:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Ga naar <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">ads.google.com</a></li>
-                      <li>Klik op "Nu starten" en log in met je Google account</li>
-                      <li>Kies "Nieuwe campagne maken" → "Ga naar Expert mode"</li>
-                      <li>Stel je betalingsgegevens in (creditcard of PayPal)</li>
+                      <li>Go to <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">ads.google.com</a></li>
+                      <li>Click "Start now" and sign in with your Google account</li>
+                      <li>Choose "Create new campaign" → "Switch to Expert mode"</li>
+                      <li>Set up your payment details (credit card or PayPal)</li>
                     </ul>
                     <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
-                      💡 <strong>Tip:</strong> Gebruik eerst een klein dagelijks budget (bijv. $10-20) om te testen
+                      💡 <strong>Tip:</strong> Start with a small daily budget (e.g. $10-20) to test
                     </div>
                   </div>
                 </div>
