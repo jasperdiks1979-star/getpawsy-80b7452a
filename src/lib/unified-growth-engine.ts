@@ -182,7 +182,7 @@ const SNIPER_SEED: Array<{
     url: '/collections/indestructible-dog-toys', query: 'indestructible dog toys aggressive chewers',
     impressions: 2800, clicks: 42, position: 11.6, aov: 25,
     title: 'Truly Indestructible Dog Toys for Heavy Chewers (2026)',
-    meta: 'Tired of toys lasting 10 minutes? These are built from solid rubber and reinforced nylon. Satisfaction guaranteed or your money back.',
+    meta: 'Tired of toys lasting 10 minutes? These are built from solid rubber and reinforced nylon. 30-day return policy on all products.',
     faqs: ['What material is truly indestructible for dog toys?', 'Are hard toys safe for dog teeth?', 'Best toy for a pit bull or German shepherd?'],
     linkSources: ['/collections/dog-toys', '/blog/dog-enrichment-ideas', '/blog/aggressive-chewer-guide', '/', '/collections/dog-beds'],
   },

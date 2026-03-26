@@ -1018,7 +1018,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           <div>
             <Shield className="w-6 h-6 mx-auto mb-2 text-primary" />
             <p className="font-semibold text-foreground">30-Day Returns</p>
-            <p className="text-muted-foreground text-xs">Happiness guarantee</p>
+            <p className="text-muted-foreground text-xs">Easy return process</p>
           </div>
           <div>
             <CheckCircle className="w-6 h-6 mx-auto mb-2 text-primary" />

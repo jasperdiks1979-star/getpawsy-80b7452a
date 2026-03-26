@@ -732,7 +732,7 @@ function detectProductType(productName: string, category?: string, description?:
     toy: {
       type: 'toy',
       benefits: ['endless fun', 'mental stimulation', 'exercise', 'boredom buster'],
-      emotionalHooks: ['see their tail wag with joy', 'hours of entertainment guaranteed', 'bring out their playful spirit'],
+      emotionalHooks: ['see their tail wag with joy', 'hours of entertainment', 'bring out their playful spirit'],
       problemSolves: ['boredom', 'destructive behavior', 'excess energy', 'loneliness'],
       targetAudience: ['active pet owners', 'busy professionals', 'playful pups'],
     },
