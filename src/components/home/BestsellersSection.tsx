@@ -68,7 +68,7 @@ export const BestsellersSection = () => {
             Top-rated products chosen by pet owners across the United States — quality-checked and ready to ship.
           </p>
         </div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-end mb-4">
           <div className="hidden md:flex gap-2">
             <button
               onClick={() => scroll('left')}
