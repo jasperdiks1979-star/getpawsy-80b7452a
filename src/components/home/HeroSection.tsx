@@ -34,11 +34,11 @@ export function HeroSection() {
           Top-rated products for dogs &amp; cats — fast US shipping and easy returns.
         </p>
 
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
           <Button
             asChild
             size="lg"
-            className="w-full sm:w-auto rounded-full px-12 py-3.5 text-base font-bold bg-primary text-primary-foreground shadow-lg hover:brightness-110 hover:scale-[1.03] active:scale-[0.98] transition-all duration-150"
+            className="w-full min-h-[52px] rounded-xl px-10 text-base font-bold bg-primary text-white shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:brightness-110 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
           >
             <Link to="/bestsellers">Shop Bestsellers</Link>
           </Button>
@@ -46,15 +46,15 @@ export function HeroSection() {
             asChild
             size="lg"
             variant="outline"
-            className="w-full sm:w-auto rounded-full px-10 py-3.5 text-base font-semibold bg-white text-foreground border border-border shadow-md hover:bg-muted hover:shadow-lg active:scale-[0.98] transition-all duration-150"
+            className="w-full min-h-[52px] rounded-xl px-10 text-base font-semibold bg-white text-[#1A1A1A] border border-[#E5E5E5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] active:scale-[0.98] transition-all duration-200"
           >
             <Link to="/products">View All Products</Link>
           </Button>
         </div>
 
-        <p className="mt-3 text-xs text-white/70 tracking-wide">Popular items sell out weekly</p>
+        <p className="mt-3 text-xs text-white/80 tracking-wide">Popular items sell out weekly</p>
 
-        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-xs md:text-sm font-medium text-white">
+        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-sm font-medium text-white/90">
           <span className="inline-flex items-center gap-1.5">✔ Free US shipping over $35</span>
           <span className="inline-flex items-center gap-1.5">✔ 30-day returns</span>
           <span className="inline-flex items-center gap-1.5">✔ Secure checkout</span>
