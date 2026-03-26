@@ -1267,7 +1267,7 @@ ${keywords.join(", ")}
             <div className="space-y-4">
               <div className="p-5 border-2 border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 space-y-4">
                 <h4 className="font-semibold text-lg flex items-center gap-2">
-                  🚀 Complete Stap-voor-Stap Handleiding: Google Ads Live Krijgen
+                  🚀 Complete Step-by-Step Guide: Getting Google Ads Live
                 </h4>
                 
                 {/* Step 1 */}
