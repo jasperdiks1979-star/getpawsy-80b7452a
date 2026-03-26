@@ -1360,18 +1360,18 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">5</div>
-                    <h5 className="font-medium">Controleren & Aanpassen</h5>
+                    <h5 className="font-medium">Review & Adjust</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Voordat je publiceert, controleer deze instellingen:</p>
+                    <p>Before publishing, check these settings:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li><strong>Budget:</strong> Pas het dagelijks budget aan (standaard $20/dag per campagne)</li>
-                      <li><strong>Locatie:</strong> Standaard op "United States" - pas aan indien nodig</li>
-                      <li><strong>Taal:</strong> Standaard op "English" - pas aan indien nodig</li>
-                      <li><strong>Biedstrategie:</strong> "Maximize Conversions" - werkt goed voor beginners</li>
+                      <li><strong>Budget:</strong> Adjust the daily budget (default $20/day per campaign)</li>
+                      <li><strong>Location:</strong> Default is "United States" — adjust if needed</li>
+                      <li><strong>Language:</strong> Default is "English" — adjust if needed</li>
+                      <li><strong>Bid strategy:</strong> "Maximize Conversions" — works well for beginners</li>
                     </ul>
                     <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-green-800 dark:text-green-200 text-xs">
-                      ✅ <strong>Aanbevolen:</strong> Start met 1 campagne (bijv. GPS Dog Fence) om te testen
+                      ✅ <strong>Recommended:</strong> Start with 1 campaign to test before scaling
                     </div>
                   </div>
                 </div>
@@ -1380,18 +1380,18 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">6</div>
-                    <h5 className="font-medium">Live Zetten (Posten)</h5>
+                    <h5 className="font-medium">Go Live (Post)</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Als alles er goed uitziet:</p>
+                    <p>When everything looks good:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li>Klik op <strong>"Post"</strong> in de toolbar (of Ctrl+P / Cmd+P)</li>
-                      <li>Selecteer alle wijzigingen die je wilt publiceren</li>
-                      <li>Klik op <strong>"Post"</strong> om te uploaden naar Google Ads</li>
-                      <li>Wacht tot de upload voltooid is (kan 1-2 minuten duren)</li>
+                      <li>Click <strong>"Post"</strong> in the toolbar (or Ctrl+P / Cmd+P)</li>
+                      <li>Select all changes you want to publish</li>
+                      <li>Click <strong>"Post"</strong> to upload to Google Ads</li>
+                      <li>Wait for the upload to complete (may take 1-2 minutes)</li>
                     </ol>
                     <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
-                      ⏰ <strong>Review tijd:</strong> Google keurt advertenties meestal binnen 24 uur goed, soms binnen een paar uur
+                      ⏰ <strong>Review time:</strong> Google usually approves ads within 24 hours, sometimes within a few hours
                     </div>
                   </div>
                 </div>
