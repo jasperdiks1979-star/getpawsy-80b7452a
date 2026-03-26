@@ -827,13 +827,13 @@ export default function OrthopedicDogBeds() {
         {/* ─── SECTION 7: RISK REVERSAL ─── */}
         <section className="mb-16 bg-card border rounded-2xl p-8 text-center">
           <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">30-Day Comfort Guarantee</h2>
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">30-Day Return Policy</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-            We're confident your dog will love their new orthopedic bed. If it's not the right fit, return it within 30 days to arrange a return. No questions asked.
+            Not the right fit for your dog? Return eligible items within 30 days. Contact our support team to start the process.
           </p>
           <div className="flex flex-wrap justify-center gap-6">
             {[
-              { icon: <RotateCcw className="w-5 h-5" />, label: 'Risk-Free Trial' },
+              { icon: <RotateCcw className="w-5 h-5" />, label: 'Easy Returns' },
               { icon: <Truck className="w-5 h-5" />, label: 'Fast US Shipping' },
               { icon: <Lock className="w-5 h-5" />, label: 'Secure Checkout' },
             ].map(t => (

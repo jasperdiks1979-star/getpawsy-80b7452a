@@ -141,8 +141,8 @@ export function CategorySeoContent({ categorySlug }: CategorySeoContentProps) {
             <div className="flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div>
-                <p className="font-medium text-foreground text-sm">Quality Guarantee</p>
-                <p className="text-xs text-muted-foreground">Vet-informed, carefully curated products</p>
+                <p className="font-medium text-foreground text-sm">Quality Commitment</p>
+                <p className="text-xs text-muted-foreground">Carefully curated products for your pet</p>
               </div>
             </div>
           </div>
