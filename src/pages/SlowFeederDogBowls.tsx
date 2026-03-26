@@ -489,7 +489,7 @@ export default function SlowFeederDogBowls() {
               Ready to Protect Your Dog?
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-              Premium quality. Fair price. {RETURN_WINDOW_DAYS}-day satisfaction guarantee.
+              Premium quality. Fair price. {RETURN_WINDOW_DAYS}-day return policy.
             </p>
             <Button asChild size="lg" className="rounded-full px-8 gap-2 text-base">
               <a href="#products">
