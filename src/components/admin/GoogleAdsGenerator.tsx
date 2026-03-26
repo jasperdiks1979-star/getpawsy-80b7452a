@@ -1248,18 +1248,18 @@ ${keywords.join(", ")}
             {/* Critical import order warning */}
             <div className="p-4 border-2 border-amber-300 rounded-lg bg-amber-50 dark:bg-amber-950/30 space-y-2">
               <h4 className="font-semibold text-amber-800 dark:text-amber-200 flex items-center gap-2">
-                ⚠️ BELANGRIJK: Import Volgorde
+                ⚠️ IMPORTANT: Import Order
               </h4>
               <p className="text-sm text-amber-700 dark:text-amber-300">
-                <strong>Campagnes en Ad Groups moeten EERST bestaan</strong> voordat je advertenties, keywords of sitelinks kunt toevoegen. 
-                Importeer altijd in deze volgorde:
+                <strong>Campaigns and Ad Groups must exist FIRST</strong> before you can add ads, keywords, or sitelinks. 
+                Always import in this order:
               </p>
               <ol className="list-decimal list-inside text-sm text-amber-700 dark:text-amber-300 space-y-1">
-                <li><strong>01_campaigns.csv</strong> → Campagne structuur aanmaken</li>
-                <li><strong>02_adgroups.csv</strong> → Ad Groups aanmaken binnen campagnes</li>
-                <li><strong>03_ads.csv</strong> → Ads toevoegen aan ad groups</li>
-                <li><strong>04_keywords.csv</strong> → Keywords toevoegen aan ad groups</li>
-                <li><strong>05_sitelinks.csv</strong> → Sitelinks toevoegen aan campagnes</li>
+                <li><strong>01_campaigns.csv</strong> → Create campaign structure</li>
+                <li><strong>02_adgroups.csv</strong> → Create Ad Groups within campaigns</li>
+                <li><strong>03_ads.csv</strong> → Add ads to ad groups</li>
+                <li><strong>04_keywords.csv</strong> → Add keywords to ad groups</li>
+                <li><strong>05_sitelinks.csv</strong> → Add sitelinks to campaigns</li>
               </ol>
             </div>
 
@@ -1267,25 +1267,25 @@ ${keywords.join(", ")}
             <div className="space-y-4">
               <div className="p-5 border-2 border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 space-y-4">
                 <h4 className="font-semibold text-lg flex items-center gap-2">
-                  🚀 Complete Stap-voor-Stap Handleiding: Google Ads Live Krijgen
+                  🚀 Complete Step-by-Step Guide: Getting Google Ads Live
                 </h4>
                 
                 {/* Step 1 */}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
-                    <h5 className="font-medium">Google Ads Account Aanmaken</h5>
+                    <h5 className="font-medium">Create Google Ads Account</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Als je nog geen account hebt:</p>
+                    <p>If you don't have an account yet:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Ga naar <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">ads.google.com</a></li>
-                      <li>Klik op "Nu starten" en log in met je Google account</li>
-                      <li>Kies "Nieuwe campagne maken" → "Ga naar Expert mode"</li>
-                      <li>Stel je betalingsgegevens in (creditcard of PayPal)</li>
+                      <li>Go to <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">ads.google.com</a></li>
+                      <li>Click "Start now" and sign in with your Google account</li>
+                      <li>Choose "Create new campaign" → "Switch to Expert mode"</li>
+                      <li>Set up your payment details (credit card or PayPal)</li>
                     </ul>
                     <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
-                      💡 <strong>Tip:</strong> Gebruik eerst een klein dagelijks budget (bijv. $10-20) om te testen
+                      💡 <strong>Tip:</strong> Start with a small daily budget (e.g. $10-20) to test
                     </div>
                   </div>
                 </div>
@@ -1294,15 +1294,15 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
-                    <h5 className="font-medium">Google Ads Editor Downloaden</h5>
+                    <h5 className="font-medium">Download Google Ads Editor</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Voor bulk uploads heb je de desktop editor nodig:</p>
+                    <p>For bulk uploads you need the desktop editor:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Download van <a href="https://ads.google.com/home/tools/ads-editor/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Google Ads Editor</a> (gratis)</li>
-                      <li>Installeer en open de applicatie</li>
-                      <li>Log in met hetzelfde Google account als je Ads account</li>
-                      <li>Klik op "Download" om je huidige account te synchroniseren</li>
+                      <li>Download from <a href="https://ads.google.com/home/tools/ads-editor/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Google Ads Editor</a> (free)</li>
+                      <li>Install and open the application</li>
+                      <li>Sign in with the same Google account as your Ads account</li>
+                      <li>Click "Download" to sync your current account</li>
                     </ul>
                   </div>
                 </div>
@@ -1311,16 +1311,16 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
-                    <h5 className="font-medium">CSV Bestanden Downloaden</h5>
+                    <h5 className="font-medium">Download CSV Files</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Download de CSV bestanden hierboven of gebruik de Complete Package:</p>
+                    <p>Download the CSV files above or use the Complete Package:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li><strong>01_campaigns.csv</strong> - Campagne instellingen</li>
-                      <li><strong>02_adgroups.csv</strong> - Advertentiegroepen</li>
+                      <li><strong>01_campaigns.csv</strong> - Campaign settings</li>
+                      <li><strong>02_adgroups.csv</strong> - Ad Groups</li>
                       <li><strong>03_ads.csv</strong> - Responsive Search Ads</li>
-                      <li><strong>04_keywords.csv</strong> - Zoekwoorden</li>
-                      <li><strong>05_sitelinks.csv</strong> - Sitelink extensies</li>
+                      <li><strong>04_keywords.csv</strong> - Keywords</li>
+                      <li><strong>05_sitelinks.csv</strong> - Sitelink extensions</li>
                     </ol>
                   </div>
                 </div>
@@ -1329,19 +1329,19 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border border-amber-200 dark:border-amber-800">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm">4</div>
-                    <h5 className="font-medium text-amber-700 dark:text-amber-400">Importeren in Google Ads Editor (VOLGORDE CRUCIAAL!)</h5>
+                    <h5 className="font-medium text-amber-700 dark:text-amber-400">Import in Google Ads Editor (ORDER IS CRITICAL!)</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p><strong>Importeer in EXACT deze volgorde:</strong></p>
+                    <p><strong>Import in EXACTLY this order:</strong></p>
                     <ol className="list-decimal list-inside space-y-2">
                       <li>
-                        <strong>Campagnes eerst:</strong> Account → Import → From file... → 01_campaigns.csv
+                        <strong>Campaigns first:</strong> Account → Import → From file... → 01_campaigns.csv
                       </li>
                       <li>
-                        <strong>Ad Groups tweede:</strong> Account → Import → From file... → 02_adgroups.csv
+                        <strong>Ad Groups second:</strong> Account → Import → From file... → 02_adgroups.csv
                       </li>
                       <li>
-                        <strong>Daarna advertenties:</strong> Account → Import → From file... → 03_ads.csv
+                        <strong>Then ads:</strong> Account → Import → From file... → 03_ads.csv
                       </li>
                       <li>
                         <strong>Keywords:</strong> Account → Import → From file... → 04_keywords.csv
@@ -1351,7 +1351,7 @@ ${keywords.join(", ")}
                       </li>
                     </ol>
                     <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
-                      ⚠️ <strong>Belangrijk:</strong> Campagnes en Ad Groups moeten EERST bestaan voordat ads/keywords kunnen worden toegevoegd!
+                      ⚠️ <strong>Important:</strong> Campaigns and Ad Groups must exist FIRST before ads/keywords can be added!
                     </div>
                   </div>
                 </div>
@@ -1360,18 +1360,18 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">5</div>
-                    <h5 className="font-medium">Controleren & Aanpassen</h5>
+                    <h5 className="font-medium">Review & Adjust</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Voordat je publiceert, controleer deze instellingen:</p>
+                    <p>Before publishing, check these settings:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li><strong>Budget:</strong> Pas het dagelijks budget aan (standaard $20/dag per campagne)</li>
-                      <li><strong>Locatie:</strong> Standaard op "United States" - pas aan indien nodig</li>
-                      <li><strong>Taal:</strong> Standaard op "English" - pas aan indien nodig</li>
-                      <li><strong>Biedstrategie:</strong> "Maximize Conversions" - werkt goed voor beginners</li>
+                      <li><strong>Budget:</strong> Adjust the daily budget (default $20/day per campaign)</li>
+                      <li><strong>Location:</strong> Default is "United States" — adjust if needed</li>
+                      <li><strong>Language:</strong> Default is "English" — adjust if needed</li>
+                      <li><strong>Bid strategy:</strong> "Maximize Conversions" — works well for beginners</li>
                     </ul>
                     <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-green-800 dark:text-green-200 text-xs">
-                      ✅ <strong>Aanbevolen:</strong> Start met 1 campagne (bijv. GPS Dog Fence) om te testen
+                      ✅ <strong>Recommended:</strong> Start with 1 campaign to test before scaling
                     </div>
                   </div>
                 </div>
@@ -1380,18 +1380,18 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">6</div>
-                    <h5 className="font-medium">Live Zetten (Posten)</h5>
+                    <h5 className="font-medium">Go Live (Post)</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Als alles er goed uitziet:</p>
+                    <p>When everything looks good:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li>Klik op <strong>"Post"</strong> in de toolbar (of Ctrl+P / Cmd+P)</li>
-                      <li>Selecteer alle wijzigingen die je wilt publiceren</li>
-                      <li>Klik op <strong>"Post"</strong> om te uploaden naar Google Ads</li>
-                      <li>Wacht tot de upload voltooid is (kan 1-2 minuten duren)</li>
+                      <li>Click <strong>"Post"</strong> in the toolbar (or Ctrl+P / Cmd+P)</li>
+                      <li>Select all changes you want to publish</li>
+                      <li>Click <strong>"Post"</strong> to upload to Google Ads</li>
+                      <li>Wait for the upload to complete (may take 1-2 minutes)</li>
                     </ol>
                     <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
-                      ⏰ <strong>Review tijd:</strong> Google keurt advertenties meestal binnen 24 uur goed, soms binnen een paar uur
+                      ⏰ <strong>Review time:</strong> Google usually approves ads within 24 hours, sometimes within a few hours
                     </div>
                   </div>
                 </div>
@@ -1400,17 +1400,17 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border border-green-200 dark:border-green-800">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm">7</div>
-                    <h5 className="font-medium text-green-700 dark:text-green-400">Conversie Tracking Instellen (Belangrijk!)</h5>
+                    <h5 className="font-medium text-green-700 dark:text-green-400">Set Up Conversion Tracking (Important!)</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Zonder conversie tracking weet Google niet welke ads werken:</p>
+                    <p>Without conversion tracking, Google won't know which ads are working:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li>Ga naar <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Ads</a> (online)</li>
+                      <li>Go to <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Ads</a> (online)</li>
                       <li>Tools & Settings → Measurement → Conversions</li>
-                      <li>Klik op "+ New conversion action" → Website</li>
-                      <li>Voer je website URL in: <code className="px-1 py-0.5 bg-muted rounded">https://getpawsy.pet</code></li>
-                      <li>Kies "Purchase" als conversie type</li>
-                      <li>Installeer de Google Tag (we hebben dit al via Google Analytics 4)</li>
+                      <li>Click "+ New conversion action" → Website</li>
+                      <li>Enter your website URL: <code className="px-1 py-0.5 bg-muted rounded">https://getpawsy.pet</code></li>
+                      <li>Choose "Purchase" as conversion type</li>
+                      <li>Install the Google Tag (already set up via Google Analytics 4)</li>
                     </ol>
                   </div>
                 </div>
@@ -1419,20 +1419,20 @@ ${keywords.join(", ")}
               {/* Quick Troubleshooting */}
               <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2">
-                  🔧 Veelvoorkomende Problemen
+                  🔧 Common Issues
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Import error:</strong> Controleer of je de CSV's in de juiste volgorde importeert (campagnes → ads → keywords)
+                    <strong className="text-foreground">Import error:</strong> Make sure you import CSVs in the correct order (campaigns → ads → keywords)
                   </div>
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Ad afgekeurd:</strong> Pas headlines aan die claims bevatten en voeg een privacybeleid toe
+                    <strong className="text-foreground">Ad rejected:</strong> Adjust headlines with claims and add a privacy policy
                   </div>
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Geen vertoningen:</strong> Verhoog je dagelijks budget of pas de biedingen aan
+                    <strong className="text-foreground">No impressions:</strong> Increase your daily budget or adjust bids
                   </div>
                   <div className="p-2 bg-background rounded border">
-                    <strong className="text-foreground">Low Quality Score:</strong> Verbeter je landingspagina's met relevante content en snelle laadtijd
+                    <strong className="text-foreground">Low Quality Score:</strong> Improve your landing pages with relevant content and fast load times
                   </div>
                 </div>
               </div>
@@ -1440,7 +1440,7 @@ ${keywords.join(", ")}
 
             {/* Campaign Preview Table */}
             <div className="space-y-3">
-              <h3 className="font-medium">Campagne Overzicht ({campaignData.length} advertenties)</h3>
+              <h3 className="font-medium">Campaign Overview ({campaignData.length} ads)</h3>
               <div className="border rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">

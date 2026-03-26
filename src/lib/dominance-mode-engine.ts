@@ -125,7 +125,7 @@ const EMOTIONAL_META = [
   (kw: string) => `Don't waste money on the wrong ${kw}. See what vets actually recommend and why 90% of pet owners get this wrong.`,
   (kw: string) => `Your pet deserves the best ${kw}. Expert-tested picks that save you time, money, and heartbreak.`,
   (kw: string) => `Stop scrolling — we tested every ${kw} so you don't have to. Real reviews, zero sponsored picks.`,
-  (kw: string) => `The only ${kw} guide you need in 2026. Vet-approved, expert-tested, and trusted by thousands of pet owners.`,
+  (kw: string) => `The only ${kw} guide you need in 2026. Expert-tested and trusted by thousands of pet owners.`,
 ];
 
 const TRUST_SIGNALS: TrustSignal[] = [
@@ -187,19 +187,19 @@ function generateFaqSchema(slug: string, pageType: MoneyUrl['pageType']): FaqEnt
 
   if (pageType === 'product' || pageType === 'bestseller') {
     faqs.push(
-      { question: `What makes this ${kw} the best choice for my pet?`, answer: `Our ${kw} is vet-approved, made with premium materials, and designed for maximum comfort and durability. Thousands of pet owners trust GetPawsy for quality pet products.` },
-      { question: `Does this ${kw} come with free shipping?`, answer: `Yes! All GetPawsy orders ship free within the US from our domestic warehouse. Typical delivery is 2-5 business days.` },
+      { question: `What makes this ${kw} the best choice for my pet?`, answer: `Our ${kw} is made with premium materials and designed for comfort and durability. Thousands of pet owners trust GetPawsy for quality pet products.` },
+      { question: `Does this ${kw} come with free shipping?`, answer: `Yes! GetPawsy offers free shipping on US orders over $35. Typical delivery is 3–7 business days.` },
       { question: `Can I return the ${kw} if my pet doesn't like it?`, answer: `Absolutely. We offer an easy 30-day return policy on all products, including this ${kw}. Contact us for assistance.` },
     );
   } else if (pageType === 'collection' || pageType === 'guide') {
     faqs.push(
       { question: `How do I choose the right ${kw} for my pet?`, answer: `Consider your pet's size, breed, and activity level. Our guide covers the top-rated options for 2026 with expert recommendations to help you decide.` },
-      { question: `What are the top-rated ${kw} in 2026?`, answer: `We've tested and reviewed the best ${kw} available. Our expert picks are based on durability, safety, and value for money — all vet-approved.` },
+      { question: `What are the top-rated ${kw} in 2026?`, answer: `We've tested and reviewed the best ${kw} available. Our expert picks are based on durability, safety, and value for money.` },
     );
   } else {
     faqs.push(
       { question: `What should I know about ${kw}?`, answer: `This comprehensive guide covers everything pet owners need to know about ${kw}, including expert tips, product recommendations, and common mistakes to avoid.` },
-      { question: `Is this ${kw} guide updated for 2026?`, answer: `Yes, this guide is fully updated for 2026 with the latest products, research, and vet-approved recommendations.` },
+      { question: `Is this ${kw} guide updated for 2026?`, answer: `Yes, this guide is fully updated for 2026 with the latest products, research, and expert recommendations.` },
     );
   }
 
