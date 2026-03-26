@@ -956,6 +956,22 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
+            {/* Compact Trust Checkmarks — immediately visible */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-primary" />
+                Ships in 3–7 business days
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                30-day returns
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-primary" />
+                Secure checkout
+              </span>
+            </div>
+
             {/* Variants - PRIORITY: Show immediately after price for visibility */}
             {variants.length > 1 && (
               <motion.div
