@@ -3214,37 +3214,6 @@ const Admin = () => {
             </AuthErrorBoundary>
           </TabsContent>
 
-          {/* Product Research Tab */}
-          <TabsContent value="product-research">
-            <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-muted-foreground">Product research laden...</span>
-                  </div>
-                </Card>
-              }>
-                <ProductResearchTool />
-              </Suspense>
-            </AuthErrorBoundary>
-          </TabsContent>
-
-          {/* Content Scraper Tab */}
-          <TabsContent value="content-scraper">
-            <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-muted-foreground">Content scraper laden...</span>
-                  </div>
-                </Card>
-              }>
-                <ContentScraperTool />
-              </Suspense>
-            </AuthErrorBoundary>
-          </TabsContent>
 
           {/* Supplier Import Tab */}
           <TabsContent value="suppliers">
