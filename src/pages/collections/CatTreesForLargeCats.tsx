@@ -180,7 +180,7 @@ export default function CatTreesForLargeCats() {
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-primary" /> Rated for 25+ lb Cats</span>
             <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> 3–7 Day US Shipping</span>
-            <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> 30-Day Satisfaction Guarantee</span>
+            <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> 30-Day Return Policy</span>
           </div>
         </section>
 

@@ -36,7 +36,7 @@ function humanize(slug: string): string {
 
 function buildSeoIntro(slug: string): string {
   const name = humanize(slug).toLowerCase();
-  return `Discover the ${name} that thousands of US pet owners trust. At GetPawsy, every product is carefully vetted for safety, durability, and real-world performance. This ${name} stands out for its premium materials, thoughtful design, and excellent value. Whether you're upgrading from a budget option or buying for the first time, you'll notice the difference immediately. Backed by our 30-day satisfaction guarantee and free US shipping, there's zero risk to try. Our pet experts personally test each item to ensure it meets the standards your furry friend deserves. Don't settle for less — give your pet the quality they need.`;
+  return `Discover the ${name} that pet owners across the US trust. At GetPawsy, every product is carefully selected for safety, durability, and real-world performance. This ${name} stands out for its premium materials, thoughtful design, and excellent value. Whether you're upgrading from a budget option or buying for the first time, you'll notice the difference. Backed by our 30-day return policy and free US shipping on orders over $35. Our team reviews each item to ensure it meets the standards your pet deserves.`;
 }
 
 function buildProductFaq(slug: string): Array<{ question: string; answer: string }> {

@@ -1133,8 +1133,8 @@ const ProductDetail = () => {
                     bullets.push(
                       "Premium materials built for daily pet life",
                       "Designed for comfort and ease of use",
-                      "Fast shipping to the United States",
-                      "Backed by 30-day satisfaction guarantee",
+                      "Shipping to the United States in 3–7 business days",
+                      "30-day return policy included",
                     );
                   }
 

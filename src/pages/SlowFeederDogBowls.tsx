@@ -505,7 +505,7 @@ export default function SlowFeederDogBowls() {
           <div className="container mx-auto px-4 max-w-3xl">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
-                { icon: RotateCcw, title: `${RETURN_WINDOW_DAYS}-Day Returns`, desc: 'Satisfaction guaranteed' },
+                { icon: RotateCcw, title: `${RETURN_WINDOW_DAYS}-Day Returns`, desc: '30-day return policy' },
                 { icon: Shield, title: 'Secure Checkout', desc: 'Encrypted payment' },
                 { icon: Headphones, title: 'Dedicated Support', desc: 'We respond within 24h' },
                 { icon: Truck, title: 'Free Shipping', desc: `Orders over $${FREE_SHIPPING_THRESHOLD}` },
