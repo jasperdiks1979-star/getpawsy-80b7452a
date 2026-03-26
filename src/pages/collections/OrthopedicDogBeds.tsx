@@ -958,7 +958,7 @@ export default function OrthopedicDogBeds() {
           </div>
           <div className="bg-card border rounded-xl p-5 text-center">
             <ShieldCheck className="w-6 h-6 text-primary mx-auto mb-2" />
-            <h3 className="font-semibold text-sm mb-1">Pet-Safe Guarantee</h3>
+            <h3 className="font-semibold text-sm mb-1">Pet-Safe Quality</h3>
             <p className="text-xs text-muted-foreground">Quality tested for safety</p>
           </div>
         </section>
