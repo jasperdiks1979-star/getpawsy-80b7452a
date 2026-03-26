@@ -1507,8 +1507,8 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer a {RETURN_WINDOW_DAYS}-day money-back guarantee. If you or your pet aren't completely satisfied with your purchase, 
-                      simply contact us and we'll arrange a hassle-free return. Items must be unused and in original packaging.
+                      We offer a {RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original packaging. 
+                      Contact us to arrange a return per our policy.
                     </AccordionContent>
                   </AccordionItem>
 
