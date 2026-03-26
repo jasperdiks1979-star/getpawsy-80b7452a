@@ -70,16 +70,16 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  GetPawsy was founded by pet lovers who wanted to create a simple place where pet owners can find reliable products for their dogs and cats.
+                  GetPawsy is a small ecommerce brand operated by Skidzo, based in the Netherlands.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  Our mission is to make everyday pet care easier by offering practical, affordable, and thoughtfully selected pet products.
+                  We focus on practical, well-reviewed pet products and ship them to customers in the United States through trusted fulfillment partners.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  We carefully select and test products before offering them to ensure quality, safety, and comfort for your pets. Finding quality pet products online often means sifting through endless options, unclear sizing, and questionable quality. We set out to change that.
+                  We test product quality, delivery reliability, and customer feedback before adding items to our store. Not everything makes the cut — and that's the point.
                 </p>
                 <p className="text-muted-foreground">
-                  GetPawsy is a Netherlands-based company serving customers in the United States via US-based fulfillment partners. We coordinate logistics, customer support, and product selection to deliver a smooth, reliable shopping experience.
+                  If something isn't right with your order, our support team responds within 24–48 hours. We handle returns, replacements, and questions directly.
                 </p>
               </div>
             </motion.div>

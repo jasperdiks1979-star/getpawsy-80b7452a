@@ -149,7 +149,7 @@ const SNIPER_SEED: Array<{
   {
     url: '/collections/waterproof-dog-beds', query: 'waterproof dog bed large',
     impressions: 1600, clicks: 26, position: 10.4, aov: 55,
-    title: 'Best Waterproof Dog Beds — Leak-Proof Guaranteed (2026)',
+    title: 'Waterproof Dog Beds — Leak-Proof Protection (2026)',
     meta: 'Accidents happen. These beds have sealed liners that block 100% of moisture. Machine-washable covers. Sizes up to XXL.',
     faqs: ['What makes a dog bed truly waterproof?', 'Are waterproof beds comfortable?', 'How to clean a waterproof dog bed?'],
     linkSources: ['/dog/orthopedic-dog-beds', '/collections/dog-beds', '/blog/puppy-house-training', '/guides/memory-foam-vs-regular-dog-bed', '/'],

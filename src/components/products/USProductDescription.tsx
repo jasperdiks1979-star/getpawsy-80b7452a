@@ -115,7 +115,7 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
           <div className="flex items-start gap-3 sm:col-span-2">
             <RotateCcw className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
             <div>
-              <p className="font-medium text-foreground text-sm">{RETURN_WINDOW_DAYS}-Day Hassle-Free Returns</p>
+              <p className="font-medium text-foreground text-sm">{RETURN_WINDOW_DAYS}-Day Easy Returns</p>
               <p className="text-xs text-muted-foreground">Easy returns if you are not completely satisfied</p>
             </div>
           </div>

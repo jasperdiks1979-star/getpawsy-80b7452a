@@ -65,7 +65,7 @@ export const BestsellersSection = () => {
             Customer Favorites
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Top-rated products chosen by pet owners across the United States — quality-checked and ready to ship.
+            Popular items customers are currently ordering — ready to ship from US fulfillment partners.
           </p>
         </div>
         <div className="flex items-center justify-end mb-4">

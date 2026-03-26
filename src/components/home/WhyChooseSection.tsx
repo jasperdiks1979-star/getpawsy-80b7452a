@@ -43,7 +43,7 @@ export function WhyChooseSection() {
           Why Pet Owners Trust GetPawsy
         </h2>
         <p className="text-sm text-muted-foreground text-center mb-10 max-w-lg mx-auto">
-          Loved by pet owners across the US
+          How we deliver a reliable shopping experience for US pet owners
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">

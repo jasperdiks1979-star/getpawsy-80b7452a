@@ -34,7 +34,7 @@ export function HeroSection() {
           Premium Pet Essentials for Dogs &amp; Cats — Fast US Delivery
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/90 max-w-xl mx-auto drop-shadow">
-          Trusted by pet owners across the United States. Fast shipping, easy returns, and reliable quality.
+          Carefully selected pet essentials, shipped quickly from US-based fulfillment partners.
         </p>
 
         <div className="mt-6">
