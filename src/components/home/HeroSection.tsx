@@ -4,13 +4,12 @@ import heroDesktop from '@/assets/hero-lifestyle.jpg';
 import heroMobile from '@/assets/hero-lifestyle-mobile.jpg';
 
 /**
- * Premium lifestyle hero — single CTA, trust row, social proof.
+ * Conversion-focused hero — dual CTA, compact trust row.
  * LCP-optimized with art-directed <picture>.
  */
 export function HeroSection() {
   return (
     <section className="relative w-full overflow-hidden">
-      {/* Background image with overlay */}
       <picture>
         <source media="(min-width: 768px)" srcSet={heroDesktop} />
         <img
@@ -25,19 +24,17 @@ export function HeroSection() {
         />
       </picture>
 
-      {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
 
-      {/* Content */}
-      <div className="relative z-10 container px-4 md:px-6 py-20 md:py-32 lg:py-40 text-center">
+      <div className="relative z-10 container px-4 md:px-6 py-16 md:py-28 lg:py-36 text-center">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
-          Premium Pet Essentials for Dogs &amp; Cats — Fast US Delivery
+          Premium Pet Essentials, Delivered Fast in the US
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/90 max-w-xl mx-auto drop-shadow">
-          Carefully selected pet essentials, shipped quickly from US-based fulfillment partners.
+          Top-rated products for dogs &amp; cats — fast US shipping and easy returns.
         </p>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button
             asChild
             size="lg"
@@ -45,14 +42,20 @@ export function HeroSection() {
           >
             <Link to="/bestsellers">Shop Bestsellers</Link>
           </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="rounded-full px-8 py-3 text-base font-semibold border-white/60 text-white hover:bg-white/10 hover:border-white backdrop-blur-sm"
+          >
+            <Link to="/products">View All Products</Link>
+          </Button>
         </div>
 
-        {/* Trust bullets */}
-        <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs md:text-sm text-white/90">
-          <span className="inline-flex items-center gap-1.5">✔ Free US shipping on orders over $35</span>
-          <span className="inline-flex items-center gap-1.5">✔ 30-day easy returns</span>
-          <span className="inline-flex items-center gap-1.5">✔ Secure checkout (Stripe, PayPal, Apple Pay)</span>
-          <span className="inline-flex items-center gap-1.5">✔ Ships from US-based fulfillment partners</span>
+        <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-xs md:text-sm text-white/90">
+          <span className="inline-flex items-center gap-1.5">✔ Free shipping over $35</span>
+          <span className="inline-flex items-center gap-1.5">✔ 30-day returns</span>
+          <span className="inline-flex items-center gap-1.5">✔ Secure checkout</span>
         </div>
       </div>
     </section>

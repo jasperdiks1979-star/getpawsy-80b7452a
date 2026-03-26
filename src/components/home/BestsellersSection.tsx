@@ -9,7 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 
 /**
- * Customer Favorites — horizontal scroll carousel with Add to Cart.
+ * Bestsellers Right Now — conversion-optimized product grid + scroll.
  */
 export const BestsellersSection = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -58,17 +58,17 @@ export const BestsellersSection = () => {
   };
 
   return (
-    <section className="py-12 md:py-16 bg-muted/30">
+    <section className="py-8 md:py-12">
       <div className="container px-4 md:px-6">
-        <div className="mb-2">
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-            Customer Favorites
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Popular items customers are currently ordering — ready to ship from US fulfillment partners.
-          </p>
-        </div>
-        <div className="flex items-center justify-end mb-4">
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
+              Bestsellers Right Now
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Popular items customers are currently ordering
+            </p>
+          </div>
           <div className="hidden md:flex gap-2">
             <button
               onClick={() => scroll('left')}
@@ -107,11 +107,11 @@ export const BestsellersSection = () => {
               return (
                 <div
                   key={bestseller.id}
-                  className="flex-shrink-0 w-[160px] md:w-[220px] snap-start"
+                  className="flex-shrink-0 w-[160px] md:w-[220px] snap-start flex flex-col"
                 >
                   <Link
                     to={`/bestseller/${slug}`}
-                    className="group flex flex-col rounded-2xl border border-border/40 bg-card overflow-hidden hover:shadow-md transition-shadow"
+                    className="group flex flex-col rounded-2xl border border-border/40 bg-card overflow-hidden hover:shadow-md transition-shadow flex-1"
                   >
                     <div className="aspect-square overflow-hidden bg-muted">
                       <img
@@ -132,6 +132,7 @@ export const BestsellersSection = () => {
                       <p className="text-sm font-bold text-primary mt-1">
                         ${price.toFixed(2)}
                       </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Ships in 3–7 days · Popular this week</p>
                     </div>
                   </Link>
                   <button
@@ -143,7 +144,7 @@ export const BestsellersSection = () => {
                         image: imageUrl,
                       });
                     }}
-                    className="w-full mt-2 py-2 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    className="w-full mt-2 py-2.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
                     Add to Cart
                   </button>
@@ -154,7 +155,7 @@ export const BestsellersSection = () => {
         )}
 
         {!isLoading && bestsellers && bestsellers.length > 0 && (
-          <div className="text-center mt-8">
+          <div className="text-center mt-6">
             <Button asChild variant="outline" className="rounded-full">
               <Link to="/bestsellers">View All Bestsellers</Link>
             </Button>

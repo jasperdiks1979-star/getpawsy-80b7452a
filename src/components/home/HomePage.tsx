@@ -16,33 +16,33 @@ const HomePage = () => {
         <title>GetPawsy – Premium Pet Products | Fast US Shipping</title>
         <meta
           name="description"
-          content="Shop premium pet products at GetPawsy. Innovative solutions for dogs and cats with fast US shipping and 30-day returns."
+          content="Shop premium pet products at GetPawsy. Top-rated essentials for dogs and cats with fast US shipping and 30-day returns."
         />
         <link rel="canonical" href="https://getpawsy.pet/" />
       </Helmet>
 
-      {/* 1. Hero — lifestyle, single CTA, trust row */}
+      {/* 1. Hero — dual CTA, compact trust */}
       <HeroSection />
 
-      {/* 1b. Recent orders — real store signal */}
+      {/* 2. Recently ordered — social proof strip */}
       <RecentOrdersSection />
 
-      {/* 2. Bestsellers — horizontal scroll carousel */}
+      {/* 3. Bestsellers — products visible immediately */}
       <Suspense fallback={null}>
         <BestsellersSection />
       </Suspense>
 
-      {/* 3. Category discovery — 4 clean cards */}
+      {/* 4. Shop by pet type — 4 category cards */}
       <Suspense fallback={null}>
         <ShopByCategoryLinks />
       </Suspense>
 
-      {/* 4. Why choose — trust/social proof */}
+      {/* 5. Compact trust strip — 3 blocks */}
       <Suspense fallback={null}>
         <WhyChooseSection />
       </Suspense>
 
-      {/* 5. Business transparency */}
+      {/* 6. Business transparency */}
       <Suspense fallback={null}>
         <TrustTransparencySection />
       </Suspense>
