@@ -345,7 +345,7 @@ export default function SlowFeederOffer() {
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Star className="w-5 h-5" />
-                <span>Loved by Pet Owners</span>
+                <span>Popular with Pet Owners</span>
               </div>
             </div>
           </div>

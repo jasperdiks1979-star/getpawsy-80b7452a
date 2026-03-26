@@ -268,7 +268,7 @@ function buildOptimizedDescription(p: MerchantProduct): string {
 
   let desc = `${problem} The ${cleanProductName(p.name)} delivers ${benefit.toLowerCase()} that ${pet} love. `;
   desc += finalBullets.join('. ') + '. ';
-  desc += `Ships from US warehouses in 3-7 business days. Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. 30-day hassle-free returns. Shop GetPawsy – Trusted by US pet parents.`;
+  desc += `Ships from US warehouses in 3-7 business days. Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. 30-day easy returns. Shop GetPawsy.`;
 
   return truncate(desc, 5000);
 }

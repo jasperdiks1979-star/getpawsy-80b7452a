@@ -302,7 +302,7 @@ const getConversionEmail = (preferenceToken: string): { subject: string; html: s
                       <span style="color: #f97316;">✓</span>
                     </td>
                     <td style="padding: 8px 0; color: #555; font-size: 14px;">
-                      <strong>30-day hassle-free returns</strong> — If it's not right, we'll make it right
+                      <strong>30-day easy returns</strong> — Contact us if something isn't right
                     </td>
                   </tr>
                   <tr>

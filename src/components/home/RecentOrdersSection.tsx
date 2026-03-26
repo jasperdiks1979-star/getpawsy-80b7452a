@@ -35,7 +35,7 @@ export function RecentOrdersSection() {
               <p className="text-sm font-medium text-foreground leading-snug mb-1">
                 {order.product}
               </p>
-              <p className="text-xs text-green-600 font-medium">{order.delivery}</p>
+              <p className="text-xs text-primary font-medium">{order.delivery}</p>
             </div>
           ))}
         </div>
