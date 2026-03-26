@@ -1400,17 +1400,17 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border border-green-200 dark:border-green-800">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm">7</div>
-                    <h5 className="font-medium text-green-700 dark:text-green-400">Conversie Tracking Instellen (Belangrijk!)</h5>
+                    <h5 className="font-medium text-green-700 dark:text-green-400">Set Up Conversion Tracking (Important!)</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Zonder conversie tracking weet Google niet welke ads werken:</p>
+                    <p>Without conversion tracking, Google won't know which ads are working:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li>Ga naar <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Ads</a> (online)</li>
+                      <li>Go to <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Ads</a> (online)</li>
                       <li>Tools & Settings → Measurement → Conversions</li>
-                      <li>Klik op "+ New conversion action" → Website</li>
-                      <li>Voer je website URL in: <code className="px-1 py-0.5 bg-muted rounded">https://getpawsy.pet</code></li>
-                      <li>Kies "Purchase" als conversie type</li>
-                      <li>Installeer de Google Tag (we hebben dit al via Google Analytics 4)</li>
+                      <li>Click "+ New conversion action" → Website</li>
+                      <li>Enter your website URL: <code className="px-1 py-0.5 bg-muted rounded">https://getpawsy.pet</code></li>
+                      <li>Choose "Purchase" as conversion type</li>
+                      <li>Install the Google Tag (already set up via Google Analytics 4)</li>
                     </ol>
                   </div>
                 </div>
