@@ -950,7 +950,7 @@ const BestsellerDetail = () => {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <RotateCcw className="w-4 h-4 text-primary" />
-                    <span>30-Day Money-Back Guarantee</span>
+                    <span>30-Day Return Policy</span>
                   </span>
                 </div>
 
