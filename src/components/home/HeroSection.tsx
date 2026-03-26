@@ -46,7 +46,7 @@ export function HeroSection() {
             asChild
             size="lg"
             variant="outline"
-            className="rounded-full px-8 py-3 text-base font-semibold border-white/60 text-white hover:bg-white/10 hover:border-white backdrop-blur-sm"
+            className="rounded-full px-8 py-3 text-base font-semibold bg-white text-foreground border border-border shadow-md hover:bg-muted hover:shadow-lg transition-all"
           >
             <Link to="/products">View All Products</Link>
           </Button>
