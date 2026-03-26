@@ -58,7 +58,7 @@ export const MostLovedPicks = () => {
             Most Loved by Pet Parents
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Hand-picked products with the highest satisfaction — trusted by thousands of happy pets
+            Hand-picked products based on customer feedback and repeat orders
           </p>
         </FadeInView>
 

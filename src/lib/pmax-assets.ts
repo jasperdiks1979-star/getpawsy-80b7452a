@@ -56,7 +56,7 @@ export const PMAX_LONG_HEADLINES = [
   'Interactive Toys That Keep Pets Happy & Engaged',
   
   // Trust + Conversion
-  'Quality Pet Gear with 30-Day Hassle-Free Returns',
+  'Quality Pet Gear with 30-Day Easy Returns',
   'Shop with Confidence – Secure Checkout & Dedicated Support',
 ] as const;
 

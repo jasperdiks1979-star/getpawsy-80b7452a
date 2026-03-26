@@ -19,7 +19,7 @@ export const TrustStack: React.FC<TrustStackProps> = ({ className = '' }) => {
             <Star key={i} className="w-3.5 h-3.5 text-warning fill-warning" />
           ))}
         </div>
-        <span className="text-sm font-medium text-foreground">Loved by 1,000+ pet owners</span>
+        <span className="text-sm font-medium text-foreground">Rated by pet owners across the US</span>
       </div>
 
       {/* Trust badges grid */}
