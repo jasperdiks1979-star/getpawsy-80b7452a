@@ -1294,15 +1294,15 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
-                    <h5 className="font-medium">Google Ads Editor Downloaden</h5>
+                    <h5 className="font-medium">Download Google Ads Editor</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Voor bulk uploads heb je de desktop editor nodig:</p>
+                    <p>For bulk uploads you need the desktop editor:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Download van <a href="https://ads.google.com/home/tools/ads-editor/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Google Ads Editor</a> (gratis)</li>
-                      <li>Installeer en open de applicatie</li>
-                      <li>Log in met hetzelfde Google account als je Ads account</li>
-                      <li>Klik op "Download" om je huidige account te synchroniseren</li>
+                      <li>Download from <a href="https://ads.google.com/home/tools/ads-editor/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Google Ads Editor</a> (free)</li>
+                      <li>Install and open the application</li>
+                      <li>Sign in with the same Google account as your Ads account</li>
+                      <li>Click "Download" to sync your current account</li>
                     </ul>
                   </div>
                 </div>
