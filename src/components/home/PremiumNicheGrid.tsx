@@ -36,8 +36,8 @@ const niches = [
   {
     slug: 'indestructible-dog-chew-toys',
     title: 'Indestructible Chew Toys',
-    benefit: 'Heavy-duty toys built for power chewers. Vet-approved for dental health.',
-    trust: 'Vet-approved • 30-day returns',
+    benefit: 'Heavy-duty toys built for power chewers. Designed for dental health.',
+    trust: 'Pet-tested • 30-day returns',
     image: chewToysImg,
     alt: 'Strong dog playing with durable rubber chew toy outdoors in sunny backyard',
   },

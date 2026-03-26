@@ -13,7 +13,7 @@ const PILLARS = [
       </svg>
     ),
     title: 'Positive Reinforcement Focus',
-    desc: 'Every tool supports force-free, vet-approved training methods. No prong collars, no choke chains — just effective solutions that build trust between you and your dog.',
+    desc: 'Every tool supports force-free, reward-based training methods. No prong collars, no choke chains — just effective solutions that build trust between you and your dog.',
   },
   {
     icon: (
