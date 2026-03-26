@@ -139,7 +139,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     bulletUSPs: [
       { icon: '✅', text: 'Stability-tested for cats 25+ lbs (Maine Coons, Ragdolls)' },
       { icon: '🇺🇸', text: 'US warehouse shipping — 5–10 day delivery' },
-      { icon: '🔄', text: '30-day satisfaction guarantee on all cat furniture' },
+      { icon: '🔄', text: '30-day return policy on all cat furniture' },
     ],
     quickComparison: [
       { model: 'Floor-to-Ceiling Tension', bestFor: 'Maximum stability, multi-cat', keyFeature: 'Adjustable 7–9 ft, no tipping', price: '$180–$300', badge: 'Most Stable' },
@@ -215,7 +215,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     bulletUSPs: [
       { icon: '✅', text: 'Crash-tested designs for dogs up to 75 lbs' },
       { icon: '🇺🇸', text: 'Fast US shipping — 3–7 business days' },
-      { icon: '🔄', text: '30-day satisfaction guarantee on all travel gear' },
+      { icon: '🔄', text: '30-day return policy on all travel gear' },
     ],
     quickComparison: [
       { model: 'Booster Car Seat', bestFor: 'Small dogs under 20 lbs', keyFeature: 'Window viewing, easy install', price: '$30–$60', badge: 'Best Seller' },
@@ -262,7 +262,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     bulletUSPs: [
       { icon: '✅', text: 'Cooling airflow design for hot weather and outdoor use' },
       { icon: '🇺🇸', text: 'Ships from US warehouses in 3–7 days' },
-      { icon: '🔄', text: '30-day return guarantee on all elevated beds' },
+      { icon: '🔄', text: '30-day return policy on all elevated beds' },
     ],
     quickComparison: [
       { model: 'Steel Frame Cot', bestFor: 'All-purpose, indoor/outdoor', keyFeature: '150 lb capacity, breathable mesh', price: '$25–$50', badge: 'Best Value' },

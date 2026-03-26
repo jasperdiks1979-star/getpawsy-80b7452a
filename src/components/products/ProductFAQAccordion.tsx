@@ -63,7 +63,7 @@ function generateFAQs(name: string, category?: string) {
     { q: `What is your return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you're not satisfied, contact our support team for a full refund or exchange.` },
     { q: `What materials is this made from?`, a: `The ${name} is made from premium, pet-safe materials designed for durability and comfort. See the product description for specific material details.` },
     { q: `Is this easy to clean?`, a: cat.includes('bed') ? `Most of our pet beds feature removable, machine-washable covers for easy maintenance.` : `Yes, this product is designed for easy cleaning. Refer to the care instructions in the product description.` },
-    { q: `Does this come with a warranty?`, a: `All GetPawsy products are backed by our ${RETURN_WINDOW_DAYS}-day satisfaction guarantee. We stand behind the quality of every product we sell.` },
+    { q: `Does this come with a warranty?`, a: `All GetPawsy products are backed by our ${RETURN_WINDOW_DAYS}-day return policy. We stand behind the quality of every product we sell.` },
     { q: `Is this safe for puppies and kittens?`, a: `Yes, we prioritize pet safety in every product. However, we recommend supervising young pets during initial use.` },
     { q: `Can I use this for multiple pets?`, a: `Absolutely! Many of our customers use this product in multi-pet households. Choose the appropriate size for your largest pet.` },
     { q: `Do you ship internationally?`, a: `We currently focus on US shipping to ensure the fastest delivery times. International shipping may be available for select items.` },

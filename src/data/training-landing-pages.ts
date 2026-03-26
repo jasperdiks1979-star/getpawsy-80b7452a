@@ -243,7 +243,7 @@ export const STOP_PULLING_LANDING: LandingPageData = {
   socialProof: [
     { stat: '0%', label: 'Neck pressure (100% chest-distributed)' },
     { stat: 'Vet-Approved', label: 'Recommended by veterinary behaviorists' },
-    { stat: '30 Days', label: 'Risk-free guarantee' },
+    { stat: '30 Days', label: 'Risk-free returns' },
   ],
   reviews: [
     { name: 'Dr. Lisa P.', location: 'Veterinarian, FL', stars: 5, text: 'I recommend harnesses over collars for every dog that pulls. This one has the best combination of control and comfort I\'ve seen at this price point.', verified: true },

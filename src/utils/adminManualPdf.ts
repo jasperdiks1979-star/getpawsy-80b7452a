@@ -734,7 +734,7 @@ export const generateAdminManualPdf = (): jsPDF => {
 
   addSpace(doc, 2);
 
-  addComplianceBox(doc, '4. Returns Policy', `${RETURN_WINDOW_DAYS}-day return window clearly stated. Eligibility conditions specified. Process explained (email ${SUPPORT_EMAIL}). Refund timeline (5–10 business days). No vague language.`);
+  addComplianceBox(doc, '4. Returns Policy', `${RETURN_WINDOW_DAYS}-day return window clearly stated. Eligibility conditions specified. Process explained (email ${SUPPORT_EMAIL}). Refund timeline (5 business days). No vague language.`);
 
   addSpace(doc, 2);
 
@@ -820,7 +820,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   addParagraph(doc, `Our support team will respond within 24 business hours with return instructions and, if applicable, a return shipping label.`);
 
   addSubtitle(doc, 'Refund Timeline');
-  addParagraph(doc, `Once your return is received and inspected, we will process your refund within 5–10 business days. Refunds are issued to the original payment method.`);
+  addParagraph(doc, `Once your return is received and inspected, we will process your refund within 5 business days. Refunds are issued to the original payment method.`);
 
   addSubtitle(doc, 'Damaged or Incorrect Items');
   addParagraph(doc, `If you receive a damaged or incorrect item, please contact ${SUPPORT_EMAIL} within 48 hours of delivery with photos of the issue. We will arrange a replacement or full refund at no additional cost to you.`);
@@ -961,7 +961,7 @@ export const generateAdminManualPdf = (): jsPDF => {
     `We have verified that all pricing is consistent across every customer touchpoint: product pages, search results, cart, and checkout display identical prices. Our shipping policy is simple and transparent: orders of $${FREE_SHIPPING_THRESHOLD} or more qualify for free shipping; orders under $${FREE_SHIPPING_THRESHOLD} are charged a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. This exact logic is implemented in our checkout system and reflected in our Merchant Center shipping settings. We ship exclusively within the United States with a delivery time of ${DELIVERY_TIME_STANDARD}. There are no hidden fees, "calculated at checkout" language, or variable shipping costs.`,
     '',
     'RETURNS POLICY',
-    `We offer a clear ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original packaging. Returns are initiated via ${SUPPORT_EMAIL}. Refunds are processed within 5–10 business days to the original payment method. For damaged or incorrect items, we provide free return shipping.`,
+    `We offer a clear ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original packaging. Returns are initiated via ${SUPPORT_EMAIL}. Refunds are processed within 5 business days to the original payment method. For damaged or incorrect items, we provide free return shipping.`,
     '',
     'PRODUCT REPRESENTATION',
     'All product listings accurately represent the items sold. Product images, titles, descriptions, and prices are consistent across our website and product feed. Ad destination URLs lead directly to the correct product pages with matching information.',

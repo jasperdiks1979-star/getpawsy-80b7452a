@@ -126,7 +126,7 @@ const DATA: Record<ProductType, ComparisonData> = {
       { feature: 'Premium pet-safe materials', ours: true, generic: false },
       { feature: 'Built for daily durability', ours: true, generic: false },
       { feature: 'Fast US-based shipping', ours: true, generic: false },
-      { feature: '30-day return guarantee', ours: true, generic: false },
+      { feature: '30-day return policy', ours: true, generic: false },
       { feature: 'Responsive support team', ours: true, generic: false },
       { feature: 'Tracked delivery included', ours: true, generic: true },
     ],

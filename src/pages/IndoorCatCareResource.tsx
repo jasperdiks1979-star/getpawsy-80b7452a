@@ -195,7 +195,7 @@ export default function IndoorCatCareResource() {
         {/* CTA */}
         <section className="text-center">
           <h2 className="text-2xl font-display font-bold mb-3">Ready to Upgrade Your Indoor Cat's Space?</h2>
-          <p className="text-muted-foreground mb-6">Browse our expert-curated collections — all with free US shipping and a 30-day satisfaction guarantee.</p>
+          <p className="text-muted-foreground mb-6">Browse our expert-curated collections — all with free US shipping and a 30-day return policy.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/collections/cat-trees-and-condos" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
               Shop Cat Trees & Condos <ArrowRight className="w-4 h-4" />

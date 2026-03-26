@@ -788,7 +788,7 @@ export const SupplierImportManager = forwardRef<HTMLDivElement, Record<string, n
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="2-5 business days">2-5 business days (US)</SelectItem>
-                      <SelectItem value="5-10 business days">5-10 business days</SelectItem>
+                      <SelectItem value="5 business days">5 business days</SelectItem>
                       <SelectItem value="10-20 business days">10-20 business days</SelectItem>
                     </SelectContent>
                   </Select>
