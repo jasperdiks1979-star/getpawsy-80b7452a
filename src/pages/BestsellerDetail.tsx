@@ -1257,7 +1257,7 @@ const BestsellerDetail = () => {
                     </div>
                     <div className="text-sm">
                       <p className="font-semibold">30-Day Returns</p>
-                      <p className="text-muted-foreground text-xs">Money back guarantee</p>
+                      <p className="text-muted-foreground text-xs">Easy return process</p>
                     </div>
                   </motion.div>
                   <motion.div 
