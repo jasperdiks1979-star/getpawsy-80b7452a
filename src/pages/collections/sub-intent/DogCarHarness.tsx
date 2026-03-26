@@ -10,7 +10,7 @@ export default function DogCarHarness() {
       subtitle="Crash-tested harness systems that attach directly to your vehicle's seat belt. Padded chest plates distribute impact forces. Ideal for medium and large dogs 30+ lbs."
       ctaText="Shop Car Harnesses"
       ctaLink="/collections/best-dog-car-seats"
-      trustBadges={['Crash-Test Informed', '3–7 Day US Shipping', '30-Day Safety Guarantee']}
+      trustBadges={['Crash-Test Informed', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Dog', href: '/dog/dog-car-travel-safety' },

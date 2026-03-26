@@ -463,11 +463,11 @@ export function identifyProductQuickWins(
     return {
       slug: p.slug,
       impressions: p.impressions,
-      seoIntro: `Looking for the perfect ${name.toLowerCase()} for your pet? At GetPawsy, we've carefully selected this ${name.toLowerCase()} based on quality, safety, and real customer feedback. Whether you're a first-time pet owner or upgrading your current setup, this product delivers the durability and design your pet deserves. Free US shipping on all orders, with a easy 30-day return policy.`,
+      seoIntro: `Looking for the perfect ${name.toLowerCase()} for your pet? At GetPawsy, we've carefully selected this ${name.toLowerCase()} based on quality, safety, and real customer feedback. Whether you're a first-time pet owner or upgrading your current setup, this product delivers the durability and design your pet deserves. Free US shipping on all orders, with an easy 30-day return policy.`,
       faqSchema: [
         { question: `How fast is shipping for this ${name.toLowerCase()}?`, answer: 'We offer free standard shipping across the US. Most orders arrive within 7-15 business days. Express shipping options are available at checkout.' },
         { question: `What materials is this ${name.toLowerCase()} made from?`, answer: 'This product is made from premium, pet-safe materials. All items meet US safety standards. Check the product description for specific material details.' },
-        { question: `Can I return this ${name.toLowerCase()}?`, answer: 'Yes! We offer a 30-day easy return policy. If you or your pet aren\'t satisfied, contact our support team for a full refund or exchange.' },
+        { question: `Can I return this ${name.toLowerCase()}?`, answer: 'Yes! We offer a 30-day easy return policy. If you or your pet aren\'t satisfied, contact our support team to arrange a return per our policy.' },
         { question: `Why do pet owners choose this ${name.toLowerCase()}?`, answer: `Pet owners love this ${name.toLowerCase()} for its durability, safety, and great value. Thousands of satisfied customers trust GetPawsy for quality pet products backed by expert reviews.` },
       ],
       relatedGuides: findRelatedGuidesForProduct(p.slug),

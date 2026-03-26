@@ -813,7 +813,7 @@ export default function OrthopedicDogBeds() {
               { icon: '🔬', title: 'Foam Density Tested', desc: 'Every bed is rated for foam density (lb/ft³) so you know exactly what you\'re getting.' },
               { icon: '💬', title: 'Dedicated Support', desc: 'Real people, real answers. Our customer care team responds within 24 hours.' },
               { icon: '🐕', title: 'Breed-Specific Guidance', desc: 'Size guides and breed recommendations so your dog gets the right fit.' },
-              { icon: '💯', title: '30-Day Return Policy', desc: 'Not the right bed? Return it within 30 days for a full refund. No questions.' },
+              { icon: '💯', title: '30-Day Return Policy', desc: 'Not the right bed? Return it within 30 days to arrange a return. No questions.' },
             ].map(item => (
               <div key={item.title} className="bg-card border rounded-xl p-5 text-center">
                 <span className="text-3xl mb-3 block">{item.icon}</span>
@@ -829,7 +829,7 @@ export default function OrthopedicDogBeds() {
           <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">30-Day Comfort Guarantee</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-            We're confident your dog will love their new orthopedic bed. If it's not the right fit, return it within 30 days for a full refund. No questions asked.
+            We're confident your dog will love their new orthopedic bed. If it's not the right fit, return it within 30 days to arrange a return. No questions asked.
           </p>
           <div className="flex flex-wrap justify-center gap-6">
             {[
