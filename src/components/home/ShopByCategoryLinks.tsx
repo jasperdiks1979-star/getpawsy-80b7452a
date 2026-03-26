@@ -15,9 +15,12 @@ export function ShopByCategoryLinks() {
   return (
     <section className="py-12 md:py-16">
       <div className="container px-4 md:px-6">
-        <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground text-center mb-8">
+        <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground text-center mb-2">
           Shop by Category
         </h2>
+        <p className="text-sm text-muted-foreground text-center mb-8 max-w-lg mx-auto">
+          Browse our curated collections for dogs and cats — from cozy beds and durable toys to smart litter solutions and travel gear.
+        </p>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
           {CATEGORIES.map((cat) => (
