@@ -50,7 +50,7 @@ const FAQ = () => {
         },
         {
           question: 'When will I receive my refund?',
-          answer: 'Once we receive and inspect your return, refunds are processed back to your original payment method within 5-7 business days.',
+          answer: 'Once we receive and inspect your return, refunds are processed back to your original payment method within 5 business days.',
         },
       ],
     },

@@ -1667,7 +1667,7 @@ const BestsellerDetail = () => {
                 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Check className="w-4 h-4 text-green-500" />
-                  <span>30-day money-back guarantee</span>
+                  <span>30-day return policy</span>
                 </div>
               </div>
 
