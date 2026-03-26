@@ -867,13 +867,11 @@ const ProductDetail = () => {
           >
             {/* Category & Title */}
             <div>
-              {/* Demand badge — inventory-driven, compliant */}
-              {inStock && (product.stock ?? 0) > 0 && (
+              {/* Stock indicator — factual, compliant */}
+              {inStock && (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 10 && (
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary mb-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  {(product.stock ?? 0) <= 10
-                    ? `Only ${product.stock} left — Popular among pet owners`
-                    : "Popular Choice — High Demand Product"}
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  Limited stock available
                 </div>
               )}
               {product.category && (
