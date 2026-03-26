@@ -63,7 +63,7 @@ export const DeliveryReassurance: React.FC<DeliveryReassuranceProps> = ({ classN
           <RotateCcw className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-medium text-foreground text-sm">{RETURN_WINDOW_DAYS}-Day Returns</p>
-            <p className="text-sm text-muted-foreground">Hassle-free returns if not satisfied</p>
+            <p className="text-sm text-muted-foreground">Easy return process</p>
           </div>
         </div>
       </div>

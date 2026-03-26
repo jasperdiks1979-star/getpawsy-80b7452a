@@ -1152,19 +1152,17 @@ const ProductDetail = () => {
 
             {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
-            {/* Stock Status & Urgency */}
+            {/* Stock Status */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success animate-pulse" : "bg-destructive"}`} />
+                <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success" : "bg-destructive"}`} />
                 <span className="font-semibold text-foreground">
-                  {inStock ? "In Stock – Ready to Ship" : "Out of Stock"}
+                  {inStock ? "In Stock – Ready to Ship" : "Currently Unavailable"}
                 </span>
               </div>
               {inStock && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  {(product.stock ?? 0) > 0 && (product.stock ?? 0) <= 15
-                    ? "Only a few left in stock – order soon"
-                    : "Ships from USA within 24 hours"}
+                  Orders processed within 1–2 business days
                 </p>
               )}
             </div>

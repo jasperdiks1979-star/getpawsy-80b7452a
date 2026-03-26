@@ -74,7 +74,7 @@ export function LocalBusinessSchema({
           itemOffered: {
             '@type': 'Service',
             name: `${RETURN_WINDOW_DAYS}-Day Returns`,
-            description: `Hassle-free returns within ${RETURN_WINDOW_DAYS} days`,
+            description: `${RETURN_WINDOW_DAYS}-day return policy`,
           },
         },
       ],

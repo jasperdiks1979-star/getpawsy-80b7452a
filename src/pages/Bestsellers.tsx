@@ -649,9 +649,9 @@ const Bestsellers = () => {
                   ['Total Curated Products', '600+'],
                   ['Average Bestseller Rating', reviewStats.totalReviews > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5.0` : 'Collecting reviews'],
                   ['Free Shipping Threshold', '$35+'],
-                  ['Return Window', '30 days, hassle-free'],
-                  ['Shipping', 'Fast shipping to the United States'],
-                  ['Standard Delivery', '7–15 business days'],
+                  ['Return Window', '30-day return policy'],
+                  ['Shipping', 'US shipping via trusted logistics partners'],
+                  ['Standard Delivery', '3–7 business days'],
                   ['Payment Security', 'Stripe-powered checkout'],
                   ['Target Market', 'United States'],
                 ].map(([label, value], i) => (

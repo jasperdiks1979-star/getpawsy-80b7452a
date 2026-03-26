@@ -126,7 +126,7 @@ export const TRUST_BADGES = {
   },
   returns: {
     title: `${RETURN_WINDOW_DAYS}-Day Returns`,
-    subtitle: 'Hassle-free returns',
+    subtitle: 'Easy return process',
   },
   secure: {
     title: 'Secure Checkout',

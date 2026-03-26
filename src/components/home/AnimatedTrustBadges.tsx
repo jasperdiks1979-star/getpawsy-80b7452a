@@ -20,7 +20,7 @@ const badges = [
   {
     icon: Shield,
     title: `${RETURN_WINDOW_DAYS}-Day Returns`,
-    description: 'Hassle-free returns',
+    description: 'Easy return process',
     color: 'success',
   },
   {
