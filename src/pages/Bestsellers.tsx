@@ -631,7 +631,7 @@ const Bestsellers = () => {
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <ShieldCheck className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">Pet-Safe Guarantee</h3>
+              <h3 className="font-semibold mb-2">Pet-Safe Quality</h3>
               <p className="text-sm text-muted-foreground">Every product is tested for safety and quality. Secure checkout powered by Stripe. Your pet's wellbeing is our top priority.</p>
             </div>
           </div>

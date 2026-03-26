@@ -171,7 +171,7 @@ export default function OrthopedicDogBeds() {
       {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       <Helmet>
         <title>7 Best Orthopedic Dog Beds for Joint Support (2026)</title>
-        <meta name="description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35." />
+        <meta name="description" content="Dog waking up stiff? Supportive memory foam beds designed to relieve joint pain. Waterproof, washable, 30-day return policy. Free US shipping over $35." />
         <meta name="keywords" content="orthopedic dog beds, memory foam dog bed, dog bed for arthritis, orthopedic dog bed large dogs, senior dog bed, joint pain dog bed, waterproof orthopedic dog bed, best orthopedic dog bed 2026" />
         <link rel="canonical" href={CANONICAL} />
         <link rel="alternate" hrefLang="en" href={CANONICAL} />
@@ -185,7 +185,7 @@ export default function OrthopedicDogBeds() {
         <meta property="og:image" content={`${BASE}/og-image.png`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />
-        <meta name="twitter:description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy." />
+        <meta name="twitter:description" content="Dog waking up stiff? Supportive memory foam beds designed to relieve joint pain. Waterproof, washable, 30-day return policy." />
         <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
@@ -958,7 +958,7 @@ export default function OrthopedicDogBeds() {
           </div>
           <div className="bg-card border rounded-xl p-5 text-center">
             <ShieldCheck className="w-6 h-6 text-primary mx-auto mb-2" />
-            <h3 className="font-semibold text-sm mb-1">Pet-Safe Guarantee</h3>
+            <h3 className="font-semibold text-sm mb-1">Pet-Safe Quality</h3>
             <p className="text-xs text-muted-foreground">Quality tested for safety</p>
           </div>
         </section>
