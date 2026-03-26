@@ -24,6 +24,9 @@ const HomePage = () => {
       {/* 1. Hero — lifestyle, single CTA, trust row */}
       <HeroSection />
 
+      {/* 1b. Recent orders — real store signal */}
+      <RecentOrdersSection />
+
       {/* 2. Bestsellers — horizontal scroll carousel */}
       <Suspense fallback={null}>
         <BestsellersSection />
