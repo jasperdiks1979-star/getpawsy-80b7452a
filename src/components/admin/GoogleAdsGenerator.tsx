@@ -1329,19 +1329,19 @@ ${keywords.join(", ")}
                 <div className="space-y-2 p-4 bg-background rounded-lg border border-amber-200 dark:border-amber-800">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm">4</div>
-                    <h5 className="font-medium text-amber-700 dark:text-amber-400">Importeren in Google Ads Editor (VOLGORDE CRUCIAAL!)</h5>
+                    <h5 className="font-medium text-amber-700 dark:text-amber-400">Import in Google Ads Editor (ORDER IS CRITICAL!)</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p><strong>Importeer in EXACT deze volgorde:</strong></p>
+                    <p><strong>Import in EXACTLY this order:</strong></p>
                     <ol className="list-decimal list-inside space-y-2">
                       <li>
-                        <strong>Campagnes eerst:</strong> Account → Import → From file... → 01_campaigns.csv
+                        <strong>Campaigns first:</strong> Account → Import → From file... → 01_campaigns.csv
                       </li>
                       <li>
-                        <strong>Ad Groups tweede:</strong> Account → Import → From file... → 02_adgroups.csv
+                        <strong>Ad Groups second:</strong> Account → Import → From file... → 02_adgroups.csv
                       </li>
                       <li>
-                        <strong>Daarna advertenties:</strong> Account → Import → From file... → 03_ads.csv
+                        <strong>Then ads:</strong> Account → Import → From file... → 03_ads.csv
                       </li>
                       <li>
                         <strong>Keywords:</strong> Account → Import → From file... → 04_keywords.csv
@@ -1351,7 +1351,7 @@ ${keywords.join(", ")}
                       </li>
                     </ol>
                     <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
-                      ⚠️ <strong>Belangrijk:</strong> Campagnes en Ad Groups moeten EERST bestaan voordat ads/keywords kunnen worden toegevoegd!
+                      ⚠️ <strong>Important:</strong> Campaigns and Ad Groups must exist FIRST before ads/keywords can be added!
                     </div>
                   </div>
                 </div>
