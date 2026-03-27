@@ -1104,9 +1104,9 @@ const BestsellerDetail = () => {
                     <ul className="space-y-0.5 text-yellow-700 dark:text-yellow-300">
                       <li>• is_active: {String(product.is_active)}</li>
                       <li>• available: {String((product as { available?: boolean }).available)}</li>
-                      <li>• stock: {stockValue === null ? 'null' : stockValue === undefined ? 'undefined' : stockValue}</li>
-                      <li>• computed: {computedAvailability}</li>
-                      <li>• reason: {availabilityReason}</li>
+                      <li>• stock: {product.stock === null ? 'null' : product.stock === undefined ? 'undefined' : product.stock}</li>
+                      <li>• computed: {availabilityResult.isInStock ? 'in_stock' : 'out_of_stock'}</li>
+                      <li>• reason: {availabilityResult.reason}</li>
                       <li>• inStock: {String(inStock)}</li>
                       <li>• product.id: {product.id}</li>
                     </ul>
@@ -1119,8 +1119,8 @@ const BestsellerDetail = () => {
                 )}
 
                 {/* Low Stock Badge */}
-                {inStock && stockValue != null && stockValue > 0 && stockValue <= 10 && (
-                  <LowStockBadge stock={stockValue} />
+                {inStock && product.stock != null && product.stock > 0 && product.stock <= 10 && (
+                  <LowStockBadge stock={product.stock} />
                 )}
 
                 {/* Stock Status */}
