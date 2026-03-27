@@ -4,14 +4,14 @@ import { ShoppingBag } from 'lucide-react';
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 const TOP_SLUGS = [
-  '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
-  'dog-stroller-pet-stroller',
-  'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
-  'dog-cot-cooling-pet-bed-3',
-  '49-inches-tall-cat-tree-with-ufo-top-perch-space-capsule-and-sisal-scratching-352d',
-  'pet-carrier-backpack-expandable-cat-dog-carrier-with-back-extension-breathable-0381',
-  '35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c',
-  'xl-stainless-steel-litter-box-w-flip-top-scoop-step-top-side-entry-enclosed-fe5e',
+  'automatic-cat-litter-box-self-cleaning-app-control',
+  'foldable-dog-stroller-pet-travel-cart',
+  'hidden-cat-litter-box-furniture-enclosure',
+  'elevated-cooling-dog-bed-outdoor-pet-cot',
+  'tall-cat-tree-ufo-perch-space-capsule-sisal',
+  'expandable-pet-carrier-backpack-breathable',
+  'modern-cat-tree-35-inch-wooden-scratching-tower',
+  'xl-stainless-steel-cat-litter-box-flip-top',
 ];
 
 interface TopProduct {
