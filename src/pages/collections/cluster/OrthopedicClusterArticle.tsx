@@ -17,7 +17,7 @@ import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 
 const BASE = 'https://getpawsy.pet';
-const HUB = '/dog/orthopedic-dog-beds';
+const HUB = '/collections/all';
 
 interface ClusterData {
   slug: string;

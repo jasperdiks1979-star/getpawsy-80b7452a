@@ -501,14 +501,14 @@ function buildInjections(product: TP20Product): LinkEquityInjection[] {
 const AUTHORITY_LOOP_CONFIGS: AuthorityLoop[] = [
   {
     category: 'Cat Trees',
-    pillarSlug: '/cat/cat-trees-for-large-cats',
+    pillarSlug: '/collections/all',
     pillarTitle: 'Best Cat Trees for Large Cats 2026 — Stability-Tested Picks',
     pillarWordTarget: '1,500–2,000',
     productSlugs: ['all-in-one-cactus-cat-tree-with-climbing-frame-and-cozy-nest', 'large-cat-tree-multi-level-tower'],
     collectionSlug: '/collections/cat-condos',
     loopLinks: [
-      { from: '/cat/cat-trees-for-large-cats', to: '/collections/cat-condos', anchor: 'browse all cat trees' },
-      { from: '/collections/cat-condos', to: '/cat/cat-trees-for-large-cats', anchor: 'cat tree buying guide' },
+      { from: '/collections/all', to: '/collections/cat-condos', anchor: 'browse all cat trees' },
+      { from: '/collections/cat-condos', to: '/collections/all', anchor: 'cat tree buying guide' },
     ],
   },
   {
@@ -537,7 +537,7 @@ const AUTHORITY_LOOP_CONFIGS: AuthorityLoop[] = [
   },
   {
     category: 'Dog Beds',
-    pillarSlug: '/dog/orthopedic-dog-beds',
+    pillarSlug: '/collections/all',
     pillarTitle: 'Best Orthopedic Dog Beds 2026 — Joint Support & Comfort',
     pillarWordTarget: '1,500–2,000',
     productSlugs: [
@@ -548,8 +548,8 @@ const AUTHORITY_LOOP_CONFIGS: AuthorityLoop[] = [
     ],
     collectionSlug: '/collections/orthopedic-calming-dog-beds',
     loopLinks: [
-      { from: '/dog/orthopedic-dog-beds', to: '/collections/orthopedic-calming-dog-beds', anchor: 'shop orthopedic dog beds' },
-      { from: '/collections/orthopedic-calming-dog-beds', to: '/dog/orthopedic-dog-beds', anchor: 'orthopedic bed buying guide' },
+      { from: '/collections/all', to: '/collections/orthopedic-calming-dog-beds', anchor: 'shop orthopedic dog beds' },
+      { from: '/collections/orthopedic-calming-dog-beds', to: '/collections/all', anchor: 'orthopedic bed buying guide' },
     ],
   },
 ];

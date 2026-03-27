@@ -32,9 +32,9 @@ export const DEPTH_MAP: DepthEntry[] = [
   // Depth 1 — Homepage
   { path: '/', label: 'Homepage', depth: 1, tier: 1, priority: 1.00 },
   // Depth 2 — Pillars (linked from homepage nav/hero)
-  { path: '/dog/orthopedic-dog-beds',   label: 'Orthopedic Dog Beds Pillar',    depth: 2, tier: 2, priority: 0.90 },
-  { path: '/cat/cat-trees-for-large-cats', label: 'Cat Trees Large Cats Pillar', depth: 2, tier: 2, priority: 0.90 },
-  { path: '/dog/dog-car-travel-safety', label: 'Dog Car Travel Safety Pillar',   depth: 2, tier: 2, priority: 0.90 },
+  { path: '/collections/all',   label: 'Orthopedic Dog Beds Pillar',    depth: 2, tier: 2, priority: 0.90 },
+  { path: '/collections/all', label: 'Cat Trees Large Cats Pillar', depth: 2, tier: 2, priority: 0.90 },
+  { path: '/collections/all', label: 'Dog Car Travel Safety Pillar',   depth: 2, tier: 2, priority: 0.90 },
   { path: '/dog/dog-anxiety-solutions', label: 'Dog Anxiety Solutions Pillar',   depth: 2, tier: 2, priority: 0.90 },
   { path: '/dog/dog-enrichment',        label: 'Dog Enrichment Pillar',          depth: 2, tier: 2, priority: 0.90 },
   { path: '/cat/cat-furniture',         label: 'Cat Furniture Pillar',           depth: 2, tier: 2, priority: 0.90 },

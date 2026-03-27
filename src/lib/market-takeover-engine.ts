@@ -305,7 +305,7 @@ function buildCannibalizationFixes(): CannibalizationFix[] {
       query: 'orthopedic dog bed',
       pages: [
         { url: '/orthopedic-dog-beds', position: 8.2, impressions: 4200 },
-        { url: '/dog/orthopedic-dog-beds', position: 18.4, impressions: 680 },
+        { url: '/collections/all', position: 18.4, impressions: 680 },
       ],
       severity: 'critical',
       action: '301 redirect /dog/orthopedic-dog-beds → /orthopedic-dog-beds. Consolidate all link equity to new hub.',
@@ -314,7 +314,7 @@ function buildCannibalizationFixes(): CannibalizationFix[] {
       query: 'cat tree large cats',
       pages: [
         { url: '/cat-trees-for-large-cats', position: 11.5, impressions: 3800 },
-        { url: '/cat/cat-trees-for-large-cats', position: 22.1, impressions: 520 },
+        { url: '/collections/all', position: 22.1, impressions: 520 },
       ],
       severity: 'critical',
       action: '301 redirect /cat/cat-trees-for-large-cats → /cat-trees-for-large-cats. Merge content.',

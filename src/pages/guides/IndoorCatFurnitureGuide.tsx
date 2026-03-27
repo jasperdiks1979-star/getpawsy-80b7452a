@@ -364,7 +364,7 @@ export default function IndoorCatFurnitureGuide() {
               ['/best-self-cleaning-litter-box-2026', 'Best Self-Cleaning Litter Boxes 2026'],
               ['/collections/best-cat-litter-boxes', 'Cat Litter Box Solutions'],
               ['/resources/indoor-cat-care', 'Indoor Cat Care Resource Center'],
-              ['/cat/cat-trees-for-large-cats', 'Cat Trees for Large Cats'],
+              ['/collections/all', 'Cat Trees for Large Cats'],
             ].map(([href, label]) => (
               <Link key={href} to={href} className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-lg hover:bg-muted/50">
                 <ArrowRight className="h-3 w-3 shrink-0" /> {label}

@@ -215,7 +215,7 @@ export default function CatCondoVsCatTree2026() {
                 { condition: 'Your cat is active, climbs furniture, loves windows', result: '→ Cat Tree', link: '/collections/cat-trees-and-condos' },
                 { condition: 'Your cat hides under beds, is anxious or newly adopted', result: '→ Cat Condo', link: '/collections/cat-condos' },
                 { condition: 'You have multiple cats', result: '→ Cat Tree (open territory)', link: '/collections/cat-tree-for-two-cats' },
-                { condition: 'Your cat is a large breed (Maine Coon, Ragdoll)', result: '→ Heavy-Duty Cat Tree', link: '/cat/cat-trees-for-large-cats' },
+                { condition: 'Your cat is a large breed (Maine Coon, Ragdoll)', result: '→ Heavy-Duty Cat Tree', link: '/collections/all' },
                 { condition: 'You live in a small apartment', result: '→ Wall-Mounted or Compact Tree', link: '/collections/best-cat-trees-for-small-apartments' },
                 { condition: 'Your cat does both — climbs AND hides', result: '→ Combo Tree-Condo (Best Value)', link: '/collections/cat-trees-and-condos' },
               ].map((item, i) => (

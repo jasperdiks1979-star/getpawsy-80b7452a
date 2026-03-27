@@ -114,7 +114,7 @@ function buildScenarios(vol: number, currentPos: number, aov: number): RevenueSc
 const orthopedicDogBeds: NicheProfile = {
   id: 'orthopedic-dog-beds',
   name: 'Orthopedic Dog Beds',
-  pillarUrl: '/dog/orthopedic-dog-beds',
+  pillarUrl: '/collections/all',
   monthlySearchVolume: 14800,
   currentPosition: 8,
   aov: 65,
@@ -135,9 +135,9 @@ const orthopedicDogBeds: NicheProfile = {
   ],
   revenueScenarios: buildScenarios(14800, 8, 65),
   ctrOptimizations: [
-    { page: '/dog/orthopedic-dog-beds', currentTitle: 'Best Orthopedic Dog Beds 2026', newTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)', currentMeta: 'Shop orthopedic dog beds...', newMeta: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35.' },
-    { page: '/dog/orthopedic-dog-beds/memory-foam', currentTitle: 'Memory Foam Dog Beds', newTitle: 'Best Memory Foam Dog Beds — Vet-Tested (2026)', currentMeta: 'Shop memory foam...', newMeta: 'Cheap foam flattens in weeks. Our memory foam beds use 1.8+ lb/ft³ density that lasts 3–5 years. Free US shipping.' },
-    { page: '/dog/orthopedic-dog-beds/best-for-large-dogs', currentTitle: 'Orthopedic Beds for Large Dogs', newTitle: 'Best Orthopedic Beds for Large Dogs – 90+ lbs Tested', currentMeta: 'Large dog beds...', newMeta: "Large breed beds that don't flatten. Load-tested for 90+ lb dogs with 6\" foam. Vet-approved, waterproof. Free shipping." },
+    { page: '/collections/all', currentTitle: 'Best Orthopedic Dog Beds 2026', newTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)', currentMeta: 'Shop orthopedic dog beds...', newMeta: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35.' },
+    { page: '/collections/all', currentTitle: 'Memory Foam Dog Beds', newTitle: 'Best Memory Foam Dog Beds — Vet-Tested (2026)', currentMeta: 'Shop memory foam...', newMeta: 'Cheap foam flattens in weeks. Our memory foam beds use 1.8+ lb/ft³ density that lasts 3–5 years. Free US shipping.' },
+    { page: '/collections/all', currentTitle: 'Orthopedic Beds for Large Dogs', newTitle: 'Best Orthopedic Beds for Large Dogs – 90+ lbs Tested', currentMeta: 'Large dog beds...', newMeta: "Large breed beds that don't flatten. Load-tested for 90+ lb dogs with 6\" foam. Vet-approved, waterproof. Free shipping." },
   ],
   executionChecklist: [
     { task: 'Pillar page rewritten to 2,200+ words', priority: 'critical', status: 'done', week: 1 },
@@ -152,13 +152,13 @@ const orthopedicDogBeds: NicheProfile = {
     { task: 'Ranking evaluation + position strengthening', priority: 'medium', status: 'pending', week: 4 },
   ],
   internalLinkMap: [
-    { from: '/', to: '/dog/orthopedic-dog-beds', anchor: 'orthopedic dog beds', type: 'exact' },
-    { from: '/guides/how-to-choose-orthopedic-dog-bed', to: '/dog/orthopedic-dog-beds', anchor: 'best orthopedic dog beds', type: 'exact' },
-    { from: '/guides/signs-your-dog-has-joint-pain', to: '/dog/orthopedic-dog-beds', anchor: 'orthopedic bed for joint pain', type: 'partial' },
-    { from: '/guides/best-dog-beds-large-breeds-2026', to: '/dog/orthopedic-dog-beds', anchor: 'large breed orthopedic beds', type: 'partial' },
-    { from: '/guides/memory-foam-vs-regular-dog-bed', to: '/dog/orthopedic-dog-beds', anchor: 'see our orthopedic collection', type: 'natural' },
-    { from: '/cat/cat-trees-for-large-cats', to: '/dog/orthopedic-dog-beds', anchor: 'Orthopedic Dog Beds', type: 'natural' },
-    { from: '/dog/dog-car-travel-safety', to: '/dog/orthopedic-dog-beds', anchor: 'Orthopedic Dog Beds', type: 'natural' },
+    { from: '/', to: '/collections/all', anchor: 'orthopedic dog beds', type: 'exact' },
+    { from: '/guides/how-to-choose-orthopedic-dog-bed', to: '/collections/all', anchor: 'best orthopedic dog beds', type: 'exact' },
+    { from: '/guides/signs-your-dog-has-joint-pain', to: '/collections/all', anchor: 'orthopedic bed for joint pain', type: 'partial' },
+    { from: '/guides/best-dog-beds-large-breeds-2026', to: '/collections/all', anchor: 'large breed orthopedic beds', type: 'partial' },
+    { from: '/guides/memory-foam-vs-regular-dog-bed', to: '/collections/all', anchor: 'see our orthopedic collection', type: 'natural' },
+    { from: '/collections/all', to: '/collections/all', anchor: 'Orthopedic Dog Beds', type: 'natural' },
+    { from: '/collections/all', to: '/collections/all', anchor: 'Orthopedic Dog Beds', type: 'natural' },
   ],
 };
 
@@ -167,7 +167,7 @@ const orthopedicDogBeds: NicheProfile = {
 const catTrees: NicheProfile = {
   id: 'cat-trees-for-large-cats',
   name: 'Cat Trees for Large Cats',
-  pillarUrl: '/cat/cat-trees-for-large-cats',
+  pillarUrl: '/collections/all',
   monthlySearchVolume: 9200,
   currentPosition: 12,
   aov: 120,
@@ -188,9 +188,9 @@ const catTrees: NicheProfile = {
   ],
   revenueScenarios: buildScenarios(9200, 12, 120),
   ctrOptimizations: [
-    { page: '/cat/cat-trees-for-large-cats', currentTitle: "Heavy Duty Cat Trees for Large Cats – Won't Tip (2026)", newTitle: "5 Best Cat Trees for Large Cats – Anti-Tip Tested (2026)", currentMeta: 'Tired of wobbly cat trees?...', newMeta: "Wobbly cat tree? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal, anti-tip tested. Free US shipping over $35." },
-    { page: '/cat/cat-trees-for-large-cats/for-maine-coon', currentTitle: 'Best Cat Tree for Maine Coon', newTitle: 'Best Cat Tree for Maine Coon – 25+ lb Rated (2026)', currentMeta: 'Find cat trees for Maine Coons...', newMeta: "Maine Coons need extra-wide platforms & 25+ lb capacity. Our expert-reviewed picks won't wobble. Free shipping." },
-    { page: '/cat/cat-trees-for-large-cats/heavy-duty', currentTitle: 'Heavy Duty Cat Trees', newTitle: 'Heavy Duty Cat Trees – 40+ lb Capacity Tested', currentMeta: 'Shop heavy duty cat trees...', newMeta: "Reinforced with solid wood frames and anti-tip hardware. Rated for 40+ lbs. Expert-reviewed, free US shipping." },
+    { page: '/collections/all', currentTitle: "Heavy Duty Cat Trees for Large Cats – Won't Tip (2026)", newTitle: "5 Best Cat Trees for Large Cats – Anti-Tip Tested (2026)", currentMeta: 'Tired of wobbly cat trees?...', newMeta: "Wobbly cat tree? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal, anti-tip tested. Free US shipping over $35." },
+    { page: '/collections/all', currentTitle: 'Best Cat Tree for Maine Coon', newTitle: 'Best Cat Tree for Maine Coon – 25+ lb Rated (2026)', currentMeta: 'Find cat trees for Maine Coons...', newMeta: "Maine Coons need extra-wide platforms & 25+ lb capacity. Our expert-reviewed picks won't wobble. Free shipping." },
+    { page: '/collections/all', currentTitle: 'Heavy Duty Cat Trees', newTitle: 'Heavy Duty Cat Trees – 40+ lb Capacity Tested', currentMeta: 'Shop heavy duty cat trees...', newMeta: "Reinforced with solid wood frames and anti-tip hardware. Rated for 40+ lbs. Expert-reviewed, free US shipping." },
   ],
   executionChecklist: [
     { task: 'Pillar page at 2,000+ words with stability science', priority: 'critical', status: 'done', week: 1 },
@@ -205,13 +205,13 @@ const catTrees: NicheProfile = {
     { task: 'Position strengthening for pos 8–15 keywords', priority: 'medium', status: 'pending', week: 4 },
   ],
   internalLinkMap: [
-    { from: '/', to: '/cat/cat-trees-for-large-cats', anchor: 'cat trees for large cats', type: 'exact' },
-    { from: '/guides/how-tall-should-cat-tree-be', to: '/cat/cat-trees-for-large-cats', anchor: 'best cat trees for large cats', type: 'exact' },
-    { from: '/guides/cat-tree-stability-guide', to: '/cat/cat-trees-for-large-cats', anchor: 'heavy-duty cat trees', type: 'partial' },
-    { from: '/guides/best-cat-trees-small-apartments', to: '/cat/cat-trees-for-large-cats', anchor: 'cat trees built for big cats', type: 'partial' },
-    { from: '/guides/sisal-vs-carpet-scratching-posts', to: '/cat/cat-trees-for-large-cats', anchor: 'browse our cat tree collection', type: 'natural' },
-    { from: '/dog/orthopedic-dog-beds', to: '/cat/cat-trees-for-large-cats', anchor: 'Cat Trees for Large Cats', type: 'natural' },
-    { from: '/dog/dog-car-travel-safety', to: '/cat/cat-trees-for-large-cats', anchor: 'Cat Trees for Large Cats', type: 'natural' },
+    { from: '/', to: '/collections/all', anchor: 'cat trees for large cats', type: 'exact' },
+    { from: '/guides/how-tall-should-cat-tree-be', to: '/collections/all', anchor: 'best cat trees for large cats', type: 'exact' },
+    { from: '/guides/cat-tree-stability-guide', to: '/collections/all', anchor: 'heavy-duty cat trees', type: 'partial' },
+    { from: '/guides/best-cat-trees-small-apartments', to: '/collections/all', anchor: 'cat trees built for big cats', type: 'partial' },
+    { from: '/guides/sisal-vs-carpet-scratching-posts', to: '/collections/all', anchor: 'browse our cat tree collection', type: 'natural' },
+    { from: '/collections/all', to: '/collections/all', anchor: 'Cat Trees for Large Cats', type: 'natural' },
+    { from: '/collections/all', to: '/collections/all', anchor: 'Cat Trees for Large Cats', type: 'natural' },
   ],
 };
 
@@ -220,7 +220,7 @@ const catTrees: NicheProfile = {
 const dogCarSeats: NicheProfile = {
   id: 'dog-car-travel-safety',
   name: 'Dog Car Travel Safety',
-  pillarUrl: '/dog/dog-car-travel-safety',
+  pillarUrl: '/collections/all',
   monthlySearchVolume: 6400,
   currentPosition: 15,
   aov: 55,
@@ -241,9 +241,9 @@ const dogCarSeats: NicheProfile = {
   ],
   revenueScenarios: buildScenarios(6400, 15, 55),
   ctrOptimizations: [
-    { page: '/dog/dog-car-travel-safety', currentTitle: 'Crash-Tested Dog Car Seats & Safety Gear (2026)', newTitle: '6 Safest Dog Car Seats – Crash-Test Rated (2026)', currentMeta: 'Your dog rides unrestrained?...', newMeta: "A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping." },
-    { page: '/dog/dog-car-travel-safety/car-seats', currentTitle: 'Best Dog Car Seats for Small Dogs', newTitle: 'Best Dog Car Seats for Small Dogs – Under 25 lbs', currentMeta: 'Shop dog car seats...', newMeta: "Small dogs need elevated, padded car seats with harness systems. Crash-test informed picks. Free shipping over $35." },
-    { page: '/dog/dog-car-travel-safety/booster-seats', currentTitle: 'Dog Booster Seats', newTitle: 'Dog Booster Seats – Elevated & Safe for Small Breeds', currentMeta: 'Shop booster seats...', newMeta: "Give your small dog a safe window view. Padded, secured booster seats for dogs under 20 lbs. Free US shipping." },
+    { page: '/collections/all', currentTitle: 'Crash-Tested Dog Car Seats & Safety Gear (2026)', newTitle: '6 Safest Dog Car Seats – Crash-Test Rated (2026)', currentMeta: 'Your dog rides unrestrained?...', newMeta: "A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping." },
+    { page: '/collections/all', currentTitle: 'Best Dog Car Seats for Small Dogs', newTitle: 'Best Dog Car Seats for Small Dogs – Under 25 lbs', currentMeta: 'Shop dog car seats...', newMeta: "Small dogs need elevated, padded car seats with harness systems. Crash-test informed picks. Free shipping over $35." },
+    { page: '/collections/all', currentTitle: 'Dog Booster Seats', newTitle: 'Dog Booster Seats – Elevated & Safe for Small Breeds', currentMeta: 'Shop booster seats...', newMeta: "Give your small dog a safe window view. Padded, secured booster seats for dogs under 20 lbs. Free US shipping." },
   ],
   executionChecklist: [
     { task: 'Pillar page at 2,000+ words with crash-test data', priority: 'critical', status: 'done', week: 1 },
@@ -258,13 +258,13 @@ const dogCarSeats: NicheProfile = {
     { task: 'Week 4 position strengthening', priority: 'medium', status: 'pending', week: 4 },
   ],
   internalLinkMap: [
-    { from: '/', to: '/dog/dog-car-travel-safety', anchor: 'dog car travel safety', type: 'exact' },
-    { from: '/guides/dog-booster-seat-vs-car-hammock', to: '/dog/dog-car-travel-safety', anchor: 'dog car safety gear', type: 'partial' },
-    { from: '/guides/dog-travel-safety-laws-by-state', to: '/dog/dog-car-travel-safety', anchor: 'crash-tested car seats', type: 'partial' },
-    { from: '/guides/crash-tested-dog-car-seat-guide', to: '/dog/dog-car-travel-safety', anchor: 'safest dog car seats', type: 'exact' },
-    { from: '/guides/best-dog-car-seat-for-small-dogs', to: '/dog/dog-car-travel-safety', anchor: 'full car safety collection', type: 'natural' },
-    { from: '/dog/orthopedic-dog-beds', to: '/dog/dog-car-travel-safety', anchor: 'Dog Car Travel Safety', type: 'natural' },
-    { from: '/cat/cat-trees-for-large-cats', to: '/dog/dog-car-travel-safety', anchor: 'Dog Car Travel Safety', type: 'natural' },
+    { from: '/', to: '/collections/all', anchor: 'dog car travel safety', type: 'exact' },
+    { from: '/guides/dog-booster-seat-vs-car-hammock', to: '/collections/all', anchor: 'dog car safety gear', type: 'partial' },
+    { from: '/guides/dog-travel-safety-laws-by-state', to: '/collections/all', anchor: 'crash-tested car seats', type: 'partial' },
+    { from: '/guides/crash-tested-dog-car-seat-guide', to: '/collections/all', anchor: 'safest dog car seats', type: 'exact' },
+    { from: '/guides/best-dog-car-seat-for-small-dogs', to: '/collections/all', anchor: 'full car safety collection', type: 'natural' },
+    { from: '/collections/all', to: '/collections/all', anchor: 'Dog Car Travel Safety', type: 'natural' },
+    { from: '/collections/all', to: '/collections/all', anchor: 'Dog Car Travel Safety', type: 'natural' },
   ],
 };
 

@@ -249,13 +249,13 @@ export default function CatTreesForLargeCats() {
               {
                 title: 'Heavy Duty Cat Trees',
                 desc: 'Built with solid wood frames, thick sisal posts, and anti-tip hardware. These cat trees are rated for 40+ lbs and designed to withstand aggressive play from large and active cats. Many include wall-anchor systems for maximum stability.',
-                link: '/cat/cat-trees-for-large-cats/heavy-duty',
+                link: '/collections/all',
                 linkText: 'Shop Heavy Duty Cat Trees →',
               },
               {
                 title: 'Cat Trees for Maine Coons',
                 desc: 'Purpose-designed for the largest domestic breed. Features include 18"+ platforms, 12"+ condo openings, reinforced hammocks rated for 25 lbs, and extra-tall scratching posts that accommodate a full stretch. Built to handle 20–30 lb cats comfortably.',
-                link: '/cat/cat-trees-for-large-cats/for-maine-coon',
+                link: '/collections/all',
                 linkText: 'Shop Maine Coon Cat Trees →',
               },
               {
