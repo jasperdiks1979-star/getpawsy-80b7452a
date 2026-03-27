@@ -131,8 +131,9 @@ export default function OrthopedicDogBeds() {
           return keywords.some(k => n.includes(k));
         })
         .sort((a, b) => {
-          const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
-          const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
+          // Dropship model: null/undefined = in stock, only 0 = out of stock
+          const aStock = a.stock === 0 ? 1 : 0;
+          const bStock = b.stock === 0 ? 1 : 0;
           if (aStock !== bStock) return aStock - bStock;
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         })
