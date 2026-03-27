@@ -650,9 +650,22 @@ const ProductDetail = () => {
     return <NotFound />;
   }
 
-  // Use centralized availability logic (real supplier stock)
-  const availabilityResult = computeAvailability(product);
+  // Use centralized availability logic with variant-aware fallback
+  // Variant stock overrides product stock only when a variant is selected
+  const variantStock = selectedVariant ? (selectedVariant as any).stock : undefined;
+  const availabilityResult = computeAvailability(product, variantStock);
   const inStock = availabilityResult.isInStock;
+
+  // Temporary debug log for stock diagnosis
+  console.log("STOCK DEBUG", {
+    productId: product.id,
+    productStock: product.stock,
+    productIsActive: product.is_active,
+    variantStock,
+    selectedVariantVid: selectedVariant?.vid,
+    inStock,
+    reason: availabilityResult.reason,
+  });
 
   const handleAddToCart = () => {
     // Prevent adding out-of-stock items
