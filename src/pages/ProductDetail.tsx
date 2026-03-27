@@ -944,7 +944,7 @@ const ProductDetail = () => {
                         <span className="text-xl text-muted-foreground line-through">${compareAt!.toFixed(2)}</span>
                         {currentDiscount && currentDiscount > 0 && (
                           <Badge className="bg-accent/20 text-accent-foreground border-accent/30">
-                            Save {currentDiscount}%
+                            Save {currentDiscount}% (${(compareAt! - displayPrice).toFixed(2)} off)
                           </Badge>
                         )}
                       </>
