@@ -25,7 +25,7 @@ interface CleanupStatus {
   isRunning: boolean;
 }
 
-export const DebugPanel = () => {
+export const DebugPanel = forwardRef<HTMLDivElement>((_, _ref) => {
   const [searchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
   const [storageData, setStorageData] = useState<StorageInfo[]>([]);
