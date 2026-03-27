@@ -59,14 +59,10 @@ export class AppErrorBoundary extends Component<Props, State> {
     }
   }
 
-  handleDismiss = () => {
-    this.setState({ hasError: false, errorId: '', errorMessage: '' });
-  };
-
   render() {
     if (this.state.hasError) {
-      // Show recovery UI only — do NOT re-render children as that causes
-      // recursive crashes and React removeChild errors
+      // STATIC recovery UI only — NO React state resets, NO re-rendering children.
+      // All buttons use window.location directly to avoid crash loops.
       return (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -83,7 +79,7 @@ export class AppErrorBoundary extends Component<Props, State> {
             <button
               onClick={() => {
                 sessionStorage.clear();
-                window.location.replace(window.location.pathname);
+                window.location.reload();
               }}
               style={{
                 padding: '8px 20px', borderRadius: '6px', border: 'none',
@@ -91,17 +87,17 @@ export class AppErrorBoundary extends Component<Props, State> {
                 cursor: 'pointer', fontWeight: 500,
               }}
             >
-              Refresh
+              Try Again
             </button>
             <button
-              onClick={this.handleDismiss}
+              onClick={() => { window.location.href = '/'; }}
               style={{
                 padding: '8px 20px', borderRadius: '6px', border: '1px solid #d1d5db',
                 background: '#fff', color: '#333', fontSize: '13px',
                 cursor: 'pointer', fontWeight: 500,
               }}
             >
-              Try Again
+              Home
             </button>
           </div>
         </div>

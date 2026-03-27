@@ -503,7 +503,8 @@ const SeoCollection = () => {
   }
 
   // Thin collection guard: if fewer than 3 real products, redirect to /collections/all
-  const isThinCollection = !productsLoading && products.length < 3 && slug !== 'all';
+  // Skip redirect for 'all' to prevent infinite redirect loop
+  const isThinCollection = !productsLoading && products.length < 3 && slug !== 'all' && !slug?.startsWith('all');
   if (isThinCollection) {
     return <Navigate to="/collections/all" replace />;
   }

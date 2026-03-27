@@ -59,6 +59,42 @@ if (typeof window !== 'undefined') {
 import { initCLSGuard, postMountVitalsChecks } from "./lib/perf/cls-guard-init";
 try { initCLSGuard(); } catch {}
 
+// === STEP 0f: Global error recovery — catch chunk load failures & unhandled errors ===
+if (typeof window !== 'undefined') {
+  let _reloadAttempted = false;
+  const safeReload = () => {
+    if (_reloadAttempted) return; // prevent reload loop
+    _reloadAttempted = true;
+    sessionStorage.setItem('__error_reload__', Date.now().toString());
+    window.location.reload();
+  };
+
+  // Only auto-reload for chunk load failures (not all errors)
+  window.addEventListener('error', (e) => {
+    const msg = e?.message || '';
+    if (msg.includes('Loading chunk') || msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {
+      console.error('[GLOBAL] Chunk load failure, reloading:', msg);
+      safeReload();
+    }
+  });
+
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e?.reason?.message || String(e?.reason || '');
+    if (reason.includes('Loading chunk') || reason.includes('Failed to fetch dynamically imported module') || reason.includes('Importing a module script failed')) {
+      console.error('[GLOBAL] Chunk load rejection, reloading:', reason);
+      safeReload();
+    }
+  });
+
+  // Prevent reload loop: if we just reloaded within 5s, don't do it again
+  const lastReload = sessionStorage.getItem('__error_reload__');
+  if (lastReload && Date.now() - parseInt(lastReload) < 5000) {
+    _reloadAttempted = true;
+  } else {
+    sessionStorage.removeItem('__error_reload__');
+  }
+}
+
 // === STEP 1: Install boot error handlers BEFORE anything else ===
 import {
   initBootDiagnostics,
