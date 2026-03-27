@@ -501,15 +501,8 @@ const SeoCollection = () => {
       matchResult: 'not_found',
     });
 
-    // Auto-redirect to closest valid category instead of showing "Collection Not Found"
-    const speciesHint = classifySpecies(rawSlug || '').speciesPrimary;
-    const fallbackPath = speciesHint === 'cat'
-      ? '/collections/cat'
-      : speciesHint === 'dog'
-        ? '/collections/dog'
-        : '/products';
-
-    return <Navigate to={fallbackPath} replace />;
+    // Always redirect to /collections/all — never show "Collection Not Found"
+    return <Navigate to="/collections/all" replace />;
   }
 
   const collectionJsonLd = products.length > 0 ? generateCollectionJsonLd(collection, products) : null;
