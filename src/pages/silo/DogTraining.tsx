@@ -31,7 +31,7 @@ const DogTraining = () => {
       <Helmet>
         <title>Dog Training Gear – No-Pull Harnesses & Leashes | GetPawsy</title>
         <meta name="description" content="Shop dog training harnesses, leashes & behavior tools. No-pull designs, reflective stitching, adjustable fit. US 3–7 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/dog/training" />
+        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
       </Helmet>
 

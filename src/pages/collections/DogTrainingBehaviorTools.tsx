@@ -32,7 +32,7 @@ import {
   LEASH_CLUSTER,
 } from '@/data/dog-training-cluster-data';
 
-const CANONICAL = 'https://getpawsy.pet/dog/dog-training-behavior-tools';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 const BASE = 'https://getpawsy.pet';
 
 const CLUSTER_ARTICLES = [

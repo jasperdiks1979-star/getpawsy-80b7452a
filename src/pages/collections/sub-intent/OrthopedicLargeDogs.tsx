@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function OrthopedicLargeDogs() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/orthopedic-dog-beds/best-for-large-dogs"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Orthopedic Dog Bed for Large Dogs (2026) – 50+ lbs"
       metaDesc="Find the best orthopedic dog beds built for large and giant breeds. High-density memory foam rated for 50–150 lb dogs. Tested for durability and joint relief."
       h1="Best Orthopedic Dog Bed for Large Dogs — Heavy Duty Memory Foam (2026)"

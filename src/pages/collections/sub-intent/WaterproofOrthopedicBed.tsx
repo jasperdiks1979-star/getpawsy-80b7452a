@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function WaterproofOrthopedicBed() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/orthopedic-dog-beds/waterproof"
+      canonical="https://getpawsy.pet/collections/all"
       title="Waterproof Orthopedic Dog Beds – Leak-Proof Memory Foam (2026)"
       metaDesc="Shop waterproof orthopedic dog beds with sealed memory foam liners. Protects against accidents, drool, and odor. Ideal for senior dogs and puppies."
       h1="Waterproof Orthopedic Dog Beds — Leak-Proof Memory Foam Protection"

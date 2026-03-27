@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function HeavyDutyCatTree() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/cat/cat-trees-for-large-cats/heavy-duty"
+      canonical="https://getpawsy.pet/collections/all"
       title="Heavy Duty Cat Trees – Built for 25+ lb Cats (2026)"
       metaDesc="Shop heavy duty cat trees with solid wood frames, thick sisal posts, and anti-tip systems. Engineered for large breeds and multi-cat homes. Free US shipping."
       h1="Heavy Duty Cat Trees — Solid Construction for Large & Active Cats (2026)"

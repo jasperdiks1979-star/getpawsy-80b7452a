@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function DogCarSeatSmallDogs() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/dog-car-travel-safety/car-seats"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Dog Car Seats for Small Dogs – Safe & Elevated (2026)"
       metaDesc="Shop dog car seats for small dogs under 25 lbs. Elevated design, padded interior, and multiple attachment points. Crash-test informed picks."
       h1="Best Dog Car Seats for Small Dogs — Safe, Elevated & Secure (2026)"

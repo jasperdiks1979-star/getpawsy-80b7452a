@@ -67,22 +67,22 @@ export const DOG_SILO: SiloConfig = {
 export const CAT_SILO: SiloConfig = {
   id: 'cat',
   hub: {
-    href: '/cat/',
+    href: '/collections/cat',
     label: 'Cat Training & Travel Gear',
     desc: 'Browse all cat training & travel essentials',
   },
   pillar: {
-    href: '/cat/best-cat-training-and-travel-gear-2026',
+    href: '/collections/all',
     label: 'Complete Cat Training & Travel Guide 2026',
     desc: 'Expert buyer guide for cat trees, carriers & enrichment',
   },
   training: {
-    href: '/cat/training/',
+    href: '/collections/all',
     label: 'Cat Enrichment & Training',
     desc: 'Cat trees, scratching posts & interactive toys',
   },
   travel: {
-    href: '/cat/travel/',
+    href: '/collections/all',
     label: 'Cat Travel Essentials',
     desc: 'Airline-approved carriers & travel gear',
   },

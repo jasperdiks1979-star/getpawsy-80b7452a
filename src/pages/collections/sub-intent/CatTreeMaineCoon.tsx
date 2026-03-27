@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function CatTreeMaineCoon() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/cat/cat-trees-for-large-cats/for-maine-coon"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Cat Tree for Maine Coon – Heavy Duty & Extra Wide (2026)"
       metaDesc="Find the best cat trees built specifically for Maine Coons. Wide platforms, 25+ lb capacity, thick sisal posts, and anti-tip stability. Expert reviewed."
       h1="Best Cat Tree for Maine Coon — Heavy Duty & Extra Wide (2026)"

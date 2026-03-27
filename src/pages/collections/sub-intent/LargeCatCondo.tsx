@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function LargeCatCondo() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/cat/cat-trees-for-large-cats/large-cat-condos"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Cat Condos for Large Cats – Spacious & Sturdy (2026)"
       metaDesc="Shop cat condos designed for large cats with oversized openings, reinforced walls, and plush interiors. Perfect for Maine Coons and Ragdolls."
       h1="Best Cat Condos for Large Cats — Spacious, Sturdy & Comfortable (2026)"

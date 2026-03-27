@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function DogBoosterSeat() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/dog-car-travel-safety/booster-seats"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Dog Booster Seats – Elevated View & Secure (2026)"
       metaDesc="Shop dog booster seats that raise small dogs to window height for calmer, safer car rides. Padded platforms with tether systems. 3–7 day US shipping."
       h1="Best Dog Booster Seats — Elevated View for Calmer Car Rides (2026)"

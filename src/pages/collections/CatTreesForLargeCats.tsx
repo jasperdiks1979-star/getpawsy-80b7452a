@@ -14,7 +14,7 @@ import { FeaturedSnippetBlock } from "@/components/seo/FeaturedSnippetBlock";
 import { StickyJumpNav } from "@/components/seo/StickyJumpNav";
 import { PAASection } from "@/components/seo/PAASection";
 
-const CANONICAL = 'https://getpawsy.pet/cat/cat-trees-for-large-cats';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 const PAGE_TITLE = 'Heavy Duty Cat Trees for Large Cats – Won\'t Tip (2026)';
 const META_DESC = 'Tired of wobbly cat trees? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal posts, anti-tip tested. Free US shipping.';
 

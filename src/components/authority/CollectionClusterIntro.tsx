@@ -41,7 +41,7 @@ const INTROS: Record<ClusterId, {
       `Indoor cats thrive when their environment stimulates natural behaviors like climbing, scratching, and exploring. This ${name.toLowerCase()} collection is curated to help your cat stay active, engaged, and happy — without compromising your home's aesthetics. Each product is reviewed for stability, material quality, and space efficiency. Whether you have a single kitten or a multi-cat household, you'll find options that match your setup.`,
     links: [
       { label: 'Best Cat Trees Buying Guide', href: '/guides/best-cat-trees' },
-      { label: 'Indoor Cat Enrichment Tips', href: '/cat/enrichment' },
+      { label: 'Indoor Cat Enrichment Tips', href: '/collections/all' },
       { label: 'Cat Scratching Solutions', href: '/guides/cat-scratching-posts' },
     ],
   },

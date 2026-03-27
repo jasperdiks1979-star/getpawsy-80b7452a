@@ -33,7 +33,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
   {
     slug: 'orthopedic-dog-beds',
     namespace: 'dog',
-    canonical: 'https://getpawsy.pet/dog/orthopedic-dog-beds',
+    canonical: 'https://getpawsy.pet/collections/all',
     title: '7 Best Orthopedic Dog Beds for Joint Support (2026)',
     metaDescription: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35.',
     ogTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)',
@@ -76,7 +76,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
   {
     slug: 'cat-trees-for-large-cats',
     namespace: 'cat',
-    canonical: 'https://getpawsy.pet/cat/cat-trees-for-large-cats',
+    canonical: 'https://getpawsy.pet/collections/all',
     title: 'Heavy Duty Cat Trees for Large Cats – Won\'t Tip (2026)',
     metaDescription: 'Tired of wobbly cat trees? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal posts, anti-tip tested. Free US shipping.',
     ogTitle: 'Best Cat Trees for Large Cats — Heavy Duty & Stability Tested',
@@ -119,7 +119,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
   {
     slug: 'dog-car-travel-safety',
     namespace: 'dog',
-    canonical: 'https://getpawsy.pet/dog/dog-car-travel-safety',
+    canonical: 'https://getpawsy.pet/collections/all',
     title: 'Crash-Tested Dog Car Seats & Safety Gear (2026)',
     metaDescription: 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping.',
     ogTitle: 'Crash-Tested Dog Car Seats & Travel Safety Gear (2026)',

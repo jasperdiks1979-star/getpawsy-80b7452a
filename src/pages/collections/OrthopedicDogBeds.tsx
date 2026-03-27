@@ -29,7 +29,7 @@ import { PAASection } from '@/components/seo/PAASection';
 import { getDominationConfig } from '@/data/domination-config';
 import orthopedicHero from '@/assets/orthopedic-hero.jpg';
 
-const CANONICAL = 'https://getpawsy.pet/dog/orthopedic-dog-beds';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 // Also served at /orthopedic-dog-beds/ — canonical always points here
 const BASE = 'https://getpawsy.pet';
 

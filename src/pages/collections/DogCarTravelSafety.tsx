@@ -9,7 +9,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { PriorityCategoryWidget } from "@/components/seo/PriorityCategoryWidget";
 import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
 
-const CANONICAL = 'https://getpawsy.pet/dog/dog-car-travel-safety';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 const PAGE_TITLE = 'Crash-Tested Dog Car Seats & Safety Gear (2026)';
 const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping.';
 

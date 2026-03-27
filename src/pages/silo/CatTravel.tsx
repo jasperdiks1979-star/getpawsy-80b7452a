@@ -31,7 +31,7 @@ const CatTravel = () => {
       <Helmet>
         <title>Cat Travel Carriers – Airline-Approved & Vet Visit Ready | GetPawsy</title>
         <meta name="description" content="Airline-approved cat carriers, travel bags & anxiety-reducing gear. Mesh ventilation, top-loading access. US 3–7 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/cat/travel" />
+        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
       </Helmet>
 

@@ -18,7 +18,7 @@ const jsonLd = {
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
   dateModified: '2026-02-28',
-  mainEntityOfPage: 'https://getpawsy.pet/dog/best-dog-training-and-travel-gear-2026',
+  mainEntityOfPage: 'https://getpawsy.pet/collections/all',
 };
 
 const faqJsonLd = {
@@ -75,7 +75,7 @@ const DogTrainingTravelPillar = () => {
       <Helmet>
         <title>Best Dog Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
         <meta name="description" content="2026 expert guide to the best dog training harnesses, car seats, leashes & travel gear. Tested picks with US 3–7 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/dog/best-dog-training-and-travel-gear-2026" />
+        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>

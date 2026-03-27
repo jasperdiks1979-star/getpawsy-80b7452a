@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function DogCarHarness() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/dog-car-travel-safety/harness-safety"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Dog Car Harnesses – Crash Tested Safety (2026)"
       metaDesc="Shop crash-tested dog car harnesses that clip to your vehicle's seat belt. Padded chest plates, reinforced stitching. Best for dogs 30+ lbs."
       h1="Best Dog Car Harnesses — Crash-Tested Restraint for Safe Travel (2026)"
