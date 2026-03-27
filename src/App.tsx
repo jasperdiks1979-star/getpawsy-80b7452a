@@ -114,7 +114,7 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
           </p>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
-              onClick={() => this.setState({ hasError: false, error: null })}
+              onClick={() => { sessionStorage.clear(); window.location.reload(); }}
               style={{
                 padding: "8px 20px", background: "#111", color: "#fff",
                 border: "none", borderRadius: "6px", cursor: "pointer",

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState, forwardRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // Lazy load the chat widget for performance
@@ -16,44 +16,48 @@ interface ChatWidgetWrapperProps {
   }>;
 }
 
-export function ChatWidgetWrapper({ productContext }: ChatWidgetWrapperProps) {
-  const location = useLocation();
-  const [shouldLoad, setShouldLoad] = useState(false);
+export const ChatWidgetWrapper = forwardRef<HTMLDivElement, ChatWidgetWrapperProps>(
+  function ChatWidgetWrapper({ productContext }, ref) {
+    const location = useLocation();
+    const [shouldLoad, setShouldLoad] = useState(false);
 
-  // Only load on product/shop pages
-  const isValidPage = 
-    location.pathname.startsWith('/product/') ||
-    location.pathname.startsWith('/bestseller/') ||
-    location.pathname === '/bestsellers' ||
-    location.pathname === '/shop';
+    // Only load on product/shop pages
+    const isValidPage = 
+      location.pathname.startsWith('/product/') ||
+      location.pathname.startsWith('/bestseller/') ||
+      location.pathname === '/bestsellers' ||
+      location.pathname === '/shop';
 
-  // Delay loading to not impact LCP
-  useEffect(() => {
-    if (!isValidPage) {
-      setShouldLoad(false);
-      return;
+    // Delay loading to not impact LCP
+    useEffect(() => {
+      if (!isValidPage) {
+        setShouldLoad(false);
+        return;
+      }
+
+      // Load after initial render + slight delay
+      const timer = setTimeout(() => {
+        setShouldLoad(true);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }, [isValidPage]);
+
+    // Never show on checkout
+    if (location.pathname.includes('/checkout')) {
+      return null;
     }
 
-    // Load after initial render + slight delay
-    const timer = setTimeout(() => {
-      setShouldLoad(true);
-    }, 2000);
+    if (!shouldLoad) {
+      return null;
+    }
 
-    return () => clearTimeout(timer);
-  }, [isValidPage]);
-
-  // Never show on checkout
-  if (location.pathname.includes('/checkout')) {
-    return null;
+    return (
+      <div ref={ref}>
+        <Suspense fallback={null}>
+          <ChatWidget productContext={productContext} />
+        </Suspense>
+      </div>
+    );
   }
-
-  if (!shouldLoad) {
-    return null;
-  }
-
-  return (
-    <Suspense fallback={null}>
-      <ChatWidget productContext={productContext} />
-    </Suspense>
-  );
-}
+);
