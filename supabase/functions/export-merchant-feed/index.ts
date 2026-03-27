@@ -614,9 +614,15 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
   const cleanTitle = p.optimized_title ? sanitizeTitle(p.optimized_title) : sanitizeTitle(p.name);
   result.titleChanged = cleanTitle !== p.name;
 
-  // 5. Sanitize description — use override directly if available (already clean)
+  // 5. Sanitize description — prefer DB-optimized, then override, then raw
   let cleanDesc: string;
-  if (override?.description) {
+  if (p.optimized_description) {
+    cleanDesc = sanitizeDescription(p.optimized_description);
+    if (cleanDesc.length < 80) {
+      cleanDesc = generateFallbackDescription(p.name);
+      result.descGenerated = true;
+    }
+  } else if (override?.description) {
     cleanDesc = override.description;
   } else {
     cleanDesc = sanitizeDescription(p.description || "");
