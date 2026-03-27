@@ -291,8 +291,9 @@ function buildItemXml(p: Product): string {
   const img = sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null);
   if (!img) return ""; // skip products without valid image
 
-  const title = buildOptimizedTitle(p);
-  const desc = buildCleanDescription(p);
+  // Prefer DB-optimized titles/descriptions, fallback to runtime generation
+  const title = p.optimized_title || buildOptimizedTitle(p);
+  const desc = p.optimized_description || buildCleanDescription(p);
 
   const priceStr = (v: number) => `${v.toFixed(2)} USD`;
   let priceXml: string;
