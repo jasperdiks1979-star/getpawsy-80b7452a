@@ -1462,6 +1462,22 @@ const App = () => {
                             element={<Navigate to="/dog/dog-car-travel-safety/harness-safety" replace />}
                           />
 
+                          {/* ═══ TRAINING COLLECTION REDIRECTS ═══ */}
+                          <Route path="/collections/dog-potty-training" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/dog-leash-control" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/dog-anti-bark" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/puppy-training-essentials" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/dog-training-accessories" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/no-pull-dog-harness" element={<Navigate to="/collections/dog-collars-leashes" replace />} />
+                          <Route path="/collections/long-training-leashes" element={<Navigate to="/collections/dog-collars-leashes" replace />} />
+                          <Route path="/collections/dog-training-clickers" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/dog-treat-pouches" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/dog-training-kits" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/puppy-training-tools" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/recall-training-gear" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/pet-grooming-tools" element={<Navigate to="/collections/dog-grooming" replace />} />
+                          <Route path="/collections/dog-car-travel-safety-seats" element={<Navigate to="/dog/dog-car-travel-safety" replace />} />
+
                           {/* SEO Collection pages — /collections/:slug */}
                           <Route
                             path="/collections/:slug"

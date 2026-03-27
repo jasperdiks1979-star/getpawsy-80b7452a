@@ -51,6 +51,16 @@
 /collections/dog-booster-seat /dog/dog-car-travel-safety/booster-seats 301
 /collections/dog-car-harness /dog/dog-car-travel-safety/harness-safety 301
 
+# ── Training collection redirects ──
+/collections/dog-potty-training /dog/dog-training-behavior-tools 301
+/collections/dog-leash-control /dog/dog-training-behavior-tools 301
+/collections/dog-anti-bark /dog/dog-training-behavior-tools 301
+/collections/puppy-training-essentials /dog/dog-training-behavior-tools 301
+/collections/dog-training-accessories /dog/dog-training-behavior-tools 301
+/collections/no-pull-dog-harness /collections/dog-collars-leashes 301
+/collections/pet-grooming-tools /collections/dog-grooming 301
+/collections/dog-car-travel-safety-seats /dog/dog-car-travel-safety 301
+
 # ── Non-pet category 404 catchers → redirect to /products ──
 /collections/bird-* /products 301
 /collections/reptile-* /products 301

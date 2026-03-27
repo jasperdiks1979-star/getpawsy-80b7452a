@@ -17,7 +17,7 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'memory-foam-dog-beds': '/collections/memory-foam-orthopedic-dog-bed',
   'senior-dog-beds': '/collections/orthopedic-dog-bed-senior-dogs',
   'dog-toys': '/collections/best-interactive-dog-toys',
-  'dog-training': '/collections/dog-leash-control',
+  'dog-training': '/dog/dog-training-behavior-tools',
   'dog-collars-leashes': '/dog/dog-training-behavior-tools',
   'dog-carriers': '/collections/dog-travel-accessories',
   'dog-car-seats': '/collections/best-dog-car-seats',
@@ -70,7 +70,7 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'pet-furniture': '/collections/cat-condos',
   'pet-houses': '/collections/dog',
   'pet-collars-leashes': '/collections/best-dog-harnesses',
-  'pet-training': '/collections/dog-leash-control',
+  'pet-training': '/dog/dog-training-behavior-tools',
   'pet-bags': '/collections/dog-travel-accessories',
   'pet-supplies': '/products',
 };

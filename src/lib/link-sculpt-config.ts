@@ -9,7 +9,7 @@
 export const PRIORITY_CORNERSTONES = [
   {
     id: 'dog-potty-training',
-    path: '/collections/dog-potty-training',
+    path: '/dog/dog-training-behavior-tools',
     label: 'Dog Potty Training Tools',
     anchors: {
       exact: ['dog potty training', 'potty training supplies'],
@@ -20,7 +20,7 @@ export const PRIORITY_CORNERSTONES = [
   },
   {
     id: 'dog-leash-control',
-    path: '/collections/dog-leash-control',
+    path: '/dog/dog-training-behavior-tools',
     label: 'Dog Leash & Control Tools',
     anchors: {
       exact: ['dog leash training', 'no-pull harness'],
@@ -31,7 +31,7 @@ export const PRIORITY_CORNERSTONES = [
   },
   {
     id: 'dog-anti-bark',
-    path: '/collections/dog-anti-bark',
+    path: '/dog/dog-training-behavior-tools',
     label: 'Anti-Bark Solutions',
     anchors: {
       exact: ['anti bark devices', 'stop dog barking'],
@@ -42,7 +42,7 @@ export const PRIORITY_CORNERSTONES = [
   },
   {
     id: 'puppy-training-essentials',
-    path: '/collections/puppy-training-essentials',
+    path: '/dog/dog-training-behavior-tools',
     label: 'Puppy Training Essentials',
     anchors: {
       exact: ['puppy training essentials', 'puppy starter kit'],
@@ -204,10 +204,10 @@ export const ANCHOR_DISTRIBUTION = {
 
 // ── Footer Priority Links ──
 export const FOOTER_SHOP_LINKS = [
-  { label: 'Potty Training', href: '/collections/dog-potty-training' },
-  { label: 'Leash & Control', href: '/collections/dog-leash-control' },
-  { label: 'Anti-Bark Solutions', href: '/collections/dog-anti-bark' },
-  { label: 'Puppy Essentials', href: '/collections/puppy-training-essentials' },
+  { label: 'Potty Training', href: '/dog/dog-training-behavior-tools' },
+  { label: 'Leash & Control', href: '/dog/dog-training-behavior-tools' },
+  { label: 'Anti-Bark Solutions', href: '/dog/dog-training-behavior-tools' },
+  { label: 'Puppy Essentials', href: '/dog/dog-training-behavior-tools' },
   { label: 'Training Accessories', href: '/collections/dog-training-accessories' },
   { label: 'Bestsellers', href: '/bestsellers' },
   { label: 'All Products', href: '/products' },

@@ -41,13 +41,9 @@ const CLUSTER_ARTICLES = [
 ];
 
 const SUB_COLLECTIONS = [
-  { href: '/collections/no-pull-dog-harness', label: 'No-Pull Dog Harnesses', desc: 'Front-clip harnesses that reduce pulling by 40–60%' },
-  { href: '/collections/long-training-leashes', label: 'Long Training Leashes', desc: 'Biothane & nylon long lines for recall practice' },
-  { href: '/collections/dog-training-clickers', label: 'Training Clickers', desc: 'Precision behavior markers for positive reinforcement' },
-  { href: '/collections/dog-treat-pouches', label: 'Treat Pouches', desc: 'Quick-access pouches for hands-free training walks' },
-  { href: '/collections/dog-training-kits', label: 'Training Kits', desc: 'Complete starter bundles for new dog owners' },
-  { href: '/collections/puppy-training-tools', label: 'Puppy Training', desc: 'Age-appropriate tools for puppies 8 weeks and up' },
-  { href: '/collections/recall-training-gear', label: 'Recall Training Gear', desc: 'Long lines, whistles, and high-value reward tools' },
+  { href: '/collections/dog-collars-leashes', label: 'Collars & Leashes', desc: 'Training leashes, harnesses and collars for all breeds' },
+  { href: '/collections/dog-toys', label: 'Dog Toys', desc: 'Interactive and training toys for engagement' },
+  { href: '/collections/dog-carriers', label: 'Dog Carriers', desc: 'Travel carriers and transport bags' },
 ];
 
 export default function DogTrainingBehaviorTools() {
@@ -270,7 +266,7 @@ export default function DogTrainingBehaviorTools() {
             {products.slice(0, 16).map(p => <ProductCard key={p.id} product={p} />)}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground py-12">Training products coming soon — browse our <Link to="/collections/dog-leash-control" className="text-primary underline">full catalog</Link>.</p>
+          <p className="text-center text-muted-foreground py-12">Training products coming soon — browse our <Link to="/products" className="text-primary underline">full catalog</Link>.</p>
         )}
       </section>
 
@@ -351,7 +347,7 @@ export default function DogTrainingBehaviorTools() {
 
           <h3 className="text-xl font-semibold text-foreground mt-8">Common Training Challenges by Dog Type</h3>
           <p>
-            <strong>Puppies (8 weeks – 6 months):</strong> Short attention spans, teething, socialization priority. Use ultra-short training sessions (2-3 minutes), extremely high treat rates, and focus on name recognition, sit, and basic leash exposure. A lightweight <Link to="/collections/puppy-training-tools" className="text-primary hover:underline">puppy harness</Link> and 6-foot leash are the only equipment needed at this stage.
+            <strong>Puppies (8 weeks – 6 months):</strong> Short attention spans, teething, socialization priority. Use ultra-short training sessions (2-3 minutes), extremely high treat rates, and focus on name recognition, sit, and basic leash exposure. A lightweight <Link to="/collections/dog-collars-leashes" className="text-primary hover:underline">puppy harness</Link> and 6-foot leash are the only equipment needed at this stage.
           </p>
           <p>
             <strong>Adolescent dogs (6-18 months):</strong> The hardest phase. Hormones, increased independence, selective hearing. This is when most dogs develop persistent pulling habits. A front-clip harness becomes essential. Start <Link to="/dog/dog-training/how-to-train-recall" className="text-primary hover:underline">recall training</Link> with a long line before they discover that running away is fun.
@@ -370,8 +366,8 @@ export default function DogTrainingBehaviorTools() {
         <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Training Tools by Breed Size</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
-            { breed: 'Small Dogs (Under 25 lbs)', breeds: 'Chihuahua, Pomeranian, Dachshund, French Bulldog', tools: ['Lightweight back-clip harness', 'Standard 6ft leash', 'Small-size clicker', 'Treat pouch with small compartments'], link: '/collections/puppy-training-tools', cta: 'Shop Small Dog Gear' },
-            { breed: 'Medium Dogs (25–60 lbs)', breeds: 'Beagle, Border Collie, Australian Shepherd, Cocker Spaniel', tools: ['Front-clip no-pull harness', 'Biothane 15ft long line', 'Dual-tone clicker', 'Quick-access treat pouch'], link: '/collections/no-pull-dog-harness', cta: 'Shop Medium Dog Gear' },
+            { breed: 'Small Dogs (Under 25 lbs)', breeds: 'Chihuahua, Pomeranian, Dachshund, French Bulldog', tools: ['Lightweight back-clip harness', 'Standard 6ft leash', 'Small-size clicker', 'Treat pouch with small compartments'], link: '/collections/dog-collars-leashes', cta: 'Shop Small Dog Gear' },
+            { breed: 'Medium Dogs (25–60 lbs)', breeds: 'Beagle, Border Collie, Australian Shepherd, Cocker Spaniel', tools: ['Front-clip no-pull harness', 'Biothane 15ft long line', 'Dual-tone clicker', 'Quick-access treat pouch'], link: '/collections/dog-collars-leashes', cta: 'Shop Medium Dog Gear' },
             { breed: 'Large Dogs (60+ lbs)', breeds: 'Labrador, German Shepherd, Golden Retriever, Pit Bull', tools: ['Tactical dual-handle harness', '30ft recall long line', 'Heavy-duty biothane leash', 'XL treat pouch'], link: '/dog/dog-training/best-harness-large-dogs', cta: 'Shop Large Dog Gear' },
           ].map((item, i) => (
             <div key={i} className="p-5 rounded-xl border border-border bg-background">

@@ -1,0 +1,1210 @@
+{
+  "generated_at": "2026-03-27T20:01:24.385Z",
+  "total_pages_scanned": 274,
+  "orphan_pages": 131,
+  "weak_pages_under_2_links": 49,
+  "orphans": [
+    {
+      "path": "/",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/__ops/growth-verification",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/api/merchant-oauth-callback",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-cat-litter-box-2026",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-cat-litter-box-reddit",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-dog-anxiety-solutions",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-dog-car-seat-safety",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-interactive-cat-toys",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-litter-box-for-smell",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-litter-box-large-cats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-litter-boxes-apartments-2026",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/best-self-cleaning-litter-box-2026",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cat-trees-for-large-cats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cat/best-cat-training-and-travel-gear-2026",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cat/cat-trees-for-large-cats/apartments-small-spaces",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cat/cat-trees-for-large-cats/for-multiple-cats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cat/cat-trees-for-large-cats/tall-vs-wide",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cats/automatic-feeders",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cats/cat-carriers",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cats/cat-litter",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cats/cat-toys",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cats/cat-trees",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/cats/litter-boxes",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/cat-condos-for-large-cats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/cat-tree-for-maine-coon",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/cat-trees-for-large-cats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-anti-bark",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-booster-seat",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-car-harness",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-car-seats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-car-travel-safety",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-car-travel-safety-seats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-leash-control",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-potty-training",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-training-accessories",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-training-clickers",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-training-kits",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-treat-pouches",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/heavy-duty-cat-tree",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/orthopedic-dog-beds",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/pet-grooming-tools",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/puppy-training-essentials",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/puppy-training-tools",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/recall-training-gear",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/waterproof-orthopedic-dog-bed",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/compliance",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/debug/perf",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/auto-expansion",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/crawl-budget",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/gsc",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/headers",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/index-control",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/link-equity",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/market-takeover",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/niche-monopoly",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/performance",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/revenue-war-machine",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/seo-hosts",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/serp-war",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/sitemap-health",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/top3-boost",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/diagnostics/top3-lockdown",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog-car-travel-safety",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/best-dog-training-and-travel-gear-2026",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-car-travel-safety/anxious-dog-road-trips",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-car-travel-safety/back-seat-hammocks",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-car-travel-safety/crash-tested-seat-belts",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/15ft-vs-30ft-training-leash",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/anti-pull-harness-big-dogs",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/common-recall-mistakes",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/front-clip-vs-back-clip-harness",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/harness-sizing-guide",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/harness-vs-collar",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/how-to-stop-pulling-without-choking",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/no-pull-harness-small-dogs",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/no-pull-harness-vs-head-halter",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/off-leash-training-safely",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/puppy-training-leash-guide",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/dog-training/stop-pulling-on-leash",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/cooling",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/for-senior-dogs",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/memory-foam-under-100",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/signs-dog-needs-orthopedic-bed",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/washable-covers",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dogs",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dogs/chew-toys",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dogs/dog-beds",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dogs/dog-carriers",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dogs/dog-collars-leashes",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dogs/dog-grooming",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/dogs/dog-toys",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/founder-mode",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/google-review",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/automatic-vs-manual-litter-box",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/best-litter-box-for-multiple-cats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/best-self-cleaning-litter-box-2026",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/how-does-self-cleaning-litter-box-work",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/how-to-train-cat-to-use-automatic-litter-box",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/is-self-cleaning-litter-box-safe",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/litter-box-odor-control-solutions",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/guides/self-cleaning-litter-box-pros-cons",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/healthz",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/help",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/indoor-cat-furniture",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/install",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/lp/cat-litter-box",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/lp/self-cleaning-litter-box",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/merchant-feed.xml",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/merchant-fix-checklist",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/orthopedic-dog-beds",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/payment-success",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/pet-care-guides",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/policies/returns",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/privacy-policy",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/product/44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/product/dog-cot-cooling-pet-bed-3",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/refund-policy",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/resources/dog-bed-size-chart",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/return-policy",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/returns-policy",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/robots.txt",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/shipping-policy",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/site-map",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/sitemap-static.xml",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/sitemap.xml",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/slow-feeder-dog-bowls",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/technical-declaration",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/terms-of-service",
+      "inbound_links": 0,
+      "sources": []
+    }
+  ],
+  "weak_pages": [
+    {
+      "path": "/track",
+      "inbound_links": 1,
+      "sources": [
+        "pages/Shipping.tsx"
+      ]
+    },
+    {
+      "path": "/resources/indoor-cat-care",
+      "inbound_links": 1,
+      "sources": [
+        "components/seo/CatTreesHubContent.tsx"
+      ]
+    },
+    {
+      "path": "/guides/cat-condo-vs-cat-tree-2026",
+      "inbound_links": 1,
+      "sources": [
+        "components/seo/CatTreesHubContent.tsx"
+      ]
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/best-for-large-dogs",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/dog/orthopedic-dog-beds/memory-foam",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/dog/dog-training/best-harness-large-dogs",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/DogTrainingBehaviorTools.tsx"
+      ]
+    },
+    {
+      "path": "/dog/dog-training/how-to-train-recall",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/DogTrainingBehaviorTools.tsx"
+      ]
+    },
+    {
+      "path": "/dog/dog-car-travel-safety/booster-seats",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/dog/dog-car-travel-safety/harness-safety",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/collections/best-orthopedic-dog-bed-large-dogs",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/OrthopedicDogBeds.tsx"
+      ]
+    },
+    {
+      "path": "/collections/memory-foam-dog-beds",
+      "inbound_links": 1,
+      "sources": [
+        "pages/DogBedSizeChart.tsx"
+      ]
+    },
+    {
+      "path": "/collections/long-training-leashes",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/DogTrainingBehaviorTools.tsx"
+      ]
+    },
+    {
+      "path": "/shop",
+      "inbound_links": 1,
+      "sources": [
+        "pages/RecentProducts.tsx"
+      ]
+    },
+    {
+      "path": "/collections/dog-beds",
+      "inbound_links": 1,
+      "sources": [
+        "pages/SeoCollection.tsx"
+      ]
+    },
+    {
+      "path": "/collections/dog-grooming",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/collections/dog-carriers",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/collections/best-dog-grooming-kits",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/collections/cat-toys",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/collections/best-cat-carriers",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/collections/automatic-cat-feeders",
+      "inbound_links": 1,
+      "sources": [
+        "App.tsx"
+      ]
+    },
+    {
+      "path": "/dashboard/crawler-analytics",
+      "inbound_links": 1,
+      "sources": [
+        "components/admin/CrawlerVisitsWidget.tsx"
+      ]
+    },
+    {
+      "path": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "inbound_links": 1,
+      "sources": [
+        "components/home/StickyMobileCta.tsx"
+      ]
+    },
+    {
+      "path": "/product/youmile-hip-joint-health-supplement-for-dogs-120-chews-glucosamine-chondroitin-msm-dog-chews-with-hy",
+      "inbound_links": 1,
+      "sources": [
+        "components/products/ProductBundleUpsell.tsx"
+      ]
+    },
+    {
+      "path": "/collections/modern-cat-trees",
+      "inbound_links": 1,
+      "sources": [
+        "components/seo/CatTreesHubContent.tsx"
+      ]
+    },
+    {
+      "path": "/guides/how-tall-should-cat-tree-be",
+      "inbound_links": 1,
+      "sources": [
+        "components/seo/CatTreesHubContent.tsx"
+      ]
+    },
+    {
+      "path": "/guides/cat-tree-materials-sisal-vs-carpet",
+      "inbound_links": 1,
+      "sources": [
+        "components/seo/CatTreesHubContent.tsx"
+      ]
+    },
+    {
+      "path": "/collections/cat-tree-for-two-cats",
+      "inbound_links": 1,
+      "sources": [
+        "components/seo/CatTreesHubContent.tsx"
+      ]
+    },
+    {
+      "path": "/collections/dog-beds-for-anxiety",
+      "inbound_links": 1,
+      "sources": [
+        "pages/DogBedSizeChart.tsx"
+      ]
+    },
+    {
+      "path": "/collections/waterproof-dog-beds",
+      "inbound_links": 1,
+      "sources": [
+        "pages/DogBedSizeChart.tsx"
+      ]
+    },
+    {
+      "path": "/guides/best-dog-bed-materials-explained",
+      "inbound_links": 1,
+      "sources": [
+        "pages/DogBedSizeChart.tsx"
+      ]
+    },
+    {
+      "path": "/guides/how-to-wash-a-dog-bed-properly",
+      "inbound_links": 1,
+      "sources": [
+        "pages/DogBedSizeChart.tsx"
+      ]
+    },
+    {
+      "path": "/dog-bed-size-chart",
+      "inbound_links": 1,
+      "sources": [
+        "pages/DogBedSizeChart.tsx"
+      ]
+    },
+    {
+      "path": "/my-claims",
+      "inbound_links": 1,
+      "sources": [
+        "pages/Orders.tsx"
+      ]
+    },
+    {
+      "path": "/guides/dog-leash-control-guide",
+      "inbound_links": 1,
+      "sources": [
+        "pages/PetCareGuides.tsx"
+      ]
+    },
+    {
+      "path": "/guides/best-dog-training-collar",
+      "inbound_links": 1,
+      "sources": [
+        "pages/PetCareGuides.tsx"
+      ]
+    },
+    {
+      "path": "/guides/dog-behavior-training-guide",
+      "inbound_links": 1,
+      "sources": [
+        "pages/PetCareGuides.tsx"
+      ]
+    },
+    {
+      "path": "/guides/dog-travel-safety-guide",
+      "inbound_links": 1,
+      "sources": [
+        "pages/PetCareGuides.tsx"
+      ]
+    },
+    {
+      "path": "/guides/cat-litter-solutions-guide",
+      "inbound_links": 1,
+      "sources": [
+        "pages/PetCareGuides.tsx"
+      ]
+    },
+    {
+      "path": "/guides/dog-potty-training-complete-guide",
+      "inbound_links": 1,
+      "sources": [
+        "pages/PetCareGuides.tsx"
+      ]
+    },
+    {
+      "path": "/guides/leash-training-dog-step-by-step",
+      "inbound_links": 1,
+      "sources": [
+        "pages/PetCareGuides.tsx"
+      ]
+    },
+    {
+      "path": "/collections/dog-travel-accessories",
+      "inbound_links": 1,
+      "sources": [
+        "pages/SeoCollection.tsx"
+      ]
+    },
+    {
+      "path": "/collections/cat-scratching-posts",
+      "inbound_links": 1,
+      "sources": [
+        "pages/SeoCollection.tsx"
+      ]
+    },
+    {
+      "path": "/collections/best-slow-feeder-dog-bowls",
+      "inbound_links": 1,
+      "sources": [
+        "pages/SlowFeederDogBowls.tsx"
+      ]
+    },
+    {
+      "path": "/collections/dogs",
+      "inbound_links": 1,
+      "sources": [
+        "pages/WhyTrustOurReviews.tsx"
+      ]
+    },
+    {
+      "path": "/collections/best-dog-car-seats",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/DogCarTravelSafety.tsx"
+      ]
+    },
+    {
+      "path": "/guides/do-orthopedic-dog-beds-help-arthritis",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/OrthopedicDogBeds.tsx"
+      ]
+    },
+    {
+      "path": "/guides/signs-dog-needs-joint-support",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/OrthopedicDogBeds.tsx"
+      ]
+    },
+    {
+      "path": "/guides/memory-foam-vs-egg-crate-foam-dog-bed",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/OrthopedicDogBeds.tsx"
+      ]
+    },
+    {
+      "path": "/guides/best-cat-litter-box-2026",
+      "inbound_links": 1,
+      "sources": [
+        "pages/landing/CatTrainingTravelPillar.tsx"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "page": "/",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/__ops/growth-verification",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/api/merchant-oauth-callback",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-cat-litter-box-2026",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-cat-litter-box-reddit",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-dog-anxiety-solutions",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-dog-car-seat-safety",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-interactive-cat-toys",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-litter-box-for-smell",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-litter-box-large-cats",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-litter-boxes-apartments-2026",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/best-self-cleaning-litter-box-2026",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cat-trees-for-large-cats",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cat/best-cat-training-and-travel-gear-2026",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cat/cat-trees-for-large-cats/apartments-small-spaces",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cat/cat-trees-for-large-cats/for-multiple-cats",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cat/cat-trees-for-large-cats/tall-vs-wide",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cats",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cats/automatic-feeders",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    },
+    {
+      "page": "/cats/cat-carriers",
+      "action": "Add to related content blocks, guide recommendations, or footer links",
+      "suggested_placements": [
+        "RecommendedProductsBlock on guide pages",
+        "RelatedGuidesBlock on product pages",
+        "Footer navigation links",
+        "Homepage featured section"
+      ]
+    }
+  ]
+}

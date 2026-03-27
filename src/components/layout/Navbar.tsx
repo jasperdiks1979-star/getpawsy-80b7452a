@@ -663,33 +663,21 @@ export const Navbar = () => {
                       </div>
                       <div className="rounded-xl border bg-card overflow-hidden mb-4">
                         <SheetClose asChild>
-                          <Link to="/collections/dog-potty-training" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🚽</span>
-                            <span className="font-medium">Potty Training</span>
+                          <Link to="/dog/dog-training-behavior-tools" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                            <span>🐕</span>
+                            <span className="font-medium">All Training Tools</span>
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
-                          <Link to="/collections/dog-leash-control" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                          <Link to="/collections/dog-collars-leashes" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
                             <span>🦮</span>
-                            <span className="font-medium">Leash & Control</span>
+                            <span className="font-medium">Collars & Leashes</span>
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
-                          <Link to="/collections/dog-anti-bark" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🔇</span>
-                            <span className="font-medium">Anti-Bark Solutions</span>
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link to="/collections/puppy-training-essentials" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🐶</span>
-                            <span className="font-medium">Puppy Essentials</span>
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link to="/collections/dog-training-accessories" className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors">
-                            <span>🎯</span>
-                            <span className="font-medium">Training Accessories</span>
+                          <Link to="/collections/dog-toys" className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors">
+                            <span>🎾</span>
+                            <span className="font-medium">Dog Toys</span>
                           </Link>
                         </SheetClose>
                       </div>
