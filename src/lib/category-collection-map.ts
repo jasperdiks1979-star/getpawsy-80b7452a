@@ -70,8 +70,8 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'pet-furniture': '/collections/cat-condos',
   'pet-houses': '/collections/dog',
   'pet-collars-leashes': '/collections/best-dog-harnesses',
-  'pet-training': '/dog/dog-training-behavior-tools',
-  'pet-bags': '/collections/dog-travel-accessories',
+  'pet-training': '/collections/all',
+  'pet-bags': '/collections/all',
   'pet-supplies': '/products',
 };
 
