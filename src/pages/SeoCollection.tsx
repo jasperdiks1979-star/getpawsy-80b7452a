@@ -682,11 +682,6 @@ const SeoCollection = () => {
             </div>
           )}
 
-          {showingRelatedResults && (
-            <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
-              Showing related results
-            </div>
-          )}
 
           {productsLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
