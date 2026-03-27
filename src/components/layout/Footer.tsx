@@ -4,7 +4,7 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Cookie from 'lucide-react/dist/esm/icons/cookie';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -17,14 +17,15 @@ import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 const showToast = (type: 'success' | 'error', msg: string) => import('sonner').then(m => m.toast[type](msg));
 
-const FounderBadge = () => {
+const FounderBadge = forwardRef<HTMLDivElement>((_, ref) => {
   if (!getFounderModeStatus()) return null;
   return (
-    <div className="fixed bottom-2 left-2 z-40 bg-foreground/90 text-background text-[10px] px-2 py-1 rounded-full opacity-60 pointer-events-none select-none">
+    <div ref={ref} className="fixed bottom-2 left-2 z-40 bg-foreground/90 text-background text-[10px] px-2 py-1 rounded-full opacity-60 pointer-events-none select-none">
       🛡️ Founder Mode ON
     </div>
   );
-};
+});
+FounderBadge.displayName = 'FounderBadge';
 
 const FooterSection = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => {
   const [isOpen, setIsOpen] = useState(false);

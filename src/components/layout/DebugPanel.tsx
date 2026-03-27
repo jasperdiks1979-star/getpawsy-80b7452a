@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Bug, ChevronDown, ChevronUp, Trash2, RefreshCw, Wrench, CheckCircle, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +25,7 @@ interface CleanupStatus {
   isRunning: boolean;
 }
 
-export const DebugPanel = () => {
+export const DebugPanel = forwardRef<HTMLDivElement>((_, _ref) => {
   const [searchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
   const [storageData, setStorageData] = useState<StorageInfo[]>([]);
@@ -405,4 +405,5 @@ export const DebugPanel = () => {
       </motion.div>
     </div>
   );
-};
+});
+DebugPanel.displayName = 'DebugPanel';
