@@ -28,10 +28,10 @@ export function HeroSection() {
 
       <div className="relative z-10 container px-4 md:px-6 py-16 md:py-28 lg:py-36 text-center">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
-          Premium Pet Essentials, Delivered Fast in the US
+          Premium Pet Comfort Starts Here
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/95 max-w-xl mx-auto drop-shadow">
-          Top-rated products for dogs &amp; cats — fast US shipping and easy returns.
+          Smart solutions for safer, cleaner, stress-free pet living.
         </p>
 
         <div className="mt-6 flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
@@ -42,22 +42,12 @@ export function HeroSection() {
           >
             <Link to="/bestsellers">Shop Bestsellers</Link>
           </Button>
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="w-full min-h-[52px] rounded-xl px-10 text-base font-semibold bg-white text-[#1A1A1A] border border-[#E5E5E5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] active:scale-[0.98] transition-all duration-200"
-          >
-            <Link to="/products">View All Products</Link>
-          </Button>
         </div>
 
-        <p className="mt-3 text-xs text-white/80 tracking-wide">Popular items sell out weekly</p>
-
         <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-sm font-medium text-white/90">
-          <span className="inline-flex items-center gap-1.5">✔ Free US shipping over $35</span>
+          <span className="inline-flex items-center gap-1.5">✔ Free shipping over $35 (US)</span>
+          <span className="inline-flex items-center gap-1.5">✔ 3–7 day delivery</span>
           <span className="inline-flex items-center gap-1.5">✔ 30-day returns</span>
-          <span className="inline-flex items-center gap-1.5">✔ Secure checkout</span>
         </div>
       </div>
     </section>
