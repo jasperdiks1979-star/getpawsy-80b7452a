@@ -211,7 +211,7 @@ export default function BestDogCarSeatSafety() {
         { text: 'How to stop dog anxiety in car', href: '/blog/how-to-stop-dog-anxiety-in-car' },
         { text: 'Dog care guides hub', href: '/dog' },
         { text: 'Shop dog carriers & travel gear', href: '/collections/dog-carriers' },
-        { text: 'Dog training tools', href: '/dog/dog-training-behavior-tools' },
+        { text: 'Dog training tools', href: '/collections/all' },
         { text: 'Best dog anxiety solutions guide', href: '/best-dog-anxiety-solutions' },
         { text: 'Dog collars & leashes', href: '/collections/dog-collars-leashes' },
         { text: 'Pet care guides', href: '/pet-care-guides' },

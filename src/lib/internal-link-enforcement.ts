@@ -84,7 +84,7 @@ function getPageInventory(): PageInventoryItem[] {
   const hubs = [
     { url: '/dog', title: 'Dog Products', links: 14, cat: 'dog' },
     { url: '/cat', title: 'Cat Products', links: 12, cat: 'cat' },
-    { url: '/dog/dog-training', title: 'Dog Training Hub', links: 8, cat: 'dog-training' },
+    { url: '/collections/all', title: 'Dog Training Hub', links: 8, cat: 'dog-training' },
     { url: '/collections', title: 'All Collections', links: 18, cat: 'all' },
   ];
   hubs.forEach(h => pages.push({ url: h.url, pageType: 'hub', currentLinks: h.links, title: h.title, category: h.cat }));

@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function WaterproofOrthopedicBed() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/orthopedic-dog-beds/waterproof"
+      canonical="https://getpawsy.pet/collections/all"
       title="Waterproof Orthopedic Dog Beds – Leak-Proof Memory Foam (2026)"
       metaDesc="Shop waterproof orthopedic dog beds with sealed memory foam liners. Protects against accidents, drool, and odor. Ideal for senior dogs and puppies."
       h1="Waterproof Orthopedic Dog Beds — Leak-Proof Memory Foam Protection"
@@ -13,11 +13,11 @@ export default function WaterproofOrthopedicBed() {
       trustBadges={['100% Waterproof Liner', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Dog', href: '/dog/orthopedic-dog-beds' },
-        { label: 'Orthopedic Dog Beds', href: '/dog/orthopedic-dog-beds' },
+        { label: 'Dog', href: '/collections/all' },
+        { label: 'Orthopedic Dog Beds', href: '/collections/all' },
         { label: 'Waterproof' },
       ]}
-      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/dog/orthopedic-dog-beds' }}
+      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/collections/all' }}
       productQuery="name.ilike.%waterproof%dog bed%,name.ilike.%orthopedic%waterproof%"
       contentBlocks={[
         {
@@ -58,9 +58,9 @@ Never: Machine wash the foam core. Never use bleach on waterproof liners. Never 
         { slug: 'signs-dog-needs-joint-support', title: 'Signs Your Dog Needs Joint Support', desc: 'When it\'s time to upgrade your dog\'s bed.' },
       ]}
       crossLinks={[
-        { label: 'Orthopedic Dog Beds Hub', href: '/dog/orthopedic-dog-beds' },
-        { label: 'Large Dog Orthopedic Beds', href: '/dog/orthopedic-dog-beds/best-for-large-dogs' },
-        { label: 'Memory Foam Dog Beds', href: '/dog/orthopedic-dog-beds/memory-foam' },
+        { label: 'Orthopedic Dog Beds Hub', href: '/collections/all' },
+        { label: 'Large Dog Orthopedic Beds', href: '/collections/all' },
+        { label: 'Memory Foam Dog Beds', href: '/collections/all' },
       ]}
     />
   );

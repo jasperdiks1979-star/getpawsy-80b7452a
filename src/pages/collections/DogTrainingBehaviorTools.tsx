@@ -32,7 +32,7 @@ import {
   LEASH_CLUSTER,
 } from '@/data/dog-training-cluster-data';
 
-const CANONICAL = 'https://getpawsy.pet/dog/dog-training-behavior-tools';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 const BASE = 'https://getpawsy.pet';
 
 const CLUSTER_ARTICLES = [
@@ -350,13 +350,13 @@ export default function DogTrainingBehaviorTools() {
             <strong>Puppies (8 weeks – 6 months):</strong> Short attention spans, teething, socialization priority. Use ultra-short training sessions (2-3 minutes), extremely high treat rates, and focus on name recognition, sit, and basic leash exposure. A lightweight <Link to="/collections/dog-collars-leashes" className="text-primary hover:underline">puppy harness</Link> and 6-foot leash are the only equipment needed at this stage.
           </p>
           <p>
-            <strong>Adolescent dogs (6-18 months):</strong> The hardest phase. Hormones, increased independence, selective hearing. This is when most dogs develop persistent pulling habits. A front-clip harness becomes essential. Start <Link to="/dog/dog-training/how-to-train-recall" className="text-primary hover:underline">recall training</Link> with a long line before they discover that running away is fun.
+            <strong>Adolescent dogs (6-18 months):</strong> The hardest phase. Hormones, increased independence, selective hearing. This is when most dogs develop persistent pulling habits. A front-clip harness becomes essential. Start <Link to="/collections/all" className="text-primary hover:underline">recall training</Link> with a long line before they discover that running away is fun.
           </p>
           <p>
             <strong>Adult dogs with established habits:</strong> Pulling, poor recall, and leash reactivity in adult dogs are not personality traits — they're trained (or untrained) behaviors that can be changed at any age. Adult dogs often learn faster than puppies because they have longer attention spans. The same positive reinforcement methods work; patience during the "unlearning" phase is the key.
           </p>
           <p>
-            <strong>Reactive dogs:</strong> Dogs that bark, lunge, or freeze around triggers (other dogs, strangers, bicycles) need a different approach. A <Link to="/dog/dog-training/best-harness-large-dogs" className="text-primary hover:underline">tactical harness with dual handles</Link> provides emergency control during reactive episodes. Training focuses on counter-conditioning (changing the emotional response to triggers) rather than obedience commands.
+            <strong>Reactive dogs:</strong> Dogs that bark, lunge, or freeze around triggers (other dogs, strangers, bicycles) need a different approach. A <Link to="/collections/all" className="text-primary hover:underline">tactical harness with dual handles</Link> provides emergency control during reactive episodes. Training focuses on counter-conditioning (changing the emotional response to triggers) rather than obedience commands.
           </p>
         </div>
       </section>
@@ -368,7 +368,7 @@ export default function DogTrainingBehaviorTools() {
           {[
             { breed: 'Small Dogs (Under 25 lbs)', breeds: 'Chihuahua, Pomeranian, Dachshund, French Bulldog', tools: ['Lightweight back-clip harness', 'Standard 6ft leash', 'Small-size clicker', 'Treat pouch with small compartments'], link: '/collections/dog-collars-leashes', cta: 'Shop Small Dog Gear' },
             { breed: 'Medium Dogs (25–60 lbs)', breeds: 'Beagle, Border Collie, Australian Shepherd, Cocker Spaniel', tools: ['Front-clip no-pull harness', 'Biothane 15ft long line', 'Dual-tone clicker', 'Quick-access treat pouch'], link: '/collections/dog-collars-leashes', cta: 'Shop Medium Dog Gear' },
-            { breed: 'Large Dogs (60+ lbs)', breeds: 'Labrador, German Shepherd, Golden Retriever, Pit Bull', tools: ['Tactical dual-handle harness', '30ft recall long line', 'Heavy-duty biothane leash', 'XL treat pouch'], link: '/dog/dog-training/best-harness-large-dogs', cta: 'Shop Large Dog Gear' },
+            { breed: 'Large Dogs (60+ lbs)', breeds: 'Labrador, German Shepherd, Golden Retriever, Pit Bull', tools: ['Tactical dual-handle harness', '30ft recall long line', 'Heavy-duty biothane leash', 'XL treat pouch'], link: '/collections/all', cta: 'Shop Large Dog Gear' },
           ].map((item, i) => (
             <div key={i} className="p-5 rounded-xl border border-border bg-background">
               <h3 className="font-semibold text-foreground mb-1">{item.breed}</h3>

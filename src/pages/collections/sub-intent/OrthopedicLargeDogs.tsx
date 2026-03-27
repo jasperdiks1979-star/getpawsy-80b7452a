@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function OrthopedicLargeDogs() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/orthopedic-dog-beds/best-for-large-dogs"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Orthopedic Dog Bed for Large Dogs (2026) – 50+ lbs"
       metaDesc="Find the best orthopedic dog beds built for large and giant breeds. High-density memory foam rated for 50–150 lb dogs. Tested for durability and joint relief."
       h1="Best Orthopedic Dog Bed for Large Dogs — Heavy Duty Memory Foam (2026)"
@@ -13,11 +13,11 @@ export default function OrthopedicLargeDogs() {
       trustBadges={['Rated for 50–150+ lbs', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Dog', href: '/dog/orthopedic-dog-beds' },
-        { label: 'Orthopedic Dog Beds', href: '/dog/orthopedic-dog-beds' },
+        { label: 'Dog', href: '/collections/all' },
+        { label: 'Orthopedic Dog Beds', href: '/collections/all' },
         { label: 'Large Dogs' },
       ]}
-      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/dog/orthopedic-dog-beds' }}
+      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/collections/all' }}
       productQuery="name.ilike.%orthopedic%,name.ilike.%memory foam%,name.ilike.%large dog bed%"
       contentBlocks={[
         {
@@ -60,9 +60,9 @@ Correct sizing: Measure your dog from nose to tail base while lying flat, add 8 
         { slug: 'signs-dog-needs-joint-support', title: 'Signs Your Dog Needs Joint Support', desc: 'Early warning signs every pet parent should know.' },
       ]}
       crossLinks={[
-        { label: 'Orthopedic Dog Beds Hub', href: '/dog/orthopedic-dog-beds' },
-        { label: 'Waterproof Orthopedic Beds', href: '/dog/orthopedic-dog-beds/waterproof' },
-        { label: 'Memory Foam Dog Beds', href: '/dog/orthopedic-dog-beds/memory-foam' },
+        { label: 'Orthopedic Dog Beds Hub', href: '/collections/all' },
+        { label: 'Waterproof Orthopedic Beds', href: '/collections/all' },
+        { label: 'Memory Foam Dog Beds', href: '/collections/all' },
       ]}
     />
   );

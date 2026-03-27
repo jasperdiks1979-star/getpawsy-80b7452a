@@ -9,7 +9,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { PriorityCategoryWidget } from "@/components/seo/PriorityCategoryWidget";
 import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
 
-const CANONICAL = 'https://getpawsy.pet/dog/dog-car-travel-safety';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 const PAGE_TITLE = 'Crash-Tested Dog Car Seats & Safety Gear (2026)';
 const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping.';
 
@@ -193,9 +193,9 @@ export default function DogCarTravelSafety() {
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Find the Right Car Safety for Your Dog</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              { title: 'Dog Car Seats', desc: 'Full-enclosure car seats with harness systems. Best for small and medium dogs up to 50 lbs. Features elevated riding position, padded interior, and multiple attachment points. The safest option for dogs that prefer to sit up during car rides.', link: '/dog/dog-car-travel-safety/car-seats', linkText: 'Shop Dog Car Seats →' },
-              { title: 'Dog Car Harnesses', desc: 'Crash-tested harness systems that clip directly to the vehicle seat belt. Best for large dogs (50+ lbs) who need freedom of movement without a confining seat. Look for CPS-certified models with reinforced stitching and padded chest plates.', link: '/dog/dog-car-travel-safety/harness', linkText: 'Shop Car Harnesses →' },
-              { title: 'Dog Booster Seats', desc: 'Elevated platforms that give small dogs (under 20 lbs) a better view while keeping them secured. Ideal for dogs that get car-anxious when they can\'t see out the window. Attaches via seat belt or headrest straps.', link: '/dog/dog-car-travel-safety/booster-seats', linkText: 'Shop Booster Seats →' },
+              { title: 'Dog Car Seats', desc: 'Full-enclosure car seats with harness systems. Best for small and medium dogs up to 50 lbs. Features elevated riding position, padded interior, and multiple attachment points. The safest option for dogs that prefer to sit up during car rides.', link: '/collections/all', linkText: 'Shop Dog Car Seats →' },
+              { title: 'Dog Car Harnesses', desc: 'Crash-tested harness systems that clip directly to the vehicle seat belt. Best for large dogs (50+ lbs) who need freedom of movement without a confining seat. Look for CPS-certified models with reinforced stitching and padded chest plates.', link: '/collections/all', linkText: 'Shop Car Harnesses →' },
+              { title: 'Dog Booster Seats', desc: 'Elevated platforms that give small dogs (under 20 lbs) a better view while keeping them secured. Ideal for dogs that get car-anxious when they can\'t see out the window. Attaches via seat belt or headrest straps.', link: '/collections/all', linkText: 'Shop Booster Seats →' },
               { title: 'Dog Car Seat Covers', desc: 'Waterproof seat covers that protect your vehicle\'s upholstery from fur, dirt, and drool. Many models include hammock-style barriers that prevent dogs from falling into the footwell during sudden stops.', link: '/collections/dog-car-seat-cover', linkText: 'Shop Seat Covers →' },
             ].map(block => (
               <div key={block.title} className="bg-card border rounded-2xl p-6">
@@ -264,9 +264,9 @@ export default function DogCarTravelSafety() {
         <section className="mb-16 bg-muted/30 rounded-2xl p-6 md:p-10">
           <h2 className="text-2xl font-display font-bold mb-2">Explore More Travel & Safety Guides</h2>
           <div className="mt-4 flex flex-wrap gap-3">
-            <Link to="/dog/orthopedic-dog-beds" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
-            <Link to="/cat/cat-trees-for-large-cats" className="text-sm text-primary hover:underline font-medium">Cat Trees for Large Cats →</Link>
-            <Link to="/dog/dog-car-travel-safety/car-seats" className="text-sm text-primary hover:underline font-medium">Dog Car Seats →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Cat Trees for Large Cats →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Dog Car Seats →</Link>
             <Link to="/blog" className="text-sm text-primary hover:underline font-medium">Expert Pet Guides →</Link>
           </div>
         </section>

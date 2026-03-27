@@ -29,7 +29,7 @@ import { PAASection } from '@/components/seo/PAASection';
 import { getDominationConfig } from '@/data/domination-config';
 import orthopedicHero from '@/assets/orthopedic-hero.jpg';
 
-const CANONICAL = 'https://getpawsy.pet/dog/orthopedic-dog-beds';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 // Also served at /orthopedic-dog-beds/ — canonical always points here
 const BASE = 'https://getpawsy.pet';
 
@@ -80,14 +80,14 @@ const TESTIMONIALS = [
 ];
 
 const ATTACK_PAGES = [
-  { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Best Orthopedic Beds for Large Dogs' },
-  { href: '/dog/orthopedic-dog-beds/memory-foam-under-100', label: 'Best Memory Foam Beds Under $100' },
-  { href: '/dog/orthopedic-dog-beds/for-senior-dogs', label: 'Orthopedic Beds for Senior Dogs' },
-  { href: '/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate', label: 'Memory Foam vs Egg Crate Beds' },
-  { href: '/dog/orthopedic-dog-beds/cooling', label: 'Best Cooling Orthopedic Beds' },
-  { href: '/dog/orthopedic-dog-beds/signs-dog-needs-orthopedic-bed', label: 'Signs Your Dog Needs an Orthopedic Bed' },
-  { href: '/dog/orthopedic-dog-beds/waterproof', label: 'Waterproof Orthopedic Beds' },
-  { href: '/dog/orthopedic-dog-beds/memory-foam', label: 'Memory Foam Dog Beds' },
+  { href: '/collections/all', label: 'Best Orthopedic Beds for Large Dogs' },
+  { href: '/collections/all', label: 'Best Memory Foam Beds Under $100' },
+  { href: '/collections/all', label: 'Orthopedic Beds for Senior Dogs' },
+  { href: '/collections/all', label: 'Memory Foam vs Egg Crate Beds' },
+  { href: '/collections/all', label: 'Best Cooling Orthopedic Beds' },
+  { href: '/collections/all', label: 'Signs Your Dog Needs an Orthopedic Bed' },
+  { href: '/collections/all', label: 'Waterproof Orthopedic Beds' },
+  { href: '/collections/all', label: 'Memory Foam Dog Beds' },
   { href: '/collections/orthopedic-dog-bed-arthritis', label: 'Beds for Dogs with Arthritis' },
   { href: '/collections/premium-orthopedic-dog-bed-comparison', label: 'Premium Bed Comparison' },
 ];
@@ -540,7 +540,7 @@ export default function OrthopedicDogBeds() {
               { title: 'Best for Small Dogs (Under 25 lbs)', icon: '🐕', desc: 'Small breeds need 3 inches of supportive foam minimum. Don\'t over-buy on thickness — focus on density. Bolstered edges provide security and head support that small dogs love. Choose beds sized 24×18" for Dachshunds, Chihuahuas, and Shih Tzus.', link: '#products', linkText: 'Shop Small Dog Beds →' },
               { title: 'Best for Senior Dogs (7+ years)', icon: '🦮', desc: 'Low entry height (under 4") is critical for dogs with reduced mobility. Bolstered edges help with head/neck support. Waterproof liner is essential for incontinence. Gel-infused foam reduces heat buildup that worsens inflammation in older dogs.', link: '/collections/orthopedic-dog-bed-senior-dogs', linkText: 'Best for Senior Dogs →' },
               { title: 'Best for Hip Dysplasia', icon: '🦴', desc: 'Hip dysplasia affects up to 50% of large and giant breeds. The bed must support the hip socket without allowing the joint to sink to the floor. Dual-layer foam with a firm base and contouring top layer is essential. Low entry point reduces pain when getting on/off.', link: '/guides/best-dog-bed-hip-dysplasia', linkText: 'Hip Dysplasia Guide →' },
-              { title: 'Budget Option (Under $50)', icon: '💰', desc: 'Quality orthopedic support doesn\'t require $150+. Our under-$50 picks use medium-density foam (1.5–1.7 lb/ft³) that lasts 1–2 years for dogs under 60 lbs. Best for pet parents who want genuine improvement over polyester-fill beds without a premium price tag.', link: '/dog/orthopedic-dog-beds/memory-foam-under-100', linkText: 'Budget Picks Under $100 →' },
+              { title: 'Budget Option (Under $50)', icon: '💰', desc: 'Quality orthopedic support doesn\'t require $150+. Our under-$50 picks use medium-density foam (1.5–1.7 lb/ft³) that lasts 1–2 years for dogs under 60 lbs. Best for pet parents who want genuine improvement over polyester-fill beds without a premium price tag.', link: '/collections/all', linkText: 'Budget Picks Under $100 →' },
               { title: 'Premium Option ($100+)', icon: '💎', desc: 'Premium orthopedic beds feature medical-grade foam (2.0+ lb/ft³), CertiPUR-US certification, sealed TPU waterproof liners, and covers rated for 200+ wash cycles. Expected lifespan: 5–7 years. Best for giant breeds, severe joint disease, or post-surgical recovery.', link: '#products', linkText: 'Shop Premium Beds →' },
             ].map(block => (
               <div key={block.title} className="bg-card border rounded-2xl p-6">
@@ -888,16 +888,16 @@ export default function OrthopedicDogBeds() {
             <Link to="/collections/best-dog-beds-for-large-dogs" className="text-sm text-primary hover:underline font-medium">
               Large Dog Beds →
             </Link>
-            <Link to="/dog/orthopedic-dog-beds/waterproof" className="text-sm text-primary hover:underline font-medium">
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">
               Waterproof Dog Beds →
             </Link>
             <Link to="/blog" className="text-sm text-primary hover:underline font-medium">
               Dog Arthritis Care Articles →
             </Link>
-            <Link to="/dog/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">
               Dog Car Travel Safety →
             </Link>
-            <Link to="/cat/cat-trees-for-large-cats" className="text-sm text-primary hover:underline font-medium">
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">
               Cat Trees for Large Cats →
             </Link>
           </div>
@@ -909,12 +909,12 @@ export default function OrthopedicDogBeds() {
           <p className="text-muted-foreground text-sm mb-6">Deep-dive guides from our research team — everything you need to make the right decision.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', title: 'Best Orthopedic Beds for Large Dogs', desc: 'Foam thickness, edge support, and weight ratings for 60–120+ lb breeds.' },
-              { href: '/dog/orthopedic-dog-beds/memory-foam-under-100', title: 'Best Memory Foam Beds Under $100', desc: 'Budget picks that actually deliver genuine orthopedic support.' },
-              { href: '/dog/orthopedic-dog-beds/signs-dog-needs-orthopedic-bed', title: 'Signs Your Dog Needs an Orthopedic Bed', desc: '8 warning signs veterinarians watch for — from stiffness to sleep changes.' },
-              { href: '/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate', title: 'Memory Foam vs Egg Crate Beds', desc: 'Honest comparison of support, durability, cooling & price.' },
-              { href: '/dog/orthopedic-dog-beds/cooling', title: 'Best Cooling Orthopedic Beds', desc: 'Gel-infused foam for hot climates and thick-coated breeds.' },
-              { href: '/dog/orthopedic-dog-beds/for-senior-dogs', title: 'Orthopedic Beds for Senior Dogs', desc: 'Low-entry design, arthritis management, and incontinence protection.' },
+              { href: '/collections/all', title: 'Best Orthopedic Beds for Large Dogs', desc: 'Foam thickness, edge support, and weight ratings for 60–120+ lb breeds.' },
+              { href: '/collections/all', title: 'Best Memory Foam Beds Under $100', desc: 'Budget picks that actually deliver genuine orthopedic support.' },
+              { href: '/collections/all', title: 'Signs Your Dog Needs an Orthopedic Bed', desc: '8 warning signs veterinarians watch for — from stiffness to sleep changes.' },
+              { href: '/collections/all', title: 'Memory Foam vs Egg Crate Beds', desc: 'Honest comparison of support, durability, cooling & price.' },
+              { href: '/collections/all', title: 'Best Cooling Orthopedic Beds', desc: 'Gel-infused foam for hot climates and thick-coated breeds.' },
+              { href: '/collections/all', title: 'Orthopedic Beds for Senior Dogs', desc: 'Low-entry design, arthritis management, and incontinence protection.' },
             ].map(guide => (
               <Link key={guide.href} to={guide.href} className="group bg-background border rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition-all">
                 <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{guide.title}</h3>

@@ -122,7 +122,7 @@ const TOP3_PAGES: Array<{
   { url: '/collections/dog-car-seats', keyword: 'best dog car seat', position: 3, impressions: 4200, clicks: 781, ctr: 18.6, intent: 'buy', aov: 65, currentWordCount: 2600 },
   { url: '/collections/slow-feeder-dog-bowls', keyword: 'best slow feeder dog bowl', position: 1, impressions: 3800, clicks: 1205, ctr: 31.7, intent: 'buy', aov: 28, currentWordCount: 2900 },
   { url: '/collections/interactive-dog-toys', keyword: 'best interactive dog toys', position: 2, impressions: 3500, clicks: 865, ctr: 24.7, intent: 'buy', aov: 32, currentWordCount: 2200 },
-  { url: '/dog/dog-training/stop-pulling-guide', keyword: 'how to stop dog pulling on leash', position: 3, impressions: 7100, clicks: 1321, ctr: 18.6, intent: 'info', aov: 45, currentWordCount: 3100 },
+  { url: '/collections/all', keyword: 'how to stop dog pulling on leash', position: 3, impressions: 7100, clicks: 1321, ctr: 18.6, intent: 'info', aov: 45, currentWordCount: 3100 },
   { url: '/collections/elevated-dog-beds', keyword: 'elevated cooling dog bed', position: 2, impressions: 2800, clicks: 692, ctr: 24.7, intent: 'buy', aov: 65, currentWordCount: 1900 },
   { url: '/collections/cat-water-fountains', keyword: 'best cat water fountain', position: 1, impressions: 4100, clicks: 1300, ctr: 31.7, intent: 'buy', aov: 38, currentWordCount: 2500 },
 ];

@@ -285,7 +285,7 @@ export function WebsiteSchema({
         '@type': 'ListItem',
         position: 1,
         name: 'Dog Training & Behavior Tools',
-        url: `${url}/dog/dog-training-behavior-tools`,
+        url: `${url}/collections/dog`,
       },
       {
         '@type': 'ListItem',

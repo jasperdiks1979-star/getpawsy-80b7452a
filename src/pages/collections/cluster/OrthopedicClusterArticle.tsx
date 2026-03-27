@@ -17,7 +17,7 @@ import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 
 const BASE = 'https://getpawsy.pet';
-const HUB = '/dog/orthopedic-dog-beds';
+const HUB = '/collections/all';
 
 interface ClusterData {
   slug: string;
@@ -65,8 +65,8 @@ const CLUSTERS: Record<string, ClusterData> = {
       { q: 'How often should I replace an orthopedic bed for a large dog?', a: 'With high-density foam (1.8+ lb/ft³), every 3–5 years. Check annually: if the foam doesn\'t spring back within 10 seconds after pressing, it\'s time for a replacement.' },
     ],
     relatedClusters: [
-      { href: '/dog/orthopedic-dog-beds/for-senior-dogs', label: 'Orthopedic Beds for Senior Dogs' },
-      { href: '/dog/orthopedic-dog-beds/cooling', label: 'Cooling Orthopedic Beds' },
+      { href: '/collections/all', label: 'Orthopedic Beds for Senior Dogs' },
+      { href: '/collections/all', label: 'Cooling Orthopedic Beds' },
     ],
     affiliateFilter: [1, 0, 5], // Big Barker, Bedsure, K9 Ballistics
   },
@@ -93,8 +93,8 @@ const CLUSTERS: Record<string, ClusterData> = {
       { q: 'Should I buy two cheap beds or one expensive one?', a: 'One quality bed usually wins. Two $40 beds over 3 years = $240. One $120 bed lasting 4 years = $120. Plus, consistent support quality is better for joint health than alternating between degrading beds.' },
     ],
     relatedClusters: [
-      { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Best for Large Dogs' },
-      { href: '/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate', label: 'Memory Foam vs Egg Crate' },
+      { href: '/collections/all', label: 'Best for Large Dogs' },
+      { href: '/collections/all', label: 'Memory Foam vs Egg Crate' },
     ],
     affiliateFilter: [0, 3, 4], // Bedsure, Furhaven, BarksBar
   },
@@ -121,8 +121,8 @@ const CLUSTERS: Record<string, ClusterData> = {
       { q: 'Should healthy young dogs use orthopedic beds?', a: 'For large and giant breeds, yes — preventive support during growth years is beneficial. For small, healthy young dogs, a standard quality bed is usually sufficient until age 5–7.' },
     ],
     relatedClusters: [
-      { href: '/dog/orthopedic-dog-beds/for-senior-dogs', label: 'Beds for Senior Dogs' },
-      { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Beds for Large Dogs' },
+      { href: '/collections/all', label: 'Beds for Senior Dogs' },
+      { href: '/collections/all', label: 'Beds for Large Dogs' },
     ],
     affiliateFilter: [2, 0, 3], // PetFusion, Bedsure, Furhaven
   },
@@ -159,8 +159,8 @@ const CLUSTERS: Record<string, ClusterData> = {
       { q: 'Is gel memory foam better than regular memory foam?', a: 'For dogs in warm climates or breeds that overheat easily, yes. Gel-infused memory foam maintains the same pressure-relief properties while dissipating body heat 20–30% more effectively.' },
     ],
     relatedClusters: [
-      { href: '/dog/orthopedic-dog-beds/memory-foam-under-100', label: 'Best Under $100' },
-      { href: '/dog/orthopedic-dog-beds/cooling', label: 'Cooling Orthopedic Beds' },
+      { href: '/collections/all', label: 'Best Under $100' },
+      { href: '/collections/all', label: 'Cooling Orthopedic Beds' },
     ],
     affiliateFilter: [0, 2, 3], // Bedsure, PetFusion, Furhaven
   },
@@ -183,8 +183,8 @@ const CLUSTERS: Record<string, ClusterData> = {
       { q: 'Best cooling bed for a Husky?', a: 'Look for gel-infused memory foam with an open-cell top layer and mesh cover. Huskies need both cooling and orthopedic support due to their active build and predisposition to hip issues. Beds with elevated airflow channels are ideal.' },
     ],
     relatedClusters: [
-      { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Best for Large Dogs' },
-      { href: '/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate', label: 'Memory Foam vs Egg Crate' },
+      { href: '/collections/all', label: 'Best for Large Dogs' },
+      { href: '/collections/all', label: 'Memory Foam vs Egg Crate' },
     ],
     affiliateFilter: [3, 0, 2], // Furhaven cooling, Bedsure, PetFusion
   },
@@ -209,8 +209,8 @@ const CLUSTERS: Record<string, ClusterData> = {
       { q: 'Can an orthopedic bed help my senior dog live longer?', a: 'While a bed alone doesn\'t extend lifespan, reduced joint pain leads to better mobility, more exercise, healthier weight, and improved quality of life — all factors that contribute to longevity in senior dogs.' },
     ],
     relatedClusters: [
-      { href: '/dog/orthopedic-dog-beds/signs-dog-needs-orthopedic-bed', label: 'Signs Your Dog Needs an Orthopedic Bed' },
-      { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Best for Large Dogs' },
+      { href: '/collections/all', label: 'Signs Your Dog Needs an Orthopedic Bed' },
+      { href: '/collections/all', label: 'Best for Large Dogs' },
     ],
     affiliateFilter: [2, 0, 4], // PetFusion, Bedsure, BarksBar
   },

@@ -31,7 +31,7 @@ const CatTraining = () => {
       <Helmet>
         <title>Cat Enrichment & Training – Trees, Posts & Toys | GetPawsy</title>
         <meta name="description" content="Cat trees, scratching posts, interactive toys & enrichment furniture. Keep indoor cats active and happy. US 3–7 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/cat/training" />
+        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
       </Helmet>
 
@@ -83,7 +83,7 @@ const CatTraining = () => {
       </section>
 
       <div className="container px-4 md:px-6 max-w-4xl">
-        <SiloBackLinks silo="cat" currentPath="/cat/training" />
+        <SiloBackLinks silo="cat" currentPath="/collections/cat" />
       </div>
     </Layout>
   );

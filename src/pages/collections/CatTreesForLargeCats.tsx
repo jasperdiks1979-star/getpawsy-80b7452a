@@ -14,7 +14,7 @@ import { FeaturedSnippetBlock } from "@/components/seo/FeaturedSnippetBlock";
 import { StickyJumpNav } from "@/components/seo/StickyJumpNav";
 import { PAASection } from "@/components/seo/PAASection";
 
-const CANONICAL = 'https://getpawsy.pet/cat/cat-trees-for-large-cats';
+const CANONICAL = 'https://getpawsy.pet/collections/all';
 const PAGE_TITLE = 'Heavy Duty Cat Trees for Large Cats – Won\'t Tip (2026)';
 const META_DESC = 'Tired of wobbly cat trees? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal posts, anti-tip tested. Free US shipping.';
 
@@ -249,13 +249,13 @@ export default function CatTreesForLargeCats() {
               {
                 title: 'Heavy Duty Cat Trees',
                 desc: 'Built with solid wood frames, thick sisal posts, and anti-tip hardware. These cat trees are rated for 40+ lbs and designed to withstand aggressive play from large and active cats. Many include wall-anchor systems for maximum stability.',
-                link: '/cat/cat-trees-for-large-cats/heavy-duty',
+                link: '/collections/all',
                 linkText: 'Shop Heavy Duty Cat Trees →',
               },
               {
                 title: 'Cat Trees for Maine Coons',
                 desc: 'Purpose-designed for the largest domestic breed. Features include 18"+ platforms, 12"+ condo openings, reinforced hammocks rated for 25 lbs, and extra-tall scratching posts that accommodate a full stretch. Built to handle 20–30 lb cats comfortably.',
-                link: '/cat/cat-trees-for-large-cats/for-maine-coon',
+                link: '/collections/all',
                 linkText: 'Shop Maine Coon Cat Trees →',
               },
               {
@@ -349,9 +349,9 @@ export default function CatTreesForLargeCats() {
             ))}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/dog/orthopedic-dog-beds" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
-            <Link to="/dog/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">Dog Car Travel Safety →</Link>
-            <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-sm text-primary hover:underline font-medium">Large Cat Condos →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Dog Car Travel Safety →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Large Cat Condos →</Link>
           </div>
         </section>
 

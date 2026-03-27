@@ -18,7 +18,7 @@ const jsonLd = {
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
   dateModified: '2026-02-28',
-  mainEntityOfPage: 'https://getpawsy.pet/dog/best-dog-training-and-travel-gear-2026',
+  mainEntityOfPage: 'https://getpawsy.pet/collections/all',
 };
 
 const faqJsonLd = {
@@ -75,7 +75,7 @@ const DogTrainingTravelPillar = () => {
       <Helmet>
         <title>Best Dog Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
         <meta name="description" content="2026 expert guide to the best dog training harnesses, car seats, leashes & travel gear. Tested picks with US 3–7 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/dog/best-dog-training-and-travel-gear-2026" />
+        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
@@ -184,27 +184,27 @@ const DogTrainingTravelPillar = () => {
           <section>
             <h2 className="text-2xl font-display font-bold mb-4">Explore Dog Guides</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link to="/dog/training/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/dog" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Dog Training Essentials →</h3>
                 <p className="text-sm text-muted-foreground">No-pull harnesses, leashes & behavior tools</p>
               </Link>
-              <Link to="/dog/travel/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/dog" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Dog Travel Safety Gear →</h3>
                 <p className="text-sm text-muted-foreground">Car seats, travel harnesses & carriers</p>
               </Link>
-              <Link to="/dog/dog-training-behavior-tools" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Training & Behavior Tools →</h3>
                 <p className="text-sm text-muted-foreground">Complete collection of training gear</p>
               </Link>
-              <Link to="/dog/dog-car-travel-safety" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Car Travel Safety →</h3>
                 <p className="text-sm text-muted-foreground">Car seats, harnesses & safety gear</p>
               </Link>
-              <Link to="/dog/orthopedic-dog-beds" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Orthopedic Dog Beds →</h3>
                 <p className="text-sm text-muted-foreground">Memory foam beds for all breeds</p>
               </Link>
-              <Link to="/dog/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/dog" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">All Dog Products →</h3>
                 <p className="text-sm text-muted-foreground">Browse the full dog collection</p>
               </Link>

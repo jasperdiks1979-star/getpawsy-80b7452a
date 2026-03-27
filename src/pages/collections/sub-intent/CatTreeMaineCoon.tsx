@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function CatTreeMaineCoon() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/cat/cat-trees-for-large-cats/for-maine-coon"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Cat Tree for Maine Coon – Heavy Duty & Extra Wide (2026)"
       metaDesc="Find the best cat trees built specifically for Maine Coons. Wide platforms, 25+ lb capacity, thick sisal posts, and anti-tip stability. Expert reviewed."
       h1="Best Cat Tree for Maine Coon — Heavy Duty & Extra Wide (2026)"
@@ -13,11 +13,11 @@ export default function CatTreeMaineCoon() {
       trustBadges={['Rated for 25+ lb Cats', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Cat', href: '/cat/cat-trees-for-large-cats' },
-        { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
+        { label: 'Cat', href: '/collections/all' },
+        { label: 'Cat Trees for Large Cats', href: '/collections/all' },
         { label: 'Maine Coon' },
       ]}
-      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/cat/cat-trees-for-large-cats' }}
+      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/collections/all' }}
       productQuery="name.ilike.%cat tree%,name.ilike.%cat tower%large%,name.ilike.%cat condo%"
       contentBlocks={[
         {
@@ -63,9 +63,9 @@ Scratching area: Multiple scratching posts distributed across the tree prevent c
         { slug: 'signs-dog-needs-joint-support', title: 'Signs Your Pet Needs Joint Support', desc: 'Applies to large cats too — mobility matters.' },
       ]}
       crossLinks={[
-        { label: 'Cat Trees for Large Cats Hub', href: '/cat/cat-trees-for-large-cats' },
-        { label: 'Heavy Duty Cat Trees', href: '/cat/cat-trees-for-large-cats/heavy-duty' },
-        { label: 'Large Cat Condos', href: '/cat/cat-trees-for-large-cats/large-cat-condos' },
+        { label: 'Cat Trees for Large Cats Hub', href: '/collections/all' },
+        { label: 'Heavy Duty Cat Trees', href: '/collections/all' },
+        { label: 'Large Cat Condos', href: '/collections/all' },
       ]}
     />
   );

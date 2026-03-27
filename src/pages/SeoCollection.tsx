@@ -191,21 +191,8 @@ const generateBreadcrumbJsonLd = (collection: SeoCollectionData, parentCollectio
  * If React Router accidentally matches /:slug or /collections/:slug for these,
  * we redirect to the correct static route.
  */
-const RESERVED_CLUSTER_SLUGS = new Set([
-  // Pillar pages
-  'orthopedic-dog-beds',
-  'cat-trees-for-large-cats',
-  'dog-car-travel-safety',
-  // Sub-intent pages
-  'best-orthopedic-dog-bed-large-dogs',
-  'waterproof-orthopedic-dog-bed',
-  'memory-foam-dog-beds',
-  'cat-tree-for-maine-coon',
-  'heavy-duty-cat-tree',
-  'cat-condos-for-large-cats',
-  'dog-car-seats',
-  'dog-booster-seat',
-  'dog-car-harness',
+const RESERVED_CLUSTER_SLUGS = new Set<string>([
+  // No reserved slugs — all collections now served via /collections/:slug
 ]);
 
 const SeoCollection = () => {
@@ -514,15 +501,8 @@ const SeoCollection = () => {
       matchResult: 'not_found',
     });
 
-    // Auto-redirect to closest valid category instead of showing "Collection Not Found"
-    const speciesHint = classifySpecies(rawSlug || '').speciesPrimary;
-    const fallbackPath = speciesHint === 'cat'
-      ? '/collections/cat'
-      : speciesHint === 'dog'
-        ? '/collections/dog'
-        : '/products';
-
-    return <Navigate to={fallbackPath} replace />;
+    // Always redirect to /collections/all — never show "Collection Not Found"
+    return <Navigate to="/collections/all" replace />;
   }
 
   const collectionJsonLd = products.length > 0 ? generateCollectionJsonLd(collection, products) : null;

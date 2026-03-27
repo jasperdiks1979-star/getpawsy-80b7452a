@@ -107,7 +107,7 @@ const SNIPER_SEED: Array<{
   faqs: string[]; linkSources: string[];
 }> = [
   {
-    url: '/dog/orthopedic-dog-beds', query: 'best orthopedic dog bed 2026',
+    url: '/collections/all', query: 'best orthopedic dog bed 2026',
     impressions: 4200, clicks: 126, position: 8.2, aov: 65,
     title: '7 Best Orthopedic Dog Beds — Vet-Backed Picks (2026)',
     meta: 'Joint pain keeps your dog up at night. These orthopedic beds use medical-grade foam to relieve pressure. Free US shipping + 30-day return policy.',
@@ -115,7 +115,7 @@ const SNIPER_SEED: Array<{
     linkSources: ['/guides/how-to-choose-orthopedic-dog-bed', '/guides/signs-your-dog-has-joint-pain', '/collections/dog-beds', '/blog/senior-dog-care', '/'],
   },
   {
-    url: '/cat/cat-trees-for-large-cats', query: 'cat tree for large cats',
+    url: '/collections/all', query: 'cat tree for large cats',
     impressions: 3800, clicks: 68, position: 11.5, aov: 89,
     title: '9 Best Cat Trees for Large Cats — Stability Tested (2026)',
     meta: 'Wobbly cat trees topple under 15+ lb cats. Our picks are load-tested to 50 lbs with solid wood posts. Ships free in 3-5 days.',
@@ -123,7 +123,7 @@ const SNIPER_SEED: Array<{
     linkSources: ['/guides/how-tall-should-cat-tree-be', '/guides/cat-tree-stability-guide', '/collections/cat-trees', '/blog/maine-coon-essentials', '/'],
   },
   {
-    url: '/dog/dog-car-seats', query: 'crash tested dog car seat',
+    url: '/collections/all', query: 'crash tested dog car seat',
     impressions: 2900, clicks: 41, position: 14.3, aov: 52,
     title: '5 Crash-Tested Dog Car Seats — Safety Ratings Inside (2026)',
     meta: 'Unrestrained dogs are 2x more likely to be injured in accidents. These seats passed 30mph crash tests. Real safety data inside.',
@@ -136,7 +136,7 @@ const SNIPER_SEED: Array<{
     title: 'Best Elevated Dog Beds for Outdoor Use (2026)',
     meta: 'Keep your dog cool and off hot ground with raised cot-style beds. Chew-resistant mesh, rust-proof frames. Free shipping over $35.',
     faqs: ['Are elevated beds good for dogs with arthritis?', 'What size raised bed for a Labrador?', 'Can elevated dog beds be used outside?'],
-    linkSources: ['/collections/dog-beds', '/blog/summer-pet-care', '/guides/best-dog-beds-large-breeds-2026', '/dog/orthopedic-dog-beds', '/'],
+    linkSources: ['/collections/dog-beds', '/blog/summer-pet-care', '/guides/best-dog-beds-large-breeds-2026', '/collections/all', '/'],
   },
   {
     url: '/collections/calming-dog-beds', query: 'calming dog bed anxiety',
@@ -144,7 +144,7 @@ const SNIPER_SEED: Array<{
     title: '6 Best Calming Dog Beds for Anxious Dogs (2026)',
     meta: 'Anxiety affects 70% of dogs. These donut-style beds mimic den security with raised rims and ultra-soft faux fur. 30-day return policy.',
     faqs: ['Do calming beds actually work for anxious dogs?', 'What shape bed is best for anxious dogs?', 'Should I get a calming bed or a weighted blanket?'],
-    linkSources: ['/blog/dog-anxiety-tips', '/collections/dog-beds', '/dog/orthopedic-dog-beds', '/guides/signs-your-dog-has-joint-pain', '/'],
+    linkSources: ['/blog/dog-anxiety-tips', '/collections/dog-beds', '/collections/all', '/guides/signs-your-dog-has-joint-pain', '/'],
   },
   {
     url: '/collections/waterproof-dog-beds', query: 'waterproof dog bed large',
@@ -152,7 +152,7 @@ const SNIPER_SEED: Array<{
     title: 'Waterproof Dog Beds — Leak-Proof Protection (2026)',
     meta: 'Accidents happen. These beds have sealed liners that block 100% of moisture. Machine-washable covers. Sizes up to XXL.',
     faqs: ['What makes a dog bed truly waterproof?', 'Are waterproof beds comfortable?', 'How to clean a waterproof dog bed?'],
-    linkSources: ['/dog/orthopedic-dog-beds', '/collections/dog-beds', '/blog/puppy-house-training', '/guides/memory-foam-vs-regular-dog-bed', '/'],
+    linkSources: ['/collections/all', '/collections/dog-beds', '/blog/puppy-house-training', '/guides/memory-foam-vs-regular-dog-bed', '/'],
   },
   {
     url: '/collections/cat-scratching-posts', query: 'best cat scratching post tall',
@@ -160,7 +160,7 @@ const SNIPER_SEED: Array<{
     title: 'Best Tall Cat Scratching Posts — Full Stretch Design (2026)',
     meta: 'Short posts frustrate cats. Our tall sisal posts let cats fully stretch and scratch — saving your furniture. Ships in 2-4 days.',
     faqs: ['How tall should a cat scratching post be?', 'Sisal vs carpet: which lasts longer?', 'Do cats prefer vertical or horizontal scratching?'],
-    linkSources: ['/cat/cat-trees-for-large-cats', '/guides/sisal-vs-carpet-scratching-posts', '/collections/cat-toys', '/blog/cat-enrichment-guide', '/'],
+    linkSources: ['/collections/all', '/guides/sisal-vs-carpet-scratching-posts', '/collections/cat-toys', '/blog/cat-enrichment-guide', '/'],
   },
   {
     url: '/collections/dog-travel-accessories', query: 'dog travel essentials road trip',
@@ -168,7 +168,7 @@ const SNIPER_SEED: Array<{
     title: 'Dog Travel Essentials — Road Trip Checklist (2026)',
     meta: 'Don\'t forget the basics. This travel kit covers safety, comfort, and hydration for your dog on the road. Curated by pet travel experts.',
     faqs: ['What do I need for a road trip with my dog?', 'How often should dogs stop on road trips?', 'Best portable water bowl for travel?'],
-    linkSources: ['/dog/dog-car-seats', '/guides/dog-travel-safety-laws-by-state', '/blog/road-trip-with-dogs', '/collections/dog-bowls', '/'],
+    linkSources: ['/collections/all', '/guides/dog-travel-safety-laws-by-state', '/blog/road-trip-with-dogs', '/collections/dog-bowls', '/'],
   },
   {
     url: '/collections/automatic-pet-feeders', query: 'automatic pet feeder cat',
@@ -176,7 +176,7 @@ const SNIPER_SEED: Array<{
     title: 'Best Automatic Pet Feeders for Cats — Portion Control (2026)',
     meta: 'Overfeeding causes 60% of cat health issues. These timed feeders dispense exact portions. WiFi-enabled with app control.',
     faqs: ['Are automatic feeders good for cats?', 'Can automatic feeders handle wet food?', 'How to prevent cats from breaking into feeders?'],
-    linkSources: ['/collections/cat-bowls', '/blog/cat-nutrition-guide', '/cat/cat-trees-for-large-cats', '/', '/blog/smart-pet-tech'],
+    linkSources: ['/collections/cat-bowls', '/blog/cat-nutrition-guide', '/collections/all', '/', '/blog/smart-pet-tech'],
   },
   {
     url: '/collections/indestructible-dog-toys', query: 'indestructible dog toys aggressive chewers',
@@ -200,7 +200,7 @@ const SNIPER_SEED: Array<{
     title: 'Heavy Duty XXL Dog Crates — Escape-Proof (2026)',
     meta: 'Built for powerful breeds. 20-gauge steel, reinforced latches, and a chew-proof tray. Fits Great Danes and Mastiffs. Free delivery.',
     faqs: ['What size crate for a Great Dane?', 'Are heavy duty crates airline approved?', 'How to crate train an adult dog?'],
-    linkSources: ['/collections/dog-beds', '/blog/crate-training-guide', '/dog/orthopedic-dog-beds', '/', '/blog/large-breed-care'],
+    linkSources: ['/collections/dog-beds', '/blog/crate-training-guide', '/collections/all', '/', '/blog/large-breed-care'],
   },
   {
     url: '/collections/cat-condos', query: 'best cat condo multi level',
@@ -208,7 +208,7 @@ const SNIPER_SEED: Array<{
     title: 'Best Multi-Level Cat Condos for Indoor Cats (2026)',
     meta: 'Indoor cats need vertical territory. These multi-level condos offer hiding spots, sisal posts, and hammocks. Fits 2-3 cats.',
     faqs: ['How many levels should a cat condo have?', 'Can multiple cats share one condo?', 'What material is most durable for cat condos?'],
-    linkSources: ['/cat/cat-trees-for-large-cats', '/guides/cat-tree-stability-guide', '/collections/cat-toys', '/', '/blog/indoor-cat-enrichment'],
+    linkSources: ['/collections/all', '/guides/cat-tree-stability-guide', '/collections/cat-toys', '/', '/blog/indoor-cat-enrichment'],
   },
   {
     url: '/collections/dog-cooling-mats', query: 'dog cooling mat summer',
@@ -216,7 +216,7 @@ const SNIPER_SEED: Array<{
     title: 'Best Dog Cooling Mats — No Electricity Needed (2026)',
     meta: 'Heatstroke kills. These pressure-activated gel mats cool for 3+ hours with no power or water. Safe for all breeds.',
     faqs: ['How do pressure-activated cooling mats work?', 'Are cooling mats safe for puppies?', 'How long do cooling mats stay cold?'],
-    linkSources: ['/collections/dog-beds', '/blog/summer-pet-safety', '/dog/orthopedic-dog-beds', '/', '/collections/elevated-dog-beds'],
+    linkSources: ['/collections/dog-beds', '/blog/summer-pet-safety', '/collections/all', '/', '/collections/elevated-dog-beds'],
   },
   {
     url: '/collections/slow-feeder-bowls', query: 'slow feeder bowl for dogs',
@@ -261,7 +261,7 @@ function buildSniperTargets(): SniperTarget[] {
 function buildLockdownNiche(): LockdownNiche {
   return {
     niche: 'Orthopedic Dog Beds',
-    hubUrl: '/dog/orthopedic-dog-beds',
+    hubUrl: '/collections/all',
     dominanceScore: 78,
     clusterArticles: [
       { title: 'How to Choose the Right Orthopedic Dog Bed', type: 'Buying Guide', wordCount: 1800, linksToHub: 3 },
@@ -273,16 +273,16 @@ function buildLockdownNiche(): LockdownNiche {
       { title: 'Best Dog Beds for Arthritis and Hip Dysplasia', type: 'Problem-Solution', wordCount: 1700, linksToHub: 3 },
     ],
     internalLinkMap: [
-      { source: '/', target: '/dog/orthopedic-dog-beds', anchorType: 'exact' },
-      { source: '/collections/dog-beds', target: '/dog/orthopedic-dog-beds', anchorType: 'partial' },
-      { source: '/guides/how-to-choose-orthopedic-dog-bed', target: '/dog/orthopedic-dog-beds', anchorType: 'exact' },
-      { source: '/guides/signs-your-dog-has-joint-pain', target: '/dog/orthopedic-dog-beds', anchorType: 'natural' },
-      { source: '/guides/memory-foam-vs-regular-dog-bed', target: '/dog/orthopedic-dog-beds', anchorType: 'partial' },
-      { source: '/blog/senior-dog-care', target: '/dog/orthopedic-dog-beds', anchorType: 'natural' },
-      { source: '/blog/large-breed-essentials', target: '/dog/orthopedic-dog-beds', anchorType: 'partial' },
-      { source: '/dog/orthopedic-dog-beds', target: '/products/memory-foam-bed-xl', anchorType: 'product' },
-      { source: '/dog/orthopedic-dog-beds', target: '/products/cooling-orthopedic-bed', anchorType: 'product' },
-      { source: '/dog/orthopedic-dog-beds', target: '/products/waterproof-orthopedic-bed', anchorType: 'product' },
+      { source: '/', target: '/collections/all', anchorType: 'exact' },
+      { source: '/collections/dog-beds', target: '/collections/all', anchorType: 'partial' },
+      { source: '/guides/how-to-choose-orthopedic-dog-bed', target: '/collections/all', anchorType: 'exact' },
+      { source: '/guides/signs-your-dog-has-joint-pain', target: '/collections/all', anchorType: 'natural' },
+      { source: '/guides/memory-foam-vs-regular-dog-bed', target: '/collections/all', anchorType: 'partial' },
+      { source: '/blog/senior-dog-care', target: '/collections/all', anchorType: 'natural' },
+      { source: '/blog/large-breed-essentials', target: '/collections/all', anchorType: 'partial' },
+      { source: '/collections/all', target: '/products/memory-foam-bed-xl', anchorType: 'product' },
+      { source: '/collections/all', target: '/products/cooling-orthopedic-bed', anchorType: 'product' },
+      { source: '/collections/all', target: '/products/waterproof-orthopedic-bed', anchorType: 'product' },
     ],
     schemas: ['FAQPage', 'Product', 'BreadcrumbList', 'Article', 'ItemList'],
     revenue90d: { conservative: 2850, growth: 5400, domination: 9200 },
@@ -293,11 +293,11 @@ function buildLockdownNiche(): LockdownNiche {
 
 function buildVelocityLeaders(): VelocityPage[] {
   const pages: VelocityPage[] = [
-    { url: '/dog/orthopedic-dog-beds', query: 'orthopedic dog bed', clickGrowthPct: 38, impressionGrowthPct: 22, positionDelta: -2.1, velocityScore: 92, action: 'double_links', revenuePerMonth: 485 },
-    { url: '/cat/cat-trees-for-large-cats', query: 'cat tree large cats', clickGrowthPct: 31, impressionGrowthPct: 18, positionDelta: -1.8, velocityScore: 84, action: 'double_links', revenuePerMonth: 620 },
+    { url: '/collections/all', query: 'orthopedic dog bed', clickGrowthPct: 38, impressionGrowthPct: 22, positionDelta: -2.1, velocityScore: 92, action: 'double_links', revenuePerMonth: 485 },
+    { url: '/collections/all', query: 'cat tree large cats', clickGrowthPct: 31, impressionGrowthPct: 18, positionDelta: -1.8, velocityScore: 84, action: 'double_links', revenuePerMonth: 620 },
     { url: '/collections/calming-dog-beds', query: 'calming dog bed', clickGrowthPct: 27, impressionGrowthPct: 35, positionDelta: -1.4, velocityScore: 76, action: 'add_articles', revenuePerMonth: 195 },
     { url: '/collections/indestructible-dog-toys', query: 'indestructible dog toy', clickGrowthPct: 19, impressionGrowthPct: 14, positionDelta: -0.9, velocityScore: 58, action: 'add_articles', revenuePerMonth: 105 },
-    { url: '/dog/dog-car-seats', query: 'dog car seat', clickGrowthPct: 15, impressionGrowthPct: 10, positionDelta: -0.6, velocityScore: 44, action: 'boost_homepage', revenuePerMonth: 165 },
+    { url: '/collections/all', query: 'dog car seat', clickGrowthPct: 15, impressionGrowthPct: 10, positionDelta: -0.6, velocityScore: 44, action: 'boost_homepage', revenuePerMonth: 165 },
     { url: '/collections/dog-cooling-mats', query: 'dog cooling mat', clickGrowthPct: 4, impressionGrowthPct: 2, positionDelta: 0.3, velocityScore: 12, action: 'reduce_priority', revenuePerMonth: 48 },
     { url: '/collections/slow-feeder-bowls', query: 'slow feeder dog bowl', clickGrowthPct: 2, impressionGrowthPct: -3, positionDelta: 1.1, velocityScore: 5, action: 'reallocate', revenuePerMonth: 22 },
   ];
@@ -312,7 +312,7 @@ function buildCannibalizationAlerts(): CannibalizationAlert[] {
       query: 'waterproof dog bed',
       pages: [
         { url: '/collections/waterproof-dog-beds', position: 10.4, impressions: 1600 },
-        { url: '/dog/orthopedic-dog-beds', position: 22.1, impressions: 320 },
+        { url: '/collections/all', position: 22.1, impressions: 320 },
       ],
       severity: 'high',
       resolution: 'Canonical → /collections/waterproof-dog-beds. Remove "waterproof" section from orthopedic page or add contextual link instead.',
@@ -320,7 +320,7 @@ function buildCannibalizationAlerts(): CannibalizationAlert[] {
     {
       query: 'large cat tree',
       pages: [
-        { url: '/cat/cat-trees-for-large-cats', position: 11.5, impressions: 3800 },
+        { url: '/collections/all', position: 11.5, impressions: 3800 },
         { url: '/collections/cat-condos', position: 28.3, impressions: 410 },
       ],
       severity: 'medium',

@@ -96,7 +96,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
   {
     id: 'sniper-01',
     page: 'Orthopedic Dog Beds (Pillar)',
-    url: '/dog/orthopedic-dog-beds',
+    url: '/collections/all',
     currentPosition: 8,
     impressions: 4200,
     primaryKeyword: 'orthopedic dog beds',
@@ -113,8 +113,8 @@ export const SNIPER_TARGETS: SniperTarget[] = [
       internalLinks: [
         { from: '/guides/best-dog-bed-2026', anchor: 'best orthopedic dog beds', type: 'blog' },
         { from: '/guides/do-orthopedic-dog-beds-help-arthritis', anchor: 'orthopedic beds for arthritis', type: 'blog' },
-        { from: '/dog/orthopedic-dog-beds/best-for-large-dogs', anchor: 'orthopedic beds for large dogs', type: 'product' },
-        { from: '/dog/orthopedic-dog-beds/waterproof', anchor: 'waterproof orthopedic beds', type: 'product' },
+        { from: '/collections/all', anchor: 'orthopedic beds for large dogs', type: 'product' },
+        { from: '/collections/all', anchor: 'waterproof orthopedic beds', type: 'product' },
         { from: '/', anchor: 'orthopedic dog beds', type: 'hub' },
       ],
       first200WordsGuidance: 'Open with pain agitation: "If your dog struggles to stand after napping, you\'re not alone — 25% of dogs over 7 develop arthritis." Transition to solution framing with memory foam benefits. Include semantic variations: joint support bed, therapeutic dog mattress, pressure-relief dog bed.',
@@ -144,7 +144,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
   {
     id: 'sniper-02',
     page: 'Memory Foam Dog Beds (Sub-intent)',
-    url: '/dog/orthopedic-dog-beds/memory-foam',
+    url: '/collections/all',
     currentPosition: 12,
     impressions: 2800,
     primaryKeyword: 'memory foam dog bed',
@@ -161,9 +161,9 @@ export const SNIPER_TARGETS: SniperTarget[] = [
       internalLinks: [
         { from: '/guides/memory-foam-vs-standard-dog-bed', anchor: 'memory foam vs standard dog beds', type: 'blog' },
         { from: '/guides/memory-foam-vs-egg-crate-foam-dog-bed', anchor: 'memory foam vs egg crate comparison', type: 'blog' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'all orthopedic dog beds', type: 'product' },
+        { from: '/collections/all', anchor: 'all orthopedic dog beds', type: 'product' },
         { from: '/collections/cooling-orthopedic-dog-bed', anchor: 'cooling memory foam beds', type: 'product' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'memory foam beds', type: 'hub' },
+        { from: '/collections/all', anchor: 'memory foam beds', type: 'hub' },
       ],
       first200WordsGuidance: 'Lead with the density problem: "Not all memory foam is created equal. Cheap beds use 1.0 lb/ft³ foam that compresses flat in weeks." Establish authority through density specs and CertiPUR-US certification.',
       comparisonSnippet: {
@@ -192,7 +192,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
   {
     id: 'sniper-03',
     page: 'Best for Large Dogs (Sub-intent)',
-    url: '/dog/orthopedic-dog-beds/best-for-large-dogs',
+    url: '/collections/all',
     currentPosition: 10,
     impressions: 1900,
     primaryKeyword: 'orthopedic dog bed large dogs',
@@ -209,9 +209,9 @@ export const SNIPER_TARGETS: SniperTarget[] = [
       internalLinks: [
         { from: '/guides/dog-bed-for-large-breeds', anchor: 'best dog beds for large breeds', type: 'blog' },
         { from: '/guides/best-orthopedic-dog-bed-for-large-dogs', anchor: 'orthopedic beds for big dogs', type: 'blog' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'all orthopedic beds', type: 'product' },
+        { from: '/collections/all', anchor: 'all orthopedic beds', type: 'product' },
         { from: '/collections/big-dog-orthopedic-bed-xl', anchor: 'XL orthopedic beds', type: 'product' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'large dog beds', type: 'hub' },
+        { from: '/collections/all', anchor: 'large dog beds', type: 'hub' },
       ],
       first200WordsGuidance: 'Open with the weight-pressure problem: "A 90-lb dog puts 3x more pressure per square inch on joints than a 30-lb dog." Lead to the solution: high-density, load-tested foam beds.',
       comparisonSnippet: {
@@ -240,7 +240,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
   {
     id: 'sniper-04',
     page: 'Waterproof Orthopedic Beds',
-    url: '/dog/orthopedic-dog-beds/waterproof',
+    url: '/collections/all',
     currentPosition: 14,
     impressions: 1200,
     primaryKeyword: 'waterproof orthopedic dog bed',
@@ -257,9 +257,9 @@ export const SNIPER_TARGETS: SniperTarget[] = [
       internalLinks: [
         { from: '/guides/machine-washable-dog-bed-guide', anchor: 'washable dog bed guide', type: 'blog' },
         { from: '/guides/how-to-wash-a-dog-bed-properly', anchor: 'how to wash a dog bed', type: 'blog' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'orthopedic beds', type: 'product' },
+        { from: '/collections/all', anchor: 'orthopedic beds', type: 'product' },
         { from: '/collections/waterproof-orthopedic-dog-bed', anchor: 'waterproof beds collection', type: 'product' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'waterproof options', type: 'hub' },
+        { from: '/collections/all', anchor: 'waterproof options', type: 'hub' },
       ],
       first200WordsGuidance: 'Lead with the problem: "One accident can permanently ruin an orthopedic bed — unless it has proper waterproof protection." Explain TPU liner technology vs cheap water-resistant coatings.',
       comparisonSnippet: {
@@ -305,9 +305,9 @@ export const SNIPER_TARGETS: SniperTarget[] = [
       internalLinks: [
         { from: '/guides/do-orthopedic-dog-beds-help-arthritis', anchor: 'do orthopedic beds help arthritis', type: 'blog' },
         { from: '/guides/signs-dog-needs-joint-support', anchor: 'signs your dog needs joint support', type: 'blog' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'all orthopedic beds', type: 'product' },
+        { from: '/collections/all', anchor: 'all orthopedic beds', type: 'product' },
         { from: '/collections/orthopedic-dog-bed-senior-dogs', anchor: 'senior dog beds', type: 'product' },
-        { from: '/dog/orthopedic-dog-beds', anchor: 'arthritis beds', type: 'hub' },
+        { from: '/collections/all', anchor: 'arthritis beds', type: 'hub' },
       ],
       first200WordsGuidance: 'Open with empathy: "Watching your dog struggle to stand is heartbreaking. Arthritis affects 25% of dogs over 7." Transition to how proper sleep surfaces reduce inflammation by 40%.',
       comparisonSnippet: {

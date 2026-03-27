@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function HeavyDutyCatTree() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/cat/cat-trees-for-large-cats/heavy-duty"
+      canonical="https://getpawsy.pet/collections/all"
       title="Heavy Duty Cat Trees – Built for 25+ lb Cats (2026)"
       metaDesc="Shop heavy duty cat trees with solid wood frames, thick sisal posts, and anti-tip systems. Engineered for large breeds and multi-cat homes. Free US shipping."
       h1="Heavy Duty Cat Trees — Solid Construction for Large & Active Cats (2026)"
@@ -13,11 +13,11 @@ export default function HeavyDutyCatTree() {
       trustBadges={['40+ lb Weight Rating', 'Solid Wood Frames', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Cat', href: '/cat/cat-trees-for-large-cats' },
-        { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
+        { label: 'Cat', href: '/collections/all' },
+        { label: 'Cat Trees for Large Cats', href: '/collections/all' },
         { label: 'Heavy Duty' },
       ]}
-      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/cat/cat-trees-for-large-cats' }}
+      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/collections/all' }}
       productQuery="name.ilike.%cat tree%,name.ilike.%cat tower%,name.ilike.%cat condo%"
       contentBlocks={[
         {
@@ -60,9 +60,9 @@ When calculating value, heavy-duty trees also prevent injury risk, reduce furnit
         { slug: 'best-orthopedic-dog-bed', title: 'Orthopedic Dog Beds Guide', desc: 'Similar quality-first approach for canine comfort.' },
       ]}
       crossLinks={[
-        { label: 'Cat Trees for Large Cats Hub', href: '/cat/cat-trees-for-large-cats' },
-        { label: 'Maine Coon Cat Trees', href: '/cat/cat-trees-for-large-cats/for-maine-coon' },
-        { label: 'Large Cat Condos', href: '/cat/cat-trees-for-large-cats/large-cat-condos' },
+        { label: 'Cat Trees for Large Cats Hub', href: '/collections/all' },
+        { label: 'Maine Coon Cat Trees', href: '/collections/all' },
+        { label: 'Large Cat Condos', href: '/collections/all' },
       ]}
     />
   );

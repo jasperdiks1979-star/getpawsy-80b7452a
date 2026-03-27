@@ -32,22 +32,22 @@ export interface SiloConfig {
 export const DOG_SILO: SiloConfig = {
   id: 'dog',
   hub: {
-    href: '/dog/',
+    href: '/collections/all',
     label: 'Dog Training & Travel Gear',
     desc: 'Browse all dog training & travel essentials',
   },
   pillar: {
-    href: '/dog/best-dog-training-and-travel-gear-2026',
+    href: '/collections/all',
     label: 'Complete Dog Training & Travel Guide 2026',
     desc: 'Expert buyer guide for harnesses, leashes & car seats',
   },
   training: {
-    href: '/dog/training/',
+    href: '/collections/all',
     label: 'Dog Training Essentials',
     desc: 'No-pull harnesses, leashes & behavior tools',
   },
   travel: {
-    href: '/dog/travel/',
+    href: '/collections/all',
     label: 'Dog Travel Safety Gear',
     desc: 'Car seats, travel harnesses & carriers',
   },
@@ -57,8 +57,8 @@ export const DOG_SILO: SiloConfig = {
     { href: '/collections/dog-anti-bark', label: 'Anti-Bark Solutions', desc: 'Humane bark control & calming aids' },
     { href: '/collections/puppy-training-essentials', label: 'Puppy Essentials', desc: 'Complete starter kits for first 12 months' },
     { href: '/collections/dog-training-accessories', label: 'Training Accessories', desc: 'Clickers, treat bags & agility gear' },
-    { href: '/dog/dog-training-behavior-tools', label: 'Training & Behavior Tools', desc: 'Harnesses, leashes & training aids' },
-    { href: '/dog/dog-car-travel-safety', label: 'Car Travel Safety', desc: 'Car seats, harnesses & hammocks' },
+    { href: '/collections/all', label: 'Training & Behavior Tools', desc: 'Harnesses, leashes & training aids' },
+    { href: '/collections/all', label: 'Car Travel Safety', desc: 'Car seats, harnesses & hammocks' },
   ],
   blogPath: '/blog?category=dogs',
   categories: ['Dog Training', 'Dog Carriers', 'Dog Collars & Leashes', 'Dog Toys', 'Dog Beds', 'Dog Bowls'],
@@ -67,27 +67,27 @@ export const DOG_SILO: SiloConfig = {
 export const CAT_SILO: SiloConfig = {
   id: 'cat',
   hub: {
-    href: '/cat/',
+    href: '/collections/cat',
     label: 'Cat Training & Travel Gear',
     desc: 'Browse all cat training & travel essentials',
   },
   pillar: {
-    href: '/cat/best-cat-training-and-travel-gear-2026',
+    href: '/collections/all',
     label: 'Complete Cat Training & Travel Guide 2026',
     desc: 'Expert buyer guide for cat trees, carriers & enrichment',
   },
   training: {
-    href: '/cat/training/',
+    href: '/collections/all',
     label: 'Cat Enrichment & Training',
     desc: 'Cat trees, scratching posts & interactive toys',
   },
   travel: {
-    href: '/cat/travel/',
+    href: '/collections/all',
     label: 'Cat Travel Essentials',
     desc: 'Airline-approved carriers & travel gear',
   },
   subCollections: [
-    { href: '/cat/cat-trees-for-large-cats', label: 'Cat Trees for Large Cats', desc: 'Stability-tested for 25+ lbs' },
+    { href: '/collections/all', label: 'Cat Trees for Large Cats', desc: 'Stability-tested for 25+ lbs' },
     { href: '/guides/best-cat-litter-box-2026', label: 'Best Litter Boxes 2026', desc: 'Odor control & self-cleaning' },
     { href: '/guides/best-cat-trees-large-cats-2026', label: 'Best Cat Trees 2026', desc: '9 trees tested for stability' },
   ],

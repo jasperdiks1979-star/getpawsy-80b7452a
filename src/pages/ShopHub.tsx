@@ -139,10 +139,10 @@ export default function ShopHub() {
             <Link to="/recent-products" className="text-primary hover:underline">Recent Products</Link>
             <Link to="/bestsellers" className="text-primary hover:underline">Bestsellers</Link>
             <Link to="/guides" className="text-primary hover:underline">Pet Care Guides</Link>
-            <Link to="/dog/training" className="text-primary hover:underline">Dog Training Guides</Link>
-            <Link to="/dog/travel" className="text-primary hover:underline">Dog Travel Guides</Link>
-            <Link to="/cat/training" className="text-primary hover:underline">Cat Training Guides</Link>
-            <Link to="/cat/travel" className="text-primary hover:underline">Cat Travel Guides</Link>
+            <Link to="/collections/dog" className="text-primary hover:underline">Dog Training Guides</Link>
+            <Link to="/collections/dog" className="text-primary hover:underline">Dog Travel Guides</Link>
+            <Link to="/collections/cat" className="text-primary hover:underline">Cat Training Guides</Link>
+            <Link to="/collections/cat" className="text-primary hover:underline">Cat Travel Guides</Link>
             <Link to="/blog" className="text-primary hover:underline">Pet Care Blog</Link>
             <Link to="/products" className="text-primary hover:underline">All Products</Link>
           </div>

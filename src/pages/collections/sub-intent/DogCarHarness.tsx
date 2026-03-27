@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function DogCarHarness() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/dog/dog-car-travel-safety/harness-safety"
+      canonical="https://getpawsy.pet/collections/all"
       title="Best Dog Car Harnesses – Crash Tested Safety (2026)"
       metaDesc="Shop crash-tested dog car harnesses that clip to your vehicle's seat belt. Padded chest plates, reinforced stitching. Best for dogs 30+ lbs."
       h1="Best Dog Car Harnesses — Crash-Tested Restraint for Safe Travel (2026)"
@@ -13,11 +13,11 @@ export default function DogCarHarness() {
       trustBadges={['Crash-Test Informed', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Dog', href: '/dog/dog-car-travel-safety' },
-        { label: 'Dog Car Travel Safety', href: '/dog/dog-car-travel-safety' },
+        { label: 'Dog', href: '/collections/all' },
+        { label: 'Dog Car Travel Safety', href: '/collections/all' },
         { label: 'Car Harnesses' },
       ]}
-      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/dog/dog-car-travel-safety' }}
+      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/collections/all' }}
       productQuery="name.ilike.%car harness%,name.ilike.%seat belt%dog%,name.ilike.%dog harness%car%"
       contentBlocks={[
         {
@@ -66,9 +66,9 @@ Size recommendations:
         { slug: 'best-orthopedic-dog-bed', title: 'Recovery Comfort at Home', desc: 'Memory foam beds for rest after road trips.' },
       ]}
       crossLinks={[
-        { label: 'Dog Car Safety Hub', href: '/dog/dog-car-travel-safety' },
-        { label: 'Dog Car Seats', href: '/dog/dog-car-travel-safety/car-seats' },
-        { label: 'Dog Booster Seats', href: '/dog/dog-car-travel-safety/booster-seats' },
+        { label: 'Dog Car Safety Hub', href: '/collections/all' },
+        { label: 'Dog Car Seats', href: '/collections/all' },
+        { label: 'Dog Booster Seats', href: '/collections/all' },
       ]}
     />
   );

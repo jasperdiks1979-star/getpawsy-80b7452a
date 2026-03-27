@@ -18,7 +18,7 @@ const jsonLd = {
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
   dateModified: '2026-02-28',
-  mainEntityOfPage: 'https://getpawsy.pet/cat/best-cat-training-and-travel-gear-2026',
+  mainEntityOfPage: 'https://getpawsy.pet/collections/all',
 };
 
 const faqJsonLd = {
@@ -75,7 +75,7 @@ const CatTrainingTravelPillar = () => {
       <Helmet>
         <title>Best Cat Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
         <meta name="description" content="2026 expert guide to the best cat trees, carriers, enrichment toys & scratching posts. Tested picks with US 3–7 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/cat/best-cat-training-and-travel-gear-2026" />
+        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
@@ -184,15 +184,15 @@ const CatTrainingTravelPillar = () => {
           <section>
             <h2 className="text-2xl font-display font-bold mb-4">Explore Cat Guides</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link to="/cat/training/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/cat" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Enrichment & Training →</h3>
                 <p className="text-sm text-muted-foreground">Cat trees, scratching posts & interactive toys</p>
               </Link>
-              <Link to="/cat/travel/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/cat" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Travel Essentials →</h3>
                 <p className="text-sm text-muted-foreground">Airline-approved carriers & travel gear</p>
               </Link>
-              <Link to="/cat/cat-trees-for-large-cats" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Trees for Large Cats →</h3>
                 <p className="text-sm text-muted-foreground">Stability-tested for 25+ lbs</p>
               </Link>
@@ -204,7 +204,7 @@ const CatTrainingTravelPillar = () => {
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Best Cat Trees 2026 →</h3>
                 <p className="text-sm text-muted-foreground">9 trees tested for stability</p>
               </Link>
-              <Link to="/cat/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/cat" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">All Cat Products →</h3>
                 <p className="text-sm text-muted-foreground">Browse the full cat collection</p>
               </Link>

@@ -32,7 +32,7 @@ const INTROS: Record<ClusterId, {
       `Your dog deserves comfort that supports their health at every life stage. This ${name.toLowerCase()} collection features products tested for quality materials, ergonomic design, and long-term durability. From orthopedic beds for senior dogs to travel carriers built for safety, each product is evaluated against real pet-owner feedback and veterinary recommendations. We prioritize items that genuinely improve your dog's daily comfort.`,
     links: [
       { label: 'Orthopedic Dog Bed Guide', href: '/guides/orthopedic-dog-beds' },
-      { label: 'Dog Travel Safety Tips', href: '/dog/travel' },
+      { label: 'Dog Travel Safety Tips', href: '/collections/all' },
       { label: 'Senior Dog Comfort Guide', href: '/guides/senior-dog-care' },
     ],
   },
@@ -41,7 +41,7 @@ const INTROS: Record<ClusterId, {
       `Indoor cats thrive when their environment stimulates natural behaviors like climbing, scratching, and exploring. This ${name.toLowerCase()} collection is curated to help your cat stay active, engaged, and happy — without compromising your home's aesthetics. Each product is reviewed for stability, material quality, and space efficiency. Whether you have a single kitten or a multi-cat household, you'll find options that match your setup.`,
     links: [
       { label: 'Best Cat Trees Buying Guide', href: '/guides/best-cat-trees' },
-      { label: 'Indoor Cat Enrichment Tips', href: '/cat/enrichment' },
+      { label: 'Indoor Cat Enrichment Tips', href: '/collections/all' },
       { label: 'Cat Scratching Solutions', href: '/guides/cat-scratching-posts' },
     ],
   },
