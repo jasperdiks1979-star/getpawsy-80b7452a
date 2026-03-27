@@ -126,7 +126,8 @@ function productToRow(p: Product): string[] {
   const isActive = p.is_active !== false;
   const stockKnown = p.stock !== null && p.stock !== undefined;
   const supplierStock = stockKnown ? p.stock! : null;
-  const inStock = isActive && stockKnown && p.stock! > 0;
+  // Dropship model: null/undefined stock = in stock, only explicit 0 = out of stock
+  const inStock = isActive && p.stock !== 0;
   const availability = inStock ? "in stock" : "out of stock";
 
   const onSale = p.compare_at_price !== null && p.compare_at_price > p.price;
