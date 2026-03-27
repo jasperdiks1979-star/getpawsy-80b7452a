@@ -4,7 +4,7 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Cookie from 'lucide-react/dist/esm/icons/cookie';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
