@@ -106,11 +106,11 @@ serve(async (req: Request): Promise<Response> => {
                   
                   <!-- CTA Button -->
                   <a href="${productUrl}" style="display: block; background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center;">
-                    Shop Now Before It's Gone! →
+                    View Product →
                   </a>
                   
                   <p style="color: #6b7280; font-size: 14px; margin: 24px 0 0; text-align: center;">
-                    Hurry - popular items sell out fast!
+                    This item is back in stock and ready to ship.
                   </p>
                 </div>
                 
