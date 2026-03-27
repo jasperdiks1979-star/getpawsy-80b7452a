@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Truck, Shield, RotateCcw } from 'lucide-react';
+import { Truck, Shield, RotateCcw, Lock, Headphones } from 'lucide-react';
 
 interface TrustStackProps {
   className?: string;
@@ -7,40 +7,35 @@ interface TrustStackProps {
 
 /**
  * High-conversion trust stack — displayed immediately below the primary CTA.
- * Compact, scannable, mobile-first.
+ * Compact, scannable, mobile-first. No fake claims.
  */
 export const TrustStack: React.FC<TrustStackProps> = ({ className = '' }) => {
+  const badges = [
+    { icon: <Lock className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Secure checkout (Stripe)' },
+    { icon: <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />, text: '30-day returns' },
+    { icon: <Truck className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Free shipping over $35' },
+    { icon: <Headphones className="w-4 h-4 text-primary flex-shrink-0" />, text: 'US-based support' },
+    { icon: <Shield className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Pet-safe materials' },
+    { icon: <span className="text-sm flex-shrink-0">🇺🇸</span>, text: 'Ships within 3–7 days' },
+  ];
+
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* Social proof line */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-0.5">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="w-3.5 h-3.5 text-warning fill-warning" />
-          ))}
-        </div>
-        <span className="text-sm font-medium text-foreground">Rated by pet owners across the US</span>
-      </div>
-
       {/* Trust badges grid */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="text-xs font-medium text-foreground">Safe & secure checkout</span>
-        </div>
-        <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="text-xs font-medium text-foreground">30-day return policy</span>
-        </div>
-        <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          <Truck className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="text-xs font-medium text-foreground">Fast US delivery (3–7 days)</span>
-        </div>
-        <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          <span className="text-sm flex-shrink-0">🇺🇸</span>
-          <span className="text-xs font-medium text-foreground">Ships from USA</span>
-        </div>
+        {badges.map((badge, i) => (
+          <div key={i} className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2.5">
+            {badge.icon}
+            <span className="text-xs font-medium text-foreground">{badge.text}</span>
+          </div>
+        ))}
       </div>
+
+      {/* Support contact */}
+      <p className="text-xs text-muted-foreground text-center">
+        Questions? Email us at{' '}
+        <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">info@getpawsy.pet</a>
+      </p>
     </div>
   );
 };

@@ -1635,9 +1635,13 @@ const ProductDetail = () => {
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">Customer Reviews</h2>
-              {reviews.length > 0 && (
+              {reviews.length > 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  {reviews.length} review{reviews.length !== 1 ? "s" : ""} from our customers
+                  {reviews.length} verified review{reviews.length !== 1 ? "s" : ""} from our customers
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Trusted by pet owners across the United States
                 </p>
               )}
             </div>
