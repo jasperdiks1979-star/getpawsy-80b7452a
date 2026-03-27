@@ -26,9 +26,9 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
 
       if (!data) return [];
 
-      // Filter in-stock and sort by requested order
+      // Filter in-stock: dropship model — only explicit 0 is out of stock
       const inStock = data.filter(
-        (p) => typeof p.stock !== 'number' || p.stock > 0
+        (p) => p.stock !== 0
       );
       return productIds
         .map((id) => inStock.find((p) => p.id === id))

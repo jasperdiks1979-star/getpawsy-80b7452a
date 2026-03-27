@@ -866,14 +866,14 @@ const ProductDetail = () => {
           >
             {/* Category & Title */}
             <div>
-              {/* Stock indicator — factual, compliant */}
-              {inStock && (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 20 && (
+              {/* Stock indicator — factual, compliant (dropship model) */}
+              {inStock && product.stock != null && product.stock > 0 && product.stock <= 20 && (
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   Only {product.stock} left in stock
                 </div>
               )}
-              {inStock && ((product.stock ?? 0) > 20 || product.stock == null) && (
+              {inStock && (product.stock == null || product.stock > 20) && (
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-success/10 border border-success/20 px-3 py-1 text-xs font-semibold text-success mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-success" />
                   In stock
