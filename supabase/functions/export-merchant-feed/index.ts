@@ -539,6 +539,8 @@ interface RawProduct {
   images: string[] | null;
   stock: number | null;
   weight: number | null;
+  optimized_title: string | null;
+  optimized_description: string | null;
 }
 
 interface SanitizedProduct {
@@ -608,13 +610,19 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
     return { ...result, excluded: true, reason: "missing_image" };
   }
 
-  // 4. Sanitize title
-  const cleanTitle = sanitizeTitle(p.name);
+  // 4. Sanitize title — prefer DB-optimized title
+  const cleanTitle = p.optimized_title ? sanitizeTitle(p.optimized_title) : sanitizeTitle(p.name);
   result.titleChanged = cleanTitle !== p.name;
 
-  // 5. Sanitize description — use override directly if available (already clean)
+  // 5. Sanitize description — prefer DB-optimized, then override, then raw
   let cleanDesc: string;
-  if (override?.description) {
+  if (p.optimized_description) {
+    cleanDesc = sanitizeDescription(p.optimized_description);
+    if (cleanDesc.length < 80) {
+      cleanDesc = generateFallbackDescription(p.name);
+      result.descGenerated = true;
+    }
+  } else if (override?.description) {
     cleanDesc = override.description;
   } else {
     cleanDesc = sanitizeDescription(p.description || "");
@@ -710,7 +718,7 @@ Deno.serve(async (req) => {
     let from = 0;
     while (true) {
       const { data, error } = await supabase.from("products")
-        .select("id, name, slug, sku, category, price, compare_at_price, description, image_url, images, stock, weight")
+        .select("id, name, slug, sku, category, price, compare_at_price, description, image_url, images, stock, weight, optimized_title, optimized_description")
         .eq("is_active", true).eq("is_duplicate", false).gt("stock", 0)
         .order("stock", { ascending: false }).range(from, from + 999);
       if (error) throw new Error(`DB: ${error.message}`);

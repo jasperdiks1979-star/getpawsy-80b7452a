@@ -280,6 +280,8 @@ interface Product {
   slug: string | null;
   weight: number | null;
   is_active: boolean;
+  optimized_title: string | null;
+  optimized_description: string | null;
 }
 
 // ── Item XML builder ─────────────────────────────────────────────────
@@ -289,8 +291,9 @@ function buildItemXml(p: Product): string {
   const img = sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null);
   if (!img) return ""; // skip products without valid image
 
-  const title = buildOptimizedTitle(p);
-  const desc = buildCleanDescription(p);
+  // Prefer DB-optimized titles/descriptions, fallback to runtime generation
+  const title = p.optimized_title || buildOptimizedTitle(p);
+  const desc = p.optimized_description || buildCleanDescription(p);
 
   const priceStr = (v: number) => `${v.toFixed(2)} USD`;
   let priceXml: string;
@@ -360,7 +363,7 @@ Deno.serve(async (req) => {
     // Fetch eligible products: active, not duplicate, priced, in-stock, with image & slug
     const { data: rawProducts, error } = await client
       .from("products")
-      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active")
+      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,optimized_title,optimized_description")
       .eq("is_active", true)
       .eq("is_duplicate", false)
       .gt("price", 0)

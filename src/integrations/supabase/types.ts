@@ -5076,6 +5076,7 @@ export type Database = {
           metadata_optimized_at: string | null
           name: string
           optimized_description: string | null
+          optimized_title: string | null
           original_name: string | null
           price: number
           primary_intent: string | null
@@ -5154,6 +5155,7 @@ export type Database = {
           metadata_optimized_at?: string | null
           name: string
           optimized_description?: string | null
+          optimized_title?: string | null
           original_name?: string | null
           price: number
           primary_intent?: string | null
@@ -5232,6 +5234,7 @@ export type Database = {
           metadata_optimized_at?: string | null
           name?: string
           optimized_description?: string | null
+          optimized_title?: string | null
           original_name?: string | null
           price?: number
           primary_intent?: string | null
