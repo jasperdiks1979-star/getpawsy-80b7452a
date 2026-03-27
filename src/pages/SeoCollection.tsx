@@ -514,28 +514,15 @@ const SeoCollection = () => {
       matchResult: 'not_found',
     });
 
-    return (
-      <Layout>
-        <div className="container py-20 text-center">
-          <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-4">Collection Not Found</h1>
-          <p className="text-muted-foreground mb-6">
-            We couldn't find the collection "{rawSlug}". Try one of these popular collections instead:
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center mb-6">
-            <Button asChild variant="default">
-              <Link to="/collections/cat">🐱 Cat Essentials</Link>
-            </Button>
-            <Button asChild variant="default">
-              <Link to="/collections/dog">🐶 Dog Essentials</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/products">Browse All Products</Link>
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
+    // Auto-redirect to closest valid category instead of showing "Collection Not Found"
+    const speciesHint = classifySpecies(rawSlug || '');
+    const fallbackPath = speciesHint === 'cat'
+      ? '/collections/cat'
+      : speciesHint === 'dog'
+        ? '/collections/dog'
+        : '/products';
+
+    return <Navigate to={fallbackPath} replace />;
   }
 
   const collectionJsonLd = products.length > 0 ? generateCollectionJsonLd(collection, products) : null;
