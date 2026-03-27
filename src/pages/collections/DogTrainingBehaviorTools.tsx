@@ -347,7 +347,7 @@ export default function DogTrainingBehaviorTools() {
 
           <h3 className="text-xl font-semibold text-foreground mt-8">Common Training Challenges by Dog Type</h3>
           <p>
-            <strong>Puppies (8 weeks – 6 months):</strong> Short attention spans, teething, socialization priority. Use ultra-short training sessions (2-3 minutes), extremely high treat rates, and focus on name recognition, sit, and basic leash exposure. A lightweight <Link to="/collections/puppy-training-tools" className="text-primary hover:underline">puppy harness</Link> and 6-foot leash are the only equipment needed at this stage.
+            <strong>Puppies (8 weeks – 6 months):</strong> Short attention spans, teething, socialization priority. Use ultra-short training sessions (2-3 minutes), extremely high treat rates, and focus on name recognition, sit, and basic leash exposure. A lightweight <Link to="/collections/dog-collars-leashes" className="text-primary hover:underline">puppy harness</Link> and 6-foot leash are the only equipment needed at this stage.
           </p>
           <p>
             <strong>Adolescent dogs (6-18 months):</strong> The hardest phase. Hormones, increased independence, selective hearing. This is when most dogs develop persistent pulling habits. A front-clip harness becomes essential. Start <Link to="/dog/dog-training/how-to-train-recall" className="text-primary hover:underline">recall training</Link> with a long line before they discover that running away is fun.
