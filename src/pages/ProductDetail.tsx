@@ -867,10 +867,16 @@ const ProductDetail = () => {
             {/* Category & Title */}
             <div>
               {/* Stock indicator — factual, compliant */}
-              {inStock && (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 10 && (
+              {inStock && (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 20 && (
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary mb-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  Limited stock available
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  Only {product.stock} left in stock
+                </div>
+              )}
+              {inStock && ((product.stock ?? 0) > 20 || product.stock == null) && (
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-success/10 border border-success/20 px-3 py-1 text-xs font-semibold text-success mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                  In stock
                 </div>
               )}
               {product.category && (
@@ -938,7 +944,7 @@ const ProductDetail = () => {
                         <span className="text-xl text-muted-foreground line-through">${compareAt!.toFixed(2)}</span>
                         {currentDiscount && currentDiscount > 0 && (
                           <Badge className="bg-accent/20 text-accent-foreground border-accent/30">
-                            Save {currentDiscount}%
+                            Save {currentDiscount}% (${(compareAt! - displayPrice).toFixed(2)} off)
                           </Badge>
                         )}
                       </>
@@ -1589,18 +1595,11 @@ const ProductDetail = () => {
           <Link to="/cat" className="text-sm text-primary hover:underline font-medium">Shop Cats</Link>
         </nav>
 
-        {/* Recent Orders — realistic social proof */}
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
-          {[
-            { location: 'Texas', product: 'Dog car seat cover', days: 4 },
-            { location: 'California', product: 'Cat tree', days: 3 },
-            { location: 'Florida', product: 'Dog harness', days: 5 },
-          ].map((order, i) => (
-            <div key={i} className="flex items-center gap-2 bg-muted/40 rounded-full px-4 py-2 text-xs text-muted-foreground">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span>Ordered in {order.location} — delivered in {order.days} days</span>
-            </div>
-          ))}
+        {/* Trusted by pet owners — factual, no fabricated order data */}
+        <div className="mt-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            Trusted by pet owners across the United States · Operated by Skidzo
+          </p>
         </div>
 
         {/* 4. Visible FAQ Accordion */}
@@ -1636,9 +1635,13 @@ const ProductDetail = () => {
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">Customer Reviews</h2>
-              {reviews.length > 0 && (
+              {reviews.length > 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  {reviews.length} review{reviews.length !== 1 ? "s" : ""} from our customers
+                  {reviews.length} verified review{reviews.length !== 1 ? "s" : ""} from our customers
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Trusted by pet owners across the United States
                 </p>
               )}
             </div>
