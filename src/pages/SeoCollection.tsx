@@ -393,7 +393,7 @@ const SeoCollection = () => {
     });
   }, [productMatch?.products, needsSpeciesFilter, slug, isDogPrefixedCollection, isCatPrefixedCollection, includeMultiPet]);
 
-  const showingRelatedResults = !!productMatch?.fallbackTriggered;
+  // "Related results" mode completely disabled — only real products shown
 
   // Preload first 2 product images for faster LCP
   useEffect(() => {
