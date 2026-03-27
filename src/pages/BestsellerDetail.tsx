@@ -111,11 +111,9 @@ const generateProductJsonLd = (
   // CANONICAL URL: Always use the product's canonical URL, never the bestseller URL
   // This prevents "Duplicate page without user-selected canonical" in GSC
   const canonicalProductUrl = `https://getpawsy.pet/product/${product.slug || product.id}`;
-  // Use real supplier stock for availability
-  const stockVal = product.stock;
-  const isActive = product.is_active !== false;
-  const inStock = isActive && stockVal !== null && stockVal !== undefined && stockVal > 0;
-  const availability = inStock
+  // Use centralized availability logic
+  const schemaAvailability = computeAvailability(product);
+  const availability = schemaAvailability.isInStock
     ? 'https://schema.org/InStock' 
     : 'https://schema.org/OutOfStock';
 
