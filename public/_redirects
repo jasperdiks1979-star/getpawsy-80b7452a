@@ -17,6 +17,12 @@
 /privacy-policy /privacy 301
 /terms-of-service /terms 301
 
+# ── /dog/* and /cat/* catch-all → /collections/all ──
+/dog /collections/dog 301
+/cat /collections/cat 301
+/dog/* /collections/all 301
+/cat/* /collections/all 301
+
 # ── Legacy category redirects ──
 /dogs /collections/dog 301
 /cats /collections/cat 301
@@ -34,32 +40,32 @@
 /cats/automatic-feeders /collections/automatic-cat-feeders 301
 /category/:slug /products 301
 
-# ── Legacy cluster → namespaced redirects ──
-/orthopedic-dog-beds /dog/orthopedic-dog-beds 301
-/cat-trees-for-large-cats /cat/cat-trees-for-large-cats 301
-/dog-car-travel-safety /dog/dog-car-travel-safety 301
-/collections/orthopedic-dog-beds /dog/orthopedic-dog-beds 301
-/collections/cat-trees-for-large-cats /cat/cat-trees-for-large-cats 301
-/collections/dog-car-travel-safety /dog/dog-car-travel-safety 301
-/collections/best-orthopedic-dog-bed-large-dogs /dog/orthopedic-dog-beds/best-for-large-dogs 301
-/collections/waterproof-orthopedic-dog-bed /dog/orthopedic-dog-beds/waterproof 301
-/collections/memory-foam-dog-beds /dog/orthopedic-dog-beds/memory-foam 301
-/collections/cat-tree-for-maine-coon /cat/cat-trees-for-large-cats/for-maine-coon 301
-/collections/heavy-duty-cat-tree /cat/cat-trees-for-large-cats/heavy-duty 301
-/collections/cat-condos-for-large-cats /cat/cat-trees-for-large-cats/large-cat-condos 301
-/collections/dog-car-seats /dog/dog-car-travel-safety/car-seats 301
-/collections/dog-booster-seat /dog/dog-car-travel-safety/booster-seats 301
-/collections/dog-car-harness /dog/dog-car-travel-safety/harness-safety 301
+# ── Legacy cluster → /collections/all ──
+/orthopedic-dog-beds /collections/all 301
+/cat-trees-for-large-cats /collections/all 301
+/dog-car-travel-safety /collections/all 301
+/collections/orthopedic-dog-beds /collections/all 301
+/collections/cat-trees-for-large-cats /collections/all 301
+/collections/dog-car-travel-safety /collections/all 301
+/collections/best-orthopedic-dog-bed-large-dogs /collections/all 301
+/collections/waterproof-orthopedic-dog-bed /collections/all 301
+/collections/memory-foam-dog-beds /collections/all 301
+/collections/cat-tree-for-maine-coon /collections/all 301
+/collections/heavy-duty-cat-tree /collections/all 301
+/collections/cat-condos-for-large-cats /collections/all 301
+/collections/dog-car-seats /collections/all 301
+/collections/dog-booster-seat /collections/all 301
+/collections/dog-car-harness /collections/all 301
 
 # ── Training collection redirects ──
-/collections/dog-potty-training /dog/dog-training-behavior-tools 301
-/collections/dog-leash-control /dog/dog-training-behavior-tools 301
-/collections/dog-anti-bark /dog/dog-training-behavior-tools 301
-/collections/puppy-training-essentials /dog/dog-training-behavior-tools 301
-/collections/dog-training-accessories /dog/dog-training-behavior-tools 301
+/collections/dog-potty-training /collections/all 301
+/collections/dog-leash-control /collections/all 301
+/collections/dog-anti-bark /collections/all 301
+/collections/puppy-training-essentials /collections/all 301
+/collections/dog-training-accessories /collections/all 301
 /collections/no-pull-dog-harness /collections/dog-collars-leashes 301
 /collections/pet-grooming-tools /collections/dog-grooming 301
-/collections/dog-car-travel-safety-seats /dog/dog-car-travel-safety 301
+/collections/dog-car-travel-safety-seats /collections/all 301
 
 # ── Non-pet category 404 catchers → redirect to /products ──
 /collections/bird-* /products 301
