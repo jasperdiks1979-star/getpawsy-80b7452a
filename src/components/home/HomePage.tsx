@@ -2,12 +2,31 @@ import { lazy, Suspense } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
-import { RecentOrdersSection } from "@/components/home/RecentOrdersSection";
+import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 
-const BestsellersSection = lazy(() => import("@/components/home/BestsellersSection").then(m => ({ default: m.BestsellersSection })));
-const ShopByCategoryLinks = lazy(() => import("@/components/home/ShopByCategoryLinks").then(m => ({ default: m.default ?? m.ShopByCategoryLinks })));
 const WhyChooseSection = lazy(() => import("@/components/home/WhyChooseSection").then(m => ({ default: m.default ?? m.WhyChooseSection })));
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
+
+const LITTER_BOX_IDS = [
+  '128e0207-8a94-4d71-b428-5b7f5002528f',
+  'fe5ed2d6-0230-4c5a-8313-235a28ef4f21',
+  '1a1302e7-939f-4c94-96b7-d4e0c9d34a37',
+  '501e9150-42e0-42d7-8031-a7225a718558',
+];
+
+const CAT_TREE_IDS = [
+  '133cdc48-0117-40d5-9aaf-1a81131ca9bb',
+  '11758292-6f06-492c-88a7-0acdeb5e417e',
+  '352ddb8f-89f6-41b1-86b8-25af8ab1adb1',
+  '07507c96-a445-431f-9724-340ee01d818f',
+  '08a62345-c1bc-438b-8169-8a49687c1289',
+];
+
+const DOG_IDS = [
+  '0381585e-8b6b-48a8-b541-c7298f99b0c9',
+  '18028997-901a-40b8-8790-9e7b3ec558bf',
+  'c7177ee4-5509-492f-965f-617402968f5c',
+];
 
 const HomePage = () => {
   return (
@@ -21,28 +40,30 @@ const HomePage = () => {
         <link rel="canonical" href="https://getpawsy.pet/" />
       </Helmet>
 
-      {/* 1. Hero — dual CTA, compact trust */}
       <HeroSection />
 
-      {/* 2. Recently ordered — social proof strip */}
-      <RecentOrdersSection />
+      <CuratedProductSection
+        title="Bestsellers — Cat Litter Solutions"
+        subtitle="Self-cleaning, enclosed & furniture-style litter boxes"
+        productIds={LITTER_BOX_IDS}
+      />
 
-      {/* 3. Bestsellers — products visible immediately */}
-      <Suspense fallback={null}>
-        <BestsellersSection />
-      </Suspense>
+      <CuratedProductSection
+        title="Cat Trees & Climbing Towers"
+        subtitle="Modern, multi-level activity centers for indoor cats"
+        productIds={CAT_TREE_IDS}
+      />
 
-      {/* 4. Shop by pet type — 4 category cards */}
-      <Suspense fallback={null}>
-        <ShopByCategoryLinks />
-      </Suspense>
+      <CuratedProductSection
+        title="Dog Travel & Comfort"
+        subtitle="Strollers, carriers & elevated beds for dogs"
+        productIds={DOG_IDS}
+      />
 
-      {/* 5. Compact trust strip — 3 blocks */}
       <Suspense fallback={null}>
         <WhyChooseSection />
       </Suspense>
 
-      {/* 6. Business transparency */}
       <Suspense fallback={null}>
         <TrustTransparencySection />
       </Suspense>
