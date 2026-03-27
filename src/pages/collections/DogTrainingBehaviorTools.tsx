@@ -41,13 +41,9 @@ const CLUSTER_ARTICLES = [
 ];
 
 const SUB_COLLECTIONS = [
-  { href: '/collections/no-pull-dog-harness', label: 'No-Pull Dog Harnesses', desc: 'Front-clip harnesses that reduce pulling by 40–60%' },
-  { href: '/collections/long-training-leashes', label: 'Long Training Leashes', desc: 'Biothane & nylon long lines for recall practice' },
-  { href: '/collections/dog-training-clickers', label: 'Training Clickers', desc: 'Precision behavior markers for positive reinforcement' },
-  { href: '/collections/dog-treat-pouches', label: 'Treat Pouches', desc: 'Quick-access pouches for hands-free training walks' },
-  { href: '/collections/dog-training-kits', label: 'Training Kits', desc: 'Complete starter bundles for new dog owners' },
-  { href: '/collections/puppy-training-tools', label: 'Puppy Training', desc: 'Age-appropriate tools for puppies 8 weeks and up' },
-  { href: '/collections/recall-training-gear', label: 'Recall Training Gear', desc: 'Long lines, whistles, and high-value reward tools' },
+  { href: '/collections/dog-collars-leashes', label: 'Collars & Leashes', desc: 'Training leashes, harnesses and collars for all breeds' },
+  { href: '/collections/dog-toys', label: 'Dog Toys', desc: 'Interactive and training toys for engagement' },
+  { href: '/collections/dog-carriers', label: 'Dog Carriers', desc: 'Travel carriers and transport bags' },
 ];
 
 export default function DogTrainingBehaviorTools() {
