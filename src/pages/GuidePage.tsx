@@ -622,17 +622,25 @@ const GuidePage = () => {
         })()}
 
         {/* Conversion Badges — Top Picks with shipping/trust signals */}
-        {enrichedComparisonProducts && enrichedComparisonProducts.length >= 3 && (
-          <ConversionBadges
-            picks={enrichedComparisonProducts.slice(0, 3).map(p => ({
-              label: p.badge || 'Top Pick',
-              name: p.name,
-              price: p.price,
-              link: p.link,
-              image: p.image,
-            }))}
-          />
-        )}
+        {(() => {
+          try {
+            const validBadgeProducts = (enrichedComparisonProducts || []).filter(p =>
+              p.name && p.name.length >= 10 && p.price && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+            );
+            if (validBadgeProducts.length < 2) return null;
+            return (
+              <ConversionBadges
+                picks={validBadgeProducts.slice(0, 3).map(p => ({
+                  label: p.badge || 'Top Pick',
+                  name: p.name,
+                  price: p.price,
+                  link: p.link,
+                  image: p.image,
+                }))}
+              />
+            );
+          } catch { return null; }
+        })()}
 
         {/* Above-the-Fold Difficulty Overview Table */}
         {guide.difficultyOverview && guide.difficultyOverview.length > 0 && (
