@@ -21,7 +21,11 @@ const BADGE_STYLES = [
 ];
 
 export function ConversionBadges({ picks }: Props) {
-  if (!picks || picks.length === 0) return null;
+  // Only show picks with real images, valid product links, and prices
+  const validPicks = (picks || []).filter(p =>
+    p.name && p.price && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+  );
+  if (validPicks.length < 2) return null;
 
   return (
     <section className="mb-12 scroll-mt-24">
