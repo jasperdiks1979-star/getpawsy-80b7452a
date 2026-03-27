@@ -1589,18 +1589,11 @@ const ProductDetail = () => {
           <Link to="/cat" className="text-sm text-primary hover:underline font-medium">Shop Cats</Link>
         </nav>
 
-        {/* Recent Orders — realistic social proof */}
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
-          {[
-            { location: 'Texas', product: 'Dog car seat cover', days: 4 },
-            { location: 'California', product: 'Cat tree', days: 3 },
-            { location: 'Florida', product: 'Dog harness', days: 5 },
-          ].map((order, i) => (
-            <div key={i} className="flex items-center gap-2 bg-muted/40 rounded-full px-4 py-2 text-xs text-muted-foreground">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span>Ordered in {order.location} — delivered in {order.days} days</span>
-            </div>
-          ))}
+        {/* Trusted by pet owners — factual, no fabricated order data */}
+        <div className="mt-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            Trusted by pet owners across the United States · Operated by Skidzo
+          </p>
         </div>
 
         {/* 4. Visible FAQ Accordion */}
