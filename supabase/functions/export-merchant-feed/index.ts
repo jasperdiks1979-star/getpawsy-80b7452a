@@ -539,6 +539,8 @@ interface RawProduct {
   images: string[] | null;
   stock: number | null;
   weight: number | null;
+  optimized_title: string | null;
+  optimized_description: string | null;
 }
 
 interface SanitizedProduct {
