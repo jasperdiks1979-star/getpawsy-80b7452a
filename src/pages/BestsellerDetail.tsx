@@ -83,6 +83,7 @@ import {
   RETURN_WINDOW_DAYS,
   TRUST_BADGES,
 } from '@/lib/shipping-constants';
+import { computeAvailability } from '@/lib/availability';
 
 // Generate JSON-LD structured data for product
 // NOTE: Reviews/ratings intentionally removed - Google requires real customer reviews
@@ -110,11 +111,9 @@ const generateProductJsonLd = (
   // CANONICAL URL: Always use the product's canonical URL, never the bestseller URL
   // This prevents "Duplicate page without user-selected canonical" in GSC
   const canonicalProductUrl = `https://getpawsy.pet/product/${product.slug || product.id}`;
-  // Use real supplier stock for availability
-  const stockVal = product.stock;
-  const isActive = product.is_active !== false;
-  const inStock = isActive && stockVal !== null && stockVal !== undefined && stockVal > 0;
-  const availability = inStock
+  // Use centralized availability logic
+  const schemaAvailability = computeAvailability(product);
+  const availability = schemaAvailability.isInStock
     ? 'https://schema.org/InStock' 
     : 'https://schema.org/OutOfStock';
 
@@ -641,22 +640,9 @@ const BestsellerDetail = () => {
     );
   }
 
-  // STOCK LOGIC: Use centralized availability computation
-  // Import from src/lib/availability.ts for consistency across the app
-  // 
-  // DROPSHIPPING MODEL:
-  // - Stock value of 0 does NOT mean out of stock (suppliers manage inventory)
-  // - Only mark as out of stock if product.is_active === false (explicitly disabled)
-  // - Missing/undefined fields => treat as IN STOCK (never default to OOS)
-  const stockValue = product.stock;
-  const isProductDisabled = product.is_active === false;
-  const inStock = !isProductDisabled;
-  
-  // Computed availability for display and structured data
-  const computedAvailability = isProductDisabled ? 'out_of_stock' : 'in_stock';
-  const availabilityReason = isProductDisabled 
-    ? 'Product is_active = false (disabled)' 
-    : 'Dropship model: in stock (no explicit OOS flag)';
+  // Use centralized availability logic — no variant stock field exists, use product stock
+  const availabilityResult = computeAvailability(product);
+  const inStock = availabilityResult.isInStock;
 
   const handleAddToCart = () => {
     if (!product || !inStock) return;
@@ -1115,9 +1101,9 @@ const BestsellerDetail = () => {
                     <ul className="space-y-0.5 text-yellow-700 dark:text-yellow-300">
                       <li>• is_active: {String(product.is_active)}</li>
                       <li>• available: {String((product as { available?: boolean }).available)}</li>
-                      <li>• stock: {stockValue === null ? 'null' : stockValue === undefined ? 'undefined' : stockValue}</li>
-                      <li>• computed: {computedAvailability}</li>
-                      <li>• reason: {availabilityReason}</li>
+                      <li>• stock: {product.stock === null ? 'null' : product.stock === undefined ? 'undefined' : product.stock}</li>
+                      <li>• computed: {availabilityResult.isInStock ? 'in_stock' : 'out_of_stock'}</li>
+                      <li>• reason: {availabilityResult.reason}</li>
                       <li>• inStock: {String(inStock)}</li>
                       <li>• product.id: {product.id}</li>
                     </ul>
@@ -1130,8 +1116,8 @@ const BestsellerDetail = () => {
                 )}
 
                 {/* Low Stock Badge */}
-                {inStock && stockValue != null && stockValue > 0 && stockValue <= 10 && (
-                  <LowStockBadge stock={stockValue} />
+                {inStock && product.stock != null && product.stock > 0 && product.stock <= 10 && (
+                  <LowStockBadge stock={product.stock} />
                 )}
 
                 {/* Stock Status */}
