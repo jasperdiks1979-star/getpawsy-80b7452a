@@ -718,7 +718,7 @@ Deno.serve(async (req) => {
     let from = 0;
     while (true) {
       const { data, error } = await supabase.from("products")
-        .select("id, name, slug, sku, category, price, compare_at_price, description, image_url, images, stock, weight")
+        .select("id, name, slug, sku, category, price, compare_at_price, description, image_url, images, stock, weight, optimized_title, optimized_description")
         .eq("is_active", true).eq("is_duplicate", false).gt("stock", 0)
         .order("stock", { ascending: false }).range(from, from + 999);
       if (error) throw new Error(`DB: ${error.message}`);
