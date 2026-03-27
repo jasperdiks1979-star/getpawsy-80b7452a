@@ -641,22 +641,10 @@ const BestsellerDetail = () => {
     );
   }
 
-  // STOCK LOGIC: Use centralized availability computation
-  // Import from src/lib/availability.ts for consistency across the app
-  // 
-  // DROPSHIPPING MODEL:
-  // - Stock value of 0 does NOT mean out of stock (suppliers manage inventory)
-  // - Only mark as out of stock if product.is_active === false (explicitly disabled)
-  // - Missing/undefined fields => treat as IN STOCK (never default to OOS)
-  const stockValue = product.stock;
-  const isProductDisabled = product.is_active === false;
-  const inStock = !isProductDisabled;
-  
-  // Computed availability for display and structured data
-  const computedAvailability = isProductDisabled ? 'out_of_stock' : 'in_stock';
-  const availabilityReason = isProductDisabled 
-    ? 'Product is_active = false (disabled)' 
-    : 'Dropship model: in stock (no explicit OOS flag)';
+  // Use centralized availability logic with variant stock fallback
+  const variantStock = selectedVariant?.stock ?? undefined;
+  const availabilityResult = computeAvailability(product, variantStock);
+  const inStock = availabilityResult.isInStock;
 
   const handleAddToCart = () => {
     if (!product || !inStock) return;

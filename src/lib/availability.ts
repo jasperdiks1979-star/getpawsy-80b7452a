@@ -1,16 +1,15 @@
 /**
  * Single source of truth for product availability computation.
  * 
- * REAL SUPPLIER STOCK MODEL (CJ Dropshipping):
- * - stock > 0 AND is_active = true → IN STOCK (purchasable)
- * - stock <= 0 OR stock is null → OUT OF STOCK (not purchasable)
+ * DROPSHIPPING MODEL (CJ Dropshipping):
  * - is_active === false → OUT OF STOCK (disabled by admin)
+ * - stock === 0 (explicitly zero) → OUT OF STOCK
+ * - stock > 0 → IN STOCK
+ * - stock is null/undefined → IN STOCK (dropship: supplier manages inventory)
  * 
- * `stock` is the ONLY inventory field used. Legacy fields like
- * `available`, `inventory`, `qty`, `out_of_stock` are ignored.
- * 
- * This ensures Google Merchant Center compliance:
- * availability in feed, schema, and UI all derive from the same logic.
+ * `stock` is the primary inventory field. When stock is null/undefined,
+ * we default to IN STOCK because suppliers keep their own inventory.
+ * Only an explicit 0 or is_active=false marks a product as unavailable.
  */
 
 export interface AvailabilityProduct {
@@ -24,16 +23,19 @@ export interface AvailabilityResult {
 }
 
 /**
- * Compute availability for a product.
+ * Compute availability for a product (with optional variant stock override).
  * 
  * Rules (priority order):
  * 1. No product → OUT OF STOCK
  * 2. is_active === false → OUT OF STOCK
- * 3. stock > 0 → IN STOCK
- * 4. stock <= 0 or null → OUT OF STOCK
+ * 3. Use effectiveStock (variantStock if provided, else product.stock)
+ * 4. effectiveStock === 0 → OUT OF STOCK (explicitly zero)
+ * 5. effectiveStock > 0 → IN STOCK
+ * 6. effectiveStock is null/undefined → IN STOCK (dropship default)
  */
 export function computeAvailability(
   product: AvailabilityProduct | null | undefined,
+  variantStock?: number | null,
 ): AvailabilityResult {
   if (!product) {
     return { isInStock: false, reason: 'No product data' };
@@ -43,12 +45,21 @@ export function computeAvailability(
     return { isInStock: false, reason: 'Product disabled (is_active=false)' };
   }
 
-  const stock = product.stock;
-  if (stock !== null && stock !== undefined && stock > 0) {
-    return { isInStock: true, reason: `In stock (${stock} units)` };
+  // Variant stock overrides product stock when provided
+  const effectiveStock = variantStock !== undefined ? variantStock : product.stock;
+
+  // Explicit zero = out of stock
+  if (effectiveStock === 0) {
+    return { isInStock: false, reason: 'Out of stock (stock: 0)' };
   }
 
-  return { isInStock: false, reason: `Out of stock (stock: ${stock ?? 'null'})` };
+  // Positive stock = in stock
+  if (effectiveStock !== null && effectiveStock !== undefined && effectiveStock > 0) {
+    return { isInStock: true, reason: `In stock (${effectiveStock} units)` };
+  }
+
+  // null/undefined = dropship model, treat as in stock
+  return { isInStock: true, reason: 'In stock (dropship model: stock not tracked)' };
 }
 
 /**
