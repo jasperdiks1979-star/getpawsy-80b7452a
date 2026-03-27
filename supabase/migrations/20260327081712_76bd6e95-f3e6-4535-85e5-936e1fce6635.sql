@@ -1,0 +1,1 @@
+UPDATE products SET is_active = true WHERE id = '6367cdd8-25f6-4d27-891f-65c5db831d54';

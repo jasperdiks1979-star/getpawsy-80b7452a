@@ -644,6 +644,15 @@ const BestsellerDetail = () => {
   const availabilityResult = computeAvailability(product);
   const inStock = availabilityResult.isInStock;
 
+  // Temporary debug log for stock diagnosis
+  console.log("PDP STOCK STATE", {
+    productId: product.id,
+    stock: product.stock,
+    is_active: product.is_active,
+    inStock,
+    reason: availabilityResult.reason,
+  });
+
   const handleAddToCart = () => {
     if (!product || !inStock) return;
     
