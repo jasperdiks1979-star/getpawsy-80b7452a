@@ -610,8 +610,8 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
     return { ...result, excluded: true, reason: "missing_image" };
   }
 
-  // 4. Sanitize title
-  const cleanTitle = sanitizeTitle(p.name);
+  // 4. Sanitize title — prefer DB-optimized title
+  const cleanTitle = p.optimized_title ? sanitizeTitle(p.optimized_title) : sanitizeTitle(p.name);
   result.titleChanged = cleanTitle !== p.name;
 
   // 5. Sanitize description — use override directly if available (already clean)
