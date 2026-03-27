@@ -992,82 +992,36 @@ const App = () => {
                           <Route path="/dog/*" element={<Navigate to="/collections/all" replace />} />
                           <Route path="/cat/*" element={<Navigate to="/collections/all" replace />} />
                           {/* ═══ LEGACY CLUSTER REDIRECTS (301-equivalent) ═══ */}
-                          <Route
-                            path="/orthopedic-dog-beds"
-                            element={<Navigate to="/dog/orthopedic-dog-beds" replace />}
-                          />
-                          <Route
-                            path="/cat-trees-for-large-cats"
-                            element={<Navigate to="/cat/cat-trees-for-large-cats" replace />}
-                          />
-                          <Route
-                            path="/dog-car-travel-safety"
-                            element={<Navigate to="/dog/dog-car-travel-safety" replace />}
-                          />
-                          <Route
-                            path="/collections/orthopedic-dog-beds"
-                            element={<Navigate to="/dog/orthopedic-dog-beds" replace />}
-                          />
-                          <Route
-                            path="/collections/cat-trees-for-large-cats"
-                            element={<Navigate to="/cat/cat-trees-for-large-cats" replace />}
-                          />
-                          <Route
-                            path="/collections/dog-car-travel-safety"
-                            element={<Navigate to="/dog/dog-car-travel-safety" replace />}
-                          />
-                          <Route
-                            path="/collections/best-orthopedic-dog-bed-large-dogs"
-                            element={<Navigate to="/dog/orthopedic-dog-beds/best-for-large-dogs" replace />}
-                          />
-                          <Route
-                            path="/collections/waterproof-orthopedic-dog-bed"
-                            element={<Navigate to="/dog/orthopedic-dog-beds/waterproof" replace />}
-                          />
-                          <Route
-                            path="/collections/memory-foam-dog-beds"
-                            element={<Navigate to="/dog/orthopedic-dog-beds/memory-foam" replace />}
-                          />
-                          <Route
-                            path="/collections/cat-tree-for-maine-coon"
-                            element={<Navigate to="/cat/cat-trees-for-large-cats/for-maine-coon" replace />}
-                          />
-                          <Route
-                            path="/collections/heavy-duty-cat-tree"
-                            element={<Navigate to="/cat/cat-trees-for-large-cats/heavy-duty" replace />}
-                          />
-                          <Route
-                            path="/collections/cat-condos-for-large-cats"
-                            element={<Navigate to="/cat/cat-trees-for-large-cats/large-cat-condos" replace />}
-                          />
-                          <Route
-                            path="/collections/dog-car-seats"
-                            element={<Navigate to="/dog/dog-car-travel-safety/car-seats" replace />}
-                          />
-                          <Route
-                            path="/collections/dog-booster-seat"
-                            element={<Navigate to="/dog/dog-car-travel-safety/booster-seats" replace />}
-                          />
-                          <Route
-                            path="/collections/dog-car-harness"
-                            element={<Navigate to="/dog/dog-car-travel-safety/harness-safety" replace />}
-                          />
-
-                          {/* ═══ TRAINING COLLECTION REDIRECTS ═══ */}
-                          <Route path="/collections/dog-potty-training" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/dog-leash-control" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/dog-anti-bark" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/puppy-training-essentials" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/dog-training-accessories" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          {/* ═══ LEGACY CLUSTER REDIRECTS → all go to /collections/* ═══ */}
+                          <Route path="/orthopedic-dog-beds" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/cat-trees-for-large-cats" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/dog-car-travel-safety" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/orthopedic-dog-beds" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/cat-trees-for-large-cats" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-car-travel-safety" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/best-orthopedic-dog-bed-large-dogs" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/waterproof-orthopedic-dog-bed" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/memory-foam-dog-beds" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/cat-tree-for-maine-coon" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/heavy-duty-cat-tree" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/cat-condos-for-large-cats" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-car-seats" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-booster-seat" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-car-harness" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-potty-training" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-leash-control" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-anti-bark" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/puppy-training-essentials" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-training-accessories" element={<Navigate to="/collections/all" replace />} />
                           <Route path="/collections/no-pull-dog-harness" element={<Navigate to="/collections/dog-collars-leashes" replace />} />
                           <Route path="/collections/long-training-leashes" element={<Navigate to="/collections/dog-collars-leashes" replace />} />
-                          <Route path="/collections/dog-training-clickers" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/dog-treat-pouches" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/dog-training-kits" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/puppy-training-tools" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
-                          <Route path="/collections/recall-training-gear" element={<Navigate to="/dog/dog-training-behavior-tools" replace />} />
+                          <Route path="/collections/dog-training-clickers" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-treat-pouches" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/dog-training-kits" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/puppy-training-tools" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/collections/recall-training-gear" element={<Navigate to="/collections/all" replace />} />
                           <Route path="/collections/pet-grooming-tools" element={<Navigate to="/collections/dog-grooming" replace />} />
-                          <Route path="/collections/dog-car-travel-safety-seats" element={<Navigate to="/dog/dog-car-travel-safety" replace />} />
+                          <Route path="/collections/dog-car-travel-safety-seats" element={<Navigate to="/collections/all" replace />} />
 
                           {/* SEO Collection pages — /collections/:slug */}
                           <Route
