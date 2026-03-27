@@ -284,20 +284,20 @@ export function WebsiteSchema({
       {
         '@type': 'ListItem',
         position: 1,
-        name: 'Dog Potty Training',
-        url: `${url}/collections/dog-potty-training`,
+        name: 'Dog Training & Behavior Tools',
+        url: `${url}/dog/dog-training-behavior-tools`,
       },
       {
         '@type': 'ListItem',
         position: 2,
-        name: 'Dog Leash & Control',
-        url: `${url}/collections/dog-leash-control`,
+        name: 'Dog Collars & Leashes',
+        url: `${url}/collections/dog-collars-leashes`,
       },
       {
         '@type': 'ListItem',
         position: 3,
-        name: 'No Pull Dog Harnesses',
-        url: `${url}/collections/no-pull-dog-harness`,
+        name: 'Dog Carriers',
+        url: `${url}/collections/dog-carriers`,
       },
       {
         '@type': 'ListItem',
