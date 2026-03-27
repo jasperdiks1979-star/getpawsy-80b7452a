@@ -91,7 +91,7 @@ function getPageInventory(): PageInventoryItem[] {
 
   // Collection pages (simulated — some compliant, some not)
   const collections = [
-    { url: '/collections/no-pull-dog-harness', links: 7, cat: 'dog-training' },
+    { url: '/collections/dog-collars-leashes', links: 7, cat: 'dog-training' },
     { url: '/collections/orthopedic-dog-beds', links: 6, cat: 'dog-beds' },
     { url: '/collections/cat-trees-for-large-cats', links: 4, cat: 'cat-furniture' },
     { url: '/collections/slow-feeder-dog-bowls', links: 3, cat: 'dog-bowls' },
