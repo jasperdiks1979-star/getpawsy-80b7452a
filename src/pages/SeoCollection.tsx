@@ -493,15 +493,18 @@ const SeoCollection = () => {
   }
 
   if (!collection) {
-    // Log not-found for diagnostics
     logCollectionResolution({
       requestedSlug: rawSlug || '',
       resolvedSlug: slug || '',
       aliasUsed: slugResolution?.aliasUsed || false,
       matchResult: 'not_found',
     });
+    return <Navigate to="/collections/all" replace />;
+  }
 
-    // Always redirect to /collections/all — never show "Collection Not Found"
+  // Thin collection guard: if fewer than 3 real products, redirect to /collections/all
+  const isThinCollection = !productsLoading && products.length < 3 && slug !== 'all';
+  if (isThinCollection) {
     return <Navigate to="/collections/all" replace />;
   }
 
