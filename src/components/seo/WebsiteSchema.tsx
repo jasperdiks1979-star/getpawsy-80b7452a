@@ -48,7 +48,7 @@ export function WebsiteSchema({
       {
         '@type': 'ContactPoint',
         contactType: 'customer service',
-        email: 'support@getpawsy.pet',
+        email: 'info@getpawsy.pet',
         availableLanguage: ['English'],
         areaServed: 'US',
         hoursAvailable: {
@@ -98,7 +98,7 @@ export function WebsiteSchema({
     priceRange: '$$',
     image: `${url}${image}`,
     logo: `${url}/favicon.png`,
-    email: 'support@getpawsy.pet',
+    email: 'info@getpawsy.pet',
     areaServed: {
       '@type': 'Country',
       name: 'United States',

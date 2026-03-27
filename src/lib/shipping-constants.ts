@@ -53,7 +53,7 @@ export const DELIVERY_TIME_STANDARD = '3–7 business days';
 export const PROCESSING_TIME = '1–2 business days';
 
 /** Sitewide trust freshness timestamp */
-export const SITE_LAST_UPDATED = 'March 25, 2026';
+export const SITE_LAST_UPDATED = 'March 27, 2026';
 
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
 export const US_FULFILLMENT_NOTE = 'Orders ship directly to customers across the United States';
@@ -76,14 +76,14 @@ export const RETURNS_POLICY_SHORT = '30-day returns';
 export const RETURNS_POLICY_DETAILED = 'Return eligible items within 30 days according to our return policy.';
 
 /** How to initiate returns */
-export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order number and photos of any issues.';
+export const RETURNS_PROCESS = 'Contact info@getpawsy.pet with your order number and photos of any issues.';
 
 // ============= SUPPORT CONSTANTS =============
 
-/** Support email */
-export const SUPPORT_EMAIL = 'support@getpawsy.pet';
+/** Primary support/contact email — used sitewide */
+export const SUPPORT_EMAIL = 'info@getpawsy.pet';
 
-/** General info email */
+/** General info email (alias, same as SUPPORT_EMAIL) */
 export const INFO_EMAIL = 'info@getpawsy.pet';
 
 /** Response time promise */

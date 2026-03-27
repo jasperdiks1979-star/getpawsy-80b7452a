@@ -14,7 +14,7 @@ export const TrustStack: React.FC<TrustStackProps> = ({ className = '' }) => {
     { icon: <Lock className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Secure checkout (Stripe)' },
     { icon: <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />, text: '30-day returns' },
     { icon: <Truck className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Free shipping over $35' },
-    { icon: <Headphones className="w-4 h-4 text-primary flex-shrink-0" />, text: 'US-based support' },
+    { icon: <Headphones className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Dedicated support team' },
     { icon: <Shield className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Pet-safe materials' },
     { icon: <span className="text-sm flex-shrink-0">🇺🇸</span>, text: 'Ships within 3–7 days' },
   ];
