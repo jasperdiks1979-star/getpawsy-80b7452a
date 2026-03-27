@@ -67,6 +67,26 @@ const HomePage = () => {
       <Suspense fallback={null}>
         <TrustTransparencySection />
       </Suspense>
+
+      <section className="py-10 md:py-14 bg-background border-t border-border/30" aria-label="About GetPawsy">
+        <div className="container px-4 md:px-6 max-w-2xl mx-auto text-center">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
+            About GetPawsy
+          </h2>
+          <div className="space-y-2 text-sm md:text-base text-muted-foreground leading-relaxed">
+            <p>GetPawsy is operated by Skidzo.</p>
+            <p>We focus on modern, practical pet solutions for everyday life.</p>
+            <p>All orders are processed securely and shipped within the United States.</p>
+            <p>
+              Customer support:{' '}
+              <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">
+                info@getpawsy.pet
+              </a>
+            </p>
+            <p>We are committed to providing a safe and transparent shopping experience for pet owners.</p>
+          </div>
+        </div>
+      </section>
     </Layout>
   );
 };
