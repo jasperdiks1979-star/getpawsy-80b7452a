@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-03-27T19:58:03.796Z",
-  "total_pages_scanned": 271,
-  "orphan_pages": 120,
-  "weak_pages_under_2_links": 51,
+  "generated_at": "2026-03-27T20:01:24.385Z",
+  "total_pages_scanned": 274,
+  "orphan_pages": 131,
+  "weak_pages_under_2_links": 49,
   "orphans": [
     {
       "path": "/",
@@ -140,6 +140,11 @@
       "sources": []
     },
     {
+      "path": "/collections/dog-anti-bark",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
       "path": "/collections/dog-booster-seat",
       "inbound_links": 0,
       "sources": []
@@ -160,6 +165,41 @@
       "sources": []
     },
     {
+      "path": "/collections/dog-car-travel-safety-seats",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-leash-control",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-potty-training",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-training-accessories",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-training-clickers",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-training-kits",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/dog-treat-pouches",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
       "path": "/collections/heavy-duty-cat-tree",
       "inbound_links": 0,
       "sources": []
@@ -171,6 +211,21 @@
     },
     {
       "path": "/collections/pet-grooming-tools",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/puppy-training-essentials",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/puppy-training-tools",
+      "inbound_links": 0,
+      "sources": []
+    },
+    {
+      "path": "/collections/recall-training-gear",
       "inbound_links": 0,
       "sources": []
     },
@@ -684,6 +739,13 @@
       ]
     },
     {
+      "path": "/collections/long-training-leashes",
+      "inbound_links": 1,
+      "sources": [
+        "pages/collections/DogTrainingBehaviorTools.tsx"
+      ]
+    },
+    {
       "path": "/shop",
       "inbound_links": 1,
       "sources": [
@@ -691,7 +753,14 @@
       ]
     },
     {
-      "path": "/collections/dog-collars-leashes",
+      "path": "/collections/dog-beds",
+      "inbound_links": 1,
+      "sources": [
+        "pages/SeoCollection.tsx"
+      ]
+    },
+    {
+      "path": "/collections/dog-grooming",
       "inbound_links": 1,
       "sources": [
         "App.tsx"
@@ -737,27 +806,6 @@
       "inbound_links": 1,
       "sources": [
         "components/admin/CrawlerVisitsWidget.tsx"
-      ]
-    },
-    {
-      "path": "/collections/dog-car-travel-safety-seats",
-      "inbound_links": 1,
-      "sources": [
-        "components/home/HomepageAuthoritySection.tsx"
-      ]
-    },
-    {
-      "path": "/guides/best-dog-car-seats-safe-travel",
-      "inbound_links": 1,
-      "sources": [
-        "components/home/HomepageAuthoritySection.tsx"
-      ]
-    },
-    {
-      "path": "/collections/cat-litter-boxes",
-      "inbound_links": 1,
-      "sources": [
-        "components/home/HomepageAuthoritySection.tsx"
       ]
     },
     {
@@ -929,20 +977,6 @@
       ]
     },
     {
-      "path": "/collections/long-training-leashes",
-      "inbound_links": 1,
-      "sources": [
-        "pages/collections/DogTrainingBehaviorTools.tsx"
-      ]
-    },
-    {
-      "path": "/collections/puppy-training-tools",
-      "inbound_links": 1,
-      "sources": [
-        "pages/collections/DogTrainingBehaviorTools.tsx"
-      ]
-    },
-    {
       "path": "/guides/do-orthopedic-dog-beds-help-arthritis",
       "inbound_links": 1,
       "sources": [
@@ -961,6 +995,13 @@
       "inbound_links": 1,
       "sources": [
         "pages/collections/OrthopedicDogBeds.tsx"
+      ]
+    },
+    {
+      "path": "/guides/best-cat-litter-box-2026",
+      "inbound_links": 1,
+      "sources": [
+        "pages/landing/CatTrainingTravelPillar.tsx"
       ]
     }
   ],
