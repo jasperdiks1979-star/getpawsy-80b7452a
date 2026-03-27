@@ -76,14 +76,14 @@ export const RETURNS_POLICY_SHORT = '30-day returns';
 export const RETURNS_POLICY_DETAILED = 'Return eligible items within 30 days according to our return policy.';
 
 /** How to initiate returns */
-export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order number and photos of any issues.';
+export const RETURNS_PROCESS = 'Contact info@getpawsy.pet with your order number and photos of any issues.';
 
 // ============= SUPPORT CONSTANTS =============
 
-/** Support email */
-export const SUPPORT_EMAIL = 'support@getpawsy.pet';
+/** Primary support/contact email — used sitewide */
+export const SUPPORT_EMAIL = 'info@getpawsy.pet';
 
-/** General info email */
+/** General info email (alias, same as SUPPORT_EMAIL) */
 export const INFO_EMAIL = 'info@getpawsy.pet';
 
 /** Response time promise */
