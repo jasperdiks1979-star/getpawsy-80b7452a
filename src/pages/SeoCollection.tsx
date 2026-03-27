@@ -515,7 +515,7 @@ const SeoCollection = () => {
     });
 
     // Auto-redirect to closest valid category instead of showing "Collection Not Found"
-    const speciesHint = classifySpecies(rawSlug || '');
+    const speciesHint = classifySpecies(rawSlug || '').speciesPrimary;
     const fallbackPath = speciesHint === 'cat'
       ? '/collections/cat'
       : speciesHint === 'dog'
