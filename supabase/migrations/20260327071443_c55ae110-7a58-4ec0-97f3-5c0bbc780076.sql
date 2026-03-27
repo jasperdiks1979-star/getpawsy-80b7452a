@@ -1,0 +1,14 @@
+UPDATE products SET slug = 'automatic-cat-litter-box-self-cleaning-app-control' WHERE id = '128e0207-8a94-4d71-b428-5b7f5002528f';
+UPDATE products SET slug = 'xl-stainless-steel-cat-litter-box-flip-top' WHERE id = 'fe5ed2d6-0230-4c5a-8313-235a28ef4f21';
+UPDATE products SET slug = 'hidden-cat-litter-box-furniture-enclosure' WHERE id = '1a1302e7-939f-4c94-96b7-d4e0c9d34a37';
+UPDATE products SET slug = 'enclosed-cat-litter-box-front-entry-extra-large' WHERE id = '501e9150-42e0-42d7-8031-a7225a718558';
+UPDATE products SET slug = 'enclosed-cat-litter-box-extra-large-flip-top' WHERE id = '156ed3db-e926-482c-951a-4c1fcb61779d';
+UPDATE products SET slug = 'modern-cat-tree-35-inch-wooden-scratching-tower' WHERE id = '133cdc48-0117-40d5-9aaf-1a81131ca9bb';
+UPDATE products SET slug = 'elevated-cat-tree-sisal-scratching-post-with-bed' WHERE id = '07507c96-a445-431f-9724-340ee01d818f';
+UPDATE products SET slug = 'cactus-cat-tree-scratching-post-solid-wood' WHERE id = '08a62345-c1bc-438b-8169-8a49687c1289';
+UPDATE products SET slug = 'cactus-cat-climbing-tree-all-in-one-condo' WHERE id = '62732903-ee38-467c-9518-33fb1b9ffc64';
+UPDATE products SET slug = 'tall-cat-tree-ufo-perch-space-capsule-sisal' WHERE id = '352ddb8f-89f6-41b1-86b8-25af8ab1adb1';
+UPDATE products SET slug = 'multi-level-cat-tree-hammock-sisal-posts' WHERE id = '11758292-6f06-492c-88a7-0acdeb5e417e';
+UPDATE products SET slug = 'expandable-pet-carrier-backpack-breathable' WHERE id = '0381585e-8b6b-48a8-b541-c7298f99b0c9';
+UPDATE products SET slug = 'foldable-dog-stroller-pet-travel-cart' WHERE id = '18028997-901a-40b8-8790-9e7b3ec558bf';
+UPDATE products SET slug = 'elevated-cooling-dog-bed-outdoor-pet-cot' WHERE id = 'c7177ee4-5509-492f-965f-617402968f5c';
