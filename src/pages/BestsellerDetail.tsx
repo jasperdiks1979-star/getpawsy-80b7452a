@@ -642,9 +642,8 @@ const BestsellerDetail = () => {
     );
   }
 
-  // Use centralized availability logic with variant stock fallback
-  const variantStock = selectedVariant?.stock ?? undefined;
-  const availabilityResult = computeAvailability(product, variantStock);
+  // Use centralized availability logic — no variant stock field exists, use product stock
+  const availabilityResult = computeAvailability(product);
   const inStock = availabilityResult.isInStock;
 
   const handleAddToCart = () => {
