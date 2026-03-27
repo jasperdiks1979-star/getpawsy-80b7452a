@@ -393,7 +393,7 @@ const SeoCollection = () => {
     });
   }, [productMatch?.products, needsSpeciesFilter, slug, isDogPrefixedCollection, isCatPrefixedCollection, includeMultiPet]);
 
-  const showingRelatedResults = !!productMatch?.fallbackTriggered;
+  // "Related results" mode completely disabled — only real products shown
 
   // Preload first 2 product images for faster LCP
   useEffect(() => {
@@ -493,15 +493,18 @@ const SeoCollection = () => {
   }
 
   if (!collection) {
-    // Log not-found for diagnostics
     logCollectionResolution({
       requestedSlug: rawSlug || '',
       resolvedSlug: slug || '',
       aliasUsed: slugResolution?.aliasUsed || false,
       matchResult: 'not_found',
     });
+    return <Navigate to="/collections/all" replace />;
+  }
 
-    // Always redirect to /collections/all — never show "Collection Not Found"
+  // Thin collection guard: if fewer than 3 real products, redirect to /collections/all
+  const isThinCollection = !productsLoading && products.length < 3 && slug !== 'all';
+  if (isThinCollection) {
     return <Navigate to="/collections/all" replace />;
   }
 
@@ -682,11 +685,6 @@ const SeoCollection = () => {
             </div>
           )}
 
-          {showingRelatedResults && (
-            <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
-              Showing related results
-            </div>
-          )}
 
           {productsLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">

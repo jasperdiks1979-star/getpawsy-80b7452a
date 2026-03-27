@@ -209,45 +209,9 @@ export async function resolveCollectionProducts(
     return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
   });
 
-  const minProducts = Math.max(MIN_COLLECTION_PRODUCTS, config?.minProducts || 0);
-  let fallbackTriggered = false;
-  let merged: ScoredProduct[] = scoredPrimary;
-
-  if (merged.length < minProducts) {
-    fallbackTriggered = true;
-    const usedIds = new Set(merged.map(p => p.id));
-
-    const scoredFallback: ScoredProduct[] = pool
-      .filter(p => !usedIds.has(p.id))
-      .map(p => ({ ...p, _score: similarityScore(p, keywords) }))
-      .filter(p => p._score > 0)
-      .sort((a, b) => {
-        if (b._score !== a._score) return b._score - a._score;
-        return b.price - a.price;
-      });
-
-    merged = [...merged, ...scoredFallback];
-  }
-
-  let products = merged.slice(0, 48) as CollectionProduct[];
-
-  if (products.length < HARD_MIN_PRODUCTS) {
-    fallbackTriggered = true;
-
-    const relatedCatPool = pool
-      .filter(p => {
-        const text = `${p.name} ${p.category || ''}`.toLowerCase();
-        if (collection.slug.includes('cat') || keywords.some(k => k.includes('cat'))) return text.includes('cat');
-        if (collection.slug.includes('dog') || keywords.some(k => k.includes('dog'))) return text.includes('dog');
-        return true;
-      })
-      .sort((a, b) => b.price - a.price)
-      .slice(0, 12);
-
-    if (relatedCatPool.length > 0) {
-      products = relatedCatPool as CollectionProduct[];
-    }
-  }
+  // No fallback injection — only show real matched products
+  const fallbackTriggered = false;
+  const products = scoredPrimary.slice(0, 48) as CollectionProduct[];
 
   if (import.meta.env.DEV) {
     console.info('[CollectionEngine]', {
@@ -265,7 +229,7 @@ export async function resolveCollectionProducts(
     debug: {
       slug: collection.slug,
       primaryMatches: scoredPrimary.length,
-      fallbackMatches: Math.max(0, merged.length - scoredPrimary.length),
+      fallbackMatches: 0,
     },
   };
 }
