@@ -229,7 +229,7 @@ export async function resolveCollectionProducts(
     debug: {
       slug: collection.slug,
       primaryMatches: scoredPrimary.length,
-      fallbackMatches: Math.max(0, merged.length - scoredPrimary.length),
+      fallbackMatches: 0,
     },
   };
 }
