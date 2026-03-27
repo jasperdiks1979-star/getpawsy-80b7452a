@@ -51,8 +51,8 @@ const footerLinks = {
     { label: 'All Products', href: '/products' },
     { label: 'Bestsellers', href: '/bestsellers' },
     { label: 'Trending Products', href: '/trending-pet-products' },
-    { label: 'Shop Dogs', href: '/dog' },
-    { label: 'Shop Cats', href: '/cat' },
+    { label: 'Shop Dogs', href: '/collections/dog' },
+    { label: 'Shop Cats', href: '/collections/cat' },
   ],
   more: [
     { label: 'Dog Beds', href: '/collections/dog-beds' },
