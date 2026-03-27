@@ -4,14 +4,14 @@ import { ShoppingBag } from 'lucide-react';
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 const TOP_SLUGS = [
-  'flower-cat-tree-no-shipments-on-weekends',
   '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
   'dog-stroller-pet-stroller',
   'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
   'dog-cot-cooling-pet-bed-3',
   '49-inches-tall-cat-tree-with-ufo-top-perch-space-capsule-and-sisal-scratching-352d',
   'pet-carrier-backpack-expandable-cat-dog-carrier-with-back-extension-breathable-0381',
-  '4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-b460',
+  '35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c',
+  'xl-stainless-steel-litter-box-w-flip-top-scoop-step-top-side-entry-enclosed-fe5e',
 ];
 
 interface TopProduct {

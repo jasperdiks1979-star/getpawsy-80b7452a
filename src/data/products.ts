@@ -29,21 +29,6 @@ export const categories = [
  */
 export const products: Product[] = [
   {
-    id: '74259a91-2759-4ae6-9dae-1c1423ec99f7',
-    slug: 'flower-cat-tree-no-shipments-on-weekends',
-    name: 'GetPawsy Flower Cat Tree – Multi-Level Scratching Tower with Condos',
-    description: 'Give your cat a cozy retreat with this flower-themed cat tree. Features multiple levels for climbing, sisal-wrapped scratching posts, and plush-lined condos for napping. The wide base helps keep the structure steady during active play. Ideal for homes with one or more indoor cats looking for vertical space to explore.',
-    price: 604.99,
-    image: 'https://cf.cjdropshipping.com/17689536/fa631739-871c-4f92-94a0-1a2d4163c7a0.jpg',
-    images: ['https://cf.cjdropshipping.com/17689536/fa631739-871c-4f92-94a0-1a2d4163c7a0.jpg'],
-    category: 'Cat Trees & Condos',
-    tags: ['cat tree', 'condo', 'scratching post'],
-    rating: 4.6,
-    reviews: 145,
-    inStock: true,
-    featured: true,
-  },
-  {
     id: '128e0207-8a94-4d71-b428-5b7f5002528f',
     slug: '60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
     name: 'GetPawsy Automatic Cat Litter Box – Self-Cleaning with App Control',
