@@ -366,8 +366,8 @@ export default function DogTrainingBehaviorTools() {
         <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Training Tools by Breed Size</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
-            { breed: 'Small Dogs (Under 25 lbs)', breeds: 'Chihuahua, Pomeranian, Dachshund, French Bulldog', tools: ['Lightweight back-clip harness', 'Standard 6ft leash', 'Small-size clicker', 'Treat pouch with small compartments'], link: '/collections/puppy-training-tools', cta: 'Shop Small Dog Gear' },
-            { breed: 'Medium Dogs (25–60 lbs)', breeds: 'Beagle, Border Collie, Australian Shepherd, Cocker Spaniel', tools: ['Front-clip no-pull harness', 'Biothane 15ft long line', 'Dual-tone clicker', 'Quick-access treat pouch'], link: '/collections/no-pull-dog-harness', cta: 'Shop Medium Dog Gear' },
+            { breed: 'Small Dogs (Under 25 lbs)', breeds: 'Chihuahua, Pomeranian, Dachshund, French Bulldog', tools: ['Lightweight back-clip harness', 'Standard 6ft leash', 'Small-size clicker', 'Treat pouch with small compartments'], link: '/collections/dog-collars-leashes', cta: 'Shop Small Dog Gear' },
+            { breed: 'Medium Dogs (25–60 lbs)', breeds: 'Beagle, Border Collie, Australian Shepherd, Cocker Spaniel', tools: ['Front-clip no-pull harness', 'Biothane 15ft long line', 'Dual-tone clicker', 'Quick-access treat pouch'], link: '/collections/dog-collars-leashes', cta: 'Shop Medium Dog Gear' },
             { breed: 'Large Dogs (60+ lbs)', breeds: 'Labrador, German Shepherd, Golden Retriever, Pit Bull', tools: ['Tactical dual-handle harness', '30ft recall long line', 'Heavy-duty biothane leash', 'XL treat pouch'], link: '/dog/dog-training/best-harness-large-dogs', cta: 'Shop Large Dog Gear' },
           ].map((item, i) => (
             <div key={i} className="p-5 rounded-xl border border-border bg-background">
