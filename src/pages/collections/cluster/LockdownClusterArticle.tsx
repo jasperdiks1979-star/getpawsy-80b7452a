@@ -76,13 +76,11 @@ const PILLAR_LABELS: Record<string, string> = {
   '/collections/no-pull-dog-harness': 'No-Pull Dog Harnesses',
   '/collections/self-cleaning-litter-box': 'Self-Cleaning Litter Boxes',
   '/collections/dog-car-seats': 'Dog Car Seats',
-  '/collections/all': 'Dog Car Travel Safety',
   '/collections/slow-feeder-dog-bowl': 'Slow Feeder Dog Bowls',
   '/collections/interactive-dog-toys': 'Interactive Dog Toys',
-  '/collections/all': 'Stop Leash Pulling Guide',
   '/collections/elevated-dog-beds': 'Elevated Dog Beds',
   '/collections/cat-water-fountains': 'Cat Water Fountains',
-  '/collections/all': 'Cat Trees for Large Cats',
+  '/collections/all': 'All Collections',
 };
 
 let _clusterIndex: ClusterIndexEntry[] | null = null;
