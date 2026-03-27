@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Bug, ChevronDown, ChevronUp, Trash2, RefreshCw, Wrench, CheckCircle, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
