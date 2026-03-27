@@ -39,7 +39,7 @@ export function ConversionBadges({ picks }: Props) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        {picks.map((pick, i) => {
+        {validPicks.map((pick, i) => {
           const style = BADGE_STYLES[i] || BADGE_STYLES[0];
           return (
             <Link

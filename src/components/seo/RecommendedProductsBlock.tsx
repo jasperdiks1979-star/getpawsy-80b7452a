@@ -43,12 +43,14 @@ export function RecommendedProductsBlock({
         .order('price', { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data || []).map(p => safeProduct(p)).filter((p): p is SafeProduct => p !== null);
+      return (data || [])
+        .map(p => safeProduct(p))
+        .filter((p): p is SafeProduct => p !== null && !!p.image_url && !!p.name && p.price > 0);
     },
     staleTime: 10 * 60 * 1000,
   });
 
-  if (!products || products.length === 0) return null;
+  if (!products || products.length < 2) return null;
 
   return (
     <section className={`py-10 ${className}`}>
