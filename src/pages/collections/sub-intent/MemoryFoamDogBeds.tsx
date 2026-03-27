@@ -13,11 +13,11 @@ export default function MemoryFoamDogBeds() {
       trustBadges={['Foam Density Tested', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Dog', href: '/dog/orthopedic-dog-beds' },
-        { label: 'Orthopedic Dog Beds', href: '/dog/orthopedic-dog-beds' },
+        { label: 'Dog', href: '/collections/all' },
+        { label: 'Orthopedic Dog Beds', href: '/collections/all' },
         { label: 'Memory Foam' },
       ]}
-      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/dog/orthopedic-dog-beds' }}
+      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/collections/all' }}
       productQuery="name.ilike.%memory foam%,name.ilike.%orthopedic%memory%"
       contentBlocks={[
         {
@@ -62,9 +62,9 @@ CertiPUR-US certification: Look for this label — it ensures the foam is free f
         { slug: 'best-dog-bed-hip-dysplasia', title: 'Best Dog Bed for Hip Dysplasia', desc: 'Targeted recommendations for joint conditions.' },
       ]}
       crossLinks={[
-        { label: 'Orthopedic Dog Beds Hub', href: '/dog/orthopedic-dog-beds' },
-        { label: 'Large Dog Orthopedic Beds', href: '/dog/orthopedic-dog-beds/best-for-large-dogs' },
-        { label: 'Waterproof Orthopedic Beds', href: '/dog/orthopedic-dog-beds/waterproof' },
+        { label: 'Orthopedic Dog Beds Hub', href: '/collections/all' },
+        { label: 'Large Dog Orthopedic Beds', href: '/collections/all' },
+        { label: 'Waterproof Orthopedic Beds', href: '/collections/all' },
       ]}
     />
   );

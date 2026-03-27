@@ -192,7 +192,7 @@ const CatTrainingTravelPillar = () => {
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Travel Essentials →</h3>
                 <p className="text-sm text-muted-foreground">Airline-approved carriers & travel gear</p>
               </Link>
-              <Link to="/cat/cat-trees-for-large-cats" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Trees for Large Cats →</h3>
                 <p className="text-sm text-muted-foreground">Stability-tested for 25+ lbs</p>
               </Link>
@@ -204,7 +204,7 @@ const CatTrainingTravelPillar = () => {
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Best Cat Trees 2026 →</h3>
                 <p className="text-sm text-muted-foreground">9 trees tested for stability</p>
               </Link>
-              <Link to="/cat/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/collections/cat" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">All Cat Products →</h3>
                 <p className="text-sm text-muted-foreground">Browse the full cat collection</p>
               </Link>

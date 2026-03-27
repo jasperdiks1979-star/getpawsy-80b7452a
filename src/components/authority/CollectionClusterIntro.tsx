@@ -32,7 +32,7 @@ const INTROS: Record<ClusterId, {
       `Your dog deserves comfort that supports their health at every life stage. This ${name.toLowerCase()} collection features products tested for quality materials, ergonomic design, and long-term durability. From orthopedic beds for senior dogs to travel carriers built for safety, each product is evaluated against real pet-owner feedback and veterinary recommendations. We prioritize items that genuinely improve your dog's daily comfort.`,
     links: [
       { label: 'Orthopedic Dog Bed Guide', href: '/guides/orthopedic-dog-beds' },
-      { label: 'Dog Travel Safety Tips', href: '/dog/travel' },
+      { label: 'Dog Travel Safety Tips', href: '/collections/all' },
       { label: 'Senior Dog Comfort Guide', href: '/guides/senior-dog-care' },
     ],
   },

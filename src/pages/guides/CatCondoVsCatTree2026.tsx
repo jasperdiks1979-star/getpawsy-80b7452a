@@ -156,7 +156,7 @@ export default function CatCondoVsCatTree2026() {
               ))}
             </ul>
             <p className="text-muted-foreground leading-relaxed">
-              Browse our full <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees & condos collection</Link> for stability-tested options, or explore <Link to="/cat/cat-trees-for-large-cats" className="text-primary underline">cat trees for large cats</Link> rated for 40+ lbs.
+              Browse our full <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees & condos collection</Link> for stability-tested options, or explore <Link to="/collections/all" className="text-primary underline">cat trees for large cats</Link> rated for 40+ lbs.
             </p>
           </section>
 
@@ -179,7 +179,7 @@ export default function CatCondoVsCatTree2026() {
               ))}
             </ul>
             <p className="text-muted-foreground leading-relaxed">
-              Browse our <Link to="/collections/cat-condos" className="text-primary underline">cat condos collection</Link> or explore <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-primary underline">large cat condos</Link> with 12"+ openings for big breeds.
+              Browse our <Link to="/collections/cat-condos" className="text-primary underline">cat condos collection</Link> or explore <Link to="/collections/all" className="text-primary underline">large cat condos</Link> with 12"+ openings for big breeds.
             </p>
           </section>
 
@@ -255,7 +255,7 @@ export default function CatCondoVsCatTree2026() {
               <Link to="/collections/cat-condos" className="inline-flex items-center gap-2 bg-card border px-5 py-2.5 rounded-lg text-sm font-semibold hover:border-primary/50 transition-colors">
                 Browse Cat Condos <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link to="/cat/cat-trees-for-large-cats" className="inline-flex items-center gap-2 bg-card border px-5 py-2.5 rounded-lg text-sm font-semibold hover:border-primary/50 transition-colors">
+              <Link to="/collections/all" className="inline-flex items-center gap-2 bg-card border px-5 py-2.5 rounded-lg text-sm font-semibold hover:border-primary/50 transition-colors">
                 Large Cat Trees <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

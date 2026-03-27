@@ -349,9 +349,9 @@ export default function CatTreesForLargeCats() {
             ))}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/dog/orthopedic-dog-beds" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
-            <Link to="/dog/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">Dog Car Travel Safety →</Link>
-            <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-sm text-primary hover:underline font-medium">Large Cat Condos →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Dog Car Travel Safety →</Link>
+            <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Large Cat Condos →</Link>
           </div>
         </section>
 

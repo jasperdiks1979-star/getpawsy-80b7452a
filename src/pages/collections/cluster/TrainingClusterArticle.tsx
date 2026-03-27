@@ -58,7 +58,7 @@ export default function TrainingClusterArticle() {
       <Layout>
         <div className="container py-20 text-center">
           <h1 className="text-2xl font-bold mb-4">Article Not Found</h1>
-          <Link to="/dog/dog-training-behavior-tools" className="text-primary underline">← Back to Dog Training Hub</Link>
+          <Link to="/collections/all" className="text-primary underline">← Back to Dog Training Hub</Link>
         </div>
       </Layout>
     );
@@ -119,7 +119,7 @@ export default function TrainingClusterArticle() {
           <BreadcrumbList>
             <BreadcrumbItem><BreadcrumbLink asChild><Link to="/"><Home className="h-3.5 w-3.5" /></Link></BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/dog/dog-training-behavior-tools">Dog Training</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/collections/all">Dog Training</Link></BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem><BreadcrumbPage>{data.breadcrumbLabel}</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>

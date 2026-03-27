@@ -350,13 +350,13 @@ export default function DogTrainingBehaviorTools() {
             <strong>Puppies (8 weeks – 6 months):</strong> Short attention spans, teething, socialization priority. Use ultra-short training sessions (2-3 minutes), extremely high treat rates, and focus on name recognition, sit, and basic leash exposure. A lightweight <Link to="/collections/dog-collars-leashes" className="text-primary hover:underline">puppy harness</Link> and 6-foot leash are the only equipment needed at this stage.
           </p>
           <p>
-            <strong>Adolescent dogs (6-18 months):</strong> The hardest phase. Hormones, increased independence, selective hearing. This is when most dogs develop persistent pulling habits. A front-clip harness becomes essential. Start <Link to="/dog/dog-training/how-to-train-recall" className="text-primary hover:underline">recall training</Link> with a long line before they discover that running away is fun.
+            <strong>Adolescent dogs (6-18 months):</strong> The hardest phase. Hormones, increased independence, selective hearing. This is when most dogs develop persistent pulling habits. A front-clip harness becomes essential. Start <Link to="/collections/all" className="text-primary hover:underline">recall training</Link> with a long line before they discover that running away is fun.
           </p>
           <p>
             <strong>Adult dogs with established habits:</strong> Pulling, poor recall, and leash reactivity in adult dogs are not personality traits — they're trained (or untrained) behaviors that can be changed at any age. Adult dogs often learn faster than puppies because they have longer attention spans. The same positive reinforcement methods work; patience during the "unlearning" phase is the key.
           </p>
           <p>
-            <strong>Reactive dogs:</strong> Dogs that bark, lunge, or freeze around triggers (other dogs, strangers, bicycles) need a different approach. A <Link to="/dog/dog-training/best-harness-large-dogs" className="text-primary hover:underline">tactical harness with dual handles</Link> provides emergency control during reactive episodes. Training focuses on counter-conditioning (changing the emotional response to triggers) rather than obedience commands.
+            <strong>Reactive dogs:</strong> Dogs that bark, lunge, or freeze around triggers (other dogs, strangers, bicycles) need a different approach. A <Link to="/collections/all" className="text-primary hover:underline">tactical harness with dual handles</Link> provides emergency control during reactive episodes. Training focuses on counter-conditioning (changing the emotional response to triggers) rather than obedience commands.
           </p>
         </div>
       </section>

@@ -13,11 +13,11 @@ export default function DogBoosterSeat() {
       trustBadges={['Elevated Window View', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Dog', href: '/dog/dog-car-travel-safety' },
-        { label: 'Dog Car Travel Safety', href: '/dog/dog-car-travel-safety' },
+        { label: 'Dog', href: '/collections/all' },
+        { label: 'Dog Car Travel Safety', href: '/collections/all' },
         { label: 'Booster Seats' },
       ]}
-      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/dog/dog-car-travel-safety' }}
+      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/collections/all' }}
       productQuery="name.ilike.%booster%,name.ilike.%car seat%small%,name.ilike.%elevated%dog%"
       contentBlocks={[
         {
@@ -48,9 +48,9 @@ For maximum safety: A full enclosed car seat with a 5-point harness provides the
         { slug: 'best-orthopedic-dog-bed', title: 'Comfort at Home Too', desc: 'Memory foam beds for recovery after adventures.' },
       ]}
       crossLinks={[
-        { label: 'Dog Car Safety Hub', href: '/dog/dog-car-travel-safety' },
-        { label: 'Dog Car Seats', href: '/dog/dog-car-travel-safety/car-seats' },
-        { label: 'Dog Car Harnesses', href: '/dog/dog-car-travel-safety/harness-safety' },
+        { label: 'Dog Car Safety Hub', href: '/collections/all' },
+        { label: 'Dog Car Seats', href: '/collections/all' },
+        { label: 'Dog Car Harnesses', href: '/collections/all' },
       ]}
     />
   );

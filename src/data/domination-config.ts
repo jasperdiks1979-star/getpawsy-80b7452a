@@ -151,12 +151,12 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       {
         question: 'Do large cats need reinforced cat trees?',
         answer: 'Yes — standard cat trees are engineered for cats under 12 lbs. A 20-lb Maine Coon jumping onto a platform creates approximately 80 lbs of dynamic impact force. Standard pressed-board cat trees rated for 15–25 lbs of static weight will wobble, tilt, or collapse under this force.\n\nHeavy-duty cat trees use solid wood frames, 4"+ diameter sisal-wrapped posts, and reinforced joints rated for 60+ lbs of dynamic load. Wall-anchor hardware provides an additional safety margin for households with multiple large cats.\n\nThe risk isn\'t just property damage — a tipping cat tree can seriously injure your cat. Always anchor tall trees (60"+) to the wall.',
-        internalLink: { href: '/cat/cat-trees-for-large-cats/heavy-duty', label: 'Heavy Duty Cat Trees' },
+        internalLink: { href: '/collections/all', label: 'Heavy Duty Cat Trees' },
       },
       {
         question: 'What cat tree can hold a 25 lb cat?',
         answer: 'Look for cat trees with solid wood or engineered wood frames rated for 40+ lbs total capacity. Avoid pressed particleboard models. Key specifications: 4"+ diameter sisal posts, 18"+ wide platforms with raised edges, and included wall-anchor hardware.\n\nFor a single 25 lb cat, a heavy-duty free-standing tree with a wide weighted base (24"×24" minimum) works well. For multiple large cats, floor-to-ceiling tension pole models are the safest choice with virtually zero tipping risk.\n\nPrice range for quality 25+ lb-rated trees: $120–$300. Under $120, construction quality drops significantly.',
-        internalLink: { href: '/cat/cat-trees-for-large-cats/for-maine-coon', label: 'Cat Trees for Maine Coons' },
+        internalLink: { href: '/collections/all', label: 'Cat Trees for Maine Coons' },
       },
       {
         question: 'What is the most sturdy cat tree for heavy cats?',
@@ -173,7 +173,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       {
         question: 'What size cat tree for a Maine Coon?',
         answer: 'Maine Coons (15–25 lbs, 40"+ nose to tail) need cat trees with platforms at least 18 inches wide, condos with 12"+ diameter openings, and total height of 60 inches or more. Standard "large" cat trees are often undersized for true Maine Coons.\n\nLook for hammock-style perches rated for 25+ lbs — Maine Coons love lounging in hammocks but collapse cheaper models. Extra-tall scratching posts (36"+) accommodate their full-stretch scratching behavior.\n\nBudget $150–$250 for a Maine Coon-appropriate tree. Floor-to-ceiling models are ideal as they provide maximum climbing territory while maintaining stability for a 20+ lb cat.',
-        internalLink: { href: '/cat/cat-trees-for-large-cats/for-maine-coon', label: 'Maine Coon Cat Tree Guide' },
+        internalLink: { href: '/collections/all', label: 'Maine Coon Cat Tree Guide' },
       },
       {
         question: 'Can two large cats share one cat tree?',

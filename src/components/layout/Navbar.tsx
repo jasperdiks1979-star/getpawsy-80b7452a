@@ -663,7 +663,7 @@ export const Navbar = () => {
                       </div>
                       <div className="rounded-xl border bg-card overflow-hidden mb-4">
                         <SheetClose asChild>
-                          <Link to="/dog/dog-training-behavior-tools" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                          <Link to="/collections/all" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
                             <span>🐕</span>
                             <span className="font-medium">All Training Tools</span>
                           </Link>

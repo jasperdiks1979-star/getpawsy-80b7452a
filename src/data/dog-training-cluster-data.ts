@@ -48,10 +48,10 @@ export const HARNESS_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'The right clip position can transform your walks. Here\'s the data on which design actually reduces pulling for different dog types.',
     canonical: `${BASE}/dog/dog-training/front-clip-vs-back-clip-harness`,
     breadcrumbLabel: 'Front Clip vs Back Clip',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
-      { href: '/dog/dog-training/harness-vs-collar', label: 'Harness vs Collar Comparison' },
+      { href: '/collections/all', label: 'Best Harness for Large Dogs' },
+      { href: '/collections/all', label: 'Harness vs Collar Comparison' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [
@@ -99,10 +99,10 @@ export const HARNESS_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Large breeds need harnesses built to handle serious pulling force. We tested the strongest options for Labs, German Shepherds, and giant breeds.',
     canonical: `${BASE}/dog/dog-training/best-harness-large-dogs`,
     breadcrumbLabel: 'Best for Large Dogs',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Guide' },
-      { href: '/dog/dog-training/harness-sizing-guide', label: 'Harness Sizing Guide' },
+      { href: '/collections/all', label: 'Front Clip vs Back Clip Guide' },
+      { href: '/collections/all', label: 'Harness Sizing Guide' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [
@@ -144,10 +144,10 @@ export const HARNESS_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Choke chains and prong collars cause real harm. These 5 force-free methods reduce pulling by 40–60% without any pain or risk.',
     canonical: `${BASE}/dog/dog-training/how-to-stop-pulling-without-choking`,
     breadcrumbLabel: 'Stop Pulling Safely',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Guide' },
-      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
+      { href: '/collections/all', label: 'Front Clip vs Back Clip Guide' },
+      { href: '/collections/all', label: 'Best Harness for Large Dogs' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [
@@ -192,10 +192,10 @@ export const HARNESS_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'A harness that doesn\'t fit right doesn\'t work right. Follow this step-by-step measurement guide to get a perfect fit the first time.',
     canonical: `${BASE}/dog/dog-training/harness-sizing-guide`,
     breadcrumbLabel: 'Sizing Guide',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front vs Back Clip Guide' },
+      { href: '/collections/all', label: 'Best Harness for Large Dogs' },
+      { href: '/collections/all', label: 'Front vs Back Clip Guide' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [
@@ -232,10 +232,10 @@ export const HARNESS_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Collars are tradition. Harnesses are science. Here\'s what veterinary research says about which is actually safer for daily walks.',
     canonical: `${BASE}/dog/dog-training/harness-vs-collar`,
     breadcrumbLabel: 'Harness vs Collar',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip' },
-      { href: '/dog/dog-training/how-to-stop-pulling-without-choking', label: 'Stop Pulling Without Choking' },
+      { href: '/collections/all', label: 'Front Clip vs Back Clip' },
+      { href: '/collections/all', label: 'Stop Pulling Without Choking' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [
@@ -285,10 +285,10 @@ export const LEASH_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'The wrong length makes training harder. Here\'s exactly which leash length to choose based on your training goals and environment.',
     canonical: `${BASE}/dog/dog-training/15ft-vs-30ft-training-leash`,
     breadcrumbLabel: '15ft vs 30ft Leash',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/how-to-train-recall', label: 'How to Train Recall' },
-      { href: '/dog/dog-training/common-recall-mistakes', label: 'Common Recall Mistakes' },
+      { href: '/collections/all', label: 'How to Train Recall' },
+      { href: '/collections/all', label: 'Common Recall Mistakes' },
       { href: '/collections/long-training-leashes', label: 'Shop Training Leashes' },
     ],
     sections: [
@@ -331,10 +331,10 @@ export const LEASH_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'A reliable recall is the single most important command your dog will ever learn. This 4-phase system builds it from scratch.',
     canonical: `${BASE}/dog/dog-training/how-to-train-recall`,
     breadcrumbLabel: 'Train Recall',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/15ft-vs-30ft-training-leash', label: '15ft vs 30ft Leash Guide' },
-      { href: '/dog/dog-training/common-recall-mistakes', label: 'Common Recall Mistakes' },
+      { href: '/collections/all', label: '15ft vs 30ft Leash Guide' },
+      { href: '/collections/all', label: 'Common Recall Mistakes' },
       { href: '/collections/long-training-leashes', label: 'Shop Training Leashes' },
     ],
     sections: [
@@ -371,10 +371,10 @@ export const LEASH_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'If your dog ignores your recall, you\'re probably making one of these 7 mistakes. Here\'s how to fix each one.',
     canonical: `${BASE}/dog/dog-training/common-recall-mistakes`,
     breadcrumbLabel: 'Recall Mistakes',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/how-to-train-recall', label: 'Recall Training Guide' },
-      { href: '/dog/dog-training/off-leash-training-safely', label: 'Off-Leash Training Safely' },
+      { href: '/collections/all', label: 'Recall Training Guide' },
+      { href: '/collections/all', label: 'Off-Leash Training Safely' },
       { href: '/collections/long-training-leashes', label: 'Shop Training Leashes' },
     ],
     sections: [
@@ -422,10 +422,10 @@ export const LEASH_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Off-leash freedom is earned through structured training, not hoped for. This 4-phase system builds genuine reliability before you unclip.',
     canonical: `${BASE}/dog/dog-training/off-leash-training-safely`,
     breadcrumbLabel: 'Off-Leash Training',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/how-to-train-recall', label: 'Recall Training Guide' },
-      { href: '/dog/dog-training/15ft-vs-30ft-training-leash', label: '15ft vs 30ft Leash Guide' },
+      { href: '/collections/all', label: 'Recall Training Guide' },
+      { href: '/collections/all', label: '15ft vs 30ft Leash Guide' },
       { href: '/collections/long-training-leashes', label: 'Shop Training Leashes' },
     ],
     sections: [
@@ -472,13 +472,13 @@ export const HIJACK_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Standard harnesses fail big dogs. We tested tactical-grade anti-pull options built for 50–150 lb breeds that pull hard.',
     canonical: `${BASE}/dog/dog-training/anti-pull-harness-big-dogs`,
     breadcrumbLabel: 'Anti-Pull for Big Dogs',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Guide' },
-      { href: '/dog/dog-training/how-to-stop-pulling-without-choking', label: 'Stop Pulling Without Choking' },
+      { href: '/collections/all', label: 'Best Harness for Large Dogs' },
+      { href: '/collections/all', label: 'Front Clip vs Back Clip Guide' },
+      { href: '/collections/all', label: 'Stop Pulling Without Choking' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
-      { href: '/dog/dog-training/harness-sizing-guide', label: 'Harness Sizing Guide' },
+      { href: '/collections/all', label: 'Harness Sizing Guide' },
     ],
     sections: [
       {
@@ -527,11 +527,11 @@ export const HIJACK_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Two popular anti-pull tools with very different mechanisms. Here\'s the honest comparison most brands won\'t give you.',
     canonical: `${BASE}/dog/dog-training/no-pull-harness-vs-head-halter`,
     breadcrumbLabel: 'Harness vs Head Halter',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Guide' },
-      { href: '/dog/dog-training/how-to-stop-pulling-without-choking', label: 'Stop Pulling Without Choking' },
-      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
+      { href: '/collections/all', label: 'Front Clip vs Back Clip Guide' },
+      { href: '/collections/all', label: 'Stop Pulling Without Choking' },
+      { href: '/collections/all', label: 'Best Harness for Large Dogs' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [
@@ -580,11 +580,11 @@ export const HIJACK_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Small dogs pull too — but they need harnesses designed for their anatomy. Here\'s what works for dogs under 25 lbs.',
     canonical: `${BASE}/dog/dog-training/no-pull-harness-small-dogs`,
     breadcrumbLabel: 'Small Dog Harnesses',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/harness-sizing-guide', label: 'Harness Sizing Guide' },
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip' },
-      { href: '/dog/dog-training/puppy-training-leash-guide', label: 'Puppy Training Leash Guide' },
+      { href: '/collections/all', label: 'Harness Sizing Guide' },
+      { href: '/collections/all', label: 'Front Clip vs Back Clip' },
+      { href: '/collections/all', label: 'Puppy Training Leash Guide' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [
@@ -628,11 +628,11 @@ export const HIJACK_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Puppies need different leashes at different stages. This age-by-age guide ensures you use the right tool at the right time.',
     canonical: `${BASE}/dog/dog-training/puppy-training-leash-guide`,
     breadcrumbLabel: 'Puppy Training Leash',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/15ft-vs-30ft-training-leash', label: '15ft vs 30ft Leash Guide' },
-      { href: '/dog/dog-training/how-to-train-recall', label: 'Recall Training Guide' },
-      { href: '/dog/dog-training/no-pull-harness-small-dogs', label: 'Harnesses for Small Dogs' },
+      { href: '/collections/all', label: '15ft vs 30ft Leash Guide' },
+      { href: '/collections/all', label: 'Recall Training Guide' },
+      { href: '/collections/all', label: 'Harnesses for Small Dogs' },
       { href: '/collections/dog-collars-leashes', label: 'Shop Training Gear' },
     ],
     sections: [
@@ -686,11 +686,11 @@ export const PULLING_CLUSTER: TrainingClusterData[] = [
     heroSubtitle: 'Pulling is the #1 walking problem dog owners face. This guide covers exactly why dogs pull, the proven methods to stop it, and which equipment actually helps — no pain-based tools required.',
     canonical: `${BASE}/dog/dog-training/stop-pulling-on-leash`,
     breadcrumbLabel: 'Stop Leash Pulling',
-    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/collections/all' },
     relatedLinks: [
-      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Harness' },
-      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
-      { href: '/dog/dog-training/harness-vs-collar', label: 'Harness vs Collar' },
+      { href: '/collections/all', label: 'Front Clip vs Back Clip Harness' },
+      { href: '/collections/all', label: 'Best Harness for Large Dogs' },
+      { href: '/collections/all', label: 'Harness vs Collar' },
       { href: '/collections/dog-collars-leashes', label: 'Shop No-Pull Harnesses' },
     ],
     sections: [

@@ -13,11 +13,11 @@ export default function DogCarSeatSmallDogs() {
       trustBadges={['For Dogs Under 25 lbs', '3–7 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Dog', href: '/dog/dog-car-travel-safety' },
-        { label: 'Dog Car Travel Safety', href: '/dog/dog-car-travel-safety' },
+        { label: 'Dog', href: '/collections/all' },
+        { label: 'Dog Car Travel Safety', href: '/collections/all' },
         { label: 'Car Seats' },
       ]}
-      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/dog/dog-car-travel-safety' }}
+      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/collections/all' }}
       productQuery="name.ilike.%car seat%,name.ilike.%booster%,name.ilike.%dog travel%"
       contentBlocks={[
         {
@@ -49,9 +49,9 @@ Measure your dog sitting: height from seat to top of head, and width at the wide
         { slug: 'signs-dog-needs-joint-support', title: 'Signs Your Dog Needs Support', desc: 'Comfortable travel starts with recognizing needs.' },
       ]}
       crossLinks={[
-        { label: 'Dog Car Safety Hub', href: '/dog/dog-car-travel-safety' },
-        { label: 'Dog Booster Seats', href: '/dog/dog-car-travel-safety/booster-seats' },
-        { label: 'Dog Car Harnesses', href: '/dog/dog-car-travel-safety/harness-safety' },
+        { label: 'Dog Car Safety Hub', href: '/collections/all' },
+        { label: 'Dog Booster Seats', href: '/collections/all' },
+        { label: 'Dog Car Harnesses', href: '/collections/all' },
       ]}
     />
   );

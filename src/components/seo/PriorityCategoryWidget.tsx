@@ -10,19 +10,19 @@ import { Star, ArrowRight } from 'lucide-react';
 
 const PRIORITY_LINKS = [
   {
-    href: '/dog/orthopedic-dog-beds',
+    href: '/collections/all',
     title: 'Orthopedic Dog Beds',
     desc: 'Vet-approved memory foam beds for joint pain & large breeds',
     badge: '⭐ Top Rated',
   },
   {
-    href: '/cat/cat-trees-for-large-cats',
+    href: '/collections/all',
     title: 'Cat Trees for Large Cats',
     desc: 'Heavy-duty, anti-tip tested for 25+ lb cats & Maine Coons',
     badge: '⭐ Top Rated',
   },
   {
-    href: '/dog/dog-car-travel-safety',
+    href: '/collections/all',
     title: 'Dog Car Travel Safety',
     desc: 'Crash-tested car seats, harnesses & booster seats',
     badge: '⭐ Top Rated',

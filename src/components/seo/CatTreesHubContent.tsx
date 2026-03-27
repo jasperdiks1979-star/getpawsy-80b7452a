@@ -35,10 +35,10 @@ export function CatTreesHubContent() {
           A cat tree isn't just furniture — it's your indoor cat's primary territory, scratching surface, exercise station, and sleeping perch combined into one structure. Cats are vertical animals. In the wild, the highest vantage point belongs to the most dominant cat in the colony. When your indoor cat climbs on top of your refrigerator, bookshelf, or kitchen cabinets, they're following this instinct — and a proper cat tree gives them a designated space to fulfill it.
         </p>
         <p className="text-muted-foreground leading-relaxed mb-4">
-          The problem? Most cat trees sold online are built for cats under 12 lbs using particle board, thin 2-inch posts wrapped in low-quality carpet, and undersized bases that wobble under any real weight. For breeds like <Link to="/cat/cat-trees-for-large-cats/for-maine-coon" className="text-primary underline">Maine Coons</Link> (15–25 lbs), Ragdolls (12–20 lbs), Norwegian Forest Cats (12–16 lbs), and British Shorthairs (12–18 lbs), these budget trees are genuinely dangerous — a 20-lb cat jumping from a 5-foot platform generates 60–80 lbs of lateral force that can topple poorly constructed trees.
+          The problem? Most cat trees sold online are built for cats under 12 lbs using particle board, thin 2-inch posts wrapped in low-quality carpet, and undersized bases that wobble under any real weight. For breeds like <Link to="/collections/all" className="text-primary underline">Maine Coons</Link> (15–25 lbs), Ragdolls (12–20 lbs), Norwegian Forest Cats (12–16 lbs), and British Shorthairs (12–18 lbs), these budget trees are genuinely dangerous — a 20-lb cat jumping from a 5-foot platform generates 60–80 lbs of lateral force that can topple poorly constructed trees.
         </p>
         <p className="text-muted-foreground leading-relaxed">
-          That's why we curate only <Link to="/cat/cat-trees-for-large-cats/heavy-duty" className="text-primary underline">heavy-duty cat trees</Link> with reinforced construction, anti-tip wall anchors, and weight ratings that actually match real-world use. Every tree in our collection has been evaluated for stability, material quality, and long-term durability.
+          That's why we curate only <Link to="/collections/all" className="text-primary underline">heavy-duty cat trees</Link> with reinforced construction, anti-tip wall anchors, and weight ratings that actually match real-world use. Every tree in our collection has been evaluated for stability, material quality, and long-term durability.
         </p>
       </section>
 
@@ -81,7 +81,7 @@ export function CatTreesHubContent() {
           Choosing a Cat Tree for Large Cats (15+ lbs)
         </h2>
         <p className="text-muted-foreground leading-relaxed mb-4">
-          Large cat breeds need cat trees built to different specifications than standard models. Here's exactly what to look for when shopping for a <Link to="/cat/cat-trees-for-large-cats" className="text-primary underline">cat tree for large cats</Link>:
+          Large cat breeds need cat trees built to different specifications than standard models. Here's exactly what to look for when shopping for a <Link to="/collections/all" className="text-primary underline">cat tree for large cats</Link>:
         </p>
         <ul className="space-y-3 mb-6">
           {[
@@ -102,7 +102,7 @@ export function CatTreesHubContent() {
           ))}
         </ul>
         <p className="text-muted-foreground leading-relaxed">
-          For breed-specific recommendations, explore our <Link to="/cat/cat-trees-for-large-cats/for-maine-coon" className="text-primary underline">Maine Coon cat trees</Link> guide or browse <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-primary underline">large cat condos</Link> for privacy-loving large breeds.
+          For breed-specific recommendations, explore our <Link to="/collections/all" className="text-primary underline">Maine Coon cat trees</Link> guide or browse <Link to="/collections/all" className="text-primary underline">large cat condos</Link> for privacy-loving large breeds.
         </p>
       </section>
 
@@ -320,7 +320,7 @@ export function CatTreesHubContent() {
           ))}
         </ul>
         <p className="text-muted-foreground leading-relaxed">
-          Explore our <Link to="/collections/cat-tree-for-two-cats" className="text-primary underline">cat trees for two cats</Link> or browse <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-primary underline">large cat condos</Link> with multi-level access paths designed to reduce territorial conflict.
+          Explore our <Link to="/collections/cat-tree-for-two-cats" className="text-primary underline">cat trees for two cats</Link> or browse <Link to="/collections/all" className="text-primary underline">large cat condos</Link> with multi-level access paths designed to reduce territorial conflict.
         </p>
       </section>
 
@@ -368,7 +368,7 @@ export function CatTreesHubContent() {
           Every cat tree in our collection is curated for stability, durability, and cat-approved design. Free US shipping on orders over $35 with a 30-day return policy.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
-          <Link to="/cat/cat-trees-for-large-cats" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
+          <Link to="/collections/all" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
             Cat Trees for Large Cats <ArrowRight className="w-4 h-4" />
           </Link>
           <Link to="/collections/best-cat-trees-for-small-apartments" className="inline-flex items-center gap-2 bg-card border px-5 py-2.5 rounded-lg text-sm font-semibold hover:border-primary/50 transition-colors">
