@@ -503,8 +503,9 @@ const SeoCollection = () => {
   }
 
   // Thin collection guard: if fewer than 3 real products, redirect to /collections/all
-  // Skip redirect for 'all' to prevent infinite redirect loop
-  const isThinCollection = !productsLoading && products.length < 3 && slug !== 'all' && !slug?.startsWith('all');
+  // Skip redirect for 'all' and 'multi-pet' to prevent infinite redirect loop
+  const safeSlugs = new Set(['all', 'multi-pet', 'dog', 'cat', 'dogs', 'cats']);
+  const isThinCollection = !productsLoading && products.length < 3 && !safeSlugs.has(slug || '') && !safeSlugs.has(rawSlug || '');
   if (isThinCollection) {
     return <Navigate to="/collections/all" replace />;
   }
