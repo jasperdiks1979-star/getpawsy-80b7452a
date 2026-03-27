@@ -15,6 +15,8 @@ function isValidProduct(p: ComparisonProduct): boolean {
 }
 
 export function ComparisonTable({ products }: Props) {
+  if (!products || !Array.isArray(products)) return null;
+  
   const valid = products.filter(isValidProduct);
 
   // Need at least 2 valid products to show comparison

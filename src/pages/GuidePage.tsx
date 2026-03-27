@@ -595,44 +595,52 @@ const GuidePage = () => {
         )}
 
         {/* Quick Recommendation Box — enrich with images from DB */}
-        {guide.quickRecommendation && (
-          <QuickRecommendation
-            data={{
-              ...guide.quickRecommendation,
-              bestOverall: {
-                ...guide.quickRecommendation.bestOverall,
-                image: guide.quickRecommendation.bestOverall.image && !guide.quickRecommendation.bestOverall.image.startsWith('/images/guides/')
-                  ? guide.quickRecommendation.bestOverall.image
-                  : findProductImage(guide.quickRecommendation.bestOverall.name) || enrichedComparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestOverall.link)?.image,
-              },
-              bestBudget: {
-                ...guide.quickRecommendation.bestBudget,
-                image: guide.quickRecommendation.bestBudget.image && !guide.quickRecommendation.bestBudget.image.startsWith('/images/guides/')
-                  ? guide.quickRecommendation.bestBudget.image
-                  : findProductImage(guide.quickRecommendation.bestBudget.name) || enrichedComparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestBudget.link)?.image,
-              },
-              bestPremium: {
-                ...guide.quickRecommendation.bestPremium,
-                image: guide.quickRecommendation.bestPremium.image && !guide.quickRecommendation.bestPremium.image.startsWith('/images/guides/')
-                  ? guide.quickRecommendation.bestPremium.image
-                  : findProductImage(guide.quickRecommendation.bestPremium.name) || enrichedComparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestPremium.link)?.image,
-              },
-            }}
-          />
-        )}
+        {guide.quickRecommendation && (() => {
+          try {
+            const qr = guide.quickRecommendation;
+            const enrichPick = (pick: typeof qr.bestOverall | undefined) => {
+              if (!pick?.name || !pick?.link) return pick;
+              const hasRealImage = pick.image && !pick.image.startsWith('/images/guides/');
+              return {
+                ...pick,
+                image: hasRealImage
+                  ? pick.image
+                  : findProductImage(pick.name) || enrichedComparisonProducts?.find(p => p.link === pick.link)?.image,
+              };
+            };
+            return (
+              <QuickRecommendation
+                data={{
+                  ...qr,
+                  bestOverall: enrichPick(qr.bestOverall) || qr.bestOverall,
+                  bestBudget: enrichPick(qr.bestBudget) || qr.bestBudget,
+                  bestPremium: enrichPick(qr.bestPremium) || qr.bestPremium,
+                }}
+              />
+            );
+          } catch { return null; }
+        })()}
 
         {/* Conversion Badges — Top Picks with shipping/trust signals */}
-        {enrichedComparisonProducts && enrichedComparisonProducts.length >= 3 && (
-          <ConversionBadges
-            picks={enrichedComparisonProducts.slice(0, 3).map(p => ({
-              label: p.badge || 'Top Pick',
-              name: p.name,
-              price: p.price,
-              link: p.link,
-              image: p.image,
-            }))}
-          />
-        )}
+        {(() => {
+          try {
+            const validBadgeProducts = (enrichedComparisonProducts || []).filter(p =>
+              p.name && p.name.length >= 10 && p.price && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+            );
+            if (validBadgeProducts.length < 2) return null;
+            return (
+              <ConversionBadges
+                picks={validBadgeProducts.slice(0, 3).map(p => ({
+                  label: p.badge || 'Top Pick',
+                  name: p.name,
+                  price: p.price,
+                  link: p.link,
+                  image: p.image,
+                }))}
+              />
+            );
+          } catch { return null; }
+        })()}
 
         {/* Above-the-Fold Difficulty Overview Table */}
         {guide.difficultyOverview && guide.difficultyOverview.length > 0 && (
@@ -778,10 +786,16 @@ const GuidePage = () => {
           </section>
         ))}
 
-        {/* Comparison Table */}
-        {enrichedComparisonProducts && enrichedComparisonProducts.length > 0 && (
-          <ComparisonTable products={enrichedComparisonProducts} />
-        )}
+        {/* Comparison Table — only with validated products */}
+        {(() => {
+          try {
+            const validComparison = (enrichedComparisonProducts || []).filter(p =>
+              p.name && p.name.length >= 10 && p.price && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+            );
+            if (validComparison.length < 2) return null;
+            return <ComparisonTable products={validComparison} />;
+          } catch { return null; }
+        })()}
 
         {/* Buying Criteria Block — Premium */}
         {guide.buyingCriteria && (
