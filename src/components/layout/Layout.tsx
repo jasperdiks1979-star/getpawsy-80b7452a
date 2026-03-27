@@ -15,7 +15,7 @@ import { SitewiseTrustBar } from './SitewiseTrustBar';
 // Lazy-load all non-critical marketing/overlay widgets
 // WelcomePopup / SlowFeederLeadMagnet / ExitIntentPopup disabled for Merchant recovery mode
 const CookieConsent = lazy(() => import('../marketing/CookieConsent').then(m => ({ default: m.CookieConsent })).catch(() => ({ default: () => null })));
-const ChatWidgetWrapper = lazy(() => import('../chat/ChatWidgetWrapper').then(m => ({ default: m.ChatWidgetWrapper })).catch(() => ({ default: () => null })));
+const ChatWidgetWrapper = lazy(() => import('../chat/ChatWidgetWrapper').then(m => ({ default: m.ChatWidgetWrapper })).catch(() => ({ default: (() => null) as any })));
 
 interface LayoutProps {
   children: React.ReactNode;
