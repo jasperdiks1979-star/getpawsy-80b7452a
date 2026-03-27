@@ -83,7 +83,7 @@ const CatTravel = () => {
       </section>
 
       <div className="container px-4 md:px-6 max-w-4xl">
-        <SiloBackLinks silo="cat" currentPath="/cat/travel" />
+        <SiloBackLinks silo="cat" currentPath="/collections/cat" />
       </div>
     </Layout>
   );

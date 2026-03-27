@@ -86,7 +86,7 @@ const DogTraining = () => {
 
       {/* Silo back-links */}
       <div className="container px-4 md:px-6 max-w-4xl">
-        <SiloBackLinks silo="dog" currentPath="/dog/training" />
+        <SiloBackLinks silo="dog" currentPath="/collections/dog" />
       </div>
     </Layout>
   );
