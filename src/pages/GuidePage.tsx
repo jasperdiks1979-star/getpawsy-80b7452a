@@ -786,10 +786,16 @@ const GuidePage = () => {
           </section>
         ))}
 
-        {/* Comparison Table */}
-        {enrichedComparisonProducts && enrichedComparisonProducts.length > 0 && (
-          <ComparisonTable products={enrichedComparisonProducts} />
-        )}
+        {/* Comparison Table — only with validated products */}
+        {(() => {
+          try {
+            const validComparison = (enrichedComparisonProducts || []).filter(p =>
+              p.name && p.name.length >= 10 && p.price && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+            );
+            if (validComparison.length < 2) return null;
+            return <ComparisonTable products={validComparison} />;
+          } catch { return null; }
+        })()}
 
         {/* Buying Criteria Block — Premium */}
         {guide.buyingCriteria && (

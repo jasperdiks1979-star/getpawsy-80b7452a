@@ -21,9 +21,11 @@ const BADGE_STYLES = [
 ];
 
 export function ConversionBadges({ picks }: Props) {
-  // Only show picks with real images, valid product links, and prices
-  const validPicks = (picks || []).filter(p =>
-    p.name && p.price && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+  if (!picks || !Array.isArray(picks)) return null;
+  
+  // Only show picks with real images, valid product links, prices, and real names
+  const validPicks = picks.filter(p =>
+    p.name && p.name.length >= 10 && p.price && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
   );
   if (validPicks.length < 2) return null;
 

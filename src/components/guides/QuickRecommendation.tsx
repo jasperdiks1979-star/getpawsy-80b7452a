@@ -22,7 +22,12 @@ function isValidPick(pick: { name: string; link: string; image?: string }): bool
 }
 
 export function QuickRecommendation({ data }: Props) {
-  const validPicks = picks.filter(({ key }) => isValidPick(data[key]));
+  if (!data) return null;
+  
+  const validPicks = picks.filter(({ key }) => {
+    const pick = data[key];
+    return pick && isValidPick(pick);
+  });
 
   // Need at least 2 valid picks to render
   if (validPicks.length < 2) return null;
