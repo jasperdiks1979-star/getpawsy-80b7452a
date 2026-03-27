@@ -405,4 +405,5 @@ export const DebugPanel = forwardRef<HTMLDivElement>((_, _ref) => {
       </motion.div>
     </div>
   );
-};
+});
+DebugPanel.displayName = 'DebugPanel';
