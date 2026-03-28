@@ -50,6 +50,10 @@ const HomePage = () => {
 
       <HeroSection />
 
+      <div className="container px-4 md:px-6">
+        <TrustBadgesBlock />
+      </div>
+
       <CuratedProductSection
         title="Bestsellers — Cat Litter Solutions"
         subtitle="Self-cleaning, enclosed & furniture-style litter boxes"

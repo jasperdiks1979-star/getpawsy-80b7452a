@@ -769,8 +769,8 @@ const Products = () => {
           </p>
         </div>
 
-        {/* Trust Strip */}
-        <CategoryTrustStrip />
+        {/* Trust Badges */}
+        <TrustBadgesBlock compact />
 
         {/* Subcategory Grid - Show when viewing a parent category */}
         {categoryParam && categories && (() => {

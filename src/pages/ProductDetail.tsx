@@ -1298,9 +1298,9 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Trust Stack — social proof + trust badges */}
+            {/* Trust Badges */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
-              <TrustStack />
+              <TrustBadgesBlock compact />
             </motion.div>
 
             {/* Trust Microcopy — compliance links */}
