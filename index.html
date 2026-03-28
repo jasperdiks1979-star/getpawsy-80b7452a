@@ -91,7 +91,7 @@
           return;
         }
         try { sessionStorage.setItem(RELOAD_GUARD_KEY, String(count + 1)); } catch(_) {}
-        console.warn('[CRASH_DETECT] Static chunk load failed — auto-reloading once');
+        console.warn('[BOOT] Chunk load failed — refreshing once');
         // Synchronous redirect — no async cache clearing to avoid race conditions
         window.location.replace(window.location.pathname + '?cb=' + Date.now());
       }
