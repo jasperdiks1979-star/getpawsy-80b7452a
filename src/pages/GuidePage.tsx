@@ -224,6 +224,12 @@ const GuidePage = () => {
   }
 
   // Active SEO title from A/B test or fallback
+  // Safe accessors — never crash on missing data
+  const safeFaq = guide.faq || [];
+  const safeKeywords = guide.keywords || [];
+  const safeSections = guide.sections || [];
+  const safeRelatedCategories = guide.relatedCategories || [];
+
   const activeSeoTitle = getSeoTitle(guide.slug, guide.seoTitle, guide.title);
 
   // Article schema with Person author entity
@@ -231,20 +237,20 @@ const GuidePage = () => {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: guide.title,
-    description: guide.excerpt,
+    description: guide.excerpt || '',
     image: guide.featuredImage ? `${BASE_URL}${guide.featuredImage}` : `${BASE_URL}/og-image.png`,
     datePublished: guide.publishedAt,
     dateModified: guide.updatedAt,
     author: getAuthorSchema(),
     publisher: getPublisherSchema(),
     mainEntityOfPage: { '@type': 'WebPage', '@id': guideUrl },
-    keywords: guide.keywords.join(', '),
+    keywords: safeKeywords.join(', '),
     articleSection: guide.category,
     inLanguage: 'en-US',
   };
 
   // FAQ schema
-  const faqSchema = guide.faq.length > 0 ? {
+  const faqSchema = safeFaq.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: guide.faq.map((item) => ({
