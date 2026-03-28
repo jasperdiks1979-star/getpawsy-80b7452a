@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
+import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
 import { HomepageFAQ } from "@/components/home/HomepageFAQ";
