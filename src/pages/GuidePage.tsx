@@ -730,7 +730,7 @@ const GuidePage = () => {
             </h2>
           </div>
           <ol className="space-y-1.5">
-            {guide.sections.map((section, i) => (
+            {safeSections.map((section, i) => (
               <li key={i}>
                 <a
                   href={`#section-${i}`}
