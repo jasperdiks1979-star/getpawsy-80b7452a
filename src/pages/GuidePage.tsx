@@ -932,7 +932,7 @@ const GuidePage = () => {
         </section>
 
         <SectionErrorBoundary section="GuidePage-recommended-products">
-          {guide.relatedCategories.length > 0 && (
+          {safeRelatedCategories.length > 0 && (
             <RecommendedProductsBlock
               categories={guide.relatedCategories.map(cat =>
                 cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
