@@ -1004,10 +1004,10 @@ const GuidePage = () => {
       </article>
 
       {/* Sticky CTA */}
-      {guide.relatedCategories.length > 0 && (
+      {safeRelatedCategories.length > 0 && (
         <StickyCTA
-          categorySlug={guide.relatedCategories[0]}
-          categoryLabel={guide.relatedCategories[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+          categorySlug={safeRelatedCategories[0]}
+          categoryLabel={safeRelatedCategories[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
         />
       )}
     </Layout>
