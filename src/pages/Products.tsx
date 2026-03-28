@@ -8,7 +8,7 @@ import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
-import { CategoryTrustStrip } from '@/components/products/CategoryTrustStrip';
+import { TrustBadgesBlock } from '@/components/shared/TrustBadgesBlock';
 import { SubcategoryGrid } from '@/components/products/SubcategoryGrid';
 import { CategoryEmptyState } from '@/components/products/CategoryEmptyState';
 import { DidYouMeanSection } from '@/components/products/DidYouMeanSection';
