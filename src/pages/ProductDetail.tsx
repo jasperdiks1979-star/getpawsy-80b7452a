@@ -536,19 +536,7 @@ const ProductDetail = () => {
     return rawImages.length > 0 ? rawImages : product?.image_url ? [product.image_url] : ["/placeholder.svg"];
   }, [product?.images, product?.image_url]);
 
-  // Auto-slideshow effect - moved before early returns to follow hooks rules
-  useEffect(() => {
-    if (!product || images.length <= 1 || autoplayPaused || lightboxOpen) return;
-
-    const interval = setInterval(() => {
-      isAutoplayChangeRef.current = true; // Mark as autoplay change to prevent scroll
-      setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [product, images.length, autoplayPaused, lightboxOpen]);
-
-  // Cleanup timeout on unmount
+  // Cleanup autoplay timeout on unmount
   useEffect(() => {
     return () => {
       if (autoplayTimeoutRef.current) {
