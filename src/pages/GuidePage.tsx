@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw, User, Award } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { useGuide, useGuidesList } from '@/hooks/useGuides';
+import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import NotFound from './NotFound';
