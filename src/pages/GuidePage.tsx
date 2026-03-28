@@ -945,7 +945,7 @@ const GuidePage = () => {
         </SectionErrorBoundary>
 
         {/* Shop Category CTA — Premium */}
-        {guide.relatedCategories.length > 0 && (
+        {safeRelatedCategories.length > 0 && (
           <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6 mb-12 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -954,7 +954,7 @@ const GuidePage = () => {
               <h3 className="font-display font-bold text-foreground">Shop Related Products</h3>
             </div>
             <div className="flex flex-wrap gap-2.5">
-              {guide.relatedCategories.map((cat) => {
+              {safeRelatedCategories.map((cat) => {
                 const collectionSlug = categoryToCollectionSlug(cat);
                 const displayName = cat.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
                 return (
