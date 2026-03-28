@@ -113,6 +113,6 @@ export const PaymentBadges = forwardRef<HTMLDivElement, PaymentBadgesProps>(func
       ))}
     </div>
   );
-};
+});
 
 export default PaymentBadges;
