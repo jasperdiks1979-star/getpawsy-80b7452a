@@ -1,5 +1,4 @@
 import { Component, ReactNode } from 'react';
-import { recordCrashAndCheckBreaker } from '@/lib/crash-circuit-breaker';
 
 interface Props {
   children: ReactNode;
@@ -36,9 +35,6 @@ export class AppErrorBoundary extends Component<Props, State> {
     } catch {
       // safety
     }
-
-    // Record for circuit breaker tracking
-    recordCrashAndCheckBreaker(errorMessage);
 
     return { hasError: true, errorId, errorMessage };
   }

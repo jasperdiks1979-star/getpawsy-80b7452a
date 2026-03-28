@@ -97,7 +97,6 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
   }
   render() {
     if (this.state.hasError) {
-      // Do NOT re-render children — causes recursive crash + removeChild errors
       return (
         <div
           style={{
@@ -107,10 +106,10 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
           }}
         >
           <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-            This page had a temporary issue
+            Something went wrong
           </h2>
           <p style={{ color: "#666", marginBottom: "1rem", maxWidth: "24rem", fontSize: "0.875rem" }}>
-            Please try again or go back to the homepage.
+            This usually resolves with a quick refresh.
           </p>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
