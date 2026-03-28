@@ -56,7 +56,7 @@ import { getProductBySlugOrId } from "@/data/products";
 import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
 import { TrustMicrocopy } from "@/components/products/TrustMicrocopy";
-import { TrustStack } from "@/components/products/TrustStack";
+import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
 import { ProductSchema } from "@/components/seo/ProductSchema";
 import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
@@ -1298,9 +1298,9 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Trust Stack — social proof + trust badges */}
+            {/* Trust Badges */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
-              <TrustStack />
+              <TrustBadgesBlock compact />
             </motion.div>
 
             {/* Trust Microcopy — compliance links */}
