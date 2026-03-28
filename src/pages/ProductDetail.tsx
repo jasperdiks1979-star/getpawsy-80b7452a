@@ -519,24 +519,6 @@ const ProductDetail = () => {
   // Track if change was from autoplay (to avoid scroll interference)
   const isAutoplayChangeRef = useRef(false);
 
-  // Auto-scroll thumbnail into view (only for user-initiated changes)
-  useEffect(() => {
-    // Skip scroll if this was an autoplay change
-    if (isAutoplayChangeRef.current) {
-      isAutoplayChangeRef.current = false;
-      return;
-    }
-
-    const thumbnail = thumbnailRefs.current[selectedImage];
-    if (thumbnail) {
-      thumbnail.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
-  }, [selectedImage]);
-
   // Flatten images array (handle nested arrays from database) and filter valid URLs
   // CRITICAL: Must be wrapped in useMemo for stable hook count across renders
   const images = useMemo(() => {
