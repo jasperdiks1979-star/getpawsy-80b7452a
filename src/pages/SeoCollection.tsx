@@ -558,8 +558,12 @@ const SeoCollection = () => {
   } : null;
   return (
     <Layout>
-      {(isPriorityCategory || domConfig) && <ScrollProgressIndicator />}
+      <SectionErrorBoundary section="SeoCollection-scroll-progress">
+        {(isPriorityCategory || domConfig) && <ScrollProgressIndicator />}
+      </SectionErrorBoundary>
+      <SectionErrorBoundary section="SeoCollection-sticky-nav">
       {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
+      </SectionErrorBoundary>
       <Helmet>
         <title>{collection.meta_title || generateCollectionMetaTitle(collection.primary_keyword)}</title>
         <meta 
