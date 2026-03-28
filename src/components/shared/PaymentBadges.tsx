@@ -80,13 +80,13 @@ interface PaymentBadgesProps {
   methods?: string[];
 }
 
-export const PaymentBadges: React.FC<PaymentBadgesProps> = ({
+export const PaymentBadges = forwardRef<HTMLDivElement, PaymentBadgesProps>(function PaymentBadges({
   variant = 'dark',
   showLabel = true,
   label = 'Secure payments:',
   className = '',
   methods,
-}) => {
+}, ref) {
   const filtered = methods
     ? badges.filter(b => methods.includes(b.name))
     : badges;
