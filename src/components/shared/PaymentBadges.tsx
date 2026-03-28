@@ -97,7 +97,7 @@ export const PaymentBadges = forwardRef<HTMLDivElement, PaymentBadgesProps>(func
   const iconColor = variant === 'light' ? 'text-background/70' : 'text-foreground/70';
 
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+    <div ref={ref} className={`flex flex-wrap items-center gap-2 ${className}`}>
       {showLabel && (
         <span className={`text-xs ${labelColor}`}>{label}</span>
       )}
