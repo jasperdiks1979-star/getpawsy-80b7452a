@@ -1,1099 +1,227 @@
 {
   "/": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/shop": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/products": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/bestsellers": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/trending-pet-products": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/recent-products": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/dog": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/cat": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/dog/training": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/dog/travel": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/cat/training": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/cat/travel": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/lp/self-cleaning-litter-box": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/lp/cat-litter-box": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-cat-litter-box-2026": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-dog-car-seat-safety": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-interactive-cat-toys": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-dog-anxiety-solutions": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-cat-litter-box-reddit": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-litter-box-for-smell": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-litter-box-large-cats": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/best-litter-boxes-apartments-2026": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/slow-feeder-dog-bowls": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/indoor-cat-furniture": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/blog": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/guides": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/pet-care-guides": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/site-map": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/about": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/contact": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/shipping": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/returns": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/faq": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/how-we-test-products": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/why-trust-our-reviews": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/about-the-author": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/privacy": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/terms": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
   },
   "/affiliate-disclosure": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26"
-  },
-  "/product/1-pair-pet-grooming-cat-dog-rabbits-horse-gloves-pet-brush-glove-premium-de-0e50": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T22:06:36.283154+00:00"
-  },
-  "/product/1pc-2tier-cat-cage-playpen-indoor-pet-enclosures-kitten-kennel-house-detachable-f828": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/1pc-dog-water-fountain-outdoor-dog-pet-water-dispenser-step-on-activated-b265": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/1pc-m-size-stainless-steel-dog-bowl-pets-hanging-food-bowl-detachable-pet-cage-f09e": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/1pc-smart-pet-water-fountain-automatic-cat-water-dispenser-4-5l-cordless-dcc0": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/2-in-1-cat-stairs-tree-with-sisal-scratching-post-4-levels-pet-steps-for-112c": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/2-in-1-dog-gps-fence-tracker-wireless-gps-dog-fence-gps-dog-collar-with-32-7ada": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/2-in-1-dog-gps-fence-tracker-wireless-gps-dog-fence-gps-dog-collar-with-32-b0cf": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/2-in-1-dog-paw-cleaner-cup-soft-pet-dog-foot-cleaning-washer-brush-cup-portable-92ce": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/2-in-1-pet-grooming-gloves-brushes-for-cats-and-dogs-high-efficiency-hair-9e0a": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/2-in-1-pet-nail-clippers-with-led-light-dog-cat-special-blood-line-scissors-f25d": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/2026-new-glowing-dog-shoes-4pcs-led-light-up-anti-slip-paw-protector-for-small-9be6": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/24-inch-anti-slip-round-fluffy-plush-faux-fur-cat-bed-fits-up-to-25-lbs-pets": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T02:29:37.866536+00:00"
-  },
-  "/product/26-compact-cat-tree-with-2-condos-sisal-scratching-posts-anti-tip-cat-tower-for-8e5e": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/28-elevated-cat-bed-with-sisal-scratching-post-for-indoor-kitties-modern-cat-0750": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/29-moon-star-cat-tree-with-4-levels-jute-scratching-posts-anti-tipping-device-292d": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/29-moon-star-cat-tree-with-4-levels-jute-scratching-posts-anti-tipping-device-4cfa": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:03:03.135131+00:00"
-  },
-  "/product/3-2l-cowhorn-model-pet-water-dispenser-stainless-steel-automatic-water-fountain-9aa3": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/3-in-1-cat-steam-brush-pet-steam-brush-for-cat-dog-long-short-haired-pet-spray-67f4": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/3-in-1-pet-travel-collapsible-bowl-foldable-slow-feeder-with-strong-suction-50f9": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:03:16.634932+00:00"
-  },
-  "/product/3-tier-cat-cage-enclosure-indoor-cat-cage-playpen-with-hammock-toy-ball-ladder-3019": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-b460": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/4-levels-cat-toy-tower-turntable-roller-balls-toys-interactive-intelligence-33f1": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/41-inch-hand-woven-water-hyacinth-cat-tree-3-sisal-scratching-posts-multi-level-41e1": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:00:16.370186+00:00"
-  },
-  "/product/44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/47-2-mobile-dog-crate-with-flip-top-feeding-door-dual-access-5-caster-system-2-c431": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/48-x-36-elevated-breathable-dog-bed-w-carry-bag-dark-blue": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T00:08:20.833432+00:00"
-  },
-  "/product/49-inches-tall-cat-tree-with-ufo-top-perch-space-capsule-and-sisal-scratching-352d": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/4l-cat-water-fountain-for-pet-dog-led-drinking-water-bowl-automatic-dispenser": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:06:04.779361+00:00"
-  },
-  "/product/4pcs-cute-latex-dog-chew-toys-with-sound-interactive-biting-toys-for-dental-1c2d": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/57-multi-level-cat-tree-for-multi-cat-households-2-condos-hammock-with-sisal-80ca": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/63-large-dog-crate-furniture-for-double-dog-wooden-dog-kennel-with-2-drawers-ecef": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/64-light-gray-cat-tower-with-plush-perches-3-dangling-balls-jute-scratching-a73e": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/650nm-red-laser-pointer-pen-light-visible-single-beam-aaa-lazer-torch-10pcs-7081": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/7pcs-pet-grooming-kit-self-cleaning-brush-shedding-kit-with-nail-clipper-flea-e71b": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/84-6-in-light-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-5a57": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:07:12.331787+00:00"
-  },
-  "/product/adjustable-winter-warm-dog-hood-for-cold-weather": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/adorable-squeaky-catnip-toys-for-your-cat-or-dog-perfect-for-solo-play-tough-f9db": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/all-in-one-cactus-cat-tree-with-climbing-frame-and-cozy-nest": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/aluminum-transport-case-aluminum-car-carrier-travel-carrier-suitable-for-cats-39bb": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/american-local-tactical-pet-boobs-service-dog-harness-vest-adjustable-9204": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/anti-falling-cat-dog-feeding-water-bowl": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/automatic-circulating-filter-cat-water-fountain": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/beige-33-5-multi-level-cat-tree-with-2-tier-condo-sisal-scratching-posts-anti-b840": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/black-brown-2-in-1-dog-crate-end-table-with-charging-station-chew-resistant-1c0b": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/bow-pet-collar-large-and-small-pet-traction-collar-dog-chain": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cactus-cat-climbing-tree-2-in-1-solid-wood-base-natural-sisal-scratching-pillar-08a6": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-climbing-frames-and-multi-level-cat-towers-with-durable-scratching-posts-7caa": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-curl-scratching-board-magic-organ-cat-toy-recyclable-corrugated-cardboard-3038": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-double-bowl-cat-food-bowl-protects-cervical-vertebra": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-food-storage-container-for-cats": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-hair-cleaner-cat-hair-removal-and-adsorption-artifact-hair-brush": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T00:08:17.376579+00:00"
-  },
-  "/product/cat-litter-box-front-entry-enclosed-extra-large-litter-box-with-litter-catching-501e": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:03:14.879207+00:00"
-  },
-  "/product/cat-puzzle-toy-with-ball-and-spring-loaded-wand-felt-indoor-cat-toy-box-suction-84be": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-repellent-spray": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:03:09.15893+00:00"
-  },
-  "/product/cat-stainless-steel-cat-litter-box-for-big-cats-with-flip-cover": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-teaser-wand-toy-with-shiny-reflective-plastic-pieces": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-teaser-wand-with-a-long-pole-and-a-bell": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cat-water-fountain-stainless-steel-108oz-3-2l-cat-fountain-for-drinking-pet-b476": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/coffee-2-in-1-dog-crate-end-table-with-pull-out-feeder-chew-resistant-metal-bc94": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-ca67": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/covered-cat-litter-box-with-lid-scoop-deodorizing-bags-for-odor-control-privacy-e447": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/cute-puffer-fish-shaped-cat-climbing-frame-three-tier-climbing-tower-with-base-edc3": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dark-gray-33-5-multi-level-cat-tree-with-2-tier-condo-sisal-scratching-posts-7d9f": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dedicated-cat-bed-and-large-cat-tree-combo-for-home-use": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/diy-modular-cat-wall-climbing-frame-4-cat-balls-multi-tiered-cat-tree-wall-5591": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:05:40.323882+00:00"
-  },
-  "/product/dog-and-cat-grooming-trimmer-professional-pet-salon-tool-for-trimming-dog-fur-12a3": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-and-cat-plaid-double-layer-thickened-pet-bib-for-dogs": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-anti-pull-automatic-retractable-leash-auto-retracting": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-bath-brush-pet-bath-comb-brush-soothing-massage-rubber-comb-pet-bathing-3bfd": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-bed-pet-sofa": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-beds-for-small-dogs-round-plush-cat-litter-kennel-pet-nest-mat-puppy-beds": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-bowls-pet-feeding-storage": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-bowls-with-stand-adjustable-height-double-bowl-feeder-with-slow-feeding-294c": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-car-seat-cover-view-mesh-pet-carrier-hammock-safety-protector-car-rear-back-ede4": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-chew-toys-for-teeth-cleaning-pet-sausage-chew-brush-pet-chew-clean-buddy": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-chew-toys-two-pack-dog-toothbrush-care-cleaning-stick-toothbrush-chew-stick-af8d": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-clothes-keep-warm-in-autumn-and-winter": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-collar-traction-rope": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-cot-cooling-pet-bed-3": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-gps-tracker-real-time-anti-lost-pet-tracker-with-geofence-flash-light-and-67a4": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-house-no-shipments-on-weekends": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-liquid-lick-bow-dog-slow-feeding-plate-non-slip-spherical-pet-licking-bowl": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-nail-grinder-2-speeds-quiet-usb-rechargeable-pet-nail-grinder-professional-142f": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-outdoor-leash-high-density-nylon": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-puzzle-toys-interactive-treat-puzzle-dog-enrichment-toys-for-large-medium-9901": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-ramp": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-rubber-ball-with-bell-sound-2-pack-interactive-pet-chew-toy-for-puppies-and-a6f8": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-sofa-bed-for-small-dogs-with-soft-cushion-washable-cover-non-slip-foot-pads-f675": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-stroller-pet-stroller": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-sun-proof-sun-proof-uv-proof-goggles": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-training-collar": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-training-collar-for-2-dogs": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-training-collar-for-2-dogs-black-and-red": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/dog-water-cup-drinking-food-garbage-bag-three-in-one-portable-small-multi-ec88": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/double-layer-rice-cat-litter-mat": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/durable-cat-scratcher-for-all-four-seasons": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/durable-sisal-rope-with-hanging-ball-toy-cat-scratching-post-indoor-space-70b5": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/durian-shape-cat-scratching-bed-cat-house-comfortable-sisal-rope-scratching-a7ee": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/elastic-extendable-reflective-dog-leash": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T10:13:31.166524+00:00"
-  },
-  "/product/enclosed-sleeping-bag-pet-bed-for-winter-warmth": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/explosion-proof-dog-leash-for-small-and-medium-sized-dogs-suitable-for-corgi-294e": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/extra-large-fully-enclosed-flip-top-cat-litter-box-anti-splash-anti-tracking-156e": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/fashion-embossed-training-long-rope-an-auxiliary-tool-for-recall-memory-and-e2b1": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/fashionable-new-tactical-collar-allows-you-to-better-control-your-beloved-dog": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/fish-shaped-dog-treat-dispenser-toy-food-grade-silicone-slow-feeder-for-boredom-38f1": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/flower-cat-tree-no-shipments-on-weekends": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/foldable-pet-stroller-for-small-dogs-cats": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/folded-silicone-pet-dog-bowl": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/front-flip-door-dual-opening-anti-splashing-anti-tracking-odor-locking-cat-e265": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/fully-enclosed-dog-house-tent-with-extra-thick-insulation-for-warmth-in-winter": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:04:22.451298+00:00"
-  },
-  "/product/furniture-style-dog-crate-end-table-with-removable-door-panel-dog-crate-bed-5b05": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/halloween-cat-tree-large-cat-tower-with-2-spacious-cat-condos-2-padded-perches-b0d7": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/heat-transfer-printing-pvc-coated-rubberized-waterproof-traction-rope-set": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/high-quality-durable-pet-cat-dog-vehicle-leash-nylon-adjustable-car-seat-dog-314f": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/hooded-cat-litter-box-w-litter-mat-litter-particle-catching-gray": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/indoor-wooden-cat-climbing-frame-cat-tower-cat-house-with-cat-scratching-board-e08f": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/interactive-cat-toys-mouse-with-led-lights-forindoor-cats-usb-rechargeable-cat-ec09": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/interactive-dog-treat-ball-a-chewing-toy-suitable-for-small-and-medium-sized-44d4": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:00:30.746845+00:00"
-  },
-  "/product/interactive-rolling-cat-ball": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/interactive-windmill-cat-toy-with-led-light-ball-suction-cup-and-catnip-indoor-02cc": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/iq-puzzle-health-dog-bowl-mat-slow-feeding-training-blanket": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/kitten-harness-vest-with-wing-decoration-strap-set-for-cats-and-small-dogs-5ae8": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/large-size-cat-scratching-board-23-6-inch-l-shape-cat-scratching-pad-wall-fac2": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/lassot-portable-pull-out-water-bowl-for-dogs-large-capacity-perfect-for-camping-62a5": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/led-laser-electronic-rolling-pet-funny-cat-toy-ball": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:03:07.628749+00:00"
-  },
-  "/product/led-luminous-pet-dog-collar-night": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/led-pet-safety-halo-style-collar": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/light-gray-33-5-multi-level-cat-tree-with-2-tier-condo-sisal-scratching-posts-b149": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/long-lasting-fragrance-fun-and-interactive-cat-spray-for-pets": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/luxury-alloy-dog-firewood-walking-collar": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/made4pets-pet-dog-car-back-seat-cover-back-seat-extension-pad-can-bear-400-530a": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:04:31.927257+00:00"
-  },
-  "/product/multi-functional-cat-scratcher-18-5-x12-x21-scratching-surface-tunnel-wooden-3d00": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/multi-functional-cat-scratching-board-with-ball-track-various-colours-of-mat-9cfc": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/multi-functional-minimalist-outdoor-dog-harness": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/multi-level-cat-tree-with-2-scratching-pads-dual-door-cat-condo-anti-tipping-fdcb": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/multi-level-natural-pear-wood-cat-tree-sisal-scratching-posts-plush-balls-long-1175": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/multiple-colour-velvet-personalise-dog-collar-leash-set-with-bow": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/muttco-pet-collar-bow-traction-set": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/nala-pet-dog-collar-traction-rope": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/natural-rubber-chew-toys-dog-toys-for-aggressive-chewers-dog-toys-for-medium-6b22": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/natural-rubber-horseshoe-shaped-chew-toys-dog-toys-for-aggressive-chewers-dog-6e60": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/new-fashion-transparent-pet-bag-cat-and-dog-travel-backpack-bags": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/new-pet-collar": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/new-pet-flea-and-tick-collar": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T10:13:31.166524+00:00"
-  },
-  "/product/new-style-pvc-coated-two-color-waterproof-training-rope": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/nylon-anti-grind-dog-leash-collar": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/outdoor-cat-tunnel": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pawhut-cat-tree-for-indoor-cats-with-hammock-cat-tower-green": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pawhut-dog-car-ramp-extra-long-and-wide-non-slip-surface-folding-portable-pet-7c77": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:47:09.369744+00:00"
-  },
-  "/product/pawhut-dog-crate-furniture-with-360-rotatable-removable-dog-bowls-dog-kennel-b28d": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pawhut-pet-feeding-station-pet-dish-bowl-set-with-storage-2-elevated-dog-bowls-fddf": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pawhut-pet-sofa-dog-sofa-for-small-dogs-with-storage-dark-blue": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pawhut-two-rooms-design-dog-whelping-box-with-washable-pee-pad-adjustable-door-51c9": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:04:27.913881+00:00"
-  },
-  "/product/pawhut-wall-mounted-cat-tree-4-layer-cat-wall-shelves-furniture-with-scratching-84b3": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pearl-design-pet-sofa-for-medium-and-large-sized-dogs-pet-bed-with-cushion-and-eb6e": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T09:06:51.726299+00:00"
-  },
-  "/product/pet-bowl-oblique-mouth-cat-bowl-food-bowl-dog-bowl-method-bucket-food-bowl": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-canvas-shoulder-bag-cute-animal-shapedcat-carrier-canvas-bags-portable-pet-daf9": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-carrier-backpack-expandable-cat-dog-carrier-with-back-extension-breathable-0381": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-cleaning-wipes": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-clothes-dog-anxiety-jacket-warm-vest": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-corn-chew-stick-for-dogs-food-grade-silicone-teething-toy-durable-bite-7bcc": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-creative-toilet-water-dispenser": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-dog-carrier-bag-carrier-for-dogs-backpack-out-double-shoulder-portable-b713": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T02:57:53.241452+00:00"
-  },
-  "/product/pet-dog-rubber-ball-toys-for-dogs-resistance-to-bite-dog-chew-toys-puppy-pets-e0f1": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-foldable-canvas-rear-seat-carrier-bag": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T10:13:32.539493+00:00"
-  },
-  "/product/pet-interactive-sound-ball-the-mellow-dog-cat-pet-voice-ball-interactive-pet-439e": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:00:24.448992+00:00"
-  },
-  "/product/pet-mint-fish-toy-three-colors-are-randomly-issued-shovel-officials-must-enter-e487": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-silicone-collar-and-leash-set-comes-with-a-suitable-for-small-and-large-4900": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:01:50.071115+00:00"
-  },
-  "/product/pet-skin-fur-and-wound-care-essence-for-cleaning-and-moisturizing": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:04:29.186326+00:00"
-  },
-  "/product/pet-slow-food-bowl-anti-choking-cat-bowl-3in1-interactive-dog-feeder-puzzle-29d9": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-stainless-steel-double-bowl-dog-feeder-in-macaron-colors": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:04:33.415608+00:00"
-  },
-  "/product/pet-sunglasses-dog-cat-windproof-glasses-accessories-goggles-small-medium-dog-3fd1": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-supplies-bowl-ceramic-cat-bowl-dog-bowl-oblique-mouth": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pet-training-treat-pouch-with-food-grade-silicone-soft-skin-friendly-dog-treat-4f84": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:03:13.531217+00:00"
-  },
-  "/product/pet-trash-bag-dog-poop-bags-for-waste-refuse-cleanup": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T21:45:27.41754+00:00"
-  },
-  "/product/pet-wash-pad-artificial-grass-pad-thats-breathable-and-highly-absorbent": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:04:25.348885+00:00"
-  },
-  "/product/pet-water-fountain-304-stainless-steel-cat-water-dispenser": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/pink-blue-options-1pc-portable-foldable-pet-tent-exercise-pen-kennel-removable-c955": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/plush-dog-bed-sofa-pet-mat-for-warmth-in-fall-and-winter": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/plush-little-mouse-cat-turntable-automatic-electric-pet-toy-for-cats": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/plush-pet-dog-flying-discs-chew-toys-interactivetug-of-war-dog-toys-with-bells-6949": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/portable-automatic-circulating-cat-water-fountain": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/portable-cats-dogs-garbage-bag-holder-pet-poop-bags-carrier-dispenser": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/portable-outdoor-cat-carrier-large-capacity-trolley-bag-with-shoulder-straps": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/portable-squeeze-style-dog-water-bowl-and-cat-drinking-fountain": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/prokel-dog-rope-fetch-exercise-toyformedium-large-aggressive-chewers-e63b": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/prokel-dog-toys-squeak-chew-toys-tough-ballfor-medium-large-extra-aggressive-0add": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/prokel-pet-toys-cat-catnip-toys-flappingsquirrel-rechargeable-touch-activated-c2cc": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/raised-dog-couch-with-comfortable-cushion-pine-wood-legs-foot-pads-for-large-ecf6": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/reestanding-wooden-pet-gate-with-support-feet-non-slip-mats-for-indoor-stairway-fe00": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/reflective-collar-waterproof-holder-case-for-airtag-air-tag-airtags-protective-d44b": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/reflective-leash-set-it-can-reflect-light-sources-effectively-enhancing-the-90ca": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/removable-and-washable-extra-thick-all-season-dog-sofa-bed-with-a-plush-5a1c": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:06:07.83462+00:00"
-  },
-  "/product/replacement-silicone-mat-accessory-for-cat-litter-boxes": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/rubber-carrot-dog-toy-for-chewing-dogs-for-training-and-cleaning-durable-fe50": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/rubber-crazy-monster-squeaky-toys-for-dogs-toy-for-chewers-non-toxic-chew-toys": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/s-m-l-dog-collar-leather-dog-collar-for-small-medium-and-large-dogs-basic-f384": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/set-of-5pcs-christmas-dog-rope-chew-toys-dog-interactive-toys-set-for-puppy-876b": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/single-shoulder-bag-for-dogs-and-cats": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/small-4-in-1-cat-tree-tower-with-self-grooming-brush-and-natural-sisal-a59f": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T11:30:27.50616+00:00"
-  },
-  "/product/small-dog-pet-cotton-padded-jacket": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/smart-pet-water-fountain-automatic-cat-water-dispenser-4-5l-cordless-685f": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/soft-warm-fleece-puppy-cat-bed-dog-cozy-nest-sofa-bed-cushion-mat-xxl-size": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/solid-wood-space-saving-cat-tree": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:01:45.640988+00:00"
-  },
-  "/product/spaceship-top-entry-fully-enclosed-cat-litter-box-with-free-litter-mat-anti-32e5": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/stainless-steel-dog-bowl-pets-hanging-food-bowl-detachable-pet-cage-food-water-3877": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/stainless-steel-pet-water-fountain-filters-pet-water-fountain-filters-8-pack-replacement-filters-wit": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T10:13:34.136317+00:00"
-  },
-  "/product/summer-cartoon-pet-ice-bib-for-cats-and-dogs": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/tactical-pet-chest-service-dog-harness-vest-adjustable-reflective-dog-harness-91a5": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-047d": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/tactical-service-dog-harness-with-handle-no-pull-adjustable-reflective-pet-vest-0e22": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/tainless-steel-dog-bowl-pets-hanging-food-bowl-detachable-pet": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/the-same-style-dog-coat-is-durable-long-lasting-and-cold-resistant": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/thickened-warm-plaid-pp-cotton-dog-bed": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T10:13:28.681837+00:00"
-  },
-  "/product/transparent-and-visible-pet-feeding-and-drinking-dispenser-automatically-2c9a": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/traveling-out-portable-dog-water-dispenser": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/u-shaped-cooling-pad-for-cats-and-dogs-cat-and-dog-neck-sleeping-pad-summer-ice-510d": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:03:18.487804+00:00"
-  },
-  "/product/us-local-stock-hiphoppet-new-latex-interactive-dog-chew-toys-cute-duck-shape-6044": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/vertical-money-tree-cat-scratching-pole-sisal-wear-resistant-cat-scratching-2a89": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/wicker-dog-house-outdoor-with-canopy-rattan-dog-bed-with-water-resistant-52b0": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:08:42.556318+00:00"
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28"
+  },
+  "/product/automatic-cat-litter-box-self-cleaning-app-control": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:02:50.341564+00:00"
+  },
+  "/product/cactus-cat-climbing-tree-all-in-one-condo": {
+    "lastmod": "2026-03-27",
+    "updatedAt": "2026-03-27T09:56:16.140735+00:00"
+  },
+  "/product/cactus-cat-tree-scratching-post-solid-wood": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:01:07.89758+00:00"
+  },
+  "/product/elevated-cat-tree-sisal-scratching-post-with-bed": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:00:58.344525+00:00"
+  },
+  "/product/elevated-cooling-dog-bed-outdoor-pet-cot": {
+    "lastmod": "2026-03-27",
+    "updatedAt": "2026-03-27T09:56:15.471679+00:00"
+  },
+  "/product/enclosed-cat-litter-box-extra-large-flip-top": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:04:14.131175+00:00"
+  },
+  "/product/enclosed-cat-litter-box-front-entry-extra-large": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:14:34.634047+00:00"
+  },
+  "/product/expandable-pet-carrier-backpack-breathable": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:00:37.737102+00:00"
+  },
+  "/product/foldable-dog-stroller-pet-travel-cart": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:04:26.460902+00:00"
+  },
+  "/product/hidden-cat-litter-box-furniture-enclosure": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:04:31.007286+00:00"
+  },
+  "/product/modern-cat-tree-35-inch-wooden-scratching-tower": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:02:54.616403+00:00"
+  },
+  "/product/multi-level-cat-tree-hammock-sisal-posts": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:01:45.270832+00:00"
+  },
+  "/product/pet-solid-wood-paw-print-cremation-urn": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T04:30:12.102427+00:00"
+  },
+  "/product/soil-free-mixed-cat-grass-treats": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T04:30:30.269963+00:00"
+  },
+  "/product/tall-cat-tree-ufo-perch-space-capsule-sisal": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:10:35.752345+00:00"
   },
   "/product/widened-support-plate-car-dog-bed-rear-seat-pet-pad": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
+    "lastmod": "2026-03-27",
+    "updatedAt": "2026-03-27T09:56:15.622014+00:00"
   },
-  "/product/winter-warmth-thickened-universal-pet-bed": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/wired-automatic-pet-fountain-dog-water-dispenser-automatic-sensing-function": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/wooden-dog-agility-seesaw-for-training-and-exercise-weather-resistant-83-l-x-16-cbfd": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/wooden-door-mounted-cat-tree-wall-mounted-cat-tree": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/xl-stainless-steel-litter-box-w-flip-top-scoop-step-top-side-entry-enclosed-fe5e": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/yegbong-pet-moisturizing-paw-balm-suitable-for-cats-and-dogs-protects-and-42ed": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:00:22.527202+00:00"
-  },
-  "/product/youmile-hip-joint-health-supplement-for-dogs-120-chews-glucosamine-chondroitin-f72f": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
-  },
-  "/product/youmile-omega-3-for-dogs-120ct-fish-oil-treats-allergy-itch-relief-skin-coat-4810": {
-    "lastmod": "2026-03-26",
-    "updatedAt": "2026-03-26T03:01:48.612562+00:00"
-  },
-  "/product/youmile-probiotics-for-dogs-soft-chews-for-seasonal-allergies-gut-and-digestive-1596": {
-    "lastmod": "2026-03-25",
-    "updatedAt": "2026-03-25T17:59:18.128497+00:00"
+  "/product/xl-stainless-steel-cat-litter-box-flip-top": {
+    "lastmod": "2026-03-27",
+    "updatedAt": "2026-03-27T09:56:15.895334+00:00"
   },
   "/collections/best-interactive-cat-toys": {
     "lastmod": "2026-02-21",
@@ -1214,6 +342,30 @@
   "/collections/self-cleaning-litter-box": {
     "lastmod": "2026-03-12",
     "updatedAt": "2026-03-12T19:42:07.666998+00:00"
+  },
+  "/guides/self-play-cat-toys": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:01:43.188775+00:00"
+  },
+  "/guides/smart-cat-toys": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:01:42.544044+00:00"
+  },
+  "/guides/interactive-toys-for-bored-cats": {
+    "lastmod": "2026-03-28",
+    "updatedAt": "2026-03-28T03:01:41.964746+00:00"
+  },
+  "/guides/best-toys-for-indoor-kittens": {
+    "lastmod": "2026-03-27",
+    "updatedAt": "2026-03-27T03:01:56.57533+00:00"
+  },
+  "/guides/best-toys-for-active-cats": {
+    "lastmod": "2026-03-27",
+    "updatedAt": "2026-03-27T03:01:55.898095+00:00"
+  },
+  "/guides/cat-toys-with-feathers": {
+    "lastmod": "2026-03-27",
+    "updatedAt": "2026-03-27T03:01:55.122029+00:00"
   },
   "/guides/cat-toys-for-lazy-cats": {
     "lastmod": "2026-03-26",
