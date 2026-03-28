@@ -3,8 +3,13 @@ import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
-
 import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
+import { HomepageFAQ } from "@/components/home/HomepageFAQ";
+import {
+  SUPPORT_EMAIL,
+  DELIVERY_TIME_STANDARD,
+  SITE_LAST_UPDATED,
+} from "@/lib/shipping-constants";
 
 const WhyChooseSection = lazy(() => import("@/components/home/WhyChooseSection").then(m => ({ default: m.default ?? m.WhyChooseSection })));
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
@@ -74,22 +79,33 @@ const HomePage = () => {
         <TrustTransparencySection />
       </Suspense>
 
+      <HomepageFAQ />
+
       <section className="py-10 md:py-14 bg-background border-t border-border/30" aria-label="About GetPawsy">
         <div className="container px-4 md:px-6 max-w-2xl mx-auto text-center">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
             About GetPawsy
           </h2>
           <div className="space-y-2 text-sm md:text-base text-muted-foreground leading-relaxed">
-            <p>GetPawsy is operated by Skidzo.</p>
-            <p>We focus on modern, practical pet solutions for everyday life.</p>
-            <p>All orders are processed securely and shipped within the United States.</p>
+            <p>
+              GetPawsy is a US-focused pet supply store operated by Skidzo, a registered business
+              based in the Netherlands. We serve customers across all 50 states with fast,
+              reliable shipping ({DELIVERY_TIME_STANDARD}).
+            </p>
+            <p>
+              Every product is carefully selected for quality, safety, and real-world usability.
+              We focus on practical pet solutions that make life easier for pet owners.
+            </p>
             <p>
               Customer support:{' '}
-              <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">
-                info@getpawsy.pet
-              </a>
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">
+                {SUPPORT_EMAIL}
+              </a>{' '}
+              — we respond within 24 hours.
             </p>
-            <p>We are committed to providing a safe and transparent shopping experience for pet owners.</p>
+            <p className="text-xs text-muted-foreground/60 mt-4">
+              Last updated: {SITE_LAST_UPDATED}
+            </p>
           </div>
         </div>
       </section>
