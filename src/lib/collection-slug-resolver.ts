@@ -52,7 +52,6 @@ const SLUG_ALIASES: Record<string, string> = {
   'multipet': 'multi-pet',
   'all-pets': 'multi-pet',
   'pet': 'multi-pet',
-  'all': 'multi-pet',
   // Dog training variants / legacy redirects
   'leash-control': 'dog-leash-control',
   'potty-training': 'dog-potty-training',
