@@ -1858,8 +1858,8 @@ const ProductDetail = () => {
         )}
       </AnimatePresence>
 
-      {/* Spacer for sticky bar */}
-      <div className={`transition-all ${showStickyBar ? "h-20" : "h-0"}`} />
+      {/* Spacer for sticky bar — fixed height, no transition to prevent layout oscillation */}
+      {showStickyBar && <div className="h-20" />}
     </Layout>
   );
 };
