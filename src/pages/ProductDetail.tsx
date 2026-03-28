@@ -645,16 +645,6 @@ const ProductDetail = () => {
   const availabilityResult = computeAvailability(product, variantStock);
   const inStock = availabilityResult.isInStock;
 
-  // Temporary debug log for stock diagnosis
-  console.log("STOCK DEBUG", {
-    productId: product.id,
-    productStock: product.stock,
-    productIsActive: product.is_active,
-    variantStock,
-    selectedVariantVid: selectedVariant?.vid,
-    inStock,
-    reason: availabilityResult.reason,
-  });
 
   const handleAddToCart = () => {
     // Prevent adding out-of-stock items
