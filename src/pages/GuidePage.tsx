@@ -925,17 +925,18 @@ const GuidePage = () => {
           </p>
         </section>
 
-        {/* Recommended Products for Your Pet — crawlable product cards */}
-        {guide.relatedCategories.length > 0 && (
-          <RecommendedProductsBlock
-            categories={guide.relatedCategories.map(cat =>
-              cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-            )}
-            title="Recommended Products for Your Pet"
-            limit={4}
-            className="mb-12"
-          />
-        )}
+        <SectionErrorBoundary section="GuidePage-recommended-products">
+          {guide.relatedCategories.length > 0 && (
+            <RecommendedProductsBlock
+              categories={guide.relatedCategories.map(cat =>
+                cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+              )}
+              title="Recommended Products for Your Pet"
+              limit={4}
+              className="mb-12"
+            />
+          )}
+        </SectionErrorBoundary>
 
         {/* Shop Category CTA — Premium */}
         {guide.relatedCategories.length > 0 && (
