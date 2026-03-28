@@ -843,37 +843,39 @@ const SeoCollection = () => {
           </section>
         )}
 
-        {/* Domination: Featured Snippet Block */}
-        {domConfig && (
-          <FeaturedSnippetBlock
-            directAnswer={domConfig.directAnswer}
-            bulletUSPs={domConfig.bulletUSPs}
-            quickComparison={domConfig.quickComparison}
-          />
-        )}
+        <SectionErrorBoundary section="SeoCollection-domination-blocks">
+          {/* Domination: Featured Snippet Block */}
+          {domConfig && (
+            <FeaturedSnippetBlock
+              directAnswer={domConfig.directAnswer}
+              bulletUSPs={domConfig.bulletUSPs}
+              quickComparison={domConfig.quickComparison}
+            />
+          )}
 
-        {/* Expert Block + Comparison for priority categories */}
-        {isPriorityCategory && (
-          <ExpertBlock categoryName={collection.name.replace(/\s–.*$/, '')} />
-        )}
-        {comparisonData && (
-          <div id="comparison">
-            <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
+          {/* Expert Block + Comparison for priority categories */}
+          {isPriorityCategory && (
+            <ExpertBlock categoryName={collection.name.replace(/\s–.*$/, '')} />
+          )}
+          {comparisonData && (
+            <div id="comparison">
+              <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
+            </div>
+          )}
+
+          {/* Cat Trees Hub: authority content — BELOW products */}
+          {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
+
+          {/* Training Collection Cross-Links — bidirectional silo linking */}
+          {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
+            <TrainingCollectionCrossLinks currentSlug={collection.slug} />
+          )}
+
+          {/* Expert Guides — curated guide links for this collection */}
+          <div id="expert-guides">
+            <CollectionExpertGuides collectionSlug={collection.slug} />
           </div>
-        )}
-
-        {/* Cat Trees Hub: authority content — BELOW products */}
-        {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
-
-        {/* Training Collection Cross-Links — bidirectional silo linking */}
-        {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
-          <TrainingCollectionCrossLinks currentSlug={collection.slug} />
-        )}
-
-        {/* Expert Guides — curated guide links for this collection */}
-        <div id="expert-guides">
-          <CollectionExpertGuides collectionSlug={collection.slug} />
-        </div>
+        </SectionErrorBoundary>
 
         {/* Sub-Category Navigation — "Explore by Type" (pillar pages only) */}
         {subCollections.length > 0 && (
