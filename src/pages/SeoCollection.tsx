@@ -910,8 +910,9 @@ const SeoCollection = () => {
           </section>
         )}
 
-        {/* Related Categories Block — sibling category cross-links */}
-        <RelatedCategoriesBlock collectionSlug={collection.slug} />
+        <SectionErrorBoundary section="SeoCollection-related-categories">
+          <RelatedCategoriesBlock collectionSlug={collection.slug} />
+        </SectionErrorBoundary>
 
         {/* Back to Pillar (sub-collection pages only) */}
         {parentCollection && (
@@ -935,22 +936,22 @@ const SeoCollection = () => {
           </p>
         </section>
 
-        {/* Trust Reinforcement — moved to compact strip above products, removed duplicate */}
+        <SectionErrorBoundary section="SeoCollection-paa-midcta">
+          {/* Domination: PAA Expansion Section */}
+          {domConfig && domConfig.paaQuestions.length > 0 && (
+            <PAASection questions={domConfig.paaQuestions} />
+          )}
 
-        {/* Domination: PAA Expansion Section */}
-        {domConfig && domConfig.paaQuestions.length > 0 && (
-          <PAASection questions={domConfig.paaQuestions} />
-        )}
-
-        {/* Domination: Mid-Content CTA */}
-        {domConfig && (
-          <MidContentCTA
-            headline={`Find the Best ${collection.name.replace(/^Best\s+/i, '').replace(/\s–.*$/, '')} for Your Pet`}
-            subtext="Browse our curated selection — every product is quality-tested with free US shipping over $35."
-            ctaText="Shop Now"
-            ctaHref="#products"
-          />
-        )}
+          {/* Domination: Mid-Content CTA */}
+          {domConfig && (
+            <MidContentCTA
+              headline={`Find the Best ${collection.name.replace(/^Best\s+/i, '').replace(/\s–.*$/, '')} for Your Pet`}
+              subtext="Browse our curated selection — every product is quality-tested with free US shipping over $35."
+              ctaText="Shop Now"
+              ctaHref="#products"
+            />
+          )}
+        </SectionErrorBoundary>
 
         {/* Section C: Mini FAQ */}
         {mergedFaqs.length > 0 && (
@@ -976,35 +977,37 @@ const SeoCollection = () => {
           </section>
         )}
 
-        {/* Soft Email Capture for SEO Traffic */}
-        <SoftEmailCapture 
-          variant="collection" 
-          className="mb-12"
-        />
+        <SectionErrorBoundary section="SeoCollection-bottom-sections">
+          {/* Soft Email Capture for SEO Traffic */}
+          <SoftEmailCapture 
+            variant="collection" 
+            className="mb-12"
+          />
 
-        {/* Related Guides — dynamic keyword-matched blog posts */}
-        <CategoryRelatedGuides 
-          categoryName={collection.name}
-          categorySlug={collection.slug}
-          primaryKeyword={collection.primary_keyword}
-        />
+          {/* Related Guides — dynamic keyword-matched blog posts */}
+          <CategoryRelatedGuides 
+            categoryName={collection.name}
+            categorySlug={collection.slug}
+            primaryKeyword={collection.primary_keyword}
+          />
 
-        {/* Popular in this Category — best-selling products with anchor variation */}
-        <CategoryPopularProducts 
-          categoryName={collection.name}
-          products={products}
-        />
+          {/* Popular in this Category — best-selling products with anchor variation */}
+          <CategoryPopularProducts 
+            categoryName={collection.name}
+            products={products}
+          />
 
-        {/* Cluster Links — contextual paragraph linking to supporting pages */}
-        <CategoryClusterLinks 
-          categoryName={collection.name}
-          categorySlug={collection.slug}
-          relatedSlugs={collection.related_collection_slugs}
-          subCollections={subCollections}
-        />
+          {/* Cluster Links — contextual paragraph linking to supporting pages */}
+          <CategoryClusterLinks 
+            categoryName={collection.name}
+            categorySlug={collection.slug}
+            relatedSlugs={collection.related_collection_slugs}
+            subCollections={subCollections}
+          />
 
-        {/* Cross-Collection Links — money collection cross-linking */}
-        <CrossCollectionLinks currentSlug={collection.slug} />
+          {/* Cross-Collection Links — money collection cross-linking */}
+          <CrossCollectionLinks currentSlug={collection.slug} />
+        </SectionErrorBoundary>
 
         {/* Section D: Internal Links */}
         <section className="grid md:grid-cols-2 gap-6">
