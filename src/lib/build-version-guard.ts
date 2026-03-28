@@ -69,7 +69,7 @@ export function runBuildVersionGuard(): BuildGuardResult {
     // Build mismatch detected
     console.warn(`[BUILD-GUARD] Build changed: ${lastSeen} → ${currentBuild}`);
 
-    // Use UNIFIED reload guard — shared with index.html crash detector
+    // Use UNIFIED reload guard — shared with index.html boot resilience
     const guardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
     const reloadCount = parseInt(sessionStorage.getItem(guardKey) || '0', 10) || 0;
     if (reloadCount >= 1 || sessionStorage.getItem(SS_RELOAD_GUARD) === currentBuild) {

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- EMERGENCY: Global crash detector - catches fatal JS errors before React loads -->
+    <!-- Boot resilience: handles chunk load failures and version mismatches -->
     <script>
       window.__BOOT_OK__ = false;
       window.__BOOT_ERRORS__ = [];
@@ -45,7 +45,7 @@
         if (!isBenignError(e.message)) {
           window.__BOOT_FATAL_ERRORS__.push({ type: 'error', msg: e.message, file: e.filename, line: e.lineno, ts: Date.now() });
         }
-        console.error('[CRASH_DETECT] JS ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
+        console.warn('[BOOT] JS error:', e.message);
       });
       window.addEventListener('unhandledrejection', function(e) {
         var msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
@@ -53,7 +53,7 @@
         if (!isBenignError(msg)) {
           window.__BOOT_FATAL_ERRORS__.push({ type: 'rejection', msg: msg, ts: Date.now() });
         }
-        console.error('[CRASH_DETECT] PROMISE REJECTION:', msg);
+        console.warn('[BOOT] Unhandled rejection:', msg);
       });
 
       // ── UNIFIED RELOAD GUARD ──────────────────────────────────────
@@ -91,7 +91,7 @@
           return;
         }
         try { sessionStorage.setItem(RELOAD_GUARD_KEY, String(count + 1)); } catch(_) {}
-        console.warn('[CRASH_DETECT] Static chunk load failed — auto-reloading once');
+        console.warn('[BOOT] Chunk load failed — refreshing once');
         // Synchronous redirect — no async cache clearing to avoid race conditions
         window.location.replace(window.location.pathname + '?cb=' + Date.now());
       }
@@ -140,7 +140,7 @@
         if (!window.__BOOT_OK__) {
           var fatal = window.__BOOT_FATAL_ERRORS__;
           if (fatal && fatal.length >= 2) {
-            console.error('[CRASH_DETECT] Boot failed with ' + fatal.length + ' fatal errors after 10s');
+            console.warn('[BOOT] Multiple errors detected — showing recovery option');
             showChunkRecovery();
           }
         }

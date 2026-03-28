@@ -56,6 +56,43 @@ const NOINDEX_PREFIXES: string[] = [
   '/terms-iframe',
   '/compliance',
   '/merchant-fix-checklist',
+  // Reduce footprint: noindex low-value / duplicate / off-niche pages
+  '/bestsellers',
+  '/trending-pet-products',
+  '/recent-products',
+  '/shop',
+  '/products',
+  '/pet-care-guides',
+  '/site-map',
+  '/how-we-test-products',
+  '/why-trust-our-reviews',
+  '/about-the-author',
+  '/affiliate-disclosure',
+  '/editorial-guidelines',
+  '/lp/',
+  '/best-cat-litter-box-2026',
+  '/best-dog-car-seat-safety',
+  '/best-interactive-cat-toys',
+  '/best-dog-anxiety-solutions',
+  '/best-cat-litter-box-reddit',
+  '/best-litter-box-for-smell',
+  '/best-litter-box-large-cats',
+  '/best-litter-boxes-apartments-2026',
+  '/slow-feeder-dog-bowls',
+  '/indoor-cat-furniture',
+];
+
+/**
+ * Specific guide slugs that are off-niche or thin content → noindex.
+ */
+const NOINDEX_GUIDE_SLUGS: string[] = [
+  'how-to-choose-guinea-pig-cage',
+  'guinea-pig-cage-vs-playpen',
+  'outdoor-dog-games-enrichment',
+  'outdoor-dog-games-2026',
+  'summer-dog-activities',
+  'backyard-enrichment-for-dogs',
+  'how-to-tire-out-a-dog-fast',
 ];
 
 /**
@@ -126,6 +163,12 @@ export function getRobotsDirective(pathname: string, search: string = ''): Robot
   // NOINDEX prefixes
   for (const prefix of NOINDEX_PREFIXES) {
     if (clean === prefix || clean.startsWith(prefix + '/')) return 'noindex';
+  }
+
+  // Off-niche guide slugs → noindex-follow (preserve link equity)
+  if (clean.startsWith('/guides/')) {
+    const slug = clean.replace('/guides/', '');
+    if (NOINDEX_GUIDE_SLUGS.includes(slug)) return 'noindex-follow';
   }
 
   // INDEXABLE prefixes (safety-net)
