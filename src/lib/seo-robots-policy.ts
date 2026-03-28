@@ -165,6 +165,12 @@ export function getRobotsDirective(pathname: string, search: string = ''): Robot
     if (clean === prefix || clean.startsWith(prefix + '/')) return 'noindex';
   }
 
+  // Off-niche guide slugs → noindex-follow (preserve link equity)
+  if (clean.startsWith('/guides/')) {
+    const slug = clean.replace('/guides/', '');
+    if (NOINDEX_GUIDE_SLUGS.includes(slug)) return 'noindex-follow';
+  }
+
   // INDEXABLE prefixes (safety-net)
   for (const prefix of INDEXABLE_PREFIXES) {
     if (clean === prefix || clean.startsWith(prefix)) return 'index';
