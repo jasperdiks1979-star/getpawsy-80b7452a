@@ -519,24 +519,6 @@ const ProductDetail = () => {
   // Track if change was from autoplay (to avoid scroll interference)
   const isAutoplayChangeRef = useRef(false);
 
-  // Auto-scroll thumbnail into view (only for user-initiated changes)
-  useEffect(() => {
-    // Skip scroll if this was an autoplay change
-    if (isAutoplayChangeRef.current) {
-      isAutoplayChangeRef.current = false;
-      return;
-    }
-
-    const thumbnail = thumbnailRefs.current[selectedImage];
-    if (thumbnail) {
-      thumbnail.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
-  }, [selectedImage]);
-
   // Flatten images array (handle nested arrays from database) and filter valid URLs
   // CRITICAL: Must be wrapped in useMemo for stable hook count across renders
   const images = useMemo(() => {
@@ -554,19 +536,7 @@ const ProductDetail = () => {
     return rawImages.length > 0 ? rawImages : product?.image_url ? [product.image_url] : ["/placeholder.svg"];
   }, [product?.images, product?.image_url]);
 
-  // Auto-slideshow effect - moved before early returns to follow hooks rules
-  useEffect(() => {
-    if (!product || images.length <= 1 || autoplayPaused || lightboxOpen) return;
-
-    const interval = setInterval(() => {
-      isAutoplayChangeRef.current = true; // Mark as autoplay change to prevent scroll
-      setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [product, images.length, autoplayPaused, lightboxOpen]);
-
-  // Cleanup timeout on unmount
+  // Cleanup autoplay timeout on unmount
   useEffect(() => {
     return () => {
       if (autoplayTimeoutRef.current) {
@@ -576,17 +546,23 @@ const ProductDetail = () => {
   }, []);
 
   // Show/hide sticky bar based on main add-to-cart button visibility
+  // Uses a ref to avoid the oscillation loop: spacer height change → observer fires → spacer toggles → loop
+  const stickyBarValueRef = useRef(false);
   useEffect(() => {
     if (!mainAddToCartRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Show sticky bar when main button is NOT visible
-        setShowStickyBar(!entry.isIntersecting);
+        const shouldShow = !entry.isIntersecting;
+        // Only update state when value actually changes to prevent re-render churn
+        if (stickyBarValueRef.current !== shouldShow) {
+          stickyBarValueRef.current = shouldShow;
+          setShowStickyBar(shouldShow);
+        }
       },
       {
-        threshold: 0,
-        rootMargin: "-100px 0px 0px 0px", // Trigger a bit before it's completely out of view
+        threshold: 0.1,
+        rootMargin: "0px 0px 0px 0px",
       },
     );
 
@@ -657,16 +633,6 @@ const ProductDetail = () => {
   const availabilityResult = computeAvailability(product, variantStock);
   const inStock = availabilityResult.isInStock;
 
-  // Temporary debug log for stock diagnosis
-  console.log("STOCK DEBUG", {
-    productId: product.id,
-    productStock: product.stock,
-    productIsActive: product.is_active,
-    variantStock,
-    selectedVariantVid: selectedVariant?.vid,
-    inStock,
-    reason: availabilityResult.reason,
-  });
 
   const handleAddToCart = () => {
     // Prevent adding out-of-stock items
@@ -1852,8 +1818,8 @@ const ProductDetail = () => {
         )}
       </AnimatePresence>
 
-      {/* Spacer for sticky bar */}
-      <div className={`transition-all ${showStickyBar ? "h-20" : "h-0"}`} />
+      {/* Spacer for sticky bar — fixed height, no transition to prevent layout oscillation */}
+      {showStickyBar && <div className="h-20" />}
     </Layout>
   );
 };
