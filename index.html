@@ -45,7 +45,7 @@
         if (!isBenignError(e.message)) {
           window.__BOOT_FATAL_ERRORS__.push({ type: 'error', msg: e.message, file: e.filename, line: e.lineno, ts: Date.now() });
         }
-        console.error('[CRASH_DETECT] JS ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
+        console.warn('[BOOT] JS error:', e.message);
       });
       window.addEventListener('unhandledrejection', function(e) {
         var msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
