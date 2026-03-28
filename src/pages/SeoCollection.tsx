@@ -11,6 +11,7 @@ import { resolveCollectionSlug, getVirtualCollection } from '@/lib/collection-sl
 import { logCollectionResolution } from '@/lib/diagnostics-payload';
 import { classifySpecies } from '@/lib/species-taxonomy';
 import { Layout } from '@/components/layout/Layout';
+import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
 import { CrossCollectionLinks } from '@/components/seo/CrossCollectionLinks';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
