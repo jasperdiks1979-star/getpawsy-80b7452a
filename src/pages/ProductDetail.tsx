@@ -1707,8 +1707,8 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* Why Customers Choose GetPawsy — trust section */}
-        <WhyCustomersChoose />
+        {/* Why GetPawsy — global trust block */}
+        <WhyGetPawsy className="mt-12" />
 
         {/* Related Products */}
         <div className="mt-16">
