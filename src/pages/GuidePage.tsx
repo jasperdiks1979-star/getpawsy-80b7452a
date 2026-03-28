@@ -224,6 +224,12 @@ const GuidePage = () => {
   }
 
   // Active SEO title from A/B test or fallback
+  // Safe accessors — never crash on missing data
+  const safeFaq = guide.faq || [];
+  const safeKeywords = guide.keywords || [];
+  const safeSections = guide.sections || [];
+  const safeRelatedCategories = guide.relatedCategories || [];
+
   const activeSeoTitle = getSeoTitle(guide.slug, guide.seoTitle, guide.title);
 
   // Article schema with Person author entity
@@ -231,23 +237,23 @@ const GuidePage = () => {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: guide.title,
-    description: guide.excerpt,
+    description: guide.excerpt || '',
     image: guide.featuredImage ? `${BASE_URL}${guide.featuredImage}` : `${BASE_URL}/og-image.png`,
     datePublished: guide.publishedAt,
     dateModified: guide.updatedAt,
     author: getAuthorSchema(),
     publisher: getPublisherSchema(),
     mainEntityOfPage: { '@type': 'WebPage', '@id': guideUrl },
-    keywords: guide.keywords.join(', '),
+    keywords: safeKeywords.join(', '),
     articleSection: guide.category,
     inLanguage: 'en-US',
   };
 
   // FAQ schema
-  const faqSchema = guide.faq.length > 0 ? {
+  const faqSchema = safeFaq.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: guide.faq.map((item) => ({
+    mainEntity: safeFaq.map((item) => ({
       '@type': 'Question',
       name: item.question,
       acceptedAnswer: { '@type': 'Answer', text: item.answer },
@@ -486,7 +492,7 @@ const GuidePage = () => {
         <meta name="twitter:description" content={guide.excerpt} />
         {guide.featuredImage && <meta property="og:image" content={`${BASE_URL}${guide.featuredImage}`} />}
         {guide.featuredImage && <meta name="twitter:image" content={`${BASE_URL}${guide.featuredImage}`} />}
-        {guide.keywords.map((kw, i) => (
+        {safeKeywords.map((kw, i) => (
           <meta key={i} property="article:tag" content={kw} />
         ))}
         <script type="application/ld+json">{JSON.stringify(articleSchema)}</script>
@@ -724,7 +730,7 @@ const GuidePage = () => {
             </h2>
           </div>
           <ol className="space-y-1.5">
-            {guide.sections.map((section, i) => (
+            {safeSections.map((section, i) => (
               <li key={i}>
                 <a
                   href={`#section-${i}`}
@@ -763,7 +769,7 @@ const GuidePage = () => {
                 </a>
               </li>
             )}
-            {guide.faq.length > 0 && (
+            {safeFaq.length > 0 && (
               <li>
                 <a href="#faq" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
                   <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">?</span>
@@ -776,7 +782,7 @@ const GuidePage = () => {
 
         {/* Main Sections */}
         <SectionErrorBoundary section="GuidePage-sections">
-          {(guide.sections || []).map((section, i) => (
+          {safeSections.map((section, i) => (
             <section key={i} id={`section-${i}`} className="mb-12 scroll-mt-24">
               <h2 className="text-2xl font-display font-bold text-foreground mb-5 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
@@ -888,13 +894,13 @@ const GuidePage = () => {
         )}
 
         {/* FAQ Accordion — Premium */}
-        {guide.faq.length > 0 && (
+        {safeFaq.length > 0 && (
           <section id="faq" className="mb-12 scroll-mt-24">
             <h2 className="text-2xl font-display font-bold text-foreground mb-6">
               Frequently Asked Questions
             </h2>
             <div className="space-y-0 border border-border rounded-2xl overflow-hidden shadow-sm">
-              {guide.faq.map((item, i) => (
+              {safeFaq.map((item, i) => (
                 <details key={i} className="group border-b border-border last:border-0">
                   <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer hover:bg-muted/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <h3 className="text-[15px] font-display font-semibold text-foreground text-left">{item.question}</h3>
@@ -926,7 +932,7 @@ const GuidePage = () => {
         </section>
 
         <SectionErrorBoundary section="GuidePage-recommended-products">
-          {guide.relatedCategories.length > 0 && (
+          {safeRelatedCategories.length > 0 && (
             <RecommendedProductsBlock
               categories={guide.relatedCategories.map(cat =>
                 cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
@@ -939,7 +945,7 @@ const GuidePage = () => {
         </SectionErrorBoundary>
 
         {/* Shop Category CTA — Premium */}
-        {guide.relatedCategories.length > 0 && (
+        {safeRelatedCategories.length > 0 && (
           <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6 mb-12 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -948,7 +954,7 @@ const GuidePage = () => {
               <h3 className="font-display font-bold text-foreground">Shop Related Products</h3>
             </div>
             <div className="flex flex-wrap gap-2.5">
-              {guide.relatedCategories.map((cat) => {
+              {safeRelatedCategories.map((cat) => {
                 const collectionSlug = categoryToCollectionSlug(cat);
                 const displayName = cat.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
                 return (
@@ -998,10 +1004,10 @@ const GuidePage = () => {
       </article>
 
       {/* Sticky CTA */}
-      {guide.relatedCategories.length > 0 && (
+      {safeRelatedCategories.length > 0 && (
         <StickyCTA
-          categorySlug={guide.relatedCategories[0]}
-          categoryLabel={guide.relatedCategories[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+          categorySlug={safeRelatedCategories[0]}
+          categoryLabel={safeRelatedCategories[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
         />
       )}
     </Layout>
