@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- EMERGENCY: Global crash detector - catches fatal JS errors before React loads -->
+    <!-- Boot resilience: handles chunk load failures and version mismatches -->
     <script>
       window.__BOOT_OK__ = false;
       window.__BOOT_ERRORS__ = [];
