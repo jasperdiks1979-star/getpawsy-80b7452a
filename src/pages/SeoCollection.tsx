@@ -64,6 +64,7 @@ import { MidContentCTA } from '@/components/seo/MidContentCTA';
 import { getDominationConfig } from '@/data/domination-config';
 import { CatTreesHubContent } from '@/components/seo/CatTreesHubContent';
 import { CollectionTrustBar } from '@/components/seo/CollectionTrustBar';
+import { WhyGetPawsy } from '@/components/shared/WhyGetPawsy';
 import { CollectionMiniComparison } from '@/components/seo/CollectionMiniComparison';
 import { CollectionCROBadges, isMoneyCollection } from '@/components/seo/CollectionCROBadges';
 import { getMoneyCollectionFAQs } from '@/lib/money-collection-faqs';
