@@ -140,7 +140,7 @@
         if (!window.__BOOT_OK__) {
           var fatal = window.__BOOT_FATAL_ERRORS__;
           if (fatal && fatal.length >= 2) {
-            console.error('[CRASH_DETECT] Boot failed with ' + fatal.length + ' fatal errors after 10s');
+            console.warn('[BOOT] Multiple errors detected — showing recovery option');
             showChunkRecovery();
           }
         }
