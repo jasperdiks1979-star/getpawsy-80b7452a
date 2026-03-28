@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 /**
  * Inline SVG payment brand icons - compact, recognizable logos.
