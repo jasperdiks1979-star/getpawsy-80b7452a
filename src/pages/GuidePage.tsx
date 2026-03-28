@@ -894,13 +894,13 @@ const GuidePage = () => {
         )}
 
         {/* FAQ Accordion — Premium */}
-        {guide.faq.length > 0 && (
+        {safeFaq.length > 0 && (
           <section id="faq" className="mb-12 scroll-mt-24">
             <h2 className="text-2xl font-display font-bold text-foreground mb-6">
               Frequently Asked Questions
             </h2>
             <div className="space-y-0 border border-border rounded-2xl overflow-hidden shadow-sm">
-              {guide.faq.map((item, i) => (
+              {safeFaq.map((item, i) => (
                 <details key={i} className="group border-b border-border last:border-0">
                   <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer hover:bg-muted/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <h3 className="text-[15px] font-display font-semibold text-foreground text-left">{item.question}</h3>
