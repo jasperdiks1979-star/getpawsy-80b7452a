@@ -1,5 +1,4 @@
 import { Component, ReactNode } from 'react';
-import { recordCrashAndCheckBreaker } from '@/lib/crash-circuit-breaker';
 
 interface Props {
   children: ReactNode;
