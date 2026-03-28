@@ -576,17 +576,23 @@ const ProductDetail = () => {
   }, []);
 
   // Show/hide sticky bar based on main add-to-cart button visibility
+  // Uses a ref to avoid the oscillation loop: spacer height change → observer fires → spacer toggles → loop
+  const stickyBarValueRef = useRef(false);
   useEffect(() => {
     if (!mainAddToCartRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Show sticky bar when main button is NOT visible
-        setShowStickyBar(!entry.isIntersecting);
+        const shouldShow = !entry.isIntersecting;
+        // Only update state when value actually changes to prevent re-render churn
+        if (stickyBarValueRef.current !== shouldShow) {
+          stickyBarValueRef.current = shouldShow;
+          setShowStickyBar(shouldShow);
+        }
       },
       {
-        threshold: 0,
-        rootMargin: "-100px 0px 0px 0px", // Trigger a bit before it's completely out of view
+        threshold: 0.1,
+        rootMargin: "0px 0px 0px 0px",
       },
     );
 
