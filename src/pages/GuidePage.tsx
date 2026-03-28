@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw, User, Award } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { useGuide, useGuidesList } from '@/hooks/useGuides';
+import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import NotFound from './NotFound';
@@ -774,17 +775,19 @@ const GuidePage = () => {
         </nav>
 
         {/* Main Sections */}
-        {guide.sections.map((section, i) => (
-          <section key={i} id={`section-${i}`} className="mb-12 scroll-mt-24">
-            <h2 className="text-2xl font-display font-bold text-foreground mb-5 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
-                {i + 1}
-              </span>
-              {section.heading}
-            </h2>
-            {renderContent(section.content, i)}
-          </section>
-        ))}
+        <SectionErrorBoundary section="GuidePage-sections">
+          {(guide.sections || []).map((section, i) => (
+            <section key={i} id={`section-${i}`} className="mb-12 scroll-mt-24">
+              <h2 className="text-2xl font-display font-bold text-foreground mb-5 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
+                  {i + 1}
+                </span>
+                {section.heading}
+              </h2>
+              {renderContent(section.content, i)}
+            </section>
+          ))}
+        </SectionErrorBoundary>
 
         {/* Comparison Table — only with validated products */}
         {(() => {
@@ -922,17 +925,18 @@ const GuidePage = () => {
           </p>
         </section>
 
-        {/* Recommended Products for Your Pet — crawlable product cards */}
-        {guide.relatedCategories.length > 0 && (
-          <RecommendedProductsBlock
-            categories={guide.relatedCategories.map(cat =>
-              cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-            )}
-            title="Recommended Products for Your Pet"
-            limit={4}
-            className="mb-12"
-          />
-        )}
+        <SectionErrorBoundary section="GuidePage-recommended-products">
+          {guide.relatedCategories.length > 0 && (
+            <RecommendedProductsBlock
+              categories={guide.relatedCategories.map(cat =>
+                cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+              )}
+              title="Recommended Products for Your Pet"
+              limit={4}
+              className="mb-12"
+            />
+          )}
+        </SectionErrorBoundary>
 
         {/* Shop Category CTA — Premium */}
         {guide.relatedCategories.length > 0 && (

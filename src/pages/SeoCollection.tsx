@@ -11,6 +11,7 @@ import { resolveCollectionSlug, getVirtualCollection } from '@/lib/collection-sl
 import { logCollectionResolution } from '@/lib/diagnostics-payload';
 import { classifySpecies } from '@/lib/species-taxonomy';
 import { Layout } from '@/components/layout/Layout';
+import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
 import { CrossCollectionLinks } from '@/components/seo/CrossCollectionLinks';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -557,8 +558,12 @@ const SeoCollection = () => {
   } : null;
   return (
     <Layout>
-      {(isPriorityCategory || domConfig) && <ScrollProgressIndicator />}
+      <SectionErrorBoundary section="SeoCollection-scroll-progress">
+        {(isPriorityCategory || domConfig) && <ScrollProgressIndicator />}
+      </SectionErrorBoundary>
+      <SectionErrorBoundary section="SeoCollection-sticky-nav">
       {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
+      </SectionErrorBoundary>
       <Helmet>
         <title>{collection.meta_title || generateCollectionMetaTitle(collection.primary_keyword)}</title>
         <meta 
@@ -668,11 +673,12 @@ const SeoCollection = () => {
           <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Secure Checkout</span>
         </div>
 
-        {/* Cluster-aware contextual intro — 150–200 words with 3 guide links */}
-        <CollectionClusterIntro
-          collectionName={collection.name}
-          collectionSlug={collection.slug}
-        />
+        <SectionErrorBoundary section="SeoCollection-cluster-intro">
+          <CollectionClusterIntro
+            collectionName={collection.name}
+            collectionSlug={collection.slug}
+          />
+        </SectionErrorBoundary>
 
         <div id="product-grid" />
         <section id="products" className="mb-8 md:mb-12">
@@ -837,37 +843,39 @@ const SeoCollection = () => {
           </section>
         )}
 
-        {/* Domination: Featured Snippet Block */}
-        {domConfig && (
-          <FeaturedSnippetBlock
-            directAnswer={domConfig.directAnswer}
-            bulletUSPs={domConfig.bulletUSPs}
-            quickComparison={domConfig.quickComparison}
-          />
-        )}
+        <SectionErrorBoundary section="SeoCollection-domination-blocks">
+          {/* Domination: Featured Snippet Block */}
+          {domConfig && (
+            <FeaturedSnippetBlock
+              directAnswer={domConfig.directAnswer}
+              bulletUSPs={domConfig.bulletUSPs}
+              quickComparison={domConfig.quickComparison}
+            />
+          )}
 
-        {/* Expert Block + Comparison for priority categories */}
-        {isPriorityCategory && (
-          <ExpertBlock categoryName={collection.name.replace(/\s–.*$/, '')} />
-        )}
-        {comparisonData && (
-          <div id="comparison">
-            <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
+          {/* Expert Block + Comparison for priority categories */}
+          {isPriorityCategory && (
+            <ExpertBlock categoryName={collection.name.replace(/\s–.*$/, '')} />
+          )}
+          {comparisonData && (
+            <div id="comparison">
+              <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
+            </div>
+          )}
+
+          {/* Cat Trees Hub: authority content — BELOW products */}
+          {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
+
+          {/* Training Collection Cross-Links — bidirectional silo linking */}
+          {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
+            <TrainingCollectionCrossLinks currentSlug={collection.slug} />
+          )}
+
+          {/* Expert Guides — curated guide links for this collection */}
+          <div id="expert-guides">
+            <CollectionExpertGuides collectionSlug={collection.slug} />
           </div>
-        )}
-
-        {/* Cat Trees Hub: authority content — BELOW products */}
-        {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
-
-        {/* Training Collection Cross-Links — bidirectional silo linking */}
-        {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
-          <TrainingCollectionCrossLinks currentSlug={collection.slug} />
-        )}
-
-        {/* Expert Guides — curated guide links for this collection */}
-        <div id="expert-guides">
-          <CollectionExpertGuides collectionSlug={collection.slug} />
-        </div>
+        </SectionErrorBoundary>
 
         {/* Sub-Category Navigation — "Explore by Type" (pillar pages only) */}
         {subCollections.length > 0 && (
@@ -902,8 +910,9 @@ const SeoCollection = () => {
           </section>
         )}
 
-        {/* Related Categories Block — sibling category cross-links */}
-        <RelatedCategoriesBlock collectionSlug={collection.slug} />
+        <SectionErrorBoundary section="SeoCollection-related-categories">
+          <RelatedCategoriesBlock collectionSlug={collection.slug} />
+        </SectionErrorBoundary>
 
         {/* Back to Pillar (sub-collection pages only) */}
         {parentCollection && (
@@ -927,22 +936,22 @@ const SeoCollection = () => {
           </p>
         </section>
 
-        {/* Trust Reinforcement — moved to compact strip above products, removed duplicate */}
+        <SectionErrorBoundary section="SeoCollection-paa-midcta">
+          {/* Domination: PAA Expansion Section */}
+          {domConfig && domConfig.paaQuestions.length > 0 && (
+            <PAASection questions={domConfig.paaQuestions} />
+          )}
 
-        {/* Domination: PAA Expansion Section */}
-        {domConfig && domConfig.paaQuestions.length > 0 && (
-          <PAASection questions={domConfig.paaQuestions} />
-        )}
-
-        {/* Domination: Mid-Content CTA */}
-        {domConfig && (
-          <MidContentCTA
-            headline={`Find the Best ${collection.name.replace(/^Best\s+/i, '').replace(/\s–.*$/, '')} for Your Pet`}
-            subtext="Browse our curated selection — every product is quality-tested with free US shipping over $35."
-            ctaText="Shop Now"
-            ctaHref="#products"
-          />
-        )}
+          {/* Domination: Mid-Content CTA */}
+          {domConfig && (
+            <MidContentCTA
+              headline={`Find the Best ${collection.name.replace(/^Best\s+/i, '').replace(/\s–.*$/, '')} for Your Pet`}
+              subtext="Browse our curated selection — every product is quality-tested with free US shipping over $35."
+              ctaText="Shop Now"
+              ctaHref="#products"
+            />
+          )}
+        </SectionErrorBoundary>
 
         {/* Section C: Mini FAQ */}
         {mergedFaqs.length > 0 && (
@@ -968,35 +977,37 @@ const SeoCollection = () => {
           </section>
         )}
 
-        {/* Soft Email Capture for SEO Traffic */}
-        <SoftEmailCapture 
-          variant="collection" 
-          className="mb-12"
-        />
+        <SectionErrorBoundary section="SeoCollection-bottom-sections">
+          {/* Soft Email Capture for SEO Traffic */}
+          <SoftEmailCapture 
+            variant="collection" 
+            className="mb-12"
+          />
 
-        {/* Related Guides — dynamic keyword-matched blog posts */}
-        <CategoryRelatedGuides 
-          categoryName={collection.name}
-          categorySlug={collection.slug}
-          primaryKeyword={collection.primary_keyword}
-        />
+          {/* Related Guides — dynamic keyword-matched blog posts */}
+          <CategoryRelatedGuides 
+            categoryName={collection.name}
+            categorySlug={collection.slug}
+            primaryKeyword={collection.primary_keyword}
+          />
 
-        {/* Popular in this Category — best-selling products with anchor variation */}
-        <CategoryPopularProducts 
-          categoryName={collection.name}
-          products={products}
-        />
+          {/* Popular in this Category — best-selling products with anchor variation */}
+          <CategoryPopularProducts 
+            categoryName={collection.name}
+            products={products}
+          />
 
-        {/* Cluster Links — contextual paragraph linking to supporting pages */}
-        <CategoryClusterLinks 
-          categoryName={collection.name}
-          categorySlug={collection.slug}
-          relatedSlugs={collection.related_collection_slugs}
-          subCollections={subCollections}
-        />
+          {/* Cluster Links — contextual paragraph linking to supporting pages */}
+          <CategoryClusterLinks 
+            categoryName={collection.name}
+            categorySlug={collection.slug}
+            relatedSlugs={collection.related_collection_slugs}
+            subCollections={subCollections}
+          />
 
-        {/* Cross-Collection Links — money collection cross-linking */}
-        <CrossCollectionLinks currentSlug={collection.slug} />
+          {/* Cross-Collection Links — money collection cross-linking */}
+          <CrossCollectionLinks currentSlug={collection.slug} />
+        </SectionErrorBoundary>
 
         {/* Section D: Internal Links */}
         <section className="grid md:grid-cols-2 gap-6">
