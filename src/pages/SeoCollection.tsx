@@ -1050,6 +1050,9 @@ const SeoCollection = () => {
             </span>
           </Link>
         </section>
+
+        {/* Global Trust Block */}
+        <WhyGetPawsy className="mt-8" />
       </div>
     </Layout>
   );

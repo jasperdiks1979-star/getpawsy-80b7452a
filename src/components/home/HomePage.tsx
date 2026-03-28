@@ -62,6 +62,10 @@ const HomePage = () => {
         productIds={DOG_IDS}
       />
 
+      <div className="container px-4 md:px-6 py-8">
+        <WhyGetPawsy />
+      </div>
+
       <Suspense fallback={null}>
         <WhyChooseSection />
       </Suspense>
