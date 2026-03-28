@@ -493,6 +493,18 @@ const SeoCollection = () => {
   }
 
   if (!collection) {
+    // NEVER redirect /collections/all to itself
+    if (rawSlug === 'all') {
+      return (
+        <Layout>
+          <div className="container py-16 text-center">
+            <h1 className="text-2xl font-bold mb-4">All Products</h1>
+            <p className="text-muted-foreground mb-6">Our catalog is loading. Please try again shortly.</p>
+            <Button asChild><Link to="/">Back to Home</Link></Button>
+          </div>
+        </Layout>
+      );
+    }
     logCollectionResolution({
       requestedSlug: rawSlug || '',
       resolvedSlug: slug || '',
