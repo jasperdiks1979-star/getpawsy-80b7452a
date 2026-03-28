@@ -4,6 +4,8 @@ import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 
+import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
+
 const WhyChooseSection = lazy(() => import("@/components/home/WhyChooseSection").then(m => ({ default: m.default ?? m.WhyChooseSection })));
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
 
@@ -59,6 +61,10 @@ const HomePage = () => {
         subtitle="Strollers, carriers & elevated beds for dogs"
         productIds={DOG_IDS}
       />
+
+      <div className="container px-4 md:px-6 py-8">
+        <WhyGetPawsy />
+      </div>
 
       <Suspense fallback={null}>
         <WhyChooseSection />

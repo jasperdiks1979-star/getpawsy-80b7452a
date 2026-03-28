@@ -118,6 +118,9 @@ export const Footer = () => {
               <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline block">
                 {SUPPORT_EMAIL}
               </a>
+              <p className="text-xs text-background/50 mt-1">
+                Our support team responds within 24 hours.
+              </p>
               <p className="text-xs text-background/40 mt-2 leading-relaxed">
                 GetPawsy is operated by Skidzo, a registered business based in the Netherlands, serving customers in the United States through trusted logistics partners with fast US delivery.
               </p>
