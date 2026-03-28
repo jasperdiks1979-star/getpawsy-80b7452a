@@ -782,7 +782,7 @@ const GuidePage = () => {
 
         {/* Main Sections */}
         <SectionErrorBoundary section="GuidePage-sections">
-          {(guide.sections || []).map((section, i) => (
+          {safeSections.map((section, i) => (
             <section key={i} id={`section-${i}`} className="mb-12 scroll-mt-24">
               <h2 className="text-2xl font-display font-bold text-foreground mb-5 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
