@@ -53,7 +53,7 @@
         if (!isBenignError(msg)) {
           window.__BOOT_FATAL_ERRORS__.push({ type: 'rejection', msg: msg, ts: Date.now() });
         }
-        console.error('[CRASH_DETECT] PROMISE REJECTION:', msg);
+        console.warn('[BOOT] Unhandled rejection:', msg);
       });
 
       // ── UNIFIED RELOAD GUARD ──────────────────────────────────────
