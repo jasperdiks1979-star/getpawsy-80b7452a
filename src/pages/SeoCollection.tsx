@@ -493,6 +493,18 @@ const SeoCollection = () => {
   }
 
   if (!collection) {
+    // NEVER redirect /collections/all to itself
+    if (rawSlug === 'all') {
+      return (
+        <Layout>
+          <div className="container py-16 text-center">
+            <h1 className="text-2xl font-bold mb-4">All Products</h1>
+            <p className="text-muted-foreground mb-6">Our catalog is loading. Please try again shortly.</p>
+            <Button asChild><Link to="/">Back to Home</Link></Button>
+          </div>
+        </Layout>
+      );
+    }
     logCollectionResolution({
       requestedSlug: rawSlug || '',
       resolvedSlug: slug || '',
@@ -502,10 +514,11 @@ const SeoCollection = () => {
     return <Navigate to="/collections/all" replace />;
   }
 
-  // Thin collection guard: if fewer than 3 real products, redirect to /collections/all
-  // Skip redirect for 'all' and 'multi-pet' to prevent infinite redirect loop
+  // Thin collection guard: redirect thin collections to /collections/all
+  // NEVER redirect /collections/all itself — it must always render
+  const isAllRoute = rawSlug === 'all' || slug === 'all';
   const safeSlugs = new Set(['all', 'multi-pet', 'dog', 'cat', 'dogs', 'cats']);
-  const isThinCollection = !productsLoading && products.length < 3 && !safeSlugs.has(slug || '') && !safeSlugs.has(rawSlug || '');
+  const isThinCollection = !isAllRoute && !productsLoading && products.length < 3 && !safeSlugs.has(slug || '') && !safeSlugs.has(rawSlug || '');
   if (isThinCollection) {
     return <Navigate to="/collections/all" replace />;
   }
