@@ -69,11 +69,10 @@ if (typeof window !== 'undefined') {
     window.location.reload();
   };
 
-  // Only auto-reload for chunk load failures (not all errors)
+  // Auto-reload for chunk load failures and fatal unrecoverable errors
   window.addEventListener('error', (e) => {
     const msg = e?.message || '';
     if (msg.includes('Loading chunk') || msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {
-      console.error('[GLOBAL] Chunk load failure, reloading:', msg);
       safeReload();
     }
   });
@@ -81,7 +80,6 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (e) => {
     const reason = e?.reason?.message || String(e?.reason || '');
     if (reason.includes('Loading chunk') || reason.includes('Failed to fetch dynamically imported module') || reason.includes('Importing a module script failed')) {
-      console.error('[GLOBAL] Chunk load rejection, reloading:', reason);
       safeReload();
     }
   });

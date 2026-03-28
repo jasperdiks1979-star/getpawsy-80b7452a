@@ -36,9 +36,6 @@ export class AppErrorBoundary extends Component<Props, State> {
       // safety
     }
 
-    // Record for circuit breaker tracking
-    recordCrashAndCheckBreaker(errorMessage);
-
     return { hasError: true, errorId, errorMessage };
   }
 
