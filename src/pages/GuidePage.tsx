@@ -253,7 +253,7 @@ const GuidePage = () => {
   const faqSchema = safeFaq.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: guide.faq.map((item) => ({
+    mainEntity: safeFaq.map((item) => ({
       '@type': 'Question',
       name: item.question,
       acceptedAnswer: { '@type': 'Answer', text: item.answer },
