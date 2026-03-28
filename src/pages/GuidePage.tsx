@@ -492,7 +492,7 @@ const GuidePage = () => {
         <meta name="twitter:description" content={guide.excerpt} />
         {guide.featuredImage && <meta property="og:image" content={`${BASE_URL}${guide.featuredImage}`} />}
         {guide.featuredImage && <meta name="twitter:image" content={`${BASE_URL}${guide.featuredImage}`} />}
-        {guide.keywords.map((kw, i) => (
+        {safeKeywords.map((kw, i) => (
           <meta key={i} property="article:tag" content={kw} />
         ))}
         <script type="application/ld+json">{JSON.stringify(articleSchema)}</script>
