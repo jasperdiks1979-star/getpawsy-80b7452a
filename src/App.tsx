@@ -84,14 +84,25 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
     return { hasError: true, error };
   }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("[RouteErrorBoundary] Caught error:", error);
+    const route = typeof window !== 'undefined' ? window.location.pathname : 'unknown';
+    console.error("[RouteErrorBoundary] Caught error:", {
+      message: error.message,
+      name: error.name,
+      route,
+      stack: error.stack?.substring(0, 500),
+    });
+    console.error("[RouteErrorBoundary] Component stack:", errorInfo.componentStack?.substring(0, 800));
     import("@/lib/error-reporter").then(({ reportError, isReact310Error, reportReact310Error }) => {
       if (isReact310Error(error)) {
         reportReact310Error(error, "RouteErrorBoundary", {
           componentStack: errorInfo.componentStack?.substring(0, 1000),
+          route,
         });
       } else {
-        reportError(error, "RouteErrorBoundary", { componentStack: errorInfo.componentStack?.substring(0, 1000) });
+        reportError(error, "RouteErrorBoundary", {
+          componentStack: errorInfo.componentStack?.substring(0, 1000),
+          route,
+        });
       }
     });
   }

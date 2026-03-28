@@ -40,14 +40,21 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[AppErrorBoundary] Fatal crash caught:', error);
-    console.error('[AppErrorBoundary] Component stack:', errorInfo.componentStack);
+    const route = typeof window !== 'undefined' ? window.location.pathname : 'unknown';
+    console.error('[AppErrorBoundary] Fatal crash caught:', {
+      message: error.message,
+      name: error.name,
+      route,
+      stack: error.stack?.substring(0, 500),
+    });
+    console.error('[AppErrorBoundary] Component stack:', errorInfo.componentStack?.substring(0, 800));
 
     // Best-effort async reporting
     try {
       import('@/lib/error-reporter').then(({ reportError }) => {
         reportError(error, 'AppErrorBoundary', {
           componentStack: errorInfo.componentStack?.substring(0, 1000),
+          route,
         });
       }).catch(() => {});
     } catch {
