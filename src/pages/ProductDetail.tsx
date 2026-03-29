@@ -1751,10 +1751,10 @@ const ProductDetail = () => {
               <div className="flex-shrink-0 min-w-0">
                 <p className="text-xs font-medium text-foreground truncate max-w-[120px] md:max-w-none">{safeString(product.name)}</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-lg font-bold text-primary">${Number(product.price).toFixed(2)}</span>
-                  {product.compare_at_price && (
+                  <span className="text-lg font-bold text-primary">${activePrice.toFixed(2)}</span>
+                  {validCompareAt && (
                     <span className="text-xs text-muted-foreground line-through">
-                      ${Number(product.compare_at_price).toFixed(2)}
+                      ${validCompareAt.toFixed(2)}
                     </span>
                   )}
                 </div>
