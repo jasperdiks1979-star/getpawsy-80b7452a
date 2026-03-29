@@ -215,7 +215,7 @@ const Bestsellers = () => {
         .from('bestsellers')
         .select(`
           id, slug, rank, hero_headline, hero_subheadline, seo_description, long_description, selling_points,
-          product:products!bestsellers_product_id_fkey (
+          product:products_public!bestsellers_product_id_fkey (
             id, name, price, compare_at_price, image_url, images, category, stock
           )
         `)
