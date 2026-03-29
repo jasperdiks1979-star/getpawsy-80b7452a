@@ -74,7 +74,7 @@ const FEATURE_KEYWORDS: Record<string, string[]> = {
 const DROPSHIP_TITLE_PATTERNS = [
   /\b(2024|2025|2026)\b/i, // year stuffing
   /\b(hot sale|best seller|top rated|viral|trending|popular)\b/i,
-  /\b(free shipping|fast delivery|limited time|sale|discount)\b/i,
+  /\b(free shipping|US delivery|limited time|sale|discount)\b/i,
   /\b(high quality|premium quality|best quality|top quality)\b/i,
   /\b(new arrival|latest|brand new)\b/i,
   /\d+\s*(pcs|pieces|pack|set)\s*$/i, // "5pcs" at end

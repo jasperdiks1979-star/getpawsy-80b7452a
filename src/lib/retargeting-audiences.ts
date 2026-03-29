@@ -73,7 +73,7 @@ export const RETARGETING_AUDIENCES: RetargetingAudience[] = [
     excludePurchasers: true,
     
     primaryMessage: 'Still exploring pet essentials?',
-    secondaryMessage: 'Quality products with fast US shipping and easy returns',
+    secondaryMessage: 'Quality products with US shipping and easy returns',
     ctaText: 'Continue Browsing',
     destinationPath: '/collections/{last_viewed}', // Dynamic
     
@@ -113,7 +113,7 @@ export const MESSAGING_GUIDELINES = {
   // What TO do
   allowed: [
     'Use trust-building language ("trusted", "reliable", "quality")',
-    'Mention convenience benefits (fast shipping, easy returns)',
+    'Mention convenience benefits (shipping, easy returns)',
     'Focus on everyday practicality',
     'Show social proof if available (reviews, customer count)',
     'Use calm, helpful tone',
@@ -151,7 +151,7 @@ export const AD_COPY_TEMPLATES = {
       'Quality Pet Care Made Simple',
     ],
     descriptions: [
-      'Discover thoughtfully selected products for dogs and cats. Fast US shipping, easy returns.',
+      'Discover thoughtfully selected products for dogs and cats. US shipping, easy returns.',
       'From feeding solutions to travel gear — practical essentials for everyday pet care.',
       'Quality products designed for comfort and convenience. Free shipping over $35.',
     ],
@@ -165,7 +165,7 @@ export const AD_COPY_TEMPLATES = {
       'Trusted by Pet Parents',
     ],
     descriptions: [
-      'Continue discovering practical pet essentials. Fast shipping, easy returns.',
+      'Continue discovering practical pet essentials. Shipping, easy returns.',
       'Find the right products for your pet. Quality you can trust, delivered fast.',
       'Designed for everyday comfort. Free US shipping on orders over $35.',
     ],
@@ -175,12 +175,12 @@ export const AD_COPY_TEMPLATES = {
     headlines: [
       'Designed for Comfort',
       'Quality Pet Essentials',
-      'Fast US Shipping',
+      'US Shipping',
       'Everyday Reliability',
     ],
     descriptions: [
       'Quality products designed for everyday life. Free shipping over $35, 30-day returns.',
-      'Trusted by pet parents nationwide. Fast delivery, easy returns available.',
+      'Trusted by pet parents nationwide. US delivery, easy returns available.',
       'Practical solutions for your pet. Quality, comfort, and convenience.',
     ],
   },

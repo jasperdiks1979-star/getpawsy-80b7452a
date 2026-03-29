@@ -422,7 +422,7 @@ const Admin = () => {
         }
         
         // Get realistic shipping time from CJ warehouse data
-        let shippingTime = "3-7 business days"; // Default for US warehouse
+        let shippingTime = "5–10 business days"; // Default for US warehouse
         try {
           const shippingResponse = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/audit-warehouse-shipping`,

@@ -294,7 +294,7 @@ export const ProductCard = memo(
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground">Fast shipping to customers in the United States</p>
+              <p className="text-xs text-muted-foreground">Shipping to customers in the United States</p>
 
               <div className="flex gap-2 pt-1 md:hidden">
                 <Button

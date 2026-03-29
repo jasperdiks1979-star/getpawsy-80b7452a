@@ -34,7 +34,7 @@ const steps = [
     title: 'Shipping instellingen in Merchant Center',
     items: [
       'Land: United States',
-      'Bezorgservice: Standard (3–7 business days)',
+      'Bezorgservice: Standard (5–10 business days)',
       'Gratis verzending boven $35 (komt overeen met feed)',
       'Flat rate $5.99 onder $35',
       'Processing time: 1–3 business days',
@@ -69,7 +69,7 @@ const steps = [
       'Wacht tot feed volledig verwerkt is (check diagnostics)',
       'Ga naar Account issues → Request review',
       'Voeg toelichting toe: "Fixed shipping weights, image validation, and policy pages"',
-      'Herbeoordeling duurt doorgaans 3–7 werkdagen',
+      'Herbeoordeling duurt doorgaans 5–10 werkdagen',
     ],
   },
 ];

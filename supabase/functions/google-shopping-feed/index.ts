@@ -42,7 +42,7 @@ function cleanProductName(name: string): string {
     .replace(/,?\s*new arrival/gi, "")
     .replace(/,?\s*hot sale/gi, "")
     .replace(/,?\s*free shipping/gi, "")
-    .replace(/,?\s*fast delivery/gi, "")
+    .replace(/,?\s*US delivery/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }

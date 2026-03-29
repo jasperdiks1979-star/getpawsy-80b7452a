@@ -132,7 +132,7 @@ export const BestsellersSection = () => {
                       <p className="text-sm font-bold text-primary mt-1">
                         ${price.toFixed(2)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">Ships in 3–7 days · Popular this week</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Estimated delivery: 5–10 business days</p>
                     </div>
                   </Link>
                   <button

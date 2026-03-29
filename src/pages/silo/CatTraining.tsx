@@ -30,7 +30,7 @@ const CatTraining = () => {
     <Layout>
       <Helmet>
         <title>Cat Enrichment & Training – Trees, Posts & Toys | GetPawsy</title>
-        <meta name="description" content="Cat trees, scratching posts, interactive toys & enrichment furniture. Keep indoor cats active and happy. US 3–7 day shipping. 30-day return policy." />
+        <meta name="description" content="Cat trees, scratching posts, interactive toys & enrichment furniture. Keep indoor cats active and happy. US 5–10 day shipping. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
       </Helmet>
@@ -43,10 +43,10 @@ const CatTraining = () => {
               Cat Enrichment & Training
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              Cat trees, scratching posts, puzzle feeders, and interactive toys — everything indoor cats need to stay active, healthy, and happy. Fast shipping to the US in 3–7 days.
+              Cat trees, scratching posts, puzzle feeders, and interactive toys — everything indoor cats need to stay active, healthy, and happy. Shipping to the US in 5–10 business days.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 Fast US Shipping 3–7 Days</span>
+              <span>📦 US Shipping 5–10 Days</span>
               <span>🛡️ 30-Day Return Policy</span>
             </div>
           </FadeInView>

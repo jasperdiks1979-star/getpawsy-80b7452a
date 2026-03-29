@@ -444,7 +444,7 @@ export const generateAdminManualPdf = (): jsPDF => {
     { icon: 'Dollar Sign', name: 'Revenue', meaning: 'Financial data: revenue, payments, AOV.', action: 'If payments fail to process or data seems incorrect.', noAction: 'Revenue is a result. Focus on causes (traffic, conversion).' },
     { icon: 'Eye', name: 'Visitors', meaning: 'Visitor or pageview counts showing interest in your store.', action: 'If it suddenly drops to zero while ads are running.', noAction: 'Normal fluctuations are expected.' },
     { icon: 'Funnel', name: 'Conversion Funnel', meaning: 'Shows the flow from homepage to product to cart to checkout.', action: 'If there is 0% conversion at a specific step after significant traffic.', noAction: 'It is normal for 50–80% of visitors to drop off at each step.' },
-    { icon: 'Megaphone', name: 'Advertising', meaning: 'Ad settings or performance results.', action: 'If ads have been running for 7+ days with zero clicks.', noAction: 'During the first 3–7 days — ads need a learning phase.' },
+    { icon: 'Megaphone', name: 'Advertising', meaning: 'Ad settings or performance results.', action: 'If ads have been running for 7+ days with zero clicks.', noAction: 'During the first 5–10 business days — ads need a learning phase.' },
     { icon: 'Gear', name: 'Settings', meaning: 'Configuration options for your store.', action: 'Only when you specifically want to change something.', noAction: 'If something works, do not adjust it.' },
     { icon: 'Green Checkmark', name: 'Success', meaning: 'Everything is working correctly.', action: 'Never — this confirms the system is working.', noAction: 'Always. A green checkmark is good news.' },
     { icon: 'Yellow Triangle', name: 'Warning', meaning: 'A caution indicator, not an error.', action: 'If related to payment failures or critical processes.', noAction: 'For "low stock" or "slow load" — not always urgent.' },
@@ -611,7 +611,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   addSpace(doc, 5);
 
   addSubtitle(doc, 'The Learning Phase');
-  addParagraph(doc, `Online ad platforms (Pinterest, Google, Meta) need a learning phase of 3–7 days. During this period, the algorithm collects data about who clicks your ads, who visits your site, and who purchases. You will see costs without proportional results. This is expected.`);
+  addParagraph(doc, `Online ad platforms (Pinterest, Google, Meta) need a learning phase of 5–10 business days. During this period, the algorithm collects data about who clicks your ads, who visits your site, and who purchases. You will see costs without proportional results. This is expected.`);
 
   addWarningBox(doc, 'The biggest mistake new advertisers make is drawing conclusions too quickly. After one day with high costs and no sales, they panic and stop the campaign. This is counterproductive. Wait at least 7–14 days.');
 

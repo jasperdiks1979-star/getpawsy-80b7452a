@@ -12,27 +12,27 @@ const BADGE_CONFIG: Record<string, { badges: { icon: 'shield' | 'truck' | 'award
     badges: [
       { icon: 'shield', label: 'Stability Tested' },
       { icon: 'award', label: 'Large Cat Approved' },
-      { icon: 'truck', label: 'Fast US Shipping' },
+      { icon: 'truck', label: 'US Shipping' },
     ],
   },
   'best-cat-litter-boxes': {
     badges: [
       { icon: 'shield', label: 'Odor Control Tested' },
       { icon: 'award', label: 'Vet Recommended' },
-      { icon: 'truck', label: 'Fast US Shipping' },
+      { icon: 'truck', label: 'US Shipping' },
     ],
   },
   'modern-cat-trees': {
     badges: [
       { icon: 'shield', label: 'Stability Tested' },
       { icon: 'award', label: 'Design Award' },
-      { icon: 'truck', label: 'Fast US Shipping' },
+      { icon: 'truck', label: 'US Shipping' },
     ],
   },
   'best-cat-scratching-posts': {
     badges: [
       { icon: 'shield', label: 'Durability Tested' },
-      { icon: 'truck', label: 'Fast US Shipping' },
+      { icon: 'truck', label: 'US Shipping' },
     ],
   },
 };

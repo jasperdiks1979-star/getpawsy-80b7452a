@@ -58,7 +58,7 @@ export interface LandingPageData {
 export const NO_PULL_HARNESS_LANDING: LandingPageData = {
   slug: 'no-pull-harness',
   metaTitle: 'Stop Dog Pulling in 7 Days — No-Pull Harness | GetPawsy',
-  metaDescription: 'End leash pulling without choking. Front-clip no-pull harness reduces pulling by 60%. Trainer recommended. Fast US shipping. 30-day return policy.',
+  metaDescription: 'End leash pulling without choking. Front-clip no-pull harness reduces pulling by 60%. Trainer recommended. US shipping. 30-day return policy.',
   headline: 'Your Dog Pulling You Down the Street?',
   subheadline: 'End the tug-of-war in 7 days — without choke chains, prong collars, or painful corrections.',
   painPoints: [
@@ -138,7 +138,7 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
 export const RECALL_TRAINING_LANDING: LandingPageData = {
   slug: 'recall-training-kit',
   metaTitle: 'Train Your Dog to Come Every Time — Recall Training Kit | GetPawsy',
-  metaDescription: 'Complete recall training kit with 15ft long line, treat pouch, and step-by-step guide. Trainer recommended. Fast US shipping.',
+  metaDescription: 'Complete recall training kit with 15ft long line, treat pouch, and step-by-step guide. Trainer recommended. US shipping.',
   headline: 'Does Your Dog Ignore You When You Call?',
   subheadline: 'Train a bulletproof recall in 8 weeks with this trainer-approved kit — no expensive private sessions needed.',
   painPoints: [
@@ -218,7 +218,7 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
 export const STOP_PULLING_LANDING: LandingPageData = {
   slug: 'stop-dog-pulling-fast',
   metaTitle: 'Stop Dog Pulling Fast — Protect Your Dog\'s Neck | GetPawsy',
-  metaDescription: 'Stop leash pulling without choking or pain. Vet-approved no-pull harness protects your dog\'s neck and trachea. Fast US shipping. 30-day return policy.',
+  metaDescription: 'Stop leash pulling without choking or pain. Vet-approved no-pull harness protects your dog\'s neck and trachea. US shipping. 30-day return policy.',
   headline: 'Stop Choking Your Dog on Every Walk.',
   subheadline: 'Traditional collars put 100% of leash force on your dog\'s neck — damaging their trachea, thyroid, and cervical spine. There\'s a better way.',
   painPoints: [

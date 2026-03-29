@@ -167,7 +167,7 @@ const PinterestLandingPage = () => {
 
             <div className="grid grid-cols-3 gap-2">
               {[
-                { icon: Truck, label: '3–7 Day\nUS Delivery' },
+                { icon: Truck, label: '5–10 Day\nUS Delivery' },
                 { icon: RotateCcw, label: '30-Day\nReturn Policy' },
                 { icon: ShieldCheck, label: 'Secure\nCheckout' },
               ].map(({ icon: Icon, label }) => (

@@ -665,7 +665,7 @@ export const SEO_KEYWORDS = {
     'pet shop free shipping',
     'pet store with free delivery',
     'online pet store USA',
-    'pet supplies fast shipping',
+    'pet supplies shipping',
   ],
 
   // Seasonal keywords

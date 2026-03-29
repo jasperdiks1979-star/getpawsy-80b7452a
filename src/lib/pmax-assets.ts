@@ -26,7 +26,7 @@ export const PMAX_SHORT_HEADLINES = [
   
   // Shipping/Trust
   'Free US Shipping $35+',
-  'Fast 3-7 Day Delivery',
+  'Estimated 5–10 Day Delivery',
   '30-Day Easy Returns',
   
   // Category-specific
@@ -41,7 +41,7 @@ export const PMAX_SHORT_HEADLINES = [
 
 export const PMAX_LONG_HEADLINES = [
   // Brand + Trust
-  'GetPawsy: Trusted Pet Products with Fast US Shipping',
+  'GetPawsy: Trusted Pet Products with US Shipping',
   'Shop Quality Pet Supplies – Free Shipping on Orders Over $35',
   'Premium Pet Products Designed for Comfort & Durability',
   
@@ -51,7 +51,7 @@ export const PMAX_LONG_HEADLINES = [
   'From Cozy Beds to Interactive Toys – Everything Your Pet Needs',
   
   // Category-focused
-  'Dog Beds, Cat Trees & More – Fast Delivery to Your Door',
+  'Dog Beds, Cat Trees & More – US Delivery to Your Door',
   'Pet Travel Accessories for Stress-Free Adventures',
   'Interactive Toys That Keep Pets Happy & Engaged',
   
@@ -64,18 +64,18 @@ export const PMAX_LONG_HEADLINES = [
 
 export const PMAX_DESCRIPTIONS = [
   // Primary descriptions (benefit-first)
-  'Shop quality pet products. Free US shipping on orders over $35. Fast 3-7 day delivery.',
+  'Shop quality pet products. Free US shipping on orders over $35. Fast 5–10 day delivery.',
   'Trusted pet supplies for dogs, cats & more. 30-day easy returns on all orders.',
-  'Premium pet essentials designed for comfort. Fast shipping to the United States.',
+  'Premium pet essentials designed for comfort. Shipping to the United States.',
   
   // Category descriptions
   'Cozy dog beds, interactive toys & travel gear. Free shipping on $35+ orders.',
-  'Cat trees, scratchers & enrichment toys. Quality products with fast US delivery.',
+  'Cat trees, scratchers & enrichment toys. Quality products with US delivery.',
   'Pet travel accessories for stress-free trips. Secure checkout, easy returns.',
   
   // Trust-focused
   'Quality pet products you can trust. Dedicated support & 30-day return policy.',
-  'Shop GetPawsy for pet essentials. Free shipping, fast delivery, easy returns.',
+  'Shop GetPawsy for pet essentials. Free shipping, US delivery, easy returns.',
   
   // Seasonal/Generic
   'Everything your pet needs for comfort & play. Shop now with free shipping.',
@@ -152,7 +152,7 @@ export const PMAX_ASSET_GROUPS: PMaxAssetGroup[] = [
     ],
     descriptions: [
       'Shop dog beds, toys, leashes & more. Free US shipping on orders $35+.',
-      'Quality dog products designed for comfort. Fast 3-7 day delivery.',
+      'Quality dog products designed for comfort. Fast 5–10 day delivery.',
     ],
   },
   {
@@ -171,7 +171,7 @@ export const PMAX_ASSET_GROUPS: PMaxAssetGroup[] = [
     ],
     descriptions: [
       'Shop cat trees, toys, scratchers & more. Free shipping on $35+ orders.',
-      'Quality cat products for enrichment & comfort. Fast US delivery.',
+      'Quality cat products for enrichment & comfort. US delivery.',
     ],
   },
   {
@@ -190,7 +190,7 @@ export const PMAX_ASSET_GROUPS: PMaxAssetGroup[] = [
     ],
     descriptions: [
       'Shop pet carriers, car seats & travel accessories. Free US shipping.',
-      'Travel comfortably with your pet. Quality gear with fast delivery.',
+      'Travel comfortably with your pet. Quality gear with US delivery.',
     ],
   },
 ] as const;

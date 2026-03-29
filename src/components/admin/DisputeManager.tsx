@@ -739,7 +739,7 @@ export default function DisputeManager() {
                     <li>Review the customer's claim and evidence above</li>
                     <li>Go to CJ Dropshipping platform and submit a dispute</li>
                     <li>Save the CJ dispute ID in the Details tab</li>
-                    <li>Wait for CJ to process (typically 3-7 days)</li>
+                    <li>Wait for CJ to process (typically 5–10 business days)</li>
                     <li>Once CJ resolves, use "Resolve Claim" to notify customer</li>
                   </ol>
                 </div>

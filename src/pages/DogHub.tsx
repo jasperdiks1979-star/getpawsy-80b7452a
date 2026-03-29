@@ -30,8 +30,8 @@ const DogHub = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Dog Training & Travel Gear – Fast Shipping to the US | GetPawsy</title>
-        <meta name="description" content="Shop dog training harnesses, travel carriers, leashes & enrichment toys. Fast shipping to the United States in 3–7 days. 30-day return policy." />
+        <title>Dog Training & Travel Gear – US Shipping | GetPawsy</title>
+        <meta name="description" content="Shop dog training harnesses, travel carriers, leashes & enrichment toys. Estimated delivery: 5–10 business days. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
       </Helmet>
@@ -45,10 +45,10 @@ const DogHub = () => {
               Dog Training & Travel Essentials
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              No-pull harnesses, car travel safety gear, training leashes, and enrichment toys — fast shipping to customers in the United States.
+              No-pull harnesses, car travel safety gear, training leashes, and enrichment toys — shipped to customers across the United States.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 US Delivery 3–7 Business Days</span>
+              <span>📦 Estimated delivery: 5–10 business days</span>
               <span>🛡️ 30-Day Returns</span>
               <span>🔒 Secure Checkout</span>
             </div>

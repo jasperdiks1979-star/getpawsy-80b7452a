@@ -31,7 +31,7 @@ const CatHub = () => {
     <Layout>
       <Helmet>
         <title>Cat Trees, Carriers & Essentials – Fast Shipping to the US | GetPawsy</title>
-        <meta name="description" content="Shop cat trees, carriers, enrichment toys & scratching posts. Fast shipping to the United States in 3–7 days. 30-day return policy." />
+        <meta name="description" content="Shop cat trees, carriers, enrichment toys & scratching posts. Shipping to the United States in 5–10 business days. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
       </Helmet>
@@ -45,10 +45,10 @@ const CatHub = () => {
               Cat Training & Travel Essentials
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              Cat trees, enrichment toys, airline-approved carriers & scratching posts — fast shipping to customers in the United States.
+              Cat trees, enrichment toys, airline-approved carriers & scratching posts — shipping to customers in the United States.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 Fast US Shipping 3–7 Days</span>
+              <span>📦 US Shipping 5–10 Days</span>
               <span>🛡️ 30-Day Return Policy</span>
               <span>🔒 Secure Checkout</span>
             </div>

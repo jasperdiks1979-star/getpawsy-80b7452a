@@ -124,7 +124,7 @@ export const TRUST_BADGES = {
     subtitle: `On orders over $${FREE_SHIPPING_THRESHOLD}`,
   },
   delivery: {
-    title: 'Fast Delivery',
+    title: 'US Delivery',
     subtitle: DELIVERY_TIME_STANDARD,
   },
   returns: {

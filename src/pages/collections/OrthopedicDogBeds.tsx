@@ -52,7 +52,7 @@ const FAQ_DATA = [
   { question: 'What is CertiPUR-US foam certification?', answer: 'CertiPUR-US is an independent certification program that verifies foam is made without harmful chemicals including formaldehyde, heavy metals, phthalates, and ozone depleters. It also tests for low VOC emissions. Always choose CertiPUR-US certified foam for your dog\'s bed — uncertified foam may off-gas toxic chemicals that are harmful to pets.' },
   { question: 'Can I wash the memory foam core of an orthopedic bed?', answer: 'Never machine wash or fully submerge memory foam — it absorbs water, takes days to dry, and can develop mold. For accidents, blot immediately, then spot clean with a mild enzyme cleaner. Sprinkle baking soda on the surface, let sit for 30 minutes, then vacuum. This is why a waterproof liner between the foam and cover is essential.' },
   { question: 'What\'s the return policy on orthopedic dog beds?', answer: 'We offer a 30-day return policy on all orthopedic beds. If your dog doesn\'t take to the bed within 30 days, contact us to arrange a return. Items must be unused and in original condition. We recommend giving your dog at least 7–14 days to adjust, as most dogs show noticeable improvement in mobility within this period.' },
-  { question: 'How long does shipping take for orthopedic beds?', answer: 'Our most popular orthopedic beds ship directly to customers in the United States, with delivery typically within 3–7 business days. Orders over $35 qualify for free standard shipping. We also offer expedited shipping options for urgent needs, such as post-surgery recovery beds.' },
+  { question: 'How long does shipping take for orthopedic beds?', answer: 'Our most popular orthopedic beds ship directly to customers in the United States, with delivery typically within 5–10 business days. Orders over $35 qualify for free standard shipping. We also offer expedited shipping options for urgent needs, such as post-surgery recovery beds.' },
   { question: 'Are heated orthopedic beds safe for dogs?', answer: 'Heated orthopedic beds can benefit dogs with severe arthritis, but should only be used under veterinary guidance. Look for beds with auto-shutoff timers, chew-resistant cords, and low-voltage heating elements. Never leave a heated bed on unsupervised. For most dogs, standard memory foam provides sufficient warmth through body heat retention.' },
 ];
 
@@ -223,7 +223,7 @@ export default function OrthopedicDogBeds() {
               Orthopedic Memory Foam Support for Large &amp; Senior Dogs.
             </p>
             <p className="text-sm text-primary-foreground/60 mb-4">
-              Free US Shipping • 30-Day Trial • Fast Delivery
+              Free US Shipping • 30-Day Trial • US Delivery
             </p>
             <p className="text-xs text-primary-foreground/50 mb-6 flex items-center gap-1.5">
               <Heart className="w-3.5 h-3.5" /> Over 2,000 happy dog owners served
@@ -835,7 +835,7 @@ export default function OrthopedicDogBeds() {
           <div className="flex flex-wrap justify-center gap-6">
             {[
               { icon: <RotateCcw className="w-5 h-5" />, label: 'Easy Returns' },
-              { icon: <Truck className="w-5 h-5" />, label: 'Fast US Shipping' },
+              { icon: <Truck className="w-5 h-5" />, label: 'US Shipping' },
               { icon: <Lock className="w-5 h-5" />, label: 'Secure Checkout' },
             ].map(t => (
               <div key={t.label} className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

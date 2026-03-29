@@ -279,7 +279,7 @@ function buildProgrammaticPage(productType: string, useCase: string, spaHtml: st
 
 <h2>Why Choosing the Right ${escapeHtml(label)} for ${escapeHtml(useCase.charAt(0).toUpperCase() + useCase.slice(1))} Matters</h2>
 <p>Not all ${escapeHtml(label.toLowerCase())} are created equal. When shopping specifically for ${escapeHtml(useCase)}, you need products designed with the right features, materials, and sizing. Generic options often fall short because they don't address the unique requirements of ${escapeHtml(useCase)}. The wrong choice can lead to wasted money, frustration, and an unhappy pet.</p>
-<p>Our team evaluated dozens of options based on durability, safety, comfort, and value. We prioritize products available with fast US shipping and backed by strong return policies so you can buy with confidence.</p>
+<p>Our team evaluated dozens of options based on durability, safety, comfort, and value. We prioritize products available with US shipping (estimated 5–10 business days) and backed by our 30-day return policy so you can buy with confidence.</p>
 
 <h2>What to Look For</h2>
 <ul>

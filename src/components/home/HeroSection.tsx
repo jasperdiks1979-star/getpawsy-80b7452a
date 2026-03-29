@@ -46,7 +46,7 @@ export function HeroSection() {
 
         <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-sm font-medium text-white/90">
           <span className="inline-flex items-center gap-1.5">✔ Free shipping over $35 (US)</span>
-          <span className="inline-flex items-center gap-1.5">✔ 3–7 day delivery</span>
+          <span className="inline-flex items-center gap-1.5">✔ Estimated delivery: 5–10 business days</span>
           <span className="inline-flex items-center gap-1.5">✔ 30-day returns</span>
         </div>
       </div>

@@ -128,7 +128,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Cost-per-year is actually lower ($40/yr vs $60/yr)',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping on orders over $35 (3–7 business days)', guarantee: '30-day return policy — easy returns on eligible items', returnPolicy: 'Easy returns with prepaid label included' },
+      authorityBlock: { shipping: 'Free US shipping on orders over $35 (5–10 business days)', guarantee: '30-day return policy — easy returns on eligible items', returnPolicy: 'Easy returns with prepaid label included' },
     },
     revenue: {
       currentCtr: getCtr(8),

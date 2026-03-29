@@ -207,17 +207,17 @@ function runBuyerIntentPush(queries: GscQueryRow[]): BuyerIntentResult {
         page,
         queries: allQueries,
         titleRewrite: `${capitalize(primaryKw)} – US Free Shipping & 30-Day Returns | GetPawsy`,
-        metaRewrite: `Find the ${primaryKw} your pet deserves. Independently tested, delivered in 3-7 days. Shop now with free shipping over $35.`,
+        metaRewrite: `Find the ${primaryKw} your pet deserves. Independently tested, estimated delivery 5–10 business days. Shop now with free shipping over $35.`,
         faqEntries: allQueries.slice(0, 3).map(q => ({
           question: `What is the best ${q}?`,
-          answer: `Our ${q} selection is tested by pet care experts. Each product ships with fast delivery to the US and a 30-day return policy. View our curated picks above.`,
+          answer: `Our ${q} selection is tested by pet care experts. Estimated delivery: 5–10 business days. 30-day return policy. View our curated picks above.`,
         })),
         internalLinks: [
           { from: '/guides/best-dog-toys-2026', anchor: primaryKw },
           { from: '/bestsellers', anchor: `top ${primaryKw}` },
           { from: '/blog/pet-bonding-activities', anchor: `${primaryKw} for bonding` },
         ],
-        trustBlocks: ['Free US Shipping Over $35', '30-Day Returns', 'Secure Checkout', 'Fast Delivery'],
+        trustBlocks: ['Free US Shipping Over $35', '30-Day Returns', 'Secure Checkout', '5–10 Day Delivery'],
         comparisonTable: targets.some(t => t.modifiers.some(m => m.includes('vs') || m.includes('compare') || m.includes('best'))),
       };
     });

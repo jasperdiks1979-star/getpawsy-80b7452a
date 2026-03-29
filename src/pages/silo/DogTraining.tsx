@@ -30,7 +30,7 @@ const DogTraining = () => {
     <Layout>
       <Helmet>
         <title>Dog Training Gear – No-Pull Harnesses & Leashes | GetPawsy</title>
-        <meta name="description" content="Shop dog training harnesses, leashes & behavior tools. No-pull designs, reflective stitching, adjustable fit. US 3–7 day shipping. 30-day return policy." />
+        <meta name="description" content="Shop dog training harnesses, leashes & behavior tools. No-pull designs, reflective stitching, adjustable fit. Estimated delivery: 5–10 business days. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
       </Helmet>
@@ -43,10 +43,10 @@ const DogTraining = () => {
               Dog Training Essentials
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              No-pull harnesses, training leashes, and behavior tools — everything you need to build a better bond with your dog. Fast shipping to the US in 3–7 days.
+              No-pull harnesses, training leashes, and behavior tools — everything you need to build a better bond with your dog. Estimated delivery: 5–10 business days.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 Fast US Shipping 3–7 Days</span>
+              <span>📦 Estimated delivery: 5–10 business days</span>
               <span>🛡️ 30-Day Return Policy</span>
             </div>
           </FadeInView>

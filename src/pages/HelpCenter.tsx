@@ -73,7 +73,7 @@ const HelpCenter = () => (
       <title>Customer Help Center | GetPawsy</title>
       <meta
         name="description"
-        content="Find answers about orders, shipping, returns and customer support at GetPawsy. Fast US shipping, 30-day returns, secure checkout."
+        content="Find answers about orders, shipping, returns and customer support at GetPawsy. US shipping, 30-day returns, secure checkout."
       />
       <link rel="canonical" href="https://getpawsy.pet/help" />
     </Helmet>

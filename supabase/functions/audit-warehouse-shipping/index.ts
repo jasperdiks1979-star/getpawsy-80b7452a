@@ -204,7 +204,7 @@ function getRecommendedShippingTime(
   }
   
   // Default for US warehouse without specific options
-  return "3-7 business days";
+  return "5–10 business days";
 }
 
 // Get shipping info for a single product - used during import

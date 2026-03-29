@@ -117,7 +117,7 @@ function generatePinVariants(product: {
       product_name: product.name,
       pin_variant: "benefit",
       pin_title: `Why Pet Parents Love ${shortName.slice(0, 60)} ❤️`,
-      pin_description: `✔ Convenience you'll wonder how you lived without\n✔ Built for busy pet parents\n✔ Fast US shipping 3-7 days\n\n${desc.slice(0, 120)}\n\nExplore at GetPawsy.pet\n\n${hashtags.join(" ")}`,
+      pin_description: `✔ Convenience you'll wonder how you lived without\n✔ Built for busy pet parents\n✔ US shipping · 5–10 business days\n\n${desc.slice(0, 120)}\n\nExplore at GetPawsy.pet\n\n${hashtags.join(" ")}`,
       pin_image_url: product.image_url,
       destination_link: `${BASE_URL}/lp/${product.slug}`,
       board_name: board,

@@ -170,7 +170,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
     variations: {
       reassurance: {
         headline: 'US Shipping • 30-Day Returns',
-        description: 'Quality pet products with free shipping over $35. Fast delivery.',
+        description: 'Quality pet products with free shipping over $35. Estimated delivery: 5–10 business days.',
       },
       problem_solution: {
         headline: 'Pet Essentials Made Simple',

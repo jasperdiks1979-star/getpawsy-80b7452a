@@ -221,7 +221,7 @@ const Cart = () => {
               <div className="mt-4 p-2 bg-muted/50 rounded-lg border border-border text-center">
                 <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs">
                   <Truck className="w-3 h-3" />
-                  <span>Processing: 1–2 business days • Delivery: 3–7 business days</span>
+                  <span>Processing: 1–2 business days • Delivery: 5–10 business days</span>
                 </div>
               </div>
 

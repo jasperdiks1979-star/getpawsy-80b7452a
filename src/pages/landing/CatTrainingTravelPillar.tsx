@@ -13,7 +13,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
   headline: 'Best Cat Training & Travel Gear 2026 – Expert Buyer Guide',
-  description: 'Complete 2026 buyer guide for cat trees, carriers, enrichment toys, and scratching posts. Fast shipping to the US.',
+  description: 'Complete 2026 buyer guide for cat trees, carriers, enrichment toys, and scratching posts. Shipping to the US.',
   author: { '@type': 'Organization', name: 'GetPawsy' },
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
@@ -74,7 +74,7 @@ const CatTrainingTravelPillar = () => {
     <Layout>
       <Helmet>
         <title>Best Cat Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
-        <meta name="description" content="2026 expert guide to the best cat trees, carriers, enrichment toys & scratching posts. Tested picks with US 3–7 day shipping. 30-day return policy." />
+        <meta name="description" content="2026 expert guide to the best cat trees, carriers, enrichment toys & scratching posts. Tested picks with US 5–10 day shipping. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
@@ -89,7 +89,7 @@ const CatTrainingTravelPillar = () => {
               Best Cat Training & Travel Gear 2026
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-3xl">
-              Indoor cats need stimulation, enrichment, and safe travel solutions. This guide covers the best cat trees, carriers, scratching posts, and interactive toys — all available with US 3–7 day shipping.
+              Indoor cats need stimulation, enrichment, and safe travel solutions. This guide covers the best cat trees, carriers, scratching posts, and interactive toys — all available with US 5–10 day shipping.
             </p>
           </FadeInView>
 
@@ -163,7 +163,7 @@ const CatTrainingTravelPillar = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-display font-bold mb-4">Shipping & Returns</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              All cat products ship with 3–7 business day delivery to the United States. Free shipping on orders over $35. Every purchase is covered by our 30-day return policy — items must be unused and in original condition.
+              All cat products ship with 5–10 business day estimated delivery to the United States. Free shipping on orders over $35. Every purchase is covered by our 30-day return policy — items must be unused and in original condition.
             </p>
           </section>
 

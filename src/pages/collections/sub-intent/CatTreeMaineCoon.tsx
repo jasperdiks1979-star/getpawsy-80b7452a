@@ -10,7 +10,7 @@ export default function CatTreeMaineCoon() {
       subtitle={'Cat trees engineered for the largest domestic breed. 18"+ platforms, 12" condo openings, and reinforced construction rated for 25–30+ lb cats.'}
       ctaText="Shop Maine Coon Cat Trees"
       ctaLink="/collections/cat-trees-and-condos"
-      trustBadges={['Rated for 25+ lb Cats', '3–7 Day US Shipping', '30-Day Return Policy']}
+      trustBadges={['Rated for 25+ lb Cats', '5–10 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Cat', href: '/collections/all' },

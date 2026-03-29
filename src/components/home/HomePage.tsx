@@ -40,10 +40,10 @@ const HomePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>GetPawsy – Premium Pet Products | Fast US Shipping</title>
+        <title>GetPawsy – Premium Pet Products | US Shipping</title>
         <meta
           name="description"
-          content="Shop premium pet products at GetPawsy. Top-rated essentials for dogs and cats with fast US shipping and 30-day returns."
+          content="Shop premium pet products at GetPawsy. Top-rated essentials for dogs and cats with US shipping and 30-day returns."
         />
         <link rel="canonical" href="https://getpawsy.pet/" />
       </Helmet>

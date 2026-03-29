@@ -20,7 +20,7 @@ const Shipping = () => {
     <Layout>
       <Helmet>
         <title>Shipping Policy | GetPawsy</title>
-        <meta name="description" content="GetPawsy shipping policy. Orders processed in 1–2 business days, delivered in 3–7 business days to the US. Free shipping on orders over $35." />
+        <meta name="description" content="GetPawsy shipping policy. Orders processed in 1–2 business days, delivered in 5–10 business days to the US. Free shipping on orders over $35." />
         <link rel="canonical" href="https://getpawsy.pet/shipping" />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">

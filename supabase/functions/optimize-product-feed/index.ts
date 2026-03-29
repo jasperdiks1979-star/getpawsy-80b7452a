@@ -106,7 +106,7 @@ function rewriteDescription(name: string, category: string | null): string {
 ✔ Durable materials
 ✔ Suitable for daily use
 
-Ships from US warehouse with fast delivery (3–7 business days). Popular choice among pet owners in the United States.`;
+Ships to customers across the United States. Estimated delivery: 5–10 business days.`;
 }
 
 // ── Price optimization ───────────────────────────────────────────────

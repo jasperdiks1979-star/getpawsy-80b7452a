@@ -55,8 +55,8 @@ const SHIPPING_CLAIM_KEYWORDS = [
   "1–2 business days",
   "1-2 business days",
   "delivery time",
-  "3–7 business days",
-  "3-7 business days",
+  "5–10 business days",
+  "5–10 business days",
   "us warehouse",
   "us warehouses",
   "us fulfillment",
@@ -225,7 +225,7 @@ function checkShippingClaims(corpus: string): { found: string[]; missing: string
     { name: "processing_time", keywords: ["processing time"] },
     { name: "processing_duration", keywords: ["1–2 business days", "1-2 business days"] },
     { name: "delivery_time", keywords: ["delivery time", "shipping time"] },
-    { name: "delivery_duration", keywords: ["3–7 business days", "3-7 business days"] },
+    { name: "delivery_duration", keywords: ["5–10 business days", "5–10 business days"] },
     { name: "us_fulfillment", keywords: ["us warehouse", "us warehouses", "us fulfillment", "united states"] },
   ];
   

@@ -282,7 +282,7 @@ const Bestsellers = () => {
     { question: 'Are bestseller prices accurate?', answer: 'Yes — the price you see is the price you pay. All bestseller prices include free US shipping on orders over $35.' },
     { question: 'What is the return policy for bestseller products?', answer: 'All bestseller products are covered by our 30-day return policy. If you or your pet are not satisfied, contact us to arrange a return per our policy.' },
     { question: 'Do you offer bundles with bestseller items?', answer: 'Yes! Many bestseller product pages feature a "Frequently Bought Together" section where you can save by bundling complementary items. Bundle discounts are applied automatically at checkout.' },
-    { question: 'How long does shipping take for bestseller items?', answer: 'Estimated delivery for US orders is 3–7 business days. Free shipping is available on orders over $35.' },
+    { question: 'How long does shipping take for bestseller items?', answer: 'Estimated delivery for US orders is 5–10 business days. Free shipping is available on orders over $35.' },
     { question: 'Are these products safe for puppies and kittens?', answer: 'Product safety varies by item. Each product page includes age and size recommendations. For puppies under 6 months or kittens, always check the specific product details or contact our support team.' },
     { question: 'Can I see real customer reviews?', answer: 'Absolutely. Every bestseller product page features verified customer reviews with photos. We never filter or remove honest feedback — positive or negative.' },
     { question: 'Do you ship internationally?', answer: 'Currently we ship to the United States only. We are working on expanding to Canada and the UK. Sign up for our newsletter to be notified when international shipping becomes available.' },
@@ -618,7 +618,7 @@ const Bestsellers = () => {
                 <Truck className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-semibold mb-2">Free US Shipping</h3>
-              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 3–7 business days.</p>
+              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 5–10 business days.</p>
             </div>
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -651,7 +651,7 @@ const Bestsellers = () => {
                   ['Free Shipping Threshold', '$35+'],
                   ['Return Window', '30-day return policy'],
                   ['Shipping', 'US shipping via trusted logistics partners'],
-                  ['Standard Delivery', '3–7 business days'],
+                  ['Standard Delivery', '5–10 business days'],
                   ['Payment Security', 'Stripe-powered checkout'],
                   ['Target Market', 'United States'],
                 ].map(([label, value], i) => (

@@ -242,7 +242,7 @@ export function TopPicksSection() {
               Top Picks for Pet Parents
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              20 hand-selected products loved by dogs and cats — verified quality, fast US shipping
+              20 hand-selected products loved by dogs and cats — verified quality, US shipping
             </p>
           </div>
           <Button asChild variant="outline" className="gap-2 rounded-full shrink-0">
