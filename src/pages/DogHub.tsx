@@ -48,7 +48,7 @@ const DogHub = () => {
               No-pull harnesses, car travel safety gear, training leashes, and enrichment toys — shipped to customers across the United States.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 US Delivery 3–7 Business Days</span>
+              <span>📦 Estimated delivery: 5–10 business days</span>
               <span>🛡️ 30-Day Returns</span>
               <span>🔒 Secure Checkout</span>
             </div>

@@ -10,7 +10,7 @@ export const CategoryTrustStrip = () => {
       </div>
       <div className="flex items-center gap-1.5">
         <Truck className="w-3.5 h-3.5 text-primary" />
-        <span>Delivery: 3–7 Business Days</span>
+        <span>Estimated delivery: 5–10 business days</span>
       </div>
       <div className="flex items-center gap-1.5">
         <RotateCcw className="w-3.5 h-3.5 text-primary" />

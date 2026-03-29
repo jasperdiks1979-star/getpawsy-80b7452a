@@ -13,7 +13,7 @@ const BADGES = [
   {
     icon: RotateCcw,
     title: `${RETURN_WINDOW_DAYS}-Day Returns`,
-    subtitle: 'Hassle-free returns on all orders',
+    subtitle: 'Easy returns on eligible items',
   },
   {
     icon: Lock,

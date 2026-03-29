@@ -941,7 +941,7 @@ const BestsellerDetail = () => {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-primary" />
-                    <span>Fast shipping to the United States</span>
+                    <span>Estimated delivery: 5–10 business days</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <RotateCcw className="w-4 h-4 text-primary" />

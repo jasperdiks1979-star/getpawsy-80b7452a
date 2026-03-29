@@ -420,8 +420,8 @@ PRINT SPECIFICATIES:
 - Snijmerken (crop marks) zijn toegevoegd
 
 CONTACT:
-Website: getpawsy.nl
-Email: info@getpawsy.nl
+Website: getpawsy.pet
+Email: support@getpawsy.pet
 
 Gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} ${new Date().toLocaleTimeString('nl-NL')}
 `;

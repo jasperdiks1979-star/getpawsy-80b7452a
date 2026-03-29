@@ -46,7 +46,7 @@ const DogTraining = () => {
               No-pull harnesses, training leashes, and behavior tools — everything you need to build a better bond with your dog. Estimated delivery: 5–10 business days.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 Fast US Shipping 3–7 Days</span>
+              <span>📦 Estimated delivery: 5–10 business days</span>
               <span>🛡️ 30-Day Return Policy</span>
             </div>
           </FadeInView>
