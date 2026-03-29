@@ -90,7 +90,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                         )}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      Ships in 3–7 days
+                      Ships in 5–10 business days
                     </p>
                   </div>
                 </Link>

@@ -13,7 +13,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
   headline: 'Best Dog Training & Travel Gear 2026 – Expert Buyer Guide',
-  description: 'Complete 2026 buyer guide for dog training harnesses, car travel safety, leashes, and enrichment gear. Fast shipping to the US.',
+  description: 'Complete 2026 buyer guide for dog training harnesses, car travel safety, leashes, and enrichment gear. Shipping to the US.',
   author: { '@type': 'Organization', name: 'GetPawsy' },
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
@@ -74,7 +74,7 @@ const DogTrainingTravelPillar = () => {
     <Layout>
       <Helmet>
         <title>Best Dog Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
-        <meta name="description" content="2026 expert guide to the best dog training harnesses, car seats, leashes & travel gear. Tested picks with US 3–7 day shipping. 30-day return policy." />
+        <meta name="description" content="2026 expert guide to the best dog training harnesses, car seats, leashes & travel gear. Tested picks with US 5–10 day shipping. 30-day return policy." />
         <link rel="canonical" href="https://getpawsy.pet/collections/all" />
         <meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
@@ -89,7 +89,7 @@ const DogTrainingTravelPillar = () => {
               Best Dog Training & Travel Gear 2026
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-3xl">
-              Whether you're training a new puppy or preparing your dog for road trips, having the right gear makes all the difference. This guide covers the best harnesses, leashes, car seats, and travel accessories — all available with US 3–7 day shipping.
+              Whether you're training a new puppy or preparing your dog for road trips, having the right gear makes all the difference. This guide covers the best harnesses, leashes, car seats, and travel accessories — all available with US 5–10 day shipping.
             </p>
           </FadeInView>
 

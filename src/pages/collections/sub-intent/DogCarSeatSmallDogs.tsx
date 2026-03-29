@@ -10,7 +10,7 @@ export default function DogCarSeatSmallDogs() {
       subtitle="Car seats designed for dogs under 25 lbs with elevated viewing platforms, padded interiors, and secure attachment systems. Keep small dogs safe and comfortable on every ride."
       ctaText="Shop Small Dog Car Seats"
       ctaLink="/collections/best-dog-car-seats"
-      trustBadges={['For Dogs Under 25 lbs', '3–7 Day US Shipping', '30-Day Return Policy']}
+      trustBadges={['For Dogs Under 25 lbs', '5–10 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Dog', href: '/collections/all' },

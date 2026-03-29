@@ -584,7 +584,7 @@ const ProductDetail = () => {
           <title>{`${truncatedSlugName} | GetPawsy - Premium Pet Products`}</title>
           <meta
             name="description"
-            content={`Shop ${truncatedSlugName} at GetPawsy. Premium quality, fast US shipping & 30-day returns.`}
+            content={`Shop ${truncatedSlugName} at GetPawsy. Premium quality, US shipping & 30-day returns.`}
           />
           <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
           <meta
@@ -945,7 +945,7 @@ const ProductDetail = () => {
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Truck className="w-3.5 h-3.5 text-primary" />
-                Ships in 3–7 business days
+                Ships in 5–10 business days
               </span>
               <span className="flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-primary" />
@@ -1134,7 +1134,7 @@ const ProductDetail = () => {
                     bullets.push(
                       "Premium materials built for daily pet life",
                       "Designed for comfort and ease of use",
-                      "Shipping to the United States in 3–7 business days",
+                      "Shipping to the United States in 5–10 business days",
                       "30-day return policy included",
                     );
                   }
@@ -1232,7 +1232,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart – Ships in 3–7 Days 🇺🇸
+                Add to Cart – Ships in 5–10 Days 🇺🇸
               </Button>
 
               {/* Wishlist */}
@@ -1252,7 +1252,7 @@ const ProductDetail = () => {
                 <Truck className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-foreground">Shipping Information</p>
-                  <p className="text-muted-foreground">Orders processed within 1–2 business days. Delivery: 3–7 business days within the United States.</p>
+                  <p className="text-muted-foreground">Orders processed within 1–2 business days. Delivery: 5–10 business days within the United States.</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -1798,7 +1798,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span className="hidden md:inline">Add to Cart – Ships in 3–7 Days 🇺🇸</span>
+                <span className="hidden md:inline">Add to Cart – Ships in 5–10 Days 🇺🇸</span>
                 <span className="md:hidden">Add to Cart 🇺🇸</span>
               </Button>
 

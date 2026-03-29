@@ -95,7 +95,7 @@ export function WebsiteSchema({
     '@id': `${url}/#store`,
     name: 'GetPawsy Pet Store',
     url: url,
-    description: 'Online pet store offering premium dog beds, cat trees, pet toys, collars, grooming supplies and accessories. Fast US shipping with secure payment.',
+    description: 'Online pet store offering premium dog beds, cat trees, pet toys, collars, grooming supplies and accessories. US shipping with secure payment.',
     priceRange: '$$',
     image: `${url}${image}`,
     logo: `${url}/favicon.png`,

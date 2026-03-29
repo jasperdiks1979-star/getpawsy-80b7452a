@@ -13,7 +13,7 @@ const badges = [
   },
   {
     icon: Clock,
-    title: 'Fast Delivery',
+    title: 'US Delivery',
     description: DELIVERY_TIME_STANDARD,
     color: 'sand',
   },

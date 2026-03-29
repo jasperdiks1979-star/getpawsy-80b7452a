@@ -220,7 +220,7 @@ function runRevenueEngine(queries: GscRow[]): RevenueEngineResult {
   const croImprovements: CroImprovement[] = [
     { area: 'Above-the-fold', issue: 'Value proposition unclear on mobile', fix: 'Strong benefit-first H1 with problem-solution framing', impact: 'high', projectedLift: 15 },
     { area: 'CTA', issue: 'CTA below scroll on product pages', fix: 'Sticky mobile Add-to-Cart with trust micro-copy', impact: 'high', projectedLift: 12 },
-    { area: 'Trust', issue: 'Missing shipping clarity', fix: 'Add shipping reassurance block (US warehouse, 3-7 days)', impact: 'medium', projectedLift: 8 },
+    { area: 'Trust', issue: 'Missing shipping clarity', fix: 'Add shipping reassurance block (US warehouse, 5–10 business days)', impact: 'medium', projectedLift: 8 },
     { area: 'Social proof', issue: 'No trust indicators above fold', fix: 'Add micro-trust badges (30-day returns, secure payment)', impact: 'medium', projectedLift: 7 },
     { area: 'Mobile', issue: 'Cart visibility issues on small screens', fix: 'Floating cart icon with item count badge', impact: 'medium', projectedLift: 5 },
     { area: 'Content', issue: 'Generic product descriptions', fix: 'Benefit-first bullet structure with use-case examples', impact: 'high', projectedLift: 10 },

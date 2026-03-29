@@ -77,7 +77,7 @@ export default function DogTrainingBehaviorTools() {
     '@context': 'https://schema.org', '@type': 'CollectionPage',
     '@id': `${CANONICAL}#collection`,
     name: 'Dog Training & Behavior Tools — No-Pull Harnesses, Leashes & Training Gear',
-    description: 'High-quality no-pull harnesses, long training leashes, recall gear & positive reinforcement tools. Fast US shipping.',
+    description: 'High-quality no-pull harnesses, long training leashes, recall gear & positive reinforcement tools. US shipping.',
     url: CANONICAL,
     mainEntity: {
       '@type': 'ItemList', numberOfItems: products.length,
@@ -107,7 +107,7 @@ export default function DogTrainingBehaviorTools() {
         <link rel="alternate" hrefLang="x-default" href={CANONICAL} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content="Dog Training & Behavior Tools | GetPawsy" />
-        <meta property="og:description" content="No-pull harnesses, long training leashes, recall gear & positive reinforcement tools. Fast US shipping." />
+        <meta property="og:description" content="No-pull harnesses, long training leashes, recall gear & positive reinforcement tools. US shipping." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={CANONICAL} />
         <meta property="og:site_name" content="GetPawsy" />
@@ -158,7 +158,7 @@ export default function DogTrainingBehaviorTools() {
       <section className="border-b border-border bg-muted/30">
         <div className="container py-3">
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /><span>Fast US Shipping</span></div>
+            <div className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /><span>US Shipping</span></div>
             <div className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /><span>30-Day Return Policy</span></div>
             <div className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-primary" /><span>Secure Checkout</span></div>
             <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-primary" /><span>Trainer Recommended</span></div>
@@ -256,7 +256,7 @@ export default function DogTrainingBehaviorTools() {
       {/* ─── PRODUCTS ─── */}
       <section id="products" className="container py-12 md:py-16">
         <h2 className="text-2xl md:text-3xl font-display font-bold text-center mb-2">Featured Training Products</h2>
-        <p className="text-center text-muted-foreground mb-8">US-warehouse fulfilled • 3–7 day shipping</p>
+        <p className="text-center text-muted-foreground mb-8">US-warehouse fulfilled • 5–10 day shipping</p>
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}

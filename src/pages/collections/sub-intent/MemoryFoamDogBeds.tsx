@@ -10,7 +10,7 @@ export default function MemoryFoamDogBeds() {
       subtitle="Viscoelastic memory foam beds that contour to your dog's body, relieve pressure points, and maintain support for 3–5 years. Tested and density-rated."
       ctaText="Shop Memory Foam Beds"
       ctaLink="/collections/orthopedic-calming-dog-beds"
-      trustBadges={['Foam Density Tested', '3–7 Day US Shipping', '30-Day Return Policy']}
+      trustBadges={['Foam Density Tested', '5–10 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Dog', href: '/collections/all' },

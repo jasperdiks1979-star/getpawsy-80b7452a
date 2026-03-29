@@ -37,7 +37,7 @@ const FAQ_DATA = [
   { question: 'How do I clean a cat tree?', answer: 'Vacuum all platforms and condos weekly to remove hair and dander. Spot-clean stains with enzyme cleaner. For deep cleaning, remove fabric covers if possible and machine wash. Replace carpet/fabric covers every 2–3 years. Wipe wood surfaces with a damp cloth.' },
   { question: 'Can I put a cat tree near a window?', answer: 'Yes — window placement is ideal. Cats love watching outdoor activity, and natural sunlight provides warmth. Ensure the tree is stable enough that a cat launching toward the window won\'t tip it. Secure the tree to the wall if it\'s next to a window, especially on upper floors.' },
   { question: 'What is the best budget cat tree for large cats?', answer: 'Budget options under $120 include engineered wood trees with 4-inch sisal posts and 16+ inch platforms. They won\'t have the premium features of $200+ trees, but provide adequate support for cats up to 20 lbs. Add wall anchors ($10) for extra stability.' },
-  { question: 'How long does shipping take for cat trees?', answer: 'Our cat trees ship directly to customers with standard delivery in 3–7 business days. Large trees ship via ground freight. Free shipping on orders over $35. Assembly hardware and wall-anchor kits included with all heavy-duty models.' },
+  { question: 'How long does shipping take for cat trees?', answer: 'Our cat trees ship directly to customers with standard delivery in 5–10 business days. Large trees ship via ground freight. Free shipping on orders over $35. Assembly hardware and wall-anchor kits included with all heavy-duty models.' },
   { question: 'What is your return policy on cat trees?', answer: 'We offer a 30-day return policy. If the tree doesn\'t meet your expectations, contact us to start a return. Due to size, return shipping may apply. Defective or damaged trees are replaced free of charge.' },
 ];
 
@@ -179,7 +179,7 @@ export default function CatTreesForLargeCats() {
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-primary" /> Rated for 25+ lb Cats</span>
-            <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> 3–7 Day US Shipping</span>
+            <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> 5–10 Day US Shipping</span>
             <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> 30-Day Return Policy</span>
           </div>
         </section>
@@ -360,7 +360,7 @@ export default function CatTreesForLargeCats() {
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Choose GetPawsy for Cat Trees?</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: '🚚', title: 'US Delivery', desc: 'Estimated delivery: 3–7 business days. Free shipping on orders over $35.' },
+              { icon: '🚚', title: 'US Delivery', desc: 'Estimated delivery: 5–10 business days. Free shipping on orders over $35.' },
               { icon: '🔄', title: '30-Day Returns', desc: 'Not the right fit? Return within 30 days per our return policy.' },
               { icon: '🐾', title: 'Selected for Stability', desc: 'We prioritize sturdy, well-built cat trees suitable for larger cats.' },
               { icon: '⭐', title: 'Quality Reviewed', desc: 'Products selected based on materials, build quality, and customer feedback.' },

@@ -63,7 +63,7 @@ function scoreProduct(p: { name: string; price: number; category?: string; wareh
   // Clear category = +2
   if (ALLOWED_CATEGORIES.some(c => lower.includes(c))) score += 2;
 
-  // Fast shipping = +1
+  // Shipping = +1
   if (p.shippingDays && p.shippingDays <= 5) score += 1;
 
   // High-intent keywords = +1

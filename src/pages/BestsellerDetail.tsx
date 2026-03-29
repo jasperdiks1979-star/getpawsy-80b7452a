@@ -1644,7 +1644,7 @@ const BestsellerDetail = () => {
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
                 Find the right products for your pet. Browse our selection and enjoy free US shipping on orders over $35.
-                <span className="block mt-2 text-primary font-medium">Estimated delivery: 3–7 business days.</span>
+                <span className="block mt-2 text-primary font-medium">Estimated delivery: 5–10 business days.</span>
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

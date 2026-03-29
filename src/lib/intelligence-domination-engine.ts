@@ -331,7 +331,7 @@ function runConversionAmplifier(queries: GscRow[]): ConversionAmplifierResult {
     { area: 'Social proof', severity: 'medium', description: 'No review count or rating visible above fold', fix: 'Add aggregate star rating + review count under product title' },
     { area: 'Cross-sell', severity: 'medium', description: 'Related products section lacks contextual relevance', fix: 'Add "Frequently bought together" bundle with 1-click add-all' },
     { area: 'Mobile checkout', severity: 'high', description: 'Cart page requires multiple taps to reach checkout', fix: 'Implement express checkout (Apple Pay / Google Pay) on product page' },
-    { area: 'Shipping clarity', severity: 'low', description: 'Delivery estimates not specific enough', fix: 'Show "Arrives in 3-7 business days" with zip-based estimation' },
+    { area: 'Shipping clarity', severity: 'low', description: 'Delivery estimates not specific enough', fix: 'Show "Arrives in 5–10 business days" with zip-based estimation' },
     { area: 'Comparison content', severity: 'low', description: 'No comparison tables on product pages', fix: 'Add "How it compares" section for commercial-intent visitors' },
   ];
 

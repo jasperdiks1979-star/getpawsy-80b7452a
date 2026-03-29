@@ -59,7 +59,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Vet-recommended memory foam for joint pain relief' },
-      { icon: '🇺🇸', text: 'Ships from US warehouses in 3–7 days' },
+      { icon: '🇺🇸', text: 'Ships from US warehouses in 5–10 business days' },
       { icon: '🔄', text: '30-day return policy — full refund if your dog doesn\'t love it' },
     ],
     quickComparison: [
@@ -214,7 +214,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Crash-tested designs for dogs up to 75 lbs' },
-      { icon: '🇺🇸', text: 'Fast US shipping — 3–7 business days' },
+      { icon: '🇺🇸', text: 'US shipping — 5–10 business days' },
       { icon: '🔄', text: '30-day return policy on all travel gear' },
     ],
     quickComparison: [
@@ -261,7 +261,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Cooling airflow design for hot weather and outdoor use' },
-      { icon: '🇺🇸', text: 'Ships from US warehouses in 3–7 days' },
+      { icon: '🇺🇸', text: 'Ships from US warehouses in 5–10 business days' },
       { icon: '🔄', text: '30-day return policy on all elevated beds' },
     ],
     quickComparison: [
@@ -307,7 +307,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Automatic odor control — no daily scooping required' },
-      { icon: '🇺🇸', text: 'Ships from US warehouses — 3–7 day delivery' },
+      { icon: '🇺🇸', text: 'Ships from US warehouses — 5–10 day delivery' },
       { icon: '🔄', text: '30-day trial — return if your cat won\'t use it' },
     ],
     quickComparison: [
@@ -354,7 +354,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Vet-recommended for mental stimulation & anxiety relief' },
-      { icon: '🇺🇸', text: 'US warehouse shipping — 3–7 day delivery' },
+      { icon: '🇺🇸', text: 'US warehouse shipping — 5–10 day delivery' },
       { icon: '🔄', text: '30-day return policy on all toys' },
     ],
     quickComparison: [

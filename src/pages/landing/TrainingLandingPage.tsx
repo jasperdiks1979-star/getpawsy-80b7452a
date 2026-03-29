@@ -262,7 +262,7 @@ export default function TrainingLandingPage() {
             {/* Trust microcopy */}
             <div className="space-y-1.5 mb-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Truck className="w-3.5 h-3.5 text-primary" /><span>Free US Shipping over $35 • 3-7 Day Delivery</span>
+                <Truck className="w-3.5 h-3.5 text-primary" /><span>Free US Shipping over $35 • 5–10 Day Delivery</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <RotateCcw className="w-3.5 h-3.5 text-primary" /><span>30-Day Return Policy</span>

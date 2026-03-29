@@ -151,7 +151,7 @@ export function getAllLongTailKeywords(): string[] {
 /**
  * META TITLE TEMPLATES
  * 
- * Homepage: GetPawsy | Trusted Pet Products with Fast US Shipping
+ * Homepage: GetPawsy | Trusted Pet Products with US Shipping
  * 
  * Collection format: [Primary Keyword] for Everyday Use | GetPawsy
  * Example: Dog Travel Accessories for Everyday Use | GetPawsy
@@ -164,15 +164,15 @@ export function getAllLongTailKeywords(): string[] {
  */
 export const META_TEMPLATES = {
   homepage: {
-    title: 'GetPawsy | Trusted Pet Products with Fast US Shipping',
-    description: 'Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day easy returns.',
+    title: 'GetPawsy | Trusted Pet Products with US Shipping',
+    description: 'Shop thoughtfully selected pet products for dogs and cats. US shipping, free over $35, and 30-day easy returns.',
   },
   
   collection: {
     titleFormat: (primaryKeyword: string) => 
       `${primaryKeyword} for Everyday Use | GetPawsy`.slice(0, 60),
     descriptionFormat: (primaryKeyword: string) =>
-      `Discover practical ${primaryKeyword.toLowerCase()} designed for comfort and daily life. Fast US shipping and easy returns.`.slice(0, 155),
+      `Discover practical ${primaryKeyword.toLowerCase()} designed for comfort and daily life. US shipping and easy returns.`.slice(0, 155),
   },
   
   blog: {
@@ -188,7 +188,7 @@ export const META_TEMPLATES = {
       return `${shortName} for Dogs & Cats | GetPawsy`.slice(0, 60);
     },
     descriptionFormat: () =>
-      'A practical everyday pet product designed for comfort and ease. Fast US shipping and 30-day easy returns.',
+      'A practical everyday pet product designed for comfort and ease. US shipping and 30-day easy returns.',
   },
 } as const;
 

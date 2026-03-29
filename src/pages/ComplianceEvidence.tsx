@@ -130,7 +130,7 @@ export default function ComplianceEvidence() {
     results.push({ name: "Organization Schema", category: "Structured Data", status: "pass", detail: "JSON-LD: contactPoint, parentOrganization (Skidzo), vatID" });
     results.push({ name: "Product Schema (PDP)", category: "Structured Data", status: "pass", detail: "name, image, offers (USD), availability, brand, sku" });
     results.push({ name: "MerchantReturnPolicy", category: "Structured Data", status: "pass", detail: "30-day ReturnByMail with FullRefund — matches /returns" });
-    results.push({ name: "ShippingDetails", category: "Structured Data", status: "pass", detail: "US region, handling 1-2 days, transit 3-7 days — matches /shipping" });
+    results.push({ name: "ShippingDetails", category: "Structured Data", status: "pass", detail: "US region, handling 1-2 days, transit 5–10 business days — matches /shipping" });
     results.push({ name: "No Fake ReviewRating", category: "Structured Data", status: "pass", detail: "reviewRating only present when real DB reviews exist" });
 
     // ── F) Checkout transparency ──
@@ -284,7 +284,7 @@ export default function ComplianceEvidence() {
                 <strong>Confirm business information</strong> — Ensure business name is "Skidzo" or "GetPawsy by Skidzo", and address matches: Apeldoorn, Gelderland, Netherlands.
               </li>
               <li>
-                <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (3–7 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.
+                <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (5–10 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.
               </li>
               <li>
                 <strong>Check return policy</strong> — Under Shipping and returns → Return policies: 30-day return window, return by mail, full refund within 5 business days.

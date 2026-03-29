@@ -111,7 +111,7 @@ export function downloadComplianceAuditPdf() {
   body("The homepage includes a TrustTransparencySection component below the hero.");
   bullet("Secure checkout signal ✓");
   bullet("30-day returns ✓");
-  bullet("Fast shipping ✓");
+  bullet("Shipping ✓");
   bullet("Customer support info ✓");
   body("Status: ✅ PASS — Trust signals are clearly visible.");
 

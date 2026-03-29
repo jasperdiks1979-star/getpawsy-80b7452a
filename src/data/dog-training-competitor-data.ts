@@ -426,7 +426,7 @@ export const CTR_WARFARE_UPGRADES: CTRUpgrade[] = [
     competitorTitle: 'Dog Training Leashes & Long Lines',
     competitorDesc: 'Find training leashes for your dog at great prices.',
     getpawsyTitle: 'Long Training Leash for Dogs — 15ft & 30ft Recall Lines (2026 Guide)',
-    getpawsyDesc: 'Biothane & nylon long lines for recall training. Lightweight, waterproof, tangle-free. Step-by-step recall protocol included. Fast US shipping.',
+    getpawsyDesc: 'Biothane & nylon long lines for recall training. Lightweight, waterproof, tangle-free. Step-by-step recall protocol included. US shipping.',
     expectedCTRLift: '+30–40%',
   },
   {

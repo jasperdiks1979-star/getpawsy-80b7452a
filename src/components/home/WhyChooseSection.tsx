@@ -5,8 +5,8 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 const REASONS = [
   {
     icon: Truck,
-    title: 'Fast US Shipping',
-    desc: 'Free on orders over $35. Delivery in 3–7 business days.',
+    title: 'US Shipping',
+    desc: 'Free on orders over $35. Delivery in 5–10 business days.',
   },
   {
     icon: RotateCcw,

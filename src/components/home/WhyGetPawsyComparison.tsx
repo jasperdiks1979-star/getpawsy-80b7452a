@@ -31,7 +31,7 @@ const FEATURES = [
       </svg>
     ),
     title: 'US Delivery',
-    desc: 'Estimated delivery: 3–7 business days to the United States. Free shipping on orders over $35.',
+    desc: 'Estimated delivery: 5–10 business days to the United States. Free shipping on orders over $35.',
   },
   {
     icon: (

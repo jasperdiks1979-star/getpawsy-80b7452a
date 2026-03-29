@@ -102,7 +102,7 @@ const getWelcomeEmail = (preferenceToken: string): { subject: string; html: stri
           <tr>
             <td style="background-color: #f8f9fa; padding: 24px 32px; text-align: center; border-top: 1px solid #eee;">
               <p style="margin: 0 0 8px 0; color: #888; font-size: 12px;">
-                GetPawsy — Trusted Pet Products with Fast US Shipping
+                GetPawsy — Trusted Pet Products with US Shipping
               </p>
               <p style="margin: 0; color: #aaa; font-size: 11px;">
                 ${preferenceToken ? `<a href="https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}" style="color: #888; text-decoration: underline;">Manage Preferences</a> | ` : ''}
@@ -201,7 +201,7 @@ const getEducationEmail = (preferenceToken: string): { subject: string; html: st
               <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 24px 0;">
                 <p style="margin: 0; color: #555; font-size: 14px;">
                   <strong>Why GetPawsy?</strong><br>
-                  We carefully select products that balance quality and value — with fast US shipping and easy 30-day returns.
+                  We carefully select products that balance quality and value — with US shipping and easy 30-day returns.
                 </p>
               </div>
               
@@ -216,7 +216,7 @@ const getEducationEmail = (preferenceToken: string): { subject: string; html: st
           <tr>
             <td style="background-color: #f8f9fa; padding: 24px 32px; text-align: center; border-top: 1px solid #eee;">
               <p style="margin: 0 0 8px 0; color: #888; font-size: 12px;">
-                GetPawsy — Trusted Pet Products with Fast US Shipping
+                GetPawsy — Trusted Pet Products with US Shipping
               </p>
               <p style="margin: 0; color: #aaa; font-size: 11px;">
                 ${preferenceToken ? `<a href="https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}" style="color: #888; text-decoration: underline;">Manage Preferences</a> | ` : ''}
@@ -294,7 +294,7 @@ const getConversionEmail = (preferenceToken: string): { subject: string; html: s
                       <span style="color: #f97316;">✓</span>
                     </td>
                     <td style="padding: 8px 0; color: #555; font-size: 14px;">
-                      <strong>Fast US shipping</strong> — Free on orders over $35
+                      <strong>US shipping</strong> — Free on orders over $35
                     </td>
                   </tr>
                   <tr>
@@ -342,7 +342,7 @@ const getConversionEmail = (preferenceToken: string): { subject: string; html: s
           <tr>
             <td style="background-color: #f8f9fa; padding: 24px 32px; text-align: center; border-top: 1px solid #eee;">
               <p style="margin: 0 0 8px 0; color: #888; font-size: 12px;">
-                GetPawsy — Trusted Pet Products with Fast US Shipping
+                GetPawsy — Trusted Pet Products with US Shipping
               </p>
               <p style="margin: 0; color: #aaa; font-size: 11px;">
                 ${preferenceToken ? `<a href="https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}" style="color: #888; text-decoration: underline;">Manage Preferences</a> | ` : ''}

@@ -149,7 +149,7 @@ export default function DogCarTravelSafety() {
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-primary" /> Crash-Test Certified</span>
-            <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> 3–7 Day US Shipping</span>
+            <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> 5–10 Day US Shipping</span>
             <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> 30-Day Return Policy</span>
           </div>
         </section>
@@ -276,7 +276,7 @@ export default function DogCarTravelSafety() {
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Choose GetPawsy for Dog Car Safety?</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: '🚚', title: 'Fast US Shipping', desc: '3–7 day delivery across the US. Free shipping on orders over $35.' },
+              { icon: '🚚', title: 'US Shipping', desc: '5–10 day delivery across the US. Free shipping on orders over $35.' },
               { icon: '🔄', title: '30-Day Return Policy', desc: 'Not satisfied? Return within 30 days to arrange a return.' },
               { icon: '🛡️', title: 'Crash-Test Informed', desc: 'We only stock products with documented safety credentials and CPS-level testing.' },
               { icon: '🏥', title: 'Vet-Approved Materials', desc: 'Padded, non-toxic materials safe for dogs of all sizes and breeds.' },

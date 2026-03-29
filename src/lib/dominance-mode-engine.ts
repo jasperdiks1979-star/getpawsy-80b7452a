@@ -130,7 +130,7 @@ const EMOTIONAL_META = [
 
 const TRUST_SIGNALS: TrustSignal[] = [
   { label: 'Free US Shipping', icon: '🚚' },
-  { label: 'Fast 3-7 Day Delivery', icon: '⚡' },
+  { label: 'Estimated 5–10 Day Delivery', icon: '⚡' },
   { label: '30-Day Returns', icon: '↩️' },
   { label: 'Secure Checkout', icon: '🔒' },
 ];
@@ -188,7 +188,7 @@ function generateFaqSchema(slug: string, pageType: MoneyUrl['pageType']): FaqEnt
   if (pageType === 'product' || pageType === 'bestseller') {
     faqs.push(
       { question: `What makes this ${kw} the best choice for my pet?`, answer: `Our ${kw} is made with premium materials and designed for comfort and durability. Thousands of pet owners trust GetPawsy for quality pet products.` },
-      { question: `Does this ${kw} come with free shipping?`, answer: `Yes! GetPawsy offers free shipping on US orders over $35. Typical delivery is 3–7 business days.` },
+      { question: `Does this ${kw} come with free shipping?`, answer: `Yes! GetPawsy offers free shipping on US orders over $35. Typical delivery is 5–10 business days.` },
       { question: `Can I return the ${kw} if my pet doesn't like it?`, answer: `Absolutely. We offer an easy 30-day return policy on all products, including this ${kw}. Contact us for assistance.` },
     );
   } else if (pageType === 'collection' || pageType === 'guide') {

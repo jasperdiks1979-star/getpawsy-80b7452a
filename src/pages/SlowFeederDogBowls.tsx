@@ -380,7 +380,7 @@ export default function SlowFeederDogBowls() {
               More Slow Feeder Dog Bowls
             </h2>
             <p className="text-center text-muted-foreground mb-10 text-sm">
-              Fast shipping to customers in the United States • {DELIVERY_TIME_STANDARD}
+              Shipping to customers in the United States • {DELIVERY_TIME_STANDARD}
             </p>
 
             {products && products.length > 1 ? (

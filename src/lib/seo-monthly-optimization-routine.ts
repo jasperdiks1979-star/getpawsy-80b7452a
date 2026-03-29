@@ -85,7 +85,7 @@ export const OPTIMIZATION_ACTIONS: Record<string, OptimizationAction> = {
       META DESCRIPTION (max 155 chars):
       - Start with an action verb or question
       - Include the primary keyword naturally
-      - Mention trust signals (fast shipping, easy returns)
+      - Mention trust signals (shipping, easy returns)
       - End with a soft call-to-action
     `,
     estimatedImpact: 'high',

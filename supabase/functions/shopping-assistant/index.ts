@@ -9,7 +9,7 @@ const corsHeaders = {
 // Hard-coded shipping & returns info - NEVER generate alternative values
 const SHIPPING_INFO = {
   processing: "0–1 business day",
-  delivery: "3–7 business days",
+  delivery: "5–10 business days",
   region: "United States only",
   fulfillment: "Ships from US fulfillment centers",
   freeThreshold: 35,

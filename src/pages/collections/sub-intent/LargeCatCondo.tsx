@@ -10,7 +10,7 @@ export default function LargeCatCondo() {
       subtitle={'Oversized cat condos with 12"+ openings, reinforced walls rated for 25+ lbs, and plush removable liners. Built for large breeds that love enclosed spaces.'}
       ctaText="Shop Large Cat Condos"
       ctaLink="/collections/cat-trees-and-condos"
-      trustBadges={['12"+ Openings', '3–7 Day US Shipping', '30-Day Return Policy']}
+      trustBadges={['12"+ Openings', '5–10 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Cat', href: '/collections/all' },

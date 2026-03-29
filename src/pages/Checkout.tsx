@@ -734,7 +734,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Package className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span>Fast shipping to the US • {DELIVERY_TIME_STANDARD}</span>
+                  <span>Shipping to the US • {DELIVERY_TIME_STANDARD}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />

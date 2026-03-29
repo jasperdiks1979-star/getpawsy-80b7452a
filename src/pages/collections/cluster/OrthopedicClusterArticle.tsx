@@ -205,7 +205,7 @@ const CLUSTERS: Record<string, ClusterData> = {
     faq: [
       { q: 'What\'s the best bed for a senior dog with arthritis?', a: 'A medium-firm memory foam bed (1.8+ lb/ft³ density) with a low entry side and bolster edges. The foam should be at least 4 inches thick for dogs under 60 lbs and 5+ inches for larger seniors. Waterproof liner is essential for aging dogs.' },
       { q: 'Should senior dogs sleep on the floor?', a: 'No. Hard floors provide zero joint support and conduct cold, worsening stiffness. Even thin orthopedic mats are significantly better than floor sleeping for dogs with aging joints.' },
-      { q: 'How do I get my senior dog to use a new bed?', a: 'Place the bed where your dog already sleeps. Add a worn t-shirt with your scent. Reward your dog for investigating and lying on the bed. Most dogs transition within 3–7 days once they experience the comfort difference.' },
+      { q: 'How do I get my senior dog to use a new bed?', a: 'Place the bed where your dog already sleeps. Add a worn t-shirt with your scent. Reward your dog for investigating and lying on the bed. Most dogs transition within 5–10 business days once they experience the comfort difference.' },
       { q: 'Can an orthopedic bed help my senior dog live longer?', a: 'While a bed alone doesn\'t extend lifespan, reduced joint pain leads to better mobility, more exercise, healthier weight, and improved quality of life — all factors that contribute to longevity in senior dogs.' },
     ],
     relatedClusters: [

@@ -33,7 +33,7 @@ const MONEY_HUBS: Array<{
     href: '/collections/cat-condos',
     anchor: 'indoor cat furniture and enrichment',
     content:
-      'Indoor cats need vertical space, scratching surfaces, and mental stimulation to stay healthy and happy. Our curated indoor cat furniture collection includes wall-mounted shelves that create aerial highways, sisal scratching towers that protect your furniture, window perches with suction-cup mounts for bird watching, and interactive puzzle feeders. Each piece is selected for durability, modern aesthetics, and cat ergonomics. Perfect for apartments and multi-cat households. Fast US shipping, free over $35.',
+      'Indoor cats need vertical space, scratching surfaces, and mental stimulation to stay healthy and happy. Our curated indoor cat furniture collection includes wall-mounted shelves that create aerial highways, sisal scratching towers that protect your furniture, window perches with suction-cup mounts for bird watching, and interactive puzzle feeders. Each piece is selected for durability, modern aesthetics, and cat ergonomics. Perfect for apartments and multi-cat households. US shipping, free over $35.',
     badges: ['Wall-Mountable', 'Space-Saving', 'Modern Design'],
     guideLink: '/resources/indoor-cat-care',
   },

@@ -117,12 +117,12 @@ function generateContent(name: string, cat: string): ContentBlock {
     paragraphs: [
       `Choosing the right products for your pet means balancing quality, safety, and everyday practicality. This product is designed specifically for the demands of daily pet life — built with premium materials that hold up over time, while remaining comfortable and safe for your furry companion.`,
       `Every detail is considered with your pet's well-being in mind. From the materials used to the ergonomic design, this product reflects what real pet owners need: something that works reliably, looks good in your home, and genuinely improves your pet's quality of life.`,
-      `Backed by our 30-day return policy and responsive customer support, you can try it with complete confidence. Fast shipping from US-based fulfillment means your pet won't have to wait long to enjoy their new favorite thing.`,
+      `Backed by our 30-day return policy and responsive customer support, you can try it with complete confidence. Shipping from US-based fulfillment means your pet won't have to wait long to enjoy their new favorite thing.`,
     ],
     highlights: [
       'Premium, pet-safe materials throughout',
       'Designed for daily use and durability',
-      'Fast US shipping with tracking',
+      'US shipping with tracking',
       '30-day return policy',
       'Responsive customer support team',
     ],

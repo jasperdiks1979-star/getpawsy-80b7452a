@@ -111,7 +111,7 @@ export const TrustTransparencySection = () => (
           ))}
         </dl>
         <p className="text-sm text-muted-foreground mt-4">
-          Orders are fulfilled by trusted logistics partners to ensure fast delivery across the United States.
+          Orders are fulfilled by trusted logistics partners to ensure US delivery across the United States.
         </p>
       </div>
     </div>

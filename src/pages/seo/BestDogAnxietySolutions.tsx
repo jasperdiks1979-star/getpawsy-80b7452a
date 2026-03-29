@@ -84,7 +84,7 @@ export default function BestDogAnxietySolutions() {
           bestFor: 'General anxiety and new-home adjustment',
           highlights: ['Releases dog-appeasing pheromone (DAP)', 'Clinically proven to reduce stress signs', 'Covers 700 sq ft', '30-day refill system'],
           pros: ['Clinically proven pheromone technology', 'Covers 700 sq ft — whole room coverage', 'Works 24/7 with no owner intervention', 'Odorless and safe for humans and other pets'],
-          cons: ['Monthly refills cost $15–$20', 'Requires electrical outlet placement', 'Takes 3–7 days to show full effect'],
+          cons: ['Monthly refills cost $15–$20', 'Requires electrical outlet placement', 'Takes 5–10 business days to show full effect'],
           priceRange: '$24–$34',
           rating: 4.6,
         },
