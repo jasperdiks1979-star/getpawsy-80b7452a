@@ -220,7 +220,7 @@ export async function generatePricingReport(demandScores: Map<string, number>): 
       productName: p.name,
       slug: p.slug,
       currentPrice: p.price,
-      costPrice: p.cost_price,
+      costPrice: null,
       conversionRate: metrics.purchases / views,
       bounceRate: metrics.bounces / views,
       cartAbandonmentRate: metrics.atc > 0 ? 1 - (metrics.purchases / metrics.atc) : 0.5,
