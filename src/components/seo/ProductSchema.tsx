@@ -132,7 +132,7 @@ export function ProductSchema({
       '@id': `${baseUrl}/product/${productPath}#offer`,
       url: `${baseUrl}/product/${productPath}`,
       priceCurrency: 'USD',
-      price: product.price.toFixed(2),
+      price: canonicalSchemaPrice.toFixed(2),
       priceValidUntil: priceValidUntilStr,
       // Use centralized availability logic (real supplier stock)
       availability: computeAvailability(product).isInStock
