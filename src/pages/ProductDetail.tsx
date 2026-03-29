@@ -50,6 +50,7 @@ import { ReviewsList } from "@/components/reviews/ReviewsList";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackViewItem } from "@/lib/analytics";
 import { calculateSellingPrice } from "@/lib/pricing";
+import { getProductDiscount } from "@/lib/discount";
 import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
 import { getProductBySlugOrId } from "@/data/products";
