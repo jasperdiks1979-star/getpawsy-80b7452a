@@ -49,7 +49,7 @@ export default function GscChecklist() {
 
         // 4. Recent products
         const { data: products } = await supabase
-          .from('products')
+          .from('products_public')
           .select('slug')
           .eq('is_active', true)
           .not('slug', 'is', null)

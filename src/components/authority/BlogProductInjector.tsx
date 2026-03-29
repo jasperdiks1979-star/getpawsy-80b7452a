@@ -32,7 +32,7 @@ export const BlogProductInjector = memo(function BlogProductInjector({
     queryFn: async () => {
       if (!clusterId) return [];
       const { data } = await supabase
-        .from('products')
+        .from('products_public')
         .select('id, name, slug, image_url, price, compare_at_price, category')
         .eq('cluster_primary', clusterId)
         .eq('is_active', true)

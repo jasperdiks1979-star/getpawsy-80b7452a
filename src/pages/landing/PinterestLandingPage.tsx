@@ -28,7 +28,7 @@ const PinterestLandingPage = () => {
     queryKey: ['pinterest-landing', slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('slug', slug)
         .eq('is_active', true)

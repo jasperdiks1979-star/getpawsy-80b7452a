@@ -44,7 +44,7 @@ const CatLitterBoxLanding = () => {
     queryKey: ['lp-cat-litter-box'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('slug', LITTER_BOX_SLUG)
         .eq('is_active', true)

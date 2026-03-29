@@ -17,7 +17,7 @@ export default function TrendingProducts() {
     queryKey: ['trending-products', sort],
     queryFn: async () => {
       let query = supabase
-        .from('products')
+        .from('products_public')
         .select('id, name, slug, price, image_url, category, created_at, updated_at')
         .eq('is_active', true)
         .not('image_url', 'is', null);

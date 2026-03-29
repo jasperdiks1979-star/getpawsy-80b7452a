@@ -172,8 +172,8 @@ export function generatePricingRecommendation(signals: PricingSignals): PricingR
 export async function generatePricingReport(demandScores: Map<string, number>): Promise<PricingIntelligenceReport> {
   // Fetch products with cost data
   const { data: products } = await supabase
-    .from('products')
-    .select('id, name, slug, price, cost_price, is_active')
+    .from('products_public')
+    .select('id, name, slug, price, is_active')
     .eq('is_active', true)
     .limit(500);
 
