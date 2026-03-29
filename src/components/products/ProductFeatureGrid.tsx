@@ -32,7 +32,7 @@ function detectType(name: string, category: string): ProductType {
 
 const FEATURES: Record<ProductType, Feature[]> = {
   bed: [
-    { title: 'Memory Foam Core', description: 'Adapts to your dog\'s body and relieves pressure points' },
+    { title: 'Memory Foam Core', description: 'Adapts to your dog\'s body and supports pressure points' },
     { title: 'Raised Edges', description: 'Provides extra comfort, security, and neck support' },
     { title: 'Washable Cover', description: 'Removable cover for easy machine washing' },
     { title: 'Non-Slip Base', description: 'Stays firmly in place on hardwood and tile floors' },
