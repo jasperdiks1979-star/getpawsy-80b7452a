@@ -137,7 +137,7 @@ export const TRUST_BADGES = {
   },
   quality: {
     title: 'Customer Support',
-    subtitle: 'Response within 24–48 hours',
+    subtitle: 'Response within 24 hours',
   },
 } as const;
 
