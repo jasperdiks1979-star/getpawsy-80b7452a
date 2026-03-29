@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 
 /**
  * Bestsellers Right Now — conversion-optimized product grid + scroll.
