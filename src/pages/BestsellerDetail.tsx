@@ -360,7 +360,7 @@ const BestsellerDetail = () => {
         .from('bestsellers')
         .select(`
           *,
-          products:product_id (
+          products_public:product_id (
             id,
             name,
             slug,
@@ -386,7 +386,7 @@ const BestsellerDetail = () => {
     enabled: !!slug,
   });
 
-  const product = bestseller?.products;
+  const product = bestseller?.products_public;
   const sellingPoints: SellingPoint[] = bestseller?.selling_points 
     ? (bestseller.selling_points as unknown as SellingPoint[])
     : [];

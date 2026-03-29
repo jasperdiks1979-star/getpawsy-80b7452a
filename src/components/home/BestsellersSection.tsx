@@ -22,7 +22,7 @@ export const BestsellersSection = () => {
         .from('bestsellers')
         .select(`
           *,
-          products:product_id (
+          products_public:product_id (
             id,
             name,
             price,
@@ -39,7 +39,7 @@ export const BestsellersSection = () => {
       if (error) throw error;
 
       return (data || []).filter(b => {
-        const p = b.products;
+        const p = b.products_public;
         if (!p) return false;
         if (!p.image_url || p.image_url === '/placeholder.svg') return false;
         if (typeof p.stock === 'number' && p.stock <= 0) return false;
@@ -96,7 +96,7 @@ export const BestsellersSection = () => {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {bestsellers.slice(0, 8).map((bestseller) => {
-              const product = bestseller.products;
+              const product = bestseller.products_public;
               if (!product) return null;
 
               const price = typeof product.price === 'number' ? product.price : 0;
