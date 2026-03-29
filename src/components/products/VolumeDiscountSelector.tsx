@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Star, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ interface VolumeDiscountSelectorProps {
   basePrice: number;
   onQuantityChange: (quantity: number, discountPercent: number) => void;
   selectedQuantity?: number;
+  /** Context label — defaults to generic pet copy */
+  contextLabel?: string;
 }
 
 interface VolumeTier {
@@ -28,15 +30,17 @@ export const VolumeDiscountSelector = ({
   basePrice,
   onQuantityChange,
   selectedQuantity = 1,
+  contextLabel,
 }: VolumeDiscountSelectorProps) => {
   const [selected, setSelected] = useState<VolumeTier>(
     VOLUME_TIERS.find(t => t.quantity === selectedQuantity) || VOLUME_TIERS[0]
   );
 
-  const handleSelect = (tier: VolumeTier) => {
+  const handleSelect = useCallback((tier: VolumeTier) => {
+    if (tier.quantity === selected.quantity) return; // no-op guard
     setSelected(tier);
     onQuantityChange(tier.quantity, tier.discount);
-  };
+  }, [selected.quantity, onQuantityChange]);
 
   // Calculate prices for each tier
   const tiersWithPrices = useMemo(() => {
@@ -62,7 +66,7 @@ export const VolumeDiscountSelector = ({
         <Users className="w-4 h-4 text-primary" />
         <h3 className="text-sm font-semibold">Buy More, Save More</h3>
         <span className="text-xs text-muted-foreground">
-          Perfect for multi-dog households
+          {contextLabel || 'Great value for pet owners'}
         </span>
       </div>
 
