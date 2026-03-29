@@ -45,7 +45,7 @@ const DogHub = () => {
               Dog Training & Travel Essentials
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              No-pull harnesses, car travel safety gear, training leashes, and enrichment toys — fast shipping to customers in the United States.
+              No-pull harnesses, car travel safety gear, training leashes, and enrichment toys — shipped to customers across the United States.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
               <span>📦 US Delivery 3–7 Business Days</span>
