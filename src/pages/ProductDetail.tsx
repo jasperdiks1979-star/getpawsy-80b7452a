@@ -489,9 +489,11 @@ const ProductDetail = () => {
   useEffect(() => {
     if (!currentProductId) return;
     setSelectedImage(0);
-    // Auto-select first variant immediately, or null if no variants
-    // This runs ONCE per product load — no oscillation possible
+    // Auto-select first variant for internal state (images, SKU), but do NOT
+    // promote its price into display — the storefront shows product.price until
+    // the user explicitly picks a variant.
     setSelectedVariant(variants.length > 0 ? variants[0] : null);
+    setUserHasSelectedVariant(false);
 
     addToRecentlyViewed(currentProductId);
     if (product) {
