@@ -5594,6 +5594,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "referral_uses_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "referral_uses_referred_order_id_fkey"
             columns: ["referred_order_id"]
             isOneToOne: false
@@ -7609,6 +7616,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_codes_public: {
+        Row: {
+          code: string | null
+          id: string | null
+          is_active: boolean | null
+          reward_type: string | null
+          reward_value: number | null
+        }
+        Insert: {
+          code?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          reward_type?: string | null
+          reward_value?: number | null
+        }
+        Update: {
+          code?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          reward_type?: string | null
+          reward_value?: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
