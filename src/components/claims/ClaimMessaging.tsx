@@ -149,11 +149,12 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData, error: signError } = await supabase.storage
         .from("dispute-attachments")
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 60 * 60); // 1-hour expiry
 
-      uploadedUrls.push(urlData.publicUrl);
+      if (signError || !urlData?.signedUrl) throw signError ?? new Error("Failed to create signed URL");
+      uploadedUrls.push(urlData.signedUrl);
     }
 
     return uploadedUrls;
