@@ -62,8 +62,8 @@ function extractProductType(name: string, category: string): ProductType {
  */
 const clarityIntros: Record<ProductType, ClarityIntro> = {
   bed: {
-    intro: "Many pets sleep on worn-out beds that offer zero joint support — leading to stiffness, restless nights, and low energy. This orthopedic pet bed relieves pressure on hips and joints with high-density foam that adapts to your dog's body. Perfect for senior dogs, active breeds, and any pet that deserves deeper, more restorative sleep.",
-    shortBenefits: ['Relieves joint pressure overnight', 'Breathable, machine-washable cover', 'Non-slip base for all floors'],
+    intro: "Many pets sleep on worn-out beds that offer little joint support — leading to stiffness and restless nights. This pet bed is designed to support hips and joints with high-density foam that adapts to your dog's body. A great choice for senior dogs, active breeds, and any pet that deserves more comfortable sleep.",
+    shortBenefits: ['Designed to support joint comfort', 'Breathable, machine-washable cover', 'Non-slip base for all floors'],
   },
   bowl: {
     intro: "Pets that eat too fast risk bloating, vomiting, and poor digestion — while lightweight bowls slide across the floor creating mess at every meal. This feeding bowl promotes healthier eating habits with a stable, non-slip design that keeps mealtimes clean and calm. Ideal for dogs and cats of all sizes who need a slower, safer feeding routine.",
