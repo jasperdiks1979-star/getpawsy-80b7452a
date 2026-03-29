@@ -29,7 +29,8 @@ export const BestsellersSection = () => {
             compare_at_price,
             image_url,
             category,
-            stock
+            stock,
+            variants
           )
         `)
         .eq('is_active', true)
