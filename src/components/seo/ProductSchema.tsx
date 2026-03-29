@@ -79,10 +79,12 @@ export function ProductSchema({
     product.description || ''
   );
 
+  const canonicalSchemaPrice = getCanonicalPrice(product);
+
   // Generate meta description
   const metaDescription = generateMetaDescription(
     product.name,
-    product.price,
+    canonicalSchemaPrice,
     product.category || undefined
   );
 
