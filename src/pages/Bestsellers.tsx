@@ -472,6 +472,7 @@ const Bestsellers = () => {
                 <tbody>
                   {bestsellers.slice(0, 5).map((b) => {
                     const r = ratingsMap?.[b.product.id];
+                    const cp = getCanonicalCardPrice(b.product);
                     return (
                       <tr key={b.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-bold text-primary">#{b.rank}</td>
@@ -481,9 +482,9 @@ const Bestsellers = () => {
                           </Link>
                         </td>
                         <td className="p-3 text-muted-foreground">{b.product.category || '—'}</td>
-                        <td className="p-3 text-right font-semibold">${b.product.price.toFixed(2)}</td>
+                        <td className="p-3 text-right font-semibold">{cp.displayPrice}</td>
                         <td className="p-3 text-right">{r?.averageRating ? `${r.averageRating.toFixed(1)} ★` : '—'}</td>
-                        <td className="p-3 text-center">{b.product.price >= 35 ? <CheckCircle className="w-4 h-4 text-primary mx-auto" /> : '$35+'}</td>
+                        <td className="p-3 text-center">{cp.price >= 35 ? <CheckCircle className="w-4 h-4 text-primary mx-auto" /> : '$35+'}</td>
                       </tr>
                     );
                   })}
