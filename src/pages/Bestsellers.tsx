@@ -171,9 +171,9 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
               <p className="text-sm text-muted-foreground line-clamp-2">{bestseller.hero_subheadline}</p>
             )}
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-primary">${bestseller.product.price.toFixed(2)}</span>
-              {bestseller.product.compare_at_price && (
-                <span className="text-sm text-muted-foreground line-through">${bestseller.product.compare_at_price.toFixed(2)}</span>
+              <span className="text-xl font-bold text-primary">{canonical.displayPrice}</span>
+              {canonical.displayCompareAt && (
+                <span className="text-sm text-muted-foreground line-through">{canonical.displayCompareAt}</span>
               )}
             </div>
             {bestseller.selling_points && bestseller.selling_points.length > 0 && (
