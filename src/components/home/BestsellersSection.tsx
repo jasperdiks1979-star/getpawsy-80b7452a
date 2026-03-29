@@ -101,7 +101,8 @@ export const BestsellersSection = () => {
               const product = bestseller.products_public;
               if (!product) return null;
 
-              const price = typeof product.price === 'number' ? product.price : 0;
+              const canonical = getCanonicalCardPrice(product);
+              const price = canonical.price;
               const imageUrl = product.image_url || '/placeholder.svg';
               const productName = bestseller.hero_headline || product.name || 'Product';
               const slug = bestseller.slug || product.id;

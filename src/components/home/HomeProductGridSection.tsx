@@ -101,14 +101,19 @@ export function HomeProductGridSection({
                     {product.benefit}
                   </p>
                 )}
-                <div className="flex items-center justify-between mt-auto pt-2">
-                  <span className="text-primary font-bold text-sm">
-                    ${product.price.toFixed(2)}
-                  </span>
-                  <span className="text-[10px] font-semibold text-primary">
-                    View →
-                  </span>
-                </div>
+                {(() => {
+                  const cp = getCanonicalCardPrice(product);
+                  return (
+                    <div className="flex items-center justify-between mt-auto pt-2">
+                      <span className="text-primary font-bold text-sm">
+                        {cp.displayPrice}
+                      </span>
+                      <span className="text-[10px] font-semibold text-primary">
+                        View →
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </a>
           ))}
