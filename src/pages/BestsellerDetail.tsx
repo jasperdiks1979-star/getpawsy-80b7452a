@@ -757,9 +757,7 @@ const BestsellerDetail = () => {
     );
   };
 
-  const discount = product.compare_at_price 
-    ? Math.round((1 - product.price / product.compare_at_price) * 100)
-    : 0;
+  const { percent: discount } = getProductDiscount(product.price, product.compare_at_price);
 
   // Generate structured data with real reviews when available
   const productJsonLd = generateProductJsonLd(product, bestseller, reviews);

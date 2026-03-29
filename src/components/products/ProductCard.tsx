@@ -161,10 +161,7 @@ export const ProductCard = memo(
       window.location.assign(productUrl);
     };
 
-    const discount =
-      product.compare_at_price && Number(product.compare_at_price) > Number(product.price)
-        ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
-        : null;
+    const { percent: discount } = getProductDiscount(product.price, product.compare_at_price);
 
     const productUrl =
       product.slug && product.slug.trim() !== "" ? `/product/${product.slug}` : `/product/${product.id}`;

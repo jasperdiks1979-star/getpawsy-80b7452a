@@ -916,7 +916,7 @@ const ProductDetail = () => {
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
                 // Only show compare-at if it's strictly greater than display price
                 const showCompare = compareAt !== null && compareAt > displayPrice;
-                const currentDiscount = showCompare ? Math.round((1 - displayPrice / compareAt!) * 100) : null;
+                const { percent: currentDiscount } = getProductDiscount(displayPrice, compareAt);
 
                 return (
                   <div className="flex items-baseline gap-3 flex-wrap">
