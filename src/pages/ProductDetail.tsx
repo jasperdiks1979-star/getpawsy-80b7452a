@@ -1041,7 +1041,7 @@ const ProductDetail = () => {
                     return (
                       <motion.button
                         key={variant.vid}
-                        onClick={() => { if (!isSelected) setSelectedVariant(variant); }}
+                        onClick={() => { if (!isSelected) { setSelectedVariant(variant); setUserHasSelectedVariant(true); } }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
