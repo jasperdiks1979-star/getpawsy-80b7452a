@@ -209,7 +209,7 @@ const GoogleReview = () => {
                     </tr>
                     <tr>
                       <td className="px-4 py-3 font-medium text-gray-600">Business Email</td>
-                      <td className="px-4 py-3">info@getpawsy.pet</td>
+                      <td className="px-4 py-3">support@getpawsy.pet</td>
                     </tr>
                   </tbody>
                 </table>
