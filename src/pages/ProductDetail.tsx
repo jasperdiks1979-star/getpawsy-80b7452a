@@ -1523,7 +1523,7 @@ const ProductDetail = () => {
                         whileTap={{ scale: 0.97 }}
                         onClick={() => {
                           setSelectedVariant(variant);
-                          if (variant.variantImage) {
+                          setUserHasSelectedVariant(true);
                             const idx = images.findIndex((img) => img === variant.variantImage);
                             if (idx !== -1) setSelectedImage(idx);
                           }
