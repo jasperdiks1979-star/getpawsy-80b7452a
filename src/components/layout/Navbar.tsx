@@ -388,7 +388,7 @@ export const Navbar = () => {
           <Truck className="w-4 h-4" />
           <span>Free US shipping on orders over $35</span>
           <span className="hidden sm:inline text-primary-foreground/80">•</span>
-          <span className="hidden sm:inline text-primary-foreground/80">US delivery 🚀</span>
+          <span className="hidden sm:inline text-primary-foreground/80">Estimated delivery: 5–10 business days</span>
           <button
             onClick={dismissBanner}
             className="absolute right-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"

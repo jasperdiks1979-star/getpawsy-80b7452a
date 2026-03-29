@@ -28,7 +28,7 @@ const TRENDING_GUIDES = [
     path: '/best-dog-anxiety-solutions',
     title: 'Best Dog Anxiety Solutions',
     badge: '⭐ Expert Pick',
-    desc: 'Proven calming products that reduce stress fast.',
+    desc: 'Calming products that may help reduce stress.',
     emoji: '🐕',
   },
 ] as const;
