@@ -103,7 +103,7 @@ export async function getTopMoneyProducts(
 ): Promise<MoneyProduct[]> {
   const { data, error } = await supabase
     .from('products_public')
-    .select('id, name, slug, price, compare_at_price, image_url, category')
+    .select('id, name, slug, price, compare_at_price, image_url, category, variants')
     .eq('is_active', true)
     .not('slug', 'is', null)
     .not('image_url', 'is', null)
