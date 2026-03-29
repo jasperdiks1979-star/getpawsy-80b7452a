@@ -83,7 +83,7 @@ const clarityIntros: Record<ProductType, ClarityIntro> = {
   },
   toy: {
     intro: "Bored pets turn to destructive behavior — chewing furniture, excessive barking, and anxious habits that frustrate everyone. This interactive toy channels that energy into healthy play with durable, non-toxic materials that withstand daily use. Designed to mentally stimulate your pet while keeping your home intact and your pet happier.",
-    shortBenefits: ['Durable for aggressive chewers', 'Non-toxic safe materials', 'Reduces destructive behavior'],
+    shortBenefits: ['Durable for aggressive chewers', 'Non-toxic safe materials', 'Helps redirect destructive behavior'],
   },
   carrier: {
     intro: "Traveling with a loose pet is unsafe, and poorly ventilated carriers cause anxiety and overheating during vet visits or road trips. This pet carrier provides a secure, well-ventilated space with easy-access openings that reduce loading stress. Airline-compatible and sturdy enough for confident travel anywhere.",
