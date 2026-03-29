@@ -1524,6 +1524,7 @@ const ProductDetail = () => {
                         onClick={() => {
                           setSelectedVariant(variant);
                           setUserHasSelectedVariant(true);
+                          if (variant.variantImage) {
                             const idx = images.findIndex((img) => img === variant.variantImage);
                             if (idx !== -1) setSelectedImage(idx);
                           }
