@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
 import { computeAvailability } from '@/lib/availability';
 import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
+import { getCanonicalPrice } from '@/lib/canonical-pricing';
 
 interface ProductSchemaProps {
   product: {
