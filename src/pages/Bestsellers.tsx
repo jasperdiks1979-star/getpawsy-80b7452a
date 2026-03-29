@@ -91,7 +91,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
     addItem({
       id: bestseller.product.id,
       name: bestseller.product.name,
-      price: bestseller.product.price,
+      price: canonicalPrice,
       image: bestseller.product.image_url || '/placeholder.svg',
     });
     trackAddToCart(
