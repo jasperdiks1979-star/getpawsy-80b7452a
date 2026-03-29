@@ -483,27 +483,22 @@ const ProductDetail = () => {
   // Track product views in visitor analytics
   const { trackProductView } = useVisitorTracking();
 
-  // Reset selected image when product changes and add to recently viewed
+  // Reset state and auto-select first variant when PRODUCT ID changes (not object ref)
+  const currentProductId = product?.id;
   useEffect(() => {
+    if (!currentProductId) return;
     setSelectedImage(0);
-    // Auto-select first variant as source of truth (instead of null)
-    setSelectedVariant(null);
+    // Auto-select first variant immediately, or null if no variants
+    // This runs ONCE per product load — no oscillation possible
+    setSelectedVariant(variants.length > 0 ? variants[0] : null);
 
-    // Add current product to recently viewed and track view
-    if (product?.id && product) {
-      addToRecentlyViewed(product.id);
-      trackViewItem(product.id, product.name || "", product.price || 0, product.category || undefined);
-      // Track in visitor analytics for enhanced product view insights
-      trackProductView(product.id, product.name || "");
+    addToRecentlyViewed(currentProductId);
+    if (product) {
+      trackViewItem(currentProductId, product.name || "", product.price || 0, product.category || undefined);
+      trackProductView(currentProductId, product.name || "");
     }
-  }, [product?.id, product, addToRecentlyViewed, trackProductView]);
-
-  // Auto-select first variant when variants are available and none selected
-  useEffect(() => {
-    if (variants.length > 0 && !selectedVariant) {
-      setSelectedVariant(variants[0]);
-    }
-  }, [variants, selectedVariant]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProductId]);
 
   // Update selected image when variant is selected
   useEffect(() => {
