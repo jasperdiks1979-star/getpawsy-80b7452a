@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingBag } from 'lucide-react';
+import { getCanonicalPrice } from '@/lib/canonical-pricing';
 
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
@@ -20,6 +21,7 @@ interface TopProduct {
   slug: string;
   image_url: string | null;
   price: number;
+  variants?: unknown;
 }
 
 /**
