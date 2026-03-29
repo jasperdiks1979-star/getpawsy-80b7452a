@@ -1,11 +1,15 @@
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
+
 interface GridProduct {
   id: string;
   name: string;
   slug: string;
   image_url: string | null;
   price: number;
+  compare_at_price?: number | null;
+  variants?: unknown;
   category?: string | null;
   benefit?: string;
 }
