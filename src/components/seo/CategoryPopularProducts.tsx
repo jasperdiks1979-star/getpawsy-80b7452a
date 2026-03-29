@@ -64,11 +64,18 @@ export function CategoryPopularProducts({ categoryName, products }: CategoryPopu
                   <ShoppingBag className="w-8 h-8 text-muted-foreground/50" />
                 </div>
               )}
-              {product.compare_at_price && product.compare_at_price > product.price && (
-                <Badge className="absolute top-2 right-2 bg-destructive text-white text-xs">
-                  -{Math.round((1 - product.price / product.compare_at_price) * 100)}%
-                </Badge>
-              )}
+              {(() => {
+                const cp = getCanonicalCardPrice(product);
+                return (
+                  <>
+                    {cp.compareAtPrice && (
+                      <Badge className="absolute top-2 right-2 bg-destructive text-white text-xs">
+                        -{Math.round((1 - cp.price / cp.compareAtPrice) * 100)}%
+                      </Badge>
+                    )}
+                  </>
+                );
+              })()}
               {i === 0 && (
                 <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
                   Best Seller
@@ -79,14 +86,19 @@ export function CategoryPopularProducts({ categoryName, products }: CategoryPopu
               <h3 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
                 {productAnchors[i % productAnchors.length](product.name)}
               </h3>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-primary">${product.price.toFixed(2)}</span>
-                {product.compare_at_price && product.compare_at_price > product.price && (
-                  <span className="text-xs text-muted-foreground line-through">
-                    ${product.compare_at_price.toFixed(2)}
-                  </span>
-                )}
-              </div>
+              {(() => {
+                const cp = getCanonicalCardPrice(product);
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-primary">{cp.displayPrice}</span>
+                    {cp.displayCompareAt && (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {cp.displayCompareAt}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
               <span className="inline-flex items-center gap-1 text-primary text-xs mt-2">
                 See details & pricing <ArrowRight className="w-3 h-3" />
               </span>

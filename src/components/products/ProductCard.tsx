@@ -290,10 +290,10 @@ export const ProductCard = memo(
               )}
 
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-primary">${safePrice(product.price)}</span>
-                {product.compare_at_price && Number(product.compare_at_price) > Number(product.price) && (
+                <span className="text-lg font-bold text-primary">{canonical.displayPrice}</span>
+                {canonical.displayCompareAt && (
                   <span className="text-sm text-muted-foreground line-through">
-                    ${safePrice(product.compare_at_price)}
+                    {canonical.displayCompareAt}
                   </span>
                 )}
               </div>

@@ -15,7 +15,7 @@ interface ProductSchemaProps {
     image_url?: string | null;
     images?: string[] | null;
     category?: string | null;
-    stock?: number | null;
+    variants?: unknown;
     sku?: string | null;
     seo_tier?: string | null;
     product_type?: string | null;

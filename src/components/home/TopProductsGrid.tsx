@@ -79,7 +79,7 @@ export function TopProductsGrid() {
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-1">
                   {p.name}
                 </h3>
-                <span className="text-sm font-bold text-primary">${p.price.toFixed(2)}</span>
+                <span className="text-sm font-bold text-primary">${getCanonicalPrice(p).toFixed(2)}</span>
               </div>
             </a>
           ))}
