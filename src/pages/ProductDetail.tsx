@@ -151,7 +151,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
   const fetchBaseBy = async (column: "id" | "slug", value: string) => {
     const { data, error } = await supabase
-      .from("products")
+      .from("products_public")
       .select("*")
       .eq(column, value)
       .eq("is_active", true)
