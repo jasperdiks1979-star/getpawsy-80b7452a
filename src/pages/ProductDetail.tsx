@@ -1596,14 +1596,8 @@ const ProductDetail = () => {
         <FinalCtaBlock
           onAddToCart={handleAddToCart}
           inStock={inStock}
-          price={selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)}
-          compareAtPrice={
-            product.compare_at_price &&
-            Number(product.compare_at_price) >
-              (selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price))
-              ? Number(product.compare_at_price)
-              : null
-          }
+          price={activePrice}
+          compareAtPrice={validCompareAt}
           productName={product.name}
           category={product.category || ""}
         />
