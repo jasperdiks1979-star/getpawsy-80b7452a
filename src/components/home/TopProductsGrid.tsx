@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingBag } from 'lucide-react';
+import { getCanonicalPrice } from '@/lib/canonical-pricing';
 
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
@@ -20,6 +21,7 @@ interface TopProduct {
   slug: string;
   image_url: string | null;
   price: number;
+  variants?: unknown;
 }
 
 /**
@@ -33,7 +35,7 @@ export function TopProductsGrid() {
       const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('products_public')
-        .select('id, name, slug, image_url, price')
+        .select('id, name, slug, image_url, price, variants')
         .in('slug', TOP_SLUGS)
         .eq('is_active', true);
       if (error) throw error;
@@ -77,7 +79,7 @@ export function TopProductsGrid() {
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-1">
                   {p.name}
                 </h3>
-                <span className="text-sm font-bold text-primary">${p.price.toFixed(2)}</span>
+                <span className="text-sm font-bold text-primary">${getCanonicalPrice(p).toFixed(2)}</span>
               </div>
             </a>
           ))}

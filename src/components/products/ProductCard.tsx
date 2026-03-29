@@ -16,6 +16,7 @@ import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWis
 import { safeString, safePrice } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
 import { getProductDiscount } from "@/lib/discount";
+import { getCanonicalCardPrice } from "@/lib/canonical-pricing";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 
 export interface Product {
@@ -102,11 +103,14 @@ export const ProductCard = memo(
 
     const isOutOfStock = !computeAvailability(product).isInStock;
 
+    const cardCanonical = getCanonicalCardPrice(product);
+    const cardPrice = cardCanonical.price;
+
     const handleCardClick = () => {
       trackSelectItem(listId, listName, {
         id: product.id,
         name: product.name,
-        price: Number(product.price),
+        price: cardPrice,
         category: product.category || undefined,
         position,
       });
@@ -128,11 +132,11 @@ export const ProductCard = memo(
       addItem({
         id: product.id,
         name: product.name,
-        price: Number(product.price),
+        price: cardPrice,
         image: product.image_url || "/placeholder.svg",
       });
 
-      trackAddToCart(product.id, product.name, Number(product.price), 1);
+      trackAddToCart(product.id, product.name, cardPrice, 1);
       toast.success("Added to cart");
     };
 
@@ -148,7 +152,7 @@ export const ProductCard = memo(
         trackRemoveFromWishlist(product.id, product.name);
         toast.success("Removed from wishlist");
       } else {
-        trackAddToWishlist(product.id, product.name, Number(product.price));
+        trackAddToWishlist(product.id, product.name, cardPrice);
         toast.success("Added to wishlist");
       }
 
@@ -162,7 +166,7 @@ export const ProductCard = memo(
       window.location.assign(productUrl);
     };
 
-    const { percent: discount } = getProductDiscount(product.price, product.compare_at_price);
+    const { percent: discount } = getProductDiscount(cardPrice, cardCanonical.compareAtPrice);
 
     const productUrl =
       product.slug && product.slug.trim() !== "" ? `/product/${product.slug}` : `/product/${product.id}`;
@@ -284,10 +288,10 @@ export const ProductCard = memo(
               )}
 
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-primary">${safePrice(product.price)}</span>
-                {product.compare_at_price && Number(product.compare_at_price) > Number(product.price) && (
+                <span className="text-lg font-bold text-primary">{cardCanonical.displayPrice}</span>
+                {cardCanonical.displayCompareAt && (
                   <span className="text-sm text-muted-foreground line-through">
-                    ${safePrice(product.compare_at_price)}
+                    {cardCanonical.displayCompareAt}
                   </span>
                 )}
               </div>

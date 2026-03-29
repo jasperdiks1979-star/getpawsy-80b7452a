@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
 import { computeAvailability } from '@/lib/availability';
 import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
+import { getCanonicalPrice } from '@/lib/canonical-pricing';
 
 interface ProductSchemaProps {
   product: {
@@ -15,6 +16,7 @@ interface ProductSchemaProps {
     images?: string[] | null;
     category?: string | null;
     stock?: number | null;
+    variants?: unknown;
     sku?: string | null;
     seo_tier?: string | null;
     product_type?: string | null;
@@ -77,10 +79,12 @@ export function ProductSchema({
     product.description || ''
   );
 
+  const canonicalSchemaPrice = getCanonicalPrice(product);
+
   // Generate meta description
   const metaDescription = generateMetaDescription(
     product.name,
-    product.price,
+    canonicalSchemaPrice,
     product.category || undefined
   );
 
@@ -128,7 +132,7 @@ export function ProductSchema({
       '@id': `${baseUrl}/product/${productPath}#offer`,
       url: `${baseUrl}/product/${productPath}`,
       priceCurrency: 'USD',
-      price: product.price.toFixed(2),
+      price: canonicalSchemaPrice.toFixed(2),
       priceValidUntil: priceValidUntilStr,
       // Use centralized availability logic (real supplier stock)
       availability: computeAvailability(product).isInStock
@@ -261,7 +265,7 @@ export function ProductSchema({
       <meta property="og:image" content={primaryImage} />
       <meta property="og:url" content={productUrl} />
       <meta property="og:site_name" content="GetPawsy" />
-      <meta property="product:price:amount" content={product.price.toString()} />
+      <meta property="product:price:amount" content={canonicalSchemaPrice.toString()} />
       <meta property="product:price:currency" content="USD" />
       <meta property="product:availability" content={computeAvailability(product).isInStock ? 'in stock' : 'out of stock'} />
       {product.category && <meta property="product:category" content={product.category} />}
