@@ -3,7 +3,7 @@ import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 const TRUST_BULLETS = [
   { icon: Truck, label: 'US Shipping (estimated 5–10 business days)' },
-  { icon: RotateCcw, label: '30-Day Hassle-Free Returns' },
+  { icon: RotateCcw, label: '30-Day Easy Returns' },
   { icon: ShieldCheck, label: 'Secure Checkout & Encrypted Payments' },
   { icon: Headphones, label: 'Dedicated Customer Support (response within 24 hours)' },
 ] as const;
