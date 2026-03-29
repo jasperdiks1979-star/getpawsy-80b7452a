@@ -6,6 +6,7 @@ import {
   RETURN_WINDOW_DAYS,
   FAQ_SHIPPING_ANSWER,
   FAQ_RETURNS_ANSWER,
+  SUPPORT_EMAIL,
 } from '@/lib/shipping-constants';
 
 interface WebsiteSchemaProps {
