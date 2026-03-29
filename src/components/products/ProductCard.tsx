@@ -163,7 +163,9 @@ export const ProductCard = memo(
       window.location.assign(productUrl);
     };
 
-    const { percent: discount } = getProductDiscount(product.price, product.compare_at_price);
+    const canonical = getCanonicalCardPrice(product);
+    const canonicalPrice = canonical.price;
+    const { percent: discount } = getProductDiscount(canonicalPrice, canonical.compareAtPrice);
 
     const productUrl =
       product.slug && product.slug.trim() !== "" ? `/product/${product.slug}` : `/product/${product.id}`;
