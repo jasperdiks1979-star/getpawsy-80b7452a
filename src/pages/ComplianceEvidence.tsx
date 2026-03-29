@@ -102,7 +102,7 @@ export default function ComplianceEvidence() {
 
     // ── C) Business identity ──
     results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "Skidzo / GetPawsy — visible in footer, /about, /contact" });
-    results.push({ name: "Support Email", category: "Business Identity", status: "pass", detail: "info@getpawsy.pet — /contact, footer, and checkout" });
+    results.push({ name: "Support Email", category: "Business Identity", status: "pass", detail: "support@getpawsy.pet — /contact, footer, and checkout" });
     results.push({ name: "Business Registration", category: "Business Identity", status: "pass", detail: "KVK 78156955, VAT NL003295015B69 — footer" });
     results.push({ name: "Physical Location", category: "Business Identity", status: "pass", detail: "Apeldoorn, Gelderland, Netherlands — /about and footer" });
     results.push({ name: "Customer Service Hours", category: "Business Identity", status: "pass", detail: "Mon–Fri 09:00–17:00 CET, response within 24h" });
