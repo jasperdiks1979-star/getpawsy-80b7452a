@@ -84,6 +84,7 @@ import {
   TRUST_BADGES,
 } from '@/lib/shipping-constants';
 import { computeAvailability } from '@/lib/availability';
+import { getProductDiscount } from '@/lib/discount';
 
 // Generate JSON-LD structured data for product
 // NOTE: Reviews/ratings intentionally removed - Google requires real customer reviews

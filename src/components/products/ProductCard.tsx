@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from "@/lib/analytics";
 import { safeString, safePrice } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
+import { getProductDiscount } from "@/lib/discount";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 
 export interface Product {
