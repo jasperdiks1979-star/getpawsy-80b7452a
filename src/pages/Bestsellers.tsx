@@ -17,6 +17,7 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { useProductRatings } from '@/hooks/useProductRatings';
 import { toast } from 'sonner';
 import { trackViewItemList, trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 import {
   Accordion,
   AccordionContent,
@@ -62,6 +63,7 @@ interface BestsellerWithProduct {
     images: string[] | null;
     category: string | null;
     stock: number | null;
+    variants?: unknown;
   };
 }
 
@@ -76,8 +78,11 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(bestseller.product.id);
 
-  const discount = bestseller.product.compare_at_price 
-    ? Math.round((1 - bestseller.product.price / bestseller.product.compare_at_price) * 100)
+  const canonical = getCanonicalCardPrice(bestseller.product);
+  const canonicalPrice = canonical.price;
+
+  const discount = canonical.compareAtPrice
+    ? Math.round((1 - canonicalPrice / canonical.compareAtPrice) * 100)
     : 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -86,13 +91,13 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
     addItem({
       id: bestseller.product.id,
       name: bestseller.product.name,
-      price: bestseller.product.price,
+      price: canonicalPrice,
       image: bestseller.product.image_url || '/placeholder.svg',
     });
     trackAddToCart(
       bestseller.product.id,
       bestseller.product.name,
-      bestseller.product.price,
+      canonicalPrice,
       1
     );
     toast.success('Added to cart!');
@@ -107,7 +112,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
       toast.success('Removed from wishlist');
     } else {
       addToWishlist(bestseller.product.id);
-      trackAddToWishlist(bestseller.product.id, bestseller.product.name, bestseller.product.price);
+      trackAddToWishlist(bestseller.product.id, bestseller.product.name, canonicalPrice);
       toast.success('Added to wishlist!');
     }
   };
@@ -166,9 +171,9 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
               <p className="text-sm text-muted-foreground line-clamp-2">{bestseller.hero_subheadline}</p>
             )}
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-primary">${bestseller.product.price.toFixed(2)}</span>
-              {bestseller.product.compare_at_price && (
-                <span className="text-sm text-muted-foreground line-through">${bestseller.product.compare_at_price.toFixed(2)}</span>
+              <span className="text-xl font-bold text-primary">{canonical.displayPrice}</span>
+              {canonical.displayCompareAt && (
+                <span className="text-sm text-muted-foreground line-through">{canonical.displayCompareAt}</span>
               )}
             </div>
             {bestseller.selling_points && bestseller.selling_points.length > 0 && (
@@ -216,7 +221,7 @@ const Bestsellers = () => {
         .select(`
           id, slug, rank, hero_headline, hero_subheadline, seo_description, long_description, selling_points,
           product:products_public!bestsellers_product_id_fkey (
-            id, name, price, compare_at_price, image_url, images, category, stock
+            id, name, price, compare_at_price, image_url, images, category, stock, variants
           )
         `)
         .eq('is_active', true)
@@ -263,7 +268,7 @@ const Bestsellers = () => {
     if (bestsellers && bestsellers.length > 0 && !hasTrackedImpressions.current) {
       hasTrackedImpressions.current = true;
       trackViewItemList('bestsellers', 'Bestsellers', bestsellers.map((item, index) => ({
-        id: item.product.id, name: item.product.name, price: item.product.price,
+        id: item.product.id, name: item.product.name, price: getCanonicalCardPrice(item.product).price,
         category: item.product.category || undefined, position: index + 1,
       })));
     }
@@ -271,7 +276,7 @@ const Bestsellers = () => {
 
   const handleProductSelect = (bestseller: BestsellerWithProduct, index: number) => {
     trackSelectItem('bestsellers', 'Bestsellers', {
-      id: bestseller.product.id, name: bestseller.product.name, price: bestseller.product.price,
+      id: bestseller.product.id, name: bestseller.product.name, price: getCanonicalCardPrice(bestseller.product).price,
       category: bestseller.product.category || undefined, position: index + 1,
     });
   };
@@ -467,6 +472,7 @@ const Bestsellers = () => {
                 <tbody>
                   {bestsellers.slice(0, 5).map((b) => {
                     const r = ratingsMap?.[b.product.id];
+                    const cp = getCanonicalCardPrice(b.product);
                     return (
                       <tr key={b.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-bold text-primary">#{b.rank}</td>
@@ -476,9 +482,9 @@ const Bestsellers = () => {
                           </Link>
                         </td>
                         <td className="p-3 text-muted-foreground">{b.product.category || '—'}</td>
-                        <td className="p-3 text-right font-semibold">${b.product.price.toFixed(2)}</td>
+                        <td className="p-3 text-right font-semibold">{cp.displayPrice}</td>
                         <td className="p-3 text-right">{r?.averageRating ? `${r.averageRating.toFixed(1)} ★` : '—'}</td>
-                        <td className="p-3 text-center">{b.product.price >= 35 ? <CheckCircle className="w-4 h-4 text-primary mx-auto" /> : '$35+'}</td>
+                        <td className="p-3 text-center">{cp.price >= 35 ? <CheckCircle className="w-4 h-4 text-primary mx-auto" /> : '$35+'}</td>
                       </tr>
                     );
                   })}
