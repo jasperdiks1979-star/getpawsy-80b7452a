@@ -27,7 +27,7 @@ async function fetchWinners() {
   if (boosted && boosted.length >= 4) return boosted;
 
   const { data: fallback } = await supabase
-    .from('products')
+    .from('products_public')
     .select('id, name, slug, price, compare_at_price, image_url')
     .eq('is_active', true)
     .order('price', { ascending: false })
