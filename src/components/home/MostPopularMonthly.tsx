@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getTopMoneyProducts, MONEY_PRODUCTS_QUERY_KEY } from '@/utils/moneyProductSelector';
 import { Flame } from 'lucide-react';
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 
 export default function MostPopularMonthly() {
   const { data: products, isLoading, error } = useQuery({
