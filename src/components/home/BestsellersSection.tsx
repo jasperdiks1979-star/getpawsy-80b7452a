@@ -39,7 +39,7 @@ export const BestsellersSection = () => {
       if (error) throw error;
 
       return (data || []).filter(b => {
-        const p = b.products;
+        const p = b.products_public;
         if (!p) return false;
         if (!p.image_url || p.image_url === '/placeholder.svg') return false;
         if (typeof p.stock === 'number' && p.stock <= 0) return false;
