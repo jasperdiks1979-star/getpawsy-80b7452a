@@ -419,8 +419,8 @@ const TermsOfService = () => {
                 <div className="bg-muted/30 rounded-2xl p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Mail className="w-5 h-5 text-primary" />
-                    <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">
-                      info@getpawsy.pet
+                    <a href="mailto:support@getpawsy.pet" className="text-primary hover:underline">
+                      support@getpawsy.pet
                     </a>
                   </div>
                   <div className="text-muted-foreground space-y-1">

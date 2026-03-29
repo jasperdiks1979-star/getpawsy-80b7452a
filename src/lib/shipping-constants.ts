@@ -79,18 +79,18 @@ export const RETURNS_POLICY_SHORT = '30-day returns';
 export const RETURNS_POLICY_DETAILED = 'Return eligible items within 30 days according to our return policy.';
 
 /** How to initiate returns */
-export const RETURNS_PROCESS = 'Contact info@getpawsy.pet with your order number and photos of any issues.';
+export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order number and photos of any issues.';
 
 // ============= SUPPORT CONSTANTS =============
 
 /** Primary support/contact email — used sitewide */
-export const SUPPORT_EMAIL = 'info@getpawsy.pet';
+export const SUPPORT_EMAIL = 'support@getpawsy.pet';
 
 /** General info email (alias, same as SUPPORT_EMAIL) */
-export const INFO_EMAIL = 'info@getpawsy.pet';
+export const INFO_EMAIL = 'support@getpawsy.pet';
 
 /** Response time promise */
-export const RESPONSE_TIME = 'We typically respond within 24–48 hours';
+export const RESPONSE_TIME = 'We typically respond within 24 hours';
 
 /** Business hours */
 export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET';
@@ -137,7 +137,7 @@ export const TRUST_BADGES = {
   },
   quality: {
     title: 'Customer Support',
-    subtitle: 'Response within 24–48 hours',
+    subtitle: 'Response within 24 hours',
   },
 } as const;
 

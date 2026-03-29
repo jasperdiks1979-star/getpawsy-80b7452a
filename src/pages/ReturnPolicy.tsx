@@ -59,7 +59,7 @@ const ReturnPolicy = () => {
     <Layout>
       <Helmet>
         <title>Return & Refund Policy – GetPawsy</title>
-        <meta name="description" content="GetPawsy 30-day return policy. Returns by mail, customer pays return shipping. Refund to original payment method within 5 business days. Contact info@getpawsy.pet." />
+        <meta name="description" content="GetPawsy 30-day return policy. Returns by mail, customer pays return shipping. Refund to original payment method within 5 business days. Contact support@getpawsy.pet." />
         <link rel="canonical" href="https://getpawsy.pet/returns" />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">

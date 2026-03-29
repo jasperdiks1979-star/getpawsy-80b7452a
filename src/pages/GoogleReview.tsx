@@ -209,7 +209,7 @@ const GoogleReview = () => {
                     </tr>
                     <tr>
                       <td className="px-4 py-3 font-medium text-gray-600">Business Email</td>
-                      <td className="px-4 py-3">info@getpawsy.pet</td>
+                      <td className="px-4 py-3">support@getpawsy.pet</td>
                     </tr>
                   </tbody>
                 </table>
@@ -234,7 +234,7 @@ const GoogleReview = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>Google Workspace:</strong> Business email verified (info@getpawsy.pet)</span>
+                    <span><strong>Google Workspace:</strong> Business email verified (support@getpawsy.pet)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
@@ -673,10 +673,10 @@ export const sanitizeHtml = (html: string): string => {
                 </h4>
                 <ul className="text-green-700 text-sm space-y-1">
                   <li>✓ Primary domain set to getpawsy.pet in Google Admin Console</li>
-                  <li>✓ Primary email configured as info@getpawsy.pet</li>
+                  <li>✓ Primary email configured as support@getpawsy.pet</li>
                   <li>✓ 2-Step Verification enabled on all accounts</li>
                   <li>✓ Temporary domain accounts removed</li>
-                  <li>✓ Google Ads accessed only via info@getpawsy.pet</li>
+                  <li>✓ Google Ads accessed only via support@getpawsy.pet</li>
                 </ul>
               </div>
             </div>
@@ -729,7 +729,7 @@ export const sanitizeHtml = (html: string): string => {
             <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
               <div>
                 <p className="font-medium text-gray-800">Contact</p>
-                <p>info@getpawsy.pet</p>
+                <p>support@getpawsy.pet</p>
                 <p>https://getpawsy.pet</p>
               </div>
               <div>

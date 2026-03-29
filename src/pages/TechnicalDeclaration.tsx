@@ -61,7 +61,7 @@ const TechnicalDeclaration = () => {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
           <div><strong>Domain:</strong> getpawsy.pet</div>
-          <div><strong>Account:</strong> info@getpawsy.pet</div>
+          <div><strong>Account:</strong> support@getpawsy.pet</div>
           <div><strong>Document Date:</strong> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
           <div className="text-amber-700 font-medium"><strong>⏱️ Last Updated:</strong> 30 Jan 2026</div>
         </div>
@@ -241,7 +241,7 @@ const TechnicalDeclaration = () => {
         </p>
         <ul className="list-disc list-inside text-sm text-gray-700 ml-2 space-y-1">
           <li>Temporary domain (<code className="bg-gray-100 px-1 text-xs">*.appstempdomain.goog</code>) was visible during setup</li>
-          <li>Resolved: <code className="bg-gray-100 px-1 text-xs">info@getpawsy.pet</code> is now primary</li>
+          <li>Resolved: <code className="bg-gray-100 px-1 text-xs">support@getpawsy.pet</code> is now primary</li>
           <li>Temporary account removed, 2FA enabled</li>
         </ul>
       </section>
@@ -268,7 +268,7 @@ const TechnicalDeclaration = () => {
       <footer className="border-t-2 border-gray-800 pt-4 mt-5">
         <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
           <div>
-            <p><strong>Email:</strong> info@getpawsy.pet</p>
+            <p><strong>Email:</strong> support@getpawsy.pet</p>
             <p><strong>Web:</strong> https://getpawsy.pet</p>
           </div>
           <div className="text-right">

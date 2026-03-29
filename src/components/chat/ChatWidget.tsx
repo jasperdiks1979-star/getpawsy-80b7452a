@@ -225,7 +225,7 @@ export function ChatWidget({ productContext = [] }: ChatWidgetProps) {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-2">
-            AI assistant • For urgent issues, email info@getpawsy.pet
+            AI assistant • For urgent issues, email support@getpawsy.pet
           </p>
         </form>
       </div>

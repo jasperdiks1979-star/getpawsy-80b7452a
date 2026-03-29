@@ -6,6 +6,7 @@ import {
   RETURN_WINDOW_DAYS,
   FAQ_SHIPPING_ANSWER,
   FAQ_RETURNS_ANSWER,
+  SUPPORT_EMAIL,
 } from '@/lib/shipping-constants';
 
 interface WebsiteSchemaProps {
@@ -48,7 +49,7 @@ export function WebsiteSchema({
       {
         '@type': 'ContactPoint',
         contactType: 'customer service',
-        email: 'info@getpawsy.pet',
+        email: SUPPORT_EMAIL,
         availableLanguage: ['English'],
         areaServed: 'US',
         hoursAvailable: {
@@ -98,7 +99,7 @@ export function WebsiteSchema({
     priceRange: '$$',
     image: `${url}${image}`,
     logo: `${url}/favicon.png`,
-    email: 'info@getpawsy.pet',
+    email: SUPPORT_EMAIL,
     areaServed: {
       '@type': 'Country',
       name: 'United States',

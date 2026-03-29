@@ -341,7 +341,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
             <div>
               <p><strong>Adres:</strong> De Haasstraat 11, 7312 VG Apeldoorn, NL</p>
               <p><strong>Website:</strong> https://getpawsy.pet</p>
-              <p><strong>Email:</strong> info@getpawsy.pet</p>
+              <p><strong>Email:</strong> support@getpawsy.pet</p>
             </div>
           </div>
         </section>
@@ -363,7 +363,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
         <footer className="border-t-2 border-gray-800 pt-4 mt-6">
           <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
             <div>
-              <p><strong>Email:</strong> info@getpawsy.pet</p>
+              <p><strong>Email:</strong> support@getpawsy.pet</p>
               <p><strong>Web:</strong> https://getpawsy.pet</p>
             </div>
             <div className="text-right">

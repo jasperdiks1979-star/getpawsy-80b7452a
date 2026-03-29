@@ -171,7 +171,7 @@ export function useChatbot(options: UseChatbotOptions = {}) {
         {
           id: assistantId,
           role: 'assistant',
-          content: "I'm sorry, I'm having trouble right now. Please try again or contact info@getpawsy.pet for help.",
+          content: "I'm sorry, I'm having trouble right now. Please try again or contact support@getpawsy.pet for help.",
           timestamp: new Date(),
         },
       ]);

@@ -23,7 +23,7 @@ const pillars = [
   {
     icon: Mail,
     title: 'Dedicated Support',
-    description: 'Real people respond within 24 hours. Mon–Fri 9:00–17:00 EST. Email us anytime at info@getpawsy.pet.',
+    description: 'Real people respond within 24 hours. Customer support available 7 days a week. Email us anytime at support@getpawsy.pet.',
   },
 ];
 

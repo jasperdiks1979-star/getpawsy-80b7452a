@@ -15,7 +15,7 @@ const SITE = "https://getpawsy.pet";
 const MERCHANT_ID = "5717571566";
 
 const POLICY_PAGES = [
-  { path: "/contact", label: "Contact Page", mustContain: ["info@getpawsy.pet", "skidzo"] },
+  { path: "/contact", label: "Contact Page", mustContain: ["support@getpawsy.pet", "skidzo"] },
   { path: "/about", label: "About Page", mustContain: ["getpawsy", "pet"] },
   { path: "/shipping", label: "Shipping Policy", mustContain: ["business day"] },
   { path: "/returns", label: "Return Policy", mustContain: ["refund"] },
@@ -102,7 +102,7 @@ export default function ComplianceEvidence() {
 
     // ── C) Business identity ──
     results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "Skidzo / GetPawsy — visible in footer, /about, /contact" });
-    results.push({ name: "Support Email", category: "Business Identity", status: "pass", detail: "info@getpawsy.pet — /contact, footer, and checkout" });
+    results.push({ name: "Support Email", category: "Business Identity", status: "pass", detail: "support@getpawsy.pet — /contact, footer, and checkout" });
     results.push({ name: "Business Registration", category: "Business Identity", status: "pass", detail: "KVK 78156955, VAT NL003295015B69 — footer" });
     results.push({ name: "Physical Location", category: "Business Identity", status: "pass", detail: "Apeldoorn, Gelderland, Netherlands — /about and footer" });
     results.push({ name: "Customer Service Hours", category: "Business Identity", status: "pass", detail: "Mon–Fri 09:00–17:00 CET, response within 24h" });
@@ -311,7 +311,7 @@ export default function ComplianceEvidence() {
             <div className="bg-muted p-4 rounded-lg font-mono text-xs space-y-1 whitespace-pre-wrap">
 {`We have completed a comprehensive compliance review of our store at https://getpawsy.pet to address the policy concerns:
 
-1. BUSINESS TRANSPARENCY: Our business entity (Skidzo, KVK 78156955, VAT NL003295015B69) is clearly displayed in the footer, /about, and /contact pages. Support email (info@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
+1. BUSINESS TRANSPARENCY: Our business entity (Skidzo, KVK 78156955, VAT NL003295015B69) is clearly displayed in the footer, /about, and /contact pages. Support email (support@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
 
 2. POLICY PAGES: All required pages (/shipping, /returns, /privacy, /terms, /contact, /about) are publicly accessible, contain specific and accurate information, and are linked from the global footer.
 
