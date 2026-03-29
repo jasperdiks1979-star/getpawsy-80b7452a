@@ -241,7 +241,7 @@ const TechnicalDeclaration = () => {
         </p>
         <ul className="list-disc list-inside text-sm text-gray-700 ml-2 space-y-1">
           <li>Temporary domain (<code className="bg-gray-100 px-1 text-xs">*.appstempdomain.goog</code>) was visible during setup</li>
-          <li>Resolved: <code className="bg-gray-100 px-1 text-xs">info@getpawsy.pet</code> is now primary</li>
+          <li>Resolved: <code className="bg-gray-100 px-1 text-xs">support@getpawsy.pet</code> is now primary</li>
           <li>Temporary account removed, 2FA enabled</li>
         </ul>
       </section>
