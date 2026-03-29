@@ -97,7 +97,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
     trackAddToCart(
       bestseller.product.id,
       bestseller.product.name,
-      bestseller.product.price,
+      canonicalPrice,
       1
     );
     toast.success('Added to cart!');
