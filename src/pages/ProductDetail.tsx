@@ -1798,7 +1798,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span className="hidden md:inline">Add to Cart – Ships in 5–10 Days 🇺🇸</span>
+                <span className="hidden md:inline">Add to Cart 🇺🇸</span>
                 <span className="md:hidden">Add to Cart 🇺🇸</span>
               </Button>
 
