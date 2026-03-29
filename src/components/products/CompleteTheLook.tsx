@@ -242,8 +242,9 @@ export const CompleteTheLook = ({
           const productUrl = product.slug 
             ? `/product/${product.slug}` 
             : `/product/${product.id}`;
-          const discount = product.compare_at_price 
-            ? Math.round((1 - product.price / product.compare_at_price) * 100)
+          const cp = getCanonicalCardPrice(product);
+          const discount = cp.compareAtPrice
+            ? Math.round((1 - cp.price / cp.compareAtPrice) * 100)
             : 0;
 
           return (
