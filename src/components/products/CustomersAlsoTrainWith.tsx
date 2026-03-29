@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackCrossSellClick, trackCrossSellAddToCart } from '@/lib/analytics';
+import { getCanonicalPrice } from '@/lib/canonical-pricing';
 import { useRef, useEffect } from 'react';
 import { buildOptimizedImageUrl } from '@/lib/image-optimizer';
 
@@ -123,8 +124,8 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
                 {product.name}
               </Link>
               <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-sm font-bold">${Number(product.price).toFixed(2)}</span>
-                {product.compare_at_price && Number(product.compare_at_price) > Number(product.price) && (
+                <span className="text-sm font-bold">${getCanonicalPrice(product).toFixed(2)}</span>
+                {product.compare_at_price && Number(product.compare_at_price) > getCanonicalPrice(product) && (
                   <span className="text-xs text-muted-foreground line-through">
                     ${Number(product.compare_at_price).toFixed(2)}
                   </span>
@@ -138,7 +139,7 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
                   addItem({
                     id: product.id,
                     name: product.name,
-                    price: Number(product.price),
+                    price: getCanonicalPrice(product),
                     image: product.image_url || '/placeholder.svg',
                   });
                   trackCrossSellAddToCart(

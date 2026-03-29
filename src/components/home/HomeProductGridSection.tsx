@@ -1,11 +1,15 @@
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
+
 interface GridProduct {
   id: string;
   name: string;
   slug: string;
   image_url: string | null;
   price: number;
+  compare_at_price?: number | null;
+  variants?: unknown;
   category?: string | null;
   benefit?: string;
 }
@@ -97,14 +101,19 @@ export function HomeProductGridSection({
                     {product.benefit}
                   </p>
                 )}
-                <div className="flex items-center justify-between mt-auto pt-2">
-                  <span className="text-primary font-bold text-sm">
-                    ${product.price.toFixed(2)}
-                  </span>
-                  <span className="text-[10px] font-semibold text-primary">
-                    View →
-                  </span>
-                </div>
+                {(() => {
+                  const cp = getCanonicalCardPrice(product);
+                  return (
+                    <div className="flex items-center justify-between mt-auto pt-2">
+                      <span className="text-primary font-bold text-sm">
+                        {cp.displayPrice}
+                      </span>
+                      <span className="text-[10px] font-semibold text-primary">
+                        View →
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </a>
           ))}

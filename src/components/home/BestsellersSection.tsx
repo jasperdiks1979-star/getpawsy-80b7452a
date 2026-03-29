@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 
 /**
  * Bestsellers Right Now — conversion-optimized product grid + scroll.
@@ -29,7 +30,8 @@ export const BestsellersSection = () => {
             compare_at_price,
             image_url,
             category,
-            stock
+            stock,
+            variants
           )
         `)
         .eq('is_active', true)
@@ -99,7 +101,8 @@ export const BestsellersSection = () => {
               const product = bestseller.products_public;
               if (!product) return null;
 
-              const price = typeof product.price === 'number' ? product.price : 0;
+              const canonical = getCanonicalCardPrice(product);
+              const price = canonical.price;
               const imageUrl = product.image_url || '/placeholder.svg';
               const productName = bestseller.hero_headline || product.name || 'Product';
               const slug = bestseller.slug || product.id;

@@ -19,6 +19,7 @@ interface MoneyProduct {
   compare_at_price: number | null;
   image_url: string | null;
   category: string | null;
+  variants?: unknown;
   moneyScore: number;
 }
 
@@ -102,7 +103,7 @@ export async function getTopMoneyProducts(
 ): Promise<MoneyProduct[]> {
   const { data, error } = await supabase
     .from('products_public')
-    .select('id, name, slug, price, compare_at_price, image_url, category')
+    .select('id, name, slug, price, compare_at_price, image_url, category, variants')
     .eq('is_active', true)
     .not('slug', 'is', null)
     .not('image_url', 'is', null)
@@ -125,6 +126,7 @@ export async function getTopMoneyProducts(
     compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
     image_url: p.image_url,
     category: p.category,
+    variants: p.variants,
     moneyScore: scoreProduct({
       name: p.name || '',
       price: Number(p.price),

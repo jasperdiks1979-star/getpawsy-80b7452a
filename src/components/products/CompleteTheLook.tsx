@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackCrossSellClick, trackCrossSellAddToCart } from '@/lib/analytics';
+import { getCanonicalCardPrice, getCanonicalPrice } from '@/lib/canonical-pricing';
 
 interface Product {
   id: string;
@@ -143,7 +144,7 @@ export const CompleteTheLook = ({
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: getCanonicalPrice(product),
       image: product.image_url || '/placeholder.svg',
     });
 
@@ -241,8 +242,9 @@ export const CompleteTheLook = ({
           const productUrl = product.slug 
             ? `/product/${product.slug}` 
             : `/product/${product.id}`;
-          const discount = product.compare_at_price 
-            ? Math.round((1 - product.price / product.compare_at_price) * 100)
+          const cp = getCanonicalCardPrice(product);
+          const discount = cp.compareAtPrice
+            ? Math.round((1 - cp.price / cp.compareAtPrice) * 100)
             : 0;
 
           return (
@@ -290,11 +292,11 @@ export const CompleteTheLook = ({
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-base font-bold text-primary">
-                        ${product.price.toFixed(2)}
+                        {cp.displayPrice}
                       </span>
-                      {product.compare_at_price && (
+                      {cp.displayCompareAt && (
                         <span className="text-xs text-muted-foreground line-through">
-                          ${product.compare_at_price.toFixed(2)}
+                          {cp.displayCompareAt}
                         </span>
                       )}
                     </div>

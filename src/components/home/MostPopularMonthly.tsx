@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getTopMoneyProducts, MONEY_PRODUCTS_QUERY_KEY } from '@/utils/moneyProductSelector';
 import { Flame } from 'lucide-react';
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 
 export default function MostPopularMonthly() {
   const { data: products, isLoading, error } = useQuery({
@@ -69,7 +70,7 @@ export default function MostPopularMonthly() {
                 {product.name}
               </h3>
               <p className="text-base font-bold text-primary">
-                ${product.price.toFixed(2)}
+                {getCanonicalCardPrice(product).displayPrice}
               </p>
             </div>
           </a>

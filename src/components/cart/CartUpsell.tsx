@@ -13,6 +13,7 @@ import {
   trackCrossSellClick, 
   trackCrossSellAddToCart 
 } from '@/lib/analytics';
+import { getCanonicalPrice } from '@/lib/canonical-pricing';
 
 interface CartUpsellProps {
   currentItemIds: string[];
@@ -213,7 +214,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
     addItem({
       id: product.id,
       name: product.name,
-      price: Number(product.price),
+      price: getCanonicalPrice(product),
       image: product.image_url || '/placeholder.svg',
     });
     toast.success(`${product.name} added to cart!`);
@@ -267,7 +268,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
                   </p>
                 </Link>
                 <p className="text-sm text-primary font-semibold">
-                  ${Number(product.price).toFixed(2)}
+                  ${getCanonicalPrice(product).toFixed(2)}
                 </p>
               </div>
               <Button
@@ -324,7 +325,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
               </Link>
               <div className="flex items-center justify-between">
                 <span className="text-primary font-bold">
-                  ${Number(product.price).toFixed(2)}
+                  ${getCanonicalPrice(product).toFixed(2)}
                 </span>
                 <Button
                   size="sm"
