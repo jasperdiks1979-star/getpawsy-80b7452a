@@ -34,7 +34,6 @@ export const BlogProductInjector = memo(function BlogProductInjector({
       const { data } = await supabase
         .from('products_public')
         .select('id, name, slug, image_url, price, compare_at_price, category')
-        .eq('cluster_primary', clusterId)
         .eq('is_active', true)
         .eq('is_duplicate', false)
         .order('updated_at', { ascending: false })
