@@ -94,8 +94,8 @@ const HomePage = () => {
           <div className="space-y-2 text-sm md:text-base text-muted-foreground leading-relaxed">
             <p>
               GetPawsy is a US-focused pet supply store operated by Skidzo, a registered business
-              based in the Netherlands. We serve customers across all 50 states with fast,
-              reliable shipping ({DELIVERY_TIME_STANDARD}).
+               based in the Netherlands. We serve customers across all 50 states with
+               estimated delivery in {DELIVERY_TIME_STANDARD}.
             </p>
             <p>
               Every product is carefully selected for quality, safety, and real-world usability.
