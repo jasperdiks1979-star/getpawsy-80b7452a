@@ -16,6 +16,7 @@ import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWis
 import { safeString, safePrice } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
 import { getProductDiscount } from "@/lib/discount";
+import { getCanonicalCardPrice } from "@/lib/canonical-pricing";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 
 export interface Product {
