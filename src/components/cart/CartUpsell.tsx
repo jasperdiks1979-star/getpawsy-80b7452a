@@ -13,6 +13,7 @@ import {
   trackCrossSellClick, 
   trackCrossSellAddToCart 
 } from '@/lib/analytics';
+import { getCanonicalPrice } from '@/lib/canonical-pricing';
 
 interface CartUpsellProps {
   currentItemIds: string[];
