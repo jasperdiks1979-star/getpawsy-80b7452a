@@ -106,8 +106,8 @@ const clarityIntros: Record<ProductType, ClarityIntro> = {
     shortBenefits: ['Triple filtration system', 'Ultra-quiet pump', 'Encourages healthy hydration'],
   },
   food: {
-    intro: "Low-quality pet food packed with fillers and artificial additives leads to poor coat condition, low energy, and digestive problems over time. This carefully selected formula provides balanced daily nutrition with natural ingredients and zero artificial preservatives. Wholesome fuel for an active, healthy life your pet deserves.",
-    shortBenefits: ['Natural quality ingredients', 'Complete balanced nutrition', 'Supports coat and digestive health'],
+    intro: "Choosing the right pet food can be confusing with so many options on the market. This carefully selected formula provides balanced daily nutrition with quality ingredients. Designed to support your pet's energy, coat health, and digestive comfort.",
+    shortBenefits: ['Quality ingredients', 'Complete balanced nutrition', 'Supports coat and digestive comfort'],
   },
   accessory: {
     intro: "Finding pet accessories that actually work is frustrating — many products look good online but break easily or aren't safe for daily use. This product is built with premium, pet-safe materials and practical design tested for real-world pet ownership. It integrates seamlessly into your daily routine, making life easier for both you and your pet.",
