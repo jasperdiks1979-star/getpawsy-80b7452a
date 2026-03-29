@@ -49,7 +49,7 @@ export function WebsiteSchema({
       {
         '@type': 'ContactPoint',
         contactType: 'customer service',
-        email: 'info@getpawsy.pet',
+        email: SUPPORT_EMAIL,
         availableLanguage: ['English'],
         areaServed: 'US',
         hoursAvailable: {
