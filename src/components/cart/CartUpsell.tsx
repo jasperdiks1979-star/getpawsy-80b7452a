@@ -268,7 +268,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
                   </p>
                 </Link>
                 <p className="text-sm text-primary font-semibold">
-                  ${Number(product.price).toFixed(2)}
+                  ${getCanonicalPrice(product).toFixed(2)}
                 </p>
               </div>
               <Button
