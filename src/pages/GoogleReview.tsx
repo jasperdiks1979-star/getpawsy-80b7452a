@@ -729,7 +729,7 @@ export const sanitizeHtml = (html: string): string => {
             <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
               <div>
                 <p className="font-medium text-gray-800">Contact</p>
-                <p>info@getpawsy.pet</p>
+                <p>support@getpawsy.pet</p>
                 <p>https://getpawsy.pet</p>
               </div>
               <div>
