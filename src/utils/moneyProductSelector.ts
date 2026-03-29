@@ -126,6 +126,7 @@ export async function getTopMoneyProducts(
     compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
     image_url: p.image_url,
     category: p.category,
+    variants: p.variants,
     moneyScore: scoreProduct({
       name: p.name || '',
       price: Number(p.price),

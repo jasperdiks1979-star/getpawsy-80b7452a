@@ -70,7 +70,7 @@ export default function MostPopularMonthly() {
                 {product.name}
               </h3>
               <p className="text-base font-bold text-primary">
-                ${product.price.toFixed(2)}
+                {getCanonicalCardPrice(product).displayPrice}
               </p>
             </div>
           </a>
