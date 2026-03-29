@@ -268,7 +268,7 @@ const TechnicalDeclaration = () => {
       <footer className="border-t-2 border-gray-800 pt-4 mt-5">
         <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
           <div>
-            <p><strong>Email:</strong> info@getpawsy.pet</p>
+            <p><strong>Email:</strong> support@getpawsy.pet</p>
             <p><strong>Web:</strong> https://getpawsy.pet</p>
           </div>
           <div className="text-right">

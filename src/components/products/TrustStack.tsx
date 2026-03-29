@@ -39,7 +39,7 @@ export const TrustStack: React.FC<TrustStackProps> = ({ className = '' }) => {
       {/* Support contact */}
       <p className="text-xs text-muted-foreground text-center">
         Questions? Email us at{' '}
-        <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">info@getpawsy.pet</a>
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
       </p>
     </div>
   );

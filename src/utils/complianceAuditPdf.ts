@@ -88,7 +88,7 @@ export function downloadComplianceAuditPdf() {
   bullet("Business name: GetPawsy ✓");
   bullet("Brand relationship: 'A brand of Skidzo' ✓");
   bullet("Location: Apeldoorn, Netherlands ✓");
-  bullet("Support email: info@getpawsy.pet ✓");
+  bullet("Support email: support@getpawsy.pet ✓");
   bullet("KVK: 78156955 ✓");
   bullet("VAT: NL003295015B69 ✓");
   body("Business identity appears in: global footer (all pages), /contact page, /about page.");

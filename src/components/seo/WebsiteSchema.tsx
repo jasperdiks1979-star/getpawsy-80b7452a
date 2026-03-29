@@ -99,7 +99,7 @@ export function WebsiteSchema({
     priceRange: '$$',
     image: `${url}${image}`,
     logo: `${url}/favicon.png`,
-    email: 'info@getpawsy.pet',
+    email: SUPPORT_EMAIL,
     areaServed: {
       '@type': 'Country',
       name: 'United States',
