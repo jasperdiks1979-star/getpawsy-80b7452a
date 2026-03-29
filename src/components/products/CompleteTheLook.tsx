@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackCrossSellClick, trackCrossSellAddToCart } from '@/lib/analytics';
+import { getCanonicalCardPrice, getCanonicalPrice } from '@/lib/canonical-pricing';
 
 interface Product {
   id: string;
