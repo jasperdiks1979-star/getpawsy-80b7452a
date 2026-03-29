@@ -386,7 +386,7 @@ const BestsellerDetail = () => {
     enabled: !!slug,
   });
 
-  const product = bestseller?.products;
+  const product = bestseller?.products_public;
   const sellingPoints: SellingPoint[] = bestseller?.selling_points 
     ? (bestseller.selling_points as unknown as SellingPoint[])
     : [];
