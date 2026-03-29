@@ -1036,7 +1036,7 @@ const ProductDetail = () => {
                     return (
                       <motion.button
                         key={variant.vid}
-                        onClick={() => setSelectedVariant(isSelected ? null : variant)}
+                        onClick={() => { if (!isSelected) setSelectedVariant(variant); }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
