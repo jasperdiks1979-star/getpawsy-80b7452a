@@ -1184,9 +1184,7 @@ const ProductDetail = () => {
             {/* Volume Discount — Buy More Save More */}
             {inStock && (
               <VolumeDiscountSelector
-                basePrice={
-                  selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)
-                }
+                basePrice={activePrice}
                 onQuantityChange={(newQty, discountPct) => {
                   setQuantity(newQty);
                   setVolumeDiscount(discountPct);
