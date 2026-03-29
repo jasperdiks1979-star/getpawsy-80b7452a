@@ -4,6 +4,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
 } from '@/lib/shipping-constants';
 
 interface TrustStackProps {
