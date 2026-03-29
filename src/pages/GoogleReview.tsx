@@ -673,10 +673,10 @@ export const sanitizeHtml = (html: string): string => {
                 </h4>
                 <ul className="text-green-700 text-sm space-y-1">
                   <li>✓ Primary domain set to getpawsy.pet in Google Admin Console</li>
-                  <li>✓ Primary email configured as info@getpawsy.pet</li>
+                  <li>✓ Primary email configured as support@getpawsy.pet</li>
                   <li>✓ 2-Step Verification enabled on all accounts</li>
                   <li>✓ Temporary domain accounts removed</li>
-                  <li>✓ Google Ads accessed only via info@getpawsy.pet</li>
+                  <li>✓ Google Ads accessed only via support@getpawsy.pet</li>
                 </ul>
               </div>
             </div>
