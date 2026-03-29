@@ -29,7 +29,7 @@ const niches = [
     slug: 'automatic-cat-feeders',
     title: 'Automatic Cat Feeders',
     benefit: 'Smart portion control for worry-free feeding, even when you\'re away.',
-    trust: 'App-controlled • Fast US delivery',
+    trust: 'App-controlled • US delivery available',
     image: catFeedersImg,
     alt: 'Cat eating from sleek automatic feeder in bright modern kitchen',
   },

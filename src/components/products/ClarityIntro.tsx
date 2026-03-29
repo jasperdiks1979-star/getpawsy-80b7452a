@@ -102,7 +102,7 @@ const clarityIntros: Record<ProductType, ClarityIntro> = {
     shortBenefits: ['Non-slip portable comfort', 'Machine washable', 'Works anywhere — home or travel'],
   },
   fountain: {
-    intro: "Still water in bowls collects bacteria within hours, and many pets refuse to drink stale water — leading to chronic dehydration that damages kidney and urinary health. This pet water fountain circulates and triple-filters water continuously, keeping it fresh and appealing around the clock. Ultra-quiet operation means your pet always has access to clean, flowing water.",
+    intro: "Still water in bowls can collect bacteria, and many pets prefer fresh, moving water. This pet water fountain circulates and triple-filters water continuously, helping keep it fresh and appealing around the clock. Ultra-quiet operation means your pet always has access to clean, flowing water.",
     shortBenefits: ['Triple filtration system', 'Ultra-quiet pump', 'Encourages healthy hydration'],
   },
   food: {

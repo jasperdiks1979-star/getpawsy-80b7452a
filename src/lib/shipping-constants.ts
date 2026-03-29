@@ -47,7 +47,10 @@ export const getNextTier = (subtotal: number) => {
 export const FLAT_SHIPPING_RATE = 5.99;
 
 /** Standard delivery time for US orders */
-export const DELIVERY_TIME_STANDARD = '3–7 business days';
+export const DELIVERY_TIME_STANDARD = '5–10 business days';
+
+/** Delivery disclaimer for compliance */
+export const DELIVERY_DISCLAIMER = 'Delivery times may vary depending on location';
 
 /** Processing time before shipping */
 export const PROCESSING_TIME = '1–2 business days';

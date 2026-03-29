@@ -114,15 +114,15 @@ export interface Forecast90d {
 
 const AUTHORITY_MODIFIERS = [
   '(2026 Guide)',
-  '(Vet Approved)',
+  '(Buyer Guide)',
   '(Complete Buyer Guide)',
-  '(Avoid These Mistakes)',
+  '(Comparison)',
   '(Expert Picks)',
   '(Updated 2026)',
 ] as const;
 
 const EMOTIONAL_META = [
-  (kw: string) => `Don't waste money on the wrong ${kw}. See what vets actually recommend and why 90% of pet owners get this wrong.`,
+  (kw: string) => `Choosing the right ${kw} matters. See our curated picks and what experienced pet owners recommend.`,
   (kw: string) => `Your pet deserves the best ${kw}. Expert-tested picks that save you time, money, and heartbreak.`,
   (kw: string) => `Stop scrolling — we tested every ${kw} so you don't have to. Real reviews, zero sponsored picks.`,
   (kw: string) => `The only ${kw} guide you need in 2026. Expert-tested and trusted by thousands of pet owners.`,

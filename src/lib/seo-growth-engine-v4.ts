@@ -181,17 +181,17 @@ export function correctGscData(
 
 const ZERO_CLICK_MODIFIERS = [
   '(2026 Guide)',
-  '(Vet Approved)',
+  '(Buyer Guide)',
   '(Expert Picks)',
-  '(Avoid These Mistakes)',
+  '(Comparison)',
   '(Complete Buyer Guide)',
   '(Updated 2026)',
 ];
 
 const EMOTIONAL_META_TEMPLATES = [
-  (kw: string) => `Don't waste money on the wrong ${kw}. See what vets actually recommend and why 90% of pet owners get this wrong.`,
-  (kw: string) => `Your pet deserves the best ${kw}. Expert-tested picks that save you time, money, and heartbreak. Free US shipping.`,
-  (kw: string) => `Stop scrolling — we tested every ${kw} so you don't have to. Real reviews, zero sponsored picks, honest results.`,
+  (kw: string) => `Choosing the right ${kw} matters. See our curated picks and learn what experienced pet owners recommend.`,
+  (kw: string) => `Find the right ${kw} for your pet. Carefully selected options that save you time and money. US shipping available.`,
+  (kw: string) => `We compared popular ${kw} options so you don't have to. Honest assessments, no sponsored picks.`,
 ];
 
 function humanizeSlug(slug: string): string {

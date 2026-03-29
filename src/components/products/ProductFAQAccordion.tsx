@@ -59,7 +59,7 @@ function generateFAQs(name: string, category?: string) {
   // Generic FAQs for non-cat-specific products
   return [
     { q: `What sizes does the ${name} come in?`, a: `The ${name} is available in multiple sizes to fit different pet breeds. Check the product specifications above for exact dimensions and weight recommendations.` },
-    { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+    { q: `How long does shipping take?`, a: `We ship to the United States with estimated delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping. Delivery times may vary depending on location.` },
     { q: `What is your return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day easy return policy. If you're not satisfied, contact our support team to arrange a return per our policy.` },
     { q: `What materials is this made from?`, a: `The ${name} is made from premium, pet-safe materials designed for durability and comfort. See the product description for specific material details.` },
     { q: `Is this easy to clean?`, a: cat.includes('bed') ? `Most of our pet beds feature removable, machine-washable covers for easy maintenance.` : `Yes, this product is designed for easy cleaning. Refer to the care instructions in the product description.` },

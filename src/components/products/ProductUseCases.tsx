@@ -47,8 +47,8 @@ const USE_CASES: Record<ProductType, UseCase[]> = {
     { persona: 'Nighttime walkers', scenario: 'Reflective trim ensures visibility on early morning and late evening outings.' },
   ],
   bed: [
-    { persona: 'Senior dog owners', scenario: 'Memory foam relieves arthritis pain and helps older dogs get in and out independently.' },
-    { persona: 'Post-surgery recovery', scenario: 'Supportive surface aids healing by reducing pressure on joints and incision sites.' },
+    { persona: 'Senior dog owners', scenario: 'Memory foam supports joint comfort and helps older dogs get in and out independently.' },
+    { persona: 'Post-surgery recovery', scenario: 'Supportive surface may help reduce pressure on joints and incision sites during rest.' },
     { persona: 'Large breed families', scenario: 'High-density foam doesn\'t flatten under 80+ lb dogs, maintaining support for years.' },
     { persona: 'Anxious dogs', scenario: 'Raised bolster edges create a cozy nest that reduces nighttime restlessness.' },
   ],
