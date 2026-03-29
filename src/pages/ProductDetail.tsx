@@ -648,8 +648,8 @@ const ProductDetail = () => {
       addToCartButtonRef.current,
     );
 
-    // Use variant price if selected, otherwise use product price
-    const basePrice = selectedVariant?.variantSellPrice
+    // Cart uses variant price if user explicitly selected one, else base price
+    const basePrice = userHasSelectedVariant && selectedVariant?.variantSellPrice
       ? Number(selectedVariant.variantSellPrice)
       : Number(product.price);
 
