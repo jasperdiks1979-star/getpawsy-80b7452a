@@ -214,7 +214,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
     addItem({
       id: product.id,
       name: product.name,
-      price: Number(product.price),
+      price: getCanonicalPrice(product),
       image: product.image_url || '/placeholder.svg',
     });
     toast.success(`${product.name} added to cart!`);

@@ -139,7 +139,7 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
                   addItem({
                     id: product.id,
                     name: product.name,
-                    price: Number(product.price),
+                    price: getCanonicalPrice(product),
                     image: product.image_url || '/placeholder.svg',
                   });
                   trackCrossSellAddToCart(
