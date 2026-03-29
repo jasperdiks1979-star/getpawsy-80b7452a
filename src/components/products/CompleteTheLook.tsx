@@ -292,11 +292,11 @@ export const CompleteTheLook = ({
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-base font-bold text-primary">
-                        ${product.price.toFixed(2)}
+                        {cp.displayPrice}
                       </span>
-                      {product.compare_at_price && (
+                      {cp.displayCompareAt && (
                         <span className="text-xs text-muted-foreground line-through">
-                          ${product.compare_at_price.toFixed(2)}
+                          {cp.displayCompareAt}
                         </span>
                       )}
                     </div>

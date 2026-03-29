@@ -325,7 +325,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
               </Link>
               <div className="flex items-center justify-between">
                 <span className="text-primary font-bold">
-                  ${Number(product.price).toFixed(2)}
+                  ${getCanonicalPrice(product).toFixed(2)}
                 </span>
                 <Button
                   size="sm"
