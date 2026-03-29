@@ -47,13 +47,16 @@ export const getNextTier = (subtotal: number) => {
 export const FLAT_SHIPPING_RATE = 5.99;
 
 /** Standard delivery time for US orders */
-export const DELIVERY_TIME_STANDARD = '3–7 business days';
+export const DELIVERY_TIME_STANDARD = '5–10 business days';
+
+/** Delivery disclaimer for compliance */
+export const DELIVERY_DISCLAIMER = 'Delivery times may vary depending on location';
 
 /** Processing time before shipping */
 export const PROCESSING_TIME = '1–2 business days';
 
 /** Sitewide trust freshness timestamp */
-export const SITE_LAST_UPDATED = 'March 28, 2026';
+export const SITE_LAST_UPDATED = 'March 29, 2026';
 
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
 export const US_FULFILLMENT_NOTE = 'Orders ship directly to customers across the United States';

@@ -62,8 +62,8 @@ function extractProductType(name: string, category: string): ProductType {
  */
 const clarityIntros: Record<ProductType, ClarityIntro> = {
   bed: {
-    intro: "Many pets sleep on worn-out beds that offer zero joint support — leading to stiffness, restless nights, and low energy. This orthopedic pet bed relieves pressure on hips and joints with high-density foam that adapts to your dog's body. Perfect for senior dogs, active breeds, and any pet that deserves deeper, more restorative sleep.",
-    shortBenefits: ['Relieves joint pressure overnight', 'Breathable, machine-washable cover', 'Non-slip base for all floors'],
+    intro: "Many pets sleep on worn-out beds that offer little joint support — leading to stiffness and restless nights. This pet bed is designed to support hips and joints with high-density foam that adapts to your dog's body. A great choice for senior dogs, active breeds, and any pet that deserves more comfortable sleep.",
+    shortBenefits: ['Designed to support joint comfort', 'Breathable, machine-washable cover', 'Non-slip base for all floors'],
   },
   bowl: {
     intro: "Pets that eat too fast risk bloating, vomiting, and poor digestion — while lightweight bowls slide across the floor creating mess at every meal. This feeding bowl promotes healthier eating habits with a stable, non-slip design that keeps mealtimes clean and calm. Ideal for dogs and cats of all sizes who need a slower, safer feeding routine.",
@@ -83,7 +83,7 @@ const clarityIntros: Record<ProductType, ClarityIntro> = {
   },
   toy: {
     intro: "Bored pets turn to destructive behavior — chewing furniture, excessive barking, and anxious habits that frustrate everyone. This interactive toy channels that energy into healthy play with durable, non-toxic materials that withstand daily use. Designed to mentally stimulate your pet while keeping your home intact and your pet happier.",
-    shortBenefits: ['Durable for aggressive chewers', 'Non-toxic safe materials', 'Reduces destructive behavior'],
+    shortBenefits: ['Durable for aggressive chewers', 'Non-toxic safe materials', 'Helps redirect destructive behavior'],
   },
   carrier: {
     intro: "Traveling with a loose pet is unsafe, and poorly ventilated carriers cause anxiety and overheating during vet visits or road trips. This pet carrier provides a secure, well-ventilated space with easy-access openings that reduce loading stress. Airline-compatible and sturdy enough for confident travel anywhere.",
@@ -91,7 +91,7 @@ const clarityIntros: Record<ProductType, ClarityIntro> = {
   },
   grooming: {
     intro: "Shedding fur covers your furniture, clothes, and car seats — and without regular grooming, painful mats and tangles develop that lead to skin irritation. This grooming tool removes loose undercoat effectively while being gentle on sensitive skin. Professional-quality results at home, saving hundreds per year on salon visits.",
-    shortBenefits: ['Reduces shedding up to 90%', 'Gentle on sensitive skin', 'Self-cleaning mechanism'],
+    shortBenefits: ['Helps reduce shedding significantly', 'Gentle on sensitive skin', 'Self-cleaning mechanism'],
   },
   clothing: {
     intro: "Short-haired and small breeds struggle in cold weather, shivering through winter walks while ill-fitting pet clothes restrict their movement. This pet clothing provides warmth without bulk, with a stretch-friendly design that lets your pet move naturally. Easy on-off fastening means less fussing and more time enjoying the outdoors together.",
@@ -102,12 +102,12 @@ const clarityIntros: Record<ProductType, ClarityIntro> = {
     shortBenefits: ['Non-slip portable comfort', 'Machine washable', 'Works anywhere — home or travel'],
   },
   fountain: {
-    intro: "Still water in bowls collects bacteria within hours, and many pets refuse to drink stale water — leading to chronic dehydration that damages kidney and urinary health. This pet water fountain circulates and triple-filters water continuously, keeping it fresh and appealing around the clock. Ultra-quiet operation means your pet always has access to clean, flowing water.",
+    intro: "Still water in bowls can collect bacteria, and many pets prefer fresh, moving water. This pet water fountain circulates and triple-filters water continuously, helping keep it fresh and appealing around the clock. Ultra-quiet operation means your pet always has access to clean, flowing water.",
     shortBenefits: ['Triple filtration system', 'Ultra-quiet pump', 'Encourages healthy hydration'],
   },
   food: {
-    intro: "Low-quality pet food packed with fillers and artificial additives leads to poor coat condition, low energy, and digestive problems over time. This carefully selected formula provides balanced daily nutrition with natural ingredients and zero artificial preservatives. Wholesome fuel for an active, healthy life your pet deserves.",
-    shortBenefits: ['Natural quality ingredients', 'Complete balanced nutrition', 'Supports coat and digestive health'],
+    intro: "Choosing the right pet food can be confusing with so many options on the market. This carefully selected formula provides balanced daily nutrition with quality ingredients. Designed to support your pet's energy, coat health, and digestive comfort.",
+    shortBenefits: ['Quality ingredients', 'Complete balanced nutrition', 'Supports coat and digestive comfort'],
   },
   accessory: {
     intro: "Finding pet accessories that actually work is frustrating — many products look good online but break easily or aren't safe for daily use. This product is built with premium, pet-safe materials and practical design tested for real-world pet ownership. It integrates seamlessly into your daily routine, making life easier for both you and your pet.",

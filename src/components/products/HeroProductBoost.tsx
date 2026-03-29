@@ -71,7 +71,7 @@ const HERO_DATA: Record<string, {
     whoFor: [
       'Dogs that overheat easily during summer — this bed promotes constant airflow underneath',
       'Large & medium breeds (up to 150 lbs) who need sturdy, supportive rest',
-      'Senior dogs with joint stiffness — the elevated frame relieves pressure on hips and elbows',
+      'Senior dogs with joint stiffness — the elevated frame helps reduce pressure on hips and elbows',
       'Pet parents who want one bed for both indoor and outdoor use',
       'Dogs recovering from surgery who need a clean, raised sleeping surface',
     ],

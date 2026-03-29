@@ -2,7 +2,7 @@ import { Truck, RotateCcw, ShieldCheck, Headphones } from 'lucide-react';
 import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 const TRUST_BULLETS = [
-  { icon: Truck, label: 'Fast US Shipping (3–7 business days)' },
+  { icon: Truck, label: 'US Shipping (estimated 5–10 business days)' },
   { icon: RotateCcw, label: '30-Day Hassle-Free Returns' },
   { icon: ShieldCheck, label: 'Secure Checkout & Encrypted Payments' },
   { icon: Headphones, label: 'Dedicated Customer Support (response within 24 hours)' },

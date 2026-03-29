@@ -43,10 +43,10 @@ const CatTravel = () => {
               Cat Travel Essentials
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              Airline-approved carriers, expandable travel bags, and anxiety-reducing accessories — making vet visits and travel stress-free for you and your cat. Fast shipping to the US in 3–7 days.
+              Airline-approved carriers, expandable travel bags, and anxiety-reducing accessories — making vet visits and travel easier for you and your cat. Shipping available across the US.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 Fast US Shipping 3–7 Days</span>
+              <span>📦 US Shipping Available</span>
               <span>🛡️ 30-Day Return Policy</span>
             </div>
           </FadeInView>

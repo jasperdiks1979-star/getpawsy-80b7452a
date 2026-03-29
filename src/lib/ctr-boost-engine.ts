@@ -118,10 +118,10 @@ function generateMeta(slug: string): string {
 
 // V3 CTR modifiers for zero-click pages
 const ZERO_CLICK_MODIFIERS = [
-  '(Vet Approved)',
+  '(Buyer Guide)',
   '(Expert Guide)',
   '(2026 Edition)',
-  '(Avoid These Mistakes)',
+  '(Comparison)',
 ];
 
 export function generateCtrBoosts(
