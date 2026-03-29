@@ -234,7 +234,7 @@ const GoogleReview = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>Google Workspace:</strong> Business email verified (info@getpawsy.pet)</span>
+                    <span><strong>Google Workspace:</strong> Business email verified (support@getpawsy.pet)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
