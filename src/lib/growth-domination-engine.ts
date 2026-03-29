@@ -207,7 +207,7 @@ function runBuyerIntentPush(queries: GscQueryRow[]): BuyerIntentResult {
         page,
         queries: allQueries,
         titleRewrite: `${capitalize(primaryKw)} – US Free Shipping & 30-Day Returns | GetPawsy`,
-        metaRewrite: `Find the ${primaryKw} your pet deserves. Independently tested, delivered in 3-7 days. Shop now with free shipping over $35.`,
+        metaRewrite: `Find the ${primaryKw} your pet deserves. Independently tested, estimated delivery 5–10 business days. Shop now with free shipping over $35.`,
         faqEntries: allQueries.slice(0, 3).map(q => ({
           question: `What is the best ${q}?`,
           answer: `Our ${q} selection is tested by pet care experts. Each product ships with fast delivery to the US and a 30-day return policy. View our curated picks above.`,
