@@ -581,7 +581,8 @@ const BestsellerDetail = () => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         // Show sticky bar when main button is NOT visible
-        setShowStickyBar(!entry.isIntersecting);
+        const shouldShow = !entry.isIntersecting;
+        setShowStickyBar(prev => prev === shouldShow ? prev : shouldShow);
       },
       {
         threshold: 0,
@@ -1785,7 +1786,7 @@ const BestsellerDetail = () => {
         </AnimatePresence>
 
         {/* Spacer for sticky bar on mobile */}
-        <div className={`md:hidden transition-all ${showStickyBar ? 'h-24' : 'h-0'}`} />
+        {showStickyBar && <div className="md:hidden h-24" />}
 
         {/* Post-Add Upsell Modal (Mobile Only) */}
         <PostAddUpsellModal

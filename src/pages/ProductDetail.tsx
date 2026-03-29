@@ -945,7 +945,7 @@ const ProductDetail = () => {
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Truck className="w-3.5 h-3.5 text-primary" />
-                Ships in 5–10 business days
+                Estimated delivery: 5–10 business days
               </span>
               <span className="flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-primary" />
@@ -1232,7 +1232,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart – Ships in 5–10 Days 🇺🇸
+                Add to Cart 🇺🇸
               </Button>
 
               {/* Wishlist */}
@@ -1798,7 +1798,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span className="hidden md:inline">Add to Cart – Ships in 5–10 Days 🇺🇸</span>
+                <span className="hidden md:inline">Add to Cart 🇺🇸</span>
                 <span className="md:hidden">Add to Cart 🇺🇸</span>
               </Button>
 

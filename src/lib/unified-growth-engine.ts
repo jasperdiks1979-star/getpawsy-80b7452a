@@ -158,7 +158,7 @@ const SNIPER_SEED: Array<{
     url: '/collections/cat-scratching-posts', query: 'best cat scratching post tall',
     impressions: 2100, clicks: 34, position: 15.2, aov: 35,
     title: 'Best Tall Cat Scratching Posts — Full Stretch Design (2026)',
-    meta: 'Short posts frustrate cats. Our tall sisal posts let cats fully stretch and scratch — saving your furniture. Ships in 2-4 days.',
+    meta: 'Short posts frustrate cats. Our tall sisal posts let cats fully stretch and scratch — saving your furniture. Estimated delivery: 5–10 business days.',
     faqs: ['How tall should a cat scratching post be?', 'Sisal vs carpet: which lasts longer?', 'Do cats prefer vertical or horizontal scratching?'],
     linkSources: ['/collections/all', '/guides/sisal-vs-carpet-scratching-posts', '/collections/cat-toys', '/blog/cat-enrichment-guide', '/'],
   },
