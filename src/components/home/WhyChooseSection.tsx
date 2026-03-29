@@ -11,7 +11,7 @@ const REASONS = [
   {
     icon: RotateCcw,
     title: '30-Day Returns',
-    desc: 'Return unused items within 30 days. Easy process, fast refunds.',
+    desc: 'Return unused items within 30 days. Easy process.',
   },
   {
     icon: ShieldCheck,
