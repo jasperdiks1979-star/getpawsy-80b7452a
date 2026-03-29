@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 
 interface Product {
   id: string;
@@ -10,6 +11,7 @@ interface Product {
   image_url: string | null;
   slug: string | null;
   stock: number | null;
+  variants?: unknown;
 }
 
 interface CategoryPopularProductsProps {
