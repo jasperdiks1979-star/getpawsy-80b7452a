@@ -103,11 +103,14 @@ export const ProductCard = memo(
 
     const isOutOfStock = !computeAvailability(product).isInStock;
 
+    const cardCanonical = getCanonicalCardPrice(product);
+    const cardPrice = cardCanonical.price;
+
     const handleCardClick = () => {
       trackSelectItem(listId, listName, {
         id: product.id,
         name: product.name,
-        price: Number(product.price),
+        price: cardPrice,
         category: product.category || undefined,
         position,
       });
@@ -129,11 +132,11 @@ export const ProductCard = memo(
       addItem({
         id: product.id,
         name: product.name,
-        price: Number(product.price),
+        price: cardPrice,
         image: product.image_url || "/placeholder.svg",
       });
 
-      trackAddToCart(product.id, product.name, Number(product.price), 1);
+      trackAddToCart(product.id, product.name, cardPrice, 1);
       toast.success("Added to cart");
     };
 
