@@ -341,7 +341,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
             <div>
               <p><strong>Adres:</strong> De Haasstraat 11, 7312 VG Apeldoorn, NL</p>
               <p><strong>Website:</strong> https://getpawsy.pet</p>
-              <p><strong>Email:</strong> info@getpawsy.pet</p>
+              <p><strong>Email:</strong> support@getpawsy.pet</p>
             </div>
           </div>
         </section>
