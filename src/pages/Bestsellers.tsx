@@ -17,6 +17,7 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { useProductRatings } from '@/hooks/useProductRatings';
 import { toast } from 'sonner';
 import { trackViewItemList, trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
+import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 import {
   Accordion,
   AccordionContent,
