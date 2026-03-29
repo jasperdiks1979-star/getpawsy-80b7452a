@@ -288,10 +288,10 @@ export const ProductCard = memo(
               )}
 
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-primary">{canonical.displayPrice}</span>
-                {canonical.displayCompareAt && (
+                <span className="text-lg font-bold text-primary">{cardCanonical.displayPrice}</span>
+                {cardCanonical.displayCompareAt && (
                   <span className="text-sm text-muted-foreground line-through">
-                    {canonical.displayCompareAt}
+                    {cardCanonical.displayCompareAt}
                   </span>
                 )}
               </div>
