@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-03-28T23:12:36.555Z" total_products="18">
+<merchant_diagnostics generated="2026-03-29T08:11:00.637Z" total_products="20">
   <summary>
-    <missing_gtin>4</missing_gtin>
+    <missing_gtin>6</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>0</overlength_title>
     <short_title>2</short_title>
-    <out_of_stock>3</out_of_stock>
+    <out_of_stock>2</out_of_stock>
     <duplicate_titles>0</duplicate_titles>
     <duplicate_images>0</duplicate_images>
     <missing_compare_at_price>0</missing_compare_at_price>
   </summary>
   <issues>
+    <issue type="missing_gtin" product_id="6604a6ce-a9ff-457b-b1f4-dc9ca865af68" name="Rat Terrier Throw Blanket, Dog Lover Gift Blanket Reversible Plush Fluffy Red..." />
+    <issue type="out_of_stock" product_id="6604a6ce-a9ff-457b-b1f4-dc9ca865af68" name="Rat Terrier Throw Blanket, Dog Lover Gift Blanket Reversible Plush Fluffy Red..." stock="0" />
+    <issue type="missing_gtin" product_id="af2f873c-e754-40d8-ab78-f77ef53eb823" name="Luxury Color Gemstone And Diamond Cat-Claw Ring" />
+    <issue type="out_of_stock" product_id="af2f873c-e754-40d8-ab78-f77ef53eb823" name="Luxury Color Gemstone And Diamond Cat-Claw Ring" stock="0" />
     <issue type="missing_gtin" product_id="9a72f697-74c8-4758-9950-b2ace1b8fef6" name="10W 12V Solar-Powered Dual-Fan Chicken CoopPet House Exhaust Fan" />
-    <issue type="out_of_stock" product_id="9a72f697-74c8-4758-9950-b2ace1b8fef6" name="10W 12V Solar-Powered Dual-Fan Chicken CoopPet House Exhaust Fan" stock="0" />
     <issue type="missing_gtin" product_id="8e080f9b-64ad-47a7-a3b2-bac4e478d28a" name="Soil-free Mixed Cat Grass Treats" />
     <issue type="short_title" product_id="8e080f9b-64ad-47a7-a3b2-bac4e478d28a" name="Soil-free Mixed Cat Grass Treats" length="32" />
-    <issue type="out_of_stock" product_id="8e080f9b-64ad-47a7-a3b2-bac4e478d28a" name="Soil-free Mixed Cat Grass Treats" stock="0" />
     <issue type="missing_gtin" product_id="c0cb30c6-cb17-46e3-8183-afaf5c80bebf" name="Pet Solid Wood Paw Print Cremation Urn" />
     <issue type="short_title" product_id="c0cb30c6-cb17-46e3-8183-afaf5c80bebf" name="Pet Solid Wood Paw Print Cremation Urn" length="38" />
-    <issue type="out_of_stock" product_id="c0cb30c6-cb17-46e3-8183-afaf5c80bebf" name="Pet Solid Wood Paw Print Cremation Urn" stock="0" />
     <issue type="missing_gtin" product_id="156ed3db-e926-482c-951a-4c1fcb61779d" name="GetPawsy Enclosed Cat Litter Box – Extra Large Flip-Top Design" />
   </issues>
 </merchant_diagnostics>
