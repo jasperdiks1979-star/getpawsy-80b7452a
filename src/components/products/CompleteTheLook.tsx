@@ -144,7 +144,7 @@ export const CompleteTheLook = ({
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: getCanonicalPrice(product),
       image: product.image_url || '/placeholder.svg',
     });
 
