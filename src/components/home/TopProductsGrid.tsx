@@ -35,7 +35,7 @@ export function TopProductsGrid() {
       const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('products_public')
-        .select('id, name, slug, image_url, price')
+        .select('id, name, slug, image_url, price, variants')
         .in('slug', TOP_SLUGS)
         .eq('is_active', true);
       if (error) throw error;
