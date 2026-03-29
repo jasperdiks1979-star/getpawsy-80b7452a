@@ -7,8 +7,8 @@ import {
 const BADGES = [
   {
     icon: Truck,
-    title: 'Fast US Shipping',
-    subtitle: `Delivered in ${DELIVERY_TIME_STANDARD}`,
+    title: 'US Shipping',
+    subtitle: `Estimated delivery: ${DELIVERY_TIME_STANDARD}`,
   },
   {
     icon: RotateCcw,
