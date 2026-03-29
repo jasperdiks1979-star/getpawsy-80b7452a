@@ -91,7 +91,7 @@ const clarityIntros: Record<ProductType, ClarityIntro> = {
   },
   grooming: {
     intro: "Shedding fur covers your furniture, clothes, and car seats — and without regular grooming, painful mats and tangles develop that lead to skin irritation. This grooming tool removes loose undercoat effectively while being gentle on sensitive skin. Professional-quality results at home, saving hundreds per year on salon visits.",
-    shortBenefits: ['Reduces shedding up to 90%', 'Gentle on sensitive skin', 'Self-cleaning mechanism'],
+    shortBenefits: ['Helps reduce shedding significantly', 'Gentle on sensitive skin', 'Self-cleaning mechanism'],
   },
   clothing: {
     intro: "Short-haired and small breeds struggle in cold weather, shivering through winter walks while ill-fitting pet clothes restrict their movement. This pet clothing provides warmth without bulk, with a stretch-friendly design that lets your pet move naturally. Easy on-off fastening means less fussing and more time enjoying the outdoors together.",
