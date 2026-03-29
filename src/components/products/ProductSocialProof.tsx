@@ -88,7 +88,7 @@ const REVIEWS: Record<ProductType, Review[]> = {
     { text: 'Both our cats adapted immediately. Quiet, efficient, and saves us so much time.', name: 'Tina M.' },
   ],
   default: [
-    { text: 'Great quality product. My pet loves it and it arrived fast.', name: 'Jordan W.' },
+    { text: 'Great quality product. My pet loves it and it arrived well-packaged.', name: 'Jordan W.' },
     { text: 'Exactly as described. Happy with the purchase.', name: 'Taylor B.' },
     { text: 'Good value for the price. Would definitely order again.', name: 'Casey H.' },
   ],
