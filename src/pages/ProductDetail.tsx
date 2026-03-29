@@ -50,6 +50,7 @@ import { ReviewsList } from "@/components/reviews/ReviewsList";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackViewItem } from "@/lib/analytics";
 import { calculateSellingPrice } from "@/lib/pricing";
+import { getProductDiscount } from "@/lib/discount";
 import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
 import { getProductBySlugOrId } from "@/data/products";
@@ -683,13 +684,16 @@ const ProductDetail = () => {
     }
   };
 
-  // Derive active price from variant (source of truth) and validate compare-at
+  // Derive active price from variant (source of truth) for cart/display
   const activePrice = selectedVariant?.variantSellPrice
     ? Number(selectedVariant.variantSellPrice)
     : Number(product.price);
   const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
   const validCompareAt = compareAtPrice && compareAtPrice > activePrice ? compareAtPrice : null;
-  const discount = validCompareAt ? Math.round((1 - activePrice / validCompareAt) * 100) : null;
+
+  // CANONICAL discount — always derived from BASE product.price, not variant price.
+  // This keeps the gallery badge stable when variants change.
+  const { percent: discount } = getProductDiscount(product.price, product.compare_at_price);
 
   // Check if description contains HTML
   const descriptionHasHtml = product.description?.includes("<") && product.description?.includes(">");
@@ -912,7 +916,7 @@ const ProductDetail = () => {
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
                 // Only show compare-at if it's strictly greater than display price
                 const showCompare = compareAt !== null && compareAt > displayPrice;
-                const currentDiscount = showCompare ? Math.round((1 - displayPrice / compareAt!) * 100) : null;
+                const { percent: currentDiscount } = getProductDiscount(displayPrice, compareAt);
 
                 return (
                   <div className="flex items-baseline gap-3 flex-wrap">

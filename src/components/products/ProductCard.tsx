@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from "@/lib/analytics";
 import { safeString, safePrice } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
+import { getProductDiscount } from "@/lib/discount";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 
 export interface Product {
@@ -161,10 +162,7 @@ export const ProductCard = memo(
       window.location.assign(productUrl);
     };
 
-    const discount =
-      product.compare_at_price && Number(product.compare_at_price) > Number(product.price)
-        ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
-        : null;
+    const { percent: discount } = getProductDiscount(product.price, product.compare_at_price);
 
     const productUrl =
       product.slug && product.slug.trim() !== "" ? `/product/${product.slug}` : `/product/${product.id}`;

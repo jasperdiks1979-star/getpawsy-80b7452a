@@ -84,6 +84,7 @@ import {
   TRUST_BADGES,
 } from '@/lib/shipping-constants';
 import { computeAvailability } from '@/lib/availability';
+import { getProductDiscount } from '@/lib/discount';
 
 // Generate JSON-LD structured data for product
 // NOTE: Reviews/ratings intentionally removed - Google requires real customer reviews
@@ -757,9 +758,7 @@ const BestsellerDetail = () => {
     );
   };
 
-  const discount = product.compare_at_price 
-    ? Math.round((1 - product.price / product.compare_at_price) * 100)
-    : 0;
+  const { percent: discount } = getProductDiscount(product.price, product.compare_at_price);
 
   // Generate structured data with real reviews when available
   const productJsonLd = generateProductJsonLd(product, bestseller, reviews);
