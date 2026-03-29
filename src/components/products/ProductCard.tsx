@@ -152,7 +152,7 @@ export const ProductCard = memo(
         trackRemoveFromWishlist(product.id, product.name);
         toast.success("Removed from wishlist");
       } else {
-        trackAddToWishlist(product.id, product.name, Number(product.price));
+        trackAddToWishlist(product.id, product.name, cardPrice);
         toast.success("Added to wishlist");
       }
 
