@@ -41,7 +41,7 @@ const USE_CASES: Record<ProductType, UseCase[]> = {
     { persona: 'Work-from-home pet parents', scenario: 'A window-side cat tree keeps your cat entertained while you focus on work.' },
   ],
   harness: [
-    { persona: 'Owners of strong pullers', scenario: 'Chest-clip design redirects pulling without choking — walks become manageable overnight.' },
+    { persona: 'Owners of strong pullers', scenario: 'Chest-clip design redirects pulling without choking — walks may become more manageable within days.' },
     { persona: 'Puppy trainers', scenario: 'Adjustable straps grow with your pup through their first year while building good leash habits.' },
     { persona: 'Brachycephalic breed owners', scenario: 'No throat pressure for flat-faced breeds like Bulldogs and Pugs who are sensitive to collars.' },
     { persona: 'Nighttime walkers', scenario: 'Reflective trim ensures visibility on early morning and late evening outings.' },
