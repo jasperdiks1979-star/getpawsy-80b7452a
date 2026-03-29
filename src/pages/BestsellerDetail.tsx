@@ -360,7 +360,7 @@ const BestsellerDetail = () => {
         .from('bestsellers')
         .select(`
           *,
-          products_public:product_id (
+          products_public!bestsellers_product_id_fkey (
             id,
             name,
             slug,
