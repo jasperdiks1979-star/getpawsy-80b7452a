@@ -78,8 +78,11 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(bestseller.product.id);
 
-  const discount = bestseller.product.compare_at_price 
-    ? Math.round((1 - bestseller.product.price / bestseller.product.compare_at_price) * 100)
+  const canonical = getCanonicalCardPrice(bestseller.product);
+  const canonicalPrice = canonical.price;
+
+  const discount = canonical.compareAtPrice
+    ? Math.round((1 - canonicalPrice / canonical.compareAtPrice) * 100)
     : 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
