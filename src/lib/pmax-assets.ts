@@ -70,7 +70,7 @@ export const PMAX_DESCRIPTIONS = [
   
   // Category descriptions
   'Cozy dog beds, interactive toys & travel gear. Free shipping on $35+ orders.',
-  'Cat trees, scratchers & enrichment toys. Quality products with fast US delivery.',
+  'Cat trees, scratchers & enrichment toys. Quality products with US delivery.',
   'Pet travel accessories for stress-free trips. Secure checkout, easy returns.',
   
   // Trust-focused
@@ -171,7 +171,7 @@ export const PMAX_ASSET_GROUPS: PMaxAssetGroup[] = [
     ],
     descriptions: [
       'Shop cat trees, toys, scratchers & more. Free shipping on $35+ orders.',
-      'Quality cat products for enrichment & comfort. Fast US delivery.',
+      'Quality cat products for enrichment & comfort. US delivery.',
     ],
   },
   {

@@ -69,7 +69,7 @@ const steps = [
       'Wacht tot feed volledig verwerkt is (check diagnostics)',
       'Ga naar Account issues → Request review',
       'Voeg toelichting toe: "Fixed shipping weights, image validation, and policy pages"',
-      'Herbeoordeling duurt doorgaans 3–7 werkdagen',
+      'Herbeoordeling duurt doorgaans 5–10 werkdagen',
     ],
   },
 ];

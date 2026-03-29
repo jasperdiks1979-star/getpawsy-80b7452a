@@ -163,7 +163,7 @@ const DogTrainingTravelPillar = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-display font-bold mb-4">Shipping & Returns</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              All dog training and travel products ship directly to customers with 3–7 business day delivery. Free shipping on orders over $35. Every purchase is covered by our 30-day return policy — items must be unused and in original condition.
+              All dog training and travel products ship directly to customers with 5–10 business day estimated delivery. Free shipping on orders over $35. Every purchase is covered by our 30-day return policy — items must be unused and in original condition.
             </p>
           </section>
 

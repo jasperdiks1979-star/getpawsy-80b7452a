@@ -359,7 +359,7 @@ export default function TrainingLandingPage() {
       <section className="border-t border-border bg-muted/30">
         <div className="container py-6">
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> US Delivery (3–7 Business Days)</div>
+            <div className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> Estimated Delivery: 5–10 Business Days</div>
             <div className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /> 30-Day Return Policy</div>
             <div className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-primary" /> Secure Encrypted Checkout</div>
             <div className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Easy Returns</div>
