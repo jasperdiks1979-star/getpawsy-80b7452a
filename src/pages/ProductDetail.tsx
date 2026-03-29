@@ -1090,10 +1090,10 @@ const ProductDetail = () => {
                   // Category-aware benefit bullets (problem → outcome)
                   if (n.includes("bed") || cat.includes("bed")) {
                     bullets.push(
-                      "Relieves joint pain and stiffness overnight",
-                      "Improves sleep quality from the first night",
-                      "Supports older, injured, and active dogs",
-                      "Ultra-soft, breathable cover stays cool",
+                      "Designed to support joint comfort and recovery",
+                      "May help improve sleep quality for your pet",
+                      "Suitable for older, recovering, and active dogs",
+                      "Soft, breathable cover helps regulate temperature",
                     );
                   } else if (n.includes("harness") || cat.includes("harness")) {
                     bullets.push(
@@ -1111,10 +1111,10 @@ const ProductDetail = () => {
                     );
                   } else if (/litter/i.test(n + " " + cat)) {
                     bullets.push(
-                      "Fully automatic cleaning system",
-                      "Eliminates odors instantly",
-                      "Smart sensors for safety",
-                      "Perfect for multi-cat homes",
+                      "Automatic cleaning helps reduce daily scooping",
+                      "Designed to help manage litter box odors",
+                      "Built-in sensors for pet safety",
+                      "Designed for multi-cat households",
                     );
                   } else if (n.includes("toy") || cat.includes("toy")) {
                     bullets.push(
@@ -1191,6 +1191,13 @@ const ProductDetail = () => {
                   setVolumeDiscount(discountPct);
                 }}
                 selectedQuantity={quantity}
+                contextLabel={
+                  (product.category || '').toLowerCase().includes('cat')
+                    ? 'Great value for multi-cat homes'
+                    : (product.category || '').toLowerCase().includes('dog')
+                      ? 'Perfect for multi-dog households'
+                      : 'Great value for pet owners'
+                }
               />
             )}
 
@@ -1737,7 +1744,7 @@ const ProductDetail = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-bottom"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.15)] safe-area-bottom"
           >
             <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
               {/* Product name + Price */}
