@@ -268,7 +268,7 @@ const Bestsellers = () => {
     if (bestsellers && bestsellers.length > 0 && !hasTrackedImpressions.current) {
       hasTrackedImpressions.current = true;
       trackViewItemList('bestsellers', 'Bestsellers', bestsellers.map((item, index) => ({
-        id: item.product.id, name: item.product.name, price: item.product.price,
+        id: item.product.id, name: item.product.name, price: getCanonicalCardPrice(item.product).price,
         category: item.product.category || undefined, position: index + 1,
       })));
     }
