@@ -581,7 +581,8 @@ const BestsellerDetail = () => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         // Show sticky bar when main button is NOT visible
-        setShowStickyBar(!entry.isIntersecting);
+        const shouldShow = !entry.isIntersecting;
+        setShowStickyBar(prev => prev === shouldShow ? prev : shouldShow);
       },
       {
         threshold: 0,
