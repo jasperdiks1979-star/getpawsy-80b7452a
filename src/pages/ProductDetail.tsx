@@ -909,14 +909,10 @@ const ProductDetail = () => {
               className="bg-muted/50 rounded-2xl p-5"
             >
               {(() => {
-                // VARIANT PRICE = single source of truth
-                const displayPrice = selectedVariant?.variantSellPrice
-                  ? Number(selectedVariant.variantSellPrice)
-                  : Number(product.price);
+                // Use the already-computed activePrice (base price unless user selected variant)
+                const displayPrice = activePrice;
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
-                // Only show compare-at if it's strictly greater than display price
                 const showCompare = compareAt !== null && compareAt > displayPrice;
-                // Always use stable base-product discount — never variant price
                 const currentDiscount = discount;
 
                 return (
