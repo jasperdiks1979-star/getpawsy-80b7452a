@@ -19,6 +19,7 @@ interface MoneyProduct {
   compare_at_price: number | null;
   image_url: string | null;
   category: string | null;
+  variants?: unknown;
   moneyScore: number;
 }
 
