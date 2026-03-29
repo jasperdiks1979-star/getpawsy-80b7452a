@@ -17,7 +17,7 @@ import { Star } from 'lucide-react';
  */
 async function fetchWinners() {
   const { data: boosted } = await supabase
-    .from('products')
+    .from('products_public')
     .select('id, name, slug, price, compare_at_price, image_url')
     .eq('is_active', true)
     .eq('custom_label_5', 'homepage_winner')
