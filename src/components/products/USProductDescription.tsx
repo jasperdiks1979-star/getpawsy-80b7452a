@@ -101,8 +101,8 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
           <div className="flex items-start gap-3">
             <Truck className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
              <div>
-              <p className="font-medium text-foreground text-sm">Fast Shipping</p>
-              <p className="text-xs text-muted-foreground">Shipping to customers in the United States</p>
+              <p className="font-medium text-foreground text-sm">US Shipping</p>
+              <p className="text-xs text-muted-foreground">Estimated delivery: 5–10 business days</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
