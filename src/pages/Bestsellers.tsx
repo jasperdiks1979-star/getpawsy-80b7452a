@@ -276,7 +276,7 @@ const Bestsellers = () => {
 
   const handleProductSelect = (bestseller: BestsellerWithProduct, index: number) => {
     trackSelectItem('bestsellers', 'Bestsellers', {
-      id: bestseller.product.id, name: bestseller.product.name, price: bestseller.product.price,
+      id: bestseller.product.id, name: bestseller.product.name, price: getCanonicalCardPrice(bestseller.product).price,
       category: bestseller.product.category || undefined, position: index + 1,
     });
   };
