@@ -112,7 +112,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
       toast.success('Removed from wishlist');
     } else {
       addToWishlist(bestseller.product.id);
-      trackAddToWishlist(bestseller.product.id, bestseller.product.name, bestseller.product.price);
+      trackAddToWishlist(bestseller.product.id, bestseller.product.name, canonicalPrice);
       toast.success('Added to wishlist!');
     }
   };
