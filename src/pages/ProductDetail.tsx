@@ -230,6 +230,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [userHasSelectedVariant, setUserHasSelectedVariant] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -488,9 +489,11 @@ const ProductDetail = () => {
   useEffect(() => {
     if (!currentProductId) return;
     setSelectedImage(0);
-    // Auto-select first variant immediately, or null if no variants
-    // This runs ONCE per product load — no oscillation possible
+    // Auto-select first variant for internal state (images, SKU), but do NOT
+    // promote its price into display — the storefront shows product.price until
+    // the user explicitly picks a variant.
     setSelectedVariant(variants.length > 0 ? variants[0] : null);
+    setUserHasSelectedVariant(false);
 
     addToRecentlyViewed(currentProductId);
     if (product) {
@@ -645,8 +648,8 @@ const ProductDetail = () => {
       addToCartButtonRef.current,
     );
 
-    // Use variant price if selected, otherwise use product price
-    const basePrice = selectedVariant?.variantSellPrice
+    // Cart uses variant price if user explicitly selected one, else base price
+    const basePrice = userHasSelectedVariant && selectedVariant?.variantSellPrice
       ? Number(selectedVariant.variantSellPrice)
       : Number(product.price);
 
@@ -679,8 +682,10 @@ const ProductDetail = () => {
     }
   };
 
-  // Derive active price from variant (source of truth) for cart/display
-  const activePrice = selectedVariant?.variantSellPrice
+  // DISPLAY PRICE POLICY: Always show product.price (base price) unless the
+  // user has explicitly clicked a variant.  This prevents the Google Merchant
+  // mismatch where cards show $268.99 but PDP auto-selects variant at $193.67.
+  const activePrice = userHasSelectedVariant && selectedVariant?.variantSellPrice
     ? Number(selectedVariant.variantSellPrice)
     : Number(product.price);
   const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
@@ -904,14 +909,10 @@ const ProductDetail = () => {
               className="bg-muted/50 rounded-2xl p-5"
             >
               {(() => {
-                // VARIANT PRICE = single source of truth
-                const displayPrice = selectedVariant?.variantSellPrice
-                  ? Number(selectedVariant.variantSellPrice)
-                  : Number(product.price);
+                // Use the already-computed activePrice (base price unless user selected variant)
+                const displayPrice = activePrice;
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
-                // Only show compare-at if it's strictly greater than display price
                 const showCompare = compareAt !== null && compareAt > displayPrice;
-                // Always use stable base-product discount — never variant price
                 const currentDiscount = discount;
 
                 return (
@@ -1036,7 +1037,7 @@ const ProductDetail = () => {
                     return (
                       <motion.button
                         key={variant.vid}
-                        onClick={() => { if (!isSelected) setSelectedVariant(variant); }}
+                        onClick={() => { if (!isSelected) { setSelectedVariant(variant); setUserHasSelectedVariant(true); } }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
@@ -1183,9 +1184,7 @@ const ProductDetail = () => {
             {/* Volume Discount — Buy More Save More */}
             {inStock && (
               <VolumeDiscountSelector
-                basePrice={
-                  selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)
-                }
+                basePrice={activePrice}
                 onQuantityChange={(newQty, discountPct) => {
                   setQuantity(newQty);
                   setVolumeDiscount(discountPct);
@@ -1518,6 +1517,7 @@ const ProductDetail = () => {
                         whileTap={{ scale: 0.97 }}
                         onClick={() => {
                           setSelectedVariant(variant);
+                          setUserHasSelectedVariant(true);
                           if (variant.variantImage) {
                             const idx = images.findIndex((img) => img === variant.variantImage);
                             if (idx !== -1) setSelectedImage(idx);
@@ -1596,14 +1596,8 @@ const ProductDetail = () => {
         <FinalCtaBlock
           onAddToCart={handleAddToCart}
           inStock={inStock}
-          price={selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)}
-          compareAtPrice={
-            product.compare_at_price &&
-            Number(product.compare_at_price) >
-              (selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price))
-              ? Number(product.compare_at_price)
-              : null
-          }
+          price={activePrice}
+          compareAtPrice={validCompareAt}
           productName={product.name}
           category={product.category || ""}
         />
