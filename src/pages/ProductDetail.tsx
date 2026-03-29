@@ -1090,10 +1090,10 @@ const ProductDetail = () => {
                   // Category-aware benefit bullets (problem → outcome)
                   if (n.includes("bed") || cat.includes("bed")) {
                     bullets.push(
-                      "Relieves joint pain and stiffness overnight",
-                      "Improves sleep quality from the first night",
-                      "Supports older, injured, and active dogs",
-                      "Ultra-soft, breathable cover stays cool",
+                      "Designed to support joint comfort and recovery",
+                      "May help improve sleep quality for your pet",
+                      "Suitable for older, recovering, and active dogs",
+                      "Soft, breathable cover helps regulate temperature",
                     );
                   } else if (n.includes("harness") || cat.includes("harness")) {
                     bullets.push(
