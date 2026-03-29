@@ -96,7 +96,7 @@ export const BestsellersSection = () => {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {bestsellers.slice(0, 8).map((bestseller) => {
-              const product = bestseller.products;
+              const product = bestseller.products_public;
               if (!product) return null;
 
               const price = typeof product.price === 'number' ? product.price : 0;
