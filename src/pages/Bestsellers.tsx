@@ -63,6 +63,7 @@ interface BestsellerWithProduct {
     images: string[] | null;
     category: string | null;
     stock: number | null;
+    variants?: unknown;
   };
 }
 
