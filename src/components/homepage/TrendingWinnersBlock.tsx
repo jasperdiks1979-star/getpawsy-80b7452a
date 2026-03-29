@@ -16,18 +16,8 @@ import { Star } from 'lucide-react';
  * - CTA matches store standard ("Add to Cart – Secure Checkout")
  */
 async function fetchWinners() {
-  const { data: boosted } = await supabase
-    .from('products')
-    .select('id, name, slug, price, compare_at_price, image_url')
-    .eq('is_active', true)
-    .eq('custom_label_5', 'homepage_winner')
-    .order('price', { ascending: false })
-    .limit(4);
-
-  if (boosted && boosted.length >= 4) return boosted;
-
   const { data: fallback } = await supabase
-    .from('products')
+    .from('products_public')
     .select('id, name, slug, price, compare_at_price, image_url')
     .eq('is_active', true)
     .order('price', { ascending: false })

@@ -191,7 +191,7 @@ export function calculateDemandScore(signals: DemandSignals, aov: number = 35): 
 export async function generateDemandReport(aov: number = 35): Promise<DemandPredictionReport> {
   // Fetch products
   const { data: products } = await supabase
-    .from('products')
+    .from('products_public')
     .select('id, name, slug, category, price, is_active')
     .eq('is_active', true)
     .limit(500);

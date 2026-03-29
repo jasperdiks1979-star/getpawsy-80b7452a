@@ -28,7 +28,7 @@ const PinterestLandingPage = () => {
     queryKey: ['pinterest-landing', slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('slug', slug)
         .eq('is_active', true)
@@ -93,7 +93,7 @@ const PinterestLandingPage = () => {
     <>
       <Helmet>
         <title>{product.name} | GetPawsy</title>
-        <meta name="description" content={product.meta_description || product.description?.substring(0, 155) || ''} />
+        <meta name="description" content={product.description?.substring(0, 155) || ''} />
         <link rel="canonical" href={`https://getpawsy.pet/product/${product.slug}`} />
         <meta name="robots" content="noindex, follow" />
       </Helmet>

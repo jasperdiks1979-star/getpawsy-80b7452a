@@ -151,7 +151,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
   const fetchBaseBy = async (column: "id" | "slug", value: string) => {
     const { data, error } = await supabase
-      .from("products")
+      .from("products_public")
       .select("*")
       .eq(column, value)
       .eq("is_active", true)
@@ -163,7 +163,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
   const resolveDuplicateRedirect = async (column: "id" | "slug", value: string) => {
     const { data } = await supabase
-      .from("products")
+      .from("products_public")
       .select("is_duplicate, canonical_product_id")
       .eq(column, value)
       .maybeSingle();

@@ -19,7 +19,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
     queryKey: ['curated-products', productIds],
     queryFn: async () => {
       const { data } = await supabase
-        .from('products')
+        .from('products_public')
         .select('id, name, slug, price, compare_at_price, image_url, stock')
         .in('id', productIds)
         .eq('is_active', true);
