@@ -1232,6 +1232,19 @@ const ProductDetail = () => {
               />
             )}
 
+            {/* Social proof & trust bullets — conversion boost */}
+            <div className="flex flex-col gap-2 pt-2">
+              <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <span className="text-amber-400">★★★★★</span>
+                <span>Trusted by pet owners across the US</span>
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-primary" />Free US Shipping $35+</span>
+                <span className="flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5 text-primary" />30-Day Returns</span>
+                <span className="flex items-center gap-1"><Lock className="w-3.5 h-3.5 text-primary" />Secure Checkout</span>
+              </div>
+            </div>
+
             {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div
               ref={mainAddToCartRef}
