@@ -552,7 +552,7 @@ const Bestsellers = () => {
               { name: 'Dog Enrichment Toys', desc: 'Treat-dispensing and puzzle toys to reduce boredom and anxiety.', link: '/collections/dog-enrichment-toys' },
               { name: 'Pet Grooming Essentials', desc: 'Brushes, nail trimmers, and grooming kits for dogs and cats.', link: '/collections/best-dog-grooming-kits' },
               { name: 'Pet Travel Accessories', desc: 'Carriers, car seats, and travel bowls for pets on the go.', link: '/collections/dog-travel-accessories' },
-              { name: 'All Pet Products', desc: 'Browse our full catalog of 600+ curated pet supplies.', link: '/products' },
+              { name: 'All Pet Products', desc: 'Browse our full catalog of curated premium pet supplies.', link: '/products' },
             ].map((cat) => (
               <Link key={cat.name} to={cat.link} className="flex items-start gap-3 bg-card border rounded-xl p-4 hover:shadow-md transition-shadow group">
                 <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
