@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
 import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
+import { CrawlBoostLinks } from "@/components/home/CrawlBoostLinks";
 import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
 import { HomepageFAQ } from "@/components/home/HomepageFAQ";
 import {
@@ -49,6 +50,9 @@ const HomePage = () => {
       </Helmet>
 
       <HeroSection />
+
+      {/* SEO crawl-boost: static anchor links above the fold */}
+      <CrawlBoostLinks />
 
       <div className="container px-4 md:px-6">
         <TrustBadgesBlock />
