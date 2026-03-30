@@ -57,6 +57,7 @@ interface BestsellerWithProduct {
   product: {
     id: string;
     name: string;
+    slug: string;
     price: number;
     compare_at_price: number | null;
     image_url: string | null;
@@ -127,7 +128,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Link to={`/bestseller/${bestseller.slug}`} onClick={handleClick}>
+      <Link to={`/product/${bestseller.product.slug || bestseller.slug}`} onClick={handleClick}>
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
           <div className="relative aspect-square overflow-hidden bg-muted">
             <div className="absolute top-3 left-3 z-10">
@@ -221,7 +222,7 @@ const Bestsellers = () => {
         .select(`
           id, slug, rank, hero_headline, hero_subheadline, seo_description, long_description, selling_points,
           product:products_public!bestsellers_product_id_fkey (
-            id, name, price, compare_at_price, image_url, images, category, stock, variants
+            id, name, slug, price, compare_at_price, image_url, images, category, stock, variants
           )
         `)
         .eq('is_active', true)
@@ -477,7 +478,7 @@ const Bestsellers = () => {
                       <tr key={b.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-bold text-primary">#{b.rank}</td>
                         <td className="p-3">
-                          <Link to={`/bestseller/${b.slug}`} className="font-medium hover:text-primary transition-colors">
+                          <Link to={`/product/${b.product.slug || b.slug}`} className="font-medium hover:text-primary transition-colors">
                             {(b.hero_headline || b.product.name).slice(0, 50)}
                           </Link>
                         </td>

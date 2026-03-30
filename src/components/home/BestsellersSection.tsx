@@ -26,6 +26,7 @@ export const BestsellersSection = () => {
           products_public!bestsellers_product_id_fkey (
             id,
             name,
+            slug,
             price,
             compare_at_price,
             image_url,
@@ -105,7 +106,7 @@ export const BestsellersSection = () => {
               const price = canonical.price;
               const imageUrl = product.image_url || '/placeholder.svg';
               const productName = bestseller.hero_headline || product.name || 'Product';
-              const slug = bestseller.slug || product.id;
+              const slug = (product as any).slug || bestseller.slug || product.id;
 
               return (
                 <div
@@ -113,7 +114,7 @@ export const BestsellersSection = () => {
                   className="flex-shrink-0 w-[160px] md:w-[220px] snap-start flex flex-col"
                 >
                   <Link
-                    to={`/bestseller/${slug}`}
+                    to={`/product/${slug}`}
                     className="group flex flex-col rounded-2xl border border-border/40 bg-card overflow-hidden hover:shadow-md transition-shadow flex-1"
                   >
                     <div className="aspect-square overflow-hidden bg-muted">
