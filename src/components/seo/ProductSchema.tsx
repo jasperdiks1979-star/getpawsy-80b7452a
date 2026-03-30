@@ -79,7 +79,9 @@ export function ProductSchema({
     product.description || ''
   );
 
-  const canonicalSchemaPrice = getCanonicalPrice(product);
+  const merchantPrice = getDisplayPrice(product as MerchantProduct);
+  const canonicalSchemaPrice = merchantPrice.price;
+  const merchantAvailability = getDisplayAvailability(product as MerchantProduct);
 
   // Generate meta description
   const metaDescription = generateMetaDescription(
