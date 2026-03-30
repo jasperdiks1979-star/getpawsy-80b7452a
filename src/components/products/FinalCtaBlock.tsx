@@ -63,7 +63,7 @@ export function FinalCtaBlock({ onAddToCart, inStock, price, compareAtPrice, pro
           disabled={!inStock}
         >
           <ShoppingCart className="w-5 h-5" />
-          Add to Cart 🇺🇸
+          Buy Now — Free US Shipping
         </Button>
 
         <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
