@@ -1268,7 +1268,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart 🇺🇸
+                Buy Now — Free US Shipping
               </Button>
 
               {/* Wishlist */}
