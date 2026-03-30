@@ -746,9 +746,7 @@ const App = () => {
                           {/* /bestseller/:slug → redirect to /product/:slug for canonical URL consolidation */}
                           <Route
                             path="/bestseller/:slug"
-                            element={
-                              <BestsellerRedirect />
-                            }
+                            element={<BestsellerSlugRedirect />}
                           />
                           <Route
                             path="/live-map"
