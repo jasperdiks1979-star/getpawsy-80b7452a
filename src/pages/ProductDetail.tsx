@@ -1583,6 +1583,9 @@ const ProductDetail = () => {
           </Tabs>
         </motion.div>
 
+        {/* 0. Who Is This For? — audience targeting */}
+        <ProductIdealFor productName={product.name} category={product.category || ""} />
+
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
