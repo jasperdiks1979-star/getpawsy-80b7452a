@@ -277,6 +277,12 @@ function ProductRouteRedirect() {
   return <Navigate to={`/product/${slug || ""}`} replace />;
 }
 
+/** Redirect /bestseller/:slug to canonical /product/:slug */
+function BestsellerSlugRedirect() {
+  const { slug } = useParams<{ slug: string }>();
+  return <Navigate to={`/product/${slug || ""}`} replace />;
+}
+
 // Admin sub-pages (all lazy-loaded, admin-only)
 const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
