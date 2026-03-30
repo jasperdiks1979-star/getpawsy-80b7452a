@@ -419,6 +419,20 @@ const Bestsellers = () => {
         </div>
       </section>
 
+      {/* SEO Intro Text — crawlable content for indexation boost */}
+      <section className="py-6 md:py-8 bg-muted/20 border-b border-border/20">
+        <div className="container px-4 md:px-6 max-w-3xl mx-auto">
+          <div className="prose prose-sm text-muted-foreground leading-relaxed">
+            <p>
+              Looking for the <strong>best pet products</strong> in 2026? Our curated list of <strong>top-rated pet supplies</strong> is ranked monthly by verified US pet owners based on real reviews, repeat purchases, and satisfaction ratings. From <a href="/collections/cat-trees-and-condos" className="text-primary hover:underline">cat trees and condos</a> to <a href="/collections/dog-toys" className="text-primary hover:underline">interactive dog toys</a>, every product on this page has been tested and approved by real pet families.
+            </p>
+            <p>
+              Whether you're shopping for a new <a href="/product/automatic-cat-litter-box-self-cleaning-app-control" className="text-primary hover:underline">self-cleaning cat litter box</a>, an orthopedic dog bed, or enrichment toys for your indoor cat — our <strong>best sellers for dogs and cats</strong> deliver quality, value, and fast US shipping on orders over $35.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Products Grid */}
       <section className="py-12 md:py-16">
         <div className="container px-4 md:px-6">
