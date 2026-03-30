@@ -9,18 +9,26 @@ import { ArrowRight, BookOpen, ShoppingBag } from 'lucide-react';
 
 const FEATURED_COLLECTIONS = [
   {
-    slug: 'dog-car-travel-safety-seats',
-    label: 'Dog Car Seats & Travel Safety',
-    description: 'Crash-tested dog car seats, booster seats & travel harnesses for safe road trips.',
-    icon: '🚗',
-    guidePath: '/best-dog-car-seat-safety',
-    guideLabel: 'best dog car seat safety guide',
+    slug: 'cat-trees-and-condos',
+    label: 'Cat Trees & Condos',
+    description: 'Multi-level cat trees, scratching posts & condos for active indoor cats.',
+    icon: '🐱',
+    guidePath: '/best-interactive-cat-toys',
+    guideLabel: 'best cat toys guide',
+  },
+  {
+    slug: 'dog-toys',
+    label: 'Dog Toys & Enrichment',
+    description: 'Interactive toys, puzzle feeders & chew toys for all breeds and sizes.',
+    icon: '🦴',
+    guidePath: '/best-dog-anxiety-solutions',
+    guideLabel: 'best dog enrichment guide',
   },
   {
     slug: 'cat-litter-boxes',
     label: 'Cat Litter Boxes',
     description: 'Top-rated litter boxes for odor control, large cats & multi-cat households.',
-    icon: '🐱',
+    icon: '🧹',
     guidePath: '/best-cat-litter-box-2026',
     guideLabel: 'best cat litter box 2026 guide',
   },

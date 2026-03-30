@@ -56,10 +56,10 @@ const footerLinks = {
   ],
   more: [
     { label: 'Dog Beds', href: '/collections/dog-beds' },
+    { label: 'Dog Toys', href: '/collections/dog-toys' },
     { label: 'Dog Harnesses', href: '/collections/dog-harness' },
-    { label: 'Cat Trees', href: '/collections/cat-trees-and-condos' },
+    { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
     { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-    { label: 'Pet Travel', href: '/collections/pet-travel-accessories' },
   ],
   guides: [
     { label: 'Dog Training Guide', href: '/guides/complete-dog-training-guide-2026' },

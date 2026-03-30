@@ -1249,6 +1249,11 @@ const App = () => {
                             path="/cats/cat-trees"
                             element={<Navigate to="/collections/cat-trees-and-condos" replace />}
                           />
+                          {/* SEO: /collections/cat-trees → canonical /collections/cat-trees-and-condos */}
+                          <Route
+                            path="/collections/cat-trees"
+                            element={<Navigate to="/collections/cat-trees-and-condos" replace />}
+                          />
                           <Route
                             path="/cats/cat-carriers"
                             element={<Navigate to="/collections/best-cat-carriers" replace />}
