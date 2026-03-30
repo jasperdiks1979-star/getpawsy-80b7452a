@@ -293,7 +293,7 @@ const Bestsellers = () => {
     { question: 'Can I see real customer reviews?', answer: 'Absolutely. Every bestseller product page features verified customer reviews with photos. We never filter or remove honest feedback — positive or negative.' },
     { question: 'Do you ship internationally?', answer: 'Currently we ship to the United States only. We are working on expanding to Canada and the UK. Sign up for our newsletter to be notified when international shipping becomes available.' },
     { question: 'How often is the bestseller list updated?', answer: 'Our bestseller rankings are refreshed every 30 days based on the latest sales data, review scores, and return rates. Products must consistently perform well to maintain their position.' },
-    { question: 'What makes GetPawsy different from Amazon or Chewy?', answer: 'We curate a focused selection of 600+ tested pet products instead of millions of unvetted listings. Every item is evaluated for pet safety, durability, and real owner satisfaction before it reaches our store.' },
+    { question: 'What makes GetPawsy different from Amazon or Chewy?', answer: 'We curate a focused selection of premium pet products instead of millions of unvetted listings. Every item is evaluated for pet safety, durability, and real owner satisfaction before it reaches our store.' },
     { question: 'Do bestseller products come with a warranty?', answer: 'Most bestseller products include a manufacturer warranty. Additionally, our 30-day return policy covers any defects or dissatisfaction. Check individual product pages for specific warranty details.' },
     { question: 'Can I get notified when a sold-out bestseller is restocked?', answer: 'Yes! Click the "Notify Me" button on any out-of-stock product page. You will receive an email as soon as the item is back in stock — no spam, just one notification.' },
   ];
@@ -310,7 +310,7 @@ const Bestsellers = () => {
       itemListElement: bestsellers.map((item, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: `https://getpawsy.pet/bestseller/${item.slug}`,
+        url: `https://getpawsy.pet/product/${item.product.slug}`,
         name: item.hero_headline || item.product.name,
       })),
     };
@@ -552,7 +552,7 @@ const Bestsellers = () => {
               { name: 'Dog Enrichment Toys', desc: 'Treat-dispensing and puzzle toys to reduce boredom and anxiety.', link: '/collections/dog-enrichment-toys' },
               { name: 'Pet Grooming Essentials', desc: 'Brushes, nail trimmers, and grooming kits for dogs and cats.', link: '/collections/best-dog-grooming-kits' },
               { name: 'Pet Travel Accessories', desc: 'Carriers, car seats, and travel bowls for pets on the go.', link: '/collections/dog-travel-accessories' },
-              { name: 'All Pet Products', desc: 'Browse our full catalog of 600+ curated pet supplies.', link: '/products' },
+              { name: 'All Pet Products', desc: 'Browse our full catalog of curated premium pet supplies.', link: '/products' },
             ].map((cat) => (
               <Link key={cat.name} to={cat.link} className="flex items-start gap-3 bg-card border rounded-xl p-4 hover:shadow-md transition-shadow group">
                 <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
@@ -653,7 +653,7 @@ const Bestsellers = () => {
             <table className="w-full text-sm">
               <tbody>
                 {[
-                  ['Total Curated Products', '600+'],
+                  ['Curated Product Range', 'Premium Dog & Cat Essentials'],
                   ['Average Bestseller Rating', reviewStats.totalReviews > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5.0` : 'Collecting reviews'],
                   ['Free Shipping Threshold', '$35+'],
                   ['Return Window', '30-day return policy'],
