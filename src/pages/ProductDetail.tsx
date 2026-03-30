@@ -82,6 +82,7 @@ import { ProductHowItWorks } from "@/components/products/ProductHowItWorks";
 import { ProductUseCases } from "@/components/products/ProductUseCases";
 import { ProductVsAlternatives } from "@/components/products/ProductVsAlternatives";
 import { ProductSpecsTable } from "@/components/products/ProductSpecsTable";
+import { ProductIdealFor } from "@/components/products/ProductIdealFor";
 import { LowStockBadge } from "@/components/products/LowStockBadge";
 import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
@@ -1581,6 +1582,9 @@ const ProductDetail = () => {
             )}
           </Tabs>
         </motion.div>
+
+        {/* 0. Who Is This For? — audience targeting */}
+        <ProductIdealFor productName={product.name} category={product.category || ""} />
 
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />

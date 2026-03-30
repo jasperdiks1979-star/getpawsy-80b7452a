@@ -144,7 +144,7 @@ export const TRUST_BADGES = {
 // ============= FORMATTED MESSAGES =============
 
 /** Free shipping announcement bar message */
-export const ANNOUNCEMENT_FREE_SHIPPING = `🚚 FREE shipping on orders over $${FREE_SHIPPING_THRESHOLD}!`;
+export const ANNOUNCEMENT_FREE_SHIPPING = `🚚 Free US shipping on orders over $${FREE_SHIPPING_THRESHOLD} (${DELIVERY_TIME_STANDARD})`;
 
 /** Cart free shipping progress message */
 export const getCartShippingMessage = (currentTotal: number): string => {

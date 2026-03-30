@@ -7,7 +7,7 @@ import {
 const BADGES = [
   {
     icon: Truck,
-    title: 'US Shipping',
+    title: 'Free US Shipping $35+',
     subtitle: `Estimated delivery: ${DELIVERY_TIME_STANDARD}`,
   },
   {

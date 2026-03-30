@@ -48,11 +48,11 @@ function generateContent(name: string, cat: string): ContentBlock {
         `Whether your dog is a senior dealing with arthritis, an active breed recovering from long walks, or a puppy who deserves the best start — this bed delivers measurable comfort from the very first night. Pet owners consistently report improved mobility and energy levels within weeks of switching to supportive sleep surfaces.`,
       ],
       highlights: [
-        'Relieves joint pain and hip dysplasia discomfort',
+        'Supports joints and pressure points for deeper rest',
         'High-density foam that doesn\'t flatten over time',
         'Machine-washable, breathable cover',
         'Non-slip base for all floor types',
-        'Veterinarian-recommended design',
+        'Designed with pet comfort as the priority',
       ],
     };
   }
@@ -105,7 +105,7 @@ function generateContent(name: string, cat: string): ContentBlock {
         'Channels destructive energy into positive play',
         'Durable build withstands aggressive chewers',
         'Non-toxic, BPA-free materials',
-        'Recommended by veterinarians and trainers',
+        'Trusted by pet owners and trainers',
         'Suitable for dogs and cats of all sizes',
       ],
     };
