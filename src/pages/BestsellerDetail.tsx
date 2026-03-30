@@ -789,7 +789,7 @@ const BestsellerDetail = () => {
         <meta property="og:description" content={bestseller.seo_description || product.description || ''} />
         <meta property="og:image" content={product.image_url || '/og-image.png'} />
         <meta property="og:url" content={`https://getpawsy.pet/product/${product.slug || product.id}`} />
-        <meta property="product:price:amount" content={product.price.toFixed(2)} />
+        <meta property="product:price:amount" content={getDisplayPrice(product as MerchantProduct).price.toFixed(2)} />
         <meta property="product:price:currency" content="USD" />
         
         {/* Twitter Card */}
