@@ -26,6 +26,7 @@ export const BestsellersSection = () => {
           products_public!bestsellers_product_id_fkey (
             id,
             name,
+            slug,
             price,
             compare_at_price,
             image_url,
