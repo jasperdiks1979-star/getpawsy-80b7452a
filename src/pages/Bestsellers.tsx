@@ -336,6 +336,8 @@ const Bestsellers = () => {
         />
         <meta name="keywords" content="best pet products 2026, bestselling pet supplies, top rated dog toys, popular cat accessories, best pet beds, pet product reviews" />
         <link rel="canonical" href="https://getpawsy.pet/bestsellers" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
         <meta property="og:title" content="Best Pet Products 2026 – Top 20 Bestsellers Ranked | GetPawsy" />
         <meta property="og:description" content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Free US shipping over $35." />
         <meta property="og:url" content="https://getpawsy.pet/bestsellers" />
