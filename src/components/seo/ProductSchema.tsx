@@ -1,8 +1,8 @@
 import { Helmet } from 'react-helmet-async';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
-import { computeAvailability } from '@/lib/availability';
 import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
-import { getCanonicalPrice } from '@/lib/canonical-pricing';
+import { getDisplayPrice, getDisplayAvailability } from '@/lib/merchant-safe-product';
+import type { MerchantProduct } from '@/lib/merchant-safe-product';
 
 interface ProductSchemaProps {
   product: {
