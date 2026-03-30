@@ -123,7 +123,7 @@ export default function ShopHub() {
                   )}
                   <div className="p-3">
                     <h3 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">{product.name}</h3>
-                    <p className="text-sm font-bold text-foreground mt-1">${product.price?.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-foreground mt-1">${(Number(product.price) || 0).toFixed(2)}</p>
                   </div>
                 </Link>
               ))}
