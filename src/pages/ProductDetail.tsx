@@ -1832,8 +1832,8 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span className="hidden md:inline">Add to Cart 🇺🇸</span>
-                <span className="md:hidden">Add to Cart 🇺🇸</span>
+                <span className="hidden md:inline">Buy Now — Free Shipping</span>
+                <span className="md:hidden">Buy Now</span>
               </Button>
 
               {/* Wishlist Button */}
