@@ -221,7 +221,7 @@ const Bestsellers = () => {
         .select(`
           id, slug, rank, hero_headline, hero_subheadline, seo_description, long_description, selling_points,
           product:products_public!bestsellers_product_id_fkey (
-            id, name, price, compare_at_price, image_url, images, category, stock, variants
+            id, name, slug, price, compare_at_price, image_url, images, category, stock, variants
           )
         `)
         .eq('is_active', true)
