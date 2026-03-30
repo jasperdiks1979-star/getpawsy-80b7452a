@@ -478,7 +478,7 @@ const Bestsellers = () => {
                       <tr key={b.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-bold text-primary">#{b.rank}</td>
                         <td className="p-3">
-                          <Link to={`/bestseller/${b.slug}`} className="font-medium hover:text-primary transition-colors">
+                          <Link to={`/product/${b.product.slug || b.slug}`} className="font-medium hover:text-primary transition-colors">
                             {(b.hero_headline || b.product.name).slice(0, 50)}
                           </Link>
                         </td>
