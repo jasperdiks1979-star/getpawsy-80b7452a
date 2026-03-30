@@ -344,6 +344,7 @@ const ImageCompliancePage = lazyWithRetry(() => import("./pages/admin/ImageCompl
 const CornerstoneEnginePage = lazyWithRetry(() => import("./pages/admin/CornerstoneEnginePage"));
 const WinningProductFinder = lazyWithRetry(() => import("./pages/admin/WinningProductFinder"));
 const MerchantComplianceReport = lazyWithRetry(() => import("./pages/admin/MerchantComplianceReport"));
+const MerchantSafePage = lazyWithRetry(() => import("./pages/admin/MerchantSafePage"));
 const PinterestTrafficMachinePage = lazyWithRetry(() => import("./pages/admin/PinterestTrafficMachinePage"));
 const PinterestScaleModePage = lazyWithRetry(() => import("./pages/admin/PinterestScaleModePage"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
