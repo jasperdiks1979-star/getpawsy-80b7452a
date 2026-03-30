@@ -82,6 +82,7 @@ import { ProductHowItWorks } from "@/components/products/ProductHowItWorks";
 import { ProductUseCases } from "@/components/products/ProductUseCases";
 import { ProductVsAlternatives } from "@/components/products/ProductVsAlternatives";
 import { ProductSpecsTable } from "@/components/products/ProductSpecsTable";
+import { ProductIdealFor } from "@/components/products/ProductIdealFor";
 import { LowStockBadge } from "@/components/products/LowStockBadge";
 import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
