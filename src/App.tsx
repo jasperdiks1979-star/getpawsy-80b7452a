@@ -277,6 +277,12 @@ function ProductRouteRedirect() {
   return <Navigate to={`/product/${slug || ""}`} replace />;
 }
 
+/** Redirect /bestseller/:slug to canonical /product/:slug */
+function BestsellerSlugRedirect() {
+  const { slug } = useParams<{ slug: string }>();
+  return <Navigate to={`/product/${slug || ""}`} replace />;
+}
+
 // Admin sub-pages (all lazy-loaded, admin-only)
 const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
@@ -743,13 +749,10 @@ const App = () => {
                               </Suspense>
                             }
                           />
+                          {/* /bestseller/:slug → redirect to /product/:slug for canonical URL consolidation */}
                           <Route
                             path="/bestseller/:slug"
-                            element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <BestsellerDetail />
-                              </Suspense>
-                            }
+                            element={<BestsellerSlugRedirect />}
                           />
                           <Route
                             path="/live-map"

@@ -76,8 +76,9 @@
 /collections/fish-* /products 301
 /collections/chicken-* /products 301
 
-# ── Canonical product prerender route ──
-/product/:slug /product/:slug.html 200
+# ── Bestseller detail → canonical product URL ──
+/bestseller/:slug /product/:slug 301
+/bestsellers/:slug /product/:slug 301
 
 # ── SPA fallback ──
 /* /index.html 200

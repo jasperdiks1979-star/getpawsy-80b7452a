@@ -238,7 +238,37 @@
         if (productName.length > 80) productName = productName.substring(0, 77) + '...';
         document.title = productName + ' | GetPawsy - Premium Pet Products';
         var descMeta = document.querySelector('meta[name="description"]');
-        if (descMeta) descMeta.setAttribute('content', 'Shop ' + productName + ' at GetPawsy. Premium quality, fast US shipping & 30-day returns. Trusted by pet owners nationwide.');
+        if (descMeta) descMeta.setAttribute('content', 'Shop ' + productName + ' at GetPawsy. Premium quality pet product. Estimated delivery: 5-10 business days. 30-day returns.');
+
+        // Inject minimal JSON-LD skeleton so Googlebot sees structured data in raw HTML
+        // React will replace this with full data once hydrated
+        var jsonLd = {
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          '@id': ORIGIN + '/product/' + slug + '#product',
+          'name': productName,
+          'brand': { '@type': 'Brand', 'name': 'GetPawsy' },
+          'url': ORIGIN + '/product/' + slug,
+          'offers': {
+            '@type': 'Offer',
+            'url': ORIGIN + '/product/' + slug,
+            'priceCurrency': 'USD',
+            'availability': 'https://schema.org/InStock',
+            'itemCondition': 'https://schema.org/NewCondition',
+            'seller': { '@type': 'Organization', 'name': 'GetPawsy' }
+          }
+        };
+        var ldScript = document.createElement('script');
+        ldScript.type = 'application/ld+json';
+        ldScript.id = 'gp-prehydration-jsonld';
+        ldScript.textContent = JSON.stringify(jsonLd);
+        document.head.appendChild(ldScript);
+      }
+
+      // Redirect /bestseller/:slug to /product/:slug (canonical URL consolidation)
+      if (p.indexOf('/bestseller/') === 0) {
+        var bSlug = p.replace('/bestseller/', '');
+        window.location.replace(ORIGIN + '/product/' + bSlug);
       }
     })();
     </script>
