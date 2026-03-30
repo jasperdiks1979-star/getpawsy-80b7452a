@@ -1,25 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-03-29T08:11:00.637Z" total_products="20">
+<merchant_diagnostics generated="2026-03-30T18:59:21.951Z" total_products="15">
   <summary>
-    <missing_gtin>6</missing_gtin>
+    <missing_gtin>1</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>0</overlength_title>
-    <short_title>2</short_title>
-    <out_of_stock>2</out_of_stock>
+    <short_title>0</short_title>
+    <out_of_stock>3</out_of_stock>
     <duplicate_titles>0</duplicate_titles>
     <duplicate_images>0</duplicate_images>
     <missing_compare_at_price>0</missing_compare_at_price>
   </summary>
   <issues>
-    <issue type="missing_gtin" product_id="6604a6ce-a9ff-457b-b1f4-dc9ca865af68" name="Rat Terrier Throw Blanket, Dog Lover Gift Blanket Reversible Plush Fluffy Red..." />
-    <issue type="out_of_stock" product_id="6604a6ce-a9ff-457b-b1f4-dc9ca865af68" name="Rat Terrier Throw Blanket, Dog Lover Gift Blanket Reversible Plush Fluffy Red..." stock="0" />
-    <issue type="missing_gtin" product_id="af2f873c-e754-40d8-ab78-f77ef53eb823" name="Luxury Color Gemstone And Diamond Cat-Claw Ring" />
-    <issue type="out_of_stock" product_id="af2f873c-e754-40d8-ab78-f77ef53eb823" name="Luxury Color Gemstone And Diamond Cat-Claw Ring" stock="0" />
-    <issue type="missing_gtin" product_id="9a72f697-74c8-4758-9950-b2ace1b8fef6" name="10W 12V Solar-Powered Dual-Fan Chicken CoopPet House Exhaust Fan" />
-    <issue type="missing_gtin" product_id="8e080f9b-64ad-47a7-a3b2-bac4e478d28a" name="Soil-free Mixed Cat Grass Treats" />
-    <issue type="short_title" product_id="8e080f9b-64ad-47a7-a3b2-bac4e478d28a" name="Soil-free Mixed Cat Grass Treats" length="32" />
-    <issue type="missing_gtin" product_id="c0cb30c6-cb17-46e3-8183-afaf5c80bebf" name="Pet Solid Wood Paw Print Cremation Urn" />
-    <issue type="short_title" product_id="c0cb30c6-cb17-46e3-8183-afaf5c80bebf" name="Pet Solid Wood Paw Print Cremation Urn" length="38" />
     <issue type="missing_gtin" product_id="156ed3db-e926-482c-951a-4c1fcb61779d" name="GetPawsy Enclosed Cat Litter Box – Extra Large Flip-Top Design" />
+    <issue type="out_of_stock" product_id="fe5ed2d6-0230-4c5a-8313-235a28ef4f21" name="GetPawsy Enclosed Cat Litter Box – XL Stainless Steel Flip Top for Large Cats" stock="0" />
+    <issue type="out_of_stock" product_id="1a1302e7-939f-4c94-96b7-d4e0c9d34a37" name="GetPawsy Hidden Cat Litter Box Enclosure – Furniture with Scratching Board" stock="0" />
+    <issue type="out_of_stock" product_id="07507c96-a445-431f-9724-340ee01d818f" name="GetPawsy Elevated Cat Tree – Sisal Scratching Post with Bed &amp; Basket" stock="0" />
   </issues>
 </merchant_diagnostics>
