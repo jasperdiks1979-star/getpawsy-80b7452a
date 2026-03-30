@@ -743,12 +743,11 @@ const App = () => {
                               </Suspense>
                             }
                           />
+                          {/* /bestseller/:slug → redirect to /product/:slug for canonical URL consolidation */}
                           <Route
                             path="/bestseller/:slug"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <BestsellerDetail />
-                              </Suspense>
+                              <BestsellerRedirect />
                             }
                           />
                           <Route
