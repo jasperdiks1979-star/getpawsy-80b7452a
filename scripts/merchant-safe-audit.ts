@@ -259,7 +259,6 @@ async function checkFeedAlignment() {
 
 // ---------- F. Structured data alignment ----------
 async function checkStructuredData() {
-  // Verify that ProductSchema.tsx imports from canonical layer
   const schemaPath = path.resolve(__dirname, '../src/components/seo/ProductSchema.tsx');
   if (fs.existsSync(schemaPath)) {
     const content = fs.readFileSync(schemaPath, 'utf-8');
@@ -275,9 +274,116 @@ async function checkStructuredData() {
   }
 }
 
+// ---------- G. Googlebot HTML validation ----------
+async function checkGooglebotValidation() {
+  const isGoogleMode = process.argv.includes('--google') || process.argv.includes('--strict');
+  if (!isGoogleMode) {
+    warn('googlebot_validation', 'Skipped — run with --google or --strict to enable');
+    return;
+  }
+
+  console.log('\n🤖 Running Googlebot-level validation...\n');
+
+  // Get product URLs from API
+  let productSlugs: string[] = [];
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/products_public?is_active=eq.true&limit=5&select=slug`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      },
+    );
+    if (res.ok) {
+      const products = await res.json();
+      productSlugs = products.map((p: { slug: string }) => p.slug).filter(Boolean);
+    }
+  } catch { /* proceed with defaults */ }
+
+  const testUrls = [
+    `${BASE_URL}/`,
+    `${BASE_URL}/bestsellers`,
+    ...productSlugs.slice(0, 3).map(s => `${BASE_URL}/product/${s}`),
+  ];
+
+  const GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+  const NORMAL_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+  for (const url of testUrls) {
+    try {
+      const [normalRes, botRes] = await Promise.all([
+        fetch(url, {
+          headers: { 'User-Agent': NORMAL_UA, 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(15000),
+        }),
+        fetch(url, {
+          headers: { 'User-Agent': GOOGLEBOT_UA, 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(15000),
+        }),
+      ]);
+
+      // Status code check
+      if (normalRes.status !== botRes.status) {
+        fail(`googlebot_status_${url}`, `Status mismatch: normal=${normalRes.status}, googlebot=${botRes.status}`);
+        await normalRes.text(); await botRes.text();
+        continue;
+      }
+
+      const normalHtml = await normalRes.text();
+      const botHtml = await botRes.text();
+
+      // Content length similarity check (within 10%)
+      const diff = Math.abs(normalHtml.length - botHtml.length);
+      const max = Math.max(normalHtml.length, botHtml.length);
+      if (max > 0 && (diff / max) > 0.1) {
+        warn(`googlebot_content_${url}`, `Content length differs by ${((diff / max) * 100).toFixed(1)}%: normal=${normalHtml.length}, bot=${botHtml.length}`);
+      }
+
+      // Extract JSON-LD from both
+      const extractJsonLdPrice = (html: string): string | null => {
+        const scripts = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)];
+        for (const m of scripts) {
+          try {
+            const data = JSON.parse(m[1]);
+            if (data['@type'] === 'Product' && data.offers?.price) return String(data.offers.price);
+            if (data['@graph']) {
+              const prod = data['@graph'].find((i: any) => i['@type'] === 'Product');
+              if (prod?.offers?.price) return String(prod.offers.price);
+            }
+          } catch { /* skip */ }
+        }
+        return null;
+      };
+
+      const normalPrice = extractJsonLdPrice(normalHtml);
+      const botPrice = extractJsonLdPrice(botHtml);
+
+      if (normalPrice && botPrice) {
+        if (normalPrice === botPrice) {
+          pass(`googlebot_jsonld_${url}`, `JSON-LD price matches: $${normalPrice}`);
+        } else {
+          fail(`googlebot_jsonld_${url}`, `JSON-LD price MISMATCH: normal=$${normalPrice}, googlebot=$${botPrice}`);
+        }
+      } else if (url.includes('/product/')) {
+        // Product pages should have JSON-LD
+        warn(`googlebot_jsonld_${url}`, `Missing JSON-LD: normal=${normalPrice || 'none'}, bot=${botPrice || 'none'}`);
+      } else {
+        pass(`googlebot_access_${url}`, `Accessible (status ${normalRes.status}), no product JSON-LD expected`);
+      }
+    } catch (err) {
+      fail(`googlebot_fetch_${url}`, `Fetch error: ${(err as Error).message}`);
+    }
+  }
+}
+
 // ---------- RUN ----------
 async function main() {
-  console.log('🔍 GetPawsy Merchant-Safe Audit');
+  const isGoogleMode = process.argv.includes('--google');
+  const isStrict = process.argv.includes('--strict');
+
+  console.log(`🔍 GetPawsy Merchant-Safe Audit${isGoogleMode ? ' (Googlebot mode)' : ''}${isStrict ? ' (STRICT)' : ''}`);
   console.log('================================\n');
 
   await checkPricingConsistency();
@@ -286,11 +392,13 @@ async function main() {
   await checkPolicyText();
   await checkFeedAlignment();
   await checkStructuredData();
+  await checkGooglebotValidation();
 
   console.log('\n📋 RESULTS\n');
 
   const summary: Record<string, string> = {};
   let hasFailure = false;
+  let hasWarn = false;
 
   for (const r of results) {
     const icon = r.status === 'PASS' ? '✅' : r.status === 'FAIL' ? '❌' : '⚠️';
@@ -298,6 +406,7 @@ async function main() {
     console.log(`   ${r.details}\n`);
     summary[r.check] = r.status;
     if (r.status === 'FAIL') hasFailure = true;
+    if (r.status === 'WARN') hasWarn = true;
   }
 
   summary['merchant_safe_system'] = hasFailure ? 'DEGRADED' : 'ACTIVE';
@@ -307,6 +416,9 @@ async function main() {
 
   if (hasFailure) {
     console.log('\n❌ AUDIT FAILED — resolve FAIL items before deploying');
+    process.exit(1);
+  } else if (isStrict && hasWarn) {
+    console.log('\n⚠️ STRICT MODE: warnings treated as failures');
     process.exit(1);
   } else {
     console.log('\n✅ AUDIT PASSED — merchant-safe system is active');
