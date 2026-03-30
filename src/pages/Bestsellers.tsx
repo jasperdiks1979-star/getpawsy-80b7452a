@@ -57,6 +57,7 @@ interface BestsellerWithProduct {
   product: {
     id: string;
     name: string;
+    slug: string;
     price: number;
     compare_at_price: number | null;
     image_url: string | null;
