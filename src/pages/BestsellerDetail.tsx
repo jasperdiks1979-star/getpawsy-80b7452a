@@ -148,7 +148,7 @@ const generateProductJsonLd = (
       '@type': 'Offer',
       url: canonicalProductUrl,
       priceCurrency: 'USD',
-      price: product.price.toFixed(2),
+      price: getDisplayPrice(product as MerchantProduct).price.toFixed(2),
       priceValidUntil: priceValidUntilStr,
       availability,
       itemCondition: 'https://schema.org/NewCondition',
