@@ -136,10 +136,7 @@ export function ProductSchema({
       priceCurrency: 'USD',
       price: canonicalSchemaPrice.toFixed(2),
       priceValidUntil: priceValidUntilStr,
-      // Use centralized availability logic (real supplier stock)
-      availability: computeAvailability(product).isInStock
-        ? 'https://schema.org/InStock' 
-        : 'https://schema.org/OutOfStock',
+      availability: merchantAvailability.schemaValue,
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',
