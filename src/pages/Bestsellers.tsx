@@ -127,7 +127,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Link to={`/bestseller/${bestseller.slug}`} onClick={handleClick}>
+      <Link to={`/product/${bestseller.product.slug || bestseller.slug}`} onClick={handleClick}>
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
           <div className="relative aspect-square overflow-hidden bg-muted">
             <div className="absolute top-3 left-3 z-10">
