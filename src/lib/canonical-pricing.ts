@@ -1,43 +1,35 @@
 /**
- * Canonical pricing utilities — single source of truth for how prices
- * are displayed across the storefront.
+ * Canonical pricing utilities — delegates to the merchant-safe product layer.
  *
- * POLICY (updated):
- * - The storefront price is always the BASE product.price.
- * - Variant prices are only shown after explicit user selection on PDP.
- * - This applies to PDP default, sticky CTA, cards, grids, sliders, bestseller cards.
- * - compare_at_price always comes from the base product.
+ * IMPORTANT: This file is a thin wrapper that ensures backward compatibility.
+ * All pricing logic is centralised in src/lib/merchant-safe-product.ts.
+ * New code should import from merchant-safe-product.ts directly.
  */
 
+import { getDisplayPrice, type MerchantProduct } from '@/lib/merchant-safe-product';
+
 export interface CardPriceResult {
-  /** The price to display */
   price: number;
-  /** Compare-at / was-price, or null */
   compareAtPrice: number | null;
-  /** Formatted display string */
   displayPrice: string;
-  /** Formatted compare-at string, or null */
   displayCompareAt: string | null;
 }
 
 /**
  * Get the canonical storefront price for any product display.
- * Always uses the base product price.
+ * Delegates to the merchant-safe canonical layer.
  */
 export function getCanonicalCardPrice(product: {
   price?: number | null;
   compare_at_price?: number | null;
   variants?: unknown;
 }): CardPriceResult {
-  const price = Number(product.price) || 0;
-  const compareAt = Number(product.compare_at_price) || 0;
-  const validCompareAt = compareAt > price ? compareAt : null;
-
+  const result = getDisplayPrice(product as MerchantProduct);
   return {
-    price,
-    compareAtPrice: validCompareAt,
-    displayPrice: `$${price.toFixed(2)}`,
-    displayCompareAt: validCompareAt ? `$${validCompareAt.toFixed(2)}` : null,
+    price: result.price,
+    compareAtPrice: result.compareAtPrice,
+    displayPrice: result.displayPrice,
+    displayCompareAt: result.displayCompareAt,
   };
 }
 
@@ -48,5 +40,5 @@ export function getCanonicalPrice(product: {
   price?: number | null;
   variants?: unknown;
 }): number {
-  return Number(product.price) || 0;
+  return getDisplayPrice(product as MerchantProduct).price;
 }

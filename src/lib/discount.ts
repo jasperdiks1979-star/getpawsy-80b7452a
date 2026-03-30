@@ -1,23 +1,17 @@
 /**
- * Canonical discount calculation — single source of truth for all PDPs,
- * product cards, gallery badges, and sticky CTAs.
+ * Canonical discount calculation — delegates to merchant-safe product layer.
  *
- * RULE: The discount badge always reflects the BASE product price vs compare-at.
- * Variant pricing may show inline savings but must never override the badge.
+ * This file is a thin backward-compatible wrapper.
+ * New code should use getDisplayDiscount from merchant-safe-product.ts.
  */
 
 export interface DiscountResult {
-  /** Whole-number percentage (e.g. 44), or null when no valid discount */
   percent: number | null;
-  /** Absolute dollar savings, or null */
   savings: number | null;
 }
 
 /**
  * Compute the canonical discount for a product.
- *
- * @param price        The base (or selling) price — NOT variant price
- * @param compareAt    The compare-at / was-price (may be null/undefined/0)
  */
 export function getProductDiscount(
   price: number | null | undefined,

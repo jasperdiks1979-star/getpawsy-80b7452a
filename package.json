@@ -13,7 +13,9 @@
     "test:watch": "vitest",
     "cache:audit": "node tools/cf-cache-audit.js",
     "ping:sitemap": "node scripts/pingSitemap.js",
-    "postdeploy": "node scripts/pingSitemap.js"
+    "postdeploy": "node scripts/pingSitemap.js",
+    "merchant:audit": "npx tsx scripts/merchant-safe-audit.ts",
+    "merchant:audit:strict": "npx tsx scripts/merchant-safe-audit.ts --strict"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.11.0",

@@ -85,6 +85,8 @@ import {
 } from '@/lib/shipping-constants';
 import { computeAvailability } from '@/lib/availability';
 import { getProductDiscount } from '@/lib/discount';
+import { getDisplayPrice } from '@/lib/merchant-safe-product';
+import type { MerchantProduct } from '@/lib/merchant-safe-product';
 
 // Generate JSON-LD structured data for product
 // NOTE: Reviews/ratings intentionally removed - Google requires real customer reviews
@@ -146,7 +148,7 @@ const generateProductJsonLd = (
       '@type': 'Offer',
       url: canonicalProductUrl,
       priceCurrency: 'USD',
-      price: product.price.toFixed(2),
+      price: getDisplayPrice(product as MerchantProduct).price.toFixed(2),
       priceValidUntil: priceValidUntilStr,
       availability,
       itemCondition: 'https://schema.org/NewCondition',
@@ -787,7 +789,7 @@ const BestsellerDetail = () => {
         <meta property="og:description" content={bestseller.seo_description || product.description || ''} />
         <meta property="og:image" content={product.image_url || '/og-image.png'} />
         <meta property="og:url" content={`https://getpawsy.pet/product/${product.slug || product.id}`} />
-        <meta property="product:price:amount" content={product.price.toFixed(2)} />
+        <meta property="product:price:amount" content={getDisplayPrice(product as MerchantProduct).price.toFixed(2)} />
         <meta property="product:price:currency" content="USD" />
         
         {/* Twitter Card */}

@@ -1,8 +1,8 @@
 import { Helmet } from 'react-helmet-async';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
-import { computeAvailability } from '@/lib/availability';
 import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
-import { getCanonicalPrice } from '@/lib/canonical-pricing';
+import { getDisplayPrice, getDisplayAvailability } from '@/lib/merchant-safe-product';
+import type { MerchantProduct } from '@/lib/merchant-safe-product';
 
 interface ProductSchemaProps {
   product: {
@@ -79,7 +79,9 @@ export function ProductSchema({
     product.description || ''
   );
 
-  const canonicalSchemaPrice = getCanonicalPrice(product);
+  const merchantPrice = getDisplayPrice(product as MerchantProduct);
+  const canonicalSchemaPrice = merchantPrice.price;
+  const merchantAvailability = getDisplayAvailability(product as MerchantProduct);
 
   // Generate meta description
   const metaDescription = generateMetaDescription(
@@ -134,10 +136,7 @@ export function ProductSchema({
       priceCurrency: 'USD',
       price: canonicalSchemaPrice.toFixed(2),
       priceValidUntil: priceValidUntilStr,
-      // Use centralized availability logic (real supplier stock)
-      availability: computeAvailability(product).isInStock
-        ? 'https://schema.org/InStock' 
-        : 'https://schema.org/OutOfStock',
+      availability: merchantAvailability.schemaValue,
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',
@@ -267,7 +266,7 @@ export function ProductSchema({
       <meta property="og:site_name" content="GetPawsy" />
       <meta property="product:price:amount" content={canonicalSchemaPrice.toString()} />
       <meta property="product:price:currency" content="USD" />
-      <meta property="product:availability" content={computeAvailability(product).isInStock ? 'in stock' : 'out of stock'} />
+      <meta property="product:availability" content={merchantAvailability.isInStock ? 'in stock' : 'out of stock'} />
       {product.category && <meta property="product:category" content={product.category} />}
 
       {/* Twitter */}
