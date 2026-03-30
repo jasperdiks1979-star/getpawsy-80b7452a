@@ -21,6 +21,8 @@ import {
   Info,
   Home,
   AlertTriangle,
+  RotateCcw,
+  Lock,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileProductGallery } from "@/components/products/MobileProductGallery";
