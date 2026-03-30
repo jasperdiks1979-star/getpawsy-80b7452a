@@ -225,6 +225,9 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     const baseBySlug = await fetchBaseBy("slug", productIdentifier);
     if (baseBySlug) return baseBySlug;
 
+    const legacyBestsellerRedirect = await resolveLegacyBestsellerSlug(productIdentifier);
+    if (legacyBestsellerRedirect) return legacyBestsellerRedirect;
+
     const searchName = productIdentifier.replace(/-/g, " ").toLowerCase();
     const { data, error } = await supabase
       .from("products_public")
