@@ -310,7 +310,7 @@ const Bestsellers = () => {
       itemListElement: bestsellers.map((item, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: `https://getpawsy.pet/bestseller/${item.slug}`,
+        url: `https://getpawsy.pet/product/${item.product.slug}`,
         name: item.hero_headline || item.product.name,
       })),
     };
