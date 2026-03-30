@@ -1872,6 +1872,7 @@ const App = () => {
                                   <MerchantSafePage />
                                 </Suspense>
                               }
+                            />
                             <Route
                               path="winning-products"
                               element={
