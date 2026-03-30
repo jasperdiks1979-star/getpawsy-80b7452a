@@ -146,7 +146,7 @@ export const ProductBundleUpsell = ({
         <p className="text-xs text-muted-foreground">
           🦴 Many pet parents also add a{' '}
           <Link
-            to="/product/youmile-hip-joint-health-supplement-for-dogs-120-chews-glucosamine-chondroitin-msm-dog-chews-with-hy"
+            to="/product/youmile-hip-joint-health-supplement-for-dogs-120-chews-glucosamine-chondroitin-f72f"
             className="text-primary hover:underline font-medium"
           >
             joint support supplement

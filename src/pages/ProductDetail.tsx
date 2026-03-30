@@ -176,6 +176,32 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     return null;
   };
 
+  const resolveLegacyBestsellerSlug = async (value: string) => {
+    const { data, error } = await supabase
+      .from("bestsellers")
+      .select(`
+        slug,
+        products_public!bestsellers_product_id_fkey (
+          *
+        )
+      `)
+      .eq("slug", value)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const canonicalProduct = Array.isArray(data?.products_public)
+      ? data?.products_public?.[0]
+      : data?.products_public;
+
+    if (canonicalProduct) {
+      return { ...canonicalProduct, _redirect: true, _aliasSlug: value };
+    }
+
+    return null;
+  };
+
   try {
     if (isUuid) {
       const publicById = await fetchPublicBy("id", productIdentifier);
@@ -198,6 +224,9 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
     const baseBySlug = await fetchBaseBy("slug", productIdentifier);
     if (baseBySlug) return baseBySlug;
+
+    const legacyBestsellerRedirect = await resolveLegacyBestsellerSlug(productIdentifier);
+    if (legacyBestsellerRedirect) return legacyBestsellerRedirect;
 
     const searchName = productIdentifier.replace(/-/g, " ").toLowerCase();
     const { data, error } = await supabase
