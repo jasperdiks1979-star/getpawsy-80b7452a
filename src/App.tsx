@@ -1866,6 +1866,13 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="merchant-safe"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MerchantSafePage />
+                                </Suspense>
+                              }
+                            <Route
                               path="winning-products"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
