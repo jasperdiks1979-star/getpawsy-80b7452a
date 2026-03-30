@@ -93,7 +93,7 @@ export const INFO_EMAIL = 'support@getpawsy.pet';
 export const RESPONSE_TIME = 'We typically respond within 24 hours';
 
 /** Business hours */
-export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET';
+export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET (03:00 – 11:00 AM ET)';
 
 /** Business location */
 export const BUSINESS_LOCATION = 'Apeldoorn, Netherlands';

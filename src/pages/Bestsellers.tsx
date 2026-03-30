@@ -653,7 +653,7 @@ const Bestsellers = () => {
             <table className="w-full text-sm">
               <tbody>
                 {[
-                  ['Total Curated Products', '600+'],
+                  ['Curated Product Range', 'Premium Dog & Cat Essentials'],
                   ['Average Bestseller Rating', reviewStats.totalReviews > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5.0` : 'Collecting reviews'],
                   ['Free Shipping Threshold', '$35+'],
                   ['Return Window', '30-day return policy'],
