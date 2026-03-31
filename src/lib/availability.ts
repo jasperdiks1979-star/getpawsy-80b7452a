@@ -20,15 +20,12 @@ export interface AvailabilityResult {
 }
 
 /**
- * Compute availability for a product (with optional variant stock override).
+ * Compute availability for a product.
  * 
  * Rules (priority order):
  * 1. No product → OUT OF STOCK
  * 2. is_active === false → OUT OF STOCK
- * 3. Use effectiveStock (variantStock if provided, else product.stock)
- * 4. effectiveStock === 0 → OUT OF STOCK (explicitly zero)
- * 5. effectiveStock > 0 → IN STOCK
- * 6. effectiveStock is null/undefined → IN STOCK (dropship default)
+ * 3. Everything else → IN STOCK (dropship model)
  */
 export function computeAvailability(
   product: AvailabilityProduct | null | undefined,
