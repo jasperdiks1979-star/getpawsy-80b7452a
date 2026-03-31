@@ -323,7 +323,7 @@ function normalizeShippingWeight(rawWeight: number | null, name: string): string
   else wkg = 1;
   if (wkg < 0.1) wkg = 1;
   if (wkg > 25) wkg = 25;
-  const large = /\b(xl|extra.?large|large|cat.?tree|dog.?bed|stroller|cage|crate|kennel)\b/i;
+  const large = /\b(xl|extra.?large|large|cat.?tree|dog.?bed|stroller|cage|crate|kennel|litter.?box|cat.?tower|cat.?condo|backpack|carrier)\b/i;
   if (large.test(name) && wkg < 5) wkg = 5;
   return `${Math.round(wkg * 10) / 10} kg`;
 }
