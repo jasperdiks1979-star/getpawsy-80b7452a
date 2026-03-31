@@ -323,9 +323,8 @@ function buildItemXml(p: Product): string {
 
   extra += `      <g:shipping_weight>${normalizeShippingWeight(p.weight, p.name)}</g:shipping_weight>\n`;
 
-  // Dropship model: null/undefined stock = in stock (supplier manages inventory)
-  // Only explicit 0 or is_active=false = out of stock
-  const avail = (p.is_active === false || p.stock === 0) ? "out of stock" : "in stock";
+  // Dropship model: only is_active=false marks OOS (stock=0 is irrelevant for CJ suppliers)
+  const avail = p.is_active === false ? "out of stock" : "in stock";
   const shippingCost = p.price >= FREE_SHIPPING_THRESHOLD ? "0.00" : "5.99";
 
   return `    <item>
