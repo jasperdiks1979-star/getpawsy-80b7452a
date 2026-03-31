@@ -48,10 +48,8 @@ export function computeAvailability(
   // Variant stock overrides product stock when provided
   const effectiveStock = variantStock !== undefined ? variantStock : product.stock;
 
-  // Explicit zero = out of stock
-  if (effectiveStock === 0) {
-    return { isInStock: false, reason: 'Out of stock (stock: 0)' };
-  }
+  // Dropship model: stock=0 is NOT out of stock (supplier manages inventory)
+  // Only is_active=false triggers OOS
 
   // Positive stock = in stock
   if (effectiveStock !== null && effectiveStock !== undefined && effectiveStock > 0) {

@@ -367,7 +367,6 @@ Deno.serve(async (req) => {
       .eq("is_active", true)
       .eq("is_duplicate", false)
       .gt("price", 0)
-      .gt("stock", 0)
       .not("image_url", "is", null)
       .not("slug", "is", null)
       .order("stock", { ascending: false }) // highest stock first
