@@ -3,13 +3,10 @@
  * 
  * DROPSHIPPING MODEL (CJ Dropshipping):
  * - is_active === false → OUT OF STOCK (disabled by admin)
- * - stock === 0 (explicitly zero) → OUT OF STOCK
- * - stock > 0 → IN STOCK
- * - stock is null/undefined → IN STOCK (dropship: supplier manages inventory)
+ * - ANY stock value (0, null, positive) with is_active=true → IN STOCK
  * 
- * `stock` is the primary inventory field. When stock is null/undefined,
- * we default to IN STOCK because suppliers keep their own inventory.
- * Only an explicit 0 or is_active=false marks a product as unavailable.
+ * Stock numbers are informational only. The supplier manages real inventory.
+ * Only is_active=false marks a product as unavailable.
  */
 
 export interface AvailabilityProduct {
@@ -23,15 +20,12 @@ export interface AvailabilityResult {
 }
 
 /**
- * Compute availability for a product (with optional variant stock override).
+ * Compute availability for a product.
  * 
  * Rules (priority order):
  * 1. No product → OUT OF STOCK
  * 2. is_active === false → OUT OF STOCK
- * 3. Use effectiveStock (variantStock if provided, else product.stock)
- * 4. effectiveStock === 0 → OUT OF STOCK (explicitly zero)
- * 5. effectiveStock > 0 → IN STOCK
- * 6. effectiveStock is null/undefined → IN STOCK (dropship default)
+ * 3. Everything else → IN STOCK (dropship model)
  */
 export function computeAvailability(
   product: AvailabilityProduct | null | undefined,
@@ -48,10 +42,8 @@ export function computeAvailability(
   // Variant stock overrides product stock when provided
   const effectiveStock = variantStock !== undefined ? variantStock : product.stock;
 
-  // Explicit zero = out of stock
-  if (effectiveStock === 0) {
-    return { isInStock: false, reason: 'Out of stock (stock: 0)' };
-  }
+  // Dropship model: stock=0 is NOT out of stock (supplier manages inventory)
+  // Only is_active=false triggers OOS
 
   // Positive stock = in stock
   if (effectiveStock !== null && effectiveStock !== undefined && effectiveStock > 0) {
