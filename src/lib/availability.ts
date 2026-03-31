@@ -3,13 +3,10 @@
  * 
  * DROPSHIPPING MODEL (CJ Dropshipping):
  * - is_active === false → OUT OF STOCK (disabled by admin)
- * - stock === 0 (explicitly zero) → OUT OF STOCK
- * - stock > 0 → IN STOCK
- * - stock is null/undefined → IN STOCK (dropship: supplier manages inventory)
+ * - ANY stock value (0, null, positive) with is_active=true → IN STOCK
  * 
- * `stock` is the primary inventory field. When stock is null/undefined,
- * we default to IN STOCK because suppliers keep their own inventory.
- * Only an explicit 0 or is_active=false marks a product as unavailable.
+ * Stock numbers are informational only. The supplier manages real inventory.
+ * Only is_active=false marks a product as unavailable.
  */
 
 export interface AvailabilityProduct {
