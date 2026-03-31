@@ -360,9 +360,20 @@ function buildItemXml(p: Product): BuildResult {
   const img = selectPrimaryImage(p);
   if (!img) return { xml: "", excluded: "no_valid_image" };
 
-  // Prefer DB-optimized titles/descriptions, fallback to runtime generation
-  const title = p.optimized_title || buildOptimizedTitle(p);
-  const desc = p.optimized_description || buildCleanDescription(p);
+  // Use DB-optimized only if they're actually good quality
+  // Skip generic/template titles and descriptions with banned terms
+  const dbTitleOk = p.optimized_title
+    && !p.optimized_title.includes("Pet Supply (US Shipping)")
+    && !p.optimized_title.includes("(US Shipping)")
+    && p.optimized_title.length > 20;
+  const dbDescOk = p.optimized_description
+    && !p.optimized_description.includes("3–7 business days")
+    && !p.optimized_description.includes("3-7 business days")
+    && !p.optimized_description.includes("fast delivery")
+    && !p.optimized_description.includes("fast shipping")
+    && p.optimized_description.length > 60;
+  const title = dbTitleOk ? p.optimized_title! : buildOptimizedTitle(p);
+  const desc = dbDescOk ? p.optimized_description! : buildCleanDescription(p);
 
   // Validate title quality
   if (title.length < 10) return { xml: "", excluded: "title_too_short" };
