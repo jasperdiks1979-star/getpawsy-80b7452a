@@ -201,7 +201,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Pet Ear Cleaner for Cats & Dogs',
     price: 9.99,
     compareAt: 12.49,
-    image: 'https://cf.cjdropshipping.com/quick/product/303f5da6-30d5-4c41-8fec-cdffa155383a.jpg',
+    image: '/images/products/pet-ear-cleaner.jpg',
     benefit: 'Gentle formula for sensitive ears',
     pet: 'cat',
   },
