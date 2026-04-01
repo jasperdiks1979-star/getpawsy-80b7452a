@@ -336,7 +336,7 @@ export const EnhancedSearch = ({
               <div className="p-6 text-center">
                 <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  Geen producten gevonden voor "{query}"
+                  No products found for "{query}"
                 </p>
                 <Button
                   variant="outline"
