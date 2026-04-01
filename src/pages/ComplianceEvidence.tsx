@@ -15,7 +15,7 @@ const SITE = "https://getpawsy.pet";
 const MERCHANT_ID = "5717571566";
 
 const POLICY_PAGES = [
-  { path: "/contact", label: "Contact Page", mustContain: ["support@getpawsy.pet", "skidzo"] },
+  { path: "/contact", label: "Contact Page", mustContain: ["support@getpawsy.pet", "getpawsy"] },
   { path: "/about", label: "About Page", mustContain: ["getpawsy", "pet"] },
   { path: "/shipping", label: "Shipping Policy", mustContain: ["business day"] },
   { path: "/returns", label: "Return Policy", mustContain: ["refund"] },
