@@ -726,6 +726,7 @@ export default function merchantFeedPlugin(): Plugin {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in buildStart, writing fallback feeds:', err);
         writeFileSync(join(publicDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(publicDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
+        writeFileSync(join(publicDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
       }
 
       // Keep diagnostics static file only
