@@ -773,7 +773,7 @@ const BestsellerDetail = () => {
         <title>{bestseller.seo_title || `${product.name} | GetPawsy Bestseller`}</title>
         <meta 
           name="description" 
-          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free US shipping on orders over $35.`}
+          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free shipping on eligible orders over $35.`}
         />
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
