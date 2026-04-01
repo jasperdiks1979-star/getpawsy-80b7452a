@@ -29,7 +29,7 @@ export function StickyMobileCta() {
       <div className="flex items-center justify-between border-t border-border bg-card/95 backdrop-blur-sm shadow-lg px-4 py-2.5">
         <div className="flex flex-col">
           <span className="text-sm font-bold text-foreground">$268.99</span>
-          <span className="text-[10px] text-muted-foreground">Free US Shipping</span>
+          <span className="text-[10px] text-muted-foreground">Free Shipping Available</span>
         </div>
         <Link
           to="/product/automatic-cat-litter-box-self-cleaning-app-control"
