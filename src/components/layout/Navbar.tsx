@@ -703,7 +703,7 @@ export const Navbar = () => {
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {categoryTree.map((category, idx) => (
                         <div
-                          key={category.id}
+                          key={category.key}
                           className="animate-[fadeSlideUp_0.3s_ease-out_both]"
                           style={{ animationDelay: `${idx * 30}ms` }}
                         >
