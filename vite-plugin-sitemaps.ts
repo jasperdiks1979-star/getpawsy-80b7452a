@@ -14,7 +14,7 @@ import { execSync } from 'child_process';
 const BASE_URL = 'https://getpawsy.pet';
 const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
-const FREE_SHIPPING_THRESHOLD = 49;
+const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
 
 // ── Supabase REST helper ──────────────────────────────────────────────
 
@@ -268,7 +268,7 @@ function buildOptimizedDescription(p: MerchantProduct): string {
 
   let desc = `${problem} The ${cleanProductName(p.name)} delivers ${benefit.toLowerCase()} that ${pet} love. `;
   desc += finalBullets.join('. ') + '. ';
-  desc += `Ships from US warehouses in 3-7 business days. Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. 30-day easy returns. Shop GetPawsy.`;
+  desc += `Ships to US addresses within 5–10 business days. Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. 30-day easy returns. Shop GetPawsy.`;
 
   return truncate(desc, 5000);
 }
@@ -359,9 +359,10 @@ function getProductType(cat: string | null): string {
   return t;
 }
 
-function getAvailability(stock: number | null, isActive: boolean | null): string {
+function getAvailability(_stock: number | null, isActive: boolean | null): string {
+  // Dropship model: only is_active=false marks OOS (stock is informational only)
   if (isActive === false) return 'out of stock';
-  return (stock !== null && stock !== undefined && stock > 0) ? 'in stock' : 'out of stock';
+  return 'in stock';
 }
 
 function getCurrentSeason(): string {
@@ -476,15 +477,15 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const [rawProducts, bestsellers] = await Promise.all([
     supaRest<MerchantProduct>(
       'products_public',
-      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&price=gt.0&stock=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null&order=created_at.desc&limit=5000'
+      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null&order=created_at.desc&limit=5000'
     ),
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
 
-  // Safety post-filter: exclude any product missing required fields or with stock <= 0
+  // Safety post-filter: exclude products missing required fields (stock is NOT a disqualifier for dropship)
   const eligibleProducts = rawProducts.filter(p =>
     p.price > 0 &&
-    p.stock !== null && p.stock > 0 &&
+    p.is_active !== false &&
     p.image_url && p.image_url.trim() !== '' &&
     p.slug && p.slug.trim() !== '' &&
     p.description && p.description.trim() !== ''
@@ -537,8 +538,8 @@ async function buildMerchantDiagnostics(): Promise<string> {
     if (name.length < 40) {
       issues.push(`    <issue type="short_title" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" length="${name.length}" />`);
     }
-    if (!p.stock || p.stock <= 0) {
-      issues.push(`    <issue type="out_of_stock" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" stock="${p.stock ?? 'null'}" />`);
+    if (p.is_active === false) {
+      issues.push(`    <issue type="inactive_product" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
     }
     if (!p.compare_at_price || p.compare_at_price <= 0) {
       issues.push(`    <issue type="missing_compare_at_price" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
@@ -570,7 +571,7 @@ async function buildMerchantDiagnostics(): Promise<string> {
     missing_image: issues.filter(i => i.includes('missing_image')).length,
     overlength: issues.filter(i => i.includes('overlength_title')).length,
     short_title: issues.filter(i => i.includes('short_title')).length,
-    oos: issues.filter(i => i.includes('out_of_stock')).length,
+    oos: issues.filter(i => i.includes('inactive_product')).length,
     duplicates: issues.filter(i => i.includes('duplicate_title')).length,
     duplicate_images: issues.filter(i => i.includes('duplicate_image')).length,
     missing_compare_at_price: issues.filter(i => i.includes('missing_compare_at_price')).length,
@@ -717,12 +718,15 @@ export default function merchantFeedPlugin(): Plugin {
 
         writeFileSync(join(publicDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
         writeFileSync(join(publicDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
+        writeFileSync(join(publicDir, 'google-feed.xml'), merchantFeed, 'utf-8');
         console.log(`[xml-plugin] ✓ /public/merchant-feed.xml (${merchantFeed.length} bytes)`);
         console.log(`[xml-plugin] ✓ /public/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
+        console.log(`[xml-plugin] ✓ /public/google-feed.xml (${merchantFeed.length} bytes)`);
       } catch (err) {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in buildStart, writing fallback feeds:', err);
         writeFileSync(join(publicDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(publicDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
+        writeFileSync(join(publicDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
       }
 
       // Keep diagnostics static file only
@@ -757,12 +761,15 @@ export default function merchantFeedPlugin(): Plugin {
 
         writeFileSync(join(outDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
         writeFileSync(join(outDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
+        writeFileSync(join(outDir, 'google-feed.xml'), merchantFeed, 'utf-8');
         console.log(`[xml-plugin] ✓ /dist/merchant-feed.xml (${merchantFeed.length} bytes)`);
         console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
+        console.log(`[xml-plugin] ✓ /dist/google-feed.xml (${merchantFeed.length} bytes)`);
       } catch (err) {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in closeBundle, writing fallback feeds:', err);
         writeFileSync(join(outDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(outDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
+        writeFileSync(join(outDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
       }
 
       try {

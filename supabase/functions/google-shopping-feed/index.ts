@@ -360,14 +360,17 @@ function buildItemXml(p: Product): BuildResult {
   const img = selectPrimaryImage(p);
   if (!img) return { xml: "", excluded: "no_valid_image" };
 
-  // Primary source: DB-stored optimized content (persistent rewrite engine)
-  // Runtime fallback only if DB field is missing/empty (emergency safety net)
-  const title = p.optimized_title && p.optimized_title.length > 15
-    ? p.optimized_title
-    : buildOptimizedTitle(p);
-  const desc = p.optimized_description && p.optimized_description.length > 50
-    ? p.optimized_description
-    : buildCleanDescription(p);
+  // Reject generic/template DB titles
+  const GENERIC_TITLE_PATTERNS = /^Pet (Toy|Supply|Product|Accessory|Item)\b/i;
+  const dbTitleOk = p.optimized_title && p.optimized_title.length > 15
+    && !GENERIC_TITLE_PATTERNS.test(p.optimized_title)
+    && !p.optimized_title.includes("(US Shipping)");
+  const dbDescOk = p.optimized_description && p.optimized_description.length > 50
+    && !p.optimized_description.includes("3–7 business days")
+    && !p.optimized_description.includes("3-7 business days");
+
+  const title = dbTitleOk ? p.optimized_title! : buildOptimizedTitle(p);
+  const desc = dbDescOk ? p.optimized_description! : buildCleanDescription(p);
 
   // Validate title quality
   if (title.length < 10) return { xml: "", excluded: "title_too_short" };
