@@ -92,7 +92,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
     {
       id: 7,
       question: 'Heeft u eerdere advertenties of beleidsschendingen die van invloed kunnen zijn op een heractivering?',
-      answer: 'Nee. Dit is ons eerste Google Ads account en we hebben geen eerdere beleidsschendingen. Wij zijn een legitiem geregistreerd Nederlands bedrijf (Skidzo, KvK 78156955) dat huisdierproducten verkoopt.',
+      answer: 'Nee. Dit is ons eerste Google Ads account en we hebben geen eerdere beleidsschendingen. Wij zijn een legitiem geregistreerd Nederlands bedrijf (GetPawsy, KvK 78156955) dat huisdierproducten verkoopt.',
     },
     {
       id: 8,
