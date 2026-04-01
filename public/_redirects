@@ -80,5 +80,12 @@
 /bestseller/:slug /product/:slug 301
 /bestsellers/:slug /product/:slug 301
 
+# ── Static XML + feed diagnostics must bypass SPA fallback ──
+/google-feed.xml /google-feed.xml 200
+/google-shopping-feed.xml /google-shopping-feed.xml 200
+/merchant-feed.xml /merchant-feed.xml 200
+/api/feed-source-preview /api/feed-source-preview 200
+/api/feed-check /api/feed-check 200
+
 # ── SPA fallback ──
 /* /index.html 200

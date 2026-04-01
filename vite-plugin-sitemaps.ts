@@ -69,6 +69,7 @@ const GOOGLE_FEED_TITLE = 'GetPawsy Product Feed';
 const GOOGLE_FEED_DESCRIPTION = 'Google Merchant product feed';
 const GOOGLE_FEED_ROOT = '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">';
 const FEED_ARTIFACTS = ['merchant-feed.xml', 'google-shopping-feed.xml', 'google-feed.xml'] as const;
+const FEED_DEBUG_ARTIFACTS = ['feed-source-preview', 'feed-check'] as const;
 
 function renderGoogleFeedXml(items: string[], generatedAt = new Date().toISOString()): string {
   return [
@@ -128,24 +129,44 @@ function buildFeedSourcePreview(feedXml: string, sourceFile: string): string {
   );
 }
 
+function buildFeedCheck(feedXml: string): string {
+  const normalized = feedXml.trimStart();
+  const first200 = normalized.slice(0, 200);
+
+  return JSON.stringify(
+    {
+      is_xml: normalized.startsWith('<?xml') && normalized.includes('<rss') && normalized.includes('<channel>'),
+      contains_rss: feedXml.includes('<rss'),
+      content_type: 'application/xml',
+      first_200_chars: first200,
+    },
+    null,
+    2
+  );
+}
+
 function clearFeedArtifacts(baseDir: string): void {
   for (const file of FEED_ARTIFACTS) {
     const filePath = join(baseDir, file);
     if (existsSync(filePath)) unlinkSync(filePath);
   }
 
-  const previewPath = join(baseDir, 'api', 'feed-source-preview');
-  if (existsSync(previewPath)) unlinkSync(previewPath);
+  for (const file of FEED_DEBUG_ARTIFACTS) {
+    const filePath = join(baseDir, 'api', file);
+    if (existsSync(filePath)) unlinkSync(filePath);
+  }
 }
 
 function writeFeedArtifacts(baseDir: string, merchantFeed: string, sourceFile: string): void {
   const feedPreview = buildFeedSourcePreview(merchantFeed, sourceFile);
+  const feedCheck = buildFeedCheck(merchantFeed);
 
   writeFileSync(join(baseDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
   writeFileSync(join(baseDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
   writeFileSync(join(baseDir, 'google-feed.xml'), merchantFeed, 'utf-8');
   mkdirSync(join(baseDir, 'api'), { recursive: true });
   writeFileSync(join(baseDir, 'api', 'feed-source-preview'), feedPreview, 'utf-8');
+  writeFileSync(join(baseDir, 'api', 'feed-check'), feedCheck, 'utf-8');
 }
 
 function logFeedPreview(label: string, content: string): void {
@@ -804,6 +825,7 @@ export default function merchantFeedPlugin(): Plugin {
       console.log(`[xml-plugin] ✓ /public/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
       console.log(`[xml-plugin] ✓ /public/google-feed.xml (${merchantFeed.length} bytes)`);
       console.log('[xml-plugin] ✓ /public/api/feed-source-preview');
+      console.log('[xml-plugin] ✓ /public/api/feed-check');
       const finalPublicFeed = readFileSync(join(publicDir, 'google-feed.xml'), 'utf8');
       assertGoogleFeedValid(finalPublicFeed, 'public/google-feed.xml');
       logFeedPreview('public/google-feed.xml', finalPublicFeed);
@@ -843,6 +865,7 @@ export default function merchantFeedPlugin(): Plugin {
       console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
       console.log(`[xml-plugin] ✓ /dist/google-feed.xml (${merchantFeed.length} bytes)`);
       console.log('[xml-plugin] ✓ /dist/api/feed-source-preview');
+      console.log('[xml-plugin] ✓ /dist/api/feed-check');
       const finalDistFeed = readFileSync(join(outDir, 'google-feed.xml'), 'utf8');
       assertGoogleFeedValid(finalDistFeed, 'dist/google-feed.xml');
       logFeedPreview('dist/google-feed.xml', finalDistFeed);
