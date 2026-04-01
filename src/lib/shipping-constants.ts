@@ -168,7 +168,7 @@ export const PRODUCT_SHIPPING_INFO = {
 
 // ============= SEO/FAQ SHIPPING TEXT =============
 
-export const FAQ_SHIPPING_ANSWER = `We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship directly to customers across the United States.`;
+export const FAQ_SHIPPING_ANSWER = `We offer free shipping on eligible orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship directly to customers across the United States.`;
 
 export const FAQ_RETURNS_ANSWER = `We offer a ${RETURN_WINDOW_DAYS}-day return window on eligible products. Contact us at ${SUPPORT_EMAIL} with your order number to start a return according to our return policy.`;
 
