@@ -181,7 +181,7 @@ export default function ComplianceEvidence() {
           <div>
             <h1 className="text-2xl font-bold">Google Merchant Compliance Evidence</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Merchant Center ID: {MERCHANT_ID} · Skidzo / GetPawsy · Run: {runId}
+              Merchant Center ID: {MERCHANT_ID} · GetPawsy · Run: {runId}
             </p>
           </div>
           <Button onClick={runAudit} disabled={running} variant="outline" size="sm">
