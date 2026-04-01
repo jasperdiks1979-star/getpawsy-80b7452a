@@ -141,12 +141,12 @@ const MegaMenuCategoryItem = ({
   );
 };
 
-// Mobile category item with accordion
+// Mobile category item with accordion (uses canonical registry)
 const MobileCategoryItem = ({ 
   category, 
   onClose 
 }: { 
-  category: CategoryWithChildren; 
+  category: CategoryTreeNode; 
   onClose: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -158,29 +158,20 @@ const MobileCategoryItem = ({
         className="flex items-center gap-3 px-4 py-3 cursor-pointer"
         onClick={() => hasChildren && setIsExpanded(!isExpanded)}
       >
-        {category.image_url && (
-          <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-            <img 
-              src={category.image_url} 
-              alt={category.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+        <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-primary/10 flex items-center justify-center text-lg">
+          {category.icon || '📦'}
+        </div>
         <div className="flex-1 min-w-0">
           {hasChildren ? (
-            <span className="font-medium">{category.name}</span>
+            <span className="font-medium">{category.label}</span>
           ) : (
             <Link
-              to={`/collections/${encodeURIComponent(category.slug)}`}
+              to={category.url}
               onClick={onClose}
               className="font-medium block"
             >
-              {category.name}
+              {category.label}
             </Link>
-          )}
-          {category.product_count !== undefined && category.product_count > 0 && (
-            <p className="text-xs text-muted-foreground">{category.product_count} products</p>
           )}
         </div>
         {hasChildren && (
@@ -189,40 +180,25 @@ const MobileCategoryItem = ({
       </div>
 
       {hasChildren && isExpanded && (
-        <div
-          className="overflow-hidden bg-muted/30 animate-[slideDown_0.2s_ease-out]"
-        >
+        <div className="overflow-hidden bg-muted/30 animate-[slideDown_0.2s_ease-out]">
           <div className="py-2 px-4 space-y-1">
             <Link
-              to={`/collections/${encodeURIComponent(category.slug)}`}
+              to={category.url}
               onClick={onClose}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
             >
-              All {category.name}
+              All {category.label}
               <ArrowRight className="w-3 h-3" />
             </Link>
             {category.children.map((child) => (
               <Link
-                key={child.id}
-                to={`/collections/${encodeURIComponent(child.slug)}`}
+                key={child.key}
+                to={child.url}
                 onClick={onClose}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
               >
-                {child.image_url && (
-                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0">
-                    <img 
-                      src={child.image_url} 
-                      alt={child.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <span className="truncate flex-1">{child.name}</span>
-                {child.product_count !== undefined && child.product_count > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    ({child.product_count})
-                  </span>
-                )}
+                <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm">{child.icon || '📦'}</span>
+                <span className="truncate flex-1">{child.label}</span>
               </Link>
             ))}
           </div>
