@@ -16,7 +16,7 @@ const FEATURED_ITEMS = [
   {
     name: 'Elevated Cooling Dog Bed – Breathable Mesh for All Seasons',
     path: '/product/dog-cot-cooling-pet-bed-3',
-    image: 'https://cf.cjdropshipping.com/17695584/cea797a4-58d8-4007-be42-58c3eeaa8723.jpg',
+    image: '/images/products/elevated-cooling-dog-bed.jpg',
     description: 'Raised mesh dog bed for airflow and comfort. Indoor or outdoor use.',
     type: 'product' as const,
   },
