@@ -26,7 +26,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'automatic cat litter box',
     conversionScore: 95,
     contentCluster: 'litter-boxes',
-    image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
+    image: '/images/products/self-cleaning-litter-box.jpg',
   },
   {
     slug: 'all-in-one-cactus-cat-tree-with-climbing-frame-and-cozy-nest',
