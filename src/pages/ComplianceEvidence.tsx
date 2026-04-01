@@ -281,7 +281,7 @@ export default function ComplianceEvidence() {
                 <strong>Verify website ownership</strong> — Go to Settings → Business information → Website. Confirm <code>https://getpawsy.pet</code> is claimed and verified.
               </li>
               <li>
-                <strong>Confirm business information</strong> — Ensure business name is "Skidzo" or "GetPawsy by Skidzo", and address matches: Apeldoorn, Gelderland, Netherlands.
+                <strong>Confirm business information</strong> — Ensure business name is "GetPawsy", and address matches: Apeldoorn, Gelderland, Netherlands.
               </li>
               <li>
                 <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (5–10 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.
