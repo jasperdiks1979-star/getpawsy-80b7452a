@@ -37,7 +37,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'cat tree cactus',
     conversionScore: 90,
     contentCluster: 'cat-trees',
-    image: 'https://oss-cf.cjdropshipping.com/product/2026/01/15/06/41c2bcde-5615-4832-8d42-0b10485bc94c_trans.jpeg',
+    image: '/images/products/cactus-cat-tree.jpg',
   },
   {
     slug: 'dog-cot-cooling-pet-bed-3',
