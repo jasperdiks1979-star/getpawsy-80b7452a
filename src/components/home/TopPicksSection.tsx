@@ -183,7 +183,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: '57" Multi-Level Cat Tree for Multi-Cat Homes',
     price: 147.99,
     compareAt: 183.99,
-    image: 'https://cf.cjdropshipping.com/17689536/70ba5962-2ad7-4068-9790-3d19627586a0.jpg',
+    image: '/images/products/multi-cat-tree-57.jpg',
     benefit: '2 condos + hammock for multi-cat',
     pet: 'cat',
   },
