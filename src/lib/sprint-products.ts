@@ -81,7 +81,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'hidden litter box',
     conversionScore: 82,
     contentCluster: 'litter-boxes',
-    image: 'https://cf.cjdropshipping.com/8c7d9c65-6f57-40ac-b639-1ac694c256f0.jpg',
+    image: '/images/products/hidden-litter-box.jpg',
   },
   {
     slug: '35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c',
