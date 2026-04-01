@@ -142,7 +142,7 @@ const About = () => {
                 </div>
 
                 <p className="text-muted-foreground mb-4">
-                  Skidzo is the legal entity responsible for all operations of the GetPawsy webshop, including:
+                  GetPawsy is responsible for all operations of the webshop, including:
                 </p>
                 
                 <div className="space-y-3">
