@@ -90,7 +90,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     meta_description: 'Shop all GetPawsy products: cat trees, litter boxes, dog beds, strollers & more. Free shipping on eligible orders $35+. 30-day returns.',
     faq: [
       { question: 'What products does GetPawsy sell?', answer: 'GetPawsy offers a curated selection of premium pet products including cat trees, self-cleaning litter boxes, orthopedic dog beds, pet strollers, and travel accessories — all shipped within the United States.' },
-      { question: 'Do you offer free shipping?', answer: 'Yes! Orders over $35 qualify for free US shipping. Orders under $35 ship for a flat rate of $5.99.' },
+      { question: 'Do you offer free shipping?', answer: 'Yes! Orders over $35 qualify for free shipping. Orders under $35 ship for a flat rate of $5.99.' },
     ],
     related_blog_slug: null,
     related_collection_slugs: ['cat', 'dog'],
