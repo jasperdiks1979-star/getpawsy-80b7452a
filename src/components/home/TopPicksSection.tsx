@@ -120,7 +120,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Cactus Cat Tree with Climbing Frame',
     price: 88.99,
     compareAt: 109.99,
-    image: 'https://oss-cf.cjdropshipping.com/product/2026/01/15/06/41c2bcde-5615-4832-8d42-0b10485bc94c_trans.jpeg',
+    image: '/images/products/cactus-cat-tree.jpg',
     benefit: 'Space-saving adorable design',
     pet: 'cat',
   },
