@@ -174,7 +174,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Accordion-Style Cat Scratching Post',
     price: 9.99,
     compareAt: 12.49,
-    image: 'https://cf.cjdropshipping.com/quick/product/c5c22647-f30d-437d-87e3-c959ce9e6bec.jpg',
+    image: '/images/products/accordion-scratching-post.jpg',
     benefit: 'Fun bells + satisfying scratch',
     pet: 'cat',
   },
