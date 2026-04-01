@@ -439,7 +439,7 @@ export default function SelfCleaningLitterBoxLanding() {
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-lg font-bold text-foreground mb-2">About GetPawsy</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              GetPawsy provides pet products designed to make daily life easier for pet owners. Operated by Skidzo, a registered business based in Apeldoorn, Netherlands (KVK 78156955, VAT NL003295015B69).
+              GetPawsy provides pet products designed to make daily life easier for pet owners. Registered business based in Apeldoorn, Netherlands (KVK 78156955, VAT NL003295015B69).
             </p>
           </div>
         </section>
