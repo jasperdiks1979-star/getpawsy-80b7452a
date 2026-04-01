@@ -48,7 +48,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'elevated cooling dog bed',
     conversionScore: 88,
     contentCluster: 'dog-beds',
-    image: 'https://cf.cjdropshipping.com/17695584/cea797a4-58d8-4007-be42-58c3eeaa8723.jpg',
+    image: '/images/products/elevated-cooling-dog-bed.jpg',
   },
   {
     slug: 'cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white',
