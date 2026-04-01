@@ -10,6 +10,13 @@
  * - `homepageEligible`: shown on homepage category chips
  * - `searchEligible`: shown in search overlay category suggestions
  * - `footerEligible`: shown in footer links
+ * 
+ * PRODUCT REALITY CHECK (2026-04):
+ * Active inventory is limited to ~17 products across 5 DB categories:
+ *   Cat Trees & Condos (6), Cat Litter Boxes (5), Dog Beds (2), 
+ *   Dog Travel (2), pet-supplies (2)
+ * Categories without inventory are still valid seo_collections entries
+ * and can match via keyword filters, but are deprioritized in navigation.
  */
 
 export interface CanonicalCategory {
@@ -35,11 +42,17 @@ export interface CanonicalCategory {
   displayOrder: number;
   /** Emoji icon for mobile menu display */
   icon?: string;
+  /** Whether this collection has confirmed product inventory */
+  hasInventory: boolean;
 }
 
 /**
  * Master registry of all valid categories.
  * ONLY categories listed here with active:true may appear in the UI.
+ * 
+ * Navigation eligibility is STRICTLY tied to hasInventory.
+ * Categories without inventory are searchEligible only (they have seo_collections
+ * entries with keyword filters that can surface products).
  */
 export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
   // ── Top-level: Dogs ──
@@ -55,6 +68,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 1,
     icon: '🐕',
+    hasInventory: true, // aggregates dog-prefixed products
   },
   {
     key: 'dog-beds',
@@ -68,6 +82,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 1,
     icon: '🛏️',
+    hasInventory: true, // 2 products
   },
   {
     key: 'dog-toys',
@@ -75,12 +90,13 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     url: '/collections/dog-toys',
     active: true,
     parentKey: 'dogs',
-    menuEligible: true,
-    homepageEligible: true,
+    menuEligible: false, // no dedicated Dog Toys category products
+    homepageEligible: false,
     searchEligible: true,
-    footerEligible: true,
+    footerEligible: false,
     displayOrder: 2,
     icon: '🎾',
+    hasInventory: false,
   },
   {
     key: 'dog-harness',
@@ -88,90 +104,13 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     url: '/collections/dog-harness',
     active: true,
     parentKey: 'dogs',
-    menuEligible: true,
+    menuEligible: false,
     homepageEligible: false,
     searchEligible: true,
-    footerEligible: true,
+    footerEligible: false,
     displayOrder: 3,
     icon: '🦮',
-  },
-  {
-    key: 'dog-collars',
-    label: 'Dog Collars',
-    url: '/collections/dog-collars',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 4,
-    icon: '📿',
-  },
-  {
-    key: 'dog-leashes',
-    label: 'Dog Leashes',
-    url: '/collections/dog-leashes',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 5,
-    icon: '🔗',
-  },
-  {
-    key: 'dog-bowls',
-    label: 'Dog Bowls',
-    url: '/collections/dog-bowls',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 6,
-    icon: '🥣',
-  },
-  {
-    key: 'dog-crates',
-    label: 'Dog Crates',
-    url: '/collections/dog-crates',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 7,
-    icon: '🏠',
-  },
-  {
-    key: 'dog-grooming-tools',
-    label: 'Dog Grooming',
-    url: '/collections/dog-grooming-tools',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 8,
-    icon: '✂️',
-  },
-  {
-    key: 'dog-training-tools',
-    label: 'Dog Training',
-    url: '/collections/dog-training-tools',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 9,
-    icon: '🏋️',
+    hasInventory: false,
   },
   {
     key: 'dog-travel-accessories',
@@ -183,34 +122,9 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     homepageEligible: false,
     searchEligible: true,
     footerEligible: false,
-    displayOrder: 10,
+    displayOrder: 4,
     icon: '✈️',
-  },
-  {
-    key: 'dog-car-seats',
-    label: 'Dog Car Seats',
-    url: '/collections/dog-car-seats',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 11,
-    icon: '🚗',
-  },
-  {
-    key: 'dog-coats-jackets',
-    label: 'Dog Coats & Jackets',
-    url: '/collections/dog-coats-jackets',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 12,
-    icon: '🧥',
+    hasInventory: true, // 2 products
   },
 
   // ── Top-level: Cats ──
@@ -226,6 +140,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 2,
     icon: '🐱',
+    hasInventory: true, // aggregates cat-prefixed products
   },
   {
     key: 'cat-trees-and-condos',
@@ -239,6 +154,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 1,
     icon: '🌲',
+    hasInventory: true, // 6 products
   },
   {
     key: 'cat-litter-boxes',
@@ -252,6 +168,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 2,
     icon: '🚽',
+    hasInventory: true, // 5 products
   },
   {
     key: 'cat-toys',
@@ -259,25 +176,13 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     url: '/collections/cat-toys',
     active: true,
     parentKey: 'cats',
-    menuEligible: true,
-    homepageEligible: true,
+    menuEligible: false,
+    homepageEligible: false,
     searchEligible: true,
     footerEligible: false,
     displayOrder: 3,
     icon: '🧶',
-  },
-  {
-    key: 'cat-beds',
-    label: 'Cat Beds',
-    url: '/collections/cat-beds',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 4,
-    icon: '🛌',
+    hasInventory: false,
   },
   {
     key: 'cat-scratching-posts',
@@ -285,103 +190,13 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     url: '/collections/cat-scratching-posts',
     active: true,
     parentKey: 'cats',
-    menuEligible: true,
+    menuEligible: false,
     homepageEligible: false,
     searchEligible: true,
     footerEligible: false,
     displayOrder: 5,
     icon: '🪵',
-  },
-  {
-    key: 'cat-carriers',
-    label: 'Cat Carriers',
-    url: '/collections/cat-carriers',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 6,
-    icon: '🧳',
-  },
-  {
-    key: 'cat-furniture',
-    label: 'Cat Furniture',
-    url: '/collections/cat-furniture',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 7,
-    icon: '🪑',
-  },
-  {
-    key: 'cat-grooming-tools',
-    label: 'Cat Grooming',
-    url: '/collections/cat-grooming-tools',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: true,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 8,
-    icon: '✂️',
-  },
-  {
-    key: 'cat-harnesses',
-    label: 'Cat Harnesses',
-    url: '/collections/cat-harnesses',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 9,
-    icon: '🐈',
-  },
-  {
-    key: 'cat-tunnels',
-    label: 'Cat Tunnels',
-    url: '/collections/cat-tunnels',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 10,
-    icon: '🕳️',
-  },
-  {
-    key: 'cat-water-fountains',
-    label: 'Cat Water Fountains',
-    url: '/collections/cat-water-fountains',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 11,
-    icon: '⛲',
-  },
-  {
-    key: 'cat-window-perches',
-    label: 'Cat Window Perches',
-    url: '/collections/cat-window-perches',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 12,
-    icon: '🪟',
+    hasInventory: false,
   },
 ];
 
@@ -443,16 +258,16 @@ export const SLUG_ALIASES: Record<string, string> = {
   'best-cat-toys-for-indoor-cats': 'cat-toys',
   'best-interactive-cat-toys': 'cat-toys',
   'best-cat-scratching-posts': 'cat-scratching-posts',
-  'best-cat-carriers': 'cat-carriers',
-  'best-cat-beds': 'cat-beds',
-  'best-cat-window-perches': 'cat-window-perches',
+  'best-cat-carriers': 'cats',
+  'best-cat-beds': 'cats',
+  'best-cat-window-perches': 'cats',
   'cat-condos': 'cat-trees-and-condos',
   'best-dog-harnesses': 'dog-harness',
   'best-orthopedic-dog-beds': 'dog-beds',
   'orthopedic-calming-dog-beds': 'dog-beds',
-  'best-dog-grooming-kits': 'dog-grooming-tools',
-  'best-slow-feeder-dog-bowls': 'dog-bowls',
-  'dog-collars-leashes': 'dog-collars',
+  'best-dog-grooming-kits': 'dogs',
+  'best-slow-feeder-dog-bowls': 'dogs',
+  'dog-collars-leashes': 'dogs',
   'self-cleaning-litter-box': 'cat-litter-boxes',
   'indoor-cat-enrichment': 'cat-toys',
   'automatic-cat-feeders': 'cats',

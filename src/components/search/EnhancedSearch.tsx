@@ -269,7 +269,7 @@ export const EnhancedSearch = ({
             {isLoading && query.length >= 2 && (
               <div className="p-4 flex items-center justify-center gap-2 text-muted-foreground">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm">Zoeken...</span>
+                <span className="text-sm">Searching...</span>
               </div>
             )}
 
@@ -325,7 +325,7 @@ export const EnhancedSearch = ({
                   )}
                 >
                   <Search className="w-4 h-4" />
-                  Alle resultaten voor "{query}"
+                  All results for "{query}"
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -336,7 +336,7 @@ export const EnhancedSearch = ({
               <div className="p-6 text-center">
                 <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  Geen producten gevonden voor "{query}"
+                  No products found for "{query}"
                 </p>
                 <Button
                   variant="outline"
@@ -362,7 +362,7 @@ export const EnhancedSearch = ({
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                         <Clock className="w-4 h-4" />
-                        Recente zoekopdrachten
+                        Recent searches
                       </div>
                       <Button
                         variant="ghost"

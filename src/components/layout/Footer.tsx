@@ -56,8 +56,7 @@ const footerLinks = {
   ],
   more: [
     { label: 'Dog Beds', href: '/collections/dog-beds' },
-    { label: 'Dog Toys', href: '/collections/dog-toys' },
-    { label: 'Dog Harnesses', href: '/collections/dog-harness' },
+    { label: 'Dog Travel', href: '/collections/dog-travel-accessories' },
     { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
     { label: 'Cat Litter Boxes', href: '/collections/cat-litter-boxes' },
   ],
