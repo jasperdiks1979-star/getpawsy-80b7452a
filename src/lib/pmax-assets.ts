@@ -25,7 +25,7 @@ export const PMAX_SHORT_HEADLINES = [
   'Trusted Pet Products',
   
   // Shipping/Trust
-  'Free US Shipping $35+',
+  'Free Shipping on Orders $35+',
   'Estimated 5–10 Day Delivery',
   '30-Day Easy Returns',
   
@@ -64,7 +64,7 @@ export const PMAX_LONG_HEADLINES = [
 
 export const PMAX_DESCRIPTIONS = [
   // Primary descriptions (benefit-first)
-  'Shop quality pet products. Free US shipping on orders over $35. Fast 5–10 day delivery.',
+  'Shop quality pet products. Free shipping on eligible orders over $35. Fast 5–10 day delivery.',
   'Trusted pet supplies for dogs, cats & more. 30-day easy returns on all orders.',
   'Premium pet essentials designed for comfort. Shipping to the United States.',
   
@@ -151,7 +151,7 @@ export const PMAX_ASSET_GROUPS: PMaxAssetGroup[] = [
       'Everything Your Dog Needs for Comfort & Play',
     ],
     descriptions: [
-      'Shop dog beds, toys, leashes & more. Free US shipping on orders $35+.',
+      'Shop dog beds, toys, leashes & more. Free shipping on eligible orders $35+.',
       'Quality dog products designed for comfort. Fast 5–10 day delivery.',
     ],
   },
@@ -189,7 +189,7 @@ export const PMAX_ASSET_GROUPS: PMaxAssetGroup[] = [
       'Dog Car Seats, Carriers & Travel Gear – Free Shipping $35+',
     ],
     descriptions: [
-      'Shop pet carriers, car seats & travel accessories. Free US shipping.',
+      'Shop pet carriers, car seats & travel accessories. Free shipping available.',
       'Travel comfortably with your pet. Quality gear with US delivery.',
     ],
   },

@@ -23,7 +23,7 @@ export const TrustMicrocopy: React.FC<TrustMicrocopyProps> = ({ className = '' }
     <div className={`space-y-1.5 ${className}`}>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <span className="text-primary flex-shrink-0">✔</span>
-        <span>Free US Shipping on orders ${FREE_SHIPPING_THRESHOLD}+ ({DELIVERY_TIME_STANDARD})</span>
+        <span>Free shipping on eligible orders ${FREE_SHIPPING_THRESHOLD}+ ({DELIVERY_TIME_STANDARD})</span>
       </div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <span className="text-primary flex-shrink-0">✔</span>

@@ -167,7 +167,7 @@ export const AD_COPY_TEMPLATES = {
     descriptions: [
       'Continue discovering practical pet essentials. Shipping, easy returns.',
       'Find the right products for your pet. Quality you can trust, delivered fast.',
-      'Designed for everyday comfort. Free US shipping on orders over $35.',
+      'Designed for everyday comfort. Free shipping on eligible orders over $35.',
     ],
   },
   

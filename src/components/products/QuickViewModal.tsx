@@ -295,7 +295,7 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
             <div className="flex gap-4 mb-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Truck className="w-4 h-4 text-primary" />
-                <span>Free US Shipping $35+</span>
+                <span>Free Shipping on Orders $35+</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Shield className="w-4 h-4 text-primary" />

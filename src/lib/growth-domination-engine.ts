@@ -217,7 +217,7 @@ function runBuyerIntentPush(queries: GscQueryRow[]): BuyerIntentResult {
           { from: '/bestsellers', anchor: `top ${primaryKw}` },
           { from: '/blog/pet-bonding-activities', anchor: `${primaryKw} for bonding` },
         ],
-        trustBlocks: ['Free US Shipping Over $35', '30-Day Returns', 'Secure Checkout', '5–10 Day Delivery'],
+        trustBlocks: ['Free shipping on eligible orders over $35', '30-Day Returns', 'Secure Checkout', '5–10 Day Delivery'],
         comparisonTable: targets.some(t => t.modifiers.some(m => m.includes('vs') || m.includes('compare') || m.includes('best'))),
       };
     });

@@ -104,7 +104,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     sniperScore: 96,
     optimization: {
       newTitle: '7 Best Orthopedic Dog Beds for Joint Relief (2026)',
-      newMetaDescription: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35.',
+      newMetaDescription: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35.',
       faqSchema: [
         { question: 'What is the best orthopedic dog bed for large breeds?', answer: 'Large breeds (70+ lbs) need 6+ inches of 3.0 lb/ft³ density foam with 44×34" minimum sleeping surfaces. Our top picks are load-tested with 110 lb dogs for 12+ months.' },
         { question: 'Are orthopedic dog beds worth the money?', answer: 'Yes. They cost $60–$200 but last 3–5 years vs 6–12 months for standard beds. For dogs over 40 lbs or with joint issues, the cost-per-year is actually lower.' },
@@ -128,7 +128,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Cost-per-year is actually lower ($40/yr vs $60/yr)',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping on orders over $35 (5–10 business days)', guarantee: '30-day return policy — easy returns on eligible items', returnPolicy: 'Easy returns with prepaid label included' },
+      authorityBlock: { shipping: 'Free shipping on eligible orders over $35 (5–10 business days)', guarantee: '30-day return policy — easy returns on eligible items', returnPolicy: 'Easy returns with prepaid label included' },
     },
     revenue: {
       currentCtr: getCtr(8),
@@ -152,7 +152,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     sniperScore: 88,
     optimization: {
       newTitle: 'Best Memory Foam Dog Beds — Vet-Tested (2026)',
-      newMetaDescription: 'Cheap foam flattens in weeks. Our memory foam beds use 1.8+ lb/ft³ density that lasts 3–5 years. Waterproof, washable. Free US shipping.',
+      newMetaDescription: 'Cheap foam flattens in weeks. Our memory foam beds use 1.8+ lb/ft³ density that lasts 3–5 years. Waterproof, washable. Free shipping available.',
       faqSchema: [
         { question: 'What density memory foam is best for dogs?', answer: 'Look for 1.8+ lb/ft³ density for dogs under 50 lbs. For large breeds (50+ lbs), choose 2.5+ lb/ft³. Higher density means longer-lasting support and better pressure relief.' },
         { question: 'How long does memory foam last in a dog bed?', answer: 'High-density memory foam (1.8+ lb/ft³) lasts 3–5 years. Low-density foam compresses permanently within 6–12 months regardless of thickness.' },
@@ -176,7 +176,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           '3–5 year lifespan vs 6 months for low-density',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns' },
+      authorityBlock: { shipping: 'Free shipping on eligible orders over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns' },
     },
     revenue: {
       currentCtr: getCtr(12),
@@ -224,7 +224,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'XL sizing for full stretch-out comfort',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Full refund, per our return policy' },
+      authorityBlock: { shipping: 'Free shipping on eligible orders over $35', guarantee: '30-day return policy', returnPolicy: 'Full refund, per our return policy' },
     },
     revenue: {
       currentCtr: getCtr(10),
@@ -248,7 +248,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     sniperScore: 72,
     optimization: {
       newTitle: 'Waterproof Orthopedic Dog Beds – Accident-Proof (2026)',
-      newMetaDescription: 'Accidents happen. Waterproof orthopedic beds protect the foam core while delivering real joint relief. Machine-washable covers. Free US shipping.',
+      newMetaDescription: 'Accidents happen. Waterproof orthopedic beds protect the foam core while delivering real joint relief. Machine-washable covers. Free shipping available.',
       faqSchema: [
         { question: 'Are waterproof dog beds actually waterproof?', answer: 'Quality waterproof beds have a sealed TPU liner between the foam and outer cover. This protects the foam from urine, drool, and spills. Cheap "water-resistant" beds only repel surface moisture — liquids still soak through.' },
         { question: 'Can you wash a waterproof orthopedic dog bed?', answer: 'Yes. Remove the outer cover and machine wash in warm water. The foam core should only be spot-cleaned. Most quality covers maintain waterproof properties for 50+ wash cycles.' },
@@ -272,7 +272,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'No crinkly feel — modern liners are thin and flexible',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns with prepaid label' },
+      authorityBlock: { shipping: 'Free shipping on eligible orders over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns with prepaid label' },
     },
     revenue: {
       currentCtr: getCtr(14),
@@ -296,7 +296,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     sniperScore: 70,
     optimization: {
       newTitle: 'Best Dog Beds for Arthritis — Vet-Recommended (2026)',
-      newMetaDescription: 'Your arthritic dog deserves real relief. Memory foam beds reduce joint inflammation 40%. Vet-recommended, washable. Free US shipping + 30-day return policy.',
+      newMetaDescription: 'Your arthritic dog deserves real relief. Memory foam beds reduce joint inflammation 40%. Vet-recommended, washable. Free shipping available + 30-day return policy.',
       faqSchema: [
         { question: 'Do orthopedic beds actually help dogs with arthritis?', answer: 'Yes. Memory foam distributes weight evenly, reducing pressure on inflamed joints by up to 40%. Vets recommend them as part of arthritis management alongside medication and supplements.' },
         { question: 'What type of bed is best for an arthritic dog?', answer: 'High-density memory foam (1.8+ lb/ft³) with low entry height (under 4 inches), bolster edges for head support, and a non-slip bottom. Heated options provide additional relief for severe arthritis.' },
@@ -320,7 +320,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Vet-recommended as part of arthritis care plans',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns' },
+      authorityBlock: { shipping: 'Free shipping on eligible orders over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns' },
     },
     revenue: {
       currentCtr: getCtr(11),

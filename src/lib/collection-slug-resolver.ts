@@ -179,7 +179,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['puppy potty pads', 'training pads', 'grass mat', 'housebreaking', 'potty training spray'],
     seo_intro: 'Everything you need for successful puppy and dog potty training. From absorbent training pads and grass mats to attractant sprays and potty bells — get your dog housetrained faster with proven tools.',
     meta_title: 'Dog Potty Training — Pads, Mats & Solutions 2026 | GetPawsy',
-    meta_description: 'Shop potty training pads, grass mats, sprays & tools for puppies and dogs. Housebreaking essentials. Free US shipping $35+.',
+    meta_description: 'Shop potty training pads, grass mats, sprays & tools for puppies and dogs. Housebreaking essentials. Free Shipping on Orders $35+.',
     faq: [
       { question: 'How long does potty training a puppy take?', answer: 'Most puppies can be reliably housetrained within 4-6 months, though some may take up to a year. Consistency, positive reinforcement, and a regular schedule are key to faster results.' },
       { question: 'Are grass pads better than regular potty pads?', answer: 'Grass pads (real or artificial) can make the transition to outdoor potty habits easier because they teach dogs to associate grass with bathroom time. Regular pads are more absorbent for indoor-only use.' },

@@ -172,14 +172,14 @@ export default function OrthopedicDogBeds() {
       {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       <Helmet>
         <title>7 Best Orthopedic Dog Beds for Joint Support (2026)</title>
-        <meta name="description" content="Dog waking up stiff? Supportive memory foam beds designed to relieve joint pain. Waterproof, washable, 30-day return policy. Free US shipping over $35." />
+        <meta name="description" content="Dog waking up stiff? Supportive memory foam beds designed to relieve joint pain. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35." />
         <meta name="keywords" content="orthopedic dog beds, memory foam dog bed, dog bed for arthritis, orthopedic dog bed large dogs, senior dog bed, joint pain dog bed, waterproof orthopedic dog bed, best orthopedic dog bed 2026" />
         <link rel="canonical" href={CANONICAL} />
         <link rel="alternate" hrefLang="en" href={CANONICAL} />
         <link rel="alternate" hrefLang="x-default" href={CANONICAL} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />
-        <meta property="og:description" content="Premium memory foam dog beds for arthritis & hip dysplasia. Trusted by 10,000+ pet parents. Free US shipping over $35." />
+        <meta property="og:description" content="Premium memory foam dog beds for arthritis & hip dysplasia. Trusted by 10,000+ pet parents. Free shipping on eligible orders over $35." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={CANONICAL} />
         <meta property="og:site_name" content="GetPawsy" />
@@ -223,7 +223,7 @@ export default function OrthopedicDogBeds() {
               Orthopedic Memory Foam Support for Large &amp; Senior Dogs.
             </p>
             <p className="text-sm text-primary-foreground/60 mb-4">
-              Free US Shipping • 30-Day Trial • US Delivery
+              Free Shipping Available • 30-Day Trial • US Delivery
             </p>
             <p className="text-xs text-primary-foreground/50 mb-6 flex items-center gap-1.5">
               <Heart className="w-3.5 h-3.5" /> Over 2,000 happy dog owners served
@@ -233,7 +233,7 @@ export default function OrthopedicDogBeds() {
             <div className="flex flex-wrap gap-3 mb-8">
               {[
                 { icon: <Star className="w-4 h-4 fill-current" />, text: '4.8★ Customer Rating' },
-                { icon: <Truck className="w-4 h-4" />, text: 'Free US Shipping $35+' },
+                { icon: <Truck className="w-4 h-4" />, text: 'Free Shipping on Orders $35+' },
                 { icon: <ShieldCheck className="w-4 h-4" />, text: '30-Day Returns' },
                 { icon: <Lock className="w-4 h-4" />, text: 'Secure Checkout' },
               ].map(b => (
@@ -949,7 +949,7 @@ export default function OrthopedicDogBeds() {
         <section className="mb-12 grid sm:grid-cols-3 gap-4">
           <div className="bg-card border rounded-xl p-5 text-center">
             <Truck className="w-6 h-6 text-primary mx-auto mb-2" />
-            <h3 className="font-semibold text-sm mb-1">Free US Shipping</h3>
+            <h3 className="font-semibold text-sm mb-1">Free Shipping Available</h3>
             <p className="text-xs text-muted-foreground">On orders over $35</p>
           </div>
           <div className="bg-card border rounded-xl p-5 text-center">

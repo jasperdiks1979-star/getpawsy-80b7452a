@@ -119,7 +119,7 @@ const TITLE_TEMPLATES: Record<string, (kw: string) => string> = {
 
 const META_TEMPLATES = [
   (kw: string) => `Discover the truth about ${kw}. Expert-reviewed advice, real comparisons, and actionable tips for pet owners in 2026.`,
-  (kw: string) => `Everything you need to know about ${kw}. Vet-approved recommendations and honest buying advice. Free US shipping.`,
+  (kw: string) => `Everything you need to know about ${kw}. Vet-approved recommendations and honest buying advice. Free shipping available.`,
   (kw: string) => `Stop guessing about ${kw}. See real test results, expert picks, and avoid the mistakes most pet owners make.`,
 ];
 
@@ -463,7 +463,7 @@ export function identifyProductQuickWins(
     return {
       slug: p.slug,
       impressions: p.impressions,
-      seoIntro: `Looking for the perfect ${name.toLowerCase()} for your pet? At GetPawsy, we've carefully selected this ${name.toLowerCase()} based on quality, safety, and real customer feedback. Whether you're a first-time pet owner or upgrading your current setup, this product delivers the durability and design your pet deserves. Free US shipping on all orders, with an easy 30-day return policy.`,
+      seoIntro: `Looking for the perfect ${name.toLowerCase()} for your pet? At GetPawsy, we've carefully selected this ${name.toLowerCase()} based on quality, safety, and real customer feedback. Whether you're a first-time pet owner or upgrading your current setup, this product delivers the durability and design your pet deserves. Free shipping available on all orders, with an easy 30-day return policy.`,
       faqSchema: [
         { question: `How fast is shipping for this ${name.toLowerCase()}?`, answer: 'We offer free standard shipping across the US. Most orders arrive within 7-15 business days. Express shipping options are available at checkout.' },
         { question: `What materials is this ${name.toLowerCase()} made from?`, answer: 'This product is made from premium, pet-safe materials. All items meet US safety standards. Check the product description for specific material details.' },

@@ -1044,8 +1044,8 @@ export function generateCategoryMetaDescription(categoryName: string): string {
     bed: 'Find the perfect pet bed at GetPawsy. Orthopedic, cooling, and cozy options for dogs & cats of all sizes. Help your pet sleep better. Free shipping on eligible orders over $35!',
     toy: 'Keep your pet entertained with premium toys from GetPawsy. Interactive, durable, and mentally stimulating options. Say goodbye to boredom! Free shipping on eligible orders over $35.',
     food: 'Premium pet feeding solutions at GetPawsy. Elevated bowls, slow feeders, automatic dispensers & more. Make mealtime special. Free shipping on eligible orders over $35!',
-    grooming: 'Professional pet grooming supplies at GetPawsy. Brushes, shampoos, nail care & more. Pamper your pet at home. Free US shipping on orders over $35!',
-    collar: 'Stylish and safe pet collars & harnesses at GetPawsy. From leather to reflective designs. Find the perfect fit. Free US shipping over $35!',
+    grooming: 'Professional pet grooming supplies at GetPawsy. Brushes, shampoos, nail care & more. Pamper your pet at home. Free shipping on eligible orders over $35!',
+    collar: 'Stylish and safe pet collars & harnesses at GetPawsy. From leather to reflective designs. Find the perfect fit. Free shipping on eligible orders over $35!',
   };
   
   for (const [key, description] of Object.entries(categoryDescriptions)) {

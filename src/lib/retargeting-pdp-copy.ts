@@ -74,7 +74,7 @@ export const RETARGETING_AD_VARIATIONS: AdCopyVariation[] = [
     name: 'Reassurance-First',
     focus: 'Shipping & Returns',
     headline: 'Thoughtfully designed pet essentials',
-    description: 'Free US shipping over $35. Easy 30-day returns. Quality products shipped directly to you.',
+    description: 'Free shipping on eligible orders over $35. Easy 30-day returns. Quality products shipped directly to you.',
     cta: 'Explore Products',
   },
   
@@ -132,7 +132,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
     variations: {
       reassurance: {
         headline: 'Pet essentials with peace of mind',
-        description: 'Free US shipping over $35 • 30-day easy returns',
+        description: 'Free shipping on eligible orders over $35 • 30-day easy returns',
       },
       problem_solution: {
         headline: 'Everyday pet care, simplified',
@@ -178,7 +178,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
       },
       lifestyle: {
         headline: 'Quality Pet Products',
-        description: 'Trusted essentials for daily comfort. Free US shipping on orders over $35.',
+        description: 'Trusted essentials for daily comfort. Free shipping on eligible orders over $35.',
       },
     },
   },

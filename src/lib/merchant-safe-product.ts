@@ -142,7 +142,7 @@ export function getDisplayAvailability(product: MerchantProduct): DisplayAvailab
 export function getDisplayShippingText(product: MerchantProduct): string {
   const { price } = getDisplayPrice(product);
   if (price >= FREE_SHIPPING_THRESHOLD) {
-    return `Free US shipping • Estimated delivery: ${DELIVERY_TIME_STANDARD}`;
+    return `Free shipping available • Estimated delivery: ${DELIVERY_TIME_STANDARD}`;
   }
   return `$${FLAT_SHIPPING_RATE.toFixed(2)} shipping • Estimated delivery: ${DELIVERY_TIME_STANDARD}`;
 }

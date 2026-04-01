@@ -106,7 +106,7 @@ const PinterestLandingPage = () => {
           <Link to="/" className="font-display text-xl font-bold text-primary">GetPawsy</Link>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Truck className="w-3.5 h-3.5 text-primary" />
-            <span>Free US Shipping $35+</span>
+            <span>Free Shipping on Orders $35+</span>
           </div>
         </div>
       </header>
@@ -158,7 +158,7 @@ const PinterestLandingPage = () => {
             <div className="space-y-3 mb-5">
               <Button onClick={handleBuyNow} disabled={!availability.isInStock} className="w-full h-14 text-base font-semibold rounded-xl" size="lg">
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                Buy Now — Free US Shipping
+                Buy Now — Free Shipping Available
               </Button>
               <Button onClick={handleAddToCart} disabled={!availability.isInStock} variant="outline" className="w-full h-12 rounded-xl">
                 Add to Cart
@@ -211,7 +211,7 @@ const PinterestLandingPage = () => {
             Join pet owners who upgraded their routine with GetPawsy products.
           </p>
           <Button onClick={handleBuyNow} disabled={!availability.isInStock} size="lg" className="px-8 rounded-xl text-base font-semibold">
-            Buy Now — Free US Shipping
+            Buy Now — Free Shipping Available
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </section>

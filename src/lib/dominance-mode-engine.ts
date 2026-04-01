@@ -129,7 +129,7 @@ const EMOTIONAL_META = [
 ];
 
 const TRUST_SIGNALS: TrustSignal[] = [
-  { label: 'Free US Shipping', icon: '🚚' },
+  { label: 'Free Shipping Available', icon: '🚚' },
   { label: 'Estimated 5–10 Day Delivery', icon: '⚡' },
   { label: '30-Day Returns', icon: '↩️' },
   { label: 'Secure Checkout', icon: '🔒' },

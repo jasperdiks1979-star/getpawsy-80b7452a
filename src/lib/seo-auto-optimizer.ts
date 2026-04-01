@@ -61,7 +61,7 @@ function generateAlternativeTitles(slug: string, currentPosition: number): strin
 function generateAlternativeDescriptions(slug: string): string[] {
   const keyword = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/2026/g, '').trim();
   return [
-    `We tested the top ${keyword.toLowerCase()} of 2026. See which ones actually deliver results, who they're best for, and what to avoid. Free US shipping.`,
+    `We tested the top ${keyword.toLowerCase()} of 2026. See which ones actually deliver results, who they're best for, and what to avoid. Free shipping available.`,
     `Honest ${keyword.toLowerCase()} comparison for 2026. Real testing, no sponsored picks. Find the right match for your pet in under 3 minutes.`,
   ];
 }

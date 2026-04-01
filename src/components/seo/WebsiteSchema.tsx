@@ -20,7 +20,7 @@ interface WebsiteSchemaProps {
 
 export function WebsiteSchema({
   title = 'GetPawsy - Premium Pet Products & Supplies',
-  description = `Discover premium, eco-friendly pet products at GetPawsy. Shop quality dog beds, cat trees, pet toys, collars, grooming supplies and more. Free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Vet-approved items for happy, healthy pets.`,
+  description = `Discover premium, eco-friendly pet products at GetPawsy. Shop quality dog beds, cat trees, pet toys, collars, grooming supplies and more. Free shipping on eligible orders over $${FREE_SHIPPING_THRESHOLD}. Vet-approved items for happy, healthy pets.`,
   keywords = SITE_KEYWORDS,
   image = '/og-image.png',
   url = 'https://getpawsy.pet',
