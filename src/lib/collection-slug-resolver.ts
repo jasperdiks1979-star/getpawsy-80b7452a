@@ -31,22 +31,22 @@ export interface VirtualCollection {
  * If not, fall through to virtual collections.
  */
 const SLUG_ALIASES: Record<string, string> = {
-  // Cat variants
-  'cats': 'cat',
-  'feline': 'cat',
-  'cat-essentials': 'cat',
-  'cat-products': 'cat',
-  'all-cat': 'cat',
-  'shop-cat': 'cat',
-  'cat-supplies': 'cat',
-  // Dog variants
-  'dogs': 'dog',
-  'canine': 'dog',
-  'dog-essentials': 'dog',
-  'dog-products': 'dog',
-  'all-dog': 'dog',
-  'shop-dog': 'dog',
-  'dog-supplies': 'dog',
+  // Cat variants → canonical 'cats'
+  'cat': 'cats',
+  'feline': 'cats',
+  'cat-essentials': 'cats',
+  'cat-products': 'cats',
+  'all-cat': 'cats',
+  'shop-cat': 'cats',
+  'cat-supplies': 'cats',
+  // Dog variants → canonical 'dogs'
+  'dog': 'dogs',
+  'canine': 'dogs',
+  'dog-essentials': 'dogs',
+  'dog-products': 'dogs',
+  'all-dog': 'dogs',
+  'shop-dog': 'dogs',
+  'dog-supplies': 'dogs',
   // Multi-pet variants
   'multi': 'multi-pet',
   'multipet': 'multi-pet',
