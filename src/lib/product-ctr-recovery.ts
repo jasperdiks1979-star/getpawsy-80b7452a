@@ -97,7 +97,7 @@ export function runProductCtrRecovery(
     seoIntro: buildSeoIntro(p.slug),
     faqSchema: buildProductFaq(p.slug),
     relatedGuides: findGuides(p.slug),
-    trustBadges: ['Free US Shipping', '30-Day Returns', 'Pet-Safe Materials', 'Expert Tested'],
+    trustBadges: ['Free Shipping Available', '30-Day Returns', 'Pet-Safe Materials', 'Expert Tested'],
     estimatedCtrLift: `${p.ctr.toFixed(1)}% → ${Math.min(p.ctr + 2.5, 5).toFixed(1)}% (est.)`,
   }));
 
