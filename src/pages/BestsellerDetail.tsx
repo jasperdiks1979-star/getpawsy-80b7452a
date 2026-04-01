@@ -1241,7 +1241,7 @@ const BestsellerDetail = () => {
                       <Truck className="w-5 h-5 text-primary" />
                     </div>
                     <div className="text-sm">
-                      <p className="font-semibold">Free US Shipping</p>
+                      <p className="font-semibold">Free Shipping Available</p>
                       <p className="text-muted-foreground text-xs">On orders over $35</p>
                     </div>
                   </motion.div>
