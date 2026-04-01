@@ -310,7 +310,7 @@ const About = () => {
                 
                 <div className="p-4 bg-muted/50 rounded-xl">
                   <p className="text-sm text-muted-foreground">
-                    Skidzo (operating as GetPawsy) coordinates all shipping and fulfillment. If you have any questions about your order, please contact us at <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>.
+                    GetPawsy coordinates all shipping and fulfillment. If you have any questions about your order, please contact us at <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>.
                   </p>
                 </div>
               </div>
