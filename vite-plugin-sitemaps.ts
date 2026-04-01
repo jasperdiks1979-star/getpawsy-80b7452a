@@ -482,10 +482,10 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
 
-  // Safety post-filter: exclude any product missing required fields or with stock <= 0
+  // Safety post-filter: exclude products missing required fields (stock is NOT a disqualifier for dropship)
   const eligibleProducts = rawProducts.filter(p =>
     p.price > 0 &&
-    p.stock !== null && p.stock > 0 &&
+    p.is_active !== false &&
     p.image_url && p.image_url.trim() !== '' &&
     p.slug && p.slug.trim() !== '' &&
     p.description && p.description.trim() !== ''
