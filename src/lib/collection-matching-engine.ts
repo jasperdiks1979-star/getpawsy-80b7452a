@@ -210,13 +210,24 @@ export async function resolveCollectionProducts(
     };
   }
 
-  // HARD FILTER: When product_category_filter is set, only include products matching that category.
-  // This prevents cross-category contamination (e.g., dog strollers in dog beds collection).
-  const categoryFilteredPool = collection.product_category_filter
-    ? pool.filter(p => matchesCategoryFilter(p as CollectionProduct, collection.product_category_filter))
-    : pool;
+  // CATEGORY FILTER: When product_category_filter is set, prefer products matching that category.
+  // If category-matched products exist, use ONLY those (prevents cross-category contamination).
+  // If zero match the category, fall back to keyword-only matching on the full pool.
+  const hasCategoryFilter = !!collection.product_category_filter;
+  let effectivePool = pool;
+  let fallbackTriggered = false;
 
-  const scoredPrimary: ScoredProduct[] = categoryFilteredPool
+  if (hasCategoryFilter) {
+    const categoryMatched = pool.filter(p => matchesCategoryFilter(p as CollectionProduct, collection.product_category_filter));
+    if (categoryMatched.length > 0) {
+      effectivePool = categoryMatched;
+    } else {
+      // No products match the category — fall back to keyword matching
+      fallbackTriggered = true;
+    }
+  }
+
+  const scoredPrimary: ScoredProduct[] = effectivePool
     .map((p) => ({
       ...p,
       _score: scoreProduct(p as CollectionProduct & Record<string, unknown>, collection.slug, keywords, collection.product_category_filter),
@@ -231,8 +242,6 @@ export async function resolveCollectionProducts(
     return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
   });
 
-  // No fallback injection — only show real matched products
-  const fallbackTriggered = false;
   const products = scoredPrimary.slice(0, 48) as CollectionProduct[];
 
   if (import.meta.env.DEV) {
