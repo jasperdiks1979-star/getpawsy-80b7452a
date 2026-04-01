@@ -32,7 +32,6 @@ export function WebsiteSchema({
     '@type': 'Organization',
     '@id': `${url}/#organization`,
     name: 'GetPawsy',
-    legalName: 'Skidzo',
     url: url,
     logo: {
       '@type': 'ImageObject',
