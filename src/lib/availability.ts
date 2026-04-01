@@ -25,7 +25,7 @@ export interface AvailabilityResult {
  * Rules (priority order):
  * 1. No product → OUT OF STOCK
  * 2. is_active === false → OUT OF STOCK
- * 3. Everything else → IN STOCK (dropship model)
+ * 3. Everything else → IN STOCK (fulfillment model)
  */
 export function computeAvailability(
   product: AvailabilityProduct | null | undefined,
