@@ -87,7 +87,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['all pet products', 'cat and dog products', 'pet essentials', 'pet supplies'],
     seo_intro: 'Browse every product in the GetPawsy catalog — from cat trees and litter solutions to dog beds, strollers, and travel gear. All orders ship within the United States with tracking included.',
     meta_title: 'All Products — Full Pet Product Catalog | GetPawsy',
-    meta_description: 'Shop all GetPawsy products: cat trees, litter boxes, dog beds, strollers & more. Free US shipping on $35+. 30-day returns.',
+    meta_description: 'Shop all GetPawsy products: cat trees, litter boxes, dog beds, strollers & more. Free shipping on eligible orders $35+. 30-day returns.',
     faq: [
       { question: 'What products does GetPawsy sell?', answer: 'GetPawsy offers a curated selection of premium pet products including cat trees, self-cleaning litter boxes, orthopedic dog beds, pet strollers, and travel accessories — all shipped within the United States.' },
       { question: 'Do you offer free shipping?', answer: 'Yes! Orders over $35 qualify for free US shipping. Orders under $35 ship for a flat rate of $5.99.' },
