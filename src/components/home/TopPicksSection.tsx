@@ -147,7 +147,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Extra Large Enclosed Cat Litter Box',
     price: 136.99,
     compareAt: 170.99,
-    image: 'https://cf.cjdropshipping.com/6f36562d-bc5a-4d11-bb82-cdd47b5a9622.jpg',
+    image: '/images/products/enclosed-litter-box.jpg',
     benefit: 'Front-entry with litter-catching lid',
     pet: 'cat',
   },
