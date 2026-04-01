@@ -1,4 +1,30 @@
 {
+  "served_file_path": "dist/google-feed.xml",
+  "first_20_lines_live_body": [
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+    "<rss version=\"2.0\" xmlns:g=\"http://base.google.com/ns/1.0\">",
+    "  <channel>",
+    "    <title>GetPawsy Product Feed</title>",
+    "    <link>https://getpawsy.pet</link>",
+    "    <description>Google Merchant product feed</description>",
+    "    <lastBuildDate>2026-04-01T12:51:35.472Z</lastBuildDate>",
+    "    <item>",
+    "      <g:id>ab56a66b-dfaa-4caa-921a-de5bf544f9d8</g:id>",
+    "      <g:title>Dog Chew Toy Choke-proof Food Dispenser for Pets – Safe Chewing</g:title>",
+    "      <g:description>Specifications: Honeycomb — Orange-Brown, Honeycomb — Yellow-Green, Honeycomb — Blue-Green, Honeycomb — Red-Yellow Material: Food-grade silicone Category: Pet feeding utensils Pet feeding utensils *1</g:description>",
+    "      <g:link>https://getpawsy.pet/product/dog-chew-toy-choke-proof-food-dispenser</g:link>",
+    "      <g:image_link>https://cf.cjdropshipping.com/quick/product/75afc632-1bea-4bcd-afba-1fea523570de.jpg</g:image_link>",
+    "      <g:availability>in_stock</g:availability>",
+    "      <g:price>9.99 USD</g:price>",
+    "      <g:brand>GetPawsy</g:brand>",
+    "      <g:condition>new</g:condition>",
+    "      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Toys</g:google_product_category>",
+    "      <g:shipping_weight>1 kg</g:shipping_weight>",
+    "      <g:sale_price>9.99 USD</g:sale_price>"
+  ],
+  "contains_rss": true,
+  "contains_channel": true,
+  "contains_item": true,
   "source_file_used_for_google_feed": "dist/google-feed.xml",
   "first_20_lines_of_final_google_feed_file": [
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
@@ -7,7 +33,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-04-01T12:34:19.874Z</lastBuildDate>",
+    "    <lastBuildDate>2026-04-01T12:51:35.472Z</lastBuildDate>",
     "    <item>",
     "      <g:id>ab56a66b-dfaa-4caa-921a-de5bf544f9d8</g:id>",
     "      <g:title>Dog Chew Toy Choke-proof Food Dispenser for Pets – Safe Chewing</g:title>",
@@ -24,5 +50,5 @@
   ],
   "contains_rss_tag": true,
   "contains_item_tag": true,
-  "deployed_at": "2026-04-01T12:34:19.883Z"
+  "deployed_at": "2026-04-01T12:51:35.481Z"
 }
