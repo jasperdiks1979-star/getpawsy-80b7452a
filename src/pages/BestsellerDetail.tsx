@@ -1489,7 +1489,7 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer free US shipping on orders over ${FREE_SHIPPING_THRESHOLD}. Orders under ${FREE_SHIPPING_THRESHOLD} ship for a flat rate of ${FLAT_SHIPPING_RATE.toFixed(2)}. 
+                      We offer free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD}. Orders under ${FREE_SHIPPING_THRESHOLD} ship for a flat rate of ${FLAT_SHIPPING_RATE.toFixed(2)}. 
                       Standard delivery takes {DELIVERY_TIME_STANDARD}. Once your order is shipped, you'll receive a tracking number to monitor your package.
                     </AccordionContent>
                   </AccordionItem>
