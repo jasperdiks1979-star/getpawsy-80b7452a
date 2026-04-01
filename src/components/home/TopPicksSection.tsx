@@ -74,7 +74,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Double-Sided All-Season Dog Bed Mat',
     price: 21.53,
     compareAt: 26.91,
-    image: 'https://oss-cf.cjdropshipping.com/product/2026/02/20/07/782345a3-1591-4a92-803b-35ef535fb637_trans.jpeg',
+    image: '/images/products/double-sided-dog-bed.jpg',
     benefit: 'Chew-resistant & reversible',
     pet: 'dog',
   },
