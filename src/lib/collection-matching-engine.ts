@@ -112,6 +112,17 @@ function textContainsAny(text: string, keywords: string[]): number {
   return score;
 }
 
+/**
+ * When product_category_filter is set, it acts as a HARD FILTER.
+ * Products MUST match the category to be included.
+ * This prevents cross-category contamination (e.g., dog travel items in dog beds).
+ */
+function matchesCategoryFilter(product: CollectionProduct, categoryFilter: string | null): boolean {
+  if (!categoryFilter) return true; // No filter = allow all
+  const category = (product.category || '').toLowerCase();
+  return category.includes(categoryFilter.toLowerCase());
+}
+
 function scoreProduct(product: CollectionProduct & Record<string, unknown>, slug: string, keywords: string[], categoryFilter?: string | null): number {
   const name = product.name.toLowerCase();
   const category = (product.category || '').toLowerCase();
@@ -132,7 +143,7 @@ function scoreProduct(product: CollectionProduct & Record<string, unknown>, slug
     score += 10;
   }
 
-  // Priority 3: category fallback match
+  // Priority 3: category exact match (strong signal)
   if (categoryFilter && category.includes(categoryFilter.toLowerCase())) {
     score += 10;
   }
