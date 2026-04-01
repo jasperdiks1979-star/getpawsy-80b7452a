@@ -17,7 +17,7 @@ import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Star from 'lucide-react/dist/esm/icons/star';
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 // framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
-import { traceMount, traceEffect, traceStateSet, traceQuery } from '@/lib/lcp-render-trace';
+import { traceMount, traceEffect, traceStateSet } from '@/lib/lcp-render-trace';
 import { useCart } from '@/contexts/CartContext';
 import { useCartIconRef } from '@/contexts/CartAnimationContext';
 import { useAuth } from '@/contexts/AuthContext';
