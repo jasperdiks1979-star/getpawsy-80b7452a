@@ -571,7 +571,7 @@ async function buildMerchantDiagnostics(): Promise<string> {
     missing_image: issues.filter(i => i.includes('missing_image')).length,
     overlength: issues.filter(i => i.includes('overlength_title')).length,
     short_title: issues.filter(i => i.includes('short_title')).length,
-    oos: issues.filter(i => i.includes('out_of_stock')).length,
+    oos: issues.filter(i => i.includes('inactive_product')).length,
     duplicates: issues.filter(i => i.includes('duplicate_title')).length,
     duplicate_images: issues.filter(i => i.includes('duplicate_image')).length,
     missing_compare_at_price: issues.filter(i => i.includes('missing_compare_at_price')).length,
