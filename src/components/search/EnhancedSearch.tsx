@@ -83,16 +83,15 @@ export const EnhancedSearch = ({
     }
   }, []);
 
-  // Fetch categories
+  // Load validated categories from canonical registry (not DB)
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('id, name, slug')
-        .limit(6);
-      if (data) setCategories(data);
-    };
-    fetchCategories();
+    import('@/lib/canonical-category-registry').then(({ getCategoriesForSurface }) => {
+      const searchCats = getCategoriesForSurface('search')
+        .filter(c => c.parentKey !== null) // Only subcategories for search suggestions
+        .slice(0, 6)
+        .map(c => ({ id: c.key, name: c.label, slug: c.key }));
+      setCategories(searchCats);
+    });
   }, []);
 
   // Save recent search
