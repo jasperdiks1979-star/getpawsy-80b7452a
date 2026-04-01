@@ -92,7 +92,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'modern cat tree',
     conversionScore: 80,
     contentCluster: 'cat-trees',
-    image: 'https://cf.cjdropshipping.com/17664480/e75f68d4-a5f5-46e0-ae2d-217cc563ed2f.jpg',
+    image: '/images/products/modern-cat-tree.jpg',
   },
   {
     slug: 'dog-bed-pet-sofa',
