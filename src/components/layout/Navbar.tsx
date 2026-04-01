@@ -227,37 +227,8 @@ export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Track when the navbar-categories query fires
-  const { data: categories = [] } = useQuery({
-    queryKey: ['navbar-categories'],
-    queryFn: async () => {
-      traceQuery('Navbar', 'navbar-categories', 'started');
-      const supabase = await getSupabase();
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id, name, slug, parent_id, image_url, display_order')
-        .order('display_order', { ascending: true });
-
-      if (categoriesError) throw categoriesError;
-      traceQuery('Navbar', 'navbar-categories', 'resolved');
-      return (categoriesData || []) as Category[];
-    },
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-  });
-
-  const categoryTree = useMemo(() => {
-    const buildTree = (parentId: string | null): CategoryWithChildren[] => {
-      return categories
-        .filter((cat) => cat.parent_id === parentId)
-        .sort((a, b) => (a.display_order || 999) - (b.display_order || 999))
-        .map((cat) => ({
-          ...cat,
-          children: buildTree(cat.id),
-        }));
-    };
-    return buildTree(null);
-  }, [categories]);
+  // Category tree from canonical registry — no DB query needed
+  const categoryTree = useMemo(() => buildCategoryTree('menu'), []);
 
   // ── Effect 1: scroll listener (fires immediately on mount) ──────────────
   useEffect(() => {
