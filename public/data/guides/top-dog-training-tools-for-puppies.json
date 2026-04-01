@@ -7,44 +7,88 @@
   "excerpt": "The best training tools for puppies starting at 12 weeks. Harnesses, leashes, and reward accessories tested for small and growing dogs.",
   "quickAnswer": "Start puppy training with a lightweight adjustable harness, a 6-foot fixed leash, and high-value treats. Avoid retractable leashes and choke chains — positive reinforcement tools are safer and more effective for developing dogs.",
   "category": "Dog Training",
-  "keywords": ["puppy training tools", "best tools for puppy training", "puppy harness", "puppy leash training", "dog training tools for puppies"],
+  "keywords": [
+    "puppy training tools",
+    "best tools for puppy training",
+    "puppy harness",
+    "puppy leash training",
+    "dog training tools for puppies"
+  ],
   "publishedAt": "2026-02-28",
   "updatedAt": "2026-02-28",
   "featuredImage": "/images/guides/puppy-training-tools-2026.jpg",
   "readingTime": 10,
-  "relatedCategories": ["dog-training", "dog-collars-and-leashes"],
-  "trustLines": ["Tested with puppies 12 weeks – 6 months", "Vet-reviewed for safety", "Updated February 2026"],
+  "relatedCategories": [
+    "dog-training",
+    "dog-collars-and-leashes"
+  ],
+  "trustLines": [
+    "Tested with puppies 12 weeks – 6 months",
+    "Vet-reviewed for safety",
+    "Updated February 2026"
+  ],
   "quickRecommendation": {
-    "bestOverall": { "name": "Adjustable Comfortable Dog Harness", "reason": "Lightweight, adjustable, padded — grows with your puppy.", "link": "/product/adjustable-comfortable-dog-harness-for-walking" },
-    "bestBudget": { "name": "Adjustable Comfortable Dog Harness", "reason": "At $29.95, it's the most affordable quality puppy harness available.", "link": "/product/adjustable-comfortable-dog-harness-for-walking" },
-    "bestPremium": { "name": "Tactical No-Pull Harness", "reason": "4-point adjustable with reflective stitching. Grows from puppy to adult.", "link": "/product/tactical-service-dog-harness-with-handle-no-pull-adjustable-reflective-pet-vest-harness-for-easy-wal" }
+    "bestOverall": {
+      "name": "Adjustable Comfortable Dog Harness",
+      "reason": "Lightweight, adjustable, padded — grows with your puppy.",
+      "link": "/product/adjustable-comfortable-dog-harness-for-walking"
+    },
+    "bestBudget": {
+      "name": "Adjustable Comfortable Dog Harness",
+      "reason": "At $29.95, it's the most affordable quality puppy harness available.",
+      "link": "/product/adjustable-comfortable-dog-harness-for-walking"
+    },
+    "bestPremium": {
+      "name": "Tactical No-Pull Harness",
+      "reason": "4-point adjustable with reflective stitching. Grows from puppy to adult.",
+      "link": "/product/tactical-service-dog-harness-with-handle-no-pull-adjustable-reflective-pet-vest-harness-for-easy-wal"
+    }
   },
   "comparisonProducts": [
     {
       "name": "Adjustable Comfortable Harness",
-      "image": "https://cf.cjdropshipping.com/aac7c346-3049-4ae3-ab62-7d1a8c963f49.jpg",
+      "image": "https://getpawsy.pet/images/products/685f7faf-7809-4962-b408-c2ced99dd178-2.jpg",
       "price": "$29.95",
       "description": "Lightweight padded harness with step-in design and front D-ring. Perfect first harness for puppies.",
-      "advantages": ["Lightweight", "Step-in design", "Grows with puppy", "Front D-ring"],
+      "advantages": [
+        "Lightweight",
+        "Step-in design",
+        "Grows with puppy",
+        "Front D-ring"
+      ],
       "link": "/product/adjustable-comfortable-dog-harness-for-walking",
       "badge": "Best for Puppies",
       "availability": "InStock"
     },
     {
       "name": "Tactical No-Pull Harness",
-      "image": "https://cf.cjdropshipping.com/189ebdf5-78d1-4057-91cb-9467ef626087.jpg",
+      "image": "https://getpawsy.pet/images/products/6a491f2a-3f93-4285-be2e-f93be87a8bd4-2.jpg",
       "price": "$46.99",
       "description": "Front-clip harness with top handle. 4-point adjustable from puppy to adult size.",
-      "advantages": ["Grows to adult size", "Front-clip", "Top handle", "Reflective"],
+      "advantages": [
+        "Grows to adult size",
+        "Front-clip",
+        "Top handle",
+        "Reflective"
+      ],
       "link": "/product/tactical-service-dog-harness-with-handle-no-pull-adjustable-reflective-pet-vest-harness-for-easy-wal",
       "badge": "Best Long-Term",
       "availability": "InStock"
     }
   ],
   "jumpNav": [
-    { "label": "Essential Tools", "anchor": "essential-tools" },
-    { "label": "When to Start", "anchor": "when-to-start" },
-    { "label": "FAQs", "anchor": "faqs" }
+    {
+      "label": "Essential Tools",
+      "anchor": "essential-tools"
+    },
+    {
+      "label": "When to Start",
+      "anchor": "when-to-start"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faqs"
+    }
   ],
   "sections": [
     {
@@ -55,7 +99,10 @@
       "heading": "When to Start Training Your Puppy",
       "content": "**Start at 12 weeks.** The critical socialization window runs from 8–16 weeks, making this the best time to introduce your puppy to leash walking, basic commands, and positive reinforcement.\n\n### Week 12–14: Indoor Basics\n- Introduce the harness (let them wear it for 10 minutes with treats)\n- Practice leash walking inside your home\n- Teach 'sit' and 'look at me'\n\n### Week 14–16: Quiet Outdoor Practice\n- Short 5-minute walks in your yard or a quiet street\n- Focus on rewarding attention and loose-leash walking\n- Introduce one new environment per week\n\n### Month 4–6: Building Duration\n- Extend walks to 15–20 minutes\n- Practice in increasingly distracting environments\n- Add direction changes and stops\n\nBrowse our full [training tool collection](/collections/dog-training-behavior-tools)."
     },
-    { "heading": "FAQ", "content": "" }
+    {
+      "heading": "FAQ",
+      "content": ""
+    }
   ],
   "faq": [
     {

@@ -23,7 +23,10 @@
   "updatedAt": "2026-02-25",
   "featuredImage": "/images/guides/cat-trees-large-cats.jpg",
   "readingTime": 18,
-  "relatedCategories": ["Cat Trees & Condos", "Cat Furniture"],
+  "relatedCategories": [
+    "Cat Trees & Condos",
+    "Cat Furniture"
+  ],
   "quickAnswer": "The best cat tree for large cats has a solid wood or reinforced engineered-wood frame, 4-inch diameter sisal posts, platforms at least 18 inches wide, and anti-tip wall anchors. Look for trees rated for 25+ lbs of dynamic load — standard trees top out at 12 lbs and will wobble under a jumping Maine Coon. Our top pick is the 84.6\" Light Gray Cat Tree Tower for its wide base, 11 sisal posts, and 40+ lb capacity.",
   "whoThisIsFor": [
     "Owners of Maine Coons, Ragdolls, Norwegian Forest Cats, or British Shorthairs",
@@ -39,19 +42,43 @@
     "Ships from US warehouse — arrives in 3–7 business days"
   ],
   "jumpNav": [
-    { "label": "Comparison Table", "anchor": "comparison-table" },
-    { "label": "Why Large Cats Need Special Trees", "anchor": "why-large-cats" },
-    { "label": "Top 7 Picks", "anchor": "top-picks" },
-    { "label": "Stability Engineering", "anchor": "stability-engineering" },
-    { "label": "Buyer Decision Tree", "anchor": "decision-tree" },
-    { "label": "FAQ (20 Questions)", "anchor": "faq" }
+    {
+      "label": "Comparison Table",
+      "anchor": "comparison-table"
+    },
+    {
+      "label": "Why Large Cats Need Special Trees",
+      "anchor": "why-large-cats"
+    },
+    {
+      "label": "Top 7 Picks",
+      "anchor": "top-picks"
+    },
+    {
+      "label": "Stability Engineering",
+      "anchor": "stability-engineering"
+    },
+    {
+      "label": "Buyer Decision Tree",
+      "anchor": "decision-tree"
+    },
+    {
+      "label": "FAQ (20 Questions)",
+      "anchor": "faq"
+    }
   ],
   "comparisonProducts": [
     {
       "name": "84.6\" Light Gray Cat Tree Tower",
-      "image": "https://cf.cjdropshipping.com/17648928/bd7a5bfc-1ab1-4459-8145-a1744883c440.jpg",
+      "image": "https://getpawsy.pet/images/products/156ed3db-e926-482c-951a-4c1fcb61779d-2.jpg",
       "price": "$201.99",
-      "advantages": ["Wide base prevents tipping", "11 sisal scratching posts", "3 large hiding condos", "2 hammocks", "40+ lb capacity"],
+      "advantages": [
+        "Wide base prevents tipping",
+        "11 sisal scratching posts",
+        "3 large hiding condos",
+        "2 hammocks",
+        "40+ lb capacity"
+      ],
       "link": "/product/84-6-in-light-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisa",
       "badge": "Best Overall",
       "availability": "InStock",
@@ -60,9 +87,15 @@
     },
     {
       "name": "4.6\" Dark Gray Cat Tree Tower (Wide Base)",
-      "image": "https://cf.cjdropshipping.com/2657dac1-3bd9-4582-82ca-4d9566edca31.png",
+      "image": "https://getpawsy.pet/images/products/174f2c69-4c67-46b3-ba5d-6226fb33ca9e-10.jpg",
       "price": "$318.99",
-      "advantages": ["Extra-wide base for maximum stability", "11 sisal posts", "3 condos + 2 hammocks", "Large top platform", "Anti-wobble design"],
+      "advantages": [
+        "Extra-wide base for maximum stability",
+        "11 sisal posts",
+        "3 condos + 2 hammocks",
+        "Large top platform",
+        "Anti-wobble design"
+      ],
       "link": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-",
       "badge": "Best Premium",
       "availability": "InStock",
@@ -71,9 +104,14 @@
     },
     {
       "name": "69\" Multi-Level Cat Tower (3 Hammocks)",
-      "image": "https://cf.cjdropshipping.com/17664480/a8df8d5c-613c-4711-a6d6-967c7917e644.jpg",
+      "image": "https://getpawsy.pet/images/products/194335a0-b615-46e7-8718-a7ee74faa090-2.jpg",
       "price": "$309.99",
-      "advantages": ["2 condos + 3 hammocks for multi-cat homes", "8 scratching posts", "69-inch height ideal for large breeds", "Multiple perching levels"],
+      "advantages": [
+        "2 condos + 3 hammocks for multi-cat homes",
+        "8 scratching posts",
+        "69-inch height ideal for large breeds",
+        "Multiple perching levels"
+      ],
       "link": "/product/69-cat-tree-multi-level-cat-tower-with-2-condos-and-3-hammocks-8-scratching-posts-for-multiple-cats-",
       "badge": "Best Multi-Cat",
       "availability": "InStock",
@@ -82,9 +120,14 @@
     },
     {
       "name": "81\" Cat Tree with Scratching Board",
-      "image": "https://cf.cjdropshipping.com/17664480/ec215d99-1908-4b08-b25f-a5226fa718da.jpg",
+      "image": "https://getpawsy.pet/images/products/1a38a935-637a-4a1f-8084-7e944ff4d298-10.jpg",
       "price": "$233.99",
-      "advantages": ["81-inch tall for maximum climbing", "Scratching board + posts combo", "Condos + beds + hammocks", "Multiple toy balls included"],
+      "advantages": [
+        "81-inch tall for maximum climbing",
+        "Scratching board + posts combo",
+        "Condos + beds + hammocks",
+        "Multiple toy balls included"
+      ],
       "link": "/product/81-cat-tree-w-cat-scratching-posts-scratching-board-condos-beds-hammocks-toy-balls-rope-cat-toy-gray",
       "badge": "Tallest Pick",
       "availability": "InStock",
@@ -93,9 +136,14 @@
     },
     {
       "name": "Multi-Level Natural Pear Wood Cat Tree",
-      "image": "https://cf.cjdropshipping.com/aa00623b-2a29-4c30-9522-ef76a5d40297.jpg",
+      "image": "https://getpawsy.pet/images/products/1aff8014-ce29-4232-82a7-3c94d44f1e8e-2.jpg",
       "price": "$226.99",
-      "advantages": ["Real pear wood frame — most stable material", "Sisal posts + plush balls", "Natural aesthetic blends with decor", "Solid wood won't wobble"],
+      "advantages": [
+        "Real pear wood frame — most stable material",
+        "Sisal posts + plush balls",
+        "Natural aesthetic blends with decor",
+        "Solid wood won't wobble"
+      ],
       "link": "/product/multi-level-natural-pear-wood-cat-tree-sisal-scratching-posts-plush-balls-long-plush-fabric",
       "badge": "Best Material",
       "availability": "InStock",
@@ -104,9 +152,14 @@
     },
     {
       "name": "Modern Indoor Wooden Cat Tower",
-      "image": "https://cf.cjdropshipping.com/0c0c67e1-8232-4496-bdc3-47c865223d05.png",
+      "image": "https://getpawsy.pet/images/products/1cb0c3a0-a373-4276-994d-24dbce8b97fc-2.jpg",
       "price": "$205.99",
-      "advantages": ["Modern wooden design", "Hammock + scratching post", "Removable washable mat", "Suitable for large and small cats"],
+      "advantages": [
+        "Modern wooden design",
+        "Hammock + scratching post",
+        "Removable washable mat",
+        "Suitable for large and small cats"
+      ],
       "link": "/product/modern-indoor-cat-tree-wooden-cat-tower-suitable-for-cats-includes-hammock-scratching-post-and-remov",
       "badge": "Best Design",
       "availability": "InStock",
@@ -115,9 +168,14 @@
     },
     {
       "name": "37\" Modern Cat Tree with Anti-Tip Kit",
-      "image": "https://cf.cjdropshipping.com/17664480/5079a162-f8aa-4346-b420-4745eef22594.jpg",
+      "image": "https://getpawsy.pet/images/products/1daefaa0-7892-4760-87a9-0aa34c49c767-10.png",
       "price": "$197.99",
-      "advantages": ["Includes anti-tip kit", "Wooden scratching posts", "Compact 37\" for apartments", "Condo + beds + cushions"],
+      "advantages": [
+        "Includes anti-tip kit",
+        "Wooden scratching posts",
+        "Compact 37\" for apartments",
+        "Condo + beds + cushions"
+      ],
       "link": "/product/37-inch-modern-cat-tree-w-wooden-scratching-posts-condo-beds-cushions-toy-balls-anti-tip-kit",
       "badge": "Best for Apartments",
       "availability": "InStock",
@@ -178,12 +236,30 @@
   "buyingCriteria": {
     "title": "Large Cat Tree Buying Criteria",
     "criteria": [
-      { "name": "Weight Capacity", "description": "Must support 25+ lbs dynamic load. Check for combined ratings if multi-cat." },
-      { "name": "Post Diameter", "description": "4-inch minimum. Thicker posts = less wobble and longer sisal life." },
-      { "name": "Platform Width", "description": "18 inches minimum so large cats can stretch fully without overhang." },
-      { "name": "Frame Material", "description": "Solid wood or reinforced engineered wood. Avoid hollow cardboard cores." },
-      { "name": "Anti-Tip System", "description": "Wall anchors or heavy base plate included. Essential for 15+ lb cats." },
-      { "name": "Assembly Quality", "description": "Pre-drilled holes, metal hardware (not plastic), clear instructions." }
+      {
+        "name": "Weight Capacity",
+        "description": "Must support 25+ lbs dynamic load. Check for combined ratings if multi-cat."
+      },
+      {
+        "name": "Post Diameter",
+        "description": "4-inch minimum. Thicker posts = less wobble and longer sisal life."
+      },
+      {
+        "name": "Platform Width",
+        "description": "18 inches minimum so large cats can stretch fully without overhang."
+      },
+      {
+        "name": "Frame Material",
+        "description": "Solid wood or reinforced engineered wood. Avoid hollow cardboard cores."
+      },
+      {
+        "name": "Anti-Tip System",
+        "description": "Wall anchors or heavy base plate included. Essential for 15+ lb cats."
+      },
+      {
+        "name": "Assembly Quality",
+        "description": "Pre-drilled holes, metal hardware (not plastic), clear instructions."
+      }
     ]
   },
   "prosAndCons": {
@@ -202,32 +278,107 @@
     ]
   },
   "commonMistakes": [
-    { "mistake": "Buying based on height alone", "whyItMatters": "A 6-foot tree with 3-inch posts and narrow platforms will wobble badly. Structure matters more than height." },
-    { "mistake": "Skipping wall anchors", "whyItMatters": "Even a 30-lb base can tip when a 20-lb cat leaps from the top. Always anchor." },
-    { "mistake": "Choosing carpet-wrapped posts", "whyItMatters": "Large cats shred carpet in weeks. Sisal lasts 10x longer and provides better scratching satisfaction." },
-    { "mistake": "Ignoring platform spacing", "whyItMatters": "Platforms too close together don't allow cats to stretch. 18-inch vertical spacing minimum." },
-    { "mistake": "Forgetting dynamic vs static weight ratings", "whyItMatters": "A 25 lb static rating may only handle 8 lbs of jumping force. Always check dynamic load capacity." }
+    {
+      "mistake": "Buying based on height alone",
+      "whyItMatters": "A 6-foot tree with 3-inch posts and narrow platforms will wobble badly. Structure matters more than height."
+    },
+    {
+      "mistake": "Skipping wall anchors",
+      "whyItMatters": "Even a 30-lb base can tip when a 20-lb cat leaps from the top. Always anchor."
+    },
+    {
+      "mistake": "Choosing carpet-wrapped posts",
+      "whyItMatters": "Large cats shred carpet in weeks. Sisal lasts 10x longer and provides better scratching satisfaction."
+    },
+    {
+      "mistake": "Ignoring platform spacing",
+      "whyItMatters": "Platforms too close together don't allow cats to stretch. 18-inch vertical spacing minimum."
+    },
+    {
+      "mistake": "Forgetting dynamic vs static weight ratings",
+      "whyItMatters": "A 25 lb static rating may only handle 8 lbs of jumping force. Always check dynamic load capacity."
+    }
   ],
   "faq": [
-    { "question": "What weight capacity should a cat tree have for large cats?", "answer": "A minimum of 25 lbs dynamic load rating. Maine Coons generate 80+ lbs of force when jumping, so static weight ratings alone are misleading. Our top pick handles 40+ lbs." },
-    { "question": "Are cat trees safe for Maine Coons?", "answer": "Yes — when specifically designed for large breeds. Maine Coons need 4-inch posts, 18\"+ platforms, and either a wide heavy base or wall anchors. All 7 picks in this guide are Maine Coon safe." },
-    { "question": "How do I prevent my cat tree from wobbling?", "answer": "Three steps: (1) Use wall anchors attached to studs, (2) tighten all bolts fully during assembly, (3) place on a flat hard surface, not carpet. Our #7 pick includes an anti-tip kit for instant stability." },
-    { "question": "How tall should a cat tree be for large cats?", "answer": "5–6 feet is ideal for most homes with 8-foot ceilings. Active climbers prefer floor-to-ceiling models (80\"+). Senior large cats do well with 3–4 feet plus ramps." },
-    { "question": "What materials are strongest for cat trees?", "answer": "Solid wood (pear, oak, birch) is strongest, followed by reinforced engineered wood. Avoid particleboard and hollow cardboard cores. Our #5 pick uses natural pear wood for maximum durability." },
-    { "question": "Can two large cats use the same cat tree?", "answer": "Yes, but choose a model with 3+ platforms, 2+ condos, and 40+ lb combined weight rating. Our #3 pick (69\" Multi-Level Tower) is specifically designed for multi-cat homes with 3 hammocks." },
-    { "question": "What's the best cat tree for a Maine Coon?", "answer": "Our #1 pick (84.6\" Light Gray Tower) is ideal — wide base, 40+ lb capacity, 3 large condos with 14\"+ openings. For budget buyers, our #1 at $201.99 offers the best stability-to-price ratio." },
-    { "question": "Are floor-to-ceiling cat trees safe for large cats?", "answer": "Yes, when properly installed with tension springs and wall anchors. They're actually more stable than freestanding models because the ceiling provides a second anchor point." },
-    { "question": "How often should I replace sisal posts?", "answer": "Every 2–3 years for large cats, or when the rope becomes loose and frayed. Some trees offer replaceable post sleeves. Wooden posts (like our #7 pick) can last 5+ years." },
-    { "question": "What post diameter do large cats need?", "answer": "4-inch minimum diameter. Standard 3-inch posts flex under large-cat weight and wear out faster. All picks in this guide use 4-inch or thicker posts." },
-    { "question": "Is a cat condo different from a cat tree?", "answer": "Cat condos include enclosed spaces (cubbies/houses) while cat trees focus on open platforms. Most modern designs combine both. For large cats, ensure enclosed spaces have 14\"+ openings." },
-    { "question": "Should I get a wall-mounted cat tree instead?", "answer": "Wall-mounted systems save floor space and support heavier cats since weight goes to wall studs. They're ideal for apartments but require drilling. Our #7 pick bridges the gap with a compact design + wall anchors." },
-    { "question": "What's the best cat tree for an apartment?", "answer": "Our #7 pick (37\" Modern with Anti-Tip Kit) — compact footprint, included wall anchors, and designed specifically for small spaces. At $197.99, it's also our most affordable option." },
-    { "question": "How much should I spend on a cat tree for a large cat?", "answer": "Expect $150–$320 for a quality heavy-duty tree. Anything under $100 likely uses particleboard and 3-inch posts that won't handle large-breed cats. Our picks range from $197.99 to $318.99." },
-    { "question": "Do large cats need scratching posts or scratching boards?", "answer": "Both! Scratching posts satisfy the stretch-and-scratch instinct, while boards provide a horizontal scratching surface. Our #4 pick includes both for maximum enrichment." },
-    { "question": "How do I assemble a large cat tree?", "answer": "All our picks include pre-drilled holes and step-by-step instructions. Plan for 45–90 minutes with 2 people. Use the included hardware (always metal, not plastic) and tighten all bolts before use." },
-    { "question": "Are wooden cat trees more stable than fabric-covered ones?", "answer": "Yes — solid wood is 2–3x denser than particleboard, lowering the center of gravity and absorbing more impact force. Our #5 (Pear Wood) and #6 (Modern Wooden) picks demonstrate this advantage." },
-    { "question": "What size base prevents cat tree tipping?", "answer": "Base width should be at least ⅓ of the tree's total height. For a 6-foot tree, that's a 24-inch minimum base. Our top picks exceed this by 40–80% for extra margin of safety." },
-    { "question": "Can overweight cats use standard cat trees?", "answer": "No — standard trees are rated for 10–12 lbs. Cats over 15 lbs need heavy-duty construction. Using a standard tree risks wobbling, tipping, and collapse. All picks in this guide handle 25+ lbs." },
-    { "question": "How do I choose between a cat tree and cat wall shelves?", "answer": "Cat trees are freestanding and require no installation. Wall shelves support more weight but need drilling. For renters, a cat tree with wall anchors (like our #7) is the best compromise — stability without permanent modification." }
+    {
+      "question": "What weight capacity should a cat tree have for large cats?",
+      "answer": "A minimum of 25 lbs dynamic load rating. Maine Coons generate 80+ lbs of force when jumping, so static weight ratings alone are misleading. Our top pick handles 40+ lbs."
+    },
+    {
+      "question": "Are cat trees safe for Maine Coons?",
+      "answer": "Yes — when specifically designed for large breeds. Maine Coons need 4-inch posts, 18\"+ platforms, and either a wide heavy base or wall anchors. All 7 picks in this guide are Maine Coon safe."
+    },
+    {
+      "question": "How do I prevent my cat tree from wobbling?",
+      "answer": "Three steps: (1) Use wall anchors attached to studs, (2) tighten all bolts fully during assembly, (3) place on a flat hard surface, not carpet. Our #7 pick includes an anti-tip kit for instant stability."
+    },
+    {
+      "question": "How tall should a cat tree be for large cats?",
+      "answer": "5–6 feet is ideal for most homes with 8-foot ceilings. Active climbers prefer floor-to-ceiling models (80\"+). Senior large cats do well with 3–4 feet plus ramps."
+    },
+    {
+      "question": "What materials are strongest for cat trees?",
+      "answer": "Solid wood (pear, oak, birch) is strongest, followed by reinforced engineered wood. Avoid particleboard and hollow cardboard cores. Our #5 pick uses natural pear wood for maximum durability."
+    },
+    {
+      "question": "Can two large cats use the same cat tree?",
+      "answer": "Yes, but choose a model with 3+ platforms, 2+ condos, and 40+ lb combined weight rating. Our #3 pick (69\" Multi-Level Tower) is specifically designed for multi-cat homes with 3 hammocks."
+    },
+    {
+      "question": "What's the best cat tree for a Maine Coon?",
+      "answer": "Our #1 pick (84.6\" Light Gray Tower) is ideal — wide base, 40+ lb capacity, 3 large condos with 14\"+ openings. For budget buyers, our #1 at $201.99 offers the best stability-to-price ratio."
+    },
+    {
+      "question": "Are floor-to-ceiling cat trees safe for large cats?",
+      "answer": "Yes, when properly installed with tension springs and wall anchors. They're actually more stable than freestanding models because the ceiling provides a second anchor point."
+    },
+    {
+      "question": "How often should I replace sisal posts?",
+      "answer": "Every 2–3 years for large cats, or when the rope becomes loose and frayed. Some trees offer replaceable post sleeves. Wooden posts (like our #7 pick) can last 5+ years."
+    },
+    {
+      "question": "What post diameter do large cats need?",
+      "answer": "4-inch minimum diameter. Standard 3-inch posts flex under large-cat weight and wear out faster. All picks in this guide use 4-inch or thicker posts."
+    },
+    {
+      "question": "Is a cat condo different from a cat tree?",
+      "answer": "Cat condos include enclosed spaces (cubbies/houses) while cat trees focus on open platforms. Most modern designs combine both. For large cats, ensure enclosed spaces have 14\"+ openings."
+    },
+    {
+      "question": "Should I get a wall-mounted cat tree instead?",
+      "answer": "Wall-mounted systems save floor space and support heavier cats since weight goes to wall studs. They're ideal for apartments but require drilling. Our #7 pick bridges the gap with a compact design + wall anchors."
+    },
+    {
+      "question": "What's the best cat tree for an apartment?",
+      "answer": "Our #7 pick (37\" Modern with Anti-Tip Kit) — compact footprint, included wall anchors, and designed specifically for small spaces. At $197.99, it's also our most affordable option."
+    },
+    {
+      "question": "How much should I spend on a cat tree for a large cat?",
+      "answer": "Expect $150–$320 for a quality heavy-duty tree. Anything under $100 likely uses particleboard and 3-inch posts that won't handle large-breed cats. Our picks range from $197.99 to $318.99."
+    },
+    {
+      "question": "Do large cats need scratching posts or scratching boards?",
+      "answer": "Both! Scratching posts satisfy the stretch-and-scratch instinct, while boards provide a horizontal scratching surface. Our #4 pick includes both for maximum enrichment."
+    },
+    {
+      "question": "How do I assemble a large cat tree?",
+      "answer": "All our picks include pre-drilled holes and step-by-step instructions. Plan for 45–90 minutes with 2 people. Use the included hardware (always metal, not plastic) and tighten all bolts before use."
+    },
+    {
+      "question": "Are wooden cat trees more stable than fabric-covered ones?",
+      "answer": "Yes — solid wood is 2–3x denser than particleboard, lowering the center of gravity and absorbing more impact force. Our #5 (Pear Wood) and #6 (Modern Wooden) picks demonstrate this advantage."
+    },
+    {
+      "question": "What size base prevents cat tree tipping?",
+      "answer": "Base width should be at least ⅓ of the tree's total height. For a 6-foot tree, that's a 24-inch minimum base. Our top picks exceed this by 40–80% for extra margin of safety."
+    },
+    {
+      "question": "Can overweight cats use standard cat trees?",
+      "answer": "No — standard trees are rated for 10–12 lbs. Cats over 15 lbs need heavy-duty construction. Using a standard tree risks wobbling, tipping, and collapse. All picks in this guide handle 25+ lbs."
+    },
+    {
+      "question": "How do I choose between a cat tree and cat wall shelves?",
+      "answer": "Cat trees are freestanding and require no installation. Wall shelves support more weight but need drilling. For renters, a cat tree with wall anchors (like our #7) is the best compromise — stability without permanent modification."
+    }
   ]
 }

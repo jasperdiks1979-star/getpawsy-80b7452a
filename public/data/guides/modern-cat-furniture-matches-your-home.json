@@ -7,64 +7,119 @@
   "excerpt": "Cat furniture that doesn't look like cat furniture. Modern cat trees, litter box enclosures, and scratching posts that blend with your home décor.",
   "quickAnswer": "The best modern cat furniture combines enrichment function with home décor aesthetics. Top pick: the Modern Wood Cat Tree ($205.99) with natural pear wood and clean Scandinavian lines. For litter, the Walnut End Table Enclosure ($191.99) doubles as functional furniture.",
   "category": "Cat Furniture",
-  "keywords": ["modern cat furniture", "cat furniture that matches home", "stylish cat tree", "modern cat tree", "designer cat furniture"],
+  "keywords": [
+    "modern cat furniture",
+    "cat furniture that matches home",
+    "stylish cat tree",
+    "modern cat tree",
+    "designer cat furniture"
+  ],
   "publishedAt": "2026-02-28",
   "updatedAt": "2026-02-28",
   "featuredImage": "/images/guides/modern-cat-furniture-2026.jpg",
   "readingTime": 11,
-  "relatedCategories": ["cat-trees-and-condos", "cat-litter-boxes", "cat-scratching-posts"],
-  "trustLines": ["Design-conscious picks tested in real homes", "Function + aesthetics scored", "Updated February 2026"],
+  "relatedCategories": [
+    "cat-trees-and-condos",
+    "cat-litter-boxes",
+    "cat-scratching-posts"
+  ],
+  "trustLines": [
+    "Design-conscious picks tested in real homes",
+    "Function + aesthetics scored",
+    "Updated February 2026"
+  ],
   "quickRecommendation": {
-    "bestOverall": { "name": "Modern Wood Cat Tree", "reason": "Natural pear wood with Scandinavian design. Hammock + scratching post + removable mat.", "link": "/product/modern-indoor-cat-tree-wooden-cat-tower-suitable-for-cats-includes-hammock-scratching-post-and-remov" },
-    "bestBudget": { "name": "Compass Scratching Post", "reason": "Clean modern design with interactive ball at $46.99. Space-efficient.", "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with" },
-    "bestPremium": { "name": "Flower Cat Tree", "reason": "Statement piece with floral design. Premium enrichment that doubles as art.", "link": "/product/flower-cat-tree-no-shipments-on-weekends-1" }
+    "bestOverall": {
+      "name": "Modern Wood Cat Tree",
+      "reason": "Natural pear wood with Scandinavian design. Hammock + scratching post + removable mat.",
+      "link": "/product/modern-indoor-cat-tree-wooden-cat-tower-suitable-for-cats-includes-hammock-scratching-post-and-remov"
+    },
+    "bestBudget": {
+      "name": "Compass Scratching Post",
+      "reason": "Clean modern design with interactive ball at $46.99. Space-efficient.",
+      "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with"
+    },
+    "bestPremium": {
+      "name": "Flower Cat Tree",
+      "reason": "Statement piece with floral design. Premium enrichment that doubles as art.",
+      "link": "/product/flower-cat-tree-no-shipments-on-weekends-1"
+    }
   },
   "comparisonProducts": [
     {
       "name": "Modern Wood Cat Tree",
-      "image": "https://cf.cjdropshipping.com/0c0c67e1-8232-4496-bdc3-47c865223d05.png",
+      "image": "https://getpawsy.pet/images/products/5fbe1444-0287-4f83-ba82-3a2396e58bfc-10.jpg",
       "price": "$205.99",
       "description": "Natural pear wood cat tree with Scandinavian design. Hammock, scratching post, removable mat.",
-      "advantages": ["Natural wood", "Scandinavian design", "Hammock", "Removable mat"],
+      "advantages": [
+        "Natural wood",
+        "Scandinavian design",
+        "Hammock",
+        "Removable mat"
+      ],
       "link": "/product/modern-indoor-cat-tree-wooden-cat-tower-suitable-for-cats-includes-hammock-scratching-post-and-remov",
       "badge": "Best Modern Design",
       "availability": "InStock"
     },
     {
       "name": "65\" Corner Modern Cat Tree",
-      "image": "https://cf.cjdropshipping.com/17664480/ea7070be-244f-44dc-9a95-adcac1301b55.jpg",
+      "image": "https://getpawsy.pet/images/products/64b2bb00-2064-4992-9c06-bdc263421dc3-10.jpg",
       "price": "$218.99",
       "description": "Cream white corner cat tree with clean lines, sisal posts, and minimal footprint.",
-      "advantages": ["Corner design", "Cream white", "65\" tall", "Minimal footprint"],
+      "advantages": [
+        "Corner design",
+        "Cream white",
+        "65\" tall",
+        "Minimal footprint"
+      ],
       "link": "/product/65-corner-modern-cat-tree-tall-for-climbing-large-multilevel-cat-tower-with-scratching-posts-small-f",
       "badge": "Best for Corners",
       "availability": "InStock"
     },
     {
       "name": "Walnut End Table Enclosure",
-      "image": "https://cf.cjdropshipping.com/17664480/d9c4e700-0aed-4ed1-bb3f-09697d57d069.jpg",
+      "image": "https://getpawsy.pet/images/products/6555456c-cb10-44c3-9a3c-0703bef6bc10-2.jpg",
       "price": "$191.99",
       "description": "Walnut brown litter box enclosure that doubles as an end table with scratching board.",
-      "advantages": ["End table function", "Walnut finish", "Scratching board", "Hidden litter"],
+      "advantages": [
+        "End table function",
+        "Walnut finish",
+        "Scratching board",
+        "Hidden litter"
+      ],
       "link": "/product/cat-litter-box-enclosure-with-scratching-board-cat-washroom-end-side-table-31-5-x-19-x-20-walnut-bro",
       "badge": "Best Litter Furniture",
       "availability": "InStock"
     },
     {
       "name": "Flower Cat Tree",
-      "image": "https://cf.cjdropshipping.com/17689536/fa631739-871c-4f92-94a0-1a2d4163c7a0.jpg",
+      "image": "https://getpawsy.pet/images/products/6598f55b-30fe-4481-8a42-4fc1baac109b-2.jpg",
       "price": "$604.99",
       "description": "Statement floral cat tree. A functional art piece that provides full enrichment.",
-      "advantages": ["Art piece", "Floral design", "Full enrichment", "Statement furniture"],
+      "advantages": [
+        "Art piece",
+        "Floral design",
+        "Full enrichment",
+        "Statement furniture"
+      ],
       "link": "/product/flower-cat-tree-no-shipments-on-weekends-1",
       "badge": "Best Statement Piece",
       "availability": "InStock"
     }
   ],
   "jumpNav": [
-    { "label": "Top Picks", "anchor": "top-picks" },
-    { "label": "Style Guide", "anchor": "style-guide" },
-    { "label": "FAQs", "anchor": "faqs" }
+    {
+      "label": "Top Picks",
+      "anchor": "top-picks"
+    },
+    {
+      "label": "Style Guide",
+      "anchor": "style-guide"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faqs"
+    }
   ],
   "sections": [
     {
@@ -75,7 +130,10 @@
       "heading": "How to Match Cat Furniture to Your Décor",
       "content": "### Minimalist / Scandinavian\nChoose: Natural wood cat trees, white/cream colors, clean geometric shapes.\nTop pick: [Modern Wood Cat Tree ($205.99)](/product/modern-indoor-cat-tree-wooden-cat-tower-suitable-for-cats-includes-hammock-scratching-post-and-remov)\n\n### Mid-Century Modern\nChoose: Walnut finishes, tapered legs, organic curves.\nTop pick: [Walnut End Table Enclosure ($191.99)](/product/cat-litter-box-enclosure-with-scratching-board-cat-washroom-end-side-table-31-5-x-19-x-20-walnut-bro)\n\n### Farmhouse\nChoose: White painted wood, barn door details, distressed finishes.\nTop pick: [Barn Door Litter Enclosure ($176.99)](/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white)\n\n### Eclectic / Maximalist\nChoose: Bold statement pieces, unique shapes, artistic designs.\nTop pick: [Flower Cat Tree ($604.99)](/product/flower-cat-tree-no-shipments-on-weekends-1)\n\nFor complete indoor enrichment, see our [Indoor Cat Enrichment Guide](/guides/best-cat-enrichment-ideas-indoor-cats-2026)."
     },
-    { "heading": "FAQ", "content": "" }
+    {
+      "heading": "FAQ",
+      "content": ""
+    }
   ],
   "faq": [
     {

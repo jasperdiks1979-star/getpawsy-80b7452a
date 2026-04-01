@@ -7,44 +7,88 @@
   "excerpt": "We tested interactive cat toys with real indoor cats. Scratching posts with balls, puzzle feeders, and automated toys ranked by engagement and durability.",
   "quickAnswer": "The best interactive cat toy is a scratching post with an attached ball or mouse — it provides solo enrichment when you're not home. For interactive play, wand toys remain the gold standard. Budget pick: the Compass Cat Scratching Post at $46.99.",
   "category": "Cat Toys",
-  "keywords": ["best interactive cat toys", "cat toys that work", "interactive cat toys", "best cat toys 2026", "cat enrichment toys"],
+  "keywords": [
+    "best interactive cat toys",
+    "cat toys that work",
+    "interactive cat toys",
+    "best cat toys 2026",
+    "cat enrichment toys"
+  ],
   "publishedAt": "2026-02-28",
   "updatedAt": "2026-02-28",
   "featuredImage": "/images/guides/interactive-cat-toys-2026.jpg",
   "readingTime": 10,
-  "relatedCategories": ["cat-toys", "cat-scratching-posts"],
-  "trustLines": ["Tested with 8 indoor cats over 30 days", "Durability and engagement scored", "Updated February 2026"],
+  "relatedCategories": [
+    "cat-toys",
+    "cat-scratching-posts"
+  ],
+  "trustLines": [
+    "Tested with 8 indoor cats over 30 days",
+    "Durability and engagement scored",
+    "Updated February 2026"
+  ],
   "quickRecommendation": {
-    "bestOverall": { "name": "Compass Cat Scratching Post with Ball", "reason": "Scratching post + interactive ball + mouse toy. Triple enrichment in one product.", "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with" },
-    "bestBudget": { "name": "Compass Cat Scratching Post with Ball", "reason": "At $46.99, it combines scratching, batting, and pouncing enrichment.", "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with" },
-    "bestPremium": { "name": "4.6ft Cat Tree with Interactive Toy", "reason": "Full cat tree with built-in interactive toy, 11 scratching posts, and 3 hiding condos.", "link": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-" }
+    "bestOverall": {
+      "name": "Compass Cat Scratching Post with Ball",
+      "reason": "Scratching post + interactive ball + mouse toy. Triple enrichment in one product.",
+      "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with"
+    },
+    "bestBudget": {
+      "name": "Compass Cat Scratching Post with Ball",
+      "reason": "At $46.99, it combines scratching, batting, and pouncing enrichment.",
+      "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with"
+    },
+    "bestPremium": {
+      "name": "4.6ft Cat Tree with Interactive Toy",
+      "reason": "Full cat tree with built-in interactive toy, 11 scratching posts, and 3 hiding condos.",
+      "link": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-"
+    }
   },
   "comparisonProducts": [
     {
       "name": "Compass Scratching Post with Ball",
-      "image": "https://cf.cjdropshipping.com/1dc3a846-5b6a-497b-9455-9873a8752146.png",
+      "image": "https://getpawsy.pet/images/products/35df9d09-a87f-483c-b5d7-261761ba865a-10.jpg",
       "price": "$46.99",
       "description": "Interactive scratching post with rolling ball and dangling mouse toy. Triple enrichment.",
-      "advantages": ["Scratching + play", "Rolling ball", "Mouse toy", "Space-efficient"],
+      "advantages": [
+        "Scratching + play",
+        "Rolling ball",
+        "Mouse toy",
+        "Space-efficient"
+      ],
       "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "4.6ft Cat Tree with Toy",
-      "image": "https://cf.cjdropshipping.com/2657dac1-3bd9-4582-82ca-4d9566edca31.png",
+      "image": "https://getpawsy.pet/images/products/3be1e101-d58f-4762-8864-72e1c65327ee-2.jpg",
       "price": "$318.99",
       "description": "Full cat tree tower with interactive toy, 11 scratching posts, condos, and hammocks.",
-      "advantages": ["Built-in toy", "11 scratching posts", "3 condos", "Maximum enrichment"],
+      "advantages": [
+        "Built-in toy",
+        "11 scratching posts",
+        "3 condos",
+        "Maximum enrichment"
+      ],
       "link": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-",
       "badge": "Most Complete",
       "availability": "InStock"
     }
   ],
   "jumpNav": [
-    { "label": "Top Picks", "anchor": "top-picks" },
-    { "label": "What Works", "anchor": "what-actually-works" },
-    { "label": "FAQs", "anchor": "faqs" }
+    {
+      "label": "Top Picks",
+      "anchor": "top-picks"
+    },
+    {
+      "label": "What Works",
+      "anchor": "what-actually-works"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faqs"
+    }
   ],
   "sections": [
     {
@@ -55,7 +99,10 @@
       "heading": "Solo vs Interactive Play",
       "content": "### Solo Play (When You're Not Home)\nSolo toys should be safe for unsupervised play. Best options:\n- Scratching posts with attached ball toys\n- Window perches (bird-watching = cat TV)\n- Treat-dispensing balls\n\nThe [Compass Scratching Post with Ball](/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with) is ideal for solo enrichment — the rolling ball and dangling mouse provide batting and pouncing stimulation without human involvement.\n\n### Interactive Play (When You're Home)\nInteractive play is irreplaceable. 15 minutes of wand-toy play provides more enrichment than 8 hours of solo toy access.\n\n**Play schedule for indoor cats:**\n- Morning: 10–15 minutes of wand toy play\n- Evening: 10–15 minutes of wand toy play\n- Between: Solo toy access + puzzle feeder\n\nBrowse our full [cat toy collection](/collections/cat-toys)."
     },
-    { "heading": "FAQ", "content": "" }
+    {
+      "heading": "FAQ",
+      "content": ""
+    }
   ],
   "faq": [
     {

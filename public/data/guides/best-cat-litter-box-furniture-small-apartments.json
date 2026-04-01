@@ -7,64 +7,117 @@
   "excerpt": "We tested 6 litter box furniture enclosures for small apartments. Hidden cabinets and end tables ranked by odor control, size, and style.",
   "quickAnswer": "The best litter box furniture for small apartments is the Cat Litter Box Enclosure with Barn Door at $176.99 — it looks like farmhouse furniture, fits standard litter boxes, and includes a built-in cat entrance.",
   "category": "Cat Furniture",
-  "keywords": ["cat litter box furniture", "hidden litter box", "litter box enclosure", "litter box furniture small apartment", "cat litter box cabinet"],
+  "keywords": [
+    "cat litter box furniture",
+    "hidden litter box",
+    "litter box enclosure",
+    "litter box furniture small apartment",
+    "cat litter box cabinet"
+  ],
   "publishedAt": "2026-02-28",
   "updatedAt": "2026-02-28",
   "featuredImage": "/images/guides/litter-box-furniture-2026.jpg",
   "readingTime": 12,
-  "relatedCategories": ["cat-litter-boxes"],
-  "trustLines": ["6 enclosures tested in real apartments", "Odor control tested over 14 days", "Updated February 2026"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
+  "trustLines": [
+    "6 enclosures tested in real apartments",
+    "Odor control tested over 14 days",
+    "Updated February 2026"
+  ],
   "quickRecommendation": {
-    "bestOverall": { "name": "Litter Box Enclosure with Barn Door", "reason": "Farmhouse style, barn door access, fits most litter boxes. Perfect balance of style and function.", "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white" },
-    "bestBudget": { "name": "Covered Cat Litter Box (Gray)", "reason": "Full enclosure with deodorizing bags at under $90.", "link": "/product/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g" },
-    "bestPremium": { "name": "32\" Litter Box Enclosure with Scratching Mat", "reason": "Largest enclosure with built-in scratching mat. Premium quality at $206.99.", "link": "/product/32-cat-litter-box-enclosure-with-scratching-mat-cat-entrance-fit-most-of-cat-and-litter-box-distress" }
+    "bestOverall": {
+      "name": "Litter Box Enclosure with Barn Door",
+      "reason": "Farmhouse style, barn door access, fits most litter boxes. Perfect balance of style and function.",
+      "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white"
+    },
+    "bestBudget": {
+      "name": "Covered Cat Litter Box (Gray)",
+      "reason": "Full enclosure with deodorizing bags at under $90.",
+      "link": "/product/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g"
+    },
+    "bestPremium": {
+      "name": "32\" Litter Box Enclosure with Scratching Mat",
+      "reason": "Largest enclosure with built-in scratching mat. Premium quality at $206.99.",
+      "link": "/product/32-cat-litter-box-enclosure-with-scratching-mat-cat-entrance-fit-most-of-cat-and-litter-box-distress"
+    }
   },
   "comparisonProducts": [
     {
       "name": "Barn Door Litter Box Enclosure",
-      "image": "https://cf.cjdropshipping.com/17664480/f56eb834-2643-4b70-884a-fbf1330a1d82.jpg",
+      "image": "https://getpawsy.pet/images/products/0478e495-e2bf-402e-9c78-9b6c4903b3a3-10.jpg",
       "price": "$176.99",
       "description": "Farmhouse-style enclosure with barn door, cat entrance hole. 31.5\" x 21\" x 20\". White.",
-      "advantages": ["Barn door access", "Cat entrance hole", "Fits standard litter boxes", "Farmhouse style"],
+      "advantages": [
+        "Barn door access",
+        "Cat entrance hole",
+        "Fits standard litter boxes",
+        "Farmhouse style"
+      ],
       "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "32\" Enclosure with Scratching Mat",
-      "image": "https://cf.cjdropshipping.com/17664480/b5264912-fbbc-4d47-b4a7-1bc28a5aee29.jpg",
+      "image": "https://getpawsy.pet/images/products/06f5e022-4ce1-4d6d-bb68-b4d9b05e96c8-2.jpg",
       "price": "$206.99",
       "description": "Extra-large enclosure with built-in scratching mat. Fits most cat and litter box sizes.",
-      "advantages": ["32\" wide", "Scratching mat", "Fits large boxes", "Dual function"],
+      "advantages": [
+        "32\" wide",
+        "Scratching mat",
+        "Fits large boxes",
+        "Dual function"
+      ],
       "link": "/product/32-cat-litter-box-enclosure-with-scratching-mat-cat-entrance-fit-most-of-cat-and-litter-box-distress",
       "badge": "Best Premium",
       "availability": "InStock"
     },
     {
       "name": "Walnut End Table Enclosure",
-      "image": "https://cf.cjdropshipping.com/17664480/d9c4e700-0aed-4ed1-bb3f-09697d57d069.jpg",
+      "image": "https://getpawsy.pet/images/products/0b041496-f7a3-480c-83bb-fdba8ae840f3-2.jpg",
       "price": "$191.99",
       "description": "Walnut brown enclosure that doubles as an end table with scratching board. 31.5\" x 19\" x 20\".",
-      "advantages": ["End table function", "Walnut finish", "Scratching board", "Modern design"],
+      "advantages": [
+        "End table function",
+        "Walnut finish",
+        "Scratching board",
+        "Modern design"
+      ],
       "link": "/product/cat-litter-box-enclosure-with-scratching-board-cat-washroom-end-side-table-31-5-x-19-x-20-walnut-bro",
       "badge": "Best Design",
       "availability": "InStock"
     },
     {
       "name": "Covered Litter Box with Drawer",
-      "image": "https://cf.cjdropshipping.com/17664480/44b77a81-2055-4104-98f9-9b0db7eb3dd8.jpg",
+      "image": "https://getpawsy.pet/images/products/11ad4a14-5d71-483c-a6db-9df9d7c48b86-2.jpg",
       "price": "$89.49",
       "description": "Enclosed litter box with pull-out drawer, top entry, and deodorizing bags for odor control.",
-      "advantages": ["Under $90", "Pull-out drawer", "Top entry", "Deodorizing bags"],
+      "advantages": [
+        "Under $90",
+        "Pull-out drawer",
+        "Top entry",
+        "Deodorizing bags"
+      ],
       "link": "/product/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g",
       "badge": "Best Budget",
       "availability": "InStock"
     }
   ],
   "jumpNav": [
-    { "label": "Top Picks", "anchor": "top-picks" },
-    { "label": "How to Choose", "anchor": "how-to-choose" },
-    { "label": "FAQs", "anchor": "faqs" }
+    {
+      "label": "Top Picks",
+      "anchor": "top-picks"
+    },
+    {
+      "label": "How to Choose",
+      "anchor": "how-to-choose"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faqs"
+    }
   ],
   "sections": [
     {
@@ -75,7 +128,10 @@
       "heading": "How to Choose Litter Box Furniture",
       "content": "### Size Matters\nMeasure your existing litter box (or the one you plan to buy) and add 2–3 inches on each side for cat maneuverability. The furniture should be roomy enough that your cat can turn around comfortably inside.\n\n### Ventilation\nEnclosed doesn't mean airtight. Good litter box furniture has ventilation holes, a cat entrance, and ideally a deodorizing compartment. Avoid completely sealed designs — they trap moisture and make odors worse.\n\n### Cleaning Access\nYou'll scoop daily, so easy access is critical. Look for:\n- **Barn doors** or wide front panels that open fully\n- **Lift-top lids** for quick scooping\n- **Pull-out drawers** for tray-style litter boxes\n\n### Material\n- **Engineered wood (MDF)**: Most common. Durable and affordable. Choose moisture-resistant finishes.\n- **Solid wood**: Premium, more durable, but heavier and more expensive.\n- **Avoid**: Unfinished wood (absorbs urine) and thin particleboard (warps from moisture).\n\nBrowse our full [litter box furniture collection](/collections/cat-litter-boxes)."
     },
-    { "heading": "FAQ", "content": "" }
+    {
+      "heading": "FAQ",
+      "content": ""
+    }
   ],
   "faq": [
     {
