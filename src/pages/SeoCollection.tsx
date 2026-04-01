@@ -516,11 +516,11 @@ const SeoCollection = () => {
     return <Navigate to="/collections/all" replace />;
   }
 
-  // Thin collection guard: redirect thin collections to /collections/all
-  // NEVER redirect /collections/all itself — it must always render
+  // Thin collection guard: show "no products found" message instead of redirecting to /collections/all
+  // This prevents showing wrong products when a collection has few items
   const isAllRoute = rawSlug === 'all' || slug === 'all';
   const safeSlugs = new Set(['all', 'multi-pet', 'dog', 'cat', 'dogs', 'cats']);
-  const isThinCollection = !isAllRoute && !productsLoading && products.length < 3 && !safeSlugs.has(slug || '') && !safeSlugs.has(rawSlug || '');
+  const isThinCollection = !isAllRoute && !productsLoading && products.length === 0 && !safeSlugs.has(slug || '') && !safeSlugs.has(rawSlug || '');
   if (isThinCollection) {
     return <Navigate to="/collections/all" replace />;
   }
