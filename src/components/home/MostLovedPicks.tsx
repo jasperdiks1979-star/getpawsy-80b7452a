@@ -33,7 +33,7 @@ const HERO_PRODUCTS = [
     subtitle: 'Play, Scratch & Nap in One Adorable Design',
     price: 88.99,
     compareAt: 109.99,
-    image: 'https://oss-cf.cjdropshipping.com/product/2026/01/15/06/41c2bcde-5615-4832-8d42-0b10485bc94c_trans.jpeg',
+    image: '/images/products/cactus-cat-tree.jpg',
     badge: '❤️ Fan Favorite',
     benefit: "Space-saving design cats can't resist",
   },
