@@ -47,7 +47,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Outdoor Dog Kennel with Roof & Adjustable Bowls',
     price: 149.99,
     compareAt: 187.49,
-    image: 'https://cf.cjdropshipping.com/78cdcee3-dac2-4fcf-8576-bd2f252e62df.jpg',
+    image: '/images/products/outdoor-dog-kennel.jpg',
     benefit: 'Weather-resistant with built-in feeders',
     pet: 'dog',
   },
