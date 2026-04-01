@@ -538,8 +538,8 @@ async function buildMerchantDiagnostics(): Promise<string> {
     if (name.length < 40) {
       issues.push(`    <issue type="short_title" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" length="${name.length}" />`);
     }
-    if (!p.stock || p.stock <= 0) {
-      issues.push(`    <issue type="out_of_stock" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" stock="${p.stock ?? 'null'}" />`);
+    if (p.is_active === false) {
+      issues.push(`    <issue type="inactive_product" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
     }
     if (!p.compare_at_price || p.compare_at_price <= 0) {
       issues.push(`    <issue type="missing_compare_at_price" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
