@@ -427,7 +427,7 @@ const Bestsellers = () => {
               Looking for the <strong>best pet products</strong> in 2026? Our curated list of <strong>top-rated pet supplies</strong> is ranked monthly by verified US pet owners based on real reviews, repeat purchases, and satisfaction ratings. From <a href="/collections/cat-trees-and-condos" className="text-primary hover:underline">cat trees and condos</a> to <a href="/collections/dog-toys" className="text-primary hover:underline">interactive dog toys</a>, every product on this page has been tested and approved by real pet families.
             </p>
             <p>
-              Whether you're shopping for a new <a href="/product/automatic-cat-litter-box-self-cleaning-app-control" className="text-primary hover:underline">self-cleaning cat litter box</a>, an orthopedic dog bed, or enrichment toys for your indoor cat — our <strong>best sellers for dogs and cats</strong> deliver quality, value, and fast US shipping on orders over $35.
+              Whether you're shopping for a new <a href="/product/automatic-cat-litter-box-self-cleaning-app-control" className="text-primary hover:underline">self-cleaning cat litter box</a>, an orthopedic dog bed, or enrichment toys for your indoor cat — our <strong>best sellers for dogs and cats</strong> deliver quality, value, and free US shipping on orders over $35.
             </p>
           </div>
         </div>
