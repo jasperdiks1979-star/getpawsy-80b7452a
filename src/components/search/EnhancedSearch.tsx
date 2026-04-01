@@ -44,11 +44,11 @@ const RECENT_SEARCHES_KEY = 'pawsy-recent-searches';
 const MAX_RECENT_SEARCHES = 5;
 
 const popularSearches = [
-  'Cat toys',
+  'Cat tree',
   'Dog bed',
-  'Food bowl',
+  'Litter box',
   'Scratching post',
-  'Snacks',
+  'Dog harness',
 ];
 
 export const EnhancedSearch = ({
@@ -83,16 +83,15 @@ export const EnhancedSearch = ({
     }
   }, []);
 
-  // Fetch categories
+  // Load validated categories from canonical registry (not DB)
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('id, name, slug')
-        .limit(6);
-      if (data) setCategories(data);
-    };
-    fetchCategories();
+    import('@/lib/canonical-category-registry').then(({ getCategoriesForSurface }) => {
+      const searchCats = getCategoriesForSurface('search')
+        .filter(c => c.parentKey !== null) // Only subcategories for search suggestions
+        .slice(0, 6)
+        .map(c => ({ id: c.key, name: c.label, slug: c.key }));
+      setCategories(searchCats);
+    });
   }, []);
 
   // Save recent search
@@ -200,7 +199,7 @@ export const EnhancedSearch = ({
     setIsOpen(false);
     setQuery('');
     onClose?.();
-    navigate(`/collections/${encodeURIComponent(category.slug)}`);
+    navigate(`/collections/${category.slug}`);
   };
 
   // Click outside to close
@@ -371,7 +370,7 @@ export const EnhancedSearch = ({
                         className="h-6 text-xs text-muted-foreground hover:text-foreground"
                         onClick={clearRecentSearches}
                       >
-                        Wissen
+                        Clear
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -415,7 +414,7 @@ export const EnhancedSearch = ({
                   <div>
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
                       <Tag className="w-4 h-4" />
-                      Categorieën
+                      Categories
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {categories.slice(0, 6).map((category) => (

@@ -5,8 +5,8 @@ import categoryBestsellers from '@/assets/category-bestsellers.jpg';
 import categoryNew from '@/assets/category-new.jpg';
 
 const CATEGORIES = [
-  { label: 'Dog Essentials', href: '/dog', image: categoryDogs },
-  { label: 'Cat Essentials', href: '/cat', image: categoryCats },
+  { label: 'Dog Essentials', href: '/collections/dogs', image: categoryDogs },
+  { label: 'Cat Essentials', href: '/collections/cats', image: categoryCats },
   { label: 'Top Picks', href: '/bestsellers', image: categoryBestsellers },
   { label: 'New Arrivals', href: '/products', image: categoryNew },
 ] as const;

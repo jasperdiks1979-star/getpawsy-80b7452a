@@ -17,8 +17,7 @@ import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Star from 'lucide-react/dist/esm/icons/star';
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 // framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
-import { useQuery } from '@tanstack/react-query';
-import { traceMount, traceEffect, traceStateSet, traceQuery } from '@/lib/lcp-render-trace';
+import { traceMount, traceEffect, traceStateSet } from '@/lib/lcp-render-trace';
 import { useCart } from '@/contexts/CartContext';
 import { useCartIconRef } from '@/contexts/CartAnimationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,17 +36,16 @@ const EnhancedSearch = lazy(() => import('@/components/search/EnhancedSearch').t
 import { AnimatedHamburger } from '@/components/ui/animated-hamburger';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FloatingCartPreview } from '@/components/cart/FloatingCartPreview';
-// ⚡ supabase NOT imported at top-level — dynamic import in queryFn keeps ~138KB off critical path
-const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
+import { buildCategoryTree, type CategoryTreeNode } from '@/lib/canonical-category-registry';
 import logoIcon from '@/assets/logo-getpawsy.png';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/collections/dog', label: 'Dogs' },
+  { href: '/collections/dogs', label: 'Dogs' },
   { href: '/collections/dog-toys', label: 'Dog Toys' },
   { href: '/collections/dog-beds', label: 'Dog Beds' },
   { href: '/collections/dog-harness', label: 'Harnesses' },
-  { href: '/collections/cat', label: 'Cats' },
+  { href: '/collections/cats', label: 'Cats' },
   { href: '/collections/cat-toys', label: 'Cat Toys' },
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
   { href: '/collections/cat-scratching-posts', label: 'Scratching' },
@@ -60,34 +58,20 @@ const promoItems = [
   { label: 'New Arrivals', icon: Gift, href: '/products' },
 ];
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parent_id: string | null;
-  image_url: string | null;
-  display_order: number | null;
-  product_count?: number;
-}
-
-interface CategoryWithChildren extends Category {
-  children: CategoryWithChildren[];
-}
-
-// Category item component for mega menu
+// Category item component for mega menu (uses canonical registry)
 const MegaMenuCategoryItem = ({ 
   category, 
   onClose,
   expandedCategory,
   setExpandedCategory
 }: { 
-  category: CategoryWithChildren; 
+  category: CategoryTreeNode; 
   onClose: () => void;
   expandedCategory: string | null;
   setExpandedCategory: (id: string | null) => void;
 }) => {
   const hasChildren = category.children.length > 0;
-  const isExpanded = expandedCategory === category.id;
+  const isExpanded = expandedCategory === category.key;
 
   return (
     <div className="relative">
@@ -95,27 +79,21 @@ const MegaMenuCategoryItem = ({
         className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors cursor-pointer group"
         onClick={() => {
           if (hasChildren) {
-            setExpandedCategory(isExpanded ? null : category.id);
+            setExpandedCategory(isExpanded ? null : category.key);
           }
         }}
         onMouseEnter={() => {
           if (hasChildren) {
-            setExpandedCategory(category.id);
+            setExpandedCategory(category.key);
           }
         }}
       >
-        {category.image_url && (
-          <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-            <img 
-              src={category.image_url} 
-              alt={category.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+        <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-primary/10 flex items-center justify-center text-lg">
+          {category.icon || '📦'}
+        </div>
         <div className="flex-1 min-w-0">
           <Link
-            to={`/collections/${encodeURIComponent(category.slug)}`}
+            to={category.url}
             onClick={(e) => {
               if (!hasChildren) {
                 onClose();
@@ -125,56 +103,35 @@ const MegaMenuCategoryItem = ({
             }}
             className="font-medium text-foreground group-hover:text-primary transition-colors block truncate"
           >
-            {category.name}
+            {category.label}
           </Link>
-          {category.product_count !== undefined && category.product_count > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {category.product_count} products
-            </p>
-          )}
         </div>
         {hasChildren && (
           <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
         )}
       </div>
 
-      {/* Subcategories dropdown — CSS animation */}
+      {/* Subcategories dropdown */}
       {hasChildren && isExpanded && (
-        <div
-          className="pl-4 overflow-hidden animate-[slideDown_0.2s_ease-out]"
-        >
+        <div className="pl-4 overflow-hidden animate-[slideDown_0.2s_ease-out]">
           <div className="border-l-2 border-muted pl-2 py-1 space-y-1">
-            {/* Link to parent category */}
             <Link
-              to={`/collections/${encodeURIComponent(category.slug)}`}
+              to={category.url}
               onClick={onClose}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-primary font-medium"
             >
-              All {category.name}
+              All {category.label}
               <ArrowRight className="w-3 h-3" />
             </Link>
             {category.children.map((child) => (
               <Link
-                key={child.id}
-                to={`/collections/${encodeURIComponent(child.slug)}`}
+                key={child.key}
+                to={child.url}
                 onClick={onClose}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
               >
-                {child.image_url && (
-                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0">
-                    <img 
-                      src={child.image_url} 
-                      alt={child.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <span className="truncate">{child.name}</span>
-                {child.product_count !== undefined && child.product_count > 0 && (
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    ({child.product_count})
-                  </span>
-                )}
+                <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm">{child.icon || '📦'}</span>
+                <span className="truncate">{child.label}</span>
               </Link>
             ))}
           </div>
@@ -184,12 +141,12 @@ const MegaMenuCategoryItem = ({
   );
 };
 
-// Mobile category item with accordion
+// Mobile category item with accordion (uses canonical registry)
 const MobileCategoryItem = ({ 
   category, 
   onClose 
 }: { 
-  category: CategoryWithChildren; 
+  category: CategoryTreeNode; 
   onClose: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -201,29 +158,20 @@ const MobileCategoryItem = ({
         className="flex items-center gap-3 px-4 py-3 cursor-pointer"
         onClick={() => hasChildren && setIsExpanded(!isExpanded)}
       >
-        {category.image_url && (
-          <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-            <img 
-              src={category.image_url} 
-              alt={category.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+        <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-primary/10 flex items-center justify-center text-lg">
+          {category.icon || '📦'}
+        </div>
         <div className="flex-1 min-w-0">
           {hasChildren ? (
-            <span className="font-medium">{category.name}</span>
+            <span className="font-medium">{category.label}</span>
           ) : (
             <Link
-              to={`/collections/${encodeURIComponent(category.slug)}`}
+              to={category.url}
               onClick={onClose}
               className="font-medium block"
             >
-              {category.name}
+              {category.label}
             </Link>
-          )}
-          {category.product_count !== undefined && category.product_count > 0 && (
-            <p className="text-xs text-muted-foreground">{category.product_count} products</p>
           )}
         </div>
         {hasChildren && (
@@ -232,40 +180,25 @@ const MobileCategoryItem = ({
       </div>
 
       {hasChildren && isExpanded && (
-        <div
-          className="overflow-hidden bg-muted/30 animate-[slideDown_0.2s_ease-out]"
-        >
+        <div className="overflow-hidden bg-muted/30 animate-[slideDown_0.2s_ease-out]">
           <div className="py-2 px-4 space-y-1">
             <Link
-              to={`/collections/${encodeURIComponent(category.slug)}`}
+              to={category.url}
               onClick={onClose}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
             >
-              All {category.name}
+              All {category.label}
               <ArrowRight className="w-3 h-3" />
             </Link>
             {category.children.map((child) => (
               <Link
-                key={child.id}
-                to={`/collections/${encodeURIComponent(child.slug)}`}
+                key={child.key}
+                to={child.url}
                 onClick={onClose}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
               >
-                {child.image_url && (
-                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0">
-                    <img 
-                      src={child.image_url} 
-                      alt={child.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <span className="truncate flex-1">{child.name}</span>
-                {child.product_count !== undefined && child.product_count > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    ({child.product_count})
-                  </span>
-                )}
+                <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm">{child.icon || '📦'}</span>
+                <span className="truncate flex-1">{child.label}</span>
               </Link>
             ))}
           </div>
@@ -294,37 +227,8 @@ export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Track when the navbar-categories query fires
-  const { data: categories = [] } = useQuery({
-    queryKey: ['navbar-categories'],
-    queryFn: async () => {
-      traceQuery('Navbar', 'navbar-categories', 'started');
-      const supabase = await getSupabase();
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id, name, slug, parent_id, image_url, display_order')
-        .order('display_order', { ascending: true });
-
-      if (categoriesError) throw categoriesError;
-      traceQuery('Navbar', 'navbar-categories', 'resolved');
-      return (categoriesData || []) as Category[];
-    },
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-  });
-
-  const categoryTree = useMemo(() => {
-    const buildTree = (parentId: string | null): CategoryWithChildren[] => {
-      return categories
-        .filter((cat) => cat.parent_id === parentId)
-        .sort((a, b) => (a.display_order || 999) - (b.display_order || 999))
-        .map((cat) => ({
-          ...cat,
-          children: buildTree(cat.id),
-        }));
-    };
-    return buildTree(null);
-  }, [categories]);
+  // Category tree from canonical registry — no DB query needed
+  const categoryTree = useMemo(() => buildCategoryTree('menu'), []);
 
   // ── Effect 1: scroll listener (fires immediately on mount) ──────────────
   useEffect(() => {
@@ -655,33 +559,8 @@ export const Navbar = () => {
                         )}
                       </div>
 
-                      {/* Dog Training Quick Links — Mobile */}
-                      <div className="mb-2">
-                        <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                          Dog Training
-                        </p>
-                      </div>
-                      <div className="rounded-xl border bg-card overflow-hidden mb-4">
-                        <SheetClose asChild>
-                          <Link to="/collections/all" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🐕</span>
-                            <span className="font-medium">All Training Tools</span>
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link to="/collections/dog-collars-leashes" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🦮</span>
-                            <span className="font-medium">Collars & Leashes</span>
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link to="/collections/dog-toys" className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors">
-                            <span>🎾</span>
-                            <span className="font-medium">Dog Toys</span>
-                          </Link>
-                        </SheetClose>
-                      </div>
-                      
+
+
                       {/* Mobile Categories */}
                       <div className="mb-2">
                         <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -691,7 +570,7 @@ export const Navbar = () => {
                       <div className="rounded-xl border bg-card overflow-hidden">
                         {categoryTree.map((category) => (
                           <MobileCategoryItem
-                            key={category.id}
+                            key={category.key}
                             category={category}
                             onClose={() => setIsMobileMenuOpen(false)}
                           />
@@ -799,7 +678,7 @@ export const Navbar = () => {
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {categoryTree.map((category, idx) => (
                         <div
-                          key={category.id}
+                          key={category.key}
                           className="animate-[fadeSlideUp_0.3s_ease-out_both]"
                           style={{ animationDelay: `${idx * 30}ms` }}
                         >
