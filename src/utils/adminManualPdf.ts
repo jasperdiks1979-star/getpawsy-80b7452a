@@ -267,7 +267,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...MUTED_COLOR);
-  doc.text('A consumer brand operated by Skidzo', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  doc.text('A consumer brand operated by GetPawsy', PAGE_WIDTH / 2, yPosition, { align: 'center' });
   yPosition += 20;
 
   // Decorative line
@@ -300,7 +300,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   doc.setTextColor(80, 80, 80);
   const coverDetails = [
     `Domain: getpawsy.pet`,
-    `Legal Entity: Skidzo (KVK: 78156955)`,
+    `Legal Entity: GetPawsy (KVK: 78156955)`,
     `Market: United States Only`,
     `Currency: USD ($)`,
     `Support: ${SUPPORT_EMAIL}`,
@@ -380,7 +380,7 @@ export const generateAdminManualPdf = (): jsPDF => {
 
   addParagraph(doc, `Welcome to the complete admin and compliance guide for GetPawsy. This document serves as your single source of truth for understanding your webshop, maintaining Google Merchant Center compliance, and operating your store with confidence.`);
 
-  addInfoBox(doc, 'Business Identity', `GetPawsy is a consumer-facing pet supply brand. It is operated by Skidzo, a registered business entity (KVK: 78156955, VAT ID: NL003295015B69). Skidzo is legally responsible for all operations including customer service, order processing, fulfillment coordination, returns, and refunds. This dual-name structure (brand + legal entity) is standard practice and fully compliant with Google Merchant Center policies.`);
+  addInfoBox(doc, 'Business Identity', `GetPawsy is a consumer-facing pet supply brand. It is operated by GetPawsy, a registered business entity (KVK: 78156955, VAT ID: NL003295015B69). GetPawsy is legally responsible for all operations including customer service, order processing, fulfillment coordination, returns, and refunds. This dual-name structure (brand + legal entity) is standard practice and fully compliant with Google Merchant Center policies.`);
 
   addSubtitle(doc, 'What This Document Covers');
   addBulletPoint(doc, 'Complete shipping and returns policies aligned with checkout behavior');
@@ -575,7 +575,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   addParagraph(doc, `Checkout only accepts United States shipping addresses. No international countries are visible or selectable. This aligns with our US-only shipping policy and Google Merchant Center configuration.`);
 
   addSubtitle(doc, 'Business Identity at Checkout');
-  addParagraph(doc, `The checkout page displays or links to: GetPawsy branding, Skidzo legal information, support contact (${SUPPORT_EMAIL}), and SSL security indicators. Customers can clearly identify who they are purchasing from.`);
+  addParagraph(doc, `The checkout page displays or links to: GetPawsy branding, GetPawsy legal information, support contact (${SUPPORT_EMAIL}), and SSL security indicators. Customers can clearly identify who they are purchasing from.`);
 
   addPageNumber(doc);
 
@@ -722,7 +722,7 @@ export const generateAdminManualPdf = (): jsPDF => {
 
   addSubtitle(doc, 'What Has Been Fixed');
 
-  addComplianceBox(doc, '1. Business Identity Transparency', `Brand: GetPawsy | Legal Entity: Skidzo | Clearly stated on About, Contact, and Footer pages. "GetPawsy is a consumer brand operated by Skidzo." KVK and contact information are publicly visible.`);
+  addComplianceBox(doc, '1. Business Identity Transparency', `Brand: GetPawsy | Legal Entity: GetPawsy | Clearly stated on About, Contact, and Footer pages. "GetPawsy is a consumer brand operated by GetPawsy." KVK and contact information are publicly visible.`);
 
   addSpace(doc, 2);
 
@@ -785,7 +785,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   addParagraph(doc, `While we strive to meet our delivery estimates, occasional delays may occur due to severe weather, carrier disruptions, or high-volume periods (holidays, promotions). If your order is significantly delayed, please contact us at ${SUPPORT_EMAIL}.`);
 
   addSubtitle(doc, 'Business Identity');
-  addParagraph(doc, `GetPawsy is a consumer brand operated by Skidzo, a registered business entity (KVK: 78156955). Skidzo is responsible for order processing, fulfillment coordination, and customer support.`);
+  addParagraph(doc, `GetPawsy is a consumer brand operated by GetPawsy, a registered business entity (KVK: 78156955). GetPawsy is responsible for order processing, fulfillment coordination, and customer support.`);
 
   addPageNumber(doc);
 
@@ -835,7 +835,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   addParagraph(doc, `For hygiene and safety reasons, certain pet care items may not be eligible for return once opened. These exclusions, if any, are noted on the product page.`);
 
   addSubtitle(doc, 'Business Identity');
-  addParagraph(doc, `Returns and refunds are managed by Skidzo, the legal entity operating GetPawsy. Contact: ${SUPPORT_EMAIL}.`);
+  addParagraph(doc, `Returns and refunds are managed by GetPawsy, the legal entity operating GetPawsy. Contact: ${SUPPORT_EMAIL}.`);
 
   addPageNumber(doc);
 
@@ -955,7 +955,7 @@ export const generateAdminManualPdf = (): jsPDF => {
     'We are writing to request a review of our Google Merchant Center account following a "Misrepresentation" flag. We have conducted a thorough audit of our website (getpawsy.pet) and have resolved all identified issues.',
     '',
     'BUSINESS IDENTITY',
-    `GetPawsy is a consumer-facing pet supply brand operated by Skidzo, a registered business entity (KVK: 78156955, VAT ID: NL003295015B69), based in Apeldoorn, Netherlands. This brand-entity relationship is clearly disclosed on our About page, Contact page, and website footer. Customer support is available at ${SUPPORT_EMAIL} with a 24-hour response commitment.`,
+    `GetPawsy is a consumer-facing pet supply brand operated by GetPawsy, a registered business entity (KVK: 78156955, VAT ID: NL003295015B69), based in Apeldoorn, Netherlands. This brand-entity relationship is clearly disclosed on our About page, Contact page, and website footer. Customer support is available at ${SUPPORT_EMAIL} with a 24-hour response commitment.`,
     '',
     'PRICING & SHIPPING CONSISTENCY',
     `We have verified that all pricing is consistent across every customer touchpoint: product pages, search results, cart, and checkout display identical prices. Our shipping policy is simple and transparent: orders of $${FREE_SHIPPING_THRESHOLD} or more qualify for free shipping; orders under $${FREE_SHIPPING_THRESHOLD} are charged a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. This exact logic is implemented in our checkout system and reflected in our Merchant Center shipping settings. We ship exclusively within the United States with a delivery time of ${DELIVERY_TIME_STANDARD}. There are no hidden fees, "calculated at checkout" language, or variable shipping costs.`,
@@ -971,7 +971,7 @@ export const generateAdminManualPdf = (): jsPDF => {
     '',
     'RESOLVED ISSUES',
     '• Shipping information is now 100% consistent across all pages and Merchant Center settings',
-    '• Business identity (GetPawsy operated by Skidzo) is clearly disclosed',
+    '• Business identity (GetPawsy operated by GetPawsy) is clearly disclosed',
     '• All product prices match from product page through checkout',
     '• Return policy is comprehensive, clear, and easily accessible',
     '• No misleading claims, fake urgency, or deceptive practices exist on our site',
@@ -979,7 +979,7 @@ export const generateAdminManualPdf = (): jsPDF => {
     'We respectfully request a re-review of our account. We are committed to maintaining full compliance with Google Merchant Center policies and providing a transparent, trustworthy shopping experience for our customers.',
     '',
     'Sincerely,',
-    'The GetPawsy Team (operated by Skidzo)',
+    'The GetPawsy Team (operated by GetPawsy)',
     `${SUPPORT_EMAIL}`,
     'getpawsy.pet',
   ];
@@ -1087,7 +1087,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...MUTED_COLOR);
-  doc.text('Operated by Skidzo', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  doc.text('Operated by GetPawsy', PAGE_WIDTH / 2, yPosition, { align: 'center' });
 
   addPageNumber(doc);
 
