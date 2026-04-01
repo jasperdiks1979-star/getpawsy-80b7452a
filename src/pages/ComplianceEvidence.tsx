@@ -252,7 +252,7 @@ export default function ComplianceEvidence() {
           <CardContent className="text-sm space-y-2">
             <p>This auto-generated report provides evidence for Google Merchant Center reconsideration:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Business entity: <strong>Skidzo</strong> (KVK 78156955, VAT NL003295015B69), operating as GetPawsy</li>
+              <li>Business entity: <strong>GetPawsy</strong> (KVK 78156955, VAT NL003295015B69)</li>
               <li>Registered address: Apeldoorn, Gelderland, Netherlands</li>
               <li>All policy pages publicly accessible with consistent business identity</li>
               <li>Prices in USD with transparent checkout (shipping + estimated tax shown before payment)</li>
