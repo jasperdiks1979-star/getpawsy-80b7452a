@@ -29,7 +29,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Orthopedic Memory Foam Pet Bed',
     price: 69.49,
     compareAt: 84.99,
-    image: 'https://cf.cjdropshipping.com/c8296810-eabc-444b-8b13-9cd466c098a6.jpg',
+    image: '/images/products/memory-foam-pet-bed.jpg',
     benefit: 'Vet-recommended for joint relief',
     pet: 'dog',
   },
