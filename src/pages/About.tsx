@@ -73,7 +73,7 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  GetPawsy is a small ecommerce brand operated by Skidzo, based in the Netherlands.
+                  GetPawsy is a dedicated pet supply brand based in the Netherlands, serving US pet owners.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   We focus on practical, well-reviewed pet products and ship them to customers in the United States through trusted fulfillment partners.
