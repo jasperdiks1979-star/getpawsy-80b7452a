@@ -418,7 +418,7 @@ export const CTR_WARFARE_UPGRADES: CTRUpgrade[] = [
     competitorTitle: 'Best No Pull Harness for Dogs',
     competitorDesc: 'Shop our selection of no pull harnesses for dogs of all sizes.',
     getpawsyTitle: 'Stop Dog Pulling Fast — Best No-Pull Harness (Trainer Approved 2026)',
-    getpawsyDesc: 'Front-clip harnesses that reduce pulling by 40–60% in 1 walk. Tested by certified trainers. Sizes for 5–150 lb dogs. Free US shipping over $35.',
+    getpawsyDesc: 'Front-clip harnesses that reduce pulling by 40–60% in 1 walk. Tested by certified trainers. Sizes for 5–150 lb dogs. Free shipping on eligible orders over $35.',
     expectedCTRLift: '+35–45%',
   },
   {

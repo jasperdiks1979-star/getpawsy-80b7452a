@@ -160,7 +160,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['no-pull harness', 'dog leash', 'training leash', 'slip lead', 'head collar', 'long line'],
     seo_intro: 'Find the best no-pull harnesses, training leashes, slip leads, and control tools for dogs that pull. Humane, positive-reinforcement gear trusted by professional trainers and US dog owners.',
     meta_title: 'Dog Leash & Control — No-Pull Training Tools 2026 | GetPawsy',
-    meta_description: 'Shop no-pull harnesses, training leashes & control tools for dogs. Humane solutions for pullers. Free US shipping $35+, 30-day returns.',
+    meta_description: 'Shop no-pull harnesses, training leashes & control tools for dogs. Humane solutions for pullers. Free shipping $35+, 30-day returns.',
     faq: [
       { question: 'What is the best harness for a dog that pulls?', answer: 'A front-clip no-pull harness is the most effective and humane option. It redirects your dog\'s momentum toward you when they pull, making walks more manageable without causing discomfort.' },
       { question: 'Are slip leads good for training?', answer: 'Slip leads can be effective for trained dogs in specific situations (vet visits, emergency control), but for everyday leash training, a front-clip harness paired with positive reinforcement is more effective and safer.' },

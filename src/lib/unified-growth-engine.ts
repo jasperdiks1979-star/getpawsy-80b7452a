@@ -110,7 +110,7 @@ const SNIPER_SEED: Array<{
     url: '/collections/all', query: 'best orthopedic dog bed 2026',
     impressions: 4200, clicks: 126, position: 8.2, aov: 65,
     title: '7 Best Orthopedic Dog Beds — Vet-Backed Picks (2026)',
-    meta: 'Joint pain keeps your dog up at night. These orthopedic beds use medical-grade foam to relieve pressure. Free US shipping + 30-day return policy.',
+    meta: 'Joint pain keeps your dog up at night. These orthopedic beds use medical-grade foam to relieve pressure. Free shipping on eligible orders + 30-day return policy.',
     faqs: ['What makes a dog bed truly orthopedic?', 'How thick should orthopedic foam be?', 'Are orthopedic beds worth it for young dogs?'],
     linkSources: ['/guides/how-to-choose-orthopedic-dog-bed', '/guides/signs-your-dog-has-joint-pain', '/collections/dog-beds', '/blog/senior-dog-care', '/'],
   },
