@@ -14,7 +14,7 @@ import { execSync } from 'child_process';
 const BASE_URL = 'https://getpawsy.pet';
 const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
-const FREE_SHIPPING_THRESHOLD = 49;
+const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
 
 // ── Supabase REST helper ──────────────────────────────────────────────
 
