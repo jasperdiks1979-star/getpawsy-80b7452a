@@ -103,7 +103,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'dog sofa bed',
     conversionScore: 78,
     contentCluster: 'dog-beds',
-    image: 'https://cf.cjdropshipping.com/17666208/4c6af75c-de5c-4718-a2cd-3ae575466415.jpg',
+    image: '/images/products/dog-sofa-bed.jpg',
   },
 ];
 

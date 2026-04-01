@@ -43,7 +43,7 @@ const HERO_PRODUCTS = [
     subtitle: '5-in-1 Bundle: Harness, Seat Belt, Bowl & More',
     price: 63.99,
     compareAt: 81.99,
-    image: 'https://cf.cjdropshipping.com/63d3145a-4458-422e-9fe5-b63fc51ad711.jpg',
+    image: '/images/products/tactical-dog-harness.jpg',
     badge: '⭐ Top Rated',
     benefit: 'Everything you need for safe car travel',
   },

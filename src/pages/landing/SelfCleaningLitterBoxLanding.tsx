@@ -25,10 +25,10 @@ const AccordionTrigger = lazy(() => import('@/components/ui/accordion').then(m =
 const PRODUCT_LINK = '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
 
 const REAL_PRODUCT = {
-  main: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
-  mechanism: 'https://cf.cjdropshipping.com/c887b0aa-7ff1-4aad-9fbf-903f3eb0a2f6.png',
-  angle: 'https://cf.cjdropshipping.com/e4454bbe-8555-4938-97e7-9c25acf0bb2a.png',
-  detail: 'https://cf.cjdropshipping.com/da3626ae-df14-47d8-b202-1e4f9c1f7a50.png',
+  main: '/images/products/self-cleaning-litter-box.jpg',
+  mechanism: '/images/products/litter-box-mechanism.jpg',
+  angle: '/images/products/litter-box-angle.jpg',
+  detail: '/images/products/litter-box-detail.jpg',
 };
 
 const SPECS = [
