@@ -210,7 +210,13 @@ export async function resolveCollectionProducts(
     };
   }
 
-  const scoredPrimary: ScoredProduct[] = pool
+  // HARD FILTER: When product_category_filter is set, only include products matching that category.
+  // This prevents cross-category contamination (e.g., dog strollers in dog beds collection).
+  const categoryFilteredPool = collection.product_category_filter
+    ? pool.filter(p => matchesCategoryFilter(p as CollectionProduct, collection.product_category_filter))
+    : pool;
+
+  const scoredPrimary: ScoredProduct[] = categoryFilteredPool
     .map((p) => ({
       ...p,
       _score: scoreProduct(p as CollectionProduct & Record<string, unknown>, collection.slug, keywords, collection.product_category_filter),
