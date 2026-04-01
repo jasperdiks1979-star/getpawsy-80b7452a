@@ -7,12 +7,23 @@
   "excerpt": "Complete guide to indoor cat enrichment with 17 proven ideas. Interactive toys, climbing furniture, litter solutions, and DIY enrichment activities that keep cats mentally stimulated and physically active.",
   "quickAnswer": "The best enrichment for indoor cats combines vertical climbing space (cat trees), interactive play sessions (15 minutes 2x daily), puzzle feeders, and environmental rotation. Start with a sturdy cat tree and one interactive toy — most cats show reduced boredom behaviors within a week.",
   "category": "Cat Enrichment",
-  "keywords": ["cat enrichment ideas", "indoor cat enrichment", "best cat enrichment", "indoor cat boredom", "cat enrichment activities", "keep indoor cat happy"],
+  "keywords": [
+    "cat enrichment ideas",
+    "indoor cat enrichment",
+    "best cat enrichment",
+    "indoor cat boredom",
+    "cat enrichment activities",
+    "keep indoor cat happy"
+  ],
   "publishedAt": "2026-02-28",
   "updatedAt": "2026-02-28",
   "featuredImage": "/images/guides/cat-enrichment-2026.jpg",
   "readingTime": 16,
-  "relatedCategories": ["cat-trees-and-condos", "cat-toys", "cat-scratching-posts"],
+  "relatedCategories": [
+    "cat-trees-and-condos",
+    "cat-toys",
+    "cat-scratching-posts"
+  ],
   "trustLines": [
     "17 enrichment strategies tested with indoor cats",
     "Vet-informed behavioral recommendations",
@@ -45,63 +56,109 @@
   "comparisonProducts": [
     {
       "name": "4.6ft Dark Gray Cat Tree Tower",
-      "image": "https://cf.cjdropshipping.com/2657dac1-3bd9-4582-82ca-4d9566edca31.png",
+      "image": "https://getpawsy.pet/images/products/133cdc48-0117-40d5-9aaf-1a81131ca9bb.jpg",
       "price": "$318.99",
       "description": "Heavy-duty 4.6-foot tower with 3 condos, 11 sisal scratching posts, 2 hammocks, and interactive toy.",
-      "advantages": ["3 hiding condos", "11 scratching posts", "Wide stable base", "Interactive toy included"],
+      "advantages": [
+        "3 hiding condos",
+        "11 scratching posts",
+        "Wide stable base",
+        "Interactive toy included"
+      ],
       "link": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "69\" Multi-Level Cat Tree",
-      "image": "https://cf.cjdropshipping.com/17664480/a8df8d5c-613c-4711-a6d6-967c7917e644.jpg",
+      "image": "https://getpawsy.pet/images/products/0381585e-8b6b-48a8-b541-c7298f99b0c9.jpg",
       "price": "$309.99",
       "description": "Nearly 6 feet of climbing space with 2 condos, 3 hammocks, and 8 scratching posts.",
-      "advantages": ["69\" vertical space", "2 condos + 3 hammocks", "8 scratching posts", "Multi-cat ready"],
+      "advantages": [
+        "69\" vertical space",
+        "2 condos + 3 hammocks",
+        "8 scratching posts",
+        "Multi-cat ready"
+      ],
       "link": "/product/69-cat-tree-multi-level-cat-tower-with-2-condos-and-3-hammocks-8-scratching-posts-for-multiple-cats-",
       "badge": "Best for Large Cats",
       "availability": "InStock"
     },
     {
       "name": "Modern Wood Cat Tree",
-      "image": "https://cf.cjdropshipping.com/0c0c67e1-8232-4496-bdc3-47c865223d05.png",
+      "image": "https://getpawsy.pet/images/products/62732903-ee38-467c-9518-33fb1b9ffc64.jpg",
       "price": "$205.99",
       "description": "Modern pear wood design with hammock, scratching post, and removable mat. Blends with home décor.",
-      "advantages": ["Modern design", "Natural wood", "Removable mat", "Home décor friendly"],
+      "advantages": [
+        "Modern design",
+        "Natural wood",
+        "Removable mat",
+        "Home décor friendly"
+      ],
       "link": "/product/modern-indoor-cat-tree-wooden-cat-tower-suitable-for-cats-includes-hammock-scratching-post-and-remov",
       "badge": "Best Modern Design",
       "availability": "InStock"
     },
     {
       "name": "Compass Cat Scratching Post",
-      "image": "https://cf.cjdropshipping.com/1dc3a846-5b6a-497b-9455-9873a8752146.png",
+      "image": "https://getpawsy.pet/images/products/6367cdd8-25f6-4d27-891f-65c5db831d54.jpg",
       "price": "$46.99",
       "description": "Interactive scratching post with ball toy and mouse attachment. Perfect starter enrichment.",
-      "advantages": ["Interactive ball toy", "Mouse attachment", "Space-efficient", "Budget-friendly"],
+      "advantages": [
+        "Interactive ball toy",
+        "Mouse attachment",
+        "Space-efficient",
+        "Budget-friendly"
+      ],
       "link": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with",
       "badge": "Best Budget Enrichment",
       "availability": "InStock"
     },
     {
       "name": "Beige Multi-Level Tower",
-      "image": "https://cf.cjdropshipping.com/4fcc622a-6124-43b1-ae3d-1d95fc683b23.png",
+      "image": "https://getpawsy.pet/images/products/18028997-901a-40b8-8790-9e7b3ec558bf.jpg",
       "price": "$94.99",
       "description": "Budget-friendly multi-level tower with condos, hammocks, and scratching posts in neutral beige.",
-      "advantages": ["Under $100", "Multiple levels", "Sisal scratching posts", "Neutral color"],
+      "advantages": [
+        "Under $100",
+        "Multiple levels",
+        "Sisal scratching posts",
+        "Neutral color"
+      ],
       "link": "/product/beige-multi-level-cat-tower-with-condos-hammocks-and-sisal-scratching-posts",
       "badge": "Best Budget",
       "availability": "InStock"
     }
   ],
   "jumpNav": [
-    { "label": "Why Enrichment Matters", "anchor": "why-indoor-cats-get-bored" },
-    { "label": "Signs of Boredom", "anchor": "signs-of-understimulation" },
-    { "label": "Interactive Toys", "anchor": "best-interactive-toys" },
-    { "label": "Furniture", "anchor": "cat-furniture-for-small-apartments" },
-    { "label": "Litter Solutions", "anchor": "litter-box-furniture-solutions" },
-    { "label": "DIY vs Store-Bought", "anchor": "diy-vs-store-bought" },
-    { "label": "FAQs", "anchor": "faqs" }
+    {
+      "label": "Why Enrichment Matters",
+      "anchor": "why-indoor-cats-get-bored"
+    },
+    {
+      "label": "Signs of Boredom",
+      "anchor": "signs-of-understimulation"
+    },
+    {
+      "label": "Interactive Toys",
+      "anchor": "best-interactive-toys"
+    },
+    {
+      "label": "Furniture",
+      "anchor": "cat-furniture-for-small-apartments"
+    },
+    {
+      "label": "Litter Solutions",
+      "anchor": "litter-box-furniture-solutions"
+    },
+    {
+      "label": "DIY vs Store-Bought",
+      "anchor": "diy-vs-store-bought"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faqs"
+    }
   ],
   "sections": [
     {
@@ -128,7 +185,10 @@
       "heading": "DIY vs Store-Bought",
       "content": "### When DIY Makes Sense\n- **Cardboard boxes**: Free, cats love them, and they're endlessly customizable. Cut holes, stack them, create tunnels.\n- **Paper bags**: Open bags (remove handles for safety) make crinkly hiding spots.\n- **Puzzle feeders**: Cut holes in a cardboard box and place treats inside. Zero cost, 30 minutes of entertainment.\n- **Cat-safe plants**: Cat grass, catnip, and valerian are easy to grow and provide enrichment.\n\n### When Store-Bought Is Better\n- **Cat trees**: DIY cat trees rarely have the stability needed for safe climbing and jumping. A wobbling tree is a safety hazard.\n- **Scratching posts**: Sisal rope and posts need professional-grade tension to last. DIY scratching surfaces unravel quickly.\n- **Interactive toys**: Wand toys with proper prey-action design are difficult to replicate.\n\n### The Best Approach: Hybrid\nUse DIY enrichment for variety and rotation (cardboard boxes, paper bags, treats hidden around the house), and invest in durable store-bought items for the fundamentals (cat tree, scratching posts, quality toys).\n\nOur recommendation: Start with a [cat tree under $100](/product/beige-multi-level-cat-tower-with-condos-hammocks-and-sisal-scratching-posts) and a [scratching post with toy ($46.99)](/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with), then supplement with free DIY enrichment."
     },
-    { "heading": "FAQ", "content": "" }
+    {
+      "heading": "FAQ",
+      "content": ""
+    }
   ],
   "faq": [
     {

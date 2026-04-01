@@ -7,13 +7,26 @@
   "excerpt": "We compared fixed, retractable, and anti-pull dog leashes for training. Hands-on testing with real pullers to find the best leash for loose-leash walking.",
   "quickAnswer": "For training a dog that pulls, use a fixed 6-foot leash paired with a front-clip harness. Retractable leashes actually encourage pulling. The Anti-Pull Auto-Retractable Leash is our top pick for owners who want the best of both worlds.",
   "category": "Dog Training",
-  "keywords": ["best dog training leash", "leash for pulling dogs", "anti pull leash", "training leash", "best leash for dog training"],
+  "keywords": [
+    "best dog training leash",
+    "leash for pulling dogs",
+    "anti pull leash",
+    "training leash",
+    "best leash for dog training"
+  ],
   "publishedAt": "2026-02-28",
   "updatedAt": "2026-02-28",
   "featuredImage": "/images/guides/training-leash-2026.jpg",
   "readingTime": 10,
-  "relatedCategories": ["dog-training", "dog-collars-and-leashes"],
-  "trustLines": ["Tested with dogs 30–90 lbs", "Durability stress-tested", "Updated February 2026"],
+  "relatedCategories": [
+    "dog-training",
+    "dog-collars-and-leashes"
+  ],
+  "trustLines": [
+    "Tested with dogs 30–90 lbs",
+    "Durability stress-tested",
+    "Updated February 2026"
+  ],
   "quickRecommendation": {
     "bestOverall": {
       "name": "Anti-Pull Auto-Retractable Leash",
@@ -34,29 +47,48 @@
   "comparisonProducts": [
     {
       "name": "Anti-Pull Retractable Leash",
-      "image": "https://oss-cf.cjdropshipping.com/product/2026/01/16/02/331ccf3d-dd92-482a-b0f5-b94c02db254e_fine.jpeg",
+      "image": "https://getpawsy.pet/images/products/2b61b25d-75a2-4fec-a1fd-8b7de3b916cb-2.jpg",
       "price": "$47.99",
       "description": "Auto-retracting leash with built-in anti-pull mechanism for consistent training tension.",
-      "advantages": ["Anti-pull mechanism", "Auto-retracting", "Comfortable grip", "Consistent tension"],
+      "advantages": [
+        "Anti-pull mechanism",
+        "Auto-retracting",
+        "Comfortable grip",
+        "Consistent tension"
+      ],
       "link": "/product/dog-anti-pull-automatic-retractable-leash-auto-retracting",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "Tactical Harness + Leash Set",
-      "image": "https://cf.cjdropshipping.com/63d3145a-4458-422e-9fe5-b63fc51ad711.jpg",
+      "image": "https://getpawsy.pet/images/products/2bf9d939-bf2c-4382-a8e2-3c60c6795b72-2.jpg",
       "price": "$63.99",
       "description": "Complete training kit with tactical harness, leash, car belt, and accessories.",
-      "advantages": ["Complete kit", "Tactical quality", "Car belt included", "Collapsible bowl"],
+      "advantages": [
+        "Complete kit",
+        "Tactical quality",
+        "Car belt included",
+        "Collapsible bowl"
+      ],
       "link": "/product/tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo",
       "badge": "Best Value Set",
       "availability": "InStock"
     }
   ],
   "jumpNav": [
-    { "label": "Top Picks", "anchor": "top-picks" },
-    { "label": "Fixed vs Retractable", "anchor": "fixed-vs-retractable" },
-    { "label": "FAQs", "anchor": "faqs" }
+    {
+      "label": "Top Picks",
+      "anchor": "top-picks"
+    },
+    {
+      "label": "Fixed vs Retractable",
+      "anchor": "fixed-vs-retractable"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faqs"
+    }
   ],
   "sections": [
     {
@@ -67,7 +99,10 @@
       "heading": "What to Look for in a Training Leash",
       "content": "### Length\n**6 feet is ideal** for training. Long enough for comfortable walking, short enough for control. Avoid 4-foot leashes (too restrictive) and anything over 8 feet (too much freedom).\n\n### Material\n- **Nylon webbing**: Lightweight, affordable, dries fast. Best for most dogs.\n- **Biothane**: Waterproof, odor-resistant, doesn't absorb moisture. Premium option.\n- **Rope leash**: Comfortable grip but can cause rope burn if a dog lunges.\n\n### Handle & Grip\nLook for padded handles with a traffic loop (short secondary handle near the clip). The traffic loop gives you instant close control in tight situations.\n\n### Hardware\nSwivel clips prevent tangling. Choose brass or stainless steel — zinc alloy clips corrode quickly.\n\nPair any training leash with a [no-pull harness](/guides/best-no-pull-dog-harness-2026) for best results."
     },
-    { "heading": "FAQ", "content": "" }
+    {
+      "heading": "FAQ",
+      "content": ""
+    }
   ],
   "faq": [
     {

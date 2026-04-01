@@ -27,6 +27,7 @@ export interface Product {
   description?: string | null;
   category?: string | null;
   image_url?: string | null;
+  image_alt_text?: string | null;
   images?: string[] | null;
   price: number;
   cost_price?: number | null;
@@ -193,7 +194,7 @@ export const ProductCard = memo(
             <div className="relative aspect-square overflow-hidden bg-muted">
               <OptimizedImage
                 src={product.image_url || "/placeholder.svg"}
-                alt={`${product.name}${product.category ? ` - ${product.category}` : ""} | GetPawsy`}
+                alt={product.image_alt_text || `${product.name}${product.category ? ` - ${product.category}` : ""} – GetPawsy`}
                 aspectRatio="square"
                 className="group-hover:scale-105"
                 priority={priority}

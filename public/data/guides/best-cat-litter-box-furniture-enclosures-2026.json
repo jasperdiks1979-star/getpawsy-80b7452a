@@ -6,12 +6,20 @@
   "excerpt": "8 litter box enclosures tested for odor control, cat comfort, and home décor. Real owner reviews with honest pros & cons for every budget.",
   "quickAnswer": "The best litter box furniture balances odor control, easy cleaning access, and home aesthetics. Our top pick is the Petsfit Wooden Enclosure for its ventilation and modern look. For tight spaces, the Catuar Corner Cabinet fits where others can't.",
   "category": "Cat Litter",
-  "keywords": ["cat litter box furniture", "litter box enclosure", "covered litter box", "litter box end table", "hidden litter box"],
+  "keywords": [
+    "cat litter box furniture",
+    "litter box enclosure",
+    "covered litter box",
+    "litter box end table",
+    "hidden litter box"
+  ],
   "publishedAt": "2026-02-11",
   "updatedAt": "2026-02-11",
   "featuredImage": "/images/guides/litter-box-furniture.jpg",
   "readingTime": 12,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "quickRecommendation": {
     "bestOverall": {
       "name": "Cat Litter Box Enclosure with Drawers & Storage",
@@ -32,30 +40,42 @@
   "comparisonProducts": [
     {
       "name": "Enclosure with Drawers & Storage (39\")",
-      "image": "https://cf.cjdropshipping.com/17664480/cfb518e7-1b7e-42e9-a2d3-52d8b21dbfdd.jpg",
+      "image": "https://getpawsy.pet/images/products/1a1302e7-939f-4c94-96b7-d4e0c9d34a37.jpg",
       "price": "$350.99",
       "description": "Premium litter box enclosure with built-in drawers, storage, and anti-tip safety kit in white finish.",
-      "advantages": ["Anti-tip safety kit", "Built-in storage drawers", "39\" width fits jumbo pans"],
+      "advantages": [
+        "Anti-tip safety kit",
+        "Built-in storage drawers",
+        "39\" width fits jumbo pans"
+      ],
       "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "Wooden 2-Room Enclosure (Black)",
-      "image": "https://cf.cjdropshipping.com/17639424/6a86c7d7-ec2c-4132-97ef-5a440bf270ed.jpg",
+      "image": "https://getpawsy.pet/images/products/fe5ed2d6-0230-4c5a-8313-235a28ef4f21.jpg",
       "price": "$284.99",
       "description": "Hidden litter box furniture with two separate rooms and solid wood construction in black finish.",
-      "advantages": ["Two-room privacy design", "Solid wood build", "Reduces litter tracking"],
+      "advantages": [
+        "Two-room privacy design",
+        "Solid wood build",
+        "Reduces litter tracking"
+      ],
       "link": "/product/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black",
       "badge": "Best Premium",
       "availability": "InStock"
     },
     {
       "name": "Enclosure with Barn Door (White)",
-      "image": "https://cf.cjdropshipping.com/17664480/f56eb834-2643-4b70-884a-fbf1330a1d82.jpg",
+      "image": "https://getpawsy.pet/images/products/0349b9ab-9e93-419f-a2f2-ec3fff9a224d-10.jpg",
       "price": "$176.99",
       "description": "Charming barn door litter box enclosure with 31.5\" x 21\" interior and cat entrance hole.",
-      "advantages": ["Barn door for easy scooping", "Budget-friendly", "Generous interior"],
+      "advantages": [
+        "Barn door for easy scooping",
+        "Budget-friendly",
+        "Generous interior"
+      ],
       "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Budget",
       "availability": "InStock"
@@ -98,11 +118,26 @@
   "buyingCriteria": {
     "title": "Furniture Enclosure Buying Criteria",
     "criteria": [
-      { "name": "Interior Dimensions", "description": "Must fit your litter pan with room for your cat to turn. Measure your pan first — most standard pans are 18\" x 14\", jumbo pans are 24\" x 18\"." },
-      { "name": "Moisture Protection", "description": "Sealed interior coating is essential. Unprotected wood swells and breaks down from urine exposure within months." },
-      { "name": "Cleaning Access", "description": "Easy-open tops, removable trays, or wide doors for scooping. You'll clean daily — awkward access becomes frustrating fast." },
-      { "name": "Ventilation", "description": "Back panel slots or ventilation holes prevent ammonia buildup. Fully sealed enclosures trap odor and stress cats." },
-      { "name": "Stability", "description": "Anti-tip kits or weighted bases prevent toppling, especially important with large cats, dogs, or children in the home." }
+      {
+        "name": "Interior Dimensions",
+        "description": "Must fit your litter pan with room for your cat to turn. Measure your pan first — most standard pans are 18\" x 14\", jumbo pans are 24\" x 18\"."
+      },
+      {
+        "name": "Moisture Protection",
+        "description": "Sealed interior coating is essential. Unprotected wood swells and breaks down from urine exposure within months."
+      },
+      {
+        "name": "Cleaning Access",
+        "description": "Easy-open tops, removable trays, or wide doors for scooping. You'll clean daily — awkward access becomes frustrating fast."
+      },
+      {
+        "name": "Ventilation",
+        "description": "Back panel slots or ventilation holes prevent ammonia buildup. Fully sealed enclosures trap odor and stress cats."
+      },
+      {
+        "name": "Stability",
+        "description": "Anti-tip kits or weighted bases prevent toppling, especially important with large cats, dogs, or children in the home."
+      }
     ]
   },
   "prosAndCons": {

@@ -7,12 +7,23 @@
   "excerpt": "We tested 9 top-rated cat trees for stability, enrichment & value. Expert-reviewed picks for large cats, small spaces, and budgets. Updated for 2026.",
   "quickAnswer": "The best cat tree in 2026 is the 4.6ft Dark Gray Cat Tree Tower for its 3 condos, 11 sisal scratching posts, and stable wide base. For large cats, choose the 69\" Multi-Level Tree. Budget pick: the Beige Multi-Level Tower under $100.",
   "category": "Cat Furniture",
-  "keywords": ["best cat tree 2026", "cat tree house", "cat trees for sale", "cat condo", "best cat tree", "cat tree for large cats", "budget cat tree"],
+  "keywords": [
+    "best cat tree 2026",
+    "cat tree house",
+    "cat trees for sale",
+    "cat condo",
+    "best cat tree",
+    "cat tree for large cats",
+    "budget cat tree"
+  ],
   "publishedAt": "2026-02-13",
   "updatedAt": "2026-02-13",
   "featuredImage": "/images/guides/best-cat-trees-2026.jpg",
   "readingTime": 16,
-  "relatedCategories": ["cat-trees-and-condos", "cat-furniture"],
+  "relatedCategories": [
+    "cat-trees-and-condos",
+    "cat-furniture"
+  ],
   "trustLines": [
     "9 cat trees tested in real homes over 60+ days",
     "Stability tested on hardwood, tile & carpet",
@@ -39,44 +50,83 @@
   "comparisonProducts": [
     {
       "name": "4.6ft Dark Gray Cat Tree Tower",
-      "image": "https://cf.cjdropshipping.com/f0d2cfc3-60d8-4b91-addc-6c22505efe61.png",
+      "image": "https://getpawsy.pet/images/products/12a3f51c-5872-4544-a690-43cbbc8fb5f0-2.jpg",
       "price": "$318.99",
       "description": "Heavy-duty 4.6-foot tower with 3 hiding condos, 11 sisal scratching posts, 2 hammocks, and interactive toy.",
-      "advantages": ["3 hiding condos", "11 sisal scratching posts", "Wide stable base", "Hard-floor safe"],
+      "advantages": [
+        "3 hiding condos",
+        "11 sisal scratching posts",
+        "Wide stable base",
+        "Hard-floor safe"
+      ],
       "link": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "69\" Multi-Level Cat Tree (Dark Gray)",
-      "image": "https://cf.cjdropshipping.com/93c3b47b-d61a-47e9-9fd2-41b2e1e72a7b.png",
+      "image": "https://getpawsy.pet/images/products/1338e81b-5de4-4e47-8f95-ad6bb69c3b4c-10.jpg",
       "price": "$263.99",
       "description": "69-inch multi-level cat tree for large indoor cats with 2 condos, 3 hammocks, and sisal scratching posts.",
-      "advantages": ["69\" of vertical space", "2 condos + 3 hammocks", "Stable wide base", "Best for large cats"],
+      "advantages": [
+        "69\" of vertical space",
+        "2 condos + 3 hammocks",
+        "Stable wide base",
+        "Best for large cats"
+      ],
       "link": "/product/69-cat-tree-for-large-indoor-cats-multi-level-dark-gray-2-condos-3-hammocks-scratching-post",
       "badge": "Best for Large Cats",
       "availability": "InStock"
     },
     {
       "name": "Beige Multi-Level Cat Tower",
-      "image": "https://cf.cjdropshipping.com/4fcc622a-6124-43b1-ae3d-1d95fc683b23.png",
+      "image": "https://getpawsy.pet/images/products/14b7f5c2-88e2-42fc-b134-26227bcb601b-2.jpg",
       "price": "$94.99",
       "description": "Budget-friendly multi-level tower with condos, hammocks, and sisal scratching posts in neutral beige.",
-      "advantages": ["Under $100", "Multiple levels", "Sisal scratching posts", "Light color hides fur"],
+      "advantages": [
+        "Under $100",
+        "Multiple levels",
+        "Sisal scratching posts",
+        "Light color hides fur"
+      ],
       "link": "/product/beige-multi-level-cat-tower-with-condos-hammocks-and-sisal-scratching-posts",
       "badge": "Best Budget",
       "availability": "InStock"
     }
   ],
   "jumpNav": [
-    { "label": "Best for Large Cats", "anchor": "best-cat-trees-for-large-cats" },
-    { "label": "Best Budget", "anchor": "best-budget-cat-trees" },
-    { "label": "Under $150", "anchor": "section-5" },
-    { "label": "Most Stable", "anchor": "section-6" },
-    { "label": "Condos vs Trees", "anchor": "cat-condos-vs-cat-trees" },
-    { "label": "Indoor vs Outdoor", "anchor": "indoor-vs-outdoor-cat-trees" },
-    { "label": "Height Guide", "anchor": "what-height-should-a-cat-tree-be" },
-    { "label": "FAQs", "anchor": "faqs" }
+    {
+      "label": "Best for Large Cats",
+      "anchor": "best-cat-trees-for-large-cats"
+    },
+    {
+      "label": "Best Budget",
+      "anchor": "best-budget-cat-trees"
+    },
+    {
+      "label": "Under $150",
+      "anchor": "section-5"
+    },
+    {
+      "label": "Most Stable",
+      "anchor": "section-6"
+    },
+    {
+      "label": "Condos vs Trees",
+      "anchor": "cat-condos-vs-cat-trees"
+    },
+    {
+      "label": "Indoor vs Outdoor",
+      "anchor": "indoor-vs-outdoor-cat-trees"
+    },
+    {
+      "label": "Height Guide",
+      "anchor": "what-height-should-a-cat-tree-be"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faqs"
+    }
   ],
   "sections": [
     {
@@ -119,11 +169,26 @@
   "buyingCriteria": {
     "title": "Cat Tree Buying Criteria (2026)",
     "criteria": [
-      { "name": "Stability", "description": "Wide base, heavy construction, and wall-anchor option. Push-test the top — minimal sway means safe for energetic play on any floor type." },
-      { "name": "Scratching Surface", "description": "Natural sisal rope tightly wound on 3\"+ diameter posts. More posts = longer lifespan before replacement. Avoid carpet-wrapped posts." },
-      { "name": "Platform & Condo Size", "description": "12\"+ platforms for average cats, 14\"+ for large breeds. Condos should allow full turn-around — measure your cat nose to tail." },
-      { "name": "Height-to-Ceiling Ratio", "description": "Leave 18-24\" clearance above top platform. Standard 8' ceilings work best with 4-6 foot trees." },
-      { "name": "Material Durability", "description": "Tightly woven plush, real wood or thick particleboard posts, and secure hardware. Check 90-day reviews for real-world durability feedback." }
+      {
+        "name": "Stability",
+        "description": "Wide base, heavy construction, and wall-anchor option. Push-test the top — minimal sway means safe for energetic play on any floor type."
+      },
+      {
+        "name": "Scratching Surface",
+        "description": "Natural sisal rope tightly wound on 3\"+ diameter posts. More posts = longer lifespan before replacement. Avoid carpet-wrapped posts."
+      },
+      {
+        "name": "Platform & Condo Size",
+        "description": "12\"+ platforms for average cats, 14\"+ for large breeds. Condos should allow full turn-around — measure your cat nose to tail."
+      },
+      {
+        "name": "Height-to-Ceiling Ratio",
+        "description": "Leave 18-24\" clearance above top platform. Standard 8' ceilings work best with 4-6 foot trees."
+      },
+      {
+        "name": "Material Durability",
+        "description": "Tightly woven plush, real wood or thick particleboard posts, and secure hardware. Check 90-day reviews for real-world durability feedback."
+      }
     ]
   },
   "prosAndCons": {

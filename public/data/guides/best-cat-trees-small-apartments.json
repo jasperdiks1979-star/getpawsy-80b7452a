@@ -6,12 +6,20 @@
   "excerpt": "7 compact cat trees tested in real apartments under 600 sq ft. Space-saving picks for indoor cats with honest pros & cons.",
   "quickAnswer": "The best apartment cat tree is under 60 inches tall and has a footprint smaller than 20×20 inches. Our top pick is the FEANDREA Slim Tower for its vertical design and small 15×15 inch base. For studios, wall-mounted shelves are even better.",
   "category": "Cat Furniture",
-  "keywords": ["cat tree for small apartment", "compact cat tree", "apartment cat tower", "space saving cat tree"],
+  "keywords": [
+    "cat tree for small apartment",
+    "compact cat tree",
+    "apartment cat tower",
+    "space saving cat tree"
+  ],
   "publishedAt": "2026-02-14",
   "updatedAt": "2026-02-14",
   "featuredImage": "/images/guides/cat-tree-apartment.jpg",
   "readingTime": 11,
-  "relatedCategories": ["cat-trees-and-condos", "cat-furniture"],
+  "relatedCategories": [
+    "cat-trees-and-condos",
+    "cat-furniture"
+  ],
   "quickRecommendation": {
     "bestOverall": {
       "name": "4.6ft Dark Gray Cat Tree Tower",
@@ -32,29 +40,41 @@
   "comparisonProducts": [
     {
       "name": "4.6ft Dark Gray Cat Tree Tower",
-      "image": "https://cf.cjdropshipping.com/f0d2cfc3-60d8-4b91-addc-6c22505efe61.png",
+      "image": "https://getpawsy.pet/images/products/239fadd7-8f6b-4030-ad6e-e6fe279136e3-10.jpg",
       "price": "$318.99",
       "description": "Heavy-duty 4.6-foot cat tree with wide base, 3 hiding condos, 11 sisal scratching posts, 2 hammocks, and interactive toy.",
-      "advantages": ["3 hiding condos", "11 sisal scratching posts", "Compact 4.6ft height"],
+      "advantages": [
+        "3 hiding condos",
+        "11 sisal scratching posts",
+        "Compact 4.6ft height"
+      ],
       "link": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "69\" Multi-Level Cat Tree (Dark Gray)",
-      "image": "https://cf.cjdropshipping.com/93c3b47b-d61a-47e9-9fd2-41b2e1e72a7b.png",
+      "image": "https://getpawsy.pet/images/products/24dbca64-88ba-4c15-b3a9-4b057ca5a5b7-2.jpg",
       "price": "$263.99",
       "description": "69-inch multi-level cat tree for large indoor cats with 2 condos, 3 hammocks, and scratching posts in dark gray.",
-      "advantages": ["69\" of vertical space", "2 condos + 3 hammocks", "Stable wide base"],
+      "advantages": [
+        "69\" of vertical space",
+        "2 condos + 3 hammocks",
+        "Stable wide base"
+      ],
       "link": "/product/69-cat-tree-for-large-indoor-cats-multi-level-dark-gray-2-condos-3-hammocks-scratching-post",
       "availability": "InStock"
     },
     {
       "name": "Beige Multi-Level Cat Tower",
-      "image": "https://cf.cjdropshipping.com/4fcc622a-6124-43b1-ae3d-1d95fc683b23.png",
+      "image": "https://getpawsy.pet/images/products/294c6051-b66d-4c83-a2c9-e2720b64694e-2.png",
       "price": "$94.99",
       "description": "Budget-friendly multi-level cat tower with condos, hammocks, and sisal scratching posts in beige.",
-      "advantages": ["Under $100", "Multiple levels", "Sisal scratching posts"],
+      "advantages": [
+        "Under $100",
+        "Multiple levels",
+        "Sisal scratching posts"
+      ],
       "link": "/product/beige-multi-level-cat-tower-with-condos-hammocks-and-sisal-scratching-posts",
       "badge": "Best Budget",
       "availability": "InStock"
@@ -97,11 +117,26 @@
   "buyingCriteria": {
     "title": "Apartment Cat Tree Buying Criteria",
     "criteria": [
-      { "name": "Base Footprint", "description": "Measure your available space first. Most trees need 20\" x 20\" to 28\" x 28\" of floor space. Corner placement maximizes room efficiency." },
-      { "name": "Height vs Ceiling", "description": "Leave at least 12-18\" between the top platform and your ceiling. Standard 8' apartment ceilings work best with trees 4-6 feet tall." },
-      { "name": "Stability", "description": "Wide bases, heavy construction, and wall-anchor options prevent tipping on hard apartment floors during energetic play." },
-      { "name": "Scratching Surface", "description": "More sisal-wrapped posts means more redirected scratching away from apartment furniture — protecting your security deposit." },
-      { "name": "Noise", "description": "Sturdy construction reduces wobbling and banging that travels through apartment walls and floors to neighbors below." }
+      {
+        "name": "Base Footprint",
+        "description": "Measure your available space first. Most trees need 20\" x 20\" to 28\" x 28\" of floor space. Corner placement maximizes room efficiency."
+      },
+      {
+        "name": "Height vs Ceiling",
+        "description": "Leave at least 12-18\" between the top platform and your ceiling. Standard 8' apartment ceilings work best with trees 4-6 feet tall."
+      },
+      {
+        "name": "Stability",
+        "description": "Wide bases, heavy construction, and wall-anchor options prevent tipping on hard apartment floors during energetic play."
+      },
+      {
+        "name": "Scratching Surface",
+        "description": "More sisal-wrapped posts means more redirected scratching away from apartment furniture — protecting your security deposit."
+      },
+      {
+        "name": "Noise",
+        "description": "Sturdy construction reduces wobbling and banging that travels through apartment walls and floors to neighbors below."
+      }
     ]
   },
   "prosAndCons": {

@@ -4,7 +4,11 @@
   "seoTitle": "Best Cat Litter Box (2026) – What Actually Controls Odor",
   "seoDescription": "12 litter boxes tested for odor control, tracking & multi-cat use. Enclosed, automatic & budget picks that actually work. Updated Feb 2026.",
   "h1Override": "Best Cat Litter Boxes of 2026 – Tested & Compared",
-  "trustLines": ["12 boxes tested for odor control, tracking & durability", "Quick comparison: pros, cons & best use-cases", "Free US shipping on many picks (where available)"],
+  "trustLines": [
+    "12 boxes tested for odor control, tracking & durability",
+    "Quick comparison: pros, cons & best use-cases",
+    "Free US shipping on many picks (where available)"
+  ],
   "excerpt": "We tested 12 top-rated cat litter boxes for odor, size & multi-cat use. Honest pros & cons — find your perfect pick in 5 minutes. Updated Feb 2026.",
   "whoThisIsFor": [
     "Cat owners upgrading from a basic open pan",
@@ -14,22 +18,54 @@
     "Busy professionals considering automatic self-cleaning models"
   ],
   "jumpNav": [
-    { "label": "Best Overall", "anchor": "best-overall-cat-litter-box-enclosure-with-drawers-storage" },
-    { "label": "Best Automatic", "anchor": "best-automatic-60l-smart-self-cleaning-litter-box" },
-    { "label": "Multi-Cat", "anchor": "best-for-multi-cat-homes" },
-    { "label": "Large Cats", "anchor": "best-for-large-cats-and-maine-coons" },
-    { "label": "Apartments", "anchor": "best-litter-box-for-apartments" },
-    { "label": "Odor in Small Spaces", "anchor": "best-litter-box-for-odor-in-small-spaces" },
-    { "label": "Budget Picks", "anchor": "best-budget-options-under-200" },
-    { "label": "Buying Guide", "anchor": "how-to-choose-the-right-litter-box-for-your-cat" }
+    {
+      "label": "Best Overall",
+      "anchor": "best-overall-cat-litter-box-enclosure-with-drawers-storage"
+    },
+    {
+      "label": "Best Automatic",
+      "anchor": "best-automatic-60l-smart-self-cleaning-litter-box"
+    },
+    {
+      "label": "Multi-Cat",
+      "anchor": "best-for-multi-cat-homes"
+    },
+    {
+      "label": "Large Cats",
+      "anchor": "best-for-large-cats-and-maine-coons"
+    },
+    {
+      "label": "Apartments",
+      "anchor": "best-litter-box-for-apartments"
+    },
+    {
+      "label": "Odor in Small Spaces",
+      "anchor": "best-litter-box-for-odor-in-small-spaces"
+    },
+    {
+      "label": "Budget Picks",
+      "anchor": "best-budget-options-under-200"
+    },
+    {
+      "label": "Buying Guide",
+      "anchor": "how-to-choose-the-right-litter-box-for-your-cat"
+    }
   ],
   "category": "Cat Litter",
-  "keywords": ["best cat litter box", "cat litter box reviews", "top rated litter box", "litter box buying guide", "cat litter box 2026"],
+  "keywords": [
+    "best cat litter box",
+    "cat litter box reviews",
+    "top rated litter box",
+    "litter box buying guide",
+    "cat litter box 2026"
+  ],
   "publishedAt": "2026-02-10",
   "updatedAt": "2026-02-10",
   "featuredImage": "/images/guides/best-cat-litter-box-2026.jpg",
   "readingTime": 18,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "quickRecommendation": {
     "bestOverall": {
       "name": "Cat Litter Box Enclosure with Drawers & Storage",
@@ -50,39 +86,55 @@
   "comparisonProducts": [
     {
       "name": "Enclosure with Drawers & Storage (39\")",
-      "image": "https://cf.cjdropshipping.com/17664480/cfb518e7-1b7e-42e9-a2d3-52d8b21dbfdd.jpg",
+      "image": "https://getpawsy.pet/images/products/501e9150-42e0-42d7-8031-a7225a718558.jpg",
       "price": "$350.99",
       "description": "Premium cat litter box enclosure with built-in drawers, storage space, and anti-tip safety kit. Dimensions: 39\" x 18\" x 31.5\" in white finish.",
-      "advantages": ["Anti-tip safety kit included", "Built-in storage drawers", "Fits extra large litter boxes"],
+      "advantages": [
+        "Anti-tip safety kit included",
+        "Built-in storage drawers",
+        "Fits extra large litter boxes"
+      ],
       "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
       "badge": "Best Overall",
       "availability": "InStock"
     },
     {
       "name": "60L Automatic Smart Litter Box",
-      "image": "https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png",
+      "image": "https://getpawsy.pet/images/products/07507c96-a445-431f-9724-340ee01d818f.jpg",
       "price": "$268.99",
       "description": "Self-cleaning automatic cat litter box with 60L capacity, smart app control, infrared sensor, and built-in deodorizer for multi-cat households.",
-      "advantages": ["Self-cleaning with app control", "Built-in deodorizer", "Multi-cat compatible"],
+      "advantages": [
+        "Self-cleaning with app control",
+        "Built-in deodorizer",
+        "Multi-cat compatible"
+      ],
       "link": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
       "badge": "Best Automatic",
       "availability": "InStock"
     },
     {
       "name": "Wooden Enclosure 2-Room (Black)",
-      "image": "https://cf.cjdropshipping.com/17639424/6a86c7d7-ec2c-4132-97ef-5a440bf270ed.jpg",
+      "image": "https://getpawsy.pet/images/products/352ddb8f-89f6-41b1-86b8-25af8ab1adb1.jpg",
       "price": "$284.99",
       "description": "Hidden cat litter box furniture with two separate rooms, solid wood construction in sleek black finish for odor containment and privacy.",
-      "advantages": ["Two separate rooms", "Hidden furniture design", "Solid wood construction"],
+      "advantages": [
+        "Two separate rooms",
+        "Hidden furniture design",
+        "Solid wood construction"
+      ],
       "link": "/product/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black",
       "availability": "InStock"
     },
     {
       "name": "Enclosure with Barn Door (White)",
-      "image": "https://cf.cjdropshipping.com/17664480/f56eb834-2643-4b70-884a-fbf1330a1d82.jpg",
+      "image": "https://getpawsy.pet/images/products/08a62345-c1bc-438b-8169-8a49687c1289.png",
       "price": "$176.99",
       "description": "Charming barn door litter box enclosure with generous 31.5\" x 21\" interior and dedicated cat entrance hole in white finish.",
-      "advantages": ["Charming barn door aesthetic", "Generous 31.5\" x 21\" interior", "Easy cat access hole"],
+      "advantages": [
+        "Charming barn door aesthetic",
+        "Generous 31.5\" x 21\" interior",
+        "Easy cat access hole"
+      ],
       "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Budget",
       "availability": "InStock"
@@ -174,12 +226,30 @@
   "buyingCriteria": {
     "title": "Key Buying Criteria for Cat Litter Boxes",
     "criteria": [
-      { "name": "Interior Size", "description": "The litter pan inside should be at least 1.5x your cat's body length. For large breeds, look for 24\"+ interiors." },
-      { "name": "Entry Type", "description": "Top entry reduces tracking but limits accessibility. Front entry works for all cats. Side entry (in furniture) is a good middle ground." },
-      { "name": "Odor Control", "description": "Enclosed designs with ventilation are best. Avoid fully sealed boxes — they trap ammonia. Carbon filters add extra protection." },
-      { "name": "Ease of Cleaning", "description": "Look for removable trays, easy-open top panels, or automatic self-cleaning mechanisms. Avoid designs where you can't reach corners." },
-      { "name": "Material Durability", "description": "Moisture-resistant coatings on wood, stainless steel for pans. Replace scratched plastic pans every 12-18 months." },
-      { "name": "Multi-Cat Suitability", "description": "Multiple entry/exit points prevent resource guarding. Larger interiors accommodate bigger cats. One box per cat plus one extra." }
+      {
+        "name": "Interior Size",
+        "description": "The litter pan inside should be at least 1.5x your cat's body length. For large breeds, look for 24\"+ interiors."
+      },
+      {
+        "name": "Entry Type",
+        "description": "Top entry reduces tracking but limits accessibility. Front entry works for all cats. Side entry (in furniture) is a good middle ground."
+      },
+      {
+        "name": "Odor Control",
+        "description": "Enclosed designs with ventilation are best. Avoid fully sealed boxes — they trap ammonia. Carbon filters add extra protection."
+      },
+      {
+        "name": "Ease of Cleaning",
+        "description": "Look for removable trays, easy-open top panels, or automatic self-cleaning mechanisms. Avoid designs where you can't reach corners."
+      },
+      {
+        "name": "Material Durability",
+        "description": "Moisture-resistant coatings on wood, stainless steel for pans. Replace scratched plastic pans every 12-18 months."
+      },
+      {
+        "name": "Multi-Cat Suitability",
+        "description": "Multiple entry/exit points prevent resource guarding. Larger interiors accommodate bigger cats. One box per cat plus one extra."
+      }
     ]
   },
   "prosAndCons": {
