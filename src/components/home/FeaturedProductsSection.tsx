@@ -9,7 +9,7 @@ const FEATURED_ITEMS = [
   {
     name: 'Self-Cleaning Cat Litter Box – Smart App Control & Odor Lock',
     path: '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-128e',
-    image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
+    image: '/images/products/self-cleaning-litter-box.jpg',
     description: 'Automatic 60L litter box with app control, infrared sensor, and deodorizing system.',
     type: 'product' as const,
   },
