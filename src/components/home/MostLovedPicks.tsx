@@ -23,7 +23,7 @@ const HERO_PRODUCTS = [
     subtitle: 'Deep Sleep & Joint Relief for Dogs & Cats',
     price: 69.49,
     compareAt: 84.99,
-    image: 'https://cf.cjdropshipping.com/c8296810-eabc-444b-8b13-9cd466c098a6.jpg',
+    image: '/images/products/memory-foam-pet-bed.jpg',
     badge: '🏆 Best Seller',
     benefit: 'Vet-recommended memory foam for achy joints',
   },
