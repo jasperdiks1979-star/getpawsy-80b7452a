@@ -111,7 +111,6 @@ export const Footer = () => {
                 </span>
               </Link>
               <div className="text-sm text-background/60 space-y-1">
-                <p>Operated by Skidzo</p>
                 <p>Apeldoorn, Netherlands</p>
                 <p>KVK: 78156955 · VAT: NL003295015B69</p>
               </div>
