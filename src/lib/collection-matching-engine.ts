@@ -64,6 +64,9 @@ function singularizeToken(token: string): string {
   return token;
 }
 
+// Generic single-word tokens that match too broadly and cause cross-category contamination
+const GENERIC_TOKENS = new Set(['dog', 'cat', 'pet', 'kitten', 'puppy', 'best', 'for', 'and', 'the', 'with', '2026', 'new', 'top']);
+
 function buildKeywordSet(collection: SeoCollectionLike, config?: CollectionMapEntry): string[] {
   const fromDbKeywords = (collection.product_keyword_filter || '')
     .split(',')
@@ -73,7 +76,7 @@ function buildKeywordSet(collection: SeoCollectionLike, config?: CollectionMapEn
   const slugTokens = normalizeSlug(collection.slug)
     .split('-')
     .map(t => singularizeToken(t))
-    .filter(t => t.length > 2 && !['best', 'for', 'and', 'the', 'with', '2026'].includes(t));
+    .filter(t => t.length > 2 && !GENERIC_TOKENS.has(t));
 
   const slugPhrase = slugTokens.join(' ');
 
@@ -83,11 +86,13 @@ function buildKeywordSet(collection: SeoCollectionLike, config?: CollectionMapEn
     ...fromDbKeywords,
     ...(collection.product_category_filter ? [collection.product_category_filter.toLowerCase()] : []),
     ...(CORE_COLLECTION_SYNONYMS[collection.slug] || []),
-    ...slugTokens,
-    ...(slugPhrase ? [slugPhrase] : []),
+    // Only add slug phrase (multi-word), never individual generic tokens
+    ...(slugPhrase && slugPhrase.includes(' ') ? [slugPhrase] : slugTokens),
   ]);
 
-  return Array.from(merged).filter(Boolean);
+  // Remove any remaining single generic tokens
+  const result = Array.from(merged).filter(k => k && !GENERIC_TOKENS.has(k));
+  return result;
 }
 
 function textContainsAny(text: string, keywords: string[]): number {
