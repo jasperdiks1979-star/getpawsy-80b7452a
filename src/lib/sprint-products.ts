@@ -70,7 +70,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'multi level cat tree',
     conversionScore: 84,
     contentCluster: 'cat-trees',
-    image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
+    image: '/images/products/multi-level-cat-tree.jpg',
   },
   {
     slug: 'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
