@@ -56,7 +56,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Dog Crate End Table with Lockable Doors',
     price: 149.99,
     compareAt: 187.49,
-    image: 'https://cf.cjdropshipping.com/e8dc3e46-ddb6-4b52-bd1d-d9ab00451600.jpg',
+    image: '/images/products/dog-crate-end-table.jpg',
     benefit: 'Stylish furniture-grade kennel',
     pet: 'dog',
   },
