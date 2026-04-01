@@ -193,7 +193,7 @@ const GoogleReview = () => {
                   <tbody>
                     <tr className="border-b border-gray-100">
                       <td className="px-4 py-3 font-medium text-gray-600 w-1/3">Trade Name</td>
-                      <td className="px-4 py-3">Skidzo (Eenmanszaak)</td>
+                      <td className="px-4 py-3">GetPawsy (Eenmanszaak)</td>
                     </tr>
                     <tr className="border-b border-gray-100">
                       <td className="px-4 py-3 font-medium text-gray-600">KvK Number</td>
