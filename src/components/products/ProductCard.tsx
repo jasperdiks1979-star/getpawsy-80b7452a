@@ -27,6 +27,7 @@ export interface Product {
   description?: string | null;
   category?: string | null;
   image_url?: string | null;
+  image_alt_text?: string | null;
   images?: string[] | null;
   price: number;
   cost_price?: number | null;
