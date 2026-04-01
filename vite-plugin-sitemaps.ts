@@ -7,7 +7,7 @@
  * package.json "prebuild" scripts. This ensures sitemaps are always fresh.
  */
 import type { Plugin } from 'vite';
-import { writeFileSync, mkdirSync, readFileSync, existsSync, readdirSync, unlinkSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 
@@ -112,6 +112,11 @@ function buildFeedSourcePreview(feedXml: string, sourceFile: string): string {
 
   return JSON.stringify(
     {
+      served_file_path: sourceFile,
+      first_20_lines_live_body: lines,
+      contains_rss: feedXml.includes('<rss'),
+      contains_channel: feedXml.includes('<channel>'),
+      contains_item: feedXml.includes('<item>'),
       source_file_used_for_google_feed: sourceFile,
       first_20_lines_of_final_google_feed_file: lines,
       contains_rss_tag: feedXml.includes('<rss'),
@@ -131,6 +136,16 @@ function clearFeedArtifacts(baseDir: string): void {
 
   const previewPath = join(baseDir, 'api', 'feed-source-preview');
   if (existsSync(previewPath)) unlinkSync(previewPath);
+}
+
+function writeFeedArtifacts(baseDir: string, merchantFeed: string, sourceFile: string): void {
+  const feedPreview = buildFeedSourcePreview(merchantFeed, sourceFile);
+
+  writeFileSync(join(baseDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
+  writeFileSync(join(baseDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
+  writeFileSync(join(baseDir, 'google-feed.xml'), merchantFeed, 'utf-8');
+  mkdirSync(join(baseDir, 'api'), { recursive: true });
+  writeFileSync(join(baseDir, 'api', 'feed-source-preview'), feedPreview, 'utf-8');
 }
 
 function logFeedPreview(label: string, content: string): void {
@@ -777,36 +792,21 @@ export default function merchantFeedPlugin(): Plugin {
       console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries, ${allRefs.length} child files verified)`);
 
       // ── Feed source of truth: generate static XML feeds in /public ──
-      try {
-        const merchantFeed = await Promise.race([
-          buildMerchantFeed(),
-          new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
-          ),
-        ]);
-        assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml');
-        const feedPreview = buildFeedSourcePreview(merchantFeed, 'dist/google-feed.xml');
-
-        writeFileSync(join(publicDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
-        writeFileSync(join(publicDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
-        writeFileSync(join(publicDir, 'google-feed.xml'), merchantFeed, 'utf-8');
-        mkdirSync(join(publicDir, 'api'), { recursive: true });
-        writeFileSync(join(publicDir, 'api', 'feed-source-preview'), feedPreview, 'utf-8');
-        console.log(`[xml-plugin] ✓ /public/merchant-feed.xml (${merchantFeed.length} bytes)`);
-        console.log(`[xml-plugin] ✓ /public/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
-        console.log(`[xml-plugin] ✓ /public/google-feed.xml (${merchantFeed.length} bytes)`);
-        console.log(`[xml-plugin] ✓ /public/api/feed-source-preview (${feedPreview.length} bytes)`);
-        const finalPublicFeed = readFileSync(join(publicDir, 'google-feed.xml'), 'utf8');
-        assertGoogleFeedValid(finalPublicFeed, 'public/google-feed.xml');
-        logFeedPreview('public/google-feed.xml', finalPublicFeed);
-      } catch (err) {
-        console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in buildStart, writing fallback feeds:', err);
-        writeFileSync(join(publicDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(publicDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(publicDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
-        mkdirSync(join(publicDir, 'api'), { recursive: true });
-        writeFileSync(join(publicDir, 'api', 'feed-source-preview'), buildFeedSourcePreview(FALLBACK_FEED, 'dist/google-feed.xml'), 'utf-8');
-      }
+      const merchantFeed = await Promise.race([
+        buildMerchantFeed(),
+        new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+        ),
+      ]);
+      assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml');
+      writeFeedArtifacts(publicDir, merchantFeed, 'dist/google-feed.xml');
+      console.log(`[xml-plugin] ✓ /public/merchant-feed.xml (${merchantFeed.length} bytes)`);
+      console.log(`[xml-plugin] ✓ /public/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
+      console.log(`[xml-plugin] ✓ /public/google-feed.xml (${merchantFeed.length} bytes)`);
+      console.log('[xml-plugin] ✓ /public/api/feed-source-preview');
+      const finalPublicFeed = readFileSync(join(publicDir, 'google-feed.xml'), 'utf8');
+      assertGoogleFeedValid(finalPublicFeed, 'public/google-feed.xml');
+      logFeedPreview('public/google-feed.xml', finalPublicFeed);
 
       // Keep diagnostics static file only
       try {
@@ -831,36 +831,21 @@ export default function merchantFeedPlugin(): Plugin {
       mkdirSync(outDir, { recursive: true });
       clearFeedArtifacts(outDir);
 
-      try {
-        const merchantFeed = await Promise.race([
-          buildMerchantFeed(),
-          new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
-          ),
-        ]);
-        assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml');
-        const feedPreview = buildFeedSourcePreview(merchantFeed, 'dist/google-feed.xml');
-
-        writeFileSync(join(outDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
-        writeFileSync(join(outDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
-        writeFileSync(join(outDir, 'google-feed.xml'), merchantFeed, 'utf-8');
-        mkdirSync(join(outDir, 'api'), { recursive: true });
-        writeFileSync(join(outDir, 'api', 'feed-source-preview'), feedPreview, 'utf-8');
-        console.log(`[xml-plugin] ✓ /dist/merchant-feed.xml (${merchantFeed.length} bytes)`);
-        console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
-        console.log(`[xml-plugin] ✓ /dist/google-feed.xml (${merchantFeed.length} bytes)`);
-        console.log(`[xml-plugin] ✓ /dist/api/feed-source-preview (${feedPreview.length} bytes)`);
-        const finalDistFeed = readFileSync(join(outDir, 'google-feed.xml'), 'utf8');
-        assertGoogleFeedValid(finalDistFeed, 'dist/google-feed.xml');
-        logFeedPreview('dist/google-feed.xml', finalDistFeed);
-      } catch (err) {
-        console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in closeBundle, writing fallback feeds:', err);
-        writeFileSync(join(outDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(outDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(outDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
-        mkdirSync(join(outDir, 'api'), { recursive: true });
-        writeFileSync(join(outDir, 'api', 'feed-source-preview'), buildFeedSourcePreview(FALLBACK_FEED, 'dist/google-feed.xml'), 'utf-8');
-      }
+      const merchantFeed = await Promise.race([
+        buildMerchantFeed(),
+        new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+        ),
+      ]);
+      assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml');
+      writeFeedArtifacts(outDir, merchantFeed, 'dist/google-feed.xml');
+      console.log(`[xml-plugin] ✓ /dist/merchant-feed.xml (${merchantFeed.length} bytes)`);
+      console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
+      console.log(`[xml-plugin] ✓ /dist/google-feed.xml (${merchantFeed.length} bytes)`);
+      console.log('[xml-plugin] ✓ /dist/api/feed-source-preview');
+      const finalDistFeed = readFileSync(join(outDir, 'google-feed.xml'), 'utf8');
+      assertGoogleFeedValid(finalDistFeed, 'dist/google-feed.xml');
+      logFeedPreview('dist/google-feed.xml', finalDistFeed);
 
       try {
         const diagnostics = await Promise.race([
