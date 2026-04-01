@@ -325,7 +325,7 @@ export const EnhancedSearch = ({
                   )}
                 >
                   <Search className="w-4 h-4" />
-                  Alle resultaten voor "{query}"
+                  All results for "{query}"
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
