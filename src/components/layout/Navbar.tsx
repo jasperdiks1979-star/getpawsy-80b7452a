@@ -559,33 +559,8 @@ export const Navbar = () => {
                         )}
                       </div>
 
-                      {/* Dog Training Quick Links — Mobile */}
-                      <div className="mb-2">
-                        <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                          Dog Training
-                        </p>
-                      </div>
-                      <div className="rounded-xl border bg-card overflow-hidden mb-4">
-                        <SheetClose asChild>
-                          <Link to="/collections/all" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🐕</span>
-                            <span className="font-medium">All Training Tools</span>
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link to="/collections/dog-collars-leashes" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🦮</span>
-                            <span className="font-medium">Collars & Leashes</span>
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link to="/collections/dog-toys" className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors">
-                            <span>🎾</span>
-                            <span className="font-medium">Dog Toys</span>
-                          </Link>
-                        </SheetClose>
-                      </div>
-                      
+
+
                       {/* Mobile Categories */}
                       <div className="mb-2">
                         <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
