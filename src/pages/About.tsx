@@ -17,7 +17,7 @@ const About = () => {
     <Layout>
       <Helmet>
         <title>About GetPawsy | Trusted Pet Supplies for US Pet Owners</title>
-        <meta name="description" content="GetPawsy is a pet-first online store serving US customers. Operated by Skidzo (Netherlands). Free shipping on orders $35+, 30-day returns, and real customer support." />
+        <meta name="description" content="GetPawsy is a pet-first online store serving US customers. Free shipping on orders $35+, 30-day returns, and real customer support." />
         <link rel="canonical" href="https://getpawsy.pet/about" />
       </Helmet>
       <div className="min-h-screen">
