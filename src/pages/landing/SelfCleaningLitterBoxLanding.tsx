@@ -456,7 +456,7 @@ export default function SelfCleaningLitterBoxLanding() {
               <a href="/terms" className="text-background/60 hover:text-primary transition-colors">Terms of Service</a>
             </div>
             <div className="text-xs text-background/40 space-y-1">
-              <p>GetPawsy — Operated by Skidzo</p>
+              <p>GetPawsy — Pet Supplies for US Pet Owners</p>
               <p>Apeldoorn, Netherlands · KVK 78156955 · VAT NL003295015B69</p>
               <p><a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
             </div>

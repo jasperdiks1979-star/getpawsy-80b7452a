@@ -610,7 +610,7 @@ const Bestsellers = () => {
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">Why Trust GetPawsy?</h2>
           <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
-            We're not a generic marketplace. GetPawsy is a curated pet supply store operated by Skidzo, focused exclusively on quality-tested products for US pet families.
+            We're not a generic marketplace. GetPawsy is a curated pet supply store focused exclusively on quality-tested products for US pet families.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[

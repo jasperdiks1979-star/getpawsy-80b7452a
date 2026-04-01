@@ -121,7 +121,7 @@ export const Footer = () => {
                 Our support team responds within 24 hours.
               </p>
               <p className="text-xs text-background/40 mt-2 leading-relaxed">
-                GetPawsy is operated by Skidzo, a registered business based in the Netherlands, serving customers in the United States through trusted logistics partners with US delivery.
+                GetPawsy is a registered pet supply business based in the Netherlands, serving customers in the United States with free shipping on orders over $35.
               </p>
             </div>
 

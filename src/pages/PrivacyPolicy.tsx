@@ -210,7 +210,7 @@ const PrivacyPolicy = () => {
                     </a>
                   </div>
                   <div className="text-muted-foreground space-y-1">
-                    <p className="m-0 font-semibold text-foreground">Skidzo</p>
+                    <p className="m-0 font-semibold text-foreground">GetPawsy</p>
                     <p className="m-0">Apeldoorn, Gelderland, Netherlands</p>
                     <p className="m-0 mt-3 text-sm">KVK: 78156955</p>
                     <p className="m-0 text-sm">VAT ID: NL003295015B69</p>

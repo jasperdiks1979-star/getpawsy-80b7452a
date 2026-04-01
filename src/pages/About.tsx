@@ -116,7 +116,7 @@ const About = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Legal entity:</span>
-                      <span className="text-foreground font-medium">Skidzo</span>
+                      <span className="text-foreground font-medium">GetPawsy</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Trading name:</span>
