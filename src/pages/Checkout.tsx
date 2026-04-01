@@ -730,7 +730,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Truck className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span>Free US shipping over ${FREE_SHIPPING_THRESHOLD} • ${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under</span>
+                  <span>Free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD} • ${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Package className="w-4 h-4 text-primary flex-shrink-0" />

@@ -773,7 +773,7 @@ const BestsellerDetail = () => {
         <title>{bestseller.seo_title || `${product.name} | GetPawsy Bestseller`}</title>
         <meta 
           name="description" 
-          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free US shipping on orders over $35.`}
+          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free shipping on eligible orders over $35.`}
         />
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
@@ -1241,7 +1241,7 @@ const BestsellerDetail = () => {
                       <Truck className="w-5 h-5 text-primary" />
                     </div>
                     <div className="text-sm">
-                      <p className="font-semibold">Free US Shipping</p>
+                      <p className="font-semibold">Free Shipping Available</p>
                       <p className="text-muted-foreground text-xs">On orders over $35</p>
                     </div>
                   </motion.div>
@@ -1489,7 +1489,7 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer free US shipping on orders over ${FREE_SHIPPING_THRESHOLD}. Orders under ${FREE_SHIPPING_THRESHOLD} ship for a flat rate of ${FLAT_SHIPPING_RATE.toFixed(2)}. 
+                      We offer free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD}. Orders under ${FREE_SHIPPING_THRESHOLD} ship for a flat rate of ${FLAT_SHIPPING_RATE.toFixed(2)}. 
                       Standard delivery takes {DELIVERY_TIME_STANDARD}. Once your order is shipped, you'll receive a tracking number to monitor your package.
                     </AccordionContent>
                   </AccordionItem>
@@ -1645,7 +1645,7 @@ const BestsellerDetail = () => {
                 Ready to Make Your Pet Happy?
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
-                Find the right products for your pet. Browse our selection and enjoy free US shipping on orders over $35.
+                Find the right products for your pet. Browse our selection and enjoy free shipping on eligible orders over $35.
                 <span className="block mt-2 text-primary font-medium">Estimated delivery: 5–10 business days.</span>
               </p>
               

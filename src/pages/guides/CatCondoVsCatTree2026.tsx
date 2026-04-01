@@ -246,7 +246,7 @@ export default function CatCondoVsCatTree2026() {
           <section className="bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center">
             <h2 className="text-xl font-display font-bold mb-3">Ready to Choose?</h2>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              Every cat tree and condo in our collection is curated for stability, durability, and cat-approved design. Free US shipping on orders over $35.
+              Every cat tree and condo in our collection is curated for stability, durability, and cat-approved design. Free shipping on eligible orders over $35.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link to="/collections/cat-trees-and-condos" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">

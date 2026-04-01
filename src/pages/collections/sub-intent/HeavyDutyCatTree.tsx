@@ -5,7 +5,7 @@ export default function HeavyDutyCatTree() {
     <SubIntentPage
       canonical="https://getpawsy.pet/collections/all"
       title="Heavy Duty Cat Trees – Built for 25+ lb Cats (2026)"
-      metaDesc="Shop heavy duty cat trees with solid wood frames, thick sisal posts, and anti-tip systems. Engineered for large breeds and multi-cat homes. Free US shipping."
+      metaDesc="Shop heavy duty cat trees with solid wood frames, thick sisal posts, and anti-tip systems. Engineered for large breeds and multi-cat homes. Free shipping available."
       h1="Heavy Duty Cat Trees — Solid Construction for Large & Active Cats (2026)"
       subtitle={'Reinforced cat trees with solid wood frames, 4"+ sisal posts, and wall-anchor stability systems. Built to handle 40–60+ lbs of dynamic cat force.'}
       ctaText="Shop Heavy Duty Trees"

@@ -103,7 +103,7 @@ const CatLitterBoxLanding = () => {
     <>
       <Helmet>
         <title>Stop Cleaning Your Cat's Litter Box Forever | GetPawsy</title>
-        <meta name="description" content="The 60L Smart Automatic Cat Litter Box with app control, deodorizer, and infrared safety sensors. Perfect for multi-cat homes. Free US shipping." />
+        <meta name="description" content="The 60L Smart Automatic Cat Litter Box with app control, deodorizer, and infrared safety sensors. Perfect for multi-cat homes. Free shipping available." />
         <link rel="canonical" href={`https://getpawsy.pet/product/${LITTER_BOX_SLUG}`} />
         <meta name="robots" content="noindex, follow" />
       </Helmet>
@@ -116,7 +116,7 @@ const CatLitterBoxLanding = () => {
           <Link to="/" className="font-display text-xl font-bold text-primary">GetPawsy</Link>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Truck className="w-3.5 h-3.5 text-primary" />
-            <span>Free US Shipping $35+</span>
+            <span>Free Shipping on Orders $35+</span>
           </div>
         </div>
       </header>
@@ -178,7 +178,7 @@ const CatLitterBoxLanding = () => {
             <div className="space-y-3 mb-5">
               <Button onClick={handleBuyNow} disabled={!availability.isInStock} className="w-full h-14 text-base font-semibold rounded-xl" size="lg">
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                Buy Now — Free US Shipping
+                Buy Now — Free Shipping Available
               </Button>
               <Button onClick={handleAddToCart} disabled={!availability.isInStock} variant="outline" className="w-full h-12 rounded-xl">
                 Add to Cart
@@ -241,7 +241,7 @@ const CatLitterBoxLanding = () => {
             Join cat owners who reclaimed their time with the smart litter box.
           </p>
           <Button onClick={handleBuyNow} disabled={!availability.isInStock} size="lg" className="px-8 rounded-xl text-base font-semibold">
-            Buy Now — Free US Shipping
+            Buy Now — Free Shipping Available
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </section>
@@ -270,7 +270,7 @@ const CatLitterBoxLanding = () => {
         <section className="bg-card border border-border rounded-2xl p-6 md:p-8 text-center mb-8">
           <h2 className="text-xl font-display font-bold text-foreground mb-2">Take the First Step to a Cleaner Home</h2>
           <p className="text-muted-foreground text-sm mb-5 max-w-md mx-auto">
-            Free US shipping on orders over $35. 30-day return policy. Secure checkout.
+            Free shipping on eligible orders over $35. 30-day return policy. Secure checkout.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button onClick={handleBuyNow} disabled={!availability.isInStock} size="lg" className="px-8 rounded-xl text-base font-semibold">

@@ -135,8 +135,8 @@ const orthopedicDogBeds: NicheProfile = {
   ],
   revenueScenarios: buildScenarios(14800, 8, 65),
   ctrOptimizations: [
-    { page: '/collections/all', currentTitle: 'Best Orthopedic Dog Beds 2026', newTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)', currentMeta: 'Shop orthopedic dog beds...', newMeta: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free US shipping over $35.' },
-    { page: '/collections/all', currentTitle: 'Memory Foam Dog Beds', newTitle: 'Best Memory Foam Dog Beds — Vet-Tested (2026)', currentMeta: 'Shop memory foam...', newMeta: 'Cheap foam flattens in weeks. Our memory foam beds use 1.8+ lb/ft³ density that lasts 3–5 years. Free US shipping.' },
+    { page: '/collections/all', currentTitle: 'Best Orthopedic Dog Beds 2026', newTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)', currentMeta: 'Shop orthopedic dog beds...', newMeta: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35.' },
+    { page: '/collections/all', currentTitle: 'Memory Foam Dog Beds', newTitle: 'Best Memory Foam Dog Beds — Vet-Tested (2026)', currentMeta: 'Shop memory foam...', newMeta: 'Cheap foam flattens in weeks. Our memory foam beds use 1.8+ lb/ft³ density that lasts 3–5 years. Free shipping available.' },
     { page: '/collections/all', currentTitle: 'Orthopedic Beds for Large Dogs', newTitle: 'Best Orthopedic Beds for Large Dogs – 90+ lbs Tested', currentMeta: 'Large dog beds...', newMeta: "Large breed beds that don't flatten. Load-tested for 90+ lb dogs with 6\" foam. Vet-approved, waterproof. Free shipping." },
   ],
   executionChecklist: [
@@ -188,7 +188,7 @@ const catTrees: NicheProfile = {
   ],
   revenueScenarios: buildScenarios(9200, 12, 120),
   ctrOptimizations: [
-    { page: '/collections/all', currentTitle: "Heavy Duty Cat Trees for Large Cats – Won't Tip (2026)", newTitle: "5 Best Cat Trees for Large Cats – Anti-Tip Tested (2026)", currentMeta: 'Tired of wobbly cat trees?...', newMeta: "Wobbly cat tree? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal, anti-tip tested. Free US shipping over $35." },
+    { page: '/collections/all', currentTitle: "Heavy Duty Cat Trees for Large Cats – Won't Tip (2026)", newTitle: "5 Best Cat Trees for Large Cats – Anti-Tip Tested (2026)", currentMeta: 'Tired of wobbly cat trees?...', newMeta: "Wobbly cat tree? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal, anti-tip tested. Free shipping on eligible orders over $35." },
     { page: '/collections/all', currentTitle: 'Best Cat Tree for Maine Coon', newTitle: 'Best Cat Tree for Maine Coon – 25+ lb Rated (2026)', currentMeta: 'Find cat trees for Maine Coons...', newMeta: "Maine Coons need extra-wide platforms & 25+ lb capacity. Our expert-reviewed picks won't wobble. Free shipping." },
     { page: '/collections/all', currentTitle: 'Heavy Duty Cat Trees', newTitle: 'Heavy Duty Cat Trees – 40+ lb Capacity Tested', currentMeta: 'Shop heavy duty cat trees...', newMeta: "Reinforced with solid wood frames and anti-tip hardware. Rated for 40+ lbs. Expert-reviewed, free US shipping." },
   ],
@@ -243,7 +243,7 @@ const dogCarSeats: NicheProfile = {
   ctrOptimizations: [
     { page: '/collections/all', currentTitle: 'Crash-Tested Dog Car Seats & Safety Gear (2026)', newTitle: '6 Safest Dog Car Seats – Crash-Test Rated (2026)', currentMeta: 'Your dog rides unrestrained?...', newMeta: "A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping." },
     { page: '/collections/all', currentTitle: 'Best Dog Car Seats for Small Dogs', newTitle: 'Best Dog Car Seats for Small Dogs – Under 25 lbs', currentMeta: 'Shop dog car seats...', newMeta: "Small dogs need elevated, padded car seats with harness systems. Crash-test informed picks. Free shipping over $35." },
-    { page: '/collections/all', currentTitle: 'Dog Booster Seats', newTitle: 'Dog Booster Seats – Elevated & Safe for Small Breeds', currentMeta: 'Shop booster seats...', newMeta: "Give your small dog a safe window view. Padded, secured booster seats for dogs under 20 lbs. Free US shipping." },
+    { page: '/collections/all', currentTitle: 'Dog Booster Seats', newTitle: 'Dog Booster Seats – Elevated & Safe for Small Breeds', currentMeta: 'Shop booster seats...', newMeta: "Give your small dog a safe window view. Padded, secured booster seats for dogs under 20 lbs. Free shipping available." },
   ],
   executionChecklist: [
     { task: 'Pillar page at 2,000+ words with crash-test data', priority: 'critical', status: 'done', week: 1 },

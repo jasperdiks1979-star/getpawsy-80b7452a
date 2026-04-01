@@ -120,7 +120,7 @@ export const OPERATING_COUNTRY = 'Apeldoorn, Netherlands (serving US customers)'
 
 export const TRUST_BADGES = {
   shipping: {
-    title: 'Free US Shipping',
+    title: 'Free Shipping Available',
     subtitle: `On orders over $${FREE_SHIPPING_THRESHOLD}`,
   },
   delivery: {
@@ -144,7 +144,7 @@ export const TRUST_BADGES = {
 // ============= FORMATTED MESSAGES =============
 
 /** Free shipping announcement bar message */
-export const ANNOUNCEMENT_FREE_SHIPPING = `🚚 Free US shipping on orders over $${FREE_SHIPPING_THRESHOLD} (${DELIVERY_TIME_STANDARD})`;
+export const ANNOUNCEMENT_FREE_SHIPPING = `🚚 Free shipping on orders over $${FREE_SHIPPING_THRESHOLD} (${DELIVERY_TIME_STANDARD})`;
 
 /** Cart free shipping progress message */
 export const getCartShippingMessage = (currentTotal: number): string => {
@@ -160,7 +160,7 @@ export const FLAT_RATE_MESSAGE = `Orders under $${FREE_SHIPPING_THRESHOLD} ship 
 
 /** Product page shipping info */
 export const PRODUCT_SHIPPING_INFO = {
-  freeShipping: `Free US shipping on orders $${FREE_SHIPPING_THRESHOLD}+`,
+  freeShipping: `Free shipping on eligible orders $${FREE_SHIPPING_THRESHOLD}+`,
   deliveryTime: `Estimated delivery: ${DELIVERY_TIME_STANDARD}`,
   usFulfillment: US_FULFILLMENT_NOTE,
   returns: RETURNS_POLICY_SHORT,
@@ -168,7 +168,7 @@ export const PRODUCT_SHIPPING_INFO = {
 
 // ============= SEO/FAQ SHIPPING TEXT =============
 
-export const FAQ_SHIPPING_ANSWER = `We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship directly to customers across the United States.`;
+export const FAQ_SHIPPING_ANSWER = `We offer free shipping on eligible orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship directly to customers across the United States.`;
 
 export const FAQ_RETURNS_ANSWER = `We offer a ${RETURN_WINDOW_DAYS}-day return window on eligible products. Contact us at ${SUPPORT_EMAIL} with your order number to start a return according to our return policy.`;
 

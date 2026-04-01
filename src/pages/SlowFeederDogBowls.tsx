@@ -117,7 +117,7 @@ export default function SlowFeederDogBowls() {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: 'Best Slow Feeder Dog Bowls 2026 | Vet Recommended | GetPawsy',
-    description: 'Reduce bloating, vomiting & choking with premium slow feeder dog bowls. Dishwasher safe. Free US shipping over $35.',
+    description: 'Reduce bloating, vomiting & choking with premium slow feeder dog bowls. Dishwasher safe. Free shipping on eligible orders over $35.',
     url: PAGE_URL,
     publisher: {
       '@type': 'Organization',
@@ -130,7 +130,7 @@ export default function SlowFeederDogBowls() {
     <>
       <Helmet>
         <title>Best Slow Feeder Dog Bowls 2026 | Vet Recommended | GetPawsy</title>
-        <meta name="description" content="Reduce bloating, vomiting & choking with premium slow feeder dog bowls. Dishwasher safe. Free US shipping over $35." />
+        <meta name="description" content="Reduce bloating, vomiting & choking with premium slow feeder dog bowls. Dishwasher safe. Free shipping on eligible orders over $35." />
         <link rel="canonical" href={PAGE_URL} />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
@@ -167,7 +167,7 @@ export default function SlowFeederDogBowls() {
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
-                Free US shipping over ${FREE_SHIPPING_THRESHOLD}
+                Free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD}
               </li>
             </ul>
 
@@ -365,7 +365,7 @@ export default function SlowFeederDogBowls() {
 
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
                     <Truck className="w-3 h-3 flex-shrink-0" />
-                    <span>Free US shipping over ${FREE_SHIPPING_THRESHOLD} • {DELIVERY_TIME_STANDARD}</span>
+                    <span>Free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD} • {DELIVERY_TIME_STANDARD}</span>
                   </div>
                 </div>
               </div>

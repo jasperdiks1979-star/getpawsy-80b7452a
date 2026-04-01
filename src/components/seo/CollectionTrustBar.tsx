@@ -10,7 +10,7 @@ export function CollectionTrustBar() {
     <div className="flex flex-wrap items-center justify-center gap-6 py-4 px-6 rounded-xl bg-secondary/30 border border-secondary/50 mb-8">
       <div className="flex items-center gap-2 text-sm text-secondary-foreground">
         <Truck className="w-4 h-4 text-primary" />
-        <span className="font-medium">Free US Shipping ${FREE_SHIPPING_THRESHOLD}+ ({DELIVERY_TIME_STANDARD})</span>
+        <span className="font-medium">Free Shipping ${FREE_SHIPPING_THRESHOLD}+ ({DELIVERY_TIME_STANDARD})</span>
       </div>
       <div className="flex items-center gap-2 text-sm text-secondary-foreground">
         <RotateCcw className="w-4 h-4 text-primary" />

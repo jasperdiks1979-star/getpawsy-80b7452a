@@ -87,10 +87,10 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['all pet products', 'cat and dog products', 'pet essentials', 'pet supplies'],
     seo_intro: 'Browse every product in the GetPawsy catalog — from cat trees and litter solutions to dog beds, strollers, and travel gear. All orders ship within the United States with tracking included.',
     meta_title: 'All Products — Full Pet Product Catalog | GetPawsy',
-    meta_description: 'Shop all GetPawsy products: cat trees, litter boxes, dog beds, strollers & more. Free US shipping on $35+. 30-day returns.',
+    meta_description: 'Shop all GetPawsy products: cat trees, litter boxes, dog beds, strollers & more. Free shipping on eligible orders $35+. 30-day returns.',
     faq: [
       { question: 'What products does GetPawsy sell?', answer: 'GetPawsy offers a curated selection of premium pet products including cat trees, self-cleaning litter boxes, orthopedic dog beds, pet strollers, and travel accessories — all shipped within the United States.' },
-      { question: 'Do you offer free shipping?', answer: 'Yes! Orders over $35 qualify for free US shipping. Orders under $35 ship for a flat rate of $5.99.' },
+      { question: 'Do you offer free shipping?', answer: 'Yes! Orders over $35 qualify for free shipping. Orders under $35 ship for a flat rate of $5.99.' },
     ],
     related_blog_slug: null,
     related_collection_slugs: ['cat', 'dog'],
@@ -160,7 +160,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['no-pull harness', 'dog leash', 'training leash', 'slip lead', 'head collar', 'long line'],
     seo_intro: 'Find the best no-pull harnesses, training leashes, slip leads, and control tools for dogs that pull. Humane, positive-reinforcement gear trusted by professional trainers and US dog owners.',
     meta_title: 'Dog Leash & Control — No-Pull Training Tools 2026 | GetPawsy',
-    meta_description: 'Shop no-pull harnesses, training leashes & control tools for dogs. Humane solutions for pullers. Free US shipping $35+, 30-day returns.',
+    meta_description: 'Shop no-pull harnesses, training leashes & control tools for dogs. Humane solutions for pullers. Free shipping $35+, 30-day returns.',
     faq: [
       { question: 'What is the best harness for a dog that pulls?', answer: 'A front-clip no-pull harness is the most effective and humane option. It redirects your dog\'s momentum toward you when they pull, making walks more manageable without causing discomfort.' },
       { question: 'Are slip leads good for training?', answer: 'Slip leads can be effective for trained dogs in specific situations (vet visits, emergency control), but for everyday leash training, a front-clip harness paired with positive reinforcement is more effective and safer.' },
@@ -179,7 +179,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['puppy potty pads', 'training pads', 'grass mat', 'housebreaking', 'potty training spray'],
     seo_intro: 'Everything you need for successful puppy and dog potty training. From absorbent training pads and grass mats to attractant sprays and potty bells — get your dog housetrained faster with proven tools.',
     meta_title: 'Dog Potty Training — Pads, Mats & Solutions 2026 | GetPawsy',
-    meta_description: 'Shop potty training pads, grass mats, sprays & tools for puppies and dogs. Housebreaking essentials. Free US shipping $35+.',
+    meta_description: 'Shop potty training pads, grass mats, sprays & tools for puppies and dogs. Housebreaking essentials. Free Shipping on Orders $35+.',
     faq: [
       { question: 'How long does potty training a puppy take?', answer: 'Most puppies can be reliably housetrained within 4-6 months, though some may take up to a year. Consistency, positive reinforcement, and a regular schedule are key to faster results.' },
       { question: 'Are grass pads better than regular potty pads?', answer: 'Grass pads (real or artificial) can make the transition to outdoor potty habits easier because they teach dogs to associate grass with bathroom time. Regular pads are more absorbent for indoor-only use.' },

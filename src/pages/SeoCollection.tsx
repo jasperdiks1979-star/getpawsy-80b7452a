@@ -668,7 +668,7 @@ const SeoCollection = () => {
 
         {/* Trust strip — always visible, compact */}
         <div className="flex flex-wrap items-center gap-3 md:gap-6 py-2 px-3 mb-3 rounded-lg bg-secondary/20 border border-secondary/40 text-xs text-secondary-foreground">
-          <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> Free US Shipping $35+</span>
+          <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> Free Shipping on Orders $35+</span>
           <span className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /> 30-Day Returns</span>
           <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Secure Checkout</span>
         </div>
@@ -946,7 +946,7 @@ const SeoCollection = () => {
           {domConfig && (
             <MidContentCTA
               headline={`Find the Best ${collection.name.replace(/^Best\s+/i, '').replace(/\s–.*$/, '')} for Your Pet`}
-              subtext="Browse our curated selection — every product is quality-tested with free US shipping over $35."
+              subtext="Browse our curated selection — every product is quality-tested with free shipping on eligible orders over $35."
               ctaText="Shop Now"
               ctaHref="#products"
             />

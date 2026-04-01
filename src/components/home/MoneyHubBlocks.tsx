@@ -16,7 +16,7 @@ const MONEY_HUBS: Array<{
     anchor: 'premium cat trees and condos',
     content:
       'Standard cat trees are built for cats under 12 lbs — but Maine Coons, Ragdolls, and Norwegian Forest Cats weigh 15–25 lbs and generate 4x their body weight in impact force when jumping. That\'s why we curate only heavy-duty cat trees with solid wood or reinforced engineered-wood frames, 4-inch diameter sisal posts, and platforms 18 inches or wider. Our large-cat collection includes wall-anchor hardware and anti-tip systems rated for 40+ lbs of dynamic load. Whether you need a floor-to-ceiling tension pole model for a multi-cat household or a compact heavy-duty tree for an apartment, every pick is stability-tested and backed by our 30-day return policy with free US shipping. See our expert comparison of the 7 best cat trees for large cats in our 2026 stability guide.',
-    badges: ['25+ lb Rated', 'Anti-Tip Tested', 'Free US Shipping'],
+    badges: ['25+ lb Rated', 'Anti-Tip Tested', 'Free Shipping Available'],
     guideLink: '/guides/best-cat-trees-large-cats-2026',
   },
   {
@@ -24,7 +24,7 @@ const MONEY_HUBS: Array<{
     href: '/collections/best-cat-litter-boxes',
     anchor: 'best cat litter boxes',
     content:
-      'Finding the right litter box means balancing odor control, ease of cleaning, and your cat\'s comfort. Our expert-tested collection features self-cleaning systems that reduce daily scooping by 90%, enclosed boxes that trap odors with activated carbon filters, and extra-large options designed for cats over 15 lbs. We also carry furniture-style enclosures that blend into your living room décor. Every litter box is tested for splash resistance, entry height accessibility, and long-term durability. Free US shipping over $35 and a 30-day return policy.',
+      'Finding the right litter box means balancing odor control, ease of cleaning, and your cat\'s comfort. Our expert-tested collection features self-cleaning systems that reduce daily scooping by 90%, enclosed boxes that trap odors with activated carbon filters, and extra-large options designed for cats over 15 lbs. We also carry furniture-style enclosures that blend into your living room décor. Every litter box is tested for splash resistance, entry height accessibility, and long-term durability. Free shipping on eligible orders over $35 and a 30-day return policy.',
     badges: ['Odor Control', 'Self-Cleaning', 'Large Cat Friendly'],
     guideLink: '/guides/best-cat-litter-box-2026',
   },

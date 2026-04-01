@@ -341,7 +341,7 @@ export default function SlowFeederOffer() {
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Truck className="w-5 h-5" />
-                <span>Free US Shipping $35+</span>
+                <span>Free Shipping on Orders $35+</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Star className="w-5 h-5" />

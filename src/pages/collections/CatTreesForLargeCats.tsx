@@ -16,7 +16,7 @@ import { PAASection } from "@/components/seo/PAASection";
 
 const CANONICAL = 'https://getpawsy.pet/collections/all';
 const PAGE_TITLE = 'Heavy Duty Cat Trees for Large Cats – Won\'t Tip (2026)';
-const META_DESC = 'Tired of wobbly cat trees? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal posts, anti-tip tested. Free US shipping.';
+const META_DESC = 'Tired of wobbly cat trees? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal posts, anti-tip tested. Free shipping available.';
 
 const FAQ_DATA = [
   { question: 'What cat tree can hold a 25 lb cat?', answer: 'Look for cat trees with solid wood or engineered wood bases rated for 40+ lbs. Avoid pressed-board models. Heavy-duty cat trees designed for large breeds use reinforced platforms, wall-anchor systems, and thick sisal posts (4"+ diameter) to safely support cats weighing 20–30+ lbs without wobbling.' },

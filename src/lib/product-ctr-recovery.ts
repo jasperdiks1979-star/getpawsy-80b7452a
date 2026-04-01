@@ -36,7 +36,7 @@ function humanize(slug: string): string {
 
 function buildSeoIntro(slug: string): string {
   const name = humanize(slug).toLowerCase();
-  return `Discover the ${name} that pet owners across the US trust. At GetPawsy, every product is carefully selected for safety, durability, and real-world performance. This ${name} stands out for its premium materials, thoughtful design, and excellent value. Whether you're upgrading from a budget option or buying for the first time, you'll notice the difference. Backed by our 30-day return policy and free US shipping on orders over $35. Our team reviews each item to ensure it meets the standards your pet deserves.`;
+  return `Discover the ${name} that pet owners across the US trust. At GetPawsy, every product is carefully selected for safety, durability, and real-world performance. This ${name} stands out for its premium materials, thoughtful design, and excellent value. Whether you're upgrading from a budget option or buying for the first time, you'll notice the difference. Backed by our 30-day return policy and free shipping on eligible orders over $35. Our team reviews each item to ensure it meets the standards your pet deserves.`;
 }
 
 function buildProductFaq(slug: string): Array<{ question: string; answer: string }> {
@@ -97,7 +97,7 @@ export function runProductCtrRecovery(
     seoIntro: buildSeoIntro(p.slug),
     faqSchema: buildProductFaq(p.slug),
     relatedGuides: findGuides(p.slug),
-    trustBadges: ['Free US Shipping', '30-Day Returns', 'Pet-Safe Materials', 'Expert Tested'],
+    trustBadges: ['Free Shipping Available', '30-Day Returns', 'Pet-Safe Materials', 'Expert Tested'],
     estimatedCtrLift: `${p.ctr.toFixed(1)}% → ${Math.min(p.ctr + 2.5, 5).toFixed(1)}% (est.)`,
   }));
 

@@ -82,7 +82,7 @@ export function ConversionBadges({ picks }: Props) {
       <div className="flex items-center justify-center gap-8 text-xs text-muted-foreground bg-muted/40 rounded-xl py-3 border border-border/60">
         <span className="flex items-center gap-2">
           <Truck className="w-4 h-4 text-primary" />
-          <span className="font-medium">Free US Shipping</span>
+          <span className="font-medium">Free Shipping Available</span>
         </span>
         <span className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-primary" />

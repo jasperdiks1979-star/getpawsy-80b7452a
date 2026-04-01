@@ -73,7 +73,7 @@ const ExitPopupContent = forwardRef<HTMLDivElement, {
             {/* Trust signals — compliant, factual */}
             <div className="grid grid-cols-2 gap-2 mb-5">
               {[
-                { icon: Truck, label: 'Free US Shipping $35+' },
+                { icon: Truck, label: 'Free Shipping on Orders $35+' },
                 { icon: RotateCcw, label: '30-Day Return Policy' },
                 { icon: ShieldCheck, label: 'Secure Checkout' },
                 { icon: Heart, label: 'Pet-Friendly Products' },

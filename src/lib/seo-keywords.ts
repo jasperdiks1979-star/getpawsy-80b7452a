@@ -978,7 +978,7 @@ export function generateProductKeywords(
 // Smart meta description templates based on product type
 const metaTemplates = {
   benefit: (productName: string, benefit: string, price?: number) =>
-    `${productName} - ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Free US shipping on orders over $35. Shop now at GetPawsy!`,
+    `${productName} - ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Free shipping on eligible orders over $35. Shop now at GetPawsy!`,
   
   emotional: (productName: string, hook: string, price?: number) =>
     `${productName} - ${hook}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Premium quality, vet-approved. Order today at GetPawsy!`,
@@ -1039,13 +1039,13 @@ export function generateCategoryMetaDescription(categoryName: string): string {
   const categoryLower = categoryName.toLowerCase();
   
   const categoryDescriptions: Record<string, string> = {
-    dog: 'Discover premium dog supplies at GetPawsy. From cozy beds to durable toys, we have everything your furry friend needs. Vet-approved, eco-friendly products with free US shipping over $35.',
-    cat: 'Shop the best cat products at GetPawsy. Cat trees, toys, feeding bowls & more. Premium quality, designed for happy cats. Free US shipping on orders over $35!',
-    bed: 'Find the perfect pet bed at GetPawsy. Orthopedic, cooling, and cozy options for dogs & cats of all sizes. Help your pet sleep better. Free US shipping over $35!',
-    toy: 'Keep your pet entertained with premium toys from GetPawsy. Interactive, durable, and mentally stimulating options. Say goodbye to boredom! Free US shipping over $35.',
-    food: 'Premium pet feeding solutions at GetPawsy. Elevated bowls, slow feeders, automatic dispensers & more. Make mealtime special. Free US shipping over $35!',
-    grooming: 'Professional pet grooming supplies at GetPawsy. Brushes, shampoos, nail care & more. Pamper your pet at home. Free US shipping on orders over $35!',
-    collar: 'Stylish and safe pet collars & harnesses at GetPawsy. From leather to reflective designs. Find the perfect fit. Free US shipping over $35!',
+    dog: 'Discover premium dog supplies at GetPawsy. From cozy beds to durable toys, we have everything your furry friend needs. Vet-approved, eco-friendly products with free shipping on eligible orders over $35.',
+    cat: 'Shop the best cat products at GetPawsy. Cat trees, toys, feeding bowls & more. Premium quality, designed for happy cats. Free shipping on eligible orders over $35!',
+    bed: 'Find the perfect pet bed at GetPawsy. Orthopedic, cooling, and cozy options for dogs & cats of all sizes. Help your pet sleep better. Free shipping on eligible orders over $35!',
+    toy: 'Keep your pet entertained with premium toys from GetPawsy. Interactive, durable, and mentally stimulating options. Say goodbye to boredom! Free shipping on eligible orders over $35.',
+    food: 'Premium pet feeding solutions at GetPawsy. Elevated bowls, slow feeders, automatic dispensers & more. Make mealtime special. Free shipping on eligible orders over $35!',
+    grooming: 'Professional pet grooming supplies at GetPawsy. Brushes, shampoos, nail care & more. Pamper your pet at home. Free shipping on eligible orders over $35!',
+    collar: 'Stylish and safe pet collars & harnesses at GetPawsy. From leather to reflective designs. Find the perfect fit. Free shipping on eligible orders over $35!',
   };
   
   for (const [key, description] of Object.entries(categoryDescriptions)) {

@@ -102,7 +102,7 @@ export default function SelfCleaningLitterBoxLanding() {
     <>
       <Helmet>
         <title>Automatic Self-Cleaning Cat Litter Box – 60L, App Control | GetPawsy</title>
-        <meta name="description" content="60L automatic self-cleaning cat litter box with smart app control, infrared safety sensors, and built-in deodorizer. Free US shipping over $35. 30-day returns." />
+        <meta name="description" content="60L automatic self-cleaning cat litter box with smart app control, infrared safety sensors, and built-in deodorizer. Free shipping on eligible orders over $35. 30-day returns." />
         <meta name="robots" content="noindex, follow" />
         <link rel="canonical" href={`https://getpawsy.pet${PRODUCT_LINK}`} />
         <script type="application/ld+json">{JSON.stringify({
@@ -428,7 +428,7 @@ export default function SelfCleaningLitterBoxLanding() {
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
             <span>{RETURN_WINDOW_DAYS}-Day Returns</span>
             <span>•</span>
-            <span>Free US Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
+            <span>Free Shipping Available ${FREE_SHIPPING_THRESHOLD}+</span>
             <span>•</span>
             <span>Secure Checkout</span>
           </div>

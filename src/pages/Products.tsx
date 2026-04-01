@@ -669,8 +669,8 @@ const Products = () => {
   const metaDescription = categoryDisplayName
     ? generateCategoryMetaDescription(categoryDisplayName)
     : searchQuery
-      ? `Find "${searchQuery}" at GetPawsy. Browse our collection of premium pet products. Free US shipping on orders over $35. Quality supplies for dogs, cats & more.`
-      : 'Shop premium pet products at GetPawsy. Quality supplies for dogs, cats & more. From cozy beds to durable toys, we have everything your furry friend needs. Free US shipping over $35!';
+      ? `Find "${searchQuery}" at GetPawsy. Browse our collection of premium pet products. Free shipping on eligible orders over $35. Quality supplies for dogs, cats & more.`
+      : 'Shop premium pet products at GetPawsy. Quality supplies for dogs, cats & more. From cozy beds to durable toys, we have everything your furry friend needs. Free shipping on eligible orders over $35!';
 
   const metaKeywords = categoryDisplayName
     ? getKeywordsForCategory(categoryDisplayName).slice(0, 15).join(', ')

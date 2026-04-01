@@ -7,7 +7,7 @@ import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS, DELIVERY_TIME_STANDARD } f
 const badges = [
   {
     icon: Truck,
-    title: 'Free US Shipping',
+    title: 'Free Shipping Available',
     description: `On orders over $${FREE_SHIPPING_THRESHOLD}`,
     color: 'primary',
   },

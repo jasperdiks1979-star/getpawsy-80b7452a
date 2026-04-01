@@ -105,7 +105,7 @@ export function ProductSpecsTable({ product }: ProductSpecsTableProps) {
     // Universal specs
     rows.push(
       { label: 'Brand', value: 'GetPawsy' },
-      { label: 'Shipping', value: `Free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}` },
+      { label: 'Shipping', value: `Free shipping on eligible orders over $${FREE_SHIPPING_THRESHOLD}` },
       { label: 'Returns', value: `${RETURN_WINDOW_DAYS}-day return policy` },
     );
 

@@ -59,7 +59,7 @@ export const OPTIMIZATION_LOG = [
         changes: {
           metaTitle: {
             before: 'Cat Enrichment Toys for Indoor Cats | Cat Trees & Condos',
-            after: 'Cat Trees & Condos for Indoor Cats | Free US Shipping | GetPawsy',
+            after: 'Cat Trees & Condos for Indoor Cats | Free Shipping Available | GetPawsy',
             rationale: 'Front-loaded "Cat Trees & Condos" to match exact GSC query',
           },
           metaDescription: {

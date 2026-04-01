@@ -339,7 +339,7 @@ const Bestsellers = () => {
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
         <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
         <meta property="og:title" content="Best Pet Products 2026 – Top 20 Bestsellers Ranked | GetPawsy" />
-        <meta property="og:description" content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Free US shipping over $35." />
+        <meta property="og:description" content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Free shipping on eligible orders over $35." />
         <meta property="og:url" content="https://getpawsy.pet/bestsellers" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
@@ -640,7 +640,7 @@ const Bestsellers = () => {
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Truck className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">Free US Shipping</h3>
+              <h3 className="font-semibold mb-2">Free Shipping Available</h3>
               <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 5–10 business days.</p>
             </div>
             <div className="text-center">

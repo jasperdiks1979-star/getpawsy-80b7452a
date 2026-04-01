@@ -239,7 +239,7 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   'best orthopedic dog bed': {
     before: 'Best Orthopedic Dog Beds | GetPawsy',
     after: 'Best Orthopedic Dog Beds – End Joint Pain Today (Vet-Approved 2026)',
-    meta: 'Vet-approved memory foam beds that relieve arthritis and hip dysplasia. Tested on 500+ dogs. Waterproof covers, all sizes. Free US shipping.',
+    meta: 'Vet-approved memory foam beds that relieve arthritis and hip dysplasia. Tested on 500+ dogs. Waterproof covers, all sizes. Free shipping available.',
   },
   'cat tree for large cats': {
     before: 'Cat Trees for Large Cats | GetPawsy',
@@ -249,12 +249,12 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   'best no pull dog harness': {
     before: 'Best No-Pull Dog Harness | GetPawsy',
     after: 'Stop Pulling on Day 1 – Best No-Pull Dog Harness (Trainer Approved 2026)',
-    meta: 'End leash pulling forever. Certified trainer picks with real pull-reduction data. Metal hardware, padded comfort. Free US shipping.',
+    meta: 'End leash pulling forever. Certified trainer picks with real pull-reduction data. Metal hardware, padded comfort. Free shipping available.',
   },
   'best self cleaning litter box': {
     before: 'Best Self Cleaning Litter Box | GetPawsy',
     after: 'Never Scoop Again – Best Self-Cleaning Litter Box (2026 Tested)',
-    meta: 'We tested 15+ self-cleaning litter boxes for odor, reliability, and noise. Honest rankings, no sponsorships. Free US shipping.',
+    meta: 'We tested 15+ self-cleaning litter boxes for odor, reliability, and noise. Honest rankings, no sponsorships. Free shipping available.',
   },
   'best dog car seat': {
     before: 'Best Dog Car Seat | GetPawsy',
@@ -264,12 +264,12 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   'best slow feeder dog bowl': {
     before: 'Best Slow Feeder Dog Bowl | GetPawsy',
     after: 'Stop Fast Eating & Prevent Bloat – Best Slow Feeder Bowls (2026)',
-    meta: 'Reduce eating speed by 80%. Vet-approved designs prevent bloat and improve digestion. Dishwasher safe. Free US shipping.',
+    meta: 'Reduce eating speed by 80%. Vet-approved designs prevent bloat and improve digestion. Dishwasher safe. Free shipping available.',
   },
   'best interactive dog toys': {
     before: 'Best Interactive Dog Toys | GetPawsy',
     after: 'Keep Dogs Busy for Hours – Best Interactive Toys (Expert Tested 2026)',
-    meta: 'Tested 30+ toys for engagement and durability. See which keep dogs mentally stimulated longest. Free US shipping on all orders.',
+    meta: 'Tested 30+ toys for engagement and durability. See which keep dogs mentally stimulated longest. Free shipping available on all orders.',
   },
   'how to stop dog pulling on leash': {
     before: 'How to Stop Dog Pulling on Leash | GetPawsy',
@@ -279,12 +279,12 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   'elevated cooling dog bed': {
     before: 'Elevated Cooling Dog Beds | GetPawsy',
     after: 'Beat the Heat – Best Elevated Cooling Dog Beds (Summer 2026)',
-    meta: 'Keep dogs 10–15°F cooler with elevated airflow beds. Outdoor-tested in 90°F+ heat. Chew-resistant. Free US shipping.',
+    meta: 'Keep dogs 10–15°F cooler with elevated airflow beds. Outdoor-tested in 90°F+ heat. Chew-resistant. Free shipping available.',
   },
   'best cat water fountain': {
     before: 'Best Cat Water Fountain | GetPawsy',
     after: 'Protect Kidney Health – Best Cat Water Fountains (Vet Recommended 2026)',
-    meta: 'Increase cat hydration by 200%. Ultra-quiet motors, BPA-free, dishwasher safe. Vet-recommended picks. Free US shipping.',
+    meta: 'Increase cat hydration by 200%. Ultra-quiet motors, BPA-free, dishwasher safe. Vet-recommended picks. Free shipping available.',
   },
 };
 

@@ -102,7 +102,7 @@ export default function TrainingLandingPage() {
         <div className="container flex items-center justify-between py-3">
           <Link to="/" className="text-lg font-display font-bold text-foreground">GetPawsy</Link>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="hidden sm:flex items-center gap-1"><Truck className="w-3 h-3 text-primary" /> Free US Shipping $35+</span>
+            <span className="hidden sm:flex items-center gap-1"><Truck className="w-3 h-3 text-primary" /> Free Shipping on Orders $35+</span>
             <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-primary" /> 30-Day Return Policy</span>
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function TrainingLandingPage() {
             {/* Trust microcopy */}
             <div className="space-y-1.5 mb-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Truck className="w-3.5 h-3.5 text-primary" /><span>Free US Shipping over $35 • 5–10 Day Delivery</span>
+                <Truck className="w-3.5 h-3.5 text-primary" /><span>Free shipping on eligible orders over $35 • 5–10 Day Delivery</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <RotateCcw className="w-3.5 h-3.5 text-primary" /><span>30-Day Return Policy</span>

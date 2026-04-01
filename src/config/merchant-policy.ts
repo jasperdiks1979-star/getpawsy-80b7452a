@@ -53,7 +53,7 @@ export {
 export const APPROVED_SHIPPING_LINE = 'Estimated delivery: 5–10 business days';
 
 /** Approved free shipping line */
-export const APPROVED_FREE_SHIPPING_LINE = 'Free US shipping on orders $35+';
+export const APPROVED_FREE_SHIPPING_LINE = 'Free shipping on eligible orders $35+';
 
 /** Approved returns line */
 export const APPROVED_RETURNS_LINE = '30-day returns';

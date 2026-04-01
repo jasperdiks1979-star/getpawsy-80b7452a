@@ -141,7 +141,7 @@ const TermsOfService = () => {
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Shipping times are estimates and not guaranteed</li>
                   <li>Estimated delivery: {DELIVERY_TIME_STANDARD}</li>
-                  <li>Free US shipping on orders over ${FREE_SHIPPING_THRESHOLD}</li>
+                  <li>Free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD}</li>
                   <li>{US_FULFILLMENT_NOTE}</li>
                   <li>We are not responsible for delays caused by carriers</li>
                 </ul>

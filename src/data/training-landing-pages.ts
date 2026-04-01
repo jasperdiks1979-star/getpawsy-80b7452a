@@ -128,7 +128,7 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
     ],
   },
   ctaText: 'Get Your No-Pull Harness',
-  ctaSubtext: 'Free US Shipping over $35 • 30-Day Return Policy',
+  ctaSubtext: 'Free shipping on eligible orders over $35 • 30-Day Return Policy',
   adAngle: 'pain',
 };
 
@@ -208,7 +208,7 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
     ],
   },
   ctaText: 'Get Your Recall Training Kit',
-  ctaSubtext: 'Free US Shipping over $35 • 30-Day Return Policy',
+  ctaSubtext: 'Free shipping on eligible orders over $35 • 30-Day Return Policy',
   adAngle: 'trainer',
 };
 
@@ -288,7 +288,7 @@ export const STOP_PULLING_LANDING: LandingPageData = {
     ],
   },
   ctaText: 'Protect Your Dog\'s Neck Now',
-  ctaSubtext: 'Free US Shipping over $35 • 30-Day Return Policy',
+  ctaSubtext: 'Free shipping on eligible orders over $35 • 30-Day Return Policy',
   adAngle: 'safety',
 };
 

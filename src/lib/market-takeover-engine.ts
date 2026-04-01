@@ -259,7 +259,7 @@ function buildCtrRewrites(): CtrRewrite[] {
       currentTitle: 'Orthopedic Dog Beds | GetPawsy',
       newTitle: 'Orthopedic Dog Beds for Large Dogs | Vet Recommended Support | GetPawsy',
       currentMeta: 'Shop orthopedic dog beds at GetPawsy.',
-      newMeta: 'Joint pain affects 1 in 4 dogs. Our vet-recommended orthopedic beds use medical-grade foam for lasting relief. Free US shipping + 30-day return policy.',
+      newMeta: 'Joint pain affects 1 in 4 dogs. Our vet-recommended orthopedic beds use medical-grade foam for lasting relief. Free shipping on eligible orders + 30-day return policy.',
       position: 8.2, impressions: 4200, expectedCtrLift: '+65% CTR',
     },
     {

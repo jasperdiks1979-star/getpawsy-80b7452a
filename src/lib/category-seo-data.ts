@@ -71,7 +71,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-beds': {
     h1: 'Dog Beds — Orthopedic, Calming & Washable Beds for Every Breed',
-    metaDescription: 'Shop premium dog beds for all sizes. Orthopedic memory foam, calming donut beds, washable covers. Free US shipping over $35. 30-day returns.',
+    metaDescription: 'Shop premium dog beds for all sizes. Orthopedic memory foam, calming donut beds, washable covers. Free shipping on eligible orders over $35. 30-day returns.',
     keywords: [
       'dog bed', 'orthopedic dog bed', 'calming dog bed', 'large dog bed',
       'memory foam dog bed', 'washable dog bed', 'dog bed for large dogs',
@@ -122,7 +122,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-toys': {
     h1: 'Dog Toys — Interactive, Chew & Enrichment Toys for All Breeds',
-    metaDescription: 'Shop durable dog toys for every play style. Interactive puzzles, tough chew toys, fetch toys. Free US shipping over $35. Vet-approved, non-toxic.',
+    metaDescription: 'Shop durable dog toys for every play style. Interactive puzzles, tough chew toys, fetch toys. Free shipping on eligible orders over $35. Vet-approved, non-toxic.',
     keywords: [
       'dog toys', 'interactive dog toys', 'chew toys for dogs', 'durable dog toys',
       'puzzle toys for dogs', 'squeaky dog toys', 'rope toys for dogs',
@@ -171,7 +171,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-collars-leashes': {
     h1: 'Dog Collars & Leashes — Personalized, Reflective & Training Options',
-    metaDescription: 'Shop premium dog collars and leashes. Leather, personalized, reflective, no-pull harnesses. All sizes. Free US shipping over $35.',
+    metaDescription: 'Shop premium dog collars and leashes. Leather, personalized, reflective, no-pull harnesses. All sizes. Free shipping on eligible orders over $35.',
     keywords: [
       'dog collar', 'dog leash', 'leather dog collar', 'personalized dog collar',
       'no pull dog harness', 'reflective dog collar', 'dog harness',
@@ -218,7 +218,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-grooming': {
     h1: 'Dog Grooming Supplies — Brushes, Clippers & Deshedding Tools',
-    metaDescription: 'Professional dog grooming at home. Brushes, deshedding tools, nail clippers, grooming vacuums. All coat types. Free US shipping over $35.',
+    metaDescription: 'Professional dog grooming at home. Brushes, deshedding tools, nail clippers, grooming vacuums. All coat types. Free shipping on eligible orders over $35.',
     keywords: [
       'dog grooming supplies', 'dog brush', 'deshedding tool for dogs',
       'dog nail clippers', 'dog grooming kit', 'pet grooming vacuum',
@@ -264,7 +264,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-bowls-feeders': {
     h1: 'Dog Bowls & Feeders — Elevated, Slow Feeder & Automatic Options',
-    metaDescription: 'Shop dog bowls and automatic feeders. Elevated stands, slow feeders, stainless steel, ceramic. All sizes. Free US shipping over $35.',
+    metaDescription: 'Shop dog bowls and automatic feeders. Elevated stands, slow feeders, stainless steel, ceramic. All sizes. Free shipping on eligible orders over $35.',
     keywords: [
       'dog bowl', 'elevated dog bowl', 'slow feeder dog bowl', 'automatic dog feeder',
       'raised dog feeder', 'stainless steel dog bowl', 'dog food container',
@@ -308,7 +308,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-carriers': {
     h1: 'Dog Carriers & Travel Crates — Airline-Approved & Car-Safe',
-    metaDescription: 'Shop dog carriers for travel, flights & car rides. Airline-approved, soft-sided, rolling carriers. All sizes. Free US shipping over $35.',
+    metaDescription: 'Shop dog carriers for travel, flights & car rides. Airline-approved, soft-sided, rolling carriers. All sizes. Free shipping on eligible orders over $35.',
     keywords: [
       'dog carrier', 'airline approved dog carrier', 'dog travel crate',
       'soft sided dog carrier', 'rolling pet carrier', 'dog car seat',
@@ -356,7 +356,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-trees-and-condos': {
     h1: 'Cat Trees & Cat Condos — Multi-Level Towers for Indoor Cats',
-    metaDescription: 'Shop cat trees, condos & towers for all sizes. Sisal scratching posts, multi-level platforms, enclosed hideaways. Free US shipping over $35.',
+    metaDescription: 'Shop cat trees, condos & towers for all sizes. Sisal scratching posts, multi-level platforms, enclosed hideaways. Free shipping on eligible orders over $35.',
     keywords: [
       'cat tree', 'cat condo', 'cat tower', 'cat tree tower', 'cat trees for sale',
       'tall cat tree', 'large cat tree', 'cat tree for large cats',
@@ -408,7 +408,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-toys': {
     h1: 'Cat Toys — Interactive, Feather & Puzzle Toys for Indoor Cats',
-    metaDescription: 'Shop cat toys for indoor enrichment. Interactive wands, laser toys, puzzle feeders, catnip toys. Keep cats active. Free US shipping over $35.',
+    metaDescription: 'Shop cat toys for indoor enrichment. Interactive wands, laser toys, puzzle feeders, catnip toys. Keep cats active. Free shipping on eligible orders over $35.',
     keywords: [
       'cat toys', 'interactive cat toys', 'cat toy', 'feather cat toys',
       'laser cat toy', 'catnip toys', 'cat tunnel', 'cat ball toys',
@@ -456,7 +456,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-litter-boxes': {
     h1: 'Cat Litter Boxes — Enclosed, Self-Cleaning & Odor Control Options',
-    metaDescription: 'Shop cat litter boxes for every home. Enclosed, top-entry, self-cleaning, odor-control. Easy maintenance. Free US shipping over $35.',
+    metaDescription: 'Shop cat litter boxes for every home. Enclosed, top-entry, self-cleaning, odor-control. Easy maintenance. Free shipping on eligible orders over $35.',
     keywords: [
       'cat litter box', 'self cleaning litter box', 'enclosed litter box',
       'covered litter box', 'top entry litter box', 'automatic litter box',
@@ -506,7 +506,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-bowls-feeders': {
     h1: 'Cat Bowls & Feeders — Elevated, Automatic & Whisker-Friendly',
-    metaDescription: 'Shop cat bowls and automatic feeders. Elevated, whisker-friendly, slow feeders, water fountains. Free US shipping over $35.',
+    metaDescription: 'Shop cat bowls and automatic feeders. Elevated, whisker-friendly, slow feeders, water fountains. Free shipping on eligible orders over $35.',
     keywords: [
       'cat food bowl', 'elevated cat bowl', 'automatic cat feeder',
       'cat water fountain', 'slow feeder cat bowl', 'whisker friendly cat bowl',
@@ -551,7 +551,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-scratching-posts': {
     h1: 'Cat Scratching Posts — Sisal, Tall & Wall-Mounted Options',
-    metaDescription: 'Shop cat scratching posts to protect your furniture. Tall sisal posts, wall-mounted scratchers, cardboard pads. Free US shipping over $35.',
+    metaDescription: 'Shop cat scratching posts to protect your furniture. Tall sisal posts, wall-mounted scratchers, cardboard pads. Free shipping on eligible orders over $35.',
     keywords: [
       'cat scratching post', 'sisal scratching post', 'tall scratching post',
       'cat scratcher', 'wall mounted cat scratcher', 'cat scratch pad',
@@ -595,7 +595,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-carriers': {
     h1: 'Cat Carriers — Airline-Approved, Soft-Sided & Stress-Free Travel',
-    metaDescription: 'Shop cat carriers for vet visits, flights & travel. Airline-approved, expandable, calming carriers. All sizes. Free US shipping over $35.',
+    metaDescription: 'Shop cat carriers for vet visits, flights & travel. Airline-approved, expandable, calming carriers. All sizes. Free shipping on eligible orders over $35.',
     keywords: [
       'cat carrier', 'airline approved cat carrier', 'soft sided cat carrier',
       'cat travel carrier', 'rolling cat carrier', 'expandable cat carrier',
@@ -639,7 +639,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-houses': {
     h1: 'Cat Houses & Indoor Shelters — Cozy Hideaways for Every Cat',
-    metaDescription: 'Shop cat houses and indoor shelters. Enclosed hideaways, heated houses, multi-cat condos. Warm, safe, private spaces. Free US shipping over $35.',
+    metaDescription: 'Shop cat houses and indoor shelters. Enclosed hideaways, heated houses, multi-cat condos. Warm, safe, private spaces. Free shipping on eligible orders over $35.',
     keywords: [
       'cat house', 'indoor cat house', 'cat hideaway', 'cat shelter',
       'cat cave', 'cat igloo', 'heated cat house', 'outdoor cat house',
@@ -683,7 +683,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-furniture': {
     h1: 'Cat Furniture — Shelves, Perches & Modern Cat Furniture for Homes',
-    metaDescription: 'Shop modern cat furniture that fits your décor. Wall shelves, window perches, climbing systems. Functional & stylish. Free US shipping over $35.',
+    metaDescription: 'Shop modern cat furniture that fits your décor. Wall shelves, window perches, climbing systems. Functional & stylish. Free shipping on eligible orders over $35.',
     keywords: [
       'cat furniture', 'cat wall shelves', 'cat perch', 'modern cat furniture',
       'cat shelves for wall', 'window cat perch', 'cat window seat',
@@ -727,7 +727,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-houses': {
     h1: 'Dog Houses — Indoor, Outdoor & Insulated Options for All Breeds',
-    metaDescription: 'Shop dog houses for indoor and outdoor use. Insulated, weatherproof, all sizes from small to XL. Safe shelter for every breed. Free US shipping over $35.',
+    metaDescription: 'Shop dog houses for indoor and outdoor use. Insulated, weatherproof, all sizes from small to XL. Safe shelter for every breed. Free shipping on eligible orders over $35.',
     keywords: [
       'dog house', 'outdoor dog house', 'indoor dog house', 'insulated dog house',
       'large dog house', 'wooden dog house', 'dog kennel', 'weatherproof dog house',
@@ -770,7 +770,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-training': {
     h1: 'Dog Training Supplies — Treats, Clickers & Puppy Essentials',
-    metaDescription: 'Shop dog training supplies. Training treats, clickers, puppy pads, crates, gates. Positive reinforcement tools. Free US shipping over $35.',
+    metaDescription: 'Shop dog training supplies. Training treats, clickers, puppy pads, crates, gates. Positive reinforcement tools. Free shipping on eligible orders over $35.',
     keywords: [
       'dog training supplies', 'dog treats for training', 'puppy training',
       'clicker training', 'puppy pads', 'dog crate', 'dog gate',
@@ -814,7 +814,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'cat-grooming': {
     h1: 'Cat Grooming Supplies — Brushes, Deshedding Tools & Nail Clippers',
-    metaDescription: 'Shop cat grooming essentials. Slicker brushes, deshedding tools, nail clippers, grooming gloves. For all coat types. Free US shipping over $35.',
+    metaDescription: 'Shop cat grooming essentials. Slicker brushes, deshedding tools, nail clippers, grooming gloves. For all coat types. Free shipping on eligible orders over $35.',
     keywords: [
       'cat brush', 'cat grooming', 'cat deshedding tool', 'cat nail clippers',
       'slicker brush for cats', 'cat grooming kit', 'cat hair remover',

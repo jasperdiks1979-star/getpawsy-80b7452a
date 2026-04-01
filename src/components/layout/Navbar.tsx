@@ -386,7 +386,7 @@ export const Navbar = () => {
       >
         <div className="container flex items-center justify-center gap-2 py-2 px-4 relative" style={{ height: 40 }}>
           <Truck className="w-4 h-4" />
-          <span>Free US shipping on orders over $35</span>
+          <span>Free shipping on eligible orders over $35</span>
           <span className="hidden sm:inline text-primary-foreground/80">•</span>
           <span className="hidden sm:inline text-primary-foreground/80">Estimated delivery: 5–10 business days</span>
           <button
