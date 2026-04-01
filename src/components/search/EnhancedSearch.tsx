@@ -44,11 +44,11 @@ const RECENT_SEARCHES_KEY = 'pawsy-recent-searches';
 const MAX_RECENT_SEARCHES = 5;
 
 const popularSearches = [
-  'Cat toys',
+  'Cat tree',
   'Dog bed',
-  'Food bowl',
+  'Litter box',
   'Scratching post',
-  'Snacks',
+  'Dog harness',
 ];
 
 export const EnhancedSearch = ({
