@@ -101,7 +101,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Foldable Pet Grooming Comb',
     price: 9.99,
     compareAt: 12.49,
-    image: 'https://oss-cf.cjdropshipping.com/product/2026/02/23/09/b3875e8c-c135-460e-adc4-db08c408e0c6_trans.jpeg',
+    image: '/images/products/pet-grooming-comb.jpg',
     benefit: 'Portable detangling & de-shedding',
     pet: 'dog',
   },
