@@ -86,7 +86,7 @@ export function downloadComplianceAuditPdf() {
   title("Step 2 — Business Identity Check");
   body("Business identity is clearly displayed across the site.");
   bullet("Business name: GetPawsy ✓");
-  bullet("Brand relationship: 'A brand of Skidzo' ✓");
+  bullet("Brand: GetPawsy (registered business) ✓");
   bullet("Location: Apeldoorn, Netherlands ✓");
   bullet("Support email: support@getpawsy.pet ✓");
   bullet("KVK: 78156955 ✓");

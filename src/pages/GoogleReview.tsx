@@ -734,7 +734,7 @@ export const sanitizeHtml = (html: string): string => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Business</p>
-                <p>Skidzo (Eenmanszaak)</p>
+                <p>GetPawsy (Eenmanszaak)</p>
                 <p>KvK: 78156955</p>
               </div>
               <div>

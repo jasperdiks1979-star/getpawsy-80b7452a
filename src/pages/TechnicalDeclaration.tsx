@@ -272,7 +272,7 @@ const TechnicalDeclaration = () => {
             <p><strong>Web:</strong> https://getpawsy.pet</p>
           </div>
           <div className="text-right">
-            <p><strong>Business:</strong> Skidzo</p>
+            <p><strong>Business:</strong> GetPawsy</p>
             <p><strong>KvK:</strong> 78156955</p>
           </div>
         </div>
