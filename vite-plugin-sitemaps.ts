@@ -761,8 +761,10 @@ export default function merchantFeedPlugin(): Plugin {
 
         writeFileSync(join(outDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
         writeFileSync(join(outDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
+        writeFileSync(join(outDir, 'google-feed.xml'), merchantFeed, 'utf-8');
         console.log(`[xml-plugin] ✓ /dist/merchant-feed.xml (${merchantFeed.length} bytes)`);
         console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
+        console.log(`[xml-plugin] ✓ /dist/google-feed.xml (${merchantFeed.length} bytes)`);
       } catch (err) {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in closeBundle, writing fallback feeds:', err);
         writeFileSync(join(outDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
