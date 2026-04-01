@@ -199,7 +199,7 @@ export const EnhancedSearch = ({
     setIsOpen(false);
     setQuery('');
     onClose?.();
-    navigate(`/collections/${encodeURIComponent(category.slug)}`);
+    navigate(`/collections/${category.slug}`);
   };
 
   // Click outside to close
