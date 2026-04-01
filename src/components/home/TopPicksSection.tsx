@@ -138,7 +138,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: '5-Level Revolving Stair Cat Tower',
     price: 116.18,
     compareAt: 145.23,
-    image: 'https://cf.cjdropshipping.com/a6929552-2483-4a17-b22e-62461e1d505f.jpg',
+    image: '/images/products/revolving-stair-cat-tower.jpg',
     benefit: 'Multi-level play & rest zones',
     pet: 'cat',
   },
