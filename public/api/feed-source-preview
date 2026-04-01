@@ -1,10 +1,15 @@
+validation_status: valid
+contains_rss: true
+contains_channel: true
+contains_item: true
+---xml-preview---
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
     <title>GetPawsy Product Feed</title>
     <link>https://getpawsy.pet</link>
     <description>Google Merchant product feed</description>
-    <lastBuildDate>2026-04-01T12:19:59.053Z</lastBuildDate>
+    <lastBuildDate>2026-04-01T12:22:22.396Z</lastBuildDate>
     <item>
       <g:id>ab56a66b-dfaa-4caa-921a-de5bf544f9d8</g:id>
       <g:title>Dog Chew Toy Choke-proof Food Dispenser for Pets – Safe Chewing</g:title>
