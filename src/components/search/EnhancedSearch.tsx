@@ -370,7 +370,7 @@ export const EnhancedSearch = ({
                         className="h-6 text-xs text-muted-foreground hover:text-foreground"
                         onClick={clearRecentSearches}
                       >
-                        Wissen
+                        Clear
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
