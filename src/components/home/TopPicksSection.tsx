@@ -83,7 +83,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: '3-in-1 Pet Jogging Stroller',
     price: 432.99,
     compareAt: 549.99,
-    image: 'https://cf.cjdropshipping.com/23741a01-0d99-4523-ac92-cc8f257cfcc2.jpg',
+    image: '/images/products/pet-jogging-stroller.jpg',
     benefit: 'Detachable carrier + storage',
     pet: 'dog',
   },
