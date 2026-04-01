@@ -17,7 +17,6 @@ import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Star from 'lucide-react/dist/esm/icons/star';
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 // framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
-import { useQuery } from '@tanstack/react-query';
 import { traceMount, traceEffect, traceStateSet, traceQuery } from '@/lib/lcp-render-trace';
 import { useCart } from '@/contexts/CartContext';
 import { useCartIconRef } from '@/contexts/CartAnimationContext';
@@ -37,17 +36,16 @@ const EnhancedSearch = lazy(() => import('@/components/search/EnhancedSearch').t
 import { AnimatedHamburger } from '@/components/ui/animated-hamburger';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FloatingCartPreview } from '@/components/cart/FloatingCartPreview';
-// ⚡ supabase NOT imported at top-level — dynamic import in queryFn keeps ~138KB off critical path
-const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
+import { buildCategoryTree, type CategoryTreeNode } from '@/lib/canonical-category-registry';
 import logoIcon from '@/assets/logo-getpawsy.png';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/collections/dog', label: 'Dogs' },
+  { href: '/collections/dogs', label: 'Dogs' },
   { href: '/collections/dog-toys', label: 'Dog Toys' },
   { href: '/collections/dog-beds', label: 'Dog Beds' },
   { href: '/collections/dog-harness', label: 'Harnesses' },
-  { href: '/collections/cat', label: 'Cats' },
+  { href: '/collections/cats', label: 'Cats' },
   { href: '/collections/cat-toys', label: 'Cat Toys' },
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
   { href: '/collections/cat-scratching-posts', label: 'Scratching' },
@@ -59,20 +57,6 @@ const promoItems = [
   { label: 'Free Shipping', icon: Truck, href: '/products' },
   { label: 'New Arrivals', icon: Gift, href: '/products' },
 ];
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parent_id: string | null;
-  image_url: string | null;
-  display_order: number | null;
-  product_count?: number;
-}
-
-interface CategoryWithChildren extends Category {
-  children: CategoryWithChildren[];
-}
 
 // Category item component for mega menu
 const MegaMenuCategoryItem = ({ 
