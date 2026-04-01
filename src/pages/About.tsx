@@ -108,7 +108,7 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  <strong>GetPawsy</strong> is a consumer brand operated by <strong>Skidzo</strong>, a legally registered business under the Dutch Chamber of Commerce (Kamer van Koophandel).
+                  <strong>GetPawsy</strong> is a legally registered business under the Dutch Chamber of Commerce (Kamer van Koophandel).
                 </p>
                 
                 <div className="bg-muted/50 rounded-xl p-5 mb-6">
