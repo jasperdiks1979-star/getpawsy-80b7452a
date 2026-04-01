@@ -92,7 +92,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'IQ Puzzle Slow Feeder Dog Bowl Mat',
     price: 9.99,
     compareAt: 12.49,
-    image: 'https://cf.cjdropshipping.com/quick/product/580fe102-b486-4be8-92cd-860e28b219f1.jpg',
+    image: '/images/products/slow-feeder-dog-bowl.jpg',
     benefit: 'Slows eating & stimulates mind',
     pet: 'dog',
   },
