@@ -2,7 +2,7 @@
  * Centralized Category Keyword Map for Product Auto-Categorization
  * 
  * This file contains the definitive keyword mappings used for:
- * - CJ Dropshipping product imports
+ * - Product imports and categorization
  * - Product recategorization tools
  * - Admin product management
  * 

@@ -1,11 +1,11 @@
 /**
  * Single source of truth for product availability computation.
  * 
- * DROPSHIPPING MODEL (CJ Dropshipping):
+ * AVAILABILITY MODEL:
  * - is_active === false → OUT OF STOCK (disabled by admin)
  * - ANY stock value (0, null, positive) with is_active=true → IN STOCK
  * 
- * Stock numbers are informational only. The supplier manages real inventory.
+ * Stock numbers are informational only. Fulfillment partners manage real inventory.
  * Only is_active=false marks a product as unavailable.
  */
 
@@ -25,7 +25,7 @@ export interface AvailabilityResult {
  * Rules (priority order):
  * 1. No product → OUT OF STOCK
  * 2. is_active === false → OUT OF STOCK
- * 3. Everything else → IN STOCK (dropship model)
+ * 3. Everything else → IN STOCK (fulfillment model)
  */
 export function computeAvailability(
   product: AvailabilityProduct | null | undefined,
@@ -42,7 +42,7 @@ export function computeAvailability(
   // Variant stock overrides product stock when provided
   const effectiveStock = variantStock !== undefined ? variantStock : product.stock;
 
-  // Dropship model: stock=0 is NOT out of stock (supplier manages inventory)
+  // Fulfillment model: stock=0 is NOT out of stock (partner manages inventory)
   // Only is_active=false triggers OOS
 
   // Positive stock = in stock
@@ -50,8 +50,8 @@ export function computeAvailability(
     return { isInStock: true, reason: `In stock (${effectiveStock} units)` };
   }
 
-  // null/undefined = dropship model, treat as in stock
-  return { isInStock: true, reason: 'In stock (dropship model: stock not tracked)' };
+  // null/undefined = fulfillment model, treat as in stock
+  return { isInStock: true, reason: 'In stock (fulfillment model: stock not tracked)' };
 }
 
 /**

@@ -98,8 +98,8 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'Apeldoorn, Netherlands',
-      description: 'Netherlands-based company serving US customers via US-based fulfillment partners',
+      content: 'Apeldoorn, Netherlands (7312VG)',
+      description: 'We are an online-first brand and do not operate a physical retail store',
       href: null,
     },
     {
