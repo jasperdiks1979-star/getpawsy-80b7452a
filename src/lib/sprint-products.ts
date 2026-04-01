@@ -59,7 +59,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'cat litter box furniture',
     conversionScore: 86,
     contentCluster: 'litter-boxes',
-    image: 'https://cf.cjdropshipping.com/17664480/f56eb834-2643-4b70-884a-fbf1330a1d82.jpg',
+    image: '/images/products/litter-box-furniture.jpg',
   },
   {
     slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
