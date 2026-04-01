@@ -64,6 +64,9 @@ function singularizeToken(token: string): string {
   return token;
 }
 
+// Generic single-word tokens that match too broadly and cause cross-category contamination
+const GENERIC_TOKENS = new Set(['dog', 'cat', 'pet', 'kitten', 'puppy', 'best', 'for', 'and', 'the', 'with', '2026', 'new', 'top']);
+
 function buildKeywordSet(collection: SeoCollectionLike, config?: CollectionMapEntry): string[] {
   const fromDbKeywords = (collection.product_keyword_filter || '')
     .split(',')
@@ -73,7 +76,7 @@ function buildKeywordSet(collection: SeoCollectionLike, config?: CollectionMapEn
   const slugTokens = normalizeSlug(collection.slug)
     .split('-')
     .map(t => singularizeToken(t))
-    .filter(t => t.length > 2 && !['best', 'for', 'and', 'the', 'with', '2026'].includes(t));
+    .filter(t => t.length > 2 && !GENERIC_TOKENS.has(t));
 
   const slugPhrase = slugTokens.join(' ');
 
@@ -83,11 +86,13 @@ function buildKeywordSet(collection: SeoCollectionLike, config?: CollectionMapEn
     ...fromDbKeywords,
     ...(collection.product_category_filter ? [collection.product_category_filter.toLowerCase()] : []),
     ...(CORE_COLLECTION_SYNONYMS[collection.slug] || []),
-    ...slugTokens,
-    ...(slugPhrase ? [slugPhrase] : []),
+    // Only add slug phrase (multi-word), never individual generic tokens
+    ...(slugPhrase && slugPhrase.includes(' ') ? [slugPhrase] : slugTokens),
   ]);
 
-  return Array.from(merged).filter(Boolean);
+  // Remove any remaining single generic tokens
+  const result = Array.from(merged).filter(k => k && !GENERIC_TOKENS.has(k));
+  return result;
 }
 
 function textContainsAny(text: string, keywords: string[]): number {
@@ -105,6 +110,17 @@ function textContainsAny(text: string, keywords: string[]): number {
     }
   }
   return score;
+}
+
+/**
+ * When product_category_filter is set, it acts as a HARD FILTER.
+ * Products MUST match the category to be included.
+ * This prevents cross-category contamination (e.g., dog travel items in dog beds).
+ */
+function matchesCategoryFilter(product: CollectionProduct, categoryFilter: string | null): boolean {
+  if (!categoryFilter) return true; // No filter = allow all
+  const category = (product.category || '').toLowerCase();
+  return category.includes(categoryFilter.toLowerCase());
 }
 
 function scoreProduct(product: CollectionProduct & Record<string, unknown>, slug: string, keywords: string[], categoryFilter?: string | null): number {
@@ -127,7 +143,7 @@ function scoreProduct(product: CollectionProduct & Record<string, unknown>, slug
     score += 10;
   }
 
-  // Priority 3: category fallback match
+  // Priority 3: category exact match (strong signal)
   if (categoryFilter && category.includes(categoryFilter.toLowerCase())) {
     score += 10;
   }
@@ -194,7 +210,24 @@ export async function resolveCollectionProducts(
     };
   }
 
-  const scoredPrimary: ScoredProduct[] = pool
+  // CATEGORY FILTER: When product_category_filter is set, prefer products matching that category.
+  // If category-matched products exist, use ONLY those (prevents cross-category contamination).
+  // If zero match the category, fall back to keyword-only matching on the full pool.
+  const hasCategoryFilter = !!collection.product_category_filter;
+  let effectivePool = pool;
+  let fallbackTriggered = false;
+
+  if (hasCategoryFilter) {
+    const categoryMatched = pool.filter(p => matchesCategoryFilter(p as CollectionProduct, collection.product_category_filter));
+    if (categoryMatched.length > 0) {
+      effectivePool = categoryMatched;
+    } else {
+      // No products match the category — fall back to keyword matching
+      fallbackTriggered = true;
+    }
+  }
+
+  const scoredPrimary: ScoredProduct[] = effectivePool
     .map((p) => ({
       ...p,
       _score: scoreProduct(p as CollectionProduct & Record<string, unknown>, collection.slug, keywords, collection.product_category_filter),
@@ -209,8 +242,6 @@ export async function resolveCollectionProducts(
     return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
   });
 
-  // No fallback injection — only show real matched products
-  const fallbackTriggered = false;
   const products = scoredPrimary.slice(0, 48) as CollectionProduct[];
 
   if (import.meta.env.DEV) {

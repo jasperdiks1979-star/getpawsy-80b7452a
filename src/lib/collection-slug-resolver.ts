@@ -70,9 +70,9 @@ const SLUG_ALIASES: Record<string, string> = {
   'puppy-kit': 'puppy-training-essentials',
   // Shopify legacy handles
   'frontpage': 'dog',
-  'all-products': 'multi-pet',
-  'best-sellers': 'dog',
-  'new-arrivals': 'dog',
+  'all-products': 'all',
+  'best-sellers': 'all',
+  'new-arrivals': 'all',
 };
 
 /**

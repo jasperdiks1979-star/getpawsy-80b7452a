@@ -383,7 +383,7 @@ const SeoCollection = () => {
       const hasCategoryConflict = oppositeKeywords.some(kw => category.includes(kw));
       if (hasCategoryConflict) return false;
 
-      if (dbSpecies) {
+      if (dbSpecies && dbSpecies !== 'unknown') {
         if (dbSpecies === targetSpecies) return true;
         if (dbSpecies === 'both') return true;
         return false;
@@ -513,14 +513,25 @@ const SeoCollection = () => {
       aliasUsed: slugResolution?.aliasUsed || false,
       matchResult: 'not_found',
     });
-    return <Navigate to="/collections/all" replace />;
+    // Show a proper "not found" page instead of silently redirecting to another collection
+    return (
+      <Layout>
+        <div className="container py-16 text-center">
+          <h1 className="text-2xl font-bold mb-4">Collection Not Found</h1>
+          <p className="text-muted-foreground mb-6">
+            We couldn't find a collection matching "{rawSlug}". Browse all our products instead.
+          </p>
+          <Button asChild><Link to="/products">Browse All Products</Link></Button>
+        </div>
+      </Layout>
+    );
   }
 
-  // Thin collection guard: redirect thin collections to /collections/all
-  // NEVER redirect /collections/all itself — it must always render
+  // Thin collection guard: show "no products found" message instead of redirecting to /collections/all
+  // This prevents showing wrong products when a collection has few items
   const isAllRoute = rawSlug === 'all' || slug === 'all';
   const safeSlugs = new Set(['all', 'multi-pet', 'dog', 'cat', 'dogs', 'cats']);
-  const isThinCollection = !isAllRoute && !productsLoading && products.length < 3 && !safeSlugs.has(slug || '') && !safeSlugs.has(rawSlug || '');
+  const isThinCollection = !isAllRoute && !productsLoading && products.length === 0 && !safeSlugs.has(slug || '') && !safeSlugs.has(rawSlug || '');
   if (isThinCollection) {
     return <Navigate to="/collections/all" replace />;
   }
