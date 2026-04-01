@@ -216,7 +216,7 @@ const CookiePolicy = () => {
                     </a>
                   </div>
                   <div className="text-muted-foreground space-y-1">
-                    <p className="m-0 font-semibold text-foreground">Skidzo (Eenmanszaak)</p>
+                    <p className="m-0 font-semibold text-foreground">GetPawsy</p>
                     <p className="m-0">De Haasstraat 11</p>
                     <p className="m-0">7312 VG Apeldoorn</p>
                     <p className="m-0">Nederland</p>

@@ -281,10 +281,10 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-3">
-                  <strong>GetPawsy</strong> is a consumer brand operated by <strong>Skidzo</strong>, a registered business (KVK: 78156955).
+                  <strong>GetPawsy</strong> is a registered business (KVK: 78156955).
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  Skidzo is the legal entity responsible for all shipping operations, fulfillment coordination, and customer service related to your GetPawsy order. If you have any questions or concerns about your shipment, Skidzo's customer support team is here to help.
+                  GetPawsy is responsible for all shipping operations, fulfillment coordination, and customer service related to your order. If you have any questions or concerns about your shipment, our customer support team is here to help.
                 </p>
                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
                   <Mail className="w-5 h-5 text-primary flex-shrink-0" />
