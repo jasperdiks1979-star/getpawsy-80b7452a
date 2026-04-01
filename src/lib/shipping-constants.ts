@@ -160,7 +160,7 @@ export const FLAT_RATE_MESSAGE = `Orders under $${FREE_SHIPPING_THRESHOLD} ship 
 
 /** Product page shipping info */
 export const PRODUCT_SHIPPING_INFO = {
-  freeShipping: `Free US shipping on orders $${FREE_SHIPPING_THRESHOLD}+`,
+  freeShipping: `Free shipping on eligible orders $${FREE_SHIPPING_THRESHOLD}+`,
   deliveryTime: `Estimated delivery: ${DELIVERY_TIME_STANDARD}`,
   usFulfillment: US_FULFILLMENT_NOTE,
   returns: RETURNS_POLICY_SHORT,

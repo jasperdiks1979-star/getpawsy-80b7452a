@@ -35,7 +35,7 @@ export function StickyMobileCta() {
           to="/product/automatic-cat-litter-box-self-cleaning-app-control"
           className="rounded-full px-6 py-2.5 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
         >
-          Buy Now — Free US Shipping
+          Buy Now — Free Shipping Available
         </Link>
       </div>
     </div>

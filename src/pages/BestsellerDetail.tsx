@@ -1645,7 +1645,7 @@ const BestsellerDetail = () => {
                 Ready to Make Your Pet Happy?
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
-                Find the right products for your pet. Browse our selection and enjoy free US shipping on orders over $35.
+                Find the right products for your pet. Browse our selection and enjoy free shipping on eligible orders over $35.
                 <span className="block mt-2 text-primary font-medium">Estimated delivery: 5–10 business days.</span>
               </p>
               

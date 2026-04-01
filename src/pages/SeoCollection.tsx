@@ -946,7 +946,7 @@ const SeoCollection = () => {
           {domConfig && (
             <MidContentCTA
               headline={`Find the Best ${collection.name.replace(/^Best\s+/i, '').replace(/\s–.*$/, '')} for Your Pet`}
-              subtext="Browse our curated selection — every product is quality-tested with free US shipping over $35."
+              subtext="Browse our curated selection — every product is quality-tested with free shipping on eligible orders over $35."
               ctaText="Shop Now"
               ctaHref="#products"
             />

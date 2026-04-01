@@ -65,7 +65,7 @@ export function LocalBusinessSchema({
           '@type': 'Offer',
           itemOffered: {
             '@type': 'Service',
-            name: 'Free US Shipping',
+            name: 'Free Shipping Available',
             description: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}`,
           },
         },
