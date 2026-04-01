@@ -65,6 +65,65 @@ function truncate(text: string, max: number): string {
   return text.length <= max ? text : text.substring(0, max - 3) + '...';
 }
 
+const GOOGLE_FEED_TITLE = 'GetPawsy Product Feed';
+const GOOGLE_FEED_DESCRIPTION = 'Google Merchant product feed';
+const GOOGLE_FEED_ROOT = '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">';
+
+function renderGoogleFeedXml(items: string[], generatedAt = new Date().toISOString()): string {
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    GOOGLE_FEED_ROOT,
+    '  <channel>',
+    `    <title>${esc(GOOGLE_FEED_TITLE)}</title>`,
+    `    <link>${BASE_URL}</link>`,
+    `    <description>${esc(GOOGLE_FEED_DESCRIPTION)}</description>`,
+    `    <lastBuildDate>${generatedAt}</lastBuildDate>`,
+    ...items,
+    '  </channel>',
+    '</rss>',
+  ].join('\n');
+}
+
+function assertGoogleFeedValid(content: string, label: string): void {
+  const requiredTokens = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    GOOGLE_FEED_ROOT,
+    '<channel>',
+    '<item>',
+    '</channel>',
+    '</rss>',
+  ];
+
+  for (const token of requiredTokens) {
+    if (!content.includes(token)) {
+      throw new Error(`[xml-plugin] ${label} missing required token: ${token}`);
+    }
+  }
+
+  const lower = content.toLowerCase();
+  if (lower.includes('<!doctype html') || lower.includes('<html') || lower.includes('</script>')) {
+    throw new Error(`[xml-plugin] ${label} contains HTML instead of XML`);
+  }
+}
+
+function buildFeedSourcePreview(feedXml: string): string {
+  const itemMatches = feedXml.match(/    <item>[\s\S]*?    <\/item>/g) ?? [];
+  if (itemMatches.length === 0) {
+    throw new Error('[xml-plugin] feed source preview could not find any <item> nodes');
+  }
+
+  return renderGoogleFeedXml(itemMatches.slice(0, 2));
+}
+
+function logFeedPreview(label: string, content: string): void {
+  const lines = content.split('\n').slice(0, 30);
+  console.log(`[xml-plugin] ${label} first 30 lines:`);
+  lines.forEach((line, index) => console.log(`[xml-plugin] ${String(index + 1).padStart(2, '0')}: ${line}`));
+  console.log(
+    `[xml-plugin] ${label} contains tags: <rss>=${content.includes('<rss')} <channel>=${content.includes('<channel>')} <item>=${content.includes('<item>')}`
+  );
+}
+
 // ── Merchant Feed generation ──────────────────────────────────────────
 
 interface MerchantProduct {
@@ -361,8 +420,8 @@ function getProductType(cat: string | null): string {
 
 function getAvailability(_stock: number | null, isActive: boolean | null): string {
   // Dropship model: only is_active=false marks OOS (stock is informational only)
-  if (isActive === false) return 'out of stock';
-  return 'in stock';
+  if (isActive === false) return 'out_of_stock';
+  return 'in_stock';
 }
 
 function getCurrentSeason(): string {
@@ -445,9 +504,9 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
     `      <g:title>${esc(title)}</g:title>`,
     `      <g:description>${esc(desc)}</g:description>`,
     `      <g:link>${esc(url)}</g:link>`,
-    `      <g:price>${priceStr(p.price)}</g:price>`,
-    `      <g:availability>${esc(avail)}</g:availability>`,
     `      <g:image_link>${esc(img)}</g:image_link>`,
+    `      <g:availability>${esc(avail)}</g:availability>`,
+    `      <g:price>${priceStr(p.price)}</g:price>`,
     `      <g:brand>GetPawsy</g:brand>`,
     `      <g:condition>new</g:condition>`,
     `      <g:google_product_category>${esc(getGoogleProductCategory(p.name, p.category))}</g:google_product_category>`,
@@ -498,17 +557,8 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
   );
 
   const now = new Date().toISOString();
-  const items = products.map(p => productItemXml(p, bestsellersSet)).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>GetPawsy Product Feed</title>
-    <link>${BASE_URL}</link>
-    <description>GetPawsy Google Merchant Center Feed</description>
-    <lastBuildDate>${now}</lastBuildDate>
-${items}
-  </channel>
-</rss>`;
+  const items = products.map(p => productItemXml(p, bestsellersSet));
+  return renderGoogleFeedXml(items, now);
 }
 
 // ── Merchant Diagnostics ──────────────────────────────────────────────
@@ -624,13 +674,13 @@ const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>
   <channel>
     <title>GetPawsy Product Feed</title>
     <link>https://getpawsy.pet</link>
-    <description>GetPawsy Google Merchant Center Feed</description>
+    <description>Google Merchant product feed</description>
     <item>
       <g:id>fallback-feed-item</g:id>
       <g:title>GetPawsy Feed Placeholder Product</g:title>
       <g:link>https://getpawsy.pet/products</g:link>
       <g:price>1.00 USD</g:price>
-      <g:availability>in stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:image_link>https://getpawsy.pet/images/merchant-placeholder.jpg</g:image_link>
       <g:brand>GetPawsy</g:brand>
       <g:condition>new</g:condition>
@@ -715,18 +765,27 @@ export default function merchantFeedPlugin(): Plugin {
             setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
           ),
         ]);
+        assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml');
+        const feedPreview = buildFeedSourcePreview(merchantFeed);
+        assertGoogleFeedValid(feedPreview, 'public/api/feed-source-preview');
 
         writeFileSync(join(publicDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
         writeFileSync(join(publicDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
         writeFileSync(join(publicDir, 'google-feed.xml'), merchantFeed, 'utf-8');
+        mkdirSync(join(publicDir, 'api'), { recursive: true });
+        writeFileSync(join(publicDir, 'api', 'feed-source-preview'), feedPreview, 'utf-8');
         console.log(`[xml-plugin] ✓ /public/merchant-feed.xml (${merchantFeed.length} bytes)`);
         console.log(`[xml-plugin] ✓ /public/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
         console.log(`[xml-plugin] ✓ /public/google-feed.xml (${merchantFeed.length} bytes)`);
+        console.log(`[xml-plugin] ✓ /public/api/feed-source-preview (${feedPreview.length} bytes)`);
+        logFeedPreview('public/google-feed.xml', merchantFeed);
       } catch (err) {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in buildStart, writing fallback feeds:', err);
         writeFileSync(join(publicDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(publicDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(publicDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
+        mkdirSync(join(publicDir, 'api'), { recursive: true });
+        writeFileSync(join(publicDir, 'api', 'feed-source-preview'), buildFeedSourcePreview(FALLBACK_FEED), 'utf-8');
       }
 
       // Keep diagnostics static file only
@@ -758,18 +817,27 @@ export default function merchantFeedPlugin(): Plugin {
             setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
           ),
         ]);
+        assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml');
+        const feedPreview = buildFeedSourcePreview(merchantFeed);
+        assertGoogleFeedValid(feedPreview, 'dist/api/feed-source-preview');
 
         writeFileSync(join(outDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
         writeFileSync(join(outDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
         writeFileSync(join(outDir, 'google-feed.xml'), merchantFeed, 'utf-8');
+        mkdirSync(join(outDir, 'api'), { recursive: true });
+        writeFileSync(join(outDir, 'api', 'feed-source-preview'), feedPreview, 'utf-8');
         console.log(`[xml-plugin] ✓ /dist/merchant-feed.xml (${merchantFeed.length} bytes)`);
         console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
         console.log(`[xml-plugin] ✓ /dist/google-feed.xml (${merchantFeed.length} bytes)`);
+        console.log(`[xml-plugin] ✓ /dist/api/feed-source-preview (${feedPreview.length} bytes)`);
+        logFeedPreview('dist/google-feed.xml', merchantFeed);
       } catch (err) {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in closeBundle, writing fallback feeds:', err);
         writeFileSync(join(outDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(outDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(outDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
+        mkdirSync(join(outDir, 'api'), { recursive: true });
+        writeFileSync(join(outDir, 'api', 'feed-source-preview'), buildFeedSourcePreview(FALLBACK_FEED), 'utf-8');
       }
 
       try {
