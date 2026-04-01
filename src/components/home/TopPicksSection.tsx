@@ -65,7 +65,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: '2-in-1 Dog Bike Trailer & Stroller',
     price: 322.99,
     compareAt: 409.99,
-    image: 'https://cf.cjdropshipping.com/17635104/add616e1-776b-4891-bcc9-10e2b1deede2.jpg',
+    image: '/images/products/dog-bike-trailer.jpg',
     benefit: 'Converts between biking & walking',
     pet: 'dog',
   },
