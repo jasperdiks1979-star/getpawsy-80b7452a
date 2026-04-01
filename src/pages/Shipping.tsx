@@ -143,7 +143,7 @@ const Shipping = () => {
                   Orders are fulfilled through trusted logistics partners and shipped directly to customers across the United States. Every order includes tracking information so you can follow your package from dispatch to delivery.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  Skidzo, the legal entity operating GetPawsy, coordinates all fulfillment logistics and is fully responsible for ensuring your order reaches you safely and on time.
+                  GetPawsy coordinates all fulfillment logistics and is fully responsible for ensuring your order reaches you safely and on time.
                 </p>
                 <div className="p-4 bg-muted/50 rounded-xl">
                   <p className="text-sm text-muted-foreground">
