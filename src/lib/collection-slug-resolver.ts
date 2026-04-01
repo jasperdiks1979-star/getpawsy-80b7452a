@@ -71,7 +71,6 @@ const SLUG_ALIASES: Record<string, string> = {
   // Shopify legacy handles
   'frontpage': 'dog',
   'all-products': 'all',
-  'best-sellers': 'all',
   'new-arrivals': 'all',
 };
 

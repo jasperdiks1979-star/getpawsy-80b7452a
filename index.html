@@ -149,9 +149,9 @@
     </script>
     <!-- Cache headers set by CDN - see public/_headers -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <title>Professional Dog Training Tools — Trusted by Owners Across the US | GetPawsy</title>
-    <meta name="description" content="Professional dog training tools for potty training, behavior correction & safer walks. Free US shipping $35+, 30-day returns. Trusted by dog owners nationwide." />
-    <meta name="keywords" content="dog training gear, dog travel gear, cat training toys, cat carrier, dog harness, dog car seat, cat tree, pet travel, dog leash, training treats, no pull harness, GetPawsy" />
+    <title>GetPawsy — Premium Pet Products for Dogs & Cats | US Shipping</title>
+    <meta name="description" content="Shop premium pet products at GetPawsy. Cat trees, litter boxes, dog beds, toys & more. Free shipping on eligible orders $35+. 30-day returns." />
+    <meta name="keywords" content="pet products, cat tree, dog bed, cat litter box, dog toys, cat toys, pet supplies, pet accessories, GetPawsy" />
     <meta name="author" content="GetPawsy" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
@@ -281,8 +281,8 @@
     <link rel="alternate" hreflang="x-default" href="https://getpawsy.pet/" id="gp-hreflang-default" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="Professional Dog Training Tools — Trusted by Owners Across the US | GetPawsy" />
-    <meta property="og:description" content="Professional dog training tools for potty training, behavior correction & safer walks. Free US shipping $35+." />
+    <meta property="og:title" content="GetPawsy — Premium Pet Products for Dogs & Cats | US Shipping" />
+    <meta property="og:description" content="Shop premium pet products at GetPawsy. Cat trees, litter boxes, dog beds, toys & more. Free shipping on eligible orders $35+." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://getpawsy.pet/" />
     <meta property="og:image" content="https://getpawsy.pet/og-image.png" />
@@ -294,8 +294,8 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@GetPawsy" />
-    <meta name="twitter:title" content="Professional Dog Training Tools | GetPawsy" />
-    <meta name="twitter:description" content="Potty training. Behavior correction. Safer walks. Smarter solutions. Free US shipping $35+." />
+    <meta name="twitter:title" content="GetPawsy — Premium Pet Products for Dogs & Cats" />
+    <meta name="twitter:description" content="Cat trees, litter boxes, dog beds, toys & more. Free shipping on eligible orders $35+. 30-day returns." />
     <meta name="twitter:image" content="https://getpawsy.pet/og-image.png" />
 
     <!--
@@ -308,17 +308,8 @@
     <script>
       (function(){
         var p = location.pathname;
-        if (p.indexOf('/lp/') === 0) {
-          // Landing pages use CJ product images — preconnect + preload hero
-          var pc = document.createElement('link');
-          pc.rel = 'preconnect'; pc.href = 'https://cf.cjdropshipping.com'; pc.crossOrigin = '';
-          document.head.appendChild(pc);
-          var pl = document.createElement('link');
-          pl.rel = 'preload'; pl.as = 'image'; pl.fetchPriority = 'high';
-          pl.href = 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png';
-          document.head.appendChild(pl);
-        } else {
-          // Homepage hero preloads
+        // Only preload hero images on homepage
+        if (p === '/' || p === '') {
           var m = document.createElement('link');
           m.rel = 'preload'; m.as = 'image'; m.fetchPriority = 'high';
           m.href = '/hero/dog-training-hero-mobile.webp'; m.media = '(max-width: 768px)';
@@ -327,6 +318,15 @@
           d.rel = 'preload'; d.as = 'image'; d.fetchPriority = 'high';
           d.href = '/hero/dog-training-hero-desktop.webp'; d.media = '(min-width: 769px)';
           document.head.appendChild(d);
+        }
+        // PRE-HYDRATION: Set meaningful title for collection pages
+        if (p.indexOf('/collections/') === 0) {
+          var cSlug = p.replace('/collections/', '').replace(/\/$/, '');
+          var cName = cSlug.replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+          if (cName.length > 80) cName = cName.substring(0, 77) + '...';
+          document.title = cName + ' | GetPawsy';
+          var descMeta = document.querySelector('meta[name="description"]');
+          if (descMeta) descMeta.setAttribute('content', 'Shop ' + cName + ' at GetPawsy. Premium quality pet products with US shipping and 30-day returns.');
         }
       })();
     </script>
@@ -340,10 +340,9 @@
       [data-testid="cookie-banner"] { contain:layout; }
     </style>
 
-    <!-- DNS Prefetch / preconnect — only critical origins (Cloudinary demoted to dns-prefetch since hero is now origin-served) -->
+    <!-- DNS Prefetch / preconnect — only critical origins -->
     <link rel="preconnect" href="https://nojvgfbcjgipjxpfatmm.supabase.co" crossorigin>
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
-    <link rel="dns-prefetch" href="https://cf.cjdropshipping.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
     <!-- Preload primary font files for fastest LCP text paint -->
@@ -515,7 +514,7 @@
               />
               <img
                 src="/hero/dog-training-hero-desktop.webp"
-                alt="Golden retriever being trained by owner in sunlit backyard — professional dog training tools"
+                alt="Happy pets — premium pet products for dogs and cats"
                 width="1920"
                 height="1080"
                 fetchpriority="high"
@@ -527,23 +526,23 @@
           </div>
           <div style="position:relative;z-index:10;padding:64px 24px;max-width:1280px;margin:0 auto;width:100%">
             <div style="max-width:672px">
-              <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.2em;color:#c2501f;opacity:0.8;margin:0 0 12px">DOG TRAINING AUTHORITY — US BASED</p>
+              <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.2em;color:#c2501f;opacity:0.8;margin:0 0 12px">PREMIUM PET PRODUCTS — US SHIPPING</p>
               <h1 style="font-family:'Playfair Display','Playfair Fallback',Georgia,serif;font-size:clamp(2.25rem,5vw,3.75rem);font-weight:700;line-height:1.05;letter-spacing:-0.015em;color:#1a1a1a;margin:0 0 24px">
-                Professional Dog Training Tools<br/><span style="color:#c2501f">Trusted by Owners Across the US</span>
+                Premium Pet Comfort<br/><span style="color:#c2501f">Starts Here</span>
               </h1>
               <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:clamp(1rem,2vw,1.25rem);color:#6b7280;max-width:512px;line-height:1.6;margin:0 0 32px">
-                Potty training. Behavior correction. Safer walks. Smarter solutions.
+                Smart solutions for safer, cleaner, stress-free pet living.
               </p>
               <div style="display:flex;flex-wrap:wrap;gap:16px;position:relative;z-index:50;pointer-events:auto">
-                <a href="/collections/dog-potty-training" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent">
-                  Shop Potty Training →
+                <a href="/bestsellers" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+                  Shop Bestsellers →
                 </a>
-                <a href="/collections/dog-leash-control" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
-                  Explore Leash & Control →
+                <a href="/products" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+                  Browse All Products →
                 </a>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:20px;padding-top:16px;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:500;color:#6b7280">
-                <span>✔ Free US Shipping $35+</span><span>✔ 30-Day Returns</span><span>✔ Tracked Shipping</span><span>✔ Large Breed Tested</span>
+                <span>✔ Free Shipping on Orders $35+</span><span>✔ 30-Day Returns</span><span>✔ Tracked Shipping</span>
               </div>
             </div>
           </div>
