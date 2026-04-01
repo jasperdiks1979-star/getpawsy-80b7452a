@@ -769,6 +769,7 @@ export default function merchantFeedPlugin(): Plugin {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in closeBundle, writing fallback feeds:', err);
         writeFileSync(join(outDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
         writeFileSync(join(outDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
+        writeFileSync(join(outDir, 'google-feed.xml'), FALLBACK_FEED, 'utf-8');
       }
 
       try {
