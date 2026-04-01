@@ -102,7 +102,7 @@ export const BUSINESS_LOCATION = 'Apeldoorn, Netherlands';
 export const BUSINESS_NAME = 'GetPawsy';
 
 /** Legal operator name */
-export const BUSINESS_OPERATOR = 'Skidzo';
+export const BUSINESS_OPERATOR = 'GetPawsy';
 
 /** Business registration */
 export const BUSINESS_REGISTRATION = 'KVK 78156955';

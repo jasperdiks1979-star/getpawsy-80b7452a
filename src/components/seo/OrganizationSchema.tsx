@@ -18,10 +18,6 @@ export function OrganizationSchema() {
     brand: 'GetPawsy',
     vatID: 'NL003295015B69',
     taxID: 'NL003295015B69',
-    parentOrganization: {
-      '@type': 'Organization',
-      name: 'Skidzo',
-    },
     description:
       'GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Orders are shipped directly to customers across the United States.',
     address: {

@@ -99,7 +99,7 @@ export const TrustTransparencySection = () => (
           </h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          GetPawsy is operated by Skidzo, a registered business.
+          GetPawsy is a registered pet supply business serving US customers.
         </p>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           {transparencyDetails.map(({ label, value }) => (
