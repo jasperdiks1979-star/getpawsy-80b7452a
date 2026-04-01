@@ -26,7 +26,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
 
       if (!data) return [];
 
-      // Filter in-stock: dropship model — only explicit 0 is out of stock
+      // Filter in-stock: fulfillment model — only explicit 0 is out of stock
       const inStock = data.filter(
         (p) => p.stock !== 0
       );
