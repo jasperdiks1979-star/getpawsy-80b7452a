@@ -1,11 +1,11 @@
 /**
  * Single source of truth for product availability computation.
  * 
- * DROPSHIPPING MODEL (CJ Dropshipping):
+ * AVAILABILITY MODEL:
  * - is_active === false → OUT OF STOCK (disabled by admin)
  * - ANY stock value (0, null, positive) with is_active=true → IN STOCK
  * 
- * Stock numbers are informational only. The supplier manages real inventory.
+ * Stock numbers are informational only. Fulfillment partners manage real inventory.
  * Only is_active=false marks a product as unavailable.
  */
 
