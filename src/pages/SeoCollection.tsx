@@ -383,7 +383,7 @@ const SeoCollection = () => {
       const hasCategoryConflict = oppositeKeywords.some(kw => category.includes(kw));
       if (hasCategoryConflict) return false;
 
-      if (dbSpecies) {
+      if (dbSpecies && dbSpecies !== 'unknown') {
         if (dbSpecies === targetSpecies) return true;
         if (dbSpecies === 'both') return true;
         return false;
