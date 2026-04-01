@@ -69,7 +69,7 @@ const SLUG_ALIASES: Record<string, string> = {
   'puppy-starter-kit': 'puppy-training-essentials',
   'puppy-kit': 'puppy-training-essentials',
   // Shopify legacy handles
-  'frontpage': 'dog',
+  'frontpage': 'dogs',
   'all-products': 'all',
   'new-arrivals': 'all',
 };
