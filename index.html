@@ -308,17 +308,8 @@
     <script>
       (function(){
         var p = location.pathname;
-        if (p.indexOf('/lp/') === 0) {
-          // Landing pages use CJ product images — preconnect + preload hero
-          var pc = document.createElement('link');
-          pc.rel = 'preconnect'; pc.href = 'https://cf.cjdropshipping.com'; pc.crossOrigin = '';
-          document.head.appendChild(pc);
-          var pl = document.createElement('link');
-          pl.rel = 'preload'; pl.as = 'image'; pl.fetchPriority = 'high';
-          pl.href = 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png';
-          document.head.appendChild(pl);
-        } else {
-          // Homepage hero preloads
+        // Only preload hero images on homepage
+        if (p === '/' || p === '') {
           var m = document.createElement('link');
           m.rel = 'preload'; m.as = 'image'; m.fetchPriority = 'high';
           m.href = '/hero/dog-training-hero-mobile.webp'; m.media = '(max-width: 768px)';
@@ -327,6 +318,15 @@
           d.rel = 'preload'; d.as = 'image'; d.fetchPriority = 'high';
           d.href = '/hero/dog-training-hero-desktop.webp'; d.media = '(min-width: 769px)';
           document.head.appendChild(d);
+        }
+        // PRE-HYDRATION: Set meaningful title for collection pages
+        if (p.indexOf('/collections/') === 0) {
+          var cSlug = p.replace('/collections/', '').replace(/\/$/, '');
+          var cName = cSlug.replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+          if (cName.length > 80) cName = cName.substring(0, 77) + '...';
+          document.title = cName + ' | GetPawsy';
+          var descMeta = document.querySelector('meta[name="description"]');
+          if (descMeta) descMeta.setAttribute('content', 'Shop ' + cName + ' at GetPawsy. Premium quality pet products with US shipping and 30-day returns.');
         }
       })();
     </script>
