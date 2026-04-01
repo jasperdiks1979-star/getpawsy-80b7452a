@@ -359,9 +359,10 @@ function getProductType(cat: string | null): string {
   return t;
 }
 
-function getAvailability(stock: number | null, isActive: boolean | null): string {
+function getAvailability(_stock: number | null, isActive: boolean | null): string {
+  // Dropship model: only is_active=false marks OOS (stock is informational only)
   if (isActive === false) return 'out of stock';
-  return (stock !== null && stock !== undefined && stock > 0) ? 'in stock' : 'out of stock';
+  return 'in stock';
 }
 
 function getCurrentSeason(): string {
