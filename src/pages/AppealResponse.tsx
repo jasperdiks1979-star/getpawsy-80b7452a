@@ -334,7 +334,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
           </h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p><strong>Bedrijfsnaam:</strong> Skidzo (Eenmanszaak)</p>
+              <p><strong>Bedrijfsnaam:</strong> GetPawsy (Eenmanszaak)</p>
               <p><strong>KvK:</strong> 78156955</p>
               <p><strong>VAT ID:</strong> NL003295015B69</p>
             </div>
