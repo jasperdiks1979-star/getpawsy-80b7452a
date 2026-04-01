@@ -595,7 +595,7 @@ export const Navbar = () => {
                       <div className="rounded-xl border bg-card overflow-hidden">
                         {categoryTree.map((category) => (
                           <MobileCategoryItem
-                            key={category.id}
+                            key={category.key}
                             category={category}
                             onClose={() => setIsMobileMenuOpen(false)}
                           />
