@@ -50,8 +50,8 @@ export function computeAvailability(
     return { isInStock: true, reason: `In stock (${effectiveStock} units)` };
   }
 
-  // null/undefined = dropship model, treat as in stock
-  return { isInStock: true, reason: 'In stock (dropship model: stock not tracked)' };
+  // null/undefined = fulfillment model, treat as in stock
+  return { isInStock: true, reason: 'In stock (fulfillment model: stock not tracked)' };
 }
 
 /**
