@@ -112,7 +112,17 @@ function buildFeedSourcePreview(feedXml: string): string {
     throw new Error('[xml-plugin] feed source preview could not find any <item> nodes');
   }
 
-  return renderGoogleFeedXml(itemMatches.slice(0, 2));
+  const previewXml = renderGoogleFeedXml(itemMatches.slice(0, 2));
+  assertGoogleFeedValid(previewXml, 'feed-source-preview');
+
+  return [
+    'validation_status: valid',
+    `contains_rss: ${previewXml.includes('<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">')}`,
+    `contains_channel: ${previewXml.includes('<channel>')}`,
+    `contains_item: ${previewXml.includes('<item>')}`,
+    '---xml-preview---',
+    previewXml,
+  ].join('\n');
 }
 
 function logFeedPreview(label: string, content: string): void {
