@@ -165,7 +165,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'PawHut Cat Tree with Hammock',
     price: 136.99,
     compareAt: 166.99,
-    image: 'https://cf.cjdropshipping.com/a62c86a6-3a38-4a6d-b6eb-7be827fddcf2.jpg',
+    image: '/images/products/pawhut-cat-tree.jpg',
     benefit: 'Cozy hammock + sisal posts',
     pet: 'cat',
   },

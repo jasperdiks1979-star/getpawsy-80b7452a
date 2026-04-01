@@ -23,7 +23,7 @@ const FEATURED_ITEMS = [
   {
     name: '44" Multi-Level Cat Tree – Condo, Hammock & Scratching Posts',
     path: '/product/44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
-    image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
+    image: '/images/products/multi-level-cat-tree.jpg',
     description: 'Sisal-wrapped cat tree with hammock, enclosed condo, and perch for indoor cats.',
     type: 'product' as const,
   },
