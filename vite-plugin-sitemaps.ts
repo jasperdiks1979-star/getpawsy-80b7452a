@@ -8,7 +8,7 @@
  */
 import type { Plugin } from 'vite';
 import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { join, relative } from 'path';
 import { execSync } from 'child_process';
 
 const BASE_URL = 'https://getpawsy.pet';
@@ -61,6 +61,60 @@ function esc(text: string): string {
     .replace(/'/g, '&apos;');
 }
 
+function cdata(text: string): string {
+  return `<![CDATA[${stripInvalidXmlChars(text).replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
+}
+
+type XmlContent =
+  | { type: 'text'; value: string }
+  | { type: 'cdata'; value: string };
+
+interface XmlNode {
+  name: string;
+  attributes?: Record<string, string>;
+  children?: Array<XmlNode | XmlContent>;
+}
+
+function xmlText(value: string): XmlContent {
+  return { type: 'text', value };
+}
+
+function xmlCdata(value: string): XmlContent {
+  return { type: 'cdata', value };
+}
+
+function xmlNode(name: string, children: Array<XmlNode | XmlContent>, attributes?: Record<string, string>): XmlNode {
+  return { name, attributes, children };
+}
+
+function serializeXmlContent(content: XmlContent): string {
+  return content.type === 'cdata' ? cdata(content.value) : esc(content.value);
+}
+
+function serializeXmlNode(node: XmlNode, indent = 0): string {
+  const spacing = ' '.repeat(indent);
+  const attrs = node.attributes
+    ? Object.entries(node.attributes)
+        .map(([key, value]) => ` ${key}="${esc(value)}"`)
+        .join('')
+    : '';
+  const children = node.children ?? [];
+
+  if (children.length === 0) {
+    return `${spacing}<${node.name}${attrs}></${node.name}>`;
+  }
+
+  if (children.length === 1 && 'type' in children[0]) {
+    return `${spacing}<${node.name}${attrs}>${serializeXmlContent(children[0])}</${node.name}>`;
+  }
+
+  const childLines = children.map((child) =>
+    'type' in child ? `${' '.repeat(indent + 2)}${serializeXmlContent(child)}` : serializeXmlNode(child, indent + 2)
+  );
+
+  return `${spacing}<${node.name}${attrs}>\n${childLines.join('\n')}\n${spacing}</${node.name}>`;
+}
+
 function truncate(text: string, max: number): string {
   return text.length <= max ? text : text.substring(0, max - 3) + '...';
 }
@@ -71,19 +125,25 @@ const GOOGLE_FEED_ROOT = '<rss version="2.0" xmlns:g="http://base.google.com/ns/
 const FEED_ARTIFACTS = ['merchant-feed.xml', 'google-shopping-feed.xml', 'google-feed.xml'] as const;
 const FEED_DEBUG_ARTIFACTS = ['feed-source-preview', 'feed-check'] as const;
 
-function renderGoogleFeedXml(items: string[], generatedAt = new Date().toISOString()): string {
-  return [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    GOOGLE_FEED_ROOT,
-    '  <channel>',
-    `    <title>${esc(GOOGLE_FEED_TITLE)}</title>`,
-    `    <link>${BASE_URL}</link>`,
-    `    <description>${esc(GOOGLE_FEED_DESCRIPTION)}</description>`,
-    `    <lastBuildDate>${generatedAt}</lastBuildDate>`,
-    ...items,
-    '  </channel>',
-    '</rss>',
-  ].join('\n');
+function renderGoogleFeedXml(items: XmlNode[], generatedAt = new Date().toISOString()): string {
+  const rss = xmlNode(
+    'rss',
+    [
+      xmlNode('channel', [
+        xmlNode('title', [xmlText(GOOGLE_FEED_TITLE)]),
+        xmlNode('link', [xmlText(BASE_URL)]),
+        xmlNode('description', [xmlText(GOOGLE_FEED_DESCRIPTION)]),
+        xmlNode('lastBuildDate', [xmlText(generatedAt)]),
+        ...items,
+      ]),
+    ],
+    {
+      version: '2.0',
+      'xmlns:g': 'http://base.google.com/ns/1.0',
+    }
+  );
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${serializeXmlNode(rss)}\n`;
 }
 
 function assertGoogleFeedValid(content: string, label: string): void {
@@ -106,6 +166,19 @@ function assertGoogleFeedValid(content: string, label: string): void {
   if (lower.includes('<!doctype html') || lower.includes('<html') || lower.includes('</script>')) {
     throw new Error(`[xml-plugin] ${label} contains HTML instead of XML`);
   }
+}
+
+function assertGoogleFeedFirst30Lines(content: string, label: string): string[] {
+  const first30Lines = content.split('\n').slice(0, 30);
+  const preview = first30Lines.join('\n');
+
+  for (const token of ['<?xml version="1.0" encoding="UTF-8"?>', '<rss', '<channel>', '<item>']) {
+    if (!preview.includes(token)) {
+      throw new Error(`[xml-plugin] ${label} first 30 lines missing required token: ${token}`);
+    }
+  }
+
+  return first30Lines;
 }
 
 function buildFeedSourcePreview(feedXml: string, sourceFile: string): string {
@@ -131,18 +204,28 @@ function buildFeedSourcePreview(feedXml: string, sourceFile: string): string {
 
 function buildFeedCheck(feedXml: string): string {
   const normalized = feedXml.trimStart();
-  const first200 = normalized.slice(0, 200);
+  const first30Lines = assertGoogleFeedFirst30Lines(normalized, 'google-feed.xml');
 
   return JSON.stringify(
     {
       is_xml: normalized.startsWith('<?xml') && normalized.includes('<rss') && normalized.includes('<channel>'),
       contains_rss: feedXml.includes('<rss'),
+      contains_channel: feedXml.includes('<channel>'),
+      contains_item: feedXml.includes('<item>'),
       content_type: 'application/xml',
-      first_200_chars: first200,
+      first_30_lines_of_google_feed_xml: first30Lines,
+      file_size_bytes: Buffer.byteLength(feedXml, 'utf8'),
     },
     null,
     2
   );
+}
+
+function overwriteFile(filePath: string, content: string): void {
+  if (existsSync(filePath)) {
+    unlinkSync(filePath);
+  }
+  writeFileSync(filePath, content, 'utf-8');
 }
 
 function clearFeedArtifacts(baseDir: string): void {
@@ -157,20 +240,21 @@ function clearFeedArtifacts(baseDir: string): void {
   }
 }
 
-function writeFeedArtifacts(baseDir: string, merchantFeed: string, sourceFile: string): void {
-  const feedPreview = buildFeedSourcePreview(merchantFeed, sourceFile);
+function writeFeedArtifacts(baseDir: string, merchantFeed: string, sourceFile?: string): void {
+  const resolvedSourceFile = sourceFile || relative(process.cwd(), join(baseDir, 'google-feed.xml'));
+  const feedPreview = buildFeedSourcePreview(merchantFeed, resolvedSourceFile);
   const feedCheck = buildFeedCheck(merchantFeed);
 
-  writeFileSync(join(baseDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
-  writeFileSync(join(baseDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
-  writeFileSync(join(baseDir, 'google-feed.xml'), merchantFeed, 'utf-8');
+  overwriteFile(join(baseDir, 'merchant-feed.xml'), merchantFeed);
+  overwriteFile(join(baseDir, 'google-shopping-feed.xml'), merchantFeed);
+  overwriteFile(join(baseDir, 'google-feed.xml'), merchantFeed);
   mkdirSync(join(baseDir, 'api'), { recursive: true });
-  writeFileSync(join(baseDir, 'api', 'feed-source-preview'), feedPreview, 'utf-8');
-  writeFileSync(join(baseDir, 'api', 'feed-check'), feedCheck, 'utf-8');
+  overwriteFile(join(baseDir, 'api', 'feed-source-preview'), feedPreview);
+  overwriteFile(join(baseDir, 'api', 'feed-check'), feedCheck);
 }
 
 function logFeedPreview(label: string, content: string): void {
-  const lines = content.split('\n').slice(0, 30);
+  const lines = assertGoogleFeedFirst30Lines(content, label);
   console.log(`[xml-plugin] ${label} first 30 lines:`);
   lines.forEach((line, index) => console.log(`[xml-plugin] ${String(index + 1).padStart(2, '0')}: ${line}`));
   console.log(
@@ -474,8 +558,8 @@ function getProductType(cat: string | null): string {
 
 function getAvailability(_stock: number | null, isActive: boolean | null): string {
   // Dropship model: only is_active=false marks OOS (stock is informational only)
-  if (isActive === false) return 'out_of_stock';
-  return 'in_stock';
+  if (isActive === false) return 'out of stock';
+  return 'in stock';
 }
 
 function getCurrentSeason(): string {
@@ -536,7 +620,7 @@ function sanitizeImageUrl(url: string | null): string {
   return trimmed;
 }
 
-function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string {
+function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNode {
   const url = `${BASE_URL}/product/${p.slug || p.id}`;
   const img = sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null);
   const title = buildOptimizedTitle(p);
@@ -553,37 +637,37 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
   const marginTier = margin >= 40 ? 'High-Margin' : margin >= 20 ? 'Mid-Margin' : 'Low-Margin';
   const isBestseller = bestsellersSet.has(p.id);
 
-  const tags: string[] = [
-    `      <g:id>${esc(p.id)}</g:id>`,
-    `      <g:title>${esc(title)}</g:title>`,
-    `      <g:description>${esc(desc)}</g:description>`,
-    `      <g:link>${esc(url)}</g:link>`,
-    `      <g:image_link>${esc(img)}</g:image_link>`,
-    `      <g:availability>${esc(avail)}</g:availability>`,
-    `      <g:price>${priceStr(p.price)}</g:price>`,
-    `      <g:brand>GetPawsy</g:brand>`,
-    `      <g:condition>new</g:condition>`,
-    `      <g:google_product_category>${esc(getGoogleProductCategory(p.name, p.category))}</g:google_product_category>`,
-    `      <g:shipping_weight>${esc(shippingWeight)}</g:shipping_weight>`,
+  const tags: XmlNode[] = [
+    xmlNode('g:id', [xmlText(p.id)]),
+    xmlNode('g:title', [xmlCdata(title)]),
+    xmlNode('g:description', [xmlCdata(desc)]),
+    xmlNode('g:link', [xmlText(url)]),
+    xmlNode('g:image_link', [xmlText(img)]),
+    xmlNode('g:availability', [xmlText(avail)]),
+    xmlNode('g:price', [xmlText(priceStr(p.price))]),
+    xmlNode('g:brand', [xmlText('GetPawsy')]),
+    xmlNode('g:condition', [xmlText('new')]),
+    xmlNode('g:google_product_category', [xmlText(getGoogleProductCategory(p.name, p.category))]),
+    xmlNode('g:shipping_weight', [xmlText(shippingWeight)]),
   ];
 
   if (p.compare_at_price && p.compare_at_price > p.price) {
-    tags.push(`      <g:sale_price>${priceStr(p.price)}</g:sale_price>`);
+    tags.push(xmlNode('g:sale_price', [xmlText(priceStr(p.price))]));
   }
 
   if (p.sku) {
-    tags.push(`      <g:mpn>${esc(p.sku)}</g:mpn>`);
+    tags.push(xmlNode('g:mpn', [xmlText(p.sku)]));
   } else {
-    tags.push(`      <g:identifier_exists>no</g:identifier_exists>`);
-    tags.push(`      <g:mpn>${esc(p.id)}</g:mpn>`);
+    tags.push(xmlNode('g:identifier_exists', [xmlText('no')]));
+    tags.push(xmlNode('g:mpn', [xmlText(p.id)]));
   }
 
-  tags.push(`      <g:product_type>${esc(getProductType(p.category))}</g:product_type>`);
-  tags.push(`      <g:custom_label_0>${esc(marginTier)}</g:custom_label_0>`);
-  tags.push(`      <g:custom_label_1>${isBestseller ? 'Bestseller' : 'Standard'}</g:custom_label_1>`);
-  tags.push(`      <g:custom_label_2>${esc(season)}</g:custom_label_2>`);
+  tags.push(xmlNode('g:product_type', [xmlText(getProductType(p.category))]));
+  tags.push(xmlNode('g:custom_label_0', [xmlText(marginTier)]));
+  tags.push(xmlNode('g:custom_label_1', [xmlText(isBestseller ? 'Bestseller' : 'Standard')]));
+  tags.push(xmlNode('g:custom_label_2', [xmlText(season)]));
 
-  return `    <item>\n${tags.join('\n')}\n    </item>`;
+  return xmlNode('item', tags);
 }
 
 async function buildMerchantFeed(maxItems?: number): Promise<string> {
@@ -731,10 +815,11 @@ const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>
     <description>Google Merchant product feed</description>
     <item>
       <g:id>fallback-feed-item</g:id>
-      <g:title>GetPawsy Feed Placeholder Product</g:title>
+      <g:title><![CDATA[GetPawsy Feed Placeholder Product]]></g:title>
+      <g:description><![CDATA[Temporary fallback product feed item.]]></g:description>
       <g:link>https://getpawsy.pet/products</g:link>
       <g:price>1.00 USD</g:price>
-      <g:availability>in_stock</g:availability>
+      <g:availability>in stock</g:availability>
       <g:image_link>https://getpawsy.pet/images/merchant-placeholder.jpg</g:image_link>
       <g:brand>GetPawsy</g:brand>
       <g:condition>new</g:condition>
