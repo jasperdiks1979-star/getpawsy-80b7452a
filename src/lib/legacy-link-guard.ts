@@ -6,7 +6,7 @@
 const BLOCKED_PATTERNS = [
   /admin\.shopify\.com/i,
   /myshopify\.com/i,
-  /skidzo-store/i,
+  /legacy-store/i,
 ];
 
 /**
