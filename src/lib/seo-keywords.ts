@@ -978,7 +978,7 @@ export function generateProductKeywords(
 // Smart meta description templates based on product type
 const metaTemplates = {
   benefit: (productName: string, benefit: string, price?: number) =>
-    `${productName} - ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Free US shipping on orders over $35. Shop now at GetPawsy!`,
+    `${productName} - ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Free shipping on eligible orders over $35. Shop now at GetPawsy!`,
   
   emotional: (productName: string, hook: string, price?: number) =>
     `${productName} - ${hook}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Premium quality, vet-approved. Order today at GetPawsy!`,
