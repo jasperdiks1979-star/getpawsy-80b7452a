@@ -5064,6 +5064,7 @@ export type Database = {
           feed_readiness_score: number | null
           google_product_category: string | null
           id: string
+          image_alt_text: string | null
           image_url: string | null
           images: string[] | null
           is_active: boolean | null
@@ -5143,6 +5144,7 @@ export type Database = {
           feed_readiness_score?: number | null
           google_product_category?: string | null
           id?: string
+          image_alt_text?: string | null
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
@@ -5222,6 +5224,7 @@ export type Database = {
           feed_readiness_score?: number | null
           google_product_category?: string | null
           id?: string
+          image_alt_text?: string | null
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
