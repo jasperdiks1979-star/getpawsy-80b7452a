@@ -127,7 +127,7 @@ export default function ComplianceEvidence() {
     results.push({ name: "Feed-to-Site Parity", category: "Feed Compliance", status: "pass", detail: "title, price, availability, image, link all match PDP content" });
 
     // ── E) Structured data ──
-    results.push({ name: "Organization Schema", category: "Structured Data", status: "pass", detail: "JSON-LD: contactPoint, parentOrganization (Skidzo), vatID" });
+    results.push({ name: "Organization Schema", category: "Structured Data", status: "pass", detail: "JSON-LD: contactPoint, vatID, brand GetPawsy" });
     results.push({ name: "Product Schema (PDP)", category: "Structured Data", status: "pass", detail: "name, image, offers (USD), availability, brand, sku" });
     results.push({ name: "MerchantReturnPolicy", category: "Structured Data", status: "pass", detail: "30-day ReturnByMail with FullRefund — matches /returns" });
     results.push({ name: "ShippingDetails", category: "Structured Data", status: "pass", detail: "US region, handling 1-2 days, transit 5–10 business days — matches /shipping" });
