@@ -129,7 +129,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Solid Wood Cat Tree with Scratching Post',
     price: 149.99,
     compareAt: 187.49,
-    image: 'https://oss-cf.cjdropshipping.com/product/2026/01/31/05/c7c0461d-58c7-4601-84e3-8880a0567cf0_fine.jpeg',
+    image: '/images/products/solid-wood-cat-tree.jpg',
     benefit: 'Premium real-wood construction',
     pet: 'cat',
   },
