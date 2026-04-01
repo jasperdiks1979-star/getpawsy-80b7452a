@@ -156,7 +156,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Outdoor Catio Cat Enclosure',
     price: 471.99,
     compareAt: 594.99,
-    image: 'https://cf.cjdropshipping.com/70b1c5cd-0c12-498f-beb7-bc27d47212df.jpg',
+    image: '/images/products/outdoor-catio.jpg',
     benefit: 'Safe outdoor play for 2-3 cats',
     pet: 'cat',
   },
