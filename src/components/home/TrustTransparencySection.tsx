@@ -42,7 +42,6 @@ const trustPoints = [
 
 const transparencyDetails = [
   { label: 'Business name', value: 'GetPawsy' },
-  { label: 'Operator', value: 'Skidzo' },
   { label: 'Location', value: 'Apeldoorn, Netherlands' },
   { label: 'Registration', value: 'KVK 78156955' },
   { label: 'VAT ID', value: 'NL003295015B69' },
@@ -100,7 +99,7 @@ export const TrustTransparencySection = () => (
           </h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          GetPawsy is operated by Skidzo, a registered business.
+          GetPawsy is a registered pet supply business serving US customers.
         </p>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           {transparencyDetails.map(({ label, value }) => (

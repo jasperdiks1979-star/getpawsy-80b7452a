@@ -199,7 +199,7 @@ const TechnicalDeclaration = () => {
           <tbody>
             <tr>
               <td className="border border-gray-300 p-1 font-medium bg-gray-50 w-1/3">Business</td>
-              <td className="border border-gray-300 p-1">Skidzo (Sole Proprietorship, NL)</td>
+              <td className="border border-gray-300 p-1">GetPawsy (Sole Proprietorship, NL)</td>
             </tr>
             <tr>
               <td className="border border-gray-300 p-1 font-medium bg-gray-50">KvK</td>
@@ -272,7 +272,7 @@ const TechnicalDeclaration = () => {
             <p><strong>Web:</strong> https://getpawsy.pet</p>
           </div>
           <div className="text-right">
-            <p><strong>Business:</strong> Skidzo</p>
+            <p><strong>Business:</strong> GetPawsy</p>
             <p><strong>KvK:</strong> 78156955</p>
           </div>
         </div>

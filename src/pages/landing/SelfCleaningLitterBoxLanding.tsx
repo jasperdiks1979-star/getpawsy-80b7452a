@@ -25,10 +25,10 @@ const AccordionTrigger = lazy(() => import('@/components/ui/accordion').then(m =
 const PRODUCT_LINK = '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
 
 const REAL_PRODUCT = {
-  main: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
-  mechanism: 'https://cf.cjdropshipping.com/c887b0aa-7ff1-4aad-9fbf-903f3eb0a2f6.png',
-  angle: 'https://cf.cjdropshipping.com/e4454bbe-8555-4938-97e7-9c25acf0bb2a.png',
-  detail: 'https://cf.cjdropshipping.com/da3626ae-df14-47d8-b202-1e4f9c1f7a50.png',
+  main: '/images/products/self-cleaning-litter-box.jpg',
+  mechanism: '/images/products/litter-box-mechanism.jpg',
+  angle: '/images/products/litter-box-angle.jpg',
+  detail: '/images/products/litter-box-detail.jpg',
 };
 
 const SPECS = [
@@ -439,7 +439,7 @@ export default function SelfCleaningLitterBoxLanding() {
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-lg font-bold text-foreground mb-2">About GetPawsy</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              GetPawsy provides pet products designed to make daily life easier for pet owners. Operated by Skidzo, a registered business based in Apeldoorn, Netherlands (KVK 78156955, VAT NL003295015B69).
+              GetPawsy provides pet products designed to make daily life easier for pet owners. Registered business based in Apeldoorn, Netherlands (KVK 78156955, VAT NL003295015B69).
             </p>
           </div>
         </section>
@@ -456,7 +456,7 @@ export default function SelfCleaningLitterBoxLanding() {
               <a href="/terms" className="text-background/60 hover:text-primary transition-colors">Terms of Service</a>
             </div>
             <div className="text-xs text-background/40 space-y-1">
-              <p>GetPawsy — Operated by Skidzo</p>
+              <p>GetPawsy — Pet Supplies for US Pet Owners</p>
               <p>Apeldoorn, Netherlands · KVK 78156955 · VAT NL003295015B69</p>
               <p><a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
             </div>

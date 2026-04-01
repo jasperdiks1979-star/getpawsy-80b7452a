@@ -1633,7 +1633,7 @@ const ProductDetail = () => {
         {/* Trusted by pet owners — factual, no fabricated order data */}
         <div className="mt-10 text-center">
           <p className="text-sm text-muted-foreground">
-            Trusted by pet owners across the United States · Operated by Skidzo
+            Trusted by pet owners across the United States
           </p>
         </div>
 

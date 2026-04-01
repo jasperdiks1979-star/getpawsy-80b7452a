@@ -15,7 +15,7 @@ const SITE = "https://getpawsy.pet";
 const MERCHANT_ID = "5717571566";
 
 const POLICY_PAGES = [
-  { path: "/contact", label: "Contact Page", mustContain: ["support@getpawsy.pet", "skidzo"] },
+  { path: "/contact", label: "Contact Page", mustContain: ["support@getpawsy.pet", "getpawsy"] },
   { path: "/about", label: "About Page", mustContain: ["getpawsy", "pet"] },
   { path: "/shipping", label: "Shipping Policy", mustContain: ["business day"] },
   { path: "/returns", label: "Return Policy", mustContain: ["refund"] },
@@ -101,7 +101,7 @@ export default function ComplianceEvidence() {
     results.push({ name: "HTTPS Enforced", category: "Technical SEO", status: "pass", detail: "Site served over HTTPS" });
 
     // ── C) Business identity ──
-    results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "Skidzo / GetPawsy — visible in footer, /about, /contact" });
+    results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "GetPawsy — visible in footer, /about, /contact" });
     results.push({ name: "Support Email", category: "Business Identity", status: "pass", detail: "support@getpawsy.pet — /contact, footer, and checkout" });
     results.push({ name: "Business Registration", category: "Business Identity", status: "pass", detail: "KVK 78156955, VAT NL003295015B69 — footer" });
     results.push({ name: "Physical Location", category: "Business Identity", status: "pass", detail: "Apeldoorn, Gelderland, Netherlands — /about and footer" });
@@ -127,7 +127,7 @@ export default function ComplianceEvidence() {
     results.push({ name: "Feed-to-Site Parity", category: "Feed Compliance", status: "pass", detail: "title, price, availability, image, link all match PDP content" });
 
     // ── E) Structured data ──
-    results.push({ name: "Organization Schema", category: "Structured Data", status: "pass", detail: "JSON-LD: contactPoint, parentOrganization (Skidzo), vatID" });
+    results.push({ name: "Organization Schema", category: "Structured Data", status: "pass", detail: "JSON-LD: contactPoint, vatID, brand GetPawsy" });
     results.push({ name: "Product Schema (PDP)", category: "Structured Data", status: "pass", detail: "name, image, offers (USD), availability, brand, sku" });
     results.push({ name: "MerchantReturnPolicy", category: "Structured Data", status: "pass", detail: "30-day ReturnByMail with FullRefund — matches /returns" });
     results.push({ name: "ShippingDetails", category: "Structured Data", status: "pass", detail: "US region, handling 1-2 days, transit 5–10 business days — matches /shipping" });
@@ -181,7 +181,7 @@ export default function ComplianceEvidence() {
           <div>
             <h1 className="text-2xl font-bold">Google Merchant Compliance Evidence</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Merchant Center ID: {MERCHANT_ID} · Skidzo / GetPawsy · Run: {runId}
+              Merchant Center ID: {MERCHANT_ID} · GetPawsy · Run: {runId}
             </p>
           </div>
           <Button onClick={runAudit} disabled={running} variant="outline" size="sm">
@@ -252,7 +252,7 @@ export default function ComplianceEvidence() {
           <CardContent className="text-sm space-y-2">
             <p>This auto-generated report provides evidence for Google Merchant Center reconsideration:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Business entity: <strong>Skidzo</strong> (KVK 78156955, VAT NL003295015B69), operating as GetPawsy</li>
+              <li>Business entity: <strong>GetPawsy</strong> (KVK 78156955, VAT NL003295015B69)</li>
               <li>Registered address: Apeldoorn, Gelderland, Netherlands</li>
               <li>All policy pages publicly accessible with consistent business identity</li>
               <li>Prices in USD with transparent checkout (shipping + estimated tax shown before payment)</li>
@@ -281,7 +281,7 @@ export default function ComplianceEvidence() {
                 <strong>Verify website ownership</strong> — Go to Settings → Business information → Website. Confirm <code>https://getpawsy.pet</code> is claimed and verified.
               </li>
               <li>
-                <strong>Confirm business information</strong> — Ensure business name is "Skidzo" or "GetPawsy by Skidzo", and address matches: Apeldoorn, Gelderland, Netherlands.
+                <strong>Confirm business information</strong> — Ensure business name is "GetPawsy", and address matches: Apeldoorn, Gelderland, Netherlands.
               </li>
               <li>
                 <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (5–10 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.
@@ -311,7 +311,7 @@ export default function ComplianceEvidence() {
             <div className="bg-muted p-4 rounded-lg font-mono text-xs space-y-1 whitespace-pre-wrap">
 {`We have completed a comprehensive compliance review of our store at https://getpawsy.pet to address the policy concerns:
 
-1. BUSINESS TRANSPARENCY: Our business entity (Skidzo, KVK 78156955, VAT NL003295015B69) is clearly displayed in the footer, /about, and /contact pages. Support email (support@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
+1. BUSINESS TRANSPARENCY: Our business entity (GetPawsy, KVK 78156955, VAT NL003295015B69) is clearly displayed in the footer, /about, and /contact pages. Support email (support@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
 
 2. POLICY PAGES: All required pages (/shipping, /returns, /privacy, /terms, /contact, /about) are publicly accessible, contain specific and accurate information, and are linked from the global footer.
 

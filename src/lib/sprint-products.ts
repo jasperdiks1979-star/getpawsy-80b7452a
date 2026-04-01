@@ -26,7 +26,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'automatic cat litter box',
     conversionScore: 95,
     contentCluster: 'litter-boxes',
-    image: 'https://cf.cjdropshipping.com/18f614cb-6909-40a2-a031-1d251708ebae.png',
+    image: '/images/products/self-cleaning-litter-box.jpg',
   },
   {
     slug: 'all-in-one-cactus-cat-tree-with-climbing-frame-and-cozy-nest',
@@ -37,7 +37,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'cat tree cactus',
     conversionScore: 90,
     contentCluster: 'cat-trees',
-    image: 'https://oss-cf.cjdropshipping.com/product/2026/01/15/06/41c2bcde-5615-4832-8d42-0b10485bc94c_trans.jpeg',
+    image: '/images/products/cactus-cat-tree.jpg',
   },
   {
     slug: 'dog-cot-cooling-pet-bed-3',
@@ -48,7 +48,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'elevated cooling dog bed',
     conversionScore: 88,
     contentCluster: 'dog-beds',
-    image: 'https://cf.cjdropshipping.com/17695584/cea797a4-58d8-4007-be42-58c3eeaa8723.jpg',
+    image: '/images/products/elevated-cooling-dog-bed.jpg',
   },
   {
     slug: 'cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white',
@@ -59,7 +59,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'cat litter box furniture',
     conversionScore: 86,
     contentCluster: 'litter-boxes',
-    image: 'https://cf.cjdropshipping.com/17664480/f56eb834-2643-4b70-884a-fbf1330a1d82.jpg',
+    image: '/images/products/litter-box-furniture.jpg',
   },
   {
     slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
@@ -70,7 +70,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'multi level cat tree',
     conversionScore: 84,
     contentCluster: 'cat-trees',
-    image: 'https://cf.cjdropshipping.com/17689536/ac9bfbd3-feb7-489e-9763-91606c12e1f3.jpg',
+    image: '/images/products/multi-level-cat-tree.jpg',
   },
   {
     slug: 'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
@@ -81,7 +81,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'hidden litter box',
     conversionScore: 82,
     contentCluster: 'litter-boxes',
-    image: 'https://cf.cjdropshipping.com/8c7d9c65-6f57-40ac-b639-1ac694c256f0.jpg',
+    image: '/images/products/hidden-litter-box.jpg',
   },
   {
     slug: '35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c',
@@ -92,7 +92,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'modern cat tree',
     conversionScore: 80,
     contentCluster: 'cat-trees',
-    image: 'https://cf.cjdropshipping.com/17664480/e75f68d4-a5f5-46e0-ae2d-217cc563ed2f.jpg',
+    image: '/images/products/modern-cat-tree.jpg',
   },
   {
     slug: 'dog-bed-pet-sofa',
@@ -103,7 +103,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'dog sofa bed',
     conversionScore: 78,
     contentCluster: 'dog-beds',
-    image: 'https://cf.cjdropshipping.com/17666208/4c6af75c-de5c-4718-a2cd-3ae575466415.jpg',
+    image: '/images/products/dog-sofa-bed.jpg',
   },
 ];
 

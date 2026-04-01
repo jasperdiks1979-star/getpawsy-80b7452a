@@ -11,7 +11,7 @@ const PrivacyPolicy = () => {
     <Layout>
       <Helmet>
         <title>Privacy Policy | GetPawsy</title>
-        <meta name="description" content="GetPawsy privacy policy. Learn how we collect, use, and protect your personal information. Operated by Skidzo, Netherlands." />
+        <meta name="description" content="GetPawsy privacy policy. Learn how we collect, use, and protect your personal information." />
         <link rel="canonical" href="https://getpawsy.pet/privacy" />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
@@ -210,7 +210,7 @@ const PrivacyPolicy = () => {
                     </a>
                   </div>
                   <div className="text-muted-foreground space-y-1">
-                    <p className="m-0 font-semibold text-foreground">Skidzo</p>
+                    <p className="m-0 font-semibold text-foreground">GetPawsy</p>
                     <p className="m-0">Apeldoorn, Gelderland, Netherlands</p>
                     <p className="m-0 mt-3 text-sm">KVK: 78156955</p>
                     <p className="m-0 text-sm">VAT ID: NL003295015B69</p>

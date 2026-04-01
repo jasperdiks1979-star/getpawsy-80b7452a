@@ -308,10 +308,10 @@ const ReturnPolicy = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-3">
-                  <strong>GetPawsy</strong> is a consumer brand operated by <strong>Skidzo</strong>, a registered business (KVK: 78156955).
+                  <strong>GetPawsy</strong> is a registered business (KVK: 78156955).
                 </p>
                 <p className="text-muted-foreground">
-                  Skidzo is the legal entity responsible for processing all returns, issuing refunds, and handling customer service inquiries for the GetPawsy webshop. When you contact us about a return, you are dealing directly with the team at Skidzo.
+                  GetPawsy is responsible for processing all returns, issuing refunds, and handling customer service inquiries. When you contact us about a return, you are dealing directly with our team.
                 </p>
               </div>
             </section>

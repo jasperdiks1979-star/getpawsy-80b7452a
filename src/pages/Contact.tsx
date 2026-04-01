@@ -311,7 +311,7 @@ const Contact = () => {
                     <h3 className="font-semibold text-foreground mb-2">Business Information</h3>
                     <div className="space-y-1.5 text-sm">
                       <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">Legal name:</span> Skidzo
+                        <span className="text-foreground font-medium">Legal name:</span> GetPawsy
                       </p>
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">Trading as:</span> GetPawsy
@@ -324,7 +324,7 @@ const Contact = () => {
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">
-                      Skidzo operates and is fully responsible for the GetPawsy webshop, including all orders, payments, shipping, and customer service.
+                      GetPawsy is fully responsible for all orders, payments, shipping, and customer service.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 italic">
                       GetPawsy is an independent online store focused on quality pet products for dogs and cats.

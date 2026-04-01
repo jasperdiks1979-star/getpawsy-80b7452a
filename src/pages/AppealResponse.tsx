@@ -92,7 +92,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
     {
       id: 7,
       question: 'Heeft u eerdere advertenties of beleidsschendingen die van invloed kunnen zijn op een heractivering?',
-      answer: 'Nee. Dit is ons eerste Google Ads account en we hebben geen eerdere beleidsschendingen. Wij zijn een legitiem geregistreerd Nederlands bedrijf (Skidzo, KvK 78156955) dat huisdierproducten verkoopt.',
+      answer: 'Nee. Dit is ons eerste Google Ads account en we hebben geen eerdere beleidsschendingen. Wij zijn een legitiem geregistreerd Nederlands bedrijf (GetPawsy, KvK 78156955) dat huisdierproducten verkoopt.',
     },
     {
       id: 8,
@@ -334,7 +334,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
           </h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p><strong>Bedrijfsnaam:</strong> Skidzo (Eenmanszaak)</p>
+              <p><strong>Bedrijfsnaam:</strong> GetPawsy (Eenmanszaak)</p>
               <p><strong>KvK:</strong> 78156955</p>
               <p><strong>VAT ID:</strong> NL003295015B69</p>
             </div>
@@ -367,7 +367,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
               <p><strong>Web:</strong> https://getpawsy.pet</p>
             </div>
             <div className="text-right">
-              <p><strong>Business:</strong> Skidzo</p>
+              <p><strong>Business:</strong> GetPawsy</p>
               <p><strong>KvK:</strong> 78156955</p>
             </div>
           </div>

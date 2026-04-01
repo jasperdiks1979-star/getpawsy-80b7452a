@@ -32,7 +32,6 @@ export function WebsiteSchema({
     '@type': 'Organization',
     '@id': `${url}/#organization`,
     name: 'GetPawsy',
-    legalName: 'Skidzo',
     url: url,
     logo: {
       '@type': 'ImageObject',
@@ -41,7 +40,7 @@ export function WebsiteSchema({
       height: 512,
     },
     image: `${url}${image}`,
-    description: 'Online pet products store offering dog training tools, cat essentials, and pet accessories. Operated by Skidzo from the Netherlands, serving customers across the United States.',
+    description: 'Online pet products store offering dog training tools, cat essentials, and pet accessories. Serving customers across the United States with free shipping on orders over $35.',
     foundingDate: '2024',
     // sameAs intentionally empty — only real, verified brand profiles should be listed
     sameAs: [],

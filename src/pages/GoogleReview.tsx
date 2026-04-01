@@ -102,7 +102,7 @@ const GoogleReview = () => {
               </div>
               <div>
                 <span className="text-gray-500 block text-xs uppercase tracking-wide">Business</span>
-                <span className="font-medium">Skidzo</span>
+                <span className="font-medium">GetPawsy</span>
               </div>
               <div>
                 <span className="text-gray-500 block text-xs uppercase tracking-wide">KvK Number</span>
@@ -122,7 +122,7 @@ const GoogleReview = () => {
               <div>
                 <h2 className="text-lg font-bold text-green-800 mb-2">Executive Summary: No Policy Violations</h2>
                 <p className="text-green-700 text-sm leading-relaxed">
-                  GetPawsy.pet is a legitimate e-commerce store operated by Skidzo (Dutch sole proprietorship, KvK 78156955). 
+                  GetPawsy.pet is a legitimate e-commerce store (Dutch sole proprietorship, KvK 78156955). 
                   This document provides comprehensive evidence that our website does NOT engage in cloaking, malicious software 
                   distribution, or any circumventing of Google's systems. Any flagging is a technical false positive due to 
                   Single Page Application (SPA) rendering behavior.
@@ -193,7 +193,7 @@ const GoogleReview = () => {
                   <tbody>
                     <tr className="border-b border-gray-100">
                       <td className="px-4 py-3 font-medium text-gray-600 w-1/3">Trade Name</td>
-                      <td className="px-4 py-3">Skidzo (Eenmanszaak)</td>
+                      <td className="px-4 py-3">GetPawsy (Eenmanszaak)</td>
                     </tr>
                     <tr className="border-b border-gray-100">
                       <td className="px-4 py-3 font-medium text-gray-600">KvK Number</td>
@@ -734,7 +734,7 @@ export const sanitizeHtml = (html: string): string => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Business</p>
-                <p>Skidzo (Eenmanszaak)</p>
+                <p>GetPawsy (Eenmanszaak)</p>
                 <p>KvK: 78156955</p>
               </div>
               <div>
