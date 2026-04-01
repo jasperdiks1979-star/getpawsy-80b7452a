@@ -362,7 +362,7 @@ export const EnhancedSearch = ({
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                         <Clock className="w-4 h-4" />
-                        Recente zoekopdrachten
+                        Recent searches
                       </div>
                       <Button
                         variant="ghost"

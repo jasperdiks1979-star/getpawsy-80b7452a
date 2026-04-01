@@ -360,43 +360,56 @@ const Products = () => {
     if (!products) return [];
     let result = [...products];
 
-    // Filter by search - use multi-word matching (OR logic)
-    // This allows long search queries like "car dog bed rear seat" to find products
-    // that match ANY of the significant words (length > 2)
+    // ── Weighted Search Relevance Engine ──
+    // Scores products based on phrase match, title weight, category weight, and exclusion logic
     if (searchQuery) {
       const query = searchQuery.toLowerCase().trim();
       
-      // Split into words and filter out common stopwords and short words
       const stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'for', 'with', 'in', 'on', 'at', 'to', 'of', 'is', 'are', 'was', 'pet', 'pets']);
       const searchWords = query
         .split(/\s+/)
         .filter(word => word.length > 2 && !stopwords.has(word));
       
       if (searchWords.length > 0) {
-        result = result.filter(p => {
+        // Build the full search phrase for exact/phrase matching
+        const fullPhrase = searchWords.join(' ');
+        
+        // Score each product with weighted relevance
+        const scored = result.map(p => {
           const name = p.name?.toLowerCase() || '';
           const description = p.description?.toLowerCase() || '';
           const category = p.category?.toLowerCase() || '';
-          const combinedText = `${name} ${description} ${category}`;
           
-          // Score each product by how many search words it matches
-          const matchCount = searchWords.filter(word => combinedText.includes(word)).length;
+          let score = 0;
           
-          // Require at least 1 word match, or 2 if many search words
-          const minMatches = searchWords.length >= 4 ? 2 : 1;
-          return matchCount >= minMatches;
+          // TIER 1: Exact full phrase in title (strongest signal) — 20 pts
+          if (name.includes(fullPhrase)) score += 20;
+          // TIER 2: Exact full phrase in category — 15 pts
+          else if (category.includes(fullPhrase)) score += 15;
+          // TIER 3: Exact full phrase in description — 8 pts
+          else if (description.includes(fullPhrase)) score += 8;
+          
+          // TIER 4: Individual word matches with positional weighting
+          for (const word of searchWords) {
+            if (name.includes(word)) score += 5;       // Title match: 5 pts per word
+            if (category.includes(word)) score += 3;   // Category match: 3 pts per word
+            if (description.includes(word)) score += 1; // Description match: 1 pt per word
+          }
+          
+          // BONUS: All search words present in title — extra 10 pts
+          const allInTitle = searchWords.every(w => name.includes(w));
+          if (allInTitle) score += 10;
+          
+          return { product: p, score };
         });
         
-        // Sort by match relevance (more matches = higher)
-        result.sort((a, b) => {
-          const aText = `${a.name?.toLowerCase() || ''} ${a.description?.toLowerCase() || ''} ${a.category?.toLowerCase() || ''}`;
-          const bText = `${b.name?.toLowerCase() || ''} ${b.description?.toLowerCase() || ''} ${b.category?.toLowerCase() || ''}`;
-          
-          const aMatches = searchWords.filter(word => aText.includes(word)).length;
-          const bMatches = searchWords.filter(word => bText.includes(word)).length;
-          
-          return bMatches - aMatches;
-        });
+        // Filter: require minimum score based on query complexity
+        // For 2-word queries like "dog bed", require score >= 5 (at least one title word match)
+        const minScore = searchWords.length >= 3 ? 6 : 5;
+        result = scored
+          .filter(s => s.score >= minScore)
+          .sort((a, b) => b.score - a.score)
+          .map(s => s.product);
       }
     }
 
