@@ -110,7 +110,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Pet Moisturizing Paw Balm',
     price: 9.99,
     compareAt: 12.49,
-    image: 'https://cf.cjdropshipping.com/f9473d9d-1ccd-42d6-aca2-559835ab8fb7.jpg',
+    image: '/images/products/pet-paw-balm.jpg',
     benefit: 'Soothes cracked & dry paws',
     pet: 'dog',
   },
