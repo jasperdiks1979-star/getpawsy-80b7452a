@@ -122,7 +122,7 @@ const GoogleReview = () => {
               <div>
                 <h2 className="text-lg font-bold text-green-800 mb-2">Executive Summary: No Policy Violations</h2>
                 <p className="text-green-700 text-sm leading-relaxed">
-                  GetPawsy.pet is a legitimate e-commerce store operated by Skidzo (Dutch sole proprietorship, KvK 78156955). 
+                  GetPawsy.pet is a legitimate e-commerce store (Dutch sole proprietorship, KvK 78156955). 
                   This document provides comprehensive evidence that our website does NOT engage in cloaking, malicious software 
                   distribution, or any circumventing of Google's systems. Any flagging is a technical false positive due to 
                   Single Page Application (SPA) rendering behavior.
