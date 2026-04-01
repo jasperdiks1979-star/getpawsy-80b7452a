@@ -192,7 +192,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Stainless Steel Enclosed Litter Box',
     price: 134.99,
     compareAt: 166.99,
-    image: 'https://cf.cjdropshipping.com/17664480/090adbd2-2ddb-431c-b1fd-506d8b455c45.jpg',
+    image: '/images/products/stainless-steel-litter-box.jpg',
     benefit: 'Rust-proof with deodorizer',
     pet: 'cat',
   },
