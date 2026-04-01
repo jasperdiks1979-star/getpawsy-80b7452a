@@ -120,7 +120,7 @@ export const OPERATING_COUNTRY = 'Apeldoorn, Netherlands (serving US customers)'
 
 export const TRUST_BADGES = {
   shipping: {
-    title: 'Free US Shipping',
+    title: 'Free Shipping Available',
     subtitle: `On orders over $${FREE_SHIPPING_THRESHOLD}`,
   },
   delivery: {
