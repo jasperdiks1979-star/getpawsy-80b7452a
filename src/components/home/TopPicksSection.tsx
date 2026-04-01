@@ -38,7 +38,7 @@ export const TOP_PICKS: TopPickProduct[] = [
     name: 'Tactical Dog Harness & Car Safety Set',
     price: 63.99,
     compareAt: 81.99,
-    image: 'https://cf.cjdropshipping.com/63d3145a-4458-422e-9fe5-b63fc51ad711.jpg',
+    image: '/images/products/tactical-dog-harness.jpg',
     benefit: '5-in-1 travel safety bundle',
     pet: 'dog',
   },
