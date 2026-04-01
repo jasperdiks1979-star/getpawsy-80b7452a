@@ -102,7 +102,7 @@ const GoogleReview = () => {
               </div>
               <div>
                 <span className="text-gray-500 block text-xs uppercase tracking-wide">Business</span>
-                <span className="font-medium">Skidzo</span>
+                <span className="font-medium">GetPawsy</span>
               </div>
               <div>
                 <span className="text-gray-500 block text-xs uppercase tracking-wide">KvK Number</span>
