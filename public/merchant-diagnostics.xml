@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-03-30T18:59:21.951Z" total_products="15">
+<merchant_diagnostics generated="2026-04-01T12:19:59.116Z" total_products="17">
   <summary>
-    <missing_gtin>1</missing_gtin>
+    <missing_gtin>3</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>0</overlength_title>
-    <short_title>0</short_title>
-    <out_of_stock>3</out_of_stock>
+    <short_title>1</short_title>
+    <out_of_stock>0</out_of_stock>
     <duplicate_titles>0</duplicate_titles>
     <duplicate_images>0</duplicate_images>
     <missing_compare_at_price>0</missing_compare_at_price>
   </summary>
   <issues>
+    <issue type="missing_gtin" product_id="ab56a66b-dfaa-4caa-921a-de5bf544f9d8" name="Dog Chew Toy Choke-proof Food Dispenser" />
+    <issue type="short_title" product_id="ab56a66b-dfaa-4caa-921a-de5bf544f9d8" name="Dog Chew Toy Choke-proof Food Dispenser" length="39" />
+    <issue type="missing_gtin" product_id="35df9d09-a87f-483c-b5d7-261761ba865a" name="New Pet Cat Toy Jute Fish For Self-Entertainment And Stress Relief Squeaky Du..." />
     <issue type="missing_gtin" product_id="156ed3db-e926-482c-951a-4c1fcb61779d" name="GetPawsy Enclosed Cat Litter Box – Extra Large Flip-Top Design" />
-    <issue type="out_of_stock" product_id="fe5ed2d6-0230-4c5a-8313-235a28ef4f21" name="GetPawsy Enclosed Cat Litter Box – XL Stainless Steel Flip Top for Large Cats" stock="0" />
-    <issue type="out_of_stock" product_id="1a1302e7-939f-4c94-96b7-d4e0c9d34a37" name="GetPawsy Hidden Cat Litter Box Enclosure – Furniture with Scratching Board" stock="0" />
-    <issue type="out_of_stock" product_id="07507c96-a445-431f-9724-340ee01d818f" name="GetPawsy Elevated Cat Tree – Sisal Scratching Post with Bed &amp; Basket" stock="0" />
   </issues>
 </merchant_diagnostics>
