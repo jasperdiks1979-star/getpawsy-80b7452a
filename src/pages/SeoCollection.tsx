@@ -877,6 +877,7 @@ const SeoCollection = () => {
 
           {/* Cat Trees Hub: authority content — BELOW products */}
           {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
+          {collection.slug === 'dog-beds' && <DogBedsHubContent />}
 
           {/* Training Collection Cross-Links — bidirectional silo linking */}
           {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
