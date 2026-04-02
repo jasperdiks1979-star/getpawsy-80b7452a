@@ -43,6 +43,7 @@ const SUBCATEGORIES = [
 ];
 
 const EXPERT_GUIDES = [
+  { title: 'Best Dog Beds 2026 — Complete Buying Guide', slug: 'best-dog-beds-2026', featured: true },
   { title: 'Best Orthopedic Dog Beds for Large Dogs (2026)', slug: 'best-orthopedic-dog-beds-for-large-dogs' },
   { title: 'Orthopedic Dog Beds for Arthritis: What Vets Recommend', slug: 'orthopedic-dog-beds-for-arthritis' },
   { title: 'Memory Foam Dog Beds for Senior Dogs', slug: 'memory-foam-dog-beds-for-senior-dogs' },

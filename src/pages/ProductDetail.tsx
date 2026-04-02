@@ -1607,6 +1607,9 @@ const ProductDetail = () => {
           </div>
         </motion.section>
 
+        {/* Dog Beds Cluster Links — hub + guide */}
+        <DogBedsClusterLinks productCategory={product.category} productName={product.name} />
+
         {/* Related Guides — max 3 */}
         {relatedGuides.length > 0 && <RelatedGuides guides={relatedGuides} />}
 
