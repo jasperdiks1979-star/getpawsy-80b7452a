@@ -653,7 +653,29 @@ const GuidePage = () => {
           } catch { return null; }
         })()}
 
-        {/* Above-the-Fold Difficulty Overview Table */}
+        {/* Top Pick Hero — #1 product with strong CTA */}
+        {(() => {
+          try {
+            const topProduct = (enrichedComparisonProducts || []).find(p =>
+              p.name && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+            );
+            if (!topProduct) return null;
+            const benefits = topProduct.advantages?.slice(0, 4) || [];
+            return (
+              <GuideTopPick
+                name={topProduct.name}
+                image={topProduct.image}
+                price={topProduct.price}
+                link={topProduct.link}
+                badge={topProduct.badge ? `🏆 ${topProduct.badge}` : undefined}
+                benefits={benefits}
+                trustLabel="Limited stock available"
+              />
+            );
+          } catch { return null; }
+        })()}
+
+
         {guide.difficultyOverview && guide.difficultyOverview.length > 0 && (
           <div className="mb-8 border border-border rounded-xl overflow-hidden" id="comparison">
             <div className="bg-muted/50 px-4 py-3 border-b border-border">
