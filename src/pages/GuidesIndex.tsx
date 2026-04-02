@@ -115,7 +115,7 @@ const GuidesIndex = () => {
     <Layout>
       <Helmet>
         <title>Pet Care Guides | GetPawsy</title>
-        <meta name="description" content="Expert pet care guides covering guinea pig cages, cat trees, outdoor dog games, and more. Practical advice for pet parents." />
+        <meta name="description" content="Expert pet care guides covering cat trees, dog training, travel safety, and more. Practical advice for pet parents." />
         <link rel="canonical" href={`${BASE_URL}/guides`} />
         <meta name="robots" content="index, follow, max-image-preview:large" />
         <meta property="og:title" content="Pet Care Guides | GetPawsy" />
