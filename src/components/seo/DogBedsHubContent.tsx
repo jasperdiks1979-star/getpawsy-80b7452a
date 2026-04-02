@@ -37,7 +37,7 @@ const SUBCATEGORIES = [
     title: 'Washable & Waterproof Dog Beds',
     description: 'Machine-washable covers with waterproof liners — essential for puppies in training, senior dogs, and messy eaters. Keeps bedding fresh and hygienic.',
     keywords: ['washable', 'waterproof', 'easy clean'],
-    guideLink: '/guides/washable-orthopedic-dog-bed-buying-guide',
+    guideLink: '/guides/machine-washable-dog-bed-guide',
     guideLabel: 'Washable Bed Guide →',
   },
 ];
