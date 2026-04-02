@@ -1297,6 +1297,9 @@ const ProductDetail = () => {
               <TrustBadgesBlock compact />
             </motion.div>
 
+            {/* Micro-friction reduction */}
+            <MicroFrictionBlock />
+
             {/* Why pet owners choose this */}
             <WhyCustomersChoose />
           </motion.div>
