@@ -286,11 +286,23 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
     );
   }
 
+  // Check if cart contains a dog bed for contextual messaging
+  const hasDogBed = cartProducts?.some(p => 
+    p.category?.toLowerCase().includes('dog bed') || p.category === 'Dog Beds'
+  );
+
   return (
     <div ref={containerRef} className="space-y-4">
       <div className="flex items-center gap-2">
         <TrendingUp className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold">Customers Also Bought</h3>
+        <div>
+          <h3 className="text-lg font-semibold">
+            {hasDogBed ? "Complete Your Dog's Comfort Setup" : 'Customers Also Bought'}
+          </h3>
+          {hasDogBed && (
+            <p className="text-xs text-muted-foreground">Most customers add these for the full experience</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {upsellProducts.map((product, index) => (

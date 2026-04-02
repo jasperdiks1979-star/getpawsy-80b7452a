@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
+import { getCuratedCompanions } from '@/config/dog-bed-companions';
 
 interface ProductPublic {
   id: string;
@@ -15,6 +16,9 @@ interface ProductPublic {
   is_active: boolean | null;
   slug?: string | null;
   variants: unknown;
+  created_at: string;
+  updated_at: string;
+  [key: string]: unknown;
 }
 
 interface UseRelatedProductsOptions {
@@ -130,6 +134,19 @@ export const useRelatedProducts = ({
     queryFn: async () => {
       const keywords = extractKeywords(productName);
 
+      // Check for curated companions (e.g., dog beds)
+      const curated = getCuratedCompanions(productId);
+      let curatedProducts: ProductPublic[] = [];
+      if (curated && curated.length > 0) {
+        const curatedIds = curated.map(c => c.productId);
+        const { data: cp } = await supabase
+          .from('products_public')
+          .select('*')
+          .in('id', curatedIds)
+          .eq('is_active', true);
+        if (cp) curatedProducts = cp as ProductPublic[];
+      }
+
       // Build browsing context for personalization
       let browsingContext: BrowsingContext = { recentlyViewedCategories: [] };
       
@@ -155,10 +172,14 @@ export const useRelatedProducts = ({
         .limit(60);
       
       if (catError) throw catError;
-      if (!categoryProducts || categoryProducts.length === 0) return [];
+      if (!categoryProducts || categoryProducts.length === 0) {
+        return curatedProducts.length > 0 ? curatedProducts : [];
+      }
 
       // Score and sort products by relevance with personalization
+      const curatedIdSet = new Set(curatedProducts.map(p => p.id));
       const scoredProducts = categoryProducts
+        .filter(p => !curatedIdSet.has(p.id))
         .map(product => ({
           product,
           score: scoreProduct(product, keywords, category, browsingContext),
@@ -168,9 +189,12 @@ export const useRelatedProducts = ({
         .slice(0, maxItems)
         .map(({ product }) => product);
 
+      // Curated companions go first, then scored products fill remaining slots
+      const merged = [...curatedProducts, ...scoredProducts].slice(0, maxItems);
+
       // If we don't have enough related products, fill with category matches
-      if (scoredProducts.length < maxItems && category) {
-        const existingIds = new Set(scoredProducts.map(p => p.id));
+      if (merged.length < maxItems && category) {
+        const existingIds = new Set(merged.map(p => p.id));
         
         const { data: fallbackProducts } = await supabase
           .from('products_public')
@@ -178,19 +202,19 @@ export const useRelatedProducts = ({
           .eq('is_active', true)
           .eq('category', category)
           .neq('id', productId)
-          .limit(maxItems - scoredProducts.length + 5);
+          .limit(maxItems - merged.length + 5);
         
         if (fallbackProducts) {
           fallbackProducts.forEach(p => {
-            if (!existingIds.has(p.id) && scoredProducts.length < maxItems) {
-              scoredProducts.push(p);
+            if (!existingIds.has(p.id) && merged.length < maxItems) {
+              merged.push(p);
               existingIds.add(p.id);
             }
           });
         }
       }
 
-      return dedupeProducts(scoredProducts);
+      return dedupeProducts(merged);
     },
     enabled: enabled && !!productId,
     staleTime: 10 * 60 * 1000, // 10 minutes - increased for better caching

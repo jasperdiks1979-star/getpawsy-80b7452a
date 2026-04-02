@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackBundleAddToCart } from '@/lib/analytics';
+import { getCuratedCompanions, isDogBedProduct, DOG_BED_BUNDLE_TIERS } from '@/config/dog-bed-companions';
 
 interface Product {
   id: string;
@@ -133,12 +134,25 @@ export const FrequentlyBoughtTogether = ({
   const maxDiscountCelebrated = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Select top related products for the bundle
+  // Check for curated companions first (e.g., dog beds), then fall back to generic
+  const curatedCompanions = useMemo(() => getCuratedCompanions(currentProduct.id), [currentProduct.id]);
+  const isDogBed = useMemo(() => isDogBedProduct(currentProduct.category ?? null, currentProduct.name), [currentProduct.category, currentProduct.name]);
+
   const bundleProducts = useMemo(() => {
+    if (curatedCompanions) {
+      // Prioritize curated companions, matching them against available related products
+      const curatedIds = curatedCompanions.map(c => c.productId);
+      const curated = relatedProducts.filter(p => curatedIds.includes(p.id) && p.price > 0);
+      // Fill remaining slots with other related products
+      const remaining = relatedProducts
+        .filter(p => p.id !== currentProduct.id && p.price > 0 && !curatedIds.includes(p.id))
+        .slice(0, maxItems - curated.length);
+      return [...curated, ...remaining].slice(0, maxItems);
+    }
     return relatedProducts
       .filter(p => p.id !== currentProduct.id && p.price > 0)
       .slice(0, maxItems);
-  }, [relatedProducts, currentProduct.id, maxItems]);
+  }, [relatedProducts, currentProduct.id, maxItems, curatedCompanions]);
 
   // Initialize with all items selected
   useEffect(() => {
@@ -332,17 +346,29 @@ export const FrequentlyBoughtTogether = ({
       className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-6 border border-primary/10"
     >
       {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-3">
         <div className="p-2 rounded-full bg-primary/10">
           <Sparkles className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-bold">Frequently Bought Together</h3>
+          <h3 className="text-lg font-bold">
+            {isDogBed ? "Complete Your Dog's Comfort Setup" : 'Frequently Bought Together'}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Buy 2+ items together and save up to 20%
+            {isDogBed
+              ? 'Most customers add these for better comfort'
+              : 'Buy 2+ items together and save up to 20%'}
           </p>
         </div>
       </div>
+
+      {/* Urgency copy for dog beds */}
+      {isDogBed && curatedCompanions && (
+        <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          Most customers add this for better comfort
+        </p>
+      )}
 
       {/* Products Row */}
       <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
