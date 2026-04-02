@@ -218,6 +218,15 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'cat-travel-carrier': 'best-cat-travel-carrier',
   'best-cat-carrier-for-travel': 'best-cat-travel-carrier',
   'airline-cat-carrier': 'best-cat-travel-carrier',
+
+  // ── Dog Beds Hub broken slug redirects ─────────────────────
+  'best-dog-beds-2026': 'best-dog-bed-2026',
+  'best-orthopedic-dog-beds-for-large-dogs': 'best-orthopedic-dog-bed-large-dogs-2026',
+  'elevated-dog-beds-canopy-outdoor-comfort-guide': 'best-elevated-dog-bed',
+  'orthopedic-dog-beds-for-arthritis': 'do-orthopedic-dog-beds-help-arthritis',
+  'memory-foam-dog-beds-for-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
+  'how-to-choose-perfect-dog-bed-guide': 'dog-bed-buying-guide',
+  'washable-orthopedic-dog-bed-buying-guide': 'machine-washable-dog-bed-guide',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */

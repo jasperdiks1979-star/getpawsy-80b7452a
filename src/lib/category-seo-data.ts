@@ -106,7 +106,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'How long do dog beds last?', answer: 'A quality orthopedic dog bed lasts 3-5 years with proper care. Budget beds may flatten within 6-12 months. Signs it\'s time to replace: visible compression, lumpy fill, or your dog choosing to sleep on the floor instead.' },
     ],
     relatedLinks: [
-      { to: '/guides/best-dog-beds-2026', text: 'Best Dog Beds 2026 — Complete Buyer\'s Guide' },
+      { to: '/guides/best-dog-bed-2026', text: 'Best Dog Beds 2026 — Complete Buyer\'s Guide' },
       { to: '/guides/best-orthopedic-dog-bed', text: 'Best Orthopedic Dog Beds for Joint Support' },
       { to: '/products?category=dog-houses', text: 'Dog Houses & Indoor Shelters' },
       { to: '/products?category=dog-grooming', text: 'Dog Grooming Essentials' },

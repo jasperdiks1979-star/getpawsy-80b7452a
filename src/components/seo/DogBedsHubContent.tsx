@@ -43,13 +43,13 @@ const SUBCATEGORIES = [
 ];
 
 const EXPERT_GUIDES = [
-  { title: 'Best Dog Beds 2026 — Complete Buying Guide', slug: 'best-dog-beds-2026', featured: true },
-  { title: 'Best Orthopedic Dog Beds for Large Dogs (2026)', slug: 'best-orthopedic-dog-beds-for-large-dogs' },
-  { title: 'Orthopedic Dog Beds for Arthritis: What Vets Recommend', slug: 'orthopedic-dog-beds-for-arthritis' },
-  { title: 'Memory Foam Dog Beds for Senior Dogs', slug: 'memory-foam-dog-beds-for-senior-dogs' },
-  { title: 'How to Choose the Perfect Dog Bed', slug: 'how-to-choose-perfect-dog-bed-guide' },
-  { title: 'Washable Orthopedic Dog Beds: What to Look For', slug: 'washable-orthopedic-dog-bed-buying-guide' },
-  { title: 'Elevated Dog Beds with Canopy: Outdoor Comfort Guide', slug: 'elevated-dog-beds-canopy-outdoor-comfort-guide' },
+  { title: 'Best Dog Beds 2026 — Complete Buying Guide', slug: 'best-dog-bed-2026', featured: true },
+  { title: 'Best Orthopedic Dog Beds for Large Dogs (2026)', slug: 'best-orthopedic-dog-bed-large-dogs-2026' },
+  { title: 'Orthopedic Dog Beds for Arthritis: What Vets Recommend', slug: 'do-orthopedic-dog-beds-help-arthritis' },
+  { title: 'Memory Foam Dog Beds for Senior Dogs', slug: 'orthopedic-dog-beds-for-senior-dogs' },
+  { title: 'How to Choose the Perfect Dog Bed', slug: 'dog-bed-buying-guide' },
+  { title: 'Washable Orthopedic Dog Beds: What to Look For', slug: 'machine-washable-dog-bed-guide' },
+  { title: 'Elevated Dog Beds: Outdoor Comfort Guide', slug: 'best-elevated-dog-bed' },
 ];
 
 export function DogBedsHubContent() {
