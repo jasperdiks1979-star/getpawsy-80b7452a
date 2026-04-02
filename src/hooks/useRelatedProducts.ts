@@ -20,7 +20,6 @@ interface ProductPublic {
   updated_at: string;
   [key: string]: unknown;
 }
-}
 
 interface UseRelatedProductsOptions {
   productId: string;
