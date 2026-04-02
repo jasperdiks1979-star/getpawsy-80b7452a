@@ -18,6 +18,8 @@ import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity
 import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
 import { getSeoTitle } from '@/lib/seo-title-ab';
 import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBlock';
+import { GuideTopPick } from '@/components/guides/GuideTopPick';
+import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -651,7 +653,29 @@ const GuidePage = () => {
           } catch { return null; }
         })()}
 
-        {/* Above-the-Fold Difficulty Overview Table */}
+        {/* Top Pick Hero — #1 product with strong CTA */}
+        {(() => {
+          try {
+            const topProduct = (enrichedComparisonProducts || []).find(p =>
+              p.name && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+            );
+            if (!topProduct) return null;
+            const benefits = topProduct.advantages?.slice(0, 4) || [];
+            return (
+              <GuideTopPick
+                name={topProduct.name}
+                image={topProduct.image}
+                price={topProduct.price}
+                link={topProduct.link}
+                badge={topProduct.badge ? `🏆 ${topProduct.badge}` : undefined}
+                benefits={benefits}
+                trustLabel="Limited stock available"
+              />
+            );
+          } catch { return null; }
+        })()}
+
+
         {guide.difficultyOverview && guide.difficultyOverview.length > 0 && (
           <div className="mb-8 border border-border rounded-xl overflow-hidden" id="comparison">
             <div className="bg-muted/50 px-4 py-3 border-b border-border">
@@ -782,19 +806,47 @@ const GuidePage = () => {
           </ol>
         </nav>
 
-        {/* Main Sections */}
+        {/* Main Sections with inline product CTAs */}
         <SectionErrorBoundary section="GuidePage-sections">
-          {safeSections.map((section, i) => (
-            <section key={i} id={`section-${i}`} className="mb-12 scroll-mt-24">
-              <h2 className="text-2xl font-display font-bold text-foreground mb-5 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
-                  {i + 1}
-                </span>
-                {section.heading}
-              </h2>
-              {renderContent(section.content, i)}
-            </section>
-          ))}
+          {safeSections.map((section, i) => {
+            // Insert inline product CTA after every 3rd section
+            const inlineProduct = (i > 0 && i % 3 === 2)
+              ? (enrichedComparisonProducts || []).filter(p =>
+                  p.name && p.link?.startsWith('/product') && p.image && !p.image.startsWith('/images/guides/')
+                )[Math.floor(i / 3) % Math.max((enrichedComparisonProducts || []).length, 1)]
+              : null;
+
+            const INLINE_TRIGGERS = [
+              'Most popular choice',
+              'Recommended for large dogs',
+              'Best for joint support',
+              'Customers are buying this now',
+            ];
+
+            return (
+              <div key={i}>
+                <section id={`section-${i}`} className="mb-12 scroll-mt-24">
+                  <h2 className="text-2xl font-display font-bold text-foreground mb-5 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
+                      {i + 1}
+                    </span>
+                    {section.heading}
+                  </h2>
+                  {renderContent(section.content, i)}
+                </section>
+                {inlineProduct && (
+                  <GuideInlineProduct
+                    name={inlineProduct.name}
+                    image={inlineProduct.image}
+                    price={inlineProduct.price}
+                    link={inlineProduct.link}
+                    trustTrigger={inlineProduct.badge || INLINE_TRIGGERS[Math.floor(i / 3) % INLINE_TRIGGERS.length]}
+                    benefit={inlineProduct.advantages?.[0]}
+                  />
+                )}
+              </div>
+            );
+          })}
         </SectionErrorBoundary>
 
         {/* Comparison Table — only with validated products */}
