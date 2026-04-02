@@ -960,6 +960,8 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
+            {/* Above-the-fold conversion block */}
+            <ConversionBlock productName={product.name} category={product.category || undefined} />
             {/* Compact Trust Checkmarks — immediately visible */}
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
