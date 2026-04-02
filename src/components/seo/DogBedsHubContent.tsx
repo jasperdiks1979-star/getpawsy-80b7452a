@@ -13,7 +13,7 @@ const SUBCATEGORIES = [
     title: 'Orthopedic Dog Beds',
     description: 'Memory foam support for senior dogs, large breeds, and pets with joint issues like hip dysplasia or arthritis. Distributes weight evenly to relieve pressure points.',
     keywords: ['orthopedic', 'memory foam', 'joint support'],
-    guideLink: '/guides/best-orthopedic-dog-beds-for-large-dogs',
+    guideLink: '/guides/best-orthopedic-dog-bed-large-dogs-2026',
     guideLabel: 'Orthopedic Bed Guide →',
   },
   {
