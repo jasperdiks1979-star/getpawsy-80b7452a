@@ -65,11 +65,6 @@ const CATEGORY_HUBS: Record<string, { description: string; shopCategory: string;
     shopCategory: 'dog-carriers',
     shopLabel: 'Shop Dog Travel Gear',
   },
-  'Small Pets': {
-    description: 'Expert guides on habitats, nutrition, and care for guinea pigs, hamsters, and other small pets.',
-    shopCategory: 'small-pet-habitats',
-    shopLabel: 'Shop Small Pet Habitats',
-  },
   'Dog Activities': {
     description: 'Enrichment ideas, outdoor games, and training activities to keep your dog happy and healthy.',
     shopCategory: 'dog-toys',
