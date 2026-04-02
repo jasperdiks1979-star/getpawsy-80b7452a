@@ -12,6 +12,8 @@ interface ConversionBlockProps {
   productName: string;
   category?: string;
   productId?: string;
+  /** Override "Best for" bullets from ad intent */
+  bestForOverride?: string[];
 }
 
 function getBestFor(name: string, category?: string): string[] {
@@ -39,8 +41,8 @@ function getBestFor(name: string, category?: string): string[] {
   return ['Pet comfort', 'Daily use', 'US pet owners'];
 }
 
-export const ConversionBlock = memo(function ConversionBlock({ productName, category, productId }: ConversionBlockProps) {
-  const bestFor = useMemo(() => getBestFor(productName, category), [productName, category]);
+export const ConversionBlock = memo(function ConversionBlock({ productName, category, productId, bestForOverride }: ConversionBlockProps) {
+  const bestFor = useMemo(() => bestForOverride && bestForOverride.length > 0 ? bestForOverride : getBestFor(productName, category), [productName, category, bestForOverride]);
   const winnerBadge = productId ? getWinnerBadge(productId) : undefined;
 
   return (
