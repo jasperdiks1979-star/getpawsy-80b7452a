@@ -1,0 +1,1 @@
+UPDATE public.seo_collections SET related_blog_slug = 'best-dog-beds-2026' WHERE slug = 'dog-beds';
