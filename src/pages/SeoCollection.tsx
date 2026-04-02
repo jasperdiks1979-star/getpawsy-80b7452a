@@ -1,6 +1,7 @@
 import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useMemo, useState } from 'react';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { Helmet } from 'react-helmet-async';
 import { preloadCriticalImage } from '@/hooks/useCriticalImagePreload';
 import { supabase } from '@/integrations/supabase/client';
