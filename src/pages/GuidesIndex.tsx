@@ -105,11 +105,17 @@ const GuidesIndex = () => {
     );
   }
 
-  // Group by category for hub sections
-  const grouped = guides.reduce<Record<string, typeof guides>>((acc, g) => {
-    (acc[g.category] ??= []).push(g);
-    return acc;
-  }, {});
+  // Filter out non-core categories that have no matching products
+  const HIDDEN_GUIDE_CATEGORIES = new Set([
+    'Fish', 'Birds', 'Reptiles', 'Small Pets', 'fish', 'birds', 'reptiles', 'small pets',
+  ]);
+
+  const grouped = guides
+    .filter(g => !HIDDEN_GUIDE_CATEGORIES.has(g.category))
+    .reduce<Record<string, typeof guides>>((acc, g) => {
+      (acc[g.category] ??= []).push(g);
+      return acc;
+    }, {});
 
   return (
     <Layout>
