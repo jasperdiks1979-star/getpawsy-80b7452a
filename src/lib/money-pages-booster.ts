@@ -141,7 +141,7 @@ export const MONEY_PAGES: MoneyPage[] = [
     anchors: { exact: 'calming dog beds for anxiety', partial: 'anxiety-relief dog beds', semantic: 'help your anxious dog feel safe and secure' },
   },
   {
-    path: '/guides/waterproof-orthopedic-dog-beds-guide',
+    path: '/guides/how-to-wash-a-dog-bed-properly',
     type: 'guide', cluster: 'dog-beds', species: 'dog', boost: 1.2, minInbound: 10,
     targetKeyword: 'waterproof dog bed',
     anchors: { exact: 'waterproof dog beds', partial: 'easy-clean dog bed options', semantic: 'durable beds that resist spills and accidents' },
