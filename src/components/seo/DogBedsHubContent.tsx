@@ -13,7 +13,7 @@ const SUBCATEGORIES = [
     title: 'Orthopedic Dog Beds',
     description: 'Memory foam support for senior dogs, large breeds, and pets with joint issues like hip dysplasia or arthritis. Distributes weight evenly to relieve pressure points.',
     keywords: ['orthopedic', 'memory foam', 'joint support'],
-    guideLink: '/guides/best-orthopedic-dog-beds-for-large-dogs',
+    guideLink: '/guides/best-orthopedic-dog-bed-large-dogs-2026',
     guideLabel: 'Orthopedic Bed Guide →',
   },
   {
@@ -21,7 +21,7 @@ const SUBCATEGORIES = [
     title: 'Large Breed Dog Beds',
     description: 'Extra-large beds rated for 80–120+ lbs with reinforced stitching. Sized for Labs, Golden Retrievers, German Shepherds, and Great Danes who need room to stretch.',
     keywords: ['large dog bed', 'XL', 'heavy duty'],
-    guideLink: '/guides/best-orthopedic-dog-beds-for-large-dogs',
+    guideLink: '/guides/best-dog-beds-large-breeds-2026',
     guideLabel: 'Large Breed Guide →',
   },
   {
@@ -29,7 +29,7 @@ const SUBCATEGORIES = [
     title: 'Cooling & Elevated Dog Beds',
     description: 'Breathable mesh cots and gel-infused foam beds that keep dogs cool in warm weather. Ideal for outdoor use, porches, and dogs that overheat easily.',
     keywords: ['cooling', 'elevated', 'outdoor'],
-    guideLink: '/guides/elevated-dog-beds-canopy-outdoor-comfort-guide',
+    guideLink: '/guides/best-elevated-dog-bed',
     guideLabel: 'Elevated Bed Guide →',
   },
   {
@@ -37,19 +37,19 @@ const SUBCATEGORIES = [
     title: 'Washable & Waterproof Dog Beds',
     description: 'Machine-washable covers with waterproof liners — essential for puppies in training, senior dogs, and messy eaters. Keeps bedding fresh and hygienic.',
     keywords: ['washable', 'waterproof', 'easy clean'],
-    guideLink: '/guides/washable-orthopedic-dog-bed-buying-guide',
+    guideLink: '/guides/machine-washable-dog-bed-guide',
     guideLabel: 'Washable Bed Guide →',
   },
 ];
 
 const EXPERT_GUIDES = [
-  { title: 'Best Dog Beds 2026 — Complete Buying Guide', slug: 'best-dog-beds-2026', featured: true },
-  { title: 'Best Orthopedic Dog Beds for Large Dogs (2026)', slug: 'best-orthopedic-dog-beds-for-large-dogs' },
-  { title: 'Orthopedic Dog Beds for Arthritis: What Vets Recommend', slug: 'orthopedic-dog-beds-for-arthritis' },
-  { title: 'Memory Foam Dog Beds for Senior Dogs', slug: 'memory-foam-dog-beds-for-senior-dogs' },
-  { title: 'How to Choose the Perfect Dog Bed', slug: 'how-to-choose-perfect-dog-bed-guide' },
-  { title: 'Washable Orthopedic Dog Beds: What to Look For', slug: 'washable-orthopedic-dog-bed-buying-guide' },
-  { title: 'Elevated Dog Beds with Canopy: Outdoor Comfort Guide', slug: 'elevated-dog-beds-canopy-outdoor-comfort-guide' },
+  { title: 'Best Dog Beds 2026 — Complete Buying Guide', slug: 'best-dog-bed-2026', featured: true },
+  { title: 'Best Orthopedic Dog Beds for Large Dogs (2026)', slug: 'best-orthopedic-dog-bed-large-dogs-2026' },
+  { title: 'Orthopedic Dog Beds for Arthritis: What Vets Recommend', slug: 'do-orthopedic-dog-beds-help-arthritis' },
+  { title: 'Memory Foam Dog Beds for Senior Dogs', slug: 'orthopedic-dog-beds-for-senior-dogs' },
+  { title: 'How to Choose the Perfect Dog Bed', slug: 'dog-bed-buying-guide' },
+  { title: 'Washable Orthopedic Dog Beds: What to Look For', slug: 'machine-washable-dog-bed-guide' },
+  { title: 'Elevated Dog Beds: Outdoor Comfort Guide', slug: 'best-elevated-dog-bed' },
 ];
 
 export function DogBedsHubContent() {

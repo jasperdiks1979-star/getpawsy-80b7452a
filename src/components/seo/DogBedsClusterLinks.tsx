@@ -37,7 +37,7 @@ export function DogBedsClusterLinks({ productCategory, productName }: DogBedsClu
           <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
         </Link>
         <Link
-          to="/guides/best-dog-beds-2026"
+          to="/guides/best-dog-bed-2026"
           className="group inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
         >
           <BookOpen className="w-4 h-4 shrink-0" />
