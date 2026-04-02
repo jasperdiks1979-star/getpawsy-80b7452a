@@ -736,7 +736,7 @@ const SeoCollection = () => {
           ) : products.length > 0 ? (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-                {products.map((product, index) => (
+                {visibleItems.map((product, index) => (
                   <div key={product.id}>
                     <ProductCard
                       product={{
@@ -757,7 +757,6 @@ const SeoCollection = () => {
                       popularChoice={isPriorityCategory && index < 3 && (product.stock ?? 0) > 0}
                       showSpeciesBadge={isSpeciesCollection}
                       species={(() => {
-                        // Prefer DB column over runtime classification
                         const dbSpecies = (product as any).primary_species as string | null;
                         if (dbSpecies === 'dog') return 'dog';
                         if (dbSpecies === 'cat') return 'cat';
@@ -767,7 +766,6 @@ const SeoCollection = () => {
                         return taxonomy.speciesPrimary === 'cat' || taxonomy.speciesPrimary === 'dog' ? taxonomy.speciesPrimary : 'unknown';
                       })()}
                     />
-                    {/* CRO badges + sold counter for money collections */}
                     {isMoney && (
                       <div className="px-2 pb-2">
                         <CollectionCROBadges
@@ -781,6 +779,20 @@ const SeoCollection = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Infinite scroll loader */}
+              {hasMore && (
+                <div ref={loaderRef} className="flex justify-center py-8">
+                  {scrollLoading ? (
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                      <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      Loading more products...
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">Scroll for more</span>
+                  )}
+                </div>
+              )}
 
               {/* CRO: Mini comparison table after first 4 products */}
               {isMoney && products.length >= 4 && (
