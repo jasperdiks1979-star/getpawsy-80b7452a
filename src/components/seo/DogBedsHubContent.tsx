@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Heart, Thermometer, Droplets, Bed, CheckCircle } from 'lucide-react';
+import { ArrowRight, Heart, Thermometer, Droplets, Bed, CheckCircle, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 /**
  * DogBedsHubContent — SEO authority content block for /collections/dog-beds
