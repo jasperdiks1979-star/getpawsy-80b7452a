@@ -4,12 +4,14 @@
  * Displayed between price and benefit bullets.
  */
 import { memo, useMemo } from 'react';
-import { Flame, Users, Truck, ShieldCheck } from 'lucide-react';
+import { Flame, Users, Truck, ShieldCheck, Clock, TrendingUp } from 'lucide-react';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
+import { getWinnerBadge } from '@/config/top-winners';
 
 interface ConversionBlockProps {
   productName: string;
   category?: string;
+  productId?: string;
 }
 
 function getBestFor(name: string, category?: string): string[] {
@@ -37,11 +39,22 @@ function getBestFor(name: string, category?: string): string[] {
   return ['Pet comfort', 'Daily use', 'US pet owners'];
 }
 
-export const ConversionBlock = memo(function ConversionBlock({ productName, category }: ConversionBlockProps) {
+export const ConversionBlock = memo(function ConversionBlock({ productName, category, productId }: ConversionBlockProps) {
   const bestFor = useMemo(() => getBestFor(productName, category), [productName, category]);
+  const winnerBadge = productId ? getWinnerBadge(productId) : undefined;
 
   return (
     <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 space-y-2.5">
+      {/* Winner Badge */}
+      {winnerBadge && (
+        <div className="flex items-center gap-2 pb-1">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wide">
+            <TrendingUp className="w-3 h-3" />
+            {winnerBadge.label}
+          </span>
+        </div>
+      )}
+
       {/* Best For */}
       <div className="flex items-start gap-2">
         <Flame className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -64,6 +77,14 @@ export const ConversionBlock = memo(function ConversionBlock({ productName, cate
         <Truck className="w-4 h-4 text-primary flex-shrink-0" />
         <p className="text-sm text-muted-foreground">
           Free US shipping on orders over ${FREE_SHIPPING_THRESHOLD}
+        </p>
+      </div>
+
+      {/* Fast delivery */}
+      <div className="flex items-center gap-2">
+        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+        <p className="text-sm text-muted-foreground">
+          Fast delivery: 5–10 business days
         </p>
       </div>
 
