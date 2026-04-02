@@ -58,7 +58,7 @@ import { computeAvailability } from "@/lib/availability";
 import { getProductBySlugOrId } from "@/data/products";
 import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
-import { TrustMicrocopy } from "@/components/products/TrustMicrocopy";
+// TrustMicrocopy removed — consolidated into TrustBadgesBlock
 import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
 import { ProductSchema } from "@/components/seo/ProductSchema";
 import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
