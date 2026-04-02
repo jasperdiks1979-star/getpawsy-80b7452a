@@ -16,6 +16,10 @@ interface ProductPublic {
   is_active: boolean | null;
   slug?: string | null;
   variants: unknown;
+  created_at: string;
+  updated_at: string;
+  [key: string]: unknown;
+}
 }
 
 interface UseRelatedProductsOptions {
