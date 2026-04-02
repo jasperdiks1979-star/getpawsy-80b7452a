@@ -83,10 +83,11 @@ export const EnhancedSearch = ({
   }, []);
 
   // Load validated categories from canonical registry (not DB)
+  // SAFE MODE: Only show categories that have confirmed inventory
   useEffect(() => {
     import('@/lib/canonical-category-registry').then(({ getCategoriesForSurface }) => {
       const searchCats = getCategoriesForSurface('search')
-        .filter(c => c.parentKey !== null) // Only subcategories for search suggestions
+        .filter(c => c.parentKey !== null && c.hasInventory) // Only subcategories WITH real products
         .slice(0, 6)
         .map(c => ({ id: c.key, name: c.label, slug: c.key }));
       setCategories(searchCats);
