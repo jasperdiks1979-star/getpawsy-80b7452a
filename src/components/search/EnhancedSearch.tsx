@@ -47,8 +47,7 @@ const popularSearches = [
   'Cat tree',
   'Dog bed',
   'Litter box',
-  'Scratching post',
-  'Dog harness',
+  'Dog travel',
 ];
 
 export const EnhancedSearch = ({
