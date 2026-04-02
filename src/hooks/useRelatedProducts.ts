@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
+import { getCuratedCompanions } from '@/config/dog-bed-companions';
 
 interface ProductPublic {
   id: string;
