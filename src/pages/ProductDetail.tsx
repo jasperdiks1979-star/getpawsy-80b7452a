@@ -86,6 +86,8 @@ import { ProductIdealFor } from "@/components/products/ProductIdealFor";
 import { LowStockBadge } from "@/components/products/LowStockBadge";
 import { ConversionBlock } from "@/components/products/ConversionBlock";
 import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
+import { MicroFrictionBlock } from "@/components/products/MicroFrictionBlock";
+import { useAdIntent } from "@/hooks/useAdIntent";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
