@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackBundleAddToCart } from '@/lib/analytics';
+import { getCuratedCompanions, isDogBedProduct, DOG_BED_BUNDLE_TIERS } from '@/config/dog-bed-companions';
 
 interface Product {
   id: string;
