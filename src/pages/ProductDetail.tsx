@@ -1557,39 +1557,6 @@ const ProductDetail = () => {
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
-        {/* 2. Feature Grid — detailed benefits */}
-        <ProductFeatureGrid productName={product.name} category={product.category || ""} />
-
-        {/* Internal link to collection — SEO authority flow */}
-        {product.category && (
-          <div className="mt-8 text-center">
-            <Link
-              to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, "-"))}`}
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors underline underline-offset-4"
-            >
-              Browse all {safeString(product.category)} products →
-            </Link>
-          </div>
-        )}
-
-        {/* Priority internal links — SEO link equity to key pages */}
-        <nav className="mt-6 flex flex-wrap justify-center gap-3" aria-label="Explore more">
-          <Link to="/bestsellers" className="text-sm text-primary hover:underline font-medium">Bestsellers</Link>
-          <span className="text-border">·</span>
-          <Link to="/trending-pet-products" className="text-sm text-primary hover:underline font-medium">Trending Products</Link>
-          <span className="text-border">·</span>
-          <Link to="/dog" className="text-sm text-primary hover:underline font-medium">Shop Dogs</Link>
-          <span className="text-border">·</span>
-          <Link to="/cat" className="text-sm text-primary hover:underline font-medium">Shop Cats</Link>
-        </nav>
-
-        {/* Trusted by pet owners — factual, no fabricated order data */}
-        <div className="mt-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            Trusted by pet owners across the United States
-          </p>
-        </div>
-
         {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
