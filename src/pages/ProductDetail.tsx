@@ -78,7 +78,7 @@ import { ProductProblemSolution } from "@/components/products/ProductProblemSolu
 
 import { FinalCtaBlock } from "@/components/products/FinalCtaBlock";
 
-import { ProductFeatureGrid } from "@/components/products/ProductFeatureGrid";
+// ProductFeatureGrid removed — redundant with benefit bullets + ProblemSolution
 import { ProductWhyChoose } from "@/components/products/ProductWhyChoose";
 import { ProductHowItWorks } from "@/components/products/ProductHowItWorks";
 import { ProductUseCases } from "@/components/products/ProductUseCases";
