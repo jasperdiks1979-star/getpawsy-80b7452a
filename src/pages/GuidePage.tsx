@@ -198,7 +198,8 @@ const GuidePage = () => {
   }
 
   if (error || !guide) {
-    return <NotFound />;
+    // Fallback: redirect to guides listing instead of showing 404
+    return <Navigate to="/guides" replace />;
   }
 
   // Canonical WITHOUT trailing slash (canonical standard)
