@@ -20,9 +20,6 @@ import {
   Box,
   Info,
   Home,
-  AlertTriangle,
-  RotateCcw,
-  Lock,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileProductGallery } from "@/components/products/MobileProductGallery";
@@ -58,7 +55,7 @@ import { computeAvailability } from "@/lib/availability";
 import { getProductBySlugOrId } from "@/data/products";
 import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
-import { TrustMicrocopy } from "@/components/products/TrustMicrocopy";
+// TrustMicrocopy removed — consolidated into TrustBadgesBlock
 import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
 import { ProductSchema } from "@/components/seo/ProductSchema";
 import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
@@ -78,7 +75,7 @@ import { ProductProblemSolution } from "@/components/products/ProductProblemSolu
 
 import { FinalCtaBlock } from "@/components/products/FinalCtaBlock";
 
-import { ProductFeatureGrid } from "@/components/products/ProductFeatureGrid";
+// ProductFeatureGrid removed — redundant with benefit bullets + ProblemSolution
 import { ProductWhyChoose } from "@/components/products/ProductWhyChoose";
 import { ProductHowItWorks } from "@/components/products/ProductHowItWorks";
 import { ProductUseCases } from "@/components/products/ProductUseCases";
@@ -86,7 +83,7 @@ import { ProductVsAlternatives } from "@/components/products/ProductVsAlternativ
 import { ProductSpecsTable } from "@/components/products/ProductSpecsTable";
 import { ProductIdealFor } from "@/components/products/ProductIdealFor";
 import { LowStockBadge } from "@/components/products/LowStockBadge";
-import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
+// WhyGetPawsy removed from PDP — redundant trust block (kept on homepage/collection pages)
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
@@ -882,19 +879,6 @@ const ProductDetail = () => {
           >
             {/* Category & Title */}
             <div>
-              {/* Stock indicator — factual, compliant (dropship model) */}
-              {inStock && product.stock != null && product.stock > 0 && product.stock <= 20 && (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400 mb-3">
-                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-                  Limited availability
-                </div>
-              )}
-              {inStock && (product.stock == null || product.stock > 20) && (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-success/10 border border-success/20 px-3 py-1 text-xs font-semibold text-success mb-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                  In stock
-                </div>
-              )}
               {product.category && (
                 <motion.p
                   initial={{ opacity: 0 }}
@@ -1207,12 +1191,6 @@ const ProductDetail = () => {
             {/* Stock Notification Form - Show when out of stock */}
             {!inStock && <StockNotificationForm productId={product.id} productName={product.name || ""} />}
 
-            {/* Shipping Info - Calm, factual delivery estimate */}
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Truck className="w-4 h-4 text-primary" />
-              <span className="text-sm">Estimated delivery: {DELIVERY_TIME_STANDARD}</span>
-            </div>
-
             {/* Volume Discount — Buy More Save More */}
             {inStock && (
               <VolumeDiscountSelector
@@ -1232,18 +1210,13 @@ const ProductDetail = () => {
               />
             )}
 
-            {/* Social proof & trust bullets — conversion boost */}
-            <div className="flex flex-col gap-2 pt-2">
-              <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+            {/* Social proof line */}
+            {reviews.length > 0 && (
+              <p className="text-sm font-medium text-foreground flex items-center gap-1.5 pt-1">
                 <span className="text-amber-400">★★★★★</span>
-                <span>Trusted by pet owners across the US</span>
+                <span>{reviews.length} verified review{reviews.length !== 1 ? 's' : ''}</span>
               </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-primary" />Free Shipping on Orders $35+</span>
-                <span className="flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5 text-primary" />30-Day Returns</span>
-                <span className="flex items-center gap-1"><Lock className="w-3.5 h-3.5 text-primary" />Secure Checkout</span>
-              </div>
-            </div>
+            )}
 
             {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div
@@ -1297,32 +1270,9 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Shipping & Returns Info Block — Google Merchant compliance */}
-            <div className="bg-muted/30 rounded-xl p-4 space-y-3 text-sm">
-              <div className="flex items-start gap-2">
-                <Truck className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground">Shipping Information</p>
-                  <p className="text-muted-foreground">Orders processed within 1–2 business days. Delivery: 5–10 business days within the United States.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground">Returns</p>
-                  <p className="text-muted-foreground">30-day return policy. Items must be unused and in original condition.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Trust Badges */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
+            {/* Trust Badges — single consolidated trust block */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-2">
               <TrustBadgesBlock compact />
-            </motion.div>
-
-            {/* Trust Microcopy — compliance links */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="pt-1">
-              <TrustMicrocopy />
             </motion.div>
           </motion.div>
         </div>
@@ -1604,39 +1554,6 @@ const ProductDetail = () => {
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
-        {/* 2. Feature Grid — detailed benefits */}
-        <ProductFeatureGrid productName={product.name} category={product.category || ""} />
-
-        {/* Internal link to collection — SEO authority flow */}
-        {product.category && (
-          <div className="mt-8 text-center">
-            <Link
-              to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, "-"))}`}
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors underline underline-offset-4"
-            >
-              Browse all {safeString(product.category)} products →
-            </Link>
-          </div>
-        )}
-
-        {/* Priority internal links — SEO link equity to key pages */}
-        <nav className="mt-6 flex flex-wrap justify-center gap-3" aria-label="Explore more">
-          <Link to="/bestsellers" className="text-sm text-primary hover:underline font-medium">Bestsellers</Link>
-          <span className="text-border">·</span>
-          <Link to="/trending-pet-products" className="text-sm text-primary hover:underline font-medium">Trending Products</Link>
-          <span className="text-border">·</span>
-          <Link to="/dog" className="text-sm text-primary hover:underline font-medium">Shop Dogs</Link>
-          <span className="text-border">·</span>
-          <Link to="/cat" className="text-sm text-primary hover:underline font-medium">Shop Cats</Link>
-        </nav>
-
-        {/* Trusted by pet owners — factual, no fabricated order data */}
-        <div className="mt-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            Trusted by pet owners across the United States
-          </p>
-        </div>
-
         {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
@@ -1722,8 +1639,17 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* Why GetPawsy — global trust block */}
-        <WhyGetPawsy className="mt-12" />
+        {/* Internal link to collection — SEO authority flow */}
+        {product.category && (
+          <div className="mt-8 text-center">
+            <Link
+              to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, "-"))}`}
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors underline underline-offset-4"
+            >
+              Browse all {safeString(product.category)} products →
+            </Link>
+          </div>
+        )}
 
         {/* Related Products */}
         <div className="mt-16">
