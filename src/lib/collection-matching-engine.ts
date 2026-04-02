@@ -180,6 +180,36 @@ export async function resolveCollectionProducts(
   collection: SeoCollectionLike,
   config?: CollectionMapEntry,
 ): Promise<CollectionMatchResult> {
+  // ── SPECIAL CASE: "all" collection returns the FULL catalog (no keyword scoring) ──
+  if (collection.slug === 'all') {
+    const { data: allProducts, error: allErr } = await supabase
+      .from('products_public')
+      .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at, primary_species, primary_intent')
+      .eq('is_active', true)
+      .eq('is_duplicate', false)
+      .gt('price', 0)
+      .not('image_url', 'is', null)
+      .order('price', { ascending: false })
+      .limit(500);
+
+    const products = (allProducts || []) as CollectionProduct[];
+
+    if (import.meta.env.DEV || typeof window !== 'undefined') {
+      console.info('[CollectionEngine] /collections/all', {
+        totalInDB: products.length,
+        returned: products.length,
+        error: allErr?.message || null,
+      });
+    }
+
+    return {
+      products,
+      fallbackTriggered: !!allErr,
+      appliedFilters: ['is_active = true', 'is_duplicate = false', 'price > 0', 'image_url IS NOT NULL', 'NO keyword filter (show all)'],
+      debug: { slug: 'all', primaryMatches: products.length, fallbackMatches: 0 },
+    };
+  }
+
   const keywords = buildKeywordSet(collection, config);
   const appliedFilters = [
     "is_active = true",
