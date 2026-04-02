@@ -397,6 +397,12 @@ const SeoCollection = () => {
     });
   }, [productMatch?.products, needsSpeciesFilter, slug, isDogPrefixedCollection, isCatPrefixedCollection, includeMultiPet]);
 
+  // Infinite scroll for large catalogs (e.g. /collections/all)
+  const { visibleItems, hasMore, isLoading: scrollLoading, loaderRef } = useInfiniteScroll({
+    items: products,
+    itemsPerPage: 24,
+  });
+
   // "Related results" mode completely disabled — only real products shown
 
   // Preload first 2 product images for faster LCP
