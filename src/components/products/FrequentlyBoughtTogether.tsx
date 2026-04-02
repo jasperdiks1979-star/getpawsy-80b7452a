@@ -346,17 +346,29 @@ export const FrequentlyBoughtTogether = ({
       className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-6 border border-primary/10"
     >
       {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-3">
         <div className="p-2 rounded-full bg-primary/10">
           <Sparkles className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-bold">Frequently Bought Together</h3>
+          <h3 className="text-lg font-bold">
+            {isDogBed ? "Complete Your Dog's Comfort Setup" : 'Frequently Bought Together'}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Buy 2+ items together and save up to 20%
+            {isDogBed
+              ? 'Most customers add these for better comfort'
+              : 'Buy 2+ items together and save up to 20%'}
           </p>
         </div>
       </div>
+
+      {/* Urgency copy for dog beds */}
+      {isDogBed && curatedCompanions && (
+        <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          Most customers add this for better comfort
+        </p>
+      )}
 
       {/* Products Row */}
       <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
