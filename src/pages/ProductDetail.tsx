@@ -1194,12 +1194,6 @@ const ProductDetail = () => {
             {/* Stock Notification Form - Show when out of stock */}
             {!inStock && <StockNotificationForm productId={product.id} productName={product.name || ""} />}
 
-            {/* Shipping Info - Calm, factual delivery estimate */}
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Truck className="w-4 h-4 text-primary" />
-              <span className="text-sm">Estimated delivery: {DELIVERY_TIME_STANDARD}</span>
-            </div>
-
             {/* Volume Discount — Buy More Save More */}
             {inStock && (
               <VolumeDiscountSelector
