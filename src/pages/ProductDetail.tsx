@@ -84,6 +84,7 @@ import { ProductVsAlternatives } from "@/components/products/ProductVsAlternativ
 import { ProductSpecsTable } from "@/components/products/ProductSpecsTable";
 import { ProductIdealFor } from "@/components/products/ProductIdealFor";
 import { LowStockBadge } from "@/components/products/LowStockBadge";
+import { ConversionBlock } from "@/components/products/ConversionBlock";
 // WhyGetPawsy removed from PDP — redundant trust block (kept on homepage/collection pages)
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { useGuidesList } from "@/hooks/useGuides";
@@ -959,6 +960,8 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
+            {/* Above-the-fold conversion block */}
+            <ConversionBlock productName={product.name} category={product.category || undefined} />
             {/* Compact Trust Checkmarks — immediately visible */}
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">

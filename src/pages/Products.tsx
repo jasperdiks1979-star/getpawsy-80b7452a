@@ -6,6 +6,7 @@ import { Filter, SlidersHorizontal, Loader2, X, Eye, Clock, Home } from 'lucide-
 import { Layout } from '@/components/layout/Layout';
 import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { ProductCard, Product } from '@/components/products/ProductCard';
+import { getWinnerBadge } from '@/config/top-winners';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { TrustBadgesBlock } from '@/components/shared/TrustBadgesBlock';
@@ -1133,6 +1134,9 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
               rating={productRating?.averageRating}
               reviewCount={productRating?.reviewCount}
               priority={index < 2}
+              bestSeller={getWinnerBadge(product.id)?.badge === 'best-seller'}
+              topRated={getWinnerBadge(product.id)?.badge === 'top-pick'}
+              popularChoice={getWinnerBadge(product.id)?.badge === 'most-popular'}
             />
             <Button
               variant="secondary"

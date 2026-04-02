@@ -19,12 +19,66 @@ interface ProductFAQAccordionProps {
 
 const CAT_TREE_RE = /cat\s*tree|cat\s*condo|cat\s*tower|scratching\s*post|cat\s*furniture|climbing/i;
 const LITTER_RE = /litter\s*box|self[\s-]*clean|automatic\s*litter/i;
+const DOG_BED_RE = /dog\s*bed|pet\s*cot|cooling\s*bed|elevated\s*bed|car\s*bed|travel\s*pad/i;
+const TRAVEL_RE = /stroller|carrier|backpack|travel/i;
+const TOY_RE = /toy|chew|squeaky|dispenser/i;
 
 function generateFAQs(name: string, category?: string) {
   const cat = (category || '').toLowerCase();
   const n = name.toLowerCase();
-  const isCatTree = CAT_TREE_RE.test(n) || CAT_TREE_RE.test(cat);
-  const isLitter = LITTER_RE.test(n) || LITTER_RE.test(cat);
+  const combined = `${n} ${cat}`;
+  const isCatTree = CAT_TREE_RE.test(combined);
+  const isLitter = LITTER_RE.test(combined);
+  const isDogBed = DOG_BED_RE.test(combined) || cat.includes('dog bed');
+  const isTravel = TRAVEL_RE.test(combined) || cat.includes('travel');
+  const isToy = TOY_RE.test(combined) || cat.includes('toy');
+
+  if (isDogBed) {
+    const isCooling = /cooling|elevated|breathable|outdoor|cot/i.test(combined);
+    const isCarBed = /car\s*bed|rear\s*seat|travel\s*pad/i.test(combined);
+
+    const faqs = [
+      { q: `What size dog is the ${name} designed for?`, a: `This dog bed is designed for medium to large dogs. Check the product dimensions above to match your dog's size. As a rule of thumb, your dog should be able to lie fully stretched without hanging over the edge.` },
+      { q: `Is this dog bed good for senior dogs with joint pain?`, a: `Yes. The raised or cushioned design helps distribute weight evenly, which may reduce pressure on joints and hips. Many pet owners choose this bed specifically for older dogs or dogs recovering from surgery.` },
+      { q: `Is the ${name} washable?`, a: `Yes — the cover is removable and machine-washable for easy maintenance. We recommend washing on a gentle cycle with cold water and air drying for best results.` },
+      { q: `Can I use this dog bed outdoors?`, a: isCooling ? `Absolutely. The elevated design and breathable mesh make it ideal for porches, patios, camping, and other outdoor environments. The frame is weather-resistant and rust-proof.` : `This bed is primarily designed for indoor use, but it can be used in covered outdoor areas. Avoid leaving it in direct rain or prolonged sun exposure.` },
+      { q: `How does this compare to orthopedic dog beds?`, a: isCooling ? `Unlike memory foam orthopedic beds, this elevated cot provides cooling airflow from all sides — making it a better choice for warm climates. For joint support specifically, an orthopedic bed may be preferable in colder environments.` : `This bed offers comfort and support for daily rest. If your dog has diagnosed joint conditions, consult your veterinarian about the best sleeping surface for their needs.` },
+      { q: `Will this fit in a dog crate?`, a: isCarBed ? `This bed is designed specifically for car rear seats rather than crates. Check the dimensions above to see if it fits your vehicle.` : `Check the bed dimensions against your crate's interior measurements. Many customers successfully use our beds inside XL and XXL crates.` },
+      { q: `How long does assembly take?`, a: isCooling ? `Most customers set up the elevated cot in under 5 minutes. No tools required — the legs snap into place and the mesh stretches over the frame.` : `This bed arrives ready to use — no assembly needed. Simply unbox and place it in your dog's favorite spot.` },
+      { q: `How long does shipping take?`, a: `We ship to the United States with estimated delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping. Delivery times may vary depending on location.` },
+      { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original condition. Contact our support team to start a return.` },
+      { q: `What weight can this dog bed support?`, a: isCooling ? `The elevated steel frame supports dogs up to 80 lbs. The mesh fabric is tear-resistant and maintains tension even with heavier dogs.` : `Check the product specifications above for the exact weight capacity. Most of our dog beds support medium to large breeds comfortably.` },
+    ];
+    return faqs;
+  }
+
+  if (isTravel) {
+    const isStroller = /stroller/i.test(combined);
+    const isBackpack = /backpack|carrier/i.test(combined);
+    return [
+      { q: `What is the weight limit for this ${isStroller ? 'pet stroller' : 'pet carrier'}?`, a: isStroller ? `This stroller comfortably supports dogs up to 30 lbs. For larger dogs, check our selection of heavy-duty pet strollers.` : `This carrier is designed for small dogs and cats up to 15 lbs. Always check the weight capacity before purchasing.` },
+      { q: `Is this ${isStroller ? 'stroller' : 'carrier'} airline approved?`, a: isStroller ? `Pet strollers are not typically permitted on aircraft. For air travel, consider our expandable pet carrier backpack which meets most airline cabin size requirements.` : `The dimensions are compatible with most airline cabin carry-on requirements. However, always verify with your specific airline before traveling, as policies vary.` },
+      { q: `Can senior dogs use this?`, a: isStroller ? `Absolutely — pet strollers are one of the best ways to help senior, injured, or post-surgery dogs continue enjoying outdoor time without strain.` : `Yes, the padded interior provides comfortable support for older pets during short trips to the vet or around town.` },
+      { q: `How does it fold for storage?`, a: isStroller ? `The one-hand fold mechanism collapses the stroller flat in seconds. It fits easily in a car trunk or closet.` : `The carrier collapses flat when not in use and can be stored in a closet, under a seat, or in a suitcase.` },
+      { q: `Is there ventilation for my pet?`, a: `Yes — mesh ventilation panels on multiple sides ensure steady airflow and visibility so your pet stays comfortable and calm during travel.` },
+      { q: `What surfaces can the ${isStroller ? 'stroller wheels' : 'carrier'} handle?`, a: isStroller ? `The all-terrain wheels handle pavement, grass, gravel paths, and packed dirt. The suspension system provides a smooth ride on uneven surfaces.` : `The carrier works anywhere you can carry it — city streets, hiking trails, airports, and public transit.` },
+      { q: `Is this easy to clean?`, a: `Yes — removable padding is machine-washable, and the frame can be wiped down with a damp cloth. We recommend cleaning after each use to maintain hygiene.` },
+      { q: `How long does shipping take?`, a: `We ship to the United States with estimated delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+    ];
+  }
+
+  if (isToy) {
+    return [
+      { q: `Is this toy safe for aggressive chewers?`, a: `Yes — this toy is made from durable, pet-safe materials designed to withstand aggressive chewing. However, no toy is completely indestructible. Always supervise your pet and replace the toy if it shows signs of significant wear.` },
+      { q: `What size dogs is this toy suitable for?`, a: `This toy works well for puppies, small, medium, and large dogs. The size and texture are designed to engage dogs of all sizes and chewing strengths.` },
+      { q: `Is the material non-toxic?`, a: `Yes — all materials used are non-toxic, BPA-free, and safe for pets. We prioritize food-grade or pet-safe certifications in every toy we sell.` },
+      { q: `Can I put treats inside this toy?`, a: /dispenser|treat|food/i.test(combined) ? `Absolutely — fill the compartments with your dog's favorite treats or kibble. This turns playtime into a mentally stimulating puzzle that slows feeding and reduces boredom.` : `This toy is designed primarily for chewing and play rather than treat dispensing. Check our food-dispensing toys for treat-based enrichment.` },
+      { q: `How do I clean this toy?`, a: `Most of our toys are dishwasher safe or can be hand-washed with warm soapy water. Air dry before giving it back to your pet.` },
+      { q: `Will this keep my dog entertained when home alone?`, a: `This toy is great for independent play and can help reduce boredom and destructive behavior. For best results, rotate toys regularly to keep your dog interested.` },
+      { q: `How long does shipping take?`, a: `We ship to the United States with estimated delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+      { q: `What is your return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original condition.` },
+    ];
+  }
 
   if (isCatTree) {
     return [
@@ -56,7 +110,7 @@ function generateFAQs(name: string, category?: string) {
     ];
   }
 
-  // Generic FAQs for non-cat-specific products
+  // Generic FAQs
   return [
     { q: `What sizes does the ${name} come in?`, a: `The ${name} is available in multiple sizes to fit different pet breeds. Check the product specifications above for exact dimensions and weight recommendations.` },
     { q: `How long does shipping take?`, a: `We ship to the United States with estimated delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping. Delivery times may vary depending on location.` },
