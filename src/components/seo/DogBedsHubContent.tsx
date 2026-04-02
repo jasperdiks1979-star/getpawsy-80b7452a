@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Heart, Thermometer, Droplets, Bed, CheckCircle } from 'lucide-react';
+import { ArrowRight, Heart, Thermometer, Droplets, Bed, CheckCircle, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 /**
  * DogBedsHubContent — SEO authority content block for /collections/dog-beds
@@ -61,7 +62,30 @@ export function DogBedsHubContent() {
         <Badge variant="outline" className="text-xs">Vet-Informed Picks</Badge>
       </div>
 
-      {/* Visible SEO intro — 200+ words, benefit-driven, US-focused */}
+      {/* Expert Guide CTA — above the fold */}
+      <div className="rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/[0.06] to-card p-5 md:p-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-display font-bold text-foreground text-base mb-1">
+              Read Our Expert Dog Bed Guide
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              Compare the <strong className="text-foreground">best dog beds for 2026</strong> — orthopedic, cooling, large breed, and washable options rated by comfort, durability, and value.
+            </p>
+            <Link to="/guides/best-dog-bed-2026">
+              <Button variant="outline" size="sm" className="gap-2 font-semibold">
+                <BookOpen className="w-4 h-4" />
+                Best Dog Beds 2026 — Full Buying Guide
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <section id="dog-beds-intro">
         <h2 className="text-2xl font-display font-bold mb-4">
           Finding the Right Dog Bed: Why It Matters for Your Dog's Health
