@@ -119,7 +119,7 @@ const GuidesIndex = () => {
         <link rel="canonical" href={`${BASE_URL}/guides`} />
         <meta name="robots" content="index, follow, max-image-preview:large" />
         <meta property="og:title" content="Pet Care Guides | GetPawsy" />
-        <meta property="og:description" content="Expert pet care guides covering guinea pig cages, cat trees, outdoor dog games, and more." />
+        <meta property="og:description" content="Expert pet care guides covering cat trees, dog training, travel safety, and more." />
         <meta property="og:url" content={`${BASE_URL}/guides`} />
         <meta property="og:type" content="website" />
         <script type="application/ld+json">
