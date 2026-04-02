@@ -123,6 +123,8 @@ export const BLOG_REDIRECTS: Record<string, string> = {
   'best-dog-beds-2024': 'best-dog-beds-2026',
   'best-dog-beds-2025': 'best-dog-beds-2026',
   'top-dog-beds-review': 'best-dog-beds-2026',
+  'best-dog-bed-2026': 'best-dog-beds-2026',
+  'dog-beds-comfort-sleep-guide-2026': 'best-dog-beds-2026',
   'orthopedic-dog-bed-review-2024': 'best-orthopedic-dog-beds-2026',
   'memory-foam-dog-bed-picks': 'best-orthopedic-dog-beds-2026',
   'pet-gift-ideas-2024': 'pet-gift-guide-2026',
