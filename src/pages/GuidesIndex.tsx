@@ -65,11 +65,6 @@ const CATEGORY_HUBS: Record<string, { description: string; shopCategory: string;
     shopCategory: 'dog-carriers',
     shopLabel: 'Shop Dog Travel Gear',
   },
-  'Small Pets': {
-    description: 'Expert guides on habitats, nutrition, and care for guinea pigs, hamsters, and other small pets.',
-    shopCategory: 'small-pet-habitats',
-    shopLabel: 'Shop Small Pet Habitats',
-  },
   'Dog Activities': {
     description: 'Enrichment ideas, outdoor games, and training activities to keep your dog happy and healthy.',
     shopCategory: 'dog-toys',
@@ -110,21 +105,27 @@ const GuidesIndex = () => {
     );
   }
 
-  // Group by category for hub sections
-  const grouped = guides.reduce<Record<string, typeof guides>>((acc, g) => {
-    (acc[g.category] ??= []).push(g);
-    return acc;
-  }, {});
+  // Filter out non-core categories that have no matching products
+  const HIDDEN_GUIDE_CATEGORIES = new Set([
+    'Fish', 'Birds', 'Reptiles', 'Small Pets', 'fish', 'birds', 'reptiles', 'small pets',
+  ]);
+
+  const grouped = guides
+    .filter(g => !HIDDEN_GUIDE_CATEGORIES.has(g.category))
+    .reduce<Record<string, typeof guides>>((acc, g) => {
+      (acc[g.category] ??= []).push(g);
+      return acc;
+    }, {});
 
   return (
     <Layout>
       <Helmet>
         <title>Pet Care Guides | GetPawsy</title>
-        <meta name="description" content="Expert pet care guides covering guinea pig cages, cat trees, outdoor dog games, and more. Practical advice for pet parents." />
+        <meta name="description" content="Expert pet care guides covering cat trees, dog training, travel safety, and more. Practical advice for pet parents." />
         <link rel="canonical" href={`${BASE_URL}/guides`} />
         <meta name="robots" content="index, follow, max-image-preview:large" />
         <meta property="og:title" content="Pet Care Guides | GetPawsy" />
-        <meta property="og:description" content="Expert pet care guides covering guinea pig cages, cat trees, outdoor dog games, and more." />
+        <meta property="og:description" content="Expert pet care guides covering cat trees, dog training, travel safety, and more." />
         <meta property="og:url" content={`${BASE_URL}/guides`} />
         <meta property="og:type" content="website" />
         <script type="application/ld+json">
@@ -132,7 +133,7 @@ const GuidesIndex = () => {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: 'Pet Care Guides',
-            description: 'Expert pet care guides for dog, cat, and small pet owners.',
+            description: 'Expert pet care guides for dog and cat owners.',
             url: `${BASE_URL}/guides`,
             publisher: { '@type': 'Organization', name: 'GetPawsy', url: BASE_URL },
           })}
