@@ -1582,6 +1582,9 @@ const ProductDetail = () => {
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
+        {/* Comparison block — "Why this is a better choice" */}
+        <ProductVsAlternatives productName={product.name} category={product.category || ""} />
+
         {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
