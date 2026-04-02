@@ -960,8 +960,8 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
-            {/* Above-the-fold conversion block */}
-            <ConversionBlock productName={product.name} category={product.category || undefined} />
+            {/* Above-the-fold conversion block with winner badge */}
+            <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} />
             {/* Compact Trust Checkmarks — immediately visible */}
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -1187,6 +1187,13 @@ const ProductDetail = () => {
                   Orders processed within 1–2 business days
                 </p>
               )}
+              {/* Safe urgency signal */}
+              {inStock && (
+                <p className="text-xs font-medium text-primary pl-6 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  High demand item — frequently purchased
+                </p>
+              )}
             </div>
 
             {/* Low Stock Badge — real inventory driven */}
@@ -1278,6 +1285,9 @@ const ProductDetail = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-2">
               <TrustBadgesBlock compact />
             </motion.div>
+
+            {/* Why pet owners choose this */}
+            <WhyCustomersChoose />
           </motion.div>
         </div>
 
