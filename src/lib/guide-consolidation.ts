@@ -65,6 +65,7 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'machine-washable-dog-bed-guide': 'how-to-wash-a-dog-bed-properly',
   'waterproof-orthopedic-dog-beds-guide': 'how-to-wash-a-dog-bed-properly',
   'how-thick-should-a-dog-bed-be': 'how-to-choose-the-right-dog-bed-size',
+  'outdoor-dog-games-enrichment': 'outdoor-dog-games-2026',
 
   // ── Cat Furniture Consolidation ────────────────────────────
   'cat-condo-vs-cat-tower': 'cat-condo-vs-cat-tree-2026',
