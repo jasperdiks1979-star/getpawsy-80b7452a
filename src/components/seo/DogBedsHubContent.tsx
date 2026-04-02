@@ -29,7 +29,7 @@ const SUBCATEGORIES = [
     title: 'Cooling & Elevated Dog Beds',
     description: 'Breathable mesh cots and gel-infused foam beds that keep dogs cool in warm weather. Ideal for outdoor use, porches, and dogs that overheat easily.',
     keywords: ['cooling', 'elevated', 'outdoor'],
-    guideLink: '/guides/elevated-dog-beds-canopy-outdoor-comfort-guide',
+    guideLink: '/guides/best-elevated-dog-bed',
     guideLabel: 'Elevated Bed Guide →',
   },
   {
