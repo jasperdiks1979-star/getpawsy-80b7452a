@@ -170,7 +170,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
       { slug: 'best-dog-beds-for-large-dogs', title: 'Best Dog Beds for Large Dogs' },
       { slug: 'how-to-choose-the-right-dog-bed-size', title: 'How to Choose the Right Dog Bed Size' },
       { slug: 'best-dog-bed-materials-explained', title: 'Best Dog Bed Materials Explained' },
-      { slug: 'calming-dog-bed-anxiety', title: 'Calming Dog Beds for Anxiety' },
+      { slug: 'dog-bed-for-anxiety-do-they-work', title: 'Do Calming Dog Beds Actually Work?' },
       { slug: 'signs-dog-needs-joint-support', title: 'Signs Your Dog Needs Joint Support' },
     ],
     collectionLink: { href: '/collections/orthopedic-calming-dog-beds', label: 'Shop Dog Beds' },

@@ -25,7 +25,7 @@ const TRENDING_GUIDES = [
     emoji: '🎯',
   },
   {
-    path: '/guides/calming-dog-bed-anxiety',
+    path: '/guides/dog-bed-for-anxiety-do-they-work',
     title: 'Best Dog Anxiety Solutions',
     badge: '⭐ Expert Pick',
     desc: 'Calming products that may help reduce stress.',

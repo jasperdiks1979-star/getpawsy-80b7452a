@@ -44,11 +44,11 @@ const SUBCATEGORIES = [
 
 const EXPERT_GUIDES = [
   { title: 'Best Dog Beds 2026 — Complete Buying Guide', slug: 'best-dog-bed-2026', featured: true },
-  { title: 'Best Orthopedic Dog Beds for Large Dogs (2026)', slug: 'best-orthopedic-dog-bed-large-dogs-2026' },
-  { title: 'Orthopedic Dog Beds for Arthritis: What Vets Recommend', slug: 'do-orthopedic-dog-beds-help-arthritis' },
-  { title: 'Memory Foam Dog Beds for Senior Dogs', slug: 'orthopedic-dog-beds-for-senior-dogs' },
-  { title: 'How to Choose the Perfect Dog Bed', slug: 'dog-bed-buying-guide' },
-  { title: 'Washable Orthopedic Dog Beds: What to Look For', slug: 'machine-washable-dog-bed-guide' },
+  { title: 'Best Orthopedic Dog Beds (2026) — Joint Support Picks', slug: 'best-orthopedic-dog-bed-2026' },
+  { title: 'Best Dog Beds for Large Dogs — Size & Weight Guide', slug: 'best-dog-beds-for-large-dogs' },
+  { title: 'Dog Bed Materials Explained — Foam Density Comparison', slug: 'best-dog-bed-materials-explained' },
+  { title: 'How to Choose the Right Dog Bed Size', slug: 'how-to-choose-the-right-dog-bed-size' },
+  { title: 'How to Wash a Dog Bed Properly', slug: 'how-to-wash-a-dog-bed-properly' },
   { title: 'Elevated Dog Beds: Outdoor Comfort Guide', slug: 'best-elevated-dog-bed' },
 ];
 

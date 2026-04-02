@@ -25,17 +25,46 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'automatic-vs-manual-litter-box': 'best-self-cleaning-litter-box-2026',
   'self-cleaning-litter-box-worth-it': 'best-self-cleaning-litter-box-2026',
 
-  // ── Dog Bed Consolidation ──────────────────────────────────
-  'dog-bed-for-anxiety': 'calming-dog-bed-anxiety',
-  'dog-bed-for-anxiety-do-they-work': 'calming-dog-bed-anxiety',
-  'memory-foam-vs-egg-crate-foam-dog-bed': 'memory-foam-vs-egg-crate-dog-beds',
-  'memory-foam-vs-standard-dog-bed': 'memory-foam-vs-egg-crate-dog-beds',
-  'orthopedic-vs-memory-foam-dog-beds': 'memory-foam-vs-egg-crate-dog-beds',
-  'best-orthopedic-dog-bed-for-large-dogs': 'best-orthopedic-dog-bed-large-dogs-2026',
-  'dog-bed-for-large-breeds': 'best-dog-beds-large-breeds-2026',
-  'best-orthopedic-dog-bed': 'best-orthopedic-dog-bed-2026',
-  'how-to-choose-orthopedic-dog-bed': 'best-orthopedic-dog-bed-2026',
+  // ── Dog Bed Pillar Consolidation ─────────────────────────────
+  // PILLAR: best-dog-bed-2026 (targets "best dog beds")
+  // SUB-PILLAR: best-orthopedic-dog-bed-2026 (targets "orthopedic dog beds")
+  // KEEP: best-dog-beds-for-large-dogs, best-dog-bed-materials-explained,
+  //   how-to-choose-the-right-dog-bed-size, how-to-wash-a-dog-bed-properly,
+  //   dog-bed-for-anxiety-do-they-work, best-elevated-dog-bed, best-outdoor-dog-bed,
+  //   best-dog-bed-under-100, best-dog-bed-for-small-dogs, best-dog-bed-for-crate,
+  //   best-dog-bed-for-golden-retrievers
+
+  // → Redirect to PILLAR (best-dog-bed-2026)
+  'dog-bed-buying-guide': 'best-dog-bed-2026',
+  'dog-bed-for-anxiety': 'dog-bed-for-anxiety-do-they-work',
+  'dog-bed-for-anxiety-do-they-work': 'dog-bed-for-anxiety-do-they-work',  // identity — keep target
   'dog-bed-size-chart-guide': 'how-to-choose-the-right-dog-bed-size',
+
+  // → Redirect to SUB-PILLAR (best-orthopedic-dog-bed-2026)
+  'best-orthopedic-dog-bed': 'best-orthopedic-dog-bed-2026',
+  'best-orthopedic-dog-bed-for-large-dogs': 'best-orthopedic-dog-bed-2026',
+  'best-orthopedic-dog-bed-large-dogs-2026': 'best-orthopedic-dog-bed-2026',
+  'how-to-choose-orthopedic-dog-bed': 'best-orthopedic-dog-bed-2026',
+  'best-dog-bed-hip-dysplasia': 'best-orthopedic-dog-bed-2026',
+  'best-dog-beds-for-hip-dysplasia-2026': 'best-orthopedic-dog-bed-2026',
+  'best-dog-beds-for-arthritis': 'best-orthopedic-dog-bed-2026',
+  'do-orthopedic-dog-beds-help-arthritis': 'best-orthopedic-dog-bed-2026',
+  'do-dogs-really-need-orthopedic-beds': 'best-orthopedic-dog-bed-2026',
+  'are-orthopedic-dog-beds-worth-it': 'best-orthopedic-dog-bed-2026',
+  'orthopedic-dog-beds-for-senior-dogs': 'best-orthopedic-dog-bed-2026',
+  'calming-dog-bed-anxiety': 'dog-bed-for-anxiety-do-they-work',
+
+  // → Redirect to supporting guides
+  'dog-bed-for-large-breeds': 'best-dog-beds-for-large-dogs',
+  'best-dog-beds-large-breeds-2026': 'best-dog-beds-for-large-dogs',
+  'memory-foam-vs-egg-crate-foam-dog-bed': 'best-dog-bed-materials-explained',
+  'memory-foam-vs-standard-dog-bed': 'best-dog-bed-materials-explained',
+  'memory-foam-vs-egg-crate-dog-beds': 'best-dog-bed-materials-explained',
+  'memory-foam-vs-regular-dog-bed': 'best-dog-bed-materials-explained',
+  'orthopedic-vs-memory-foam-dog-beds': 'best-dog-bed-materials-explained',
+  'machine-washable-dog-bed-guide': 'how-to-wash-a-dog-bed-properly',
+  'waterproof-orthopedic-dog-beds-guide': 'how-to-wash-a-dog-bed-properly',
+  'how-thick-should-a-dog-bed-be': 'how-to-choose-the-right-dog-bed-size',
   'outdoor-dog-games-enrichment': 'outdoor-dog-games-2026',
 
   // ── Cat Furniture Consolidation ────────────────────────────
@@ -87,8 +116,8 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-cat-tree': 'best-cat-trees-2026',
   'best-cat-trees': 'best-cat-trees-2026',
   'best-cat-trees-large-cats': 'best-cat-trees-large-cats-2026',
-  'best-orthopedic-dog-bed-large-dogs': 'best-orthopedic-dog-bed-large-dogs-2026',
-  'best-dog-beds-large-breeds': 'best-dog-beds-large-breeds-2026',
+  'best-orthopedic-dog-bed-large-dogs': 'best-orthopedic-dog-bed-2026',
+  'best-dog-beds-large-breeds': 'best-dog-beds-for-large-dogs',
   'best-litter-boxes-apartments': 'best-litter-boxes-apartments-2026',
   'best-self-cleaning-litter-box': 'best-self-cleaning-litter-box-2026',
   'best-cat-litter-box-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
@@ -104,9 +133,9 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-cat-litter-box-multiple-cats': 'best-litter-boxes-multi-cat',
   'best-cat-tree-for-large-cats': 'best-cat-trees-large-cats-2026',
   'modern-cat-tree-furniture': 'modern-cat-trees-home-design',
-  'best-memory-foam-dog-bed': 'memory-foam-vs-egg-crate-dog-beds',
-  'best-dog-bed-for-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
-  'best-waterproof-dog-bed': 'waterproof-orthopedic-dog-beds-guide',
+  'best-memory-foam-dog-bed': 'best-dog-bed-materials-explained',
+  'best-dog-bed-for-senior-dogs': 'best-orthopedic-dog-bed-2026',
+  'best-waterproof-dog-bed': 'how-to-wash-a-dog-bed-properly',
   'dog-bed-size-guide': 'how-to-choose-the-right-dog-bed-size',
   'best-dog-leash-for-training': 'best-dog-training-leash-for-pullers',
   'best-anti-pull-dog-leash': 'best-no-pull-dog-harness-2026',
@@ -121,8 +150,8 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-cat-tree-small-apartment': 'best-cat-trees-small-apartments',
   'best-cat-toys-indoor-cats': 'best-toys-for-bored-indoor-cats',
   'best-automatic-cat-toys': 'best-automatic-cat-toy',
-  'best-dog-bed-large-dogs': 'best-dog-beds-large-breeds-2026',
-  'best-dog-bed-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
+  'best-dog-bed-large-dogs': 'best-dog-beds-for-large-dogs',
+  'best-dog-bed-senior-dogs': 'best-orthopedic-dog-bed-2026',
   'best-dog-toys-aggressive-chewers': 'best-toys-for-aggressive-chewers',
   'best-dog-toys-boredom': 'best-toys-for-bored-dogs',
   'best-dog-training-leash': 'best-dog-training-leash-for-pullers',
@@ -141,11 +170,11 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'cat-litter-box-guide-2026': 'cat-litter-box-guide',
   'cat-tree-guide': 'cat-tree-buying-guide',
   'cat-toy-guide': 'cat-toy-buying-guide',
-  'dog-bed-guide': 'dog-bed-buying-guide',
+  'dog-bed-guide': 'best-dog-bed-2026',
   'cat-bed-buying-guide': 'cat-bed-guide',
   'dog-toy-buying-guide': 'dog-toy-guide',
   'dog-toy-guide-2026': 'dog-toy-guide',
-  'dog-harness-buying-guide': 'dog-harness-guide',
+  'dog-harness-buying-guide': 'leash-training-dog-step-by-step',
   'pet-carrier-buying-guide': 'pet-carrier-guide',
   'pet-grooming-buying-guide': 'pet-grooming-guide',
   'pet-feeding-buying-guide': 'pet-feeding-guide',
@@ -158,13 +187,13 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'tall-cat-tree-guide': 'how-tall-should-cat-tree-be',
   'cat-tree-vs-cat-condo': 'cat-condo-vs-cat-tree-2026',
   'best-automatic-litter-box': 'best-self-cleaning-litter-box-2026',
-  'best-litter-box-small-apartment': 'best-litter-box-small-apartments',
+  'best-litter-box-small-apartment': 'best-litter-boxes-apartments-2026',
   'best-litter-box-odor-control': 'best-odor-control-litter-box',
   'low-tracking-litter-box': 'best-low-tracking-litter-box',
   'best-dog-beds-large-dogs': 'best-dog-beds-for-large-dogs',
-  'best-dog-bed-anxiety': 'calming-dog-bed-anxiety',
-  'waterproof-dog-bed': 'waterproof-orthopedic-dog-beds-guide',
-  'memory-foam-dog-bed': 'memory-foam-vs-egg-crate-dog-beds',
+  'best-dog-bed-anxiety': 'dog-bed-for-anxiety-do-they-work',
+  'waterproof-dog-bed': 'how-to-wash-a-dog-bed-properly',
+  'memory-foam-dog-bed': 'best-dog-bed-materials-explained',
   'best-mental-stimulation-dog-toys': 'best-dog-toys-mental-stimulation',
   'best-pet-travel-carrier': 'best-dog-carriers-for-travel',
 
@@ -221,16 +250,16 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
 
   // ── Dog Beds Hub broken slug redirects ─────────────────────
   'best-dog-beds-2026': 'best-dog-bed-2026',
-  'best-orthopedic-dog-beds-for-large-dogs': 'best-orthopedic-dog-bed-large-dogs-2026',
+  'best-orthopedic-dog-beds-for-large-dogs': 'best-orthopedic-dog-bed-2026',
   'elevated-dog-beds-canopy-outdoor-comfort-guide': 'best-elevated-dog-bed',
-  'orthopedic-dog-beds-for-arthritis': 'do-orthopedic-dog-beds-help-arthritis',
-  'memory-foam-dog-beds-for-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
-  'how-to-choose-perfect-dog-bed-guide': 'dog-bed-buying-guide',
-  'washable-orthopedic-dog-bed-buying-guide': 'machine-washable-dog-bed-guide',
+  'orthopedic-dog-beds-for-arthritis': 'best-orthopedic-dog-bed-2026',
+  'memory-foam-dog-beds-for-senior-dogs': 'best-orthopedic-dog-bed-2026',
+  'how-to-choose-perfect-dog-bed-guide': 'best-dog-bed-2026',
+  'washable-orthopedic-dog-bed-buying-guide': 'how-to-wash-a-dog-bed-properly',
 
   // ── Trending strip broken slug redirects ───────────────────
   'best-dog-car-seat-safety': 'safest-dog-car-seat-for-travel',
-  'best-dog-anxiety-solutions': 'calming-dog-bed-anxiety',
+  'best-dog-anxiety-solutions': 'dog-bed-for-anxiety-do-they-work',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
