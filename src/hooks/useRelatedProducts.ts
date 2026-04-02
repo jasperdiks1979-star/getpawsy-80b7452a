@@ -131,6 +131,19 @@ export const useRelatedProducts = ({
     queryFn: async () => {
       const keywords = extractKeywords(productName);
 
+      // Check for curated companions (e.g., dog beds)
+      const curated = getCuratedCompanions(productId);
+      let curatedProducts: ProductPublic[] = [];
+      if (curated && curated.length > 0) {
+        const curatedIds = curated.map(c => c.productId);
+        const { data: cp } = await supabase
+          .from('products_public')
+          .select('*')
+          .in('id', curatedIds)
+          .eq('is_active', true);
+        if (cp) curatedProducts = cp as ProductPublic[];
+      }
+
       // Build browsing context for personalization
       let browsingContext: BrowsingContext = { recentlyViewedCategories: [] };
       
@@ -156,10 +169,14 @@ export const useRelatedProducts = ({
         .limit(60);
       
       if (catError) throw catError;
-      if (!categoryProducts || categoryProducts.length === 0) return [];
+      if (!categoryProducts || categoryProducts.length === 0) {
+        return curatedProducts.length > 0 ? curatedProducts : [];
+      }
 
       // Score and sort products by relevance with personalization
+      const curatedIdSet = new Set(curatedProducts.map(p => p.id));
       const scoredProducts = categoryProducts
+        .filter(p => !curatedIdSet.has(p.id))
         .map(product => ({
           product,
           score: scoreProduct(product, keywords, category, browsingContext),
@@ -168,6 +185,9 @@ export const useRelatedProducts = ({
         .sort((a, b) => b.score - a.score)
         .slice(0, maxItems)
         .map(({ product }) => product);
+
+      // Curated companions go first, then scored products fill remaining slots
+      const merged = [...curatedProducts, ...scoredProducts].slice(0, maxItems);
 
       // If we don't have enough related products, fill with category matches
       if (scoredProducts.length < maxItems && category) {
