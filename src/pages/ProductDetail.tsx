@@ -898,6 +898,12 @@ const ProductDetail = () => {
               <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
                 {safeString(product.name)}
               </h1>
+              {/* Ad intent headline — shown when ?kw= param matches */}
+              {adIntent.headline && (
+                <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
+                  {adIntent.headline}
+                </p>
+              )}
               {/* Benefit subline — 1-sentence value prop */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
                 {generateClarityIntro(product.name, product.category || "")}
@@ -966,7 +972,7 @@ const ProductDetail = () => {
             </motion.div>
 
             {/* Above-the-fold conversion block with winner badge */}
-            <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} />
+            <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={adIntent.bestFor} />
             {/* Compact Trust Checkmarks — immediately visible */}
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
