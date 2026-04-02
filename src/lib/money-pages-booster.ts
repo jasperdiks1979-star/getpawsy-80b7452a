@@ -135,7 +135,7 @@ export const MONEY_PAGES: MoneyPage[] = [
     anchors: { exact: 'best dog beds for large dogs', partial: 'XL dog bed recommendations', semantic: 'spacious sleeping solutions for big breeds' },
   },
   {
-    path: '/guides/calming-dog-bed-anxiety',
+    path: '/guides/dog-bed-for-anxiety-do-they-work',
     type: 'guide', cluster: 'dog-beds', species: 'dog', boost: 1.4, minInbound: 15,
     targetKeyword: 'calming dog bed for anxiety',
     anchors: { exact: 'calming dog beds for anxiety', partial: 'anxiety-relief dog beds', semantic: 'help your anxious dog feel safe and secure' },
