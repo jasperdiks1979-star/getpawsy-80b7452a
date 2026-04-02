@@ -127,7 +127,7 @@ const GuidesIndex = () => {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: 'Pet Care Guides',
-            description: 'Expert pet care guides for dog, cat, and small pet owners.',
+            description: 'Expert pet care guides for dog and cat owners.',
             url: `${BASE_URL}/guides`,
             publisher: { '@type': 'Organization', name: 'GetPawsy', url: BASE_URL },
           })}
