@@ -1134,6 +1134,9 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
               rating={productRating?.averageRating}
               reviewCount={productRating?.reviewCount}
               priority={index < 2}
+              bestSeller={getWinnerBadge(product.id)?.badge === 'best-seller'}
+              topRated={getWinnerBadge(product.id)?.badge === 'top-pick'}
+              popularChoice={getWinnerBadge(product.id)?.badge === 'most-popular'}
             />
             <Button
               variant="secondary"
