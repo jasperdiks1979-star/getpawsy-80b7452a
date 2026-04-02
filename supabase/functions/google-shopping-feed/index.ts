@@ -346,6 +346,7 @@ interface Product {
   is_active: boolean;
   optimized_title: string | null;
   optimized_description: string | null;
+  product_type: string | null;
 }
 
 // ── Item XML builder ─────────────────────────────────────────────────
