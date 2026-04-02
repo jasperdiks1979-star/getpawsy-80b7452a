@@ -1273,32 +1273,9 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Shipping & Returns Info Block — Google Merchant compliance */}
-            <div className="bg-muted/30 rounded-xl p-4 space-y-3 text-sm">
-              <div className="flex items-start gap-2">
-                <Truck className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground">Shipping Information</p>
-                  <p className="text-muted-foreground">Orders processed within 1–2 business days. Delivery: 5–10 business days within the United States.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground">Returns</p>
-                  <p className="text-muted-foreground">30-day return policy. Items must be unused and in original condition.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Trust Badges */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-3">
+            {/* Trust Badges — single consolidated trust block */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-2">
               <TrustBadgesBlock compact />
-            </motion.div>
-
-            {/* Trust Microcopy — compliance links */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="pt-1">
-              <TrustMicrocopy />
             </motion.div>
           </motion.div>
         </div>
