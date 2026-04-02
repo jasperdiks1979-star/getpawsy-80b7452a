@@ -85,7 +85,7 @@ import { ProductSpecsTable } from "@/components/products/ProductSpecsTable";
 import { ProductIdealFor } from "@/components/products/ProductIdealFor";
 import { LowStockBadge } from "@/components/products/LowStockBadge";
 import { ConversionBlock } from "@/components/products/ConversionBlock";
-// WhyGetPawsy removed from PDP — redundant trust block (kept on homepage/collection pages)
+import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
