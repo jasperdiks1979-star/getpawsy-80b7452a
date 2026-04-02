@@ -1,183 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://getpawsy.pet/collections/best-interactive-cat-toys</loc>
-    <lastmod>2026-02-21</lastmod>
+    <loc>https://getpawsy.pet/collections/dogs</loc>
+    <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/best-orthopedic-dog-beds</loc>
-    <lastmod>2026-02-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/best-slow-feeder-dog-bowls</loc>
-    <lastmod>2026-02-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-beds</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-carriers</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-furniture</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-grooming-tools</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-harnesses</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-litter-boxes</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-scratching-posts</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-toys</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-trees-and-condos</loc>
-    <lastmod>2026-02-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-tunnels</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-water-fountains</loc>
-    <lastmod>2026-02-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cat-window-perches</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
+    <priority>0.90</priority>
   </url>
   <url>
     <loc>https://getpawsy.pet/collections/cats</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
+    <priority>0.90</priority>
   </url>
   <url>
     <loc>https://getpawsy.pet/collections/dog-beds</loc>
-    <lastmod>2026-03-12</lastmod>
+    <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-bowls</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-car-seats</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-coats-jackets</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-collars</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-crates</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-grooming-tools</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-harness</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-leashes</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-toys</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-training-tools</loc>
-    <lastmod>2026-03-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://getpawsy.pet/collections/dog-travel-accessories</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
+    <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/collections/dogs</loc>
-    <lastmod>2026-02-21</lastmod>
+    <loc>https://getpawsy.pet/collections/cat-trees-and-condos</loc>
+    <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/collections/self-cleaning-litter-box</loc>
-    <lastmod>2026-03-12</lastmod>
+    <loc>https://getpawsy.pet/collections/cat-litter-boxes</loc>
+    <lastmod>2026-04-02</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
+    <priority>0.85</priority>
   </url>
 </urlset>
