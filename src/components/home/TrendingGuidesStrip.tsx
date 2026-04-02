@@ -4,28 +4,28 @@ import { FadeInView } from '@/components/ui/FadeInView';
 
 const TRENDING_GUIDES = [
   {
-    path: '/best-cat-litter-box-2026',
+    path: '/guides/best-cat-litter-box-2026',
     title: 'Best Cat Litter Box 2026',
     badge: '🔥 Trending Now',
     desc: 'Top-rated odor-control picks, tested & reviewed.',
     emoji: '🐱',
   },
   {
-    path: '/best-dog-car-seat-safety',
+    path: '/guides/safest-dog-car-seat-for-travel',
     title: 'Best Dog Car Seat Safety',
     badge: '🔥 Trending Now',
     desc: 'Crash-tested seats for safe travel with your dog.',
     emoji: '🚗',
   },
   {
-    path: '/best-interactive-cat-toys',
+    path: '/guides/best-interactive-cat-toys-that-work',
     title: 'Best Interactive Cat Toys',
     badge: '⭐ Expert Pick',
     desc: 'Keep indoor cats active and mentally stimulated.',
     emoji: '🎯',
   },
   {
-    path: '/best-dog-anxiety-solutions',
+    path: '/guides/calming-dog-bed-anxiety',
     title: 'Best Dog Anxiety Solutions',
     badge: '⭐ Expert Pick',
     desc: 'Calming products that may help reduce stress.',

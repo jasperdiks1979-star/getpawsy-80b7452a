@@ -227,6 +227,10 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'memory-foam-dog-beds-for-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
   'how-to-choose-perfect-dog-bed-guide': 'dog-bed-buying-guide',
   'washable-orthopedic-dog-bed-buying-guide': 'machine-washable-dog-bed-guide',
+
+  // ── Trending strip broken slug redirects ───────────────────
+  'best-dog-car-seat-safety': 'safest-dog-car-seat-for-travel',
+  'best-dog-anxiety-solutions': 'calming-dog-bed-anxiety',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
