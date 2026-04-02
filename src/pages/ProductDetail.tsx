@@ -86,6 +86,8 @@ import { ProductIdealFor } from "@/components/products/ProductIdealFor";
 import { LowStockBadge } from "@/components/products/LowStockBadge";
 import { ConversionBlock } from "@/components/products/ConversionBlock";
 import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
+import { MicroFrictionBlock } from "@/components/products/MicroFrictionBlock";
+import { useAdIntent } from "@/hooks/useAdIntent";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
@@ -365,6 +367,9 @@ const ProductDetail = () => {
   const { data: recentlyViewedProducts, isLoading: recentlyViewedLoading } = useRecentlyViewedProducts({
     recentlyViewedIds,
   });
+
+  // Ad intent detection — ?kw= param or category fallback
+  const adIntent = useAdIntent(product?.category);
 
   // Fetch guides for Related Guides section — improved category matching
   const { data: allGuides } = useGuidesList();
@@ -893,6 +898,12 @@ const ProductDetail = () => {
               <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
                 {safeString(product.name)}
               </h1>
+              {/* Ad intent headline — shown when ?kw= param matches */}
+              {adIntent.headline && (
+                <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
+                  {adIntent.headline}
+                </p>
+              )}
               {/* Benefit subline — 1-sentence value prop */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
                 {generateClarityIntro(product.name, product.category || "")}
@@ -961,7 +972,7 @@ const ProductDetail = () => {
             </motion.div>
 
             {/* Above-the-fold conversion block with winner badge */}
-            <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} />
+            <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={adIntent.bestFor} />
             {/* Compact Trust Checkmarks — immediately visible */}
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -1286,6 +1297,9 @@ const ProductDetail = () => {
               <TrustBadgesBlock compact />
             </motion.div>
 
+            {/* Micro-friction reduction */}
+            <MicroFrictionBlock />
+
             {/* Why pet owners choose this */}
             <WhyCustomersChoose />
           </motion.div>
@@ -1567,6 +1581,9 @@ const ProductDetail = () => {
 
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
+
+        {/* Comparison block — "Why this is a better choice" */}
+        <ProductVsAlternatives productName={product.name} category={product.category || ""} />
 
         {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
