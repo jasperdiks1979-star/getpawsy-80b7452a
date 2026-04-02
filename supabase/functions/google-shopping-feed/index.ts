@@ -346,6 +346,7 @@ interface Product {
   is_active: boolean;
   optimized_title: string | null;
   optimized_description: string | null;
+  product_type: string | null;
 }
 
 // ── Item XML builder ─────────────────────────────────────────────────
@@ -384,10 +385,11 @@ function buildItemXml(p: Product): BuildResult {
   }
 
   let extra = "";
+  // All GetPawsy branded products use identifier_exists = TRUE
+  extra += `      <g:identifier_exists>TRUE</g:identifier_exists>\n`;
   if (p.sku) {
     extra += `      <g:mpn>${esc(p.sku)}</g:mpn>\n`;
   } else {
-    extra += `      <g:identifier_exists>no</g:identifier_exists>\n`;
     extra += `      <g:mpn>${esc(p.id)}</g:mpn>\n`;
   }
 
@@ -419,7 +421,9 @@ function buildItemXml(p: Product): BuildResult {
 ${priceXml}
       <g:condition>new</g:condition>
       <g:brand>GetPawsy</g:brand>
-${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type>
+      <g:content_language>en</g:content_language>
+      <g:target_country>US</g:target_country>
+${extra}      <g:product_type>${esc(p.product_type || getProductType(p.category))}</g:product_type>
       <g:google_product_category>${esc(getGoogleProductCategory(p.name, p.category))}</g:google_product_category>
       <g:shipping>
         <g:country>US</g:country>
@@ -445,7 +449,7 @@ Deno.serve(async (req) => {
     // Fetch eligible products: active, not duplicate, priced, with image & slug
     const { data: rawProducts, error } = await client
       .from("products")
-      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,optimized_title,optimized_description")
+      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,optimized_title,optimized_description,product_type")
       .eq("is_active", true)
       .eq("is_duplicate", false)
       .gt("price", 0)
