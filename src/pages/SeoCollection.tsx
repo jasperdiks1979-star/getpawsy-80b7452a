@@ -64,6 +64,7 @@ import { PAASection } from '@/components/seo/PAASection';
 import { MidContentCTA } from '@/components/seo/MidContentCTA';
 import { getDominationConfig } from '@/data/domination-config';
 import { CatTreesHubContent } from '@/components/seo/CatTreesHubContent';
+import { DogBedsHubContent } from '@/components/seo/DogBedsHubContent';
 import { CollectionTrustBar } from '@/components/seo/CollectionTrustBar';
 import { WhyGetPawsy } from '@/components/shared/WhyGetPawsy';
 import { CollectionMiniComparison } from '@/components/seo/CollectionMiniComparison';
@@ -876,6 +877,7 @@ const SeoCollection = () => {
 
           {/* Cat Trees Hub: authority content — BELOW products */}
           {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
+          {collection.slug === 'dog-beds' && <DogBedsHubContent />}
 
           {/* Training Collection Cross-Links — bidirectional silo linking */}
           {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
