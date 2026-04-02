@@ -43,6 +43,7 @@ const SUBCATEGORIES = [
 ];
 
 const EXPERT_GUIDES = [
+  { title: 'Best Dog Beds 2026 — Complete Buying Guide', slug: 'best-dog-beds-2026', featured: true },
   { title: 'Best Orthopedic Dog Beds for Large Dogs (2026)', slug: 'best-orthopedic-dog-beds-for-large-dogs' },
   { title: 'Orthopedic Dog Beds for Arthritis: What Vets Recommend', slug: 'orthopedic-dog-beds-for-arthritis' },
   { title: 'Memory Foam Dog Beds for Senior Dogs', slug: 'memory-foam-dog-beds-for-senior-dogs' },
@@ -143,11 +144,15 @@ export function DogBedsHubContent() {
             <Link
               key={guide.slug}
               to={`/guides/${guide.slug}`}
-              className="group flex items-center gap-2 p-3 rounded-lg border hover:border-primary/40 hover:bg-primary/5 transition-all"
+              className={`group flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                (guide as any).featured
+                  ? 'border-primary/40 bg-primary/5 sm:col-span-2 hover:bg-primary/10'
+                  : 'hover:border-primary/40 hover:bg-primary/5'
+              }`}
             >
               <ArrowRight className="w-3.5 h-3.5 text-primary shrink-0 group-hover:translate-x-0.5 transition-transform" />
-              <span className="text-sm font-medium group-hover:text-primary transition-colors">
-                {guide.title}
+              <span className={`text-sm font-medium group-hover:text-primary transition-colors ${(guide as any).featured ? 'text-primary font-bold' : ''}`}>
+                {(guide as any).featured ? '⭐ ' : ''}{guide.title}
               </span>
             </Link>
           ))}
