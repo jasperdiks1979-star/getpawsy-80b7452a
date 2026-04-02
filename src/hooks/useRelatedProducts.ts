@@ -190,8 +190,8 @@ export const useRelatedProducts = ({
       const merged = [...curatedProducts, ...scoredProducts].slice(0, maxItems);
 
       // If we don't have enough related products, fill with category matches
-      if (scoredProducts.length < maxItems && category) {
-        const existingIds = new Set(scoredProducts.map(p => p.id));
+      if (merged.length < maxItems && category) {
+        const existingIds = new Set(merged.map(p => p.id));
         
         const { data: fallbackProducts } = await supabase
           .from('products_public')
@@ -199,19 +199,19 @@ export const useRelatedProducts = ({
           .eq('is_active', true)
           .eq('category', category)
           .neq('id', productId)
-          .limit(maxItems - scoredProducts.length + 5);
+          .limit(maxItems - merged.length + 5);
         
         if (fallbackProducts) {
           fallbackProducts.forEach(p => {
-            if (!existingIds.has(p.id) && scoredProducts.length < maxItems) {
-              scoredProducts.push(p);
+            if (!existingIds.has(p.id) && merged.length < maxItems) {
+              merged.push(p);
               existingIds.add(p.id);
             }
           });
         }
       }
 
-      return dedupeProducts(scoredProducts);
+      return dedupeProducts(merged);
     },
     enabled: enabled && !!productId,
     staleTime: 10 * 60 * 1000, // 10 minutes - increased for better caching
