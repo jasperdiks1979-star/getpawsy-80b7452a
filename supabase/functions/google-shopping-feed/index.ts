@@ -385,10 +385,11 @@ function buildItemXml(p: Product): BuildResult {
   }
 
   let extra = "";
+  // All GetPawsy branded products use identifier_exists = TRUE
+  extra += `      <g:identifier_exists>TRUE</g:identifier_exists>\n`;
   if (p.sku) {
     extra += `      <g:mpn>${esc(p.sku)}</g:mpn>\n`;
   } else {
-    extra += `      <g:identifier_exists>no</g:identifier_exists>\n`;
     extra += `      <g:mpn>${esc(p.id)}</g:mpn>\n`;
   }
 
