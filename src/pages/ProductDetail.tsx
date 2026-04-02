@@ -368,6 +368,9 @@ const ProductDetail = () => {
     recentlyViewedIds,
   });
 
+  // Ad intent detection — ?kw= param or category fallback
+  const adIntent = useAdIntent(product?.category);
+
   // Fetch guides for Related Guides section — improved category matching
   const { data: allGuides } = useGuidesList();
   const relatedGuides = useMemo(() => {
