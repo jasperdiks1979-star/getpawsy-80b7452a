@@ -449,7 +449,7 @@ Deno.serve(async (req) => {
     // Fetch eligible products: active, not duplicate, priced, with image & slug
     const { data: rawProducts, error } = await client
       .from("products")
-      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,optimized_title,optimized_description")
+      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,optimized_title,optimized_description,product_type")
       .eq("is_active", true)
       .eq("is_duplicate", false)
       .gt("price", 0)
