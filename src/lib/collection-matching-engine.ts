@@ -194,6 +194,14 @@ export async function resolveCollectionProducts(
 
     const products = (allProducts || []) as CollectionProduct[];
 
+    // Safety assertion: /collections/all must never silently return a tiny subset
+    if (products.length > 0 && products.length < 5) {
+      console.error(
+        `[CollectionEngine] SAFETY WARNING: /collections/all returned only ${products.length} products. ` +
+        `This may indicate a query regression. Expected full active catalog.`
+      );
+    }
+
     if (import.meta.env.DEV || typeof window !== 'undefined') {
       console.info('[CollectionEngine] /collections/all', {
         totalInDB: products.length,
