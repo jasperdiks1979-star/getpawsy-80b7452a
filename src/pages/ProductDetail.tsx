@@ -1213,18 +1213,13 @@ const ProductDetail = () => {
               />
             )}
 
-            {/* Social proof & trust bullets — conversion boost */}
-            <div className="flex flex-col gap-2 pt-2">
-              <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+            {/* Social proof line */}
+            {reviews.length > 0 && (
+              <p className="text-sm font-medium text-foreground flex items-center gap-1.5 pt-1">
                 <span className="text-amber-400">★★★★★</span>
-                <span>Trusted by pet owners across the US</span>
+                <span>{reviews.length} verified review{reviews.length !== 1 ? 's' : ''}</span>
               </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-primary" />Free Shipping on Orders $35+</span>
-                <span className="flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5 text-primary" />30-Day Returns</span>
-                <span className="flex items-center gap-1"><Lock className="w-3.5 h-3.5 text-primary" />Secure Checkout</span>
-              </div>
-            </div>
+            )}
 
             {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div
