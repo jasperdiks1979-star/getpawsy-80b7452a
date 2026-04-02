@@ -21,7 +21,7 @@ const SUBCATEGORIES = [
     title: 'Large Breed Dog Beds',
     description: 'Extra-large beds rated for 80–120+ lbs with reinforced stitching. Sized for Labs, Golden Retrievers, German Shepherds, and Great Danes who need room to stretch.',
     keywords: ['large dog bed', 'XL', 'heavy duty'],
-    guideLink: '/guides/best-orthopedic-dog-beds-for-large-dogs',
+    guideLink: '/guides/best-dog-beds-large-breeds-2026',
     guideLabel: 'Large Breed Guide →',
   },
   {
