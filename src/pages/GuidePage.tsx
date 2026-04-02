@@ -18,6 +18,8 @@ import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity
 import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
 import { getSeoTitle } from '@/lib/seo-title-ab';
 import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBlock';
+import { GuideTopPick } from '@/components/guides/GuideTopPick';
+import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
 
 const BASE_URL = 'https://getpawsy.pet';
 
