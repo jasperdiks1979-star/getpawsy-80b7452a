@@ -66,6 +66,7 @@ import { RelatedProductsCarousel } from "@/components/products/RelatedProductsCa
 import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
 import { useRelatedProducts } from "@/hooks/useRelatedProducts";
 import { RelatedGuides } from "@/components/guides/RelatedGuides";
+import { DogBedsClusterLinks } from "@/components/seo/DogBedsClusterLinks";
 import NotFound from "@/pages/NotFound";
 
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
