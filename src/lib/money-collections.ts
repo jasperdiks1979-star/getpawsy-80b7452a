@@ -99,7 +99,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Crash-tested dog car seats and booster seats for safe travel with your pet.',
     primaryKeyword: 'best dog car seats',
     cluster: 'dog',
-    crossLinks: ['dog-car-travel-safety-seats', 'crash-tested-dog-car-seat', 'dog-travel-accessories'],
+    crossLinks: ['dog-travel-accessories', 'dog-beds'],
     supportArticles: [
       'dog-car-seat-safety-guide-2026',
       'are-dog-booster-seats-safe',
