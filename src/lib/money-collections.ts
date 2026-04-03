@@ -115,7 +115,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Puzzle toys, enrichment toys, and indestructible chew toys for mental stimulation.',
     primaryKeyword: 'best interactive dog toys',
     cluster: 'dog',
-    crossLinks: ['dog-beds', 'dog-travel-accessories'],
+    crossLinks: ['dog-beds', 'dogs'],
     supportArticles: [
       'best-puzzle-toys-for-dogs-2026',
       'mental-stimulation-games-for-dogs',
