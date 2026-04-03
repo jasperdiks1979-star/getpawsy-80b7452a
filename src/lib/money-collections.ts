@@ -227,7 +227,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Car seat covers, travel water bottles, portable crates, and airline-approved gear for traveling with dogs.',
     primaryKeyword: 'best dog travel accessories',
     cluster: 'dog',
-    crossLinks: ['dog-beds', 'cat-trees-and-condos'],
+    crossLinks: ['dog-beds', 'cats'],
     supportArticles: [
       'dog-travel-checklist-2026',
       'flying-with-a-dog-guide',
