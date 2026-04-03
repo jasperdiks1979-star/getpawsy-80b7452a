@@ -219,17 +219,41 @@ const Products = () => {
     }
   }, [searchParam]);
 
-  // Fetch categories from database with parent info
+  // Fetch categories from database — only those with active products
   const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories-with-parents'],
+    queryKey: ['categories-with-parents-populated'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get categories that have at least one active product
+      const { data: allCategories, error } = await supabase
         .from('categories')
         .select('id, name, slug, parent_id, image_url, description')
         .order('name');
       
       if (error) throw error;
-      return data;
+      if (!allCategories) return [];
+
+      // Get product counts per category name
+      const { data: products } = await supabase
+        .from('products_public')
+        .select('category')
+        .eq('is_active', true);
+      
+      const populatedCategoryNames = new Set<string>();
+      (products || []).forEach(p => {
+        if (p.category) populatedCategoryNames.add(p.category);
+      });
+
+      // Keep categories that have products OR are parents of categories with products
+      const populatedIds = new Set<string>();
+      allCategories.forEach(c => {
+        if (populatedCategoryNames.has(c.name)) {
+          populatedIds.add(c.id);
+          // Also include the parent
+          if (c.parent_id) populatedIds.add(c.parent_id);
+        }
+      });
+
+      return allCategories.filter(c => populatedIds.has(c.id));
     },
   });
 

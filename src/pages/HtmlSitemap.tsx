@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SITE_URL } from '@/lib/constants';
+import { CANONICAL_CATEGORIES } from '@/lib/canonical-category-registry';
 
 /**
  * HTML Sitemap — crawlable directory of all indexable pages.
@@ -24,17 +25,11 @@ export default function HtmlSitemap() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['html-sitemap-categories'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('name, slug')
-        .order('display_order');
-      return data || [];
-    },
-    staleTime: 10 * 60 * 1000,
-  });
+  // Only show categories with confirmed inventory from the canonical registry
+  const categories = CANONICAL_CATEGORIES
+    .filter(c => c.active && c.hasInventory)
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map(c => ({ name: c.label, slug: c.key, url: c.url }));
 
   const { data: guides = [] } = useQuery({
     queryKey: ['html-sitemap-guides'],
@@ -123,7 +118,7 @@ export default function HtmlSitemap() {
             <ul className="space-y-1.5">
               {categories.map(cat => (
                 <li key={cat.slug}>
-                  <Link to={`/collections/${cat.slug}`} className="text-primary hover:underline text-sm">
+                  <Link to={cat.url} className="text-primary hover:underline text-sm">
                     {cat.name}
                   </Link>
                 </li>
