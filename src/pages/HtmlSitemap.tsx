@@ -118,7 +118,7 @@ export default function HtmlSitemap() {
             <ul className="space-y-1.5">
               {categories.map(cat => (
                 <li key={cat.slug}>
-                  <Link to={`/collections/${cat.slug}`} className="text-primary hover:underline text-sm">
+                  <Link to={cat.url} className="text-primary hover:underline text-sm">
                     {cat.name}
                   </Link>
                 </li>
