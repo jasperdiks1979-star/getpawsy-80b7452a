@@ -67,7 +67,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Memory foam, orthopedic, and calming dog beds for joint support and anxiety relief.',
     primaryKeyword: 'orthopedic dog beds',
     cluster: 'dog',
-    crossLinks: ['dog-travel-accessories', 'cat-trees-and-condos'],
+    crossLinks: ['dogs', 'cat-trees-and-condos'],
     supportArticles: [
       'orthopedic-dog-bed-buying-guide-2026',
       'best-dog-bed-for-senior-dogs',
