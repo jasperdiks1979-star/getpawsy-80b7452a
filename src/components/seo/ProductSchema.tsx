@@ -35,6 +35,12 @@ export function ProductSchema({
   reviews = [],
   baseUrl = 'https://getpawsy.pet'
 }: ProductSchemaProps) {
+  // FAIL-SAFE: Never render schema without a valid price (Google compliance)
+  const numericPrice = Number(product.price);
+  if (!numericPrice || numericPrice <= 0) {
+    console.error('[ProductSchema] Skipping schema — invalid price for', product.name);
+    return null;
+  }
   // Clean description from HTML and make it benefit-driven for US market
   const rawDescription = product.description
     ?.replace(/<[^>]*>/g, '')

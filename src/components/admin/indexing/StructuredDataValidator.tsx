@@ -57,11 +57,22 @@ export function StructuredDataValidator() {
         label: 'Images are absolute URLs',
         pass: Array.isArray(productSchema.image) && productSchema.image.every((u: string) => u.startsWith('http')),
       });
-      c.push({ label: 'Has brand', pass: !!productSchema.brand?.name });
+      c.push({ label: 'Has sku', pass: !!productSchema.sku });
+      c.push({
+        label: 'Brand is object format',
+        pass: typeof productSchema.brand === 'object' && productSchema.brand?.['@type'] === 'Brand' && !!productSchema.brand?.name,
+        detail: typeof productSchema.brand === 'string' ? 'ERROR: brand is a string — must be {"@type":"Brand","name":"..."}' : undefined,
+      });
       c.push({ label: 'Has offers', pass: !!productSchema.offers });
-      c.push({ label: 'Has price', pass: !!productSchema.offers?.price });
-      c.push({ label: 'Has priceCurrency', pass: productSchema.offers?.priceCurrency === 'USD' });
+      c.push({
+        label: 'Has price (numeric string)',
+        pass: !!productSchema.offers?.price && Number(productSchema.offers.price) > 0,
+        detail: productSchema.offers?.price ? `price="${productSchema.offers.price}"` : 'MISSING',
+      });
+      c.push({ label: 'Has priceCurrency USD', pass: productSchema.offers?.priceCurrency === 'USD' });
       c.push({ label: 'Has availability', pass: !!productSchema.offers?.availability });
+      c.push({ label: 'Has itemCondition', pass: !!productSchema.offers?.itemCondition });
+      c.push({ label: 'Has offer URL', pass: !!productSchema.offers?.url });
       c.push({
         label: 'No fake reviews (aggregateRating only with real data)',
         pass: !productSchema.aggregateRating || (productSchema.aggregateRating.reviewCount > 0),
