@@ -20,6 +20,7 @@ import {
   Box,
   Info,
   Home,
+  CheckCircle,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileProductGallery } from "@/components/products/MobileProductGallery";
