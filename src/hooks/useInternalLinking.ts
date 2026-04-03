@@ -55,20 +55,24 @@ export const useInternalLinking = (
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // Fetch categories for linking
+  // Fetch categories for linking — only cats & dogs (our active verticals)
   const { data: categories = [] } = useQuery({
     queryKey: ['internal-linking-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
         .select('id, name, slug')
+        .or('name.ilike.%dog%,name.ilike.%cat%,name.ilike.%pet%')
         .order('display_order', { ascending: true });
       
       if (error) return [];
-      return (data || []) as Category[];
+      // Further filter: exclude non-pet verticals
+      return ((data || []) as Category[]).filter(c => 
+        !/(bird|reptile|fish|hamster|guinea|rabbit|chicken|small pet)/i.test(c.name)
+      );
     },
     enabled,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   // Process content with internal links
