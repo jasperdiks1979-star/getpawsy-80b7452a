@@ -3,16 +3,21 @@
   "title": "Outdoor Dog Games: Safe Enrichment Ideas",
   "excerpt": "Discover fun, safe outdoor games and activities that keep your dog physically and mentally stimulated.",
   "category": "Dog Activities",
-  "keywords": ["outdoor dog games"],
+  "keywords": [
+    "outdoor dog games"
+  ],
   "publishedAt": "2025-06-25",
-  "updatedAt": "2025-06-25",
+  "updatedAt": "2026-04-01",
   "featuredImage": "/images/guides/outdoor-dog-games.jpg",
   "readingTime": 8,
-  "relatedCategories": ["dog-toys", "dog-outdoor"],
+  "relatedCategories": [
+    "dog-toys",
+    "dog-outdoor"
+  ],
   "sections": [
     {
       "heading": "Why Outdoor Enrichment Matters",
-      "content": "Dogs need more than a daily walk to stay physically and mentally healthy. Structured outdoor games provide exercise, mental stimulation, and bonding opportunities that a simple walk can't match.\n\nUnder-stimulated dogs often develop behavioral issues — excessive barking, chewing, digging, or anxiety. Regular outdoor enrichment games can significantly reduce these problems.\n\nThe key is variety. Just like humans, dogs get bored with the same routine. Rotating through different games keeps your dog engaged and eager to spend time outdoors with you."
+      "content": "Dogs need more than a daily walk to stay physically and mentally healthy. Structured outdoor games provide exercise, mental stimulation, and bonding opportunities that a simple walk can't match.\n\nUnder-stimulated dogs often develop behavioral issues \u2014 excessive barking, chewing, digging, or anxiety. Regular outdoor enrichment games can significantly reduce these problems.\n\nThe key is variety. Just like humans, dogs get bored with the same routine. Rotating through different games keeps your dog engaged and eager to spend time outdoors with you."
     },
     {
       "heading": "Fetch Variations Beyond the Basics",
@@ -20,7 +25,7 @@
     },
     {
       "heading": "Scent Games and Nose Work",
-      "content": "Dogs experience the world primarily through smell. Scent-based games tap into their strongest natural ability:\n\n**Treat trail**: Create a trail of treats across your yard, ending at a jackpot reward. Start with short, obvious trails and gradually increase complexity.\n\n**Find it**: Hide treats or favorite toys in your yard while your dog waits inside. Release them with a \"find it\" command. Start with 2–3 hiding spots and work up to 10+.\n\n**Scent discrimination**: Place several identical containers in your yard. Put a treat under only one. Let your dog sniff out the right container. This is the foundation of competitive nose work.\n\n**Muffin tin game**: Place treats in some cups of a muffin tin and cover all cups with tennis balls. Your dog must remove the balls to find the treats."
+      "content": "Dogs experience the world primarily through smell. Scent-based games tap into their strongest natural ability:\n\n**Treat trail**: Create a trail of treats across your yard, ending at a jackpot reward. Start with short, obvious trails and gradually increase complexity.\n\n**Find it**: Hide treats or favorite toys in your yard while your dog waits inside. Release them with a \"find it\" command. Start with 2\u20133 hiding spots and work up to 10+.\n\n**Scent discrimination**: Place several identical containers in your yard. Put a treat under only one. Let your dog sniff out the right container. This is the foundation of competitive nose work.\n\n**Muffin tin game**: Place treats in some cups of a muffin tin and cover all cups with tennis balls. Your dog must remove the balls to find the treats."
     },
     {
       "heading": "DIY Agility and Obstacle Courses",
@@ -28,13 +33,13 @@
     },
     {
       "heading": "Safety Guidelines for Outdoor Play",
-      "content": "Keep these safety considerations in mind for all outdoor games:\n\n- **Heat awareness**: On hot days, play during early morning or evening hours. Watch for signs of overheating: excessive panting, drooling, or staggering.\n- **Surface check**: Before playing, scan the area for sharp objects, toxic plants, or animal waste.\n- **Hydration**: Always bring fresh water. Offer water breaks every 15–20 minutes during active play.\n- **Age-appropriate activities**: Puppies under 12 months should avoid repetitive high-impact jumping, which can damage developing joints.\n- **Recall reliability**: Only play off-leash in securely fenced areas unless your dog has a rock-solid recall.\n- **Rest periods**: Alternate active games with calm activities. Dogs, especially young ones, don't always know when to stop."
+      "content": "Keep these safety considerations in mind for all outdoor games:\n\n- **Heat awareness**: On hot days, play during early morning or evening hours. Watch for signs of overheating: excessive panting, drooling, or staggering.\n- **Surface check**: Before playing, scan the area for sharp objects, toxic plants, or animal waste.\n- **Hydration**: Always bring fresh water. Offer water breaks every 15\u201320 minutes during active play.\n- **Age-appropriate activities**: Puppies under 12 months should avoid repetitive high-impact jumping, which can damage developing joints.\n- **Recall reliability**: Only play off-leash in securely fenced areas unless your dog has a rock-solid recall.\n- **Rest periods**: Alternate active games with calm activities. Dogs, especially young ones, don't always know when to stop."
     }
   ],
   "faq": [
     {
       "question": "How long should outdoor play sessions last?",
-      "answer": "For most adult dogs, 20–30 minutes of structured play is sufficient. High-energy breeds may enjoy 45–60 minutes. Always watch for signs of fatigue and end the session before your dog becomes exhausted."
+      "answer": "For most adult dogs, 20\u201330 minutes of structured play is sufficient. High-energy breeds may enjoy 45\u201360 minutes. Always watch for signs of fatigue and end the session before your dog becomes exhausted."
     },
     {
       "question": "Are outdoor games safe for senior dogs?",
@@ -42,7 +47,7 @@
     },
     {
       "question": "What outdoor games work best for puppies?",
-      "answer": "Puppies do well with short scent games, gentle fetch with soft toys, and basic obstacle navigation at ground level. Keep sessions to 10–15 minutes and focus on positive experiences rather than physical endurance."
+      "answer": "Puppies do well with short scent games, gentle fetch with soft toys, and basic obstacle navigation at ground level. Keep sessions to 10\u201315 minutes and focus on positive experiences rather than physical endurance."
     }
   ]
 }

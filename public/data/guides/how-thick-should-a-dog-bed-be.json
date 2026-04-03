@@ -5,13 +5,21 @@
   "metaDescription": "Find the right dog bed thickness for your pet's weight and age. Expert guidelines for small, medium, large, and giant breeds in 2026.",
   "excerpt": "Dog bed thickness matters more than most pet owners realize. Here's exactly how thick your dog's bed should be based on weight and age.",
   "category": "Dog Beds",
-  "keywords": ["dog bed thickness", "how thick should dog bed be", "dog bed size guide", "dog bed foam thickness"],
-  "relatedCategories": ["best-orthopedic-dog-beds", "memory-foam-dog-beds"],
+  "keywords": [
+    "dog bed thickness",
+    "how thick should dog bed be",
+    "dog bed size guide",
+    "dog bed foam thickness"
+  ],
+  "relatedCategories": [
+    "best-orthopedic-dog-beds",
+    "memory-foam-dog-beds"
+  ],
   "readingTime": 5,
   "sections": [
     {
       "heading": "Why Thickness Matters",
-      "content": "Dog bed thickness directly determines whether your pet's joints are protected during sleep. A bed that's too thin allows your dog to 'bottom out' — meaning their weight compresses the foam completely, leaving joints resting against the hard floor beneath.\n\nThis is especially problematic for large breeds and senior dogs, where chronic pressure on hips and shoulders can worsen arthritis, create calluses, and disrupt sleep quality. The right thickness ensures your dog's weight is fully cradled throughout the night."
+      "content": "Dog bed thickness directly determines whether your pet's joints are protected during sleep. A bed that's too thin allows your dog to 'bottom out' \u2014 meaning their weight compresses the foam completely, leaving joints resting against the hard floor beneath.\n\nThis is especially problematic for large breeds and senior dogs, where chronic pressure on hips and shoulders can worsen arthritis, create calluses, and disrupt sleep quality. The right thickness ensures your dog's weight is fully cradled throughout the night."
     },
     {
       "heading": "Thickness Guidelines by Weight",
@@ -31,8 +39,18 @@
     }
   ],
   "faq": [
-    { "question": "Is a 3-inch dog bed thick enough for a large dog?", "answer": "No. Dogs over 50 lbs will bottom out on a 3-inch bed. Large breeds need at least 5-6 inches of high-density foam for proper support." },
-    { "question": "Does foam density matter more than thickness?", "answer": "Both matter. A 6-inch bed with low-density foam (under 1.5 lb/ft³) will compress like a 3-inch bed. Look for 1.8+ lb/ft³ density combined with appropriate thickness." },
-    { "question": "Can a dog bed be too thick?", "answer": "Rarely, but very thick beds (8+ inches) can make it harder for small or elderly dogs to climb onto. A 4-6 inch range with a low entry point works best for most dogs." }
-  ]
+    {
+      "question": "Is a 3-inch dog bed thick enough for a large dog?",
+      "answer": "No. Dogs over 50 lbs will bottom out on a 3-inch bed. Large breeds need at least 5-6 inches of high-density foam for proper support."
+    },
+    {
+      "question": "Does foam density matter more than thickness?",
+      "answer": "Both matter. A 6-inch bed with low-density foam (under 1.5 lb/ft\u00b3) will compress like a 3-inch bed. Look for 1.8+ lb/ft\u00b3 density combined with appropriate thickness."
+    },
+    {
+      "question": "Can a dog bed be too thick?",
+      "answer": "Rarely, but very thick beds (8+ inches) can make it harder for small or elderly dogs to climb onto. A 4-6 inch range with a low entry point works best for most dogs."
+    }
+  ],
+  "updatedAt": "2026-04-01"
 }
