@@ -249,9 +249,9 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'How do I get my dog comfortable with grooming?', answer: 'Start with short, positive sessions — 2-3 minutes of gentle brushing followed by treats. Gradually increase duration over weeks. Never force grooming or punish resistance. Most dogs learn to enjoy grooming when it\'s consistently paired with rewards.' },
     ],
     relatedLinks: [
-      { to: '/collections/pet-grooming-vacuum-kits', text: 'Pet Grooming Vacuum Kits' },
-      { to: '/products?category=dog-beds', text: 'Dog Beds & Comfort' },
-      { to: '/products?category=dog-bowls-feeders', text: 'Dog Bowls & Feeders' },
+      { to: '/collections/dogs', text: 'Shop Dog Products' },
+      { to: '/collections/dog-beds', text: 'Dog Beds & Comfort' },
+      { to: '/guides/dog-grooming-essentials-guide', text: 'Dog Grooming Guide' },
     ],
     perfectFor: [
       'Double-coated breeds during shedding season',
