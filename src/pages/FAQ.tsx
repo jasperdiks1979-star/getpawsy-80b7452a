@@ -10,6 +10,7 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
   SUPPORT_EMAIL,
+  FLAT_RATE_MESSAGE,
 } from '@/lib/shipping-constants';
 
 const FAQ = () => {
