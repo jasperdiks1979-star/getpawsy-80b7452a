@@ -7,6 +7,8 @@ import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 import { CrawlBoostLinks } from "@/components/home/CrawlBoostLinks";
 import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
 import { HomepageFAQ } from "@/components/home/HomepageFAQ";
+import { HomepageGuideLinks } from "@/components/home/HomepageGuideLinks";
+import { HomepageCollectionHub } from "@/components/home/HomepageCollectionHub";
 import {
   SUPPORT_EMAIL,
   DELIVERY_TIME_STANDARD,
