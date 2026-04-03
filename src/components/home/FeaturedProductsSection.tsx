@@ -40,9 +40,9 @@ const FEATURED_ITEMS = [
     type: 'collection' as const,
   },
   {
-    name: 'Dog Travel',
-    path: '/collections/dog-travel-accessories',
-    description: 'Carriers, car seats, and travel essentials for dogs.',
+    name: 'Dog Travel Guide',
+    path: '/guides/dog-travel-essentials-guide',
+    description: 'Expert tips for carriers, car seats, and travel with dogs.',
     type: 'collection' as const,
   },
 ] as const;

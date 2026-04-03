@@ -88,15 +88,15 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     key: 'dog-travel-accessories',
     label: 'Dog Travel',
     url: '/collections/dog-travel-accessories',
-    active: true,
+    active: false,
     parentKey: 'dogs',
-    menuEligible: true,
+    menuEligible: false,
     homepageEligible: false,
-    searchEligible: true,
-    footerEligible: true,
+    searchEligible: false,
+    footerEligible: false,
     displayOrder: 2,
     icon: '✈️',
-    hasInventory: true,
+    hasInventory: false,
   },
 
   // ── Top-level: Cats ──
@@ -228,7 +228,7 @@ export const SLUG_ALIASES: Record<string, string> = {
   'best-cat-window-perches': 'cats',
   'best-cat-beds': 'cats',
   'dog-bowls': 'dogs',
-  'dog-car-seats': 'dog-travel-accessories',
+  'dog-car-seats': 'dogs',
   'dog-coats-jackets': 'dogs',
   'dog-collars': 'dogs',
   'dog-collars-leashes': 'dogs',
@@ -243,7 +243,7 @@ export const SLUG_ALIASES: Record<string, string> = {
   'self-cleaning-litter-box': 'cat-litter-boxes',
   'indoor-cat-enrichment': 'cats',
   'automatic-cat-feeders': 'cats',
-  'best-pet-strollers': 'dog-travel-accessories',
+  'best-pet-strollers': 'dogs',
   'modern-cat-trees': 'cat-trees-and-condos',
 
   // ── Orthopedic dog bed variants → dog-beds ──
@@ -284,12 +284,13 @@ export const SLUG_ALIASES: Record<string, string> = {
   'indestructible-dog-toys': 'dogs',
   'best-chew-toys-for-aggressive-chewers': 'dogs',
 
-  // ── Dog travel variants → dog-travel-accessories ──
-  'best-dog-car-seats': 'dog-travel-accessories',
-  'dog-car-travel-safety-seats': 'dog-travel-accessories',
-  'crash-tested-dog-car-seat': 'dog-travel-accessories',
-  'dog-car-seat-cover': 'dog-travel-accessories',
-  'dog-carriers': 'dog-travel-accessories',
+  // ── Dog travel variants → dogs (no dedicated collection) ──
+  'dog-travel-accessories': 'dogs',
+  'best-dog-car-seats': 'dogs',
+  'dog-car-travel-safety-seats': 'dogs',
+  'crash-tested-dog-car-seat': 'dogs',
+  'dog-car-seat-cover': 'dogs',
+  'dog-carriers': 'dogs',
 
   // ── Dog grooming → dogs ──
   'dog-grooming': 'dogs',

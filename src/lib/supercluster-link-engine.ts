@@ -230,7 +230,7 @@ export const SUPERCLUSTERS: SuperclusterConfig[] = [
     label: 'Pet Travel Accessories',
     species: 'multi',
     pillarSlug: 'pet-travel-guide',
-    collectionSlug: 'dog-travel-accessories',
+    collectionSlug: 'dogs',
     relatedCollections: ['best-dog-car-seats', 'best-cat-carriers', 'best-pet-strollers', 'dog-car-travel-safety-seats'],
     guideSlugs: [
       'best-pet-carrier-airline-approved',
@@ -258,7 +258,7 @@ export const SUPERCLUSTERS: SuperclusterConfig[] = [
     priorityPages: [
       { slug: 'best-dog-car-seat', type: 'guide', boost: 1.4 },
       { slug: 'best-pet-carrier-airline-approved', type: 'guide', boost: 1.3 },
-      { slug: 'dog-travel-accessories', type: 'collection', boost: 1.5 },
+      { slug: 'dogs', type: 'collection', boost: 1.5 },
       { slug: 'best-dog-car-seats', type: 'collection', boost: 1.4 },
     ],
     siblingClusterIds: ['dog-beds', 'dog-toys'],

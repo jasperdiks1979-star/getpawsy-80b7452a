@@ -155,7 +155,7 @@ export const TOPIC_PILLARS: TopicPillar[] = [
   {
     id: 'dog-travel',
     name: 'Dog Travel',
-    pillarSlug: 'dog-travel-accessories',
+    pillarSlug: 'dogs',
     description: 'Dog travel gear — car seats, booster seats, travel water bottles, and safety accessories.',
     pillarKeyword: 'dog travel accessories',
     secondaryKeywords: ['dog car seat', 'dog travel water bottle', 'pet travel safety'],

@@ -9,7 +9,7 @@ const SHORTCUTS = [
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
   { href: '/collections/dog-beds', label: 'Dog Beds' },
-  { href: '/collections/dog-travel-accessories', label: 'Dog Travel' },
+  { href: '/guides/dog-travel-essentials-guide', label: 'Dog Travel Guide' },
   { href: '/collections/dogs', label: 'All Dog Products' },
   { href: '/collections/cats', label: 'All Cat Products' },
   { href: '/bestsellers', label: 'Bestsellers' },

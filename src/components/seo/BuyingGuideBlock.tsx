@@ -113,8 +113,8 @@ const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
     description: 'Orthopedic, calming & durable beds ranked for comfort and joint support.',
   },
   'dog-carriers': {
-    anchor: 'Dog Travel Accessories – Complete Guide',
-    slug: 'dog-travel-accessories',
+    anchor: 'Dog Travel Essentials Guide',
+    slug: 'dogs',
     description: 'Car seats, carriers & travel bowls compared for safe, stress-free travel.',
   },
 };

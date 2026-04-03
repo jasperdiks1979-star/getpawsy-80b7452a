@@ -9,7 +9,7 @@ const HUB_COLLECTIONS = [
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos', icon: '🐈', desc: 'Multi-level climbing furniture for indoor cats' },
   { href: '/collections/cat-litter-boxes', label: 'Cat Litter Boxes', icon: '🧹', desc: 'Self-cleaning, enclosed & odor-control options' },
   { href: '/collections/dog-beds', label: 'Dog Beds', icon: '🛏️', desc: 'Orthopedic, calming & elevated dog beds' },
-  { href: '/collections/dog-travel-accessories', label: 'Dog Travel', icon: '✈️', desc: 'Carriers, strollers & travel essentials' },
+  { href: '/guides/dog-travel-essentials-guide', label: 'Dog Travel Guide', icon: '✈️', desc: 'Expert tips for traveling safely with dogs' },
   { href: '/guides', label: 'Expert Guides', icon: '📖', desc: 'In-depth buying advice from pet experts' },
   { href: '/bestsellers', label: 'Bestsellers', icon: '⭐', desc: 'Our most popular picks for dogs & cats' },
 ] as const;
