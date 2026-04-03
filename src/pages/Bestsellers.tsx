@@ -561,13 +561,11 @@ const Bestsellers = () => {
             {[
               { name: 'Dog Beds & Furniture', desc: 'Orthopedic and calming beds rated for comfort and durability.', link: '/collections/dog-beds' },
               { name: 'Cat Trees & Condos', desc: 'Multi-level play structures built for active indoor cats.', link: '/collections/cat-trees-and-condos' },
-              { name: 'Interactive Dog Toys', desc: 'Puzzle feeders and enrichment toys for mental stimulation.', link: '/collections/best-interactive-dog-toys' },
-              { name: 'Slow Feeder Bowls', desc: 'Anti-bloat bowls that slow eating by 5–10x for healthier digestion.', link: '/collections/best-slow-feeder-dog-bowls' },
               { name: 'Cat Litter Boxes', desc: 'Self-cleaning and odor-control litter solutions for indoor cats.', link: '/collections/cat-litter-boxes' },
-              { name: 'Cat Toys for Indoor Cats', desc: 'Interactive and solo-play toys to keep indoor cats active.', link: '/collections/best-cat-toys-for-indoor-cats' },
-              { name: 'Dog Enrichment Toys', desc: 'Treat-dispensing and puzzle toys to reduce boredom and anxiety.', link: '/collections/dog-enrichment-toys' },
-              { name: 'Pet Grooming Essentials', desc: 'Brushes, nail trimmers, and grooming kits for dogs and cats.', link: '/collections/best-dog-grooming-kits' },
-              { name: 'Pet Travel Accessories', desc: 'Carriers, car seats, and travel bowls for pets on the go.', link: '/collections/dog-travel-accessories' },
+              { name: 'Dog Travel Accessories', desc: 'Carriers, car seats, and travel bowls for pets on the go.', link: '/collections/dog-travel-accessories' },
+              { name: 'Shop Dogs', desc: 'Browse all dog products — beds, toys, training gear and more.', link: '/collections/dogs' },
+              { name: 'Shop Cats', desc: 'Browse all cat products — trees, litter boxes, toys and more.', link: '/collections/cats' },
+              { name: 'Expert Pet Guides', desc: 'In-depth buying guides to help you choose the best products.', link: '/guides' },
               { name: 'All Pet Products', desc: 'Browse our full catalog of curated premium pet supplies.', link: '/products' },
             ].map((cat) => (
               <Link key={cat.name} to={cat.link} className="flex items-start gap-3 bg-card border rounded-xl p-4 hover:shadow-md transition-shadow group">

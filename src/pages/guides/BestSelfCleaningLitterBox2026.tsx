@@ -508,9 +508,8 @@ export default function BestSelfCleaningLitterBox2026() {
               ['/collections/cat-trees-and-condos', 'Best Cat Trees & Condos'],
               ['/guides/cat-condo-vs-cat-tree-2026', 'Cat Condo vs Cat Tree — Which Is Better?'],
               ['/collections/cat-litter-boxes', 'All Cat Litter Box Solutions'],
-              ['/indoor-cat-furniture', 'Indoor Cat Furniture Guide'],
-              ['/resources/indoor-cat-care', 'Complete Indoor Cat Care Resource'],
-              ['/collections/self-cleaning-litter-box', 'Self-Cleaning Litter Box Collection'],
+              ['/guides/best-interactive-cat-toys-that-work', 'Best Interactive Cat Toys'],
+              ['/collections/cats', 'Browse All Cat Products'],
             ].map(([href, label]) => (
               <Link key={href} to={href} className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-lg hover:bg-muted/50">
                 <ArrowRight className="h-3 w-3 shrink-0" /> {label}

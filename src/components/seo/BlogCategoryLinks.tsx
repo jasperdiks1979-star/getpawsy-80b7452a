@@ -5,26 +5,21 @@ interface BlogCategoryLinksProps {
   blogCategory: string;
 }
 
-// Map blog categories to relevant collection + guide links
-// Anchor text diversified: mix of partial-match, branded, and natural anchors
 const categoryLinkMap: Record<string, Array<{ href: string; label: string; type: 'collection' | 'guide' }>> = {
   Dogs: [
     { href: '/collections/dogs', label: 'Browse Dog Essentials', type: 'collection' },
-    { href: '/collections/best-interactive-dog-toys', label: 'Top Interactive Dog Toys', type: 'collection' },
     { href: '/collections/dog-beds', label: 'Orthopedic & Calming Dog Beds', type: 'collection' },
-    { href: '/collections/dogs', label: 'Best Dog Harnesses & Leashes', type: 'collection' },
-    { href: '/guides/best-dog-beds-guide', label: 'How to Choose the Right Dog Bed', type: 'guide' },
+    { href: '/collections/dog-travel-accessories', label: 'Dog Travel Accessories', type: 'collection' },
+    { href: '/guides/best-dog-bed-2026', label: 'How to Choose the Right Dog Bed', type: 'guide' },
   ],
   Cats: [
     { href: '/collections/cats', label: 'Explore Cat Products', type: 'collection' },
-    { href: '/collections/cat-condos', label: 'Cat Condos & Hideaways', type: 'collection' },
+    { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos', type: 'collection' },
     { href: '/collections/cat-litter-boxes', label: 'Top-Rated Litter Boxes', type: 'collection' },
-    { href: '/collections/best-cat-toys-for-indoor-cats', label: 'Indoor Cat Toy Picks', type: 'collection' },
     { href: '/guides/best-cat-litter-box-2026', label: 'Complete Litter Box Guide 2026', type: 'guide' },
   ],
   Health: [
     { href: '/collections/dog-beds', label: 'Orthopedic Beds for Joint Support', type: 'collection' },
-    { href: '/collections/best-slow-feeder-dog-bowls', label: 'Slow Feeder Bowls for Healthier Eating', type: 'collection' },
     { href: '/collections/cats', label: 'GetPawsy Cat Health Collection', type: 'collection' },
     { href: '/guides/best-cat-litter-box-2026', label: 'Litter Box Hygiene & Health Guide', type: 'guide' },
   ],
@@ -32,33 +27,32 @@ const categoryLinkMap: Record<string, Array<{ href: string; label: string; type:
     { href: '/collections/dogs', label: 'GetPawsy Dog Collection', type: 'collection' },
     { href: '/collections/cats', label: 'GetPawsy Cat Collection', type: 'collection' },
     { href: '/bestsellers', label: 'See Our 2026 Bestsellers', type: 'collection' },
-    { href: '/collections/dog-enrichment-toys', label: 'Enrichment Toys & Training Aids', type: 'collection' },
+    { href: '/guides', label: 'Expert Pet Guides', type: 'guide' },
   ],
   Guides: [
     { href: '/collections/dog-beds', label: 'Recommended Orthopedic Dog Beds', type: 'collection' },
-    { href: '/collections/cat-condos', label: 'Browse Cat Condos', type: 'collection' },
+    { href: '/collections/cat-trees-and-condos', label: 'Browse Cat Trees & Condos', type: 'collection' },
     { href: '/guides/best-cat-trees-small-apartments', label: 'Cat Trees for Small Spaces Guide', type: 'guide' },
-    { href: '/collections/best-dog-grooming-kits', label: 'Grooming Kits Reviewed by Our Team', type: 'collection' },
+    { href: '/guides/dog-grooming-essentials-guide', label: 'Dog Grooming Guide', type: 'guide' },
   ],
-  // Non-core verticals: keep links but fewer, pointing to core collections
   Fish: [
     { href: '/collections/dogs', label: 'Explore Our Dog Collection', type: 'collection' },
     { href: '/collections/cats', label: 'Explore Our Cat Collection', type: 'collection' },
   ],
   'Dog Care': [
     { href: '/collections/dogs', label: 'Browse All Dog Products', type: 'collection' },
-    { href: '/collections/best-dog-grooming-kits', label: 'Dog Grooming Essentials', type: 'collection' },
-    { href: '/guides/best-dog-beds-guide', label: 'Dog Bed Buying Guide', type: 'guide' },
+    { href: '/collections/dog-beds', label: 'Dog Bed Collection', type: 'collection' },
+    { href: '/guides/best-dog-bed-2026', label: 'Dog Bed Buying Guide', type: 'guide' },
   ],
   'Cat Care': [
     { href: '/collections/cats', label: 'Browse All Cat Products', type: 'collection' },
-    { href: '/collections/cat-condos', label: 'Cat Condo Collection', type: 'collection' },
+    { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos', type: 'collection' },
     { href: '/guides/best-cat-litter-box-2026', label: 'Litter Box Selection Guide', type: 'guide' },
   ],
   'cat-care': [
     { href: '/collections/cats', label: 'GetPawsy Cat Products', type: 'collection' },
-    { href: '/collections/best-cat-beds', label: 'Cozy Cat Bed Picks', type: 'collection' },
-    { href: '/collections/best-cat-scratching-posts', label: 'Scratching Post Recommendations', type: 'collection' },
+    { href: '/collections/cat-litter-boxes', label: 'Cat Litter Boxes', type: 'collection' },
+    { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Scratching Posts', type: 'collection' },
   ],
 };
 

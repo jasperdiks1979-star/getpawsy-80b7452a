@@ -90,7 +90,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
       { slug: 'dog-shedding-control-guide', title: 'Dog Shedding Control Guide' },
       { slug: 'how-often-groom-dog', title: 'How Often Should You Groom Your Dog?' },
     ],
-    collectionLink: { href: '/collections/best-dog-grooming-kits', label: 'Shop Grooming Supplies' },
+    collectionLink: { href: '/collections/dogs', label: 'Shop Dog Products' },
   },
   {
     id: 'cat-litter',

@@ -40,9 +40,9 @@ const FEATURED_ITEMS = [
     type: 'collection' as const,
   },
   {
-    name: 'Dog Grooming',
-    path: '/collections/dog-grooming',
-    description: 'Brushes, trimmers, and grooming kits for dogs.',
+    name: 'Dog Travel',
+    path: '/collections/dog-travel-accessories',
+    description: 'Carriers, car seats, and travel essentials for dogs.',
     type: 'collection' as const,
   },
 ] as const;
