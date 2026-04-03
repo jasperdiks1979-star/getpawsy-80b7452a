@@ -121,17 +121,36 @@ export const Footer = () => {
                 </span>
               </Link>
               <div className="text-sm text-background/60 space-y-1">
-                <p>Apeldoorn, Netherlands</p>
-                <p>KVK: 78156955 · VAT: NL003295015B69</p>
+                <p>{BUSINESS_LOCATION}</p>
+                <p>{BUSINESS_REGISTRATION} · VAT: {BUSINESS_VAT_ID}</p>
+                <p className="text-background/40 text-xs mt-1">Online-only business. No physical retail location.</p>
               </div>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline block">
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline block mt-2">
                 {SUPPORT_EMAIL}
               </a>
-              <p className="text-xs text-background/50 mt-1">
-                Our support team responds within 24 hours.
-              </p>
-              <p className="text-xs text-background/40 mt-2 leading-relaxed">
-                GetPawsy is a registered pet supply business based in the Netherlands, serving customers in the United States with free shipping on orders over $35.
+
+              {/* Merchant Trust Signals */}
+              <div className="mt-4 space-y-2 text-xs text-background/60">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3 h-3 text-primary flex-shrink-0" />
+                  <span>Customer support responds within 24 hours</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3 h-3 text-primary flex-shrink-0" />
+                  <span>Secure checkout &amp; encrypted payments</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ReturnIcon className="w-3 h-3 text-primary flex-shrink-0" />
+                  <span>{RETURN_WINDOW_DAYS}-day returns policy</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Truck className="w-3 h-3 text-primary flex-shrink-0" />
+                  <span>Free shipping on orders over ${FREE_SHIPPING_THRESHOLD}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-background/40 mt-3 leading-relaxed">
+                GetPawsy is a registered pet supply business based in the Netherlands, serving customers in the United States with free shipping on orders over ${FREE_SHIPPING_THRESHOLD}.
               </p>
             </div>
 
