@@ -13,7 +13,18 @@ import {
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { DebugPanel } from './DebugPanel';
 import { getFounderModeStatus } from '@/lib/founder-mode';
-import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
+import {
+  SUPPORT_EMAIL,
+  FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
+  DELIVERY_TIME_STANDARD,
+  RETURN_WINDOW_DAYS,
+  BUSINESS_LOCATION,
+  BUSINESS_REGISTRATION,
+  BUSINESS_VAT_ID,
+  RESPONSE_TIME,
+} from '@/lib/shipping-constants';
+import { Truck, ShieldCheck, RotateCcw as ReturnIcon, Clock } from 'lucide-react';
 
 const showToast = (type: 'success' | 'error', msg: string) => import('sonner').then(m => m.toast[type](msg));
 
