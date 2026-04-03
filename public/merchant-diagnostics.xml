@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-04-02T11:16:42.581Z" total_products="17">
+<merchant_diagnostics generated="2026-04-03T17:35:21.587Z" total_products="17">
   <summary>
     <missing_gtin>3</missing_gtin>
     <missing_image>0</missing_image>
@@ -13,7 +13,7 @@
   <issues>
     <issue type="missing_gtin" product_id="ab56a66b-dfaa-4caa-921a-de5bf544f9d8" name="Dog Chew Toy Choke-proof Food Dispenser" />
     <issue type="short_title" product_id="ab56a66b-dfaa-4caa-921a-de5bf544f9d8" name="Dog Chew Toy Choke-proof Food Dispenser" length="39" />
-    <issue type="missing_gtin" product_id="35df9d09-a87f-483c-b5d7-261761ba865a" name="New Pet Cat Toy Jute Fish For Self-Entertainment And Stress Relief Squeaky Du..." />
+    <issue type="missing_gtin" product_id="35df9d09-a87f-483c-b5d7-261761ba865a" name="Cat Fish Toy – Durable Jute Squeaky Toy for Indoor Cats" />
     <issue type="missing_gtin" product_id="156ed3db-e926-482c-951a-4c1fcb61779d" name="GetPawsy Enclosed Cat Litter Box – Extra Large Flip-Top Design" />
   </issues>
 </merchant_diagnostics>
