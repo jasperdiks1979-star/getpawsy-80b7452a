@@ -284,20 +284,20 @@ export function WebsiteSchema({
       {
         '@type': 'ListItem',
         position: 1,
-        name: 'Dog Training & Behavior Tools',
-        url: `${url}/collections/dog`,
+        name: 'Shop Dogs',
+        url: `${url}/collections/dogs`,
       },
       {
         '@type': 'ListItem',
         position: 2,
-        name: 'Dog Collars & Leashes',
-        url: `${url}/collections/dog-collars-leashes`,
+        name: 'Shop Cats',
+        url: `${url}/collections/cats`,
       },
       {
         '@type': 'ListItem',
         position: 3,
-        name: 'Dog Carriers',
-        url: `${url}/collections/dog-carriers`,
+        name: 'Dog Beds',
+        url: `${url}/collections/dog-beds`,
       },
       {
         '@type': 'ListItem',
@@ -308,14 +308,14 @@ export function WebsiteSchema({
       {
         '@type': 'ListItem',
         position: 5,
-        name: 'Self Cleaning Litter Boxes',
-        url: `${url}/collections/self-cleaning-litter-box`,
+        name: 'Cat Litter Boxes',
+        url: `${url}/collections/cat-litter-boxes`,
       },
       {
         '@type': 'ListItem',
         position: 6,
-        name: 'Interactive Dog Toys',
-        url: `${url}/collections/best-interactive-dog-toys`,
+        name: 'Dog Travel Accessories',
+        url: `${url}/collections/dog-travel-accessories`,
       },
     ],
   };

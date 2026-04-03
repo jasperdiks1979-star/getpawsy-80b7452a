@@ -249,9 +249,9 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'How do I get my dog comfortable with grooming?', answer: 'Start with short, positive sessions — 2-3 minutes of gentle brushing followed by treats. Gradually increase duration over weeks. Never force grooming or punish resistance. Most dogs learn to enjoy grooming when it\'s consistently paired with rewards.' },
     ],
     relatedLinks: [
-      { to: '/collections/pet-grooming-vacuum-kits', text: 'Pet Grooming Vacuum Kits' },
-      { to: '/products?category=dog-beds', text: 'Dog Beds & Comfort' },
-      { to: '/products?category=dog-bowls-feeders', text: 'Dog Bowls & Feeders' },
+      { to: '/collections/dogs', text: 'Shop Dog Products' },
+      { to: '/collections/dog-beds', text: 'Dog Beds & Comfort' },
+      { to: '/guides/dog-grooming-essentials-guide', text: 'Dog Grooming Guide' },
     ],
     perfectFor: [
       'Double-coated breeds during shedding season',
@@ -536,9 +536,9 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'Are automatic cat feeders reliable?', answer: 'Modern automatic feeders are very reliable with proper setup. Look for models with battery backup (essential for power outages), jam-resistant mechanisms, and portion accuracy within 5%. WiFi models let you monitor and adjust remotely.' },
     ],
     relatedLinks: [
-      { to: '/collections/automatic-cat-feeders', text: 'Automatic Cat Feeders' },
-      { to: '/products?category=cat-food-treats', text: 'Cat Food & Treats' },
-      { to: '/products?category=cat-toys', text: 'Cat Toys for Mealtime Enrichment' },
+      { to: '/collections/cats', text: 'Shop Cat Products' },
+      { to: '/collections/cat-litter-boxes', text: 'Cat Litter Boxes' },
+      { to: '/guides/best-cat-litter-box-2026', text: 'Best Litter Box Guide' },
     ],
     perfectFor: [
       'Cats experiencing whisker fatigue from deep bowls',
@@ -844,9 +844,9 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'How do I groom a cat that hates being brushed?', answer: 'Start with a grooming glove that mimics petting. Keep sessions under 1 minute. Use high-value treats during and after. Gradually increase time and introduce a soft brush. Never force or restrain — positive association is the only sustainable approach.' },
     ],
     relatedLinks: [
-      { to: '/collections/pet-grooming-vacuum-kits', text: 'Pet Grooming Vacuum Kits' },
-      { to: '/products?category=cat-beds', text: 'Cat Beds' },
-      { to: '/products?category=cat-bowls-feeders', text: 'Cat Bowls & Feeders' },
+      { to: '/collections/cats', text: 'Shop Cat Products' },
+      { to: '/collections/cat-trees-and-condos', text: 'Cat Trees & Condos' },
+      { to: '/guides/best-cat-trees-small-apartments', text: 'Cat Trees Guide' },
     ],
     perfectFor: [
       'Long-haired breeds needing daily grooming',
