@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import { Filter, SlidersHorizontal, Loader2, X, Eye, Clock, Home } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
+import { ProductsCollectionShortcuts } from '@/components/products/ProductsCollectionShortcuts';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { getWinnerBadge } from '@/config/top-winners';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
@@ -892,6 +893,9 @@ const Products = () => {
             resultsCount={totalCount}
           />
         )}
+
+        {/* Collection Shortcuts — quick links for crawl depth reduction */}
+        <ProductsCollectionShortcuts />
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Desktop Filters */}
