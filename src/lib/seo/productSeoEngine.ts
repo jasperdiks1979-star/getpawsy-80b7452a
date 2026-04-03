@@ -180,33 +180,34 @@ export function generateProductSchema(product: {
   description: string | null;
   seoData?: ProductSeoResult;
 }) {
+  // Fail-safe: never generate schema without valid price
+  const numericPrice = Number(product.price);
+  if (!numericPrice || numericPrice <= 0) return null;
+
   const schema: Record<string, unknown> = {
-    '@context': 'https://schema.org',
+    '@context': 'https://schema.org/',
     '@type': 'Product',
     name: product.seoData?.seoTitle || product.name,
     description: product.seoData?.metaDescription || product.description || '',
+    sku: product.slug,
     url: `https://getpawsy.pet/product/${product.slug}`,
-    brand: { '@type': 'Brand', name: 'GetPawsy' },
+    brand: {
+      '@type': 'Brand',
+      name: 'GetPawsy',
+    },
     offers: {
       '@type': 'Offer',
-      priceCurrency: 'USD',
-      price: product.price,
-      availability: 'https://schema.org/InStock',
       url: `https://getpawsy.pet/product/${product.slug}`,
+      priceCurrency: 'USD',
+      price: numericPrice.toFixed(2),
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
       seller: { '@type': 'Organization', name: 'GetPawsy' },
-      shippingDetails: {
-        '@type': 'OfferShippingDetails',
-        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
-        deliveryTime: {
-          '@type': 'ShippingDeliveryTime',
-          businessDays: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 7 },
-        },
-      },
     },
   };
 
   if (product.image_url) {
-    schema.image = product.image_url;
+    schema.image = [product.image_url];
   }
 
   return schema;
