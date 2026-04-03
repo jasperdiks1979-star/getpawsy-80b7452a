@@ -131,7 +131,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Sisal, cardboard, and modern scratching posts to protect your furniture.',
     primaryKeyword: 'best cat scratching posts',
     cluster: 'cat',
-    crossLinks: ['cat-trees-and-condos', 'best-interactive-cat-toys'],
+    crossLinks: ['cat-trees-and-condos', 'cat-litter-boxes'],
     supportArticles: [
       'sisal-vs-cardboard-scratching-post',
       'how-to-stop-cat-scratching-furniture',
