@@ -1035,6 +1035,9 @@ const GuidePage = () => {
           </p>
         </section>
 
+        {/* Was this helpful? — micro-engagement signal */}
+        <GuideHelpfulWidget guideSlug={guide.slug} className="mb-8" />
+
         {/* Share & Freshness Signal */}
         <GuideShareFreshness
           title={guide.title}
