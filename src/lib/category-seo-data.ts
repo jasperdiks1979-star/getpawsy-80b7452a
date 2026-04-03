@@ -844,9 +844,9 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'How do I groom a cat that hates being brushed?', answer: 'Start with a grooming glove that mimics petting. Keep sessions under 1 minute. Use high-value treats during and after. Gradually increase time and introduce a soft brush. Never force or restrain — positive association is the only sustainable approach.' },
     ],
     relatedLinks: [
-      { to: '/collections/pet-grooming-vacuum-kits', text: 'Pet Grooming Vacuum Kits' },
-      { to: '/products?category=cat-beds', text: 'Cat Beds' },
-      { to: '/products?category=cat-bowls-feeders', text: 'Cat Bowls & Feeders' },
+      { to: '/collections/cats', text: 'Shop Cat Products' },
+      { to: '/collections/cat-trees-and-condos', text: 'Cat Trees & Condos' },
+      { to: '/guides/best-cat-trees-small-apartments', text: 'Cat Trees Guide' },
     ],
     perfectFor: [
       'Long-haired breeds needing daily grooming',
