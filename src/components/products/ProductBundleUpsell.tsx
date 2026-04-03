@@ -38,7 +38,7 @@ const BUNDLE_CONFIGS: Record<string, BundleConfig> = {
       name: 'U-Shaped Cooling Pad for Dogs & Cats',
       slug: 'u-shaped-cooling-pad-for-cats-and-dogs-cat-and-dog-neck-sleeping-pad-summer-ice-feeling-u-shaped-hea',
       price: 48.99,
-      image_url: '/images/products/elevated-cooling-dog-bed.jpg',
+      image_url: '/images/products/elevated-cooling-dog-bed.webp',
       shortName: 'Cooling Pad',
     },
     discountPercent: 10,
