@@ -199,12 +199,12 @@ const GuidesIndex = () => {
         {Object.entries(grouped).map(([category, categoryGuides]) => {
           const hub = CATEGORY_HUBS[category];
           return (
-            <section key={category} className="mb-16">
+            <section key={category} id={`cat-${category.toLowerCase().replace(/\s+/g, '-')}`} className="mb-16 scroll-mt-20">
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">
-                    {category}
+                    {category} <span className="text-sm font-normal text-muted-foreground ml-1">({categoryGuides.length} guides)</span>
                   </h2>
                 </div>
                 {hub && (
