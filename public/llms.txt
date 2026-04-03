@@ -1,0 +1,45 @@
+# GetPawsy — Premium Pet Products
+
+> GetPawsy is a US-focused online pet supply store specializing in high-quality products for dogs and cats. We ship across all 50 states with estimated delivery in 5–10 business days and offer a 30-day return policy.
+
+## Guides (Informational)
+
+- /guides/best-dog-bed-2026: Best Dog Beds 2026 — Expert Buyer's Guide
+- /guides/best-cat-tree-2026: Best Cat Trees 2026 — Expert Buyer's Guide
+- /guides/best-self-cleaning-litter-box-2026: Best Self-Cleaning Litter Boxes 2026
+- /guides/best-dog-car-seat-2026: Best Dog Car Seats 2026 — Safety Guide
+- /guides/best-dog-crate-2026: Best Dog Crates 2026 — Sizing & Training Guide
+- /guides/best-pet-carrier-backpack-2026: Best Pet Carrier Backpacks 2026
+- /guides/best-cat-water-fountain-2026: Best Cat Water Fountains 2026
+- /guides/best-elevated-dog-bed-2026: Best Elevated Dog Beds 2026
+- /guides/best-orthopedic-dog-bed-2026: Best Orthopedic Dog Beds 2026
+- /guides/best-dog-harness-2026: Best Dog Harnesses 2026
+- /guides/best-dog-travel-essentials-2026: Dog Travel Essentials 2026
+
+## Collections (Commercial)
+
+- /collections/cat-trees-and-condos: Cat Trees & Climbing Towers
+- /collections/cat-litter-boxes: Cat Litter Boxes & Self-Cleaning Solutions
+- /collections/dogs: Dog Products — Beds, Travel & Accessories
+- /collections/cats: Cat Products — Trees, Litter & Accessories
+- /collections/dog-beds: Dog Beds — Orthopedic & Elevated
+- /collections/dog-travel-accessories: Dog Travel Accessories
+
+## Pages
+
+- /bestsellers: Bestselling Pet Products
+- /products: All Products
+- /pet-care-guides: Pet Care Guides Hub
+- /about-the-author: About the Author
+- /editorial-guidelines: Editorial Guidelines
+- /contact: Contact Us
+- /shipping-policy: Shipping Policy
+- /return-policy: Return Policy
+- /privacy-policy: Privacy Policy
+- /terms: Terms of Service
+
+## Contact
+
+- Email: support@getpawsy.pet
+- Location: Apeldoorn, Netherlands (online-only)
+- Support hours: Mon–Fri 09:00–17:00 CET

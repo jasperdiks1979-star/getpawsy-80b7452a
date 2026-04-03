@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import heroDesktop from '@/assets/hero-lifestyle.jpg';
-import heroMobile from '@/assets/hero-lifestyle-mobile.jpg';
+import heroDesktop from '@/assets/hero-lifestyle-desktop.webp';
+import heroMobile from '@/assets/hero-lifestyle-mobile.webp';
 
 /**
  * Conversion-focused hero — dual CTA, compact trust row.
