@@ -1,18 +1,32 @@
 {
   "slug": "dog-travel-essentials-guide",
   "title": "Dog Travel Essentials (2026) – Everything You Need for Safe Pet Travel",
-  "seoTitle": "Dog Travel Essentials 2026 – Complete Packing Guide | GetPawsy",
+  "seoTitle": "Dog Travel Essentials (2026) – Complete Packing Checklist | GetPawsy",
   "metaDescription": "Complete guide to dog travel essentials: carriers, strollers, car safety, and packing checklist. Everything you need for stress-free pet travel in 2026.",
   "excerpt": "Planning to travel with your dog? This guide covers carriers, strollers, car safety, and a complete packing checklist for stress-free trips.",
   "quickAnswer": "The essential dog travel kit includes: a secure carrier or car restraint, collapsible water bowl, familiar bedding, waste bags, current ID tags, health records, and any regular medications. For longer trips, add a pet stroller for easy navigation and a portable food container.",
   "category": "Dog Travel",
-  "keywords": ["dog travel essentials", "traveling with dogs", "pet travel guide", "dog travel checklist", "dog travel gear"],
+  "keywords": [
+    "dog travel essentials",
+    "traveling with dogs",
+    "pet travel guide",
+    "dog travel checklist",
+    "dog travel gear"
+  ],
   "publishedAt": "2026-03-10",
   "updatedAt": "2026-03-10",
   "readingTime": 10,
   "heroImage": "/og-image.png",
-  "relatedCategories": ["dog-travel", "pet-travel-accessories"],
-  "relatedGuides": ["best-dog-stroller", "best-pet-carrier-airline-approved", "pet-travel-checklist", "best-dog-car-seat"],
+  "relatedCategories": [
+    "dog-travel",
+    "pet-travel-accessories"
+  ],
+  "relatedGuides": [
+    "best-dog-stroller",
+    "best-pet-carrier-airline-approved",
+    "pet-travel-checklist",
+    "best-dog-car-seat"
+  ],
   "sections": [
     {
       "heading": "Why Preparation Matters for Dog Travel",
@@ -36,15 +50,64 @@
     }
   ],
   "faq": [
-    { "question": "How do I calm my dog during travel?", "answer": "Use familiar bedding with your scent, maintain a calm voice, and consider calming treats or sprays. Short practice trips before a long journey help desensitize nervous dogs. Some veterinarians may recommend mild anti-anxiety supplements for severe cases." },
-    { "question": "Can I fly with my dog in the cabin?", "answer": "Most US domestic airlines allow small dogs (under 20 lbs including carrier) in the cabin for a fee ($95-$150). Your carrier must fit under the seat in front of you. Check your specific airline's pet policy before booking." },
-    { "question": "What is the safest way to travel with a dog in a car?", "answer": "A crash-tested car seat or seatbelt harness tether in the back seat is the safest option. Never allow dogs to ride unrestrained or in the front seat. Use a cargo barrier for larger dogs in SUVs." },
-    { "question": "How long can a dog travel in a carrier?", "answer": "For air travel, most flights are manageable for healthy dogs. For car travel, stop every 2-3 hours for bathroom breaks, water, and stretching. Puppies need more frequent stops." }
+    {
+      "question": "How do I calm my dog during travel?",
+      "answer": "Use familiar bedding with your scent, maintain a calm voice, and consider calming treats or sprays. Short practice trips before a long journey help desensitize nervous dogs. Some veterinarians may recommend mild anti-anxiety supplements for severe cases."
+    },
+    {
+      "question": "Can I fly with my dog in the cabin?",
+      "answer": "Most US domestic airlines allow small dogs (under 20 lbs including carrier) in the cabin for a fee ($95-$150). Your carrier must fit under the seat in front of you. Check your specific airline's pet policy before booking."
+    },
+    {
+      "question": "What is the safest way to travel with a dog in a car?",
+      "answer": "A crash-tested car seat or seatbelt harness tether in the back seat is the safest option. Never allow dogs to ride unrestrained or in the front seat. Use a cargo barrier for larger dogs in SUVs."
+    },
+    {
+      "question": "How long can a dog travel in a carrier?",
+      "answer": "For air travel, most flights are manageable for healthy dogs. For car travel, stop every 2-3 hours for bathroom breaks, water, and stretching. Puppies need more frequent stops."
+    }
   ],
   "internalLinks": [
-    { "text": "pet travel products", "url": "/collections/dog-travel" },
-    { "text": "dog stroller guide", "url": "/guides/best-dog-stroller" },
-    { "text": "airline carrier guide", "url": "/guides/best-pet-carrier-airline-approved" },
-    { "text": "dog car seat guide", "url": "/guides/best-dog-car-seat" }
+    {
+      "text": "pet travel products",
+      "url": "/collections/dog-travel"
+    },
+    {
+      "text": "dog stroller guide",
+      "url": "/guides/best-dog-stroller"
+    },
+    {
+      "text": "airline carrier guide",
+      "url": "/guides/best-pet-carrier-airline-approved"
+    },
+    {
+      "text": "dog car seat guide",
+      "url": "/guides/best-dog-car-seat"
+    }
+  ],
+  "bulletSummary": [
+    "A crash-tested car harness or carrier is the safest way to travel with your dog",
+    "Pack a familiar blanket and toy to reduce travel anxiety",
+    "Collapsible water bowls and portable food containers save space",
+    "Never leave your dog in a parked car — temperatures rise dangerously fast"
+  ],
+  "notFor": [
+    "Dogs with severe travel anxiety — consult your vet before road trips",
+    "Puppies without complete vaccinations — avoid public rest stops",
+    "Owners planning air travel — airline requirements differ significantly"
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Letting your dog ride unrestrained",
+      "whyItMatters": "An unrestrained 60-lb dog becomes a 2,700-lb projectile in a 35 mph crash."
+    },
+    {
+      "mistake": "Skipping rest stops on long drives",
+      "whyItMatters": "Dogs need a bathroom and stretch break every 2–3 hours to stay comfortable."
+    },
+    {
+      "mistake": "Forgetting to bring water",
+      "whyItMatters": "Dehydration can occur quickly during travel, especially in warm weather."
+    }
   ]
 }

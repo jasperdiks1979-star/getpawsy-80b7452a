@@ -1,18 +1,31 @@
 {
   "slug": "best-elevated-dog-bed-guide",
   "title": "Best Elevated Dog Beds (2026) – Cooling Comfort for Active Dogs",
-  "seoTitle": "Best Elevated Dog Beds 2026 – Cooling Raised Cot Guide | GetPawsy",
+  "seoTitle": "Best Elevated Dog Beds (2026) – Cooling Raised Cot Picks | GetPawsy",
   "metaDescription": "Find the best elevated dog beds for large dogs, outdoor use, and summer cooling. Honest comparison of raised cots vs flat beds with buying tips.",
   "excerpt": "Elevated dog beds keep your pet cool and comfortable. Compare raised cot styles, weight limits, and durability for indoor and outdoor use.",
   "quickAnswer": "Elevated dog beds use a raised mesh surface that promotes airflow from all sides, keeping dogs cooler than traditional flat beds. They are ideal for warm climates, outdoor use, large breeds, and dogs with joint stiffness who benefit from easier get-up height.",
   "category": "Dog Beds",
-  "keywords": ["elevated dog bed", "raised dog cot", "cooling dog bed", "outdoor dog bed", "best elevated pet bed"],
+  "keywords": [
+    "elevated dog bed",
+    "raised dog cot",
+    "cooling dog bed",
+    "outdoor dog bed",
+    "best elevated pet bed"
+  ],
   "publishedAt": "2026-03-15",
   "updatedAt": "2026-03-15",
   "readingTime": 8,
   "heroImage": "/og-image.png",
-  "relatedCategories": ["dog-beds", "orthopedic-dog-beds"],
-  "relatedGuides": ["best-dog-bed-2026", "best-orthopedic-dog-bed-2026", "best-outdoor-dog-bed"],
+  "relatedCategories": [
+    "dog-beds",
+    "orthopedic-dog-beds"
+  ],
+  "relatedGuides": [
+    "best-dog-bed-2026",
+    "best-orthopedic-dog-bed-2026",
+    "best-outdoor-dog-bed"
+  ],
   "sections": [
     {
       "heading": "Why Choose an Elevated Dog Bed?",
@@ -32,13 +45,56 @@
     }
   ],
   "faq": [
-    { "question": "Are elevated dog beds good for large dogs?", "answer": "Yes — steel-frame elevated beds rated for 80+ lbs provide excellent support for large breeds. The raised surface is actually easier for big dogs to get on and off compared to floor-level beds." },
-    { "question": "Can elevated dog beds be used outside?", "answer": "Absolutely. Elevated beds with steel frames and weather-resistant mesh are designed for outdoor use. They dry quickly after rain, resist mold, and keep your dog cool on hot surfaces like concrete and decking." },
-    { "question": "Do dogs actually like elevated beds?", "answer": "Most dogs adapt within 1-2 days. Dogs that sleep hot tend to prefer them immediately. If your dog is a burrower or nester, they may prefer a bolstered flat bed instead." }
+    {
+      "question": "Are elevated dog beds good for large dogs?",
+      "answer": "Yes — steel-frame elevated beds rated for 80+ lbs provide excellent support for large breeds. The raised surface is actually easier for big dogs to get on and off compared to floor-level beds."
+    },
+    {
+      "question": "Can elevated dog beds be used outside?",
+      "answer": "Absolutely. Elevated beds with steel frames and weather-resistant mesh are designed for outdoor use. They dry quickly after rain, resist mold, and keep your dog cool on hot surfaces like concrete and decking."
+    },
+    {
+      "question": "Do dogs actually like elevated beds?",
+      "answer": "Most dogs adapt within 1-2 days. Dogs that sleep hot tend to prefer them immediately. If your dog is a burrower or nester, they may prefer a bolstered flat bed instead."
+    }
   ],
   "internalLinks": [
-    { "text": "dog beds", "url": "/collections/dog-beds" },
-    { "text": "orthopedic dog beds", "url": "/guides/best-orthopedic-dog-bed-2026" },
-    { "text": "dog bed buying guide", "url": "/guides/best-dog-bed-2026" }
+    {
+      "text": "dog beds",
+      "url": "/collections/dog-beds"
+    },
+    {
+      "text": "orthopedic dog beds",
+      "url": "/guides/best-orthopedic-dog-bed-2026"
+    },
+    {
+      "text": "dog bed buying guide",
+      "url": "/guides/best-dog-bed-2026"
+    }
+  ],
+  "bulletSummary": [
+    "Elevated beds promote airflow underneath, keeping dogs cool in summer",
+    "Raised cot designs support joints better than flat mats on hard floors",
+    "Mesh fabric dries quickly — ideal for outdoor use and dogs that drool",
+    "Most elevated beds support dogs up to 150 lbs with steel or aluminum frames"
+  ],
+  "notFor": [
+    "Very small or toy breeds — the height can feel unstable for dogs under 10 lbs",
+    "Dogs with severe mobility issues who struggle to step up onto raised surfaces",
+    "Cold climates where ground-level insulation is more important than airflow"
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Choosing a bed that's too small",
+      "whyItMatters": "Dogs need to stretch fully — measure nose-to-tail and add 6 inches."
+    },
+    {
+      "mistake": "Using indoors on hardwood without rubber feet",
+      "whyItMatters": "Metal legs scratch floors. Always check for non-slip foot caps."
+    },
+    {
+      "mistake": "Leaving the fabric untreated outdoors",
+      "whyItMatters": "UV exposure degrades mesh fabric — use a UV-resistant model for outdoor use."
+    }
   ]
 }
