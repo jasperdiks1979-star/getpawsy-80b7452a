@@ -19,6 +19,7 @@ function detectType(name: string, category: string): ProductType {
   const c = `${name} ${category}`.toLowerCase();
   if (/litter\s*box|self[\s-]*clean|automatic\s*litter/i.test(c)) return 'litter box';
   if (/cat\s*tree|cat\s*condo|cat\s*tower|scratching/i.test(c)) return 'cat tree';
+  if (c.includes('stroller')) return 'stroller';
   if (c.includes('harness') || c.includes('leash') || c.includes('collar')) return 'harness';
   if (c.includes('bed') || c.includes('cushion')) return 'bed';
   if (c.includes('toy') || c.includes('ball') || c.includes('chew')) return 'toy';
