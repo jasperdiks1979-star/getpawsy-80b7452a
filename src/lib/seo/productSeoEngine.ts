@@ -180,9 +180,9 @@ export function generateProductSchema(product: {
   description: string | null;
   seoData?: ProductSeoResult;
 }) {
-  // Fail-safe: never generate schema without valid price
-  const numericPrice = Number(product.price);
-  if (!numericPrice || numericPrice <= 0) return null;
+  // Always generate schema — use fallback price if missing
+  const rawPrice = Number(product.price);
+  const numericPrice = (rawPrice && rawPrice > 0) ? rawPrice : 0.01;
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org/',

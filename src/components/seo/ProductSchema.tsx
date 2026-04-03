@@ -106,7 +106,7 @@ export function ProductSchema({
   );
 
   const merchantPrice = getDisplayPrice(product as MerchantProduct);
-  const canonicalSchemaPrice = merchantPrice.price;
+  const canonicalSchemaPrice = (merchantPrice.price && merchantPrice.price > 0) ? merchantPrice.price : safePrice;
   const merchantAvailability = getDisplayAvailability(product as MerchantProduct);
 
   // Generate meta description
