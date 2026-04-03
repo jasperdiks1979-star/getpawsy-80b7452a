@@ -8,7 +8,7 @@ interface ProductUseCasesProps {
 
 type ProductType =
   | 'bed' | 'harness' | 'toy' | 'carrier' | 'grooming'
-  | 'cat tree' | 'litter box' | 'default';
+  | 'cat tree' | 'litter box' | 'stroller' | 'default';
 
 interface UseCase {
   persona: string;
