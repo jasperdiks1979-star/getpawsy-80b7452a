@@ -24,6 +24,7 @@ import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
 import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
 import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
 import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
+import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -874,6 +875,10 @@ const GuidePage = () => {
                     benefit={inlineProduct.advantages?.[0]}
                   />
                 )}
+                {/* Mid-article "People Also Read" after section 4 */}
+                {i === 3 && relatedGuides.length >= 3 && (
+                  <PeopleAlsoRead guides={relatedGuides.slice(0, 4)} className="mb-12" />
+                )}
               </div>
             );
           })}
@@ -1033,6 +1038,9 @@ const GuidePage = () => {
             Our recommendations are independent and never influenced by affiliate commissions. Read our full <Link to="/how-we-test-products" className="text-primary hover:underline font-medium">testing methodology</Link> and <Link to="/editorial-guidelines" className="text-primary hover:underline font-medium">editorial guidelines</Link> for complete transparency.
           </p>
         </section>
+
+        {/* Was this helpful? — micro-engagement signal */}
+        <GuideHelpfulWidget guideSlug={guide.slug} className="mb-8" />
 
         {/* Share & Freshness Signal */}
         <GuideShareFreshness
