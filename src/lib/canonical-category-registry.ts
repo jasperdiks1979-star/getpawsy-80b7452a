@@ -284,12 +284,13 @@ export const SLUG_ALIASES: Record<string, string> = {
   'indestructible-dog-toys': 'dogs',
   'best-chew-toys-for-aggressive-chewers': 'dogs',
 
-  // ── Dog travel variants → dog-travel-accessories ──
-  'best-dog-car-seats': 'dog-travel-accessories',
-  'dog-car-travel-safety-seats': 'dog-travel-accessories',
-  'crash-tested-dog-car-seat': 'dog-travel-accessories',
-  'dog-car-seat-cover': 'dog-travel-accessories',
-  'dog-carriers': 'dog-travel-accessories',
+  // ── Dog travel variants → dogs (no dedicated collection) ──
+  'dog-travel-accessories': 'dogs',
+  'best-dog-car-seats': 'dogs',
+  'dog-car-travel-safety-seats': 'dogs',
+  'crash-tested-dog-car-seat': 'dogs',
+  'dog-car-seat-cover': 'dogs',
+  'dog-carriers': 'dogs',
 
   // ── Dog grooming → dogs ──
   'dog-grooming': 'dogs',
