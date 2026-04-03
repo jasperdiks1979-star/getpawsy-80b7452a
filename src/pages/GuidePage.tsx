@@ -21,6 +21,8 @@ import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBl
 import { GuideTopPick } from '@/components/guides/GuideTopPick';
 import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
 import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
+import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
+import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
 
 const BASE_URL = 'https://getpawsy.pet';
 
