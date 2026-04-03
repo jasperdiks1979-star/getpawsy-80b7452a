@@ -1,14 +1,12 @@
 /**
  * Collection Slug Resolver
  * 
- * Provides canonical slug mapping and virtual collection definitions
- * to ensure /collections/cat and /collections/dog NEVER show "Not Found".
- * 
- * Resolution order:
- * 1. Exact match in seo_collections
- * 2. Canonical alias mapping (e.g., "cats" → "cat")
- * 3. Virtual collection fallback (generates a runtime collection)
+ * Resolves collection slugs via canonical alias mapping and virtual collections.
+ * Uses SLUG_ALIASES from canonical-category-registry as the single source of truth
+ * for dead → active slug redirects.
  */
+
+import { SLUG_ALIASES as CANONICAL_ALIASES } from '@/lib/canonical-category-registry';
 
 export interface VirtualCollection {
   slug: string;
@@ -26,49 +24,26 @@ export interface VirtualCollection {
 }
 
 /**
- * Canonical slug aliases — maps variant slugs to the preferred canonical slug.
- * If the canonical slug exists in seo_collections, use it.
- * If not, fall through to virtual collections.
+ * Local slug aliases for variants not covered by canonical registry.
+ * Canonical registry aliases take priority.
  */
-const SLUG_ALIASES: Record<string, string> = {
-  // Cat variants → canonical 'cats'
-  'cat': 'cats',
+const LOCAL_ALIASES: Record<string, string> = {
   'feline': 'cats',
   'cat-essentials': 'cats',
   'cat-products': 'cats',
   'all-cat': 'cats',
   'shop-cat': 'cats',
   'cat-supplies': 'cats',
-  // Dog variants → canonical 'dogs'
-  'dog': 'dogs',
   'canine': 'dogs',
   'dog-essentials': 'dogs',
   'dog-products': 'dogs',
   'all-dog': 'dogs',
   'shop-dog': 'dogs',
   'dog-supplies': 'dogs',
-  // Multi-pet variants
   'multi': 'multi-pet',
   'multipet': 'multi-pet',
   'all-pets': 'multi-pet',
   'pet': 'multi-pet',
-  // Dog training variants / legacy redirects
-  'leash-control': 'dog-leash-control',
-  'potty-training': 'dog-potty-training',
-  'dog-leash': 'dog-leash-control',
-  'dog-potty': 'dog-potty-training',
-  'dog-training': 'dog-leash-control',
-  'training': 'dog-leash-control',
-  'anti-bark': 'dog-anti-bark',
-  'bark-control': 'dog-anti-bark',
-  'stop-barking': 'dog-anti-bark',
-  'training-accessories': 'dog-training-accessories',
-  'dog-accessories': 'dog-training-accessories',
-  'puppy-essentials': 'puppy-training-essentials',
-  'puppy-training': 'puppy-training-essentials',
-  'puppy-starter-kit': 'puppy-training-essentials',
-  'puppy-kit': 'puppy-training-essentials',
-  // Shopify legacy handles
   'frontpage': 'dogs',
   'all-products': 'all',
   'new-arrivals': 'all',
