@@ -20,6 +20,7 @@ import { getSeoTitle } from '@/lib/seo-title-ab';
 import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBlock';
 import { GuideTopPick } from '@/components/guides/GuideTopPick';
 import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
+import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -605,7 +606,25 @@ const GuidePage = () => {
           </div>
         )}
 
-        {/* Quick Recommendation Box — enrich with images from DB */}
+        {/* Bullet Summary — Key Takeaways for snippet capture */}
+        {guide.bulletSummary && guide.bulletSummary.length > 0 && (
+          <div className="mb-10 rounded-2xl border border-border bg-card p-5 md:p-6 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Key Takeaways
+            </h2>
+            <ul className="space-y-2">
+              {guide.bulletSummary.map((point, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-foreground leading-relaxed">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-primary">{i + 1}</span>
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+
         {guide.quickRecommendation && (() => {
           try {
             const qr = guide.quickRecommendation;
@@ -795,6 +814,14 @@ const GuidePage = () => {
                 </a>
               </li>
             )}
+            {guide.notFor && guide.notFor.length > 0 && (
+              <li>
+                <a href="#not-for" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">✗</span>
+                  <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">Who This Is NOT For</span>
+                </a>
+              </li>
+            )}
             {safeFaq.length > 0 && (
               <li>
                 <a href="#faq" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
@@ -947,7 +974,26 @@ const GuidePage = () => {
           </section>
         )}
 
-        {/* FAQ Accordion — Premium */}
+        {/* Who This Is NOT For */}
+        {guide.notFor && guide.notFor.length > 0 && (
+          <section id="not-for" className="mb-12 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-5">
+              Who This Is NOT For
+            </h2>
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <ul className="space-y-2.5">
+                {guide.notFor.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground leading-relaxed">
+                    <XCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+
+
         {safeFaq.length > 0 && (
           <section id="faq" className="mb-12 scroll-mt-24">
             <h2 className="text-2xl font-display font-bold text-foreground mb-6">
@@ -984,6 +1030,9 @@ const GuidePage = () => {
             Our recommendations are independent and never influenced by affiliate commissions. Read our full <Link to="/how-we-test-products" className="text-primary hover:underline font-medium">testing methodology</Link> and <Link to="/editorial-guidelines" className="text-primary hover:underline font-medium">editorial guidelines</Link> for complete transparency.
           </p>
         </section>
+
+        {/* E-E-A-T Trust Block */}
+        <WhyTrustGetPawsy variant="guide" className="mb-12" />
 
         <SectionErrorBoundary section="GuidePage-recommended-products">
           {safeRelatedCategories.length > 0 && (

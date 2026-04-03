@@ -69,6 +69,7 @@ import { useRelatedProducts } from "@/hooks/useRelatedProducts";
 import { RelatedGuides } from "@/components/guides/RelatedGuides";
 import { DogBedsClusterLinks } from "@/components/seo/DogBedsClusterLinks";
 import { PDPClusterLinks } from "@/components/seo/PDPClusterLinks";
+import { WhyTrustGetPawsy } from "@/components/seo/WhyTrustGetPawsy";
 import NotFound from "@/pages/NotFound";
 
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
@@ -1595,6 +1596,9 @@ const ProductDetail = () => {
 
         {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
+
+        {/* E-E-A-T Trust Block */}
+        <WhyTrustGetPawsy variant="pdp" className="mt-8" />
 
         {/* 9. Final CTA Block — conversion closer */}
         <FinalCtaBlock

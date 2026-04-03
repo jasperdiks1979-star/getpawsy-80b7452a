@@ -1,18 +1,32 @@
 {
   "slug": "cat-trees-for-apartments-guide",
   "title": "Best Cat Trees for Apartments (2026) – Space-Saving Picks That Cats Love",
-  "seoTitle": "Best Cat Trees for Apartments 2026 – Small Space Guide | GetPawsy",
+  "seoTitle": "Best Cat Trees for Apartments (2026) – Small Space Picks | GetPawsy",
   "metaDescription": "Find the best cat trees for small apartments. Compare compact, wall-mounted, and slim designs that maximize vertical space without cluttering your home.",
   "excerpt": "Living in a small apartment does not mean your cat has to miss out on climbing and scratching. These space-saving cat trees fit any layout.",
   "quickAnswer": "The best cat trees for apartments are tall but slim (under 20 inches wide), use vertical space efficiently with stacked platforms, and include integrated scratching posts to eliminate the need for separate scratchers. Wall-mounted options save the most floor space.",
   "category": "Cat Trees",
-  "keywords": ["cat tree for apartment", "small space cat tree", "compact cat tree", "apartment cat furniture", "wall mounted cat tree"],
+  "keywords": [
+    "cat tree for apartment",
+    "small space cat tree",
+    "compact cat tree",
+    "apartment cat furniture",
+    "wall mounted cat tree"
+  ],
   "publishedAt": "2026-03-12",
   "updatedAt": "2026-03-12",
   "readingTime": 7,
   "heroImage": "/og-image.png",
-  "relatedCategories": ["cat-trees-and-condos", "cat-condos"],
-  "relatedGuides": ["best-cat-trees-2026", "best-cat-trees-small-apartments", "cat-tree-buying-guide", "modern-cat-condo-vs-traditional-cat-tree"],
+  "relatedCategories": [
+    "cat-trees-and-condos",
+    "cat-condos"
+  ],
+  "relatedGuides": [
+    "best-cat-trees-2026",
+    "best-cat-trees-small-apartments",
+    "cat-tree-buying-guide",
+    "modern-cat-condo-vs-traditional-cat-tree"
+  ],
   "sections": [
     {
       "heading": "Why Indoor Cats Need Vertical Space",
@@ -32,14 +46,60 @@
     }
   ],
   "faq": [
-    { "question": "How tall should a cat tree be for an apartment?", "answer": "Ideally 48-60 inches — tall enough for meaningful climbing but not so tall that it dominates a room with standard 8-foot ceilings. Leave at least 12 inches of clearance from the ceiling." },
-    { "question": "Can I put a cat tree on a balcony?", "answer": "Only on enclosed balconies. Open balconies pose a fall risk. Indoor placement near a window gives cats the visual stimulation of outdoor watching without the danger." },
-    { "question": "Will a cat tree damage my apartment floors?", "answer": "Quality cat trees include felt or rubber pads on the base to prevent scratching. You can also place a small rug underneath for extra protection." },
-    { "question": "How do I stop my cat tree from wobbling?", "answer": "Ensure the base is on a level surface. Use wall-anchor straps if provided. For tall, narrow trees, placing them in a corner provides natural bracing from two walls." }
+    {
+      "question": "How tall should a cat tree be for an apartment?",
+      "answer": "Ideally 48-60 inches — tall enough for meaningful climbing but not so tall that it dominates a room with standard 8-foot ceilings. Leave at least 12 inches of clearance from the ceiling."
+    },
+    {
+      "question": "Can I put a cat tree on a balcony?",
+      "answer": "Only on enclosed balconies. Open balconies pose a fall risk. Indoor placement near a window gives cats the visual stimulation of outdoor watching without the danger."
+    },
+    {
+      "question": "Will a cat tree damage my apartment floors?",
+      "answer": "Quality cat trees include felt or rubber pads on the base to prevent scratching. You can also place a small rug underneath for extra protection."
+    },
+    {
+      "question": "How do I stop my cat tree from wobbling?",
+      "answer": "Ensure the base is on a level surface. Use wall-anchor straps if provided. For tall, narrow trees, placing them in a corner provides natural bracing from two walls."
+    }
   ],
   "internalLinks": [
-    { "text": "cat trees and condos", "url": "/collections/cat-trees-and-condos" },
-    { "text": "cat tree buying guide", "url": "/guides/cat-tree-buying-guide" },
-    { "text": "large cat trees", "url": "/guides/best-cat-trees-large-cats-2026" }
+    {
+      "text": "cat trees and condos",
+      "url": "/collections/cat-trees-and-condos"
+    },
+    {
+      "text": "cat tree buying guide",
+      "url": "/guides/cat-tree-buying-guide"
+    },
+    {
+      "text": "large cat trees",
+      "url": "/guides/best-cat-trees-large-cats-2026"
+    }
+  ],
+  "bulletSummary": [
+    "Slim-profile cat trees under 24 inches wide fit in most apartment corners",
+    "Wall-mounted shelves provide vertical space without using floor area",
+    "Multi-level designs under 60 inches work in rooms with standard 8-foot ceilings",
+    "Look for removable, washable covers to keep small spaces fresh"
+  ],
+  "notFor": [
+    "Homes with very large or heavy cats over 25 lbs — check weight limits carefully",
+    "Apartments that prohibit wall mounting — floor models only",
+    "Owners wanting outdoor cat furniture"
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Choosing a tree that's too tall for the room",
+      "whyItMatters": "A 72-inch tree in a low-ceiling room creates an unstable top platform."
+    },
+    {
+      "mistake": "Ignoring the base footprint",
+      "whyItMatters": "Wide bases provide stability but take up valuable apartment floor space."
+    },
+    {
+      "mistake": "Placing the tree away from windows",
+      "whyItMatters": "Cats use trees primarily for window-watching — position near natural light."
+    }
   ]
 }

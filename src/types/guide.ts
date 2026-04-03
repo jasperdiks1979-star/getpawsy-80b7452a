@@ -110,4 +110,6 @@ export interface GuideData extends GuideMeta {
   suggestedImageAlts?: string[];
   featuredSnippet?: string;
   difficultyOverview?: GuideDifficultyItem[];
+  bulletSummary?: string[];
+  notFor?: string[];
 }
