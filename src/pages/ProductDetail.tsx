@@ -1648,6 +1648,9 @@ const ProductDetail = () => {
         {/* Dog Beds Cluster Links — hub + guide */}
         <DogBedsClusterLinks productCategory={product.category} productName={product.name} />
 
+        {/* Universal Cluster Links — collection + guide authority flow */}
+        <PDPClusterLinks productCategory={product.category} productName={product.name} />
+
         {/* Related Guides — max 3 */}
         {relatedGuides.length > 0 && <RelatedGuides guides={relatedGuides} />}
 

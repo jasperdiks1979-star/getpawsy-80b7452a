@@ -78,9 +78,15 @@ const HomePage = () => {
         productIds={DOG_IDS}
       />
 
+      {/* Collection Hub — authority links to key category pages */}
+      <HomepageCollectionHub />
+
       <div className="container px-4 md:px-6 py-8">
         <WhyGetPawsy />
       </div>
+
+      {/* Expert Guides — crawlable guide links for authority flow */}
+      <HomepageGuideLinks />
 
       <Suspense fallback={null}>
         <WhyChooseSection />
