@@ -35,7 +35,7 @@ const LITTER_BOX_GUIDES = [
 
 const KEY_COLLECTIONS = [
   { title: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos', desc: 'Premium cat trees rated for stability and large cats.' },
-  { title: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes', desc: 'Expert-tested litter boxes for every cat and budget.' },
+  { title: 'Best Cat Litter Boxes', href: '/collections/cat-litter-boxes', desc: 'Expert-tested litter boxes for every cat and budget.' },
   { title: 'Cat Furniture', href: '/collections/cat-condos', desc: 'Indoor enrichment furniture for happy, healthy cats.' },
 ];
 
@@ -200,7 +200,7 @@ export default function IndoorCatCareResource() {
             <Link to="/collections/cat-trees-and-condos" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
               Shop Cat Trees & Condos <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link to="/collections/best-cat-litter-boxes" className="inline-flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-muted transition-colors">
+            <Link to="/collections/cat-litter-boxes" className="inline-flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-muted transition-colors">
               Shop Litter Boxes <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

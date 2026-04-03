@@ -113,7 +113,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
       { slug: 'covered-vs-open-litter-box', title: 'Covered vs Open Litter Box' },
       { slug: 'best-litter-boxes-apartments-2026', title: 'Best Litter Boxes for Apartments' },
     ],
-    collectionLink: { href: '/collections/best-cat-litter-boxes', label: 'Shop Litter Boxes' },
+    collectionLink: { href: '/collections/cat-litter-boxes', label: 'Shop Litter Boxes' },
   },
   {
     id: 'cat-toys',
@@ -131,7 +131,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
       { slug: 'how-to-entertain-an-indoor-cat', title: 'How to Entertain an Indoor Cat' },
       { slug: 'best-cat-toys', title: 'Best Cat Toys' },
     ],
-    collectionLink: { href: '/collections/best-interactive-cat-toys', label: 'Shop Cat Toys' },
+    collectionLink: { href: '/collections/cats', label: 'Shop Cat Toys' },
   },
   {
     id: 'cat-trees',
@@ -173,7 +173,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
       { slug: 'dog-bed-for-anxiety-do-they-work', title: 'Do Calming Dog Beds Actually Work?' },
       { slug: 'signs-dog-needs-joint-support', title: 'Signs Your Dog Needs Joint Support' },
     ],
-    collectionLink: { href: '/collections/orthopedic-calming-dog-beds', label: 'Shop Dog Beds' },
+    collectionLink: { href: '/collections/dog-beds', label: 'Shop Dog Beds' },
   },
 ];
 
@@ -352,8 +352,8 @@ const PetCareGuides = () => {
           <p className="text-muted-foreground leading-relaxed">
             Product recommendations are clearly separated from educational content. When we suggest a
             specific <Link to="/collections/dog-training-tools" className="text-primary font-medium hover:underline">training tool</Link>,{' '}
-            <Link to="/collections/best-cat-litter-boxes" className="text-primary font-medium hover:underline">litter box</Link>, or{' '}
-            <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary font-medium hover:underline">orthopedic dog bed</Link>,
+            <Link to="/collections/cat-litter-boxes" className="text-primary font-medium hover:underline">litter box</Link>, or{' '}
+            <Link to="/collections/dog-beds" className="text-primary font-medium hover:underline">orthopedic dog bed</Link>,
             we explain exactly why it earned our recommendation based on testing criteria like durability,
             safety certifications, and real-world performance. We disclose affiliate relationships
             transparently and never let them influence our rankings.
@@ -498,7 +498,7 @@ const PetCareGuides = () => {
             hasn't been reviewed for factual correctness. When we recommend a{' '}
             <Link to="/collections/dog-training-tools" className="text-primary hover:underline">training tool</Link>,{' '}
             <Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline">cat tree</Link>, or{' '}
-            <Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline">litter box</Link>,
+            <Link to="/collections/cat-litter-boxes" className="text-primary hover:underline">litter box</Link>,
             it's because our team has evaluated it against clear, published criteria — not because
             a brand paid for placement.
           </p>

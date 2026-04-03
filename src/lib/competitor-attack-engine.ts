@@ -82,7 +82,7 @@ export interface InterceptionTarget {
 }
 
 export const KEYWORD_INTERCEPTIONS: InterceptionTarget[] = [
-  { keyword: 'best orthopedic dog bed', monthlyVolume: 4400, competitorInTop10: ['chewy.com', 'amazon.com'], currentPosition: null, difficulty: 'medium', interceptionPlan: '2000-word expert guide + 3 comparison pages + FAQ hub', supportPagesNeeded: 4, targetCollection: '/collections/orthopedic-calming-dog-beds' },
+  { keyword: 'best orthopedic dog bed', monthlyVolume: 4400, competitorInTop10: ['chewy.com', 'amazon.com'], currentPosition: null, difficulty: 'medium', interceptionPlan: '2000-word expert guide + 3 comparison pages + FAQ hub', supportPagesNeeded: 4, targetCollection: '/collections/dog-beds' },
   { keyword: 'calming dog bed', monthlyVolume: 3600, competitorInTop10: ['amazon.com', 'chewy.com'], currentPosition: null, difficulty: 'medium', interceptionPlan: 'Anxiety-focused pillar + breed recommendations + vet FAQ', supportPagesNeeded: 3, targetCollection: '/collections/calming-anxiety-dog-beds' },
   { keyword: 'dog car seat', monthlyVolume: 6600, competitorInTop10: ['amazon.com', 'walmart.com'], currentPosition: null, difficulty: 'high', interceptionPlan: 'Safety-first pillar + crash test guide + weight matrix + 3 comparisons', supportPagesNeeded: 5, targetCollection: '/collections/best-dog-car-seats' },
   { keyword: 'cat tree for large cats', monthlyVolume: 3200, competitorInTop10: ['chewy.com', 'amazon.com'], currentPosition: null, difficulty: 'medium', interceptionPlan: 'Weight-rated guide + comparison table + breed pairing', supportPagesNeeded: 3, targetCollection: '/collections/cat-condos' },
@@ -117,14 +117,14 @@ export interface AttackPage {
 
 export const ATTACK_CONTENT_PLAN: AttackPage[] = [
   // Pillars (5)
-  { type: 'pillar', title: 'The Complete Guide to Orthopedic Dog Beds: What Vets Recommend', primaryKeyword: 'orthopedic dog bed guide', wordCount: 2200, targetCollection: '/collections/orthopedic-calming-dog-beds', internalLinksRequired: 8, faqCount: 8 },
+  { type: 'pillar', title: 'The Complete Guide to Orthopedic Dog Beds: What Vets Recommend', primaryKeyword: 'orthopedic dog bed guide', wordCount: 2200, targetCollection: '/collections/dog-beds', internalLinksRequired: 8, faqCount: 8 },
   { type: 'pillar', title: 'Dog Car Safety: The Ultimate Crash-Tested Seat & Harness Guide', primaryKeyword: 'dog car safety guide', wordCount: 2000, targetCollection: '/collections/best-dog-car-seats', internalLinksRequired: 8, faqCount: 7 },
   { type: 'pillar', title: 'Cat Trees Decoded: How to Choose the Perfect One for Your Cat', primaryKeyword: 'how to choose cat tree', wordCount: 2000, targetCollection: '/collections/cat-condos', internalLinksRequired: 8, faqCount: 8 },
   { type: 'pillar', title: 'Pet Grooming at Home: The Complete Vacuum Grooming Guide', primaryKeyword: 'pet grooming vacuum guide', wordCount: 1800, targetCollection: '/collections/pet-grooming-vacuum-kits', internalLinksRequired: 6, faqCount: 6 },
   { type: 'pillar', title: 'Interactive Cat Enrichment: Stop Boredom, Start Thriving', primaryKeyword: 'cat enrichment guide', wordCount: 1800, targetCollection: '/collections/interactive-cat-toys', internalLinksRequired: 6, faqCount: 6 },
 
   // Comparison pages (10)
-  { type: 'comparison', title: 'Orthopedic vs Memory Foam Dog Beds: Which Is Better?', primaryKeyword: 'orthopedic vs memory foam dog bed', wordCount: 1500, targetCollection: '/collections/orthopedic-calming-dog-beds', internalLinksRequired: 5, faqCount: 5 },
+  { type: 'comparison', title: 'Orthopedic vs Memory Foam Dog Beds: Which Is Better?', primaryKeyword: 'orthopedic vs memory foam dog bed', wordCount: 1500, targetCollection: '/collections/dog-beds', internalLinksRequired: 5, faqCount: 5 },
   { type: 'comparison', title: 'Dog Car Seat vs Harness: What\'s Safer?', primaryKeyword: 'dog car seat vs harness', wordCount: 1500, targetCollection: '/collections/best-dog-car-seats', internalLinksRequired: 5, faqCount: 5 },
   { type: 'comparison', title: 'Tall Cat Tree vs Wide Cat Condo: Space-Saving Guide', primaryKeyword: 'tall vs wide cat tree', wordCount: 1200, targetCollection: '/collections/cat-condos', internalLinksRequired: 4, faqCount: 4 },
   { type: 'comparison', title: 'Calming Dog Bed vs Regular Bed: Does It Actually Help?', primaryKeyword: 'calming dog bed vs regular', wordCount: 1400, targetCollection: '/collections/calming-anxiety-dog-beds', internalLinksRequired: 5, faqCount: 5 },
@@ -136,7 +136,7 @@ export const ATTACK_CONTENT_PLAN: AttackPage[] = [
   { type: 'comparison', title: 'Budget vs Premium Pet Grooming Vacuums: Worth the Upgrade?', primaryKeyword: 'budget vs premium grooming vacuum', wordCount: 1300, targetCollection: '/collections/pet-grooming-vacuum-kits', internalLinksRequired: 4, faqCount: 4 },
 
   // Best-for pages (8)
-  { type: 'best-for', title: 'Best Dog Beds for Senior Dogs with Arthritis (2025)', primaryKeyword: 'best dog bed for senior dogs', wordCount: 1600, targetCollection: '/collections/orthopedic-calming-dog-beds', internalLinksRequired: 5, faqCount: 5 },
+  { type: 'best-for', title: 'Best Dog Beds for Senior Dogs with Arthritis (2025)', primaryKeyword: 'best dog bed for senior dogs', wordCount: 1600, targetCollection: '/collections/dog-beds', internalLinksRequired: 5, faqCount: 5 },
   { type: 'best-for', title: 'Best Cat Trees for Small Apartments', primaryKeyword: 'best cat tree small apartment', wordCount: 1400, targetCollection: '/collections/cat-condos', internalLinksRequired: 5, faqCount: 5 },
   { type: 'best-for', title: 'Best Dog Car Seats for Large Breeds', primaryKeyword: 'best dog car seat large breed', wordCount: 1400, targetCollection: '/collections/best-dog-car-seats', internalLinksRequired: 5, faqCount: 5 },
   { type: 'best-for', title: 'Best Automatic Feeders for Multi-Cat Households', primaryKeyword: 'best automatic feeder multiple cats', wordCount: 1400, targetCollection: '/collections/automatic-pet-feeders', internalLinksRequired: 5, faqCount: 4 },
@@ -146,12 +146,12 @@ export const ATTACK_CONTENT_PLAN: AttackPage[] = [
   { type: 'best-for', title: 'Best Interactive Toys for Indoor Cats', primaryKeyword: 'best interactive toy indoor cat', wordCount: 1300, targetCollection: '/collections/interactive-cat-toys', internalLinksRequired: 4, faqCount: 4 },
 
   // FAQ hubs (3)
-  { type: 'faq-hub', title: 'Dog Bed FAQ: Everything Pet Parents Ask', primaryKeyword: 'dog bed questions', wordCount: 1800, targetCollection: '/collections/orthopedic-calming-dog-beds', internalLinksRequired: 6, faqCount: 15 },
+  { type: 'faq-hub', title: 'Dog Bed FAQ: Everything Pet Parents Ask', primaryKeyword: 'dog bed questions', wordCount: 1800, targetCollection: '/collections/dog-beds', internalLinksRequired: 6, faqCount: 15 },
   { type: 'faq-hub', title: 'Cat Tree FAQ: Sizing, Safety & Maintenance', primaryKeyword: 'cat tree faq', wordCount: 1600, targetCollection: '/collections/cat-condos', internalLinksRequired: 6, faqCount: 12 },
   { type: 'faq-hub', title: 'Dog Car Safety FAQ: Laws, Crash Tests & Best Practices', primaryKeyword: 'dog car seat safety faq', wordCount: 1600, targetCollection: '/collections/best-dog-car-seats', internalLinksRequired: 6, faqCount: 12 },
 
   // Alternatives pages (2)
-  { type: 'alternatives', title: 'Best Chewy Alternatives for Premium Pet Supplies', primaryKeyword: 'chewy alternatives', wordCount: 1500, targetCollection: '/collections/orthopedic-calming-dog-beds', internalLinksRequired: 6, faqCount: 5 },
+  { type: 'alternatives', title: 'Best Chewy Alternatives for Premium Pet Supplies', primaryKeyword: 'chewy alternatives', wordCount: 1500, targetCollection: '/collections/dog-beds', internalLinksRequired: 6, faqCount: 5 },
   { type: 'alternatives', title: 'Amazon Pet Supplies Alternatives: Expert-Curated Options', primaryKeyword: 'amazon pet supplies alternative', wordCount: 1500, targetCollection: '/collections/cat-condos', internalLinksRequired: 6, faqCount: 5 },
 
   // Problem-solution pages (2)

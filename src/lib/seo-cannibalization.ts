@@ -123,7 +123,7 @@ export const KNOWN_RISKS: CannibalizationRisk[] = [
   {
     keyword: 'best dog beds',
     pages: [
-      { url: '/collections/orthopedic-calming-dog-beds', pageType: 'pillar' },
+      { url: '/collections/dog-beds', pageType: 'pillar' },
       { url: '/blog/best-orthopedic-dog-beds-2026', pageType: 'blog' },
     ],
     severity: 'medium',
@@ -141,7 +141,7 @@ export const KNOWN_RISKS: CannibalizationRisk[] = [
   {
     keyword: 'cat litter box',
     pages: [
-      { url: '/collections/best-cat-litter-boxes', pageType: 'pillar' },
+      { url: '/collections/cat-litter-boxes', pageType: 'pillar' },
       { url: '/blog/cat-litter-box-problems-solutions', pageType: 'blog' },
     ],
     severity: 'low',
@@ -150,7 +150,7 @@ export const KNOWN_RISKS: CannibalizationRisk[] = [
   {
     keyword: 'calming dog bed',
     pages: [
-      { url: '/collections/orthopedic-calming-dog-beds', pageType: 'pillar' },
+      { url: '/collections/dog-beds', pageType: 'pillar' },
       { url: '/collections/dog-beds-for-anxiety', pageType: 'collection' },
     ],
     severity: 'medium',
@@ -159,7 +159,7 @@ export const KNOWN_RISKS: CannibalizationRisk[] = [
   {
     keyword: 'orthopedic dog bed',
     pages: [
-      { url: '/collections/orthopedic-calming-dog-beds', pageType: 'pillar' },
+      { url: '/collections/dog-beds', pageType: 'pillar' },
       { url: '/collections/best-orthopedic-dog-beds', pageType: 'collection' },
       { url: '/blog/best-dog-bed-for-hip-dysplasia', pageType: 'blog' },
     ],

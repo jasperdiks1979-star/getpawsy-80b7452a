@@ -261,14 +261,14 @@ export const FORTRESS_CATEGORIES = [
 export const ADDITIONAL_ATTACK_PAGES = [
   // Seasonal guides (4)
   { type: 'seasonal', title: 'Summer Dog Cooling Guide: Beds, Mats & Hydration', keyword: 'summer dog cooling', wordCount: 1500, collection: '/collections/elevated-cooling-dog-beds' },
-  { type: 'seasonal', title: 'Winter Pet Comfort: Heated Beds & Cozy Dens', keyword: 'winter dog bed', wordCount: 1400, collection: '/collections/orthopedic-calming-dog-beds' },
+  { type: 'seasonal', title: 'Winter Pet Comfort: Heated Beds & Cozy Dens', keyword: 'winter dog bed', wordCount: 1400, collection: '/collections/dog-beds' },
   { type: 'seasonal', title: 'Holiday Gift Guide: Best Pet Gifts Under $50', keyword: 'pet gift guide', wordCount: 1600, collection: '/collections/bestsellers' },
   { type: 'seasonal', title: 'Spring Shedding Season: Grooming Kit Essentials', keyword: 'spring dog shedding grooming', wordCount: 1300, collection: '/collections/pet-grooming-vacuum-kits' },
 
   // Budget vs Premium segmentation (3)
-  { type: 'budget', title: 'Best Dog Beds Under $50 (That Actually Last)', keyword: 'dog bed under 50', wordCount: 1400, collection: '/collections/orthopedic-calming-dog-beds' },
+  { type: 'budget', title: 'Best Dog Beds Under $50 (That Actually Last)', keyword: 'dog bed under 50', wordCount: 1400, collection: '/collections/dog-beds' },
   { type: 'budget', title: 'Best Cat Trees Under $100 (Stability-Tested)', keyword: 'cat tree under 100', wordCount: 1300, collection: '/collections/cat-condos' },
-  { type: 'premium', title: 'Premium Dog Beds Worth the Investment', keyword: 'premium orthopedic dog bed', wordCount: 1400, collection: '/collections/orthopedic-calming-dog-beds' },
+  { type: 'premium', title: 'Premium Dog Beds Worth the Investment', keyword: 'premium orthopedic dog bed', wordCount: 1400, collection: '/collections/dog-beds' },
 
   // Cross-category authority (3)
   { type: 'authority', title: 'First-Time Dog Owner Essentials Checklist (2025)', keyword: 'new dog owner checklist', wordCount: 2000, collection: '/collections/dog-essentials' },

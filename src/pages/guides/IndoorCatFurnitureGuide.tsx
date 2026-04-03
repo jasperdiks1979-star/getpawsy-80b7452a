@@ -329,7 +329,7 @@ export default function IndoorCatFurnitureGuide() {
             <Link to="/collections/cat-trees-and-condos" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
               Cat Trees & Condos <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link to="/collections/best-cat-litter-boxes" className="inline-flex items-center gap-2 border border-primary text-primary px-5 py-2.5 rounded-lg font-medium hover:bg-primary/5 transition-colors">
+            <Link to="/collections/cat-litter-boxes" className="inline-flex items-center gap-2 border border-primary text-primary px-5 py-2.5 rounded-lg font-medium hover:bg-primary/5 transition-colors">
               Litter Box Solutions <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -362,7 +362,7 @@ export default function IndoorCatFurnitureGuide() {
               ['/collections/cat-trees-and-condos', 'Best Cat Trees & Condos 2026'],
               ['/guides/cat-condo-vs-cat-tree-2026', 'Cat Condo vs Cat Tree — Complete Comparison'],
               ['/best-self-cleaning-litter-box-2026', 'Best Self-Cleaning Litter Boxes 2026'],
-              ['/collections/best-cat-litter-boxes', 'Cat Litter Box Solutions'],
+              ['/collections/cat-litter-boxes', 'Cat Litter Box Solutions'],
               ['/resources/indoor-cat-care', 'Indoor Cat Care Resource Center'],
               ['/collections/all', 'Cat Trees for Large Cats'],
             ].map(([href, label]) => (

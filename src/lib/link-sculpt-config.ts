@@ -75,7 +75,7 @@ export const PRIORITY_CORNERSTONES = [
   },
   {
     id: 'best-cat-litter-boxes',
-    path: '/collections/best-cat-litter-boxes',
+    path: '/collections/cat-litter-boxes',
     label: 'Best Cat Litter Boxes 2026',
     anchors: {
       exact: ['best cat litter boxes', 'best litter boxes 2026'],

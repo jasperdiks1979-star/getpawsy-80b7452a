@@ -12,7 +12,7 @@ export const HIGH_MARGIN_CATEGORIES = [
     avgMargin: 59,
     searchVolume: 12100,
     emotionalIntensity: 'very high',
-    pillarSlug: '/collections/orthopedic-calming-dog-beds',
+    pillarSlug: '/collections/dog-beds',
     supportPages: 8,
     buyerGuides: 5,
     comparisonPages: 3,

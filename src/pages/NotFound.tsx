@@ -18,7 +18,7 @@ function log404(pathname: string, referrer: string) {
 
 const SUGGESTED_LINKS = [
   { label: "All Products", href: "/products", icon: ShoppingBag },
-  { label: "Best Cat Litter Boxes", href: "/collections/best-cat-litter-boxes", icon: ShoppingBag },
+  { label: "Best Cat Litter Boxes", href: "/collections/cat-litter-boxes", icon: ShoppingBag },
   { label: "Dog Training Tools", href: "/collections/all", icon: ShoppingBag },
   { label: "All Guides", href: "/guides", icon: BookOpen },
   { label: "Help Center", href: "/help", icon: HelpCircle },

@@ -27,7 +27,7 @@ const TEST_URLS = [
   '/guides/best-dog-bed-2026',
   '/guides/best-cat-litter-box-furniture-enclosures-2026',
   '/collections/indestructible-dog-chew-toys',
-  '/collections/orthopedic-calming-dog-beds',
+  '/collections/dog-beds',
   '/collections/automatic-cat-feeders',
   '/collections/dog-car-travel-safety-seats',
   '/collections/pet-grooming-vacuum-kits',

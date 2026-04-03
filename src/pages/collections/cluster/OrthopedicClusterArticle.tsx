@@ -364,7 +364,7 @@ export default function OrthopedicClusterArticle() {
 
         {/* Products section — links to main collection */}
         <section className="mb-12 text-center">
-          <Link to="/collections/orthopedic-calming-dog-beds" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity">
+          <Link to="/collections/dog-beds" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity">
             Shop Orthopedic Dog Beds <ArrowRight className="w-4 h-4" />
           </Link>
         </section>

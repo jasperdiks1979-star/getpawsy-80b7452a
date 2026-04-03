@@ -9,7 +9,7 @@ export default function WaterproofOrthopedicBed() {
       h1="Waterproof Orthopedic Dog Beds — Leak-Proof Memory Foam Protection"
       subtitle="Orthopedic memory foam beds with sealed waterproof liners that protect against accidents, drool, and odor buildup. Essential for seniors, puppies, and incontinent dogs."
       ctaText="Shop Waterproof Beds"
-      ctaLink="/collections/orthopedic-calming-dog-beds"
+      ctaLink="/collections/dog-beds"
       trustBadges={['100% Waterproof Liner', '5–10 Day US Shipping', '30-Day Return Policy']}
       breadcrumbs={[
         { label: 'Home', href: '/' },

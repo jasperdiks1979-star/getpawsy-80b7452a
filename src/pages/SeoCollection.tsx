@@ -823,7 +823,7 @@ const SeoCollection = () => {
                 <h3 className="text-sm font-medium text-foreground mb-3">Popular Collections</h3>
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                   <li><Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline">Cat Trees & Condos</Link></li>
-                  <li><Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline">Cat Litter Boxes</Link></li>
+                  <li><Link to="/collections/cat-litter-boxes" className="text-primary hover:underline">Cat Litter Boxes</Link></li>
                   <li><Link to="/collections/dog-beds" className="text-primary hover:underline">Dog Beds</Link></li>
                   <li><Link to="/collections/dog-travel-accessories" className="text-primary hover:underline">Dog Travel Gear</Link></li>
                   <li><Link to="/collections/dog-toys" className="text-primary hover:underline">Dog Toys</Link></li>

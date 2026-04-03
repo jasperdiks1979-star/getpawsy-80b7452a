@@ -11,7 +11,7 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'cats': '/collections/cat',
 
   // Dog subcategories
-  'dog-beds': '/collections/orthopedic-calming-dog-beds',
+  'dog-beds': '/collections/dog-beds',
   'orthopedic-dog-beds': '/collections/best-orthopedic-dog-beds',
   'orthopedic-beds': '/collections/best-orthopedic-dog-beds',
   'memory-foam-dog-beds': '/collections/memory-foam-orthopedic-dog-bed',
@@ -32,9 +32,9 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'cat-beds': '/collections/best-cat-beds',
   'cat-trees-and-condos': '/collections/cat-condos',
   'cat-toys': '/collections/best-cat-toys-for-indoor-cats',
-  'cat-litter-boxes': '/collections/best-cat-litter-boxes',
+  'cat-litter-boxes': '/collections/cat-litter-boxes',
   'cat-scratching-posts': '/collections/best-cat-scratching-posts',
-  'cat-carriers': '/collections/best-cat-carriers',
+  'cat-carriers': '/collections/cats',
   'cat-bowls-feeders': '/collections/automatic-cat-feeders',
   'cat-furniture': '/collections/cat-condos',
   'cat-houses': '/collections/cat',
@@ -66,10 +66,10 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'bird-toys': '/collections/bird-accessories',
 
   // Pet generic
-  'pet-beds': '/collections/orthopedic-calming-dog-beds',
+  'pet-beds': '/collections/dog-beds',
   'pet-furniture': '/collections/cat-condos',
   'pet-houses': '/collections/dog',
-  'pet-collars-leashes': '/collections/best-dog-harnesses',
+  'pet-collars-leashes': '/collections/dogs',
   'pet-training': '/collections/all',
   'pet-bags': '/collections/all',
   'pet-supplies': '/products',
