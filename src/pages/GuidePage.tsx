@@ -606,7 +606,25 @@ const GuidePage = () => {
           </div>
         )}
 
-        {/* Quick Recommendation Box — enrich with images from DB */}
+        {/* Bullet Summary — Key Takeaways for snippet capture */}
+        {guide.bulletSummary && guide.bulletSummary.length > 0 && (
+          <div className="mb-10 rounded-2xl border border-border bg-card p-5 md:p-6 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Key Takeaways
+            </h2>
+            <ul className="space-y-2">
+              {guide.bulletSummary.map((point, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-foreground leading-relaxed">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-primary">{i + 1}</span>
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+
         {guide.quickRecommendation && (() => {
           try {
             const qr = guide.quickRecommendation;
