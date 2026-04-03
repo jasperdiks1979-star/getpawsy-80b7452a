@@ -93,6 +93,42 @@ function generateContent(name: string, cat: string): ContentBlock {
     };
   }
 
+  if (/stroller/i.test(n + ' ' + c)) {
+    return {
+      heading: 'Why Pet Owners Love This Stroller',
+      paragraphs: [
+        `Senior dogs, injured pets, and small breeds deserve to enjoy the outdoors without being limited by their stamina or mobility. A pet stroller gives them access to parks, neighborhoods, and fresh air — without the physical strain. It's not a luxury; for many pets, it's the difference between staying home and staying active.`,
+        `This stroller is designed with real-world use in mind. The one-hand fold mechanism means you can collapse it in seconds for car storage or public transit. All-terrain wheels handle pavement, grass, and gravel smoothly, while the built-in suspension system absorbs bumps that could startle or jostle a nervous pet.`,
+        `The breathable mesh canopy provides ventilation and visibility so your pet stays calm and comfortable. A rear brake system keeps the stroller secure when parked, and the spacious interior fits pets up to 30 lbs with room to turn around. Whether you are taking a morning walk or running errands, this stroller makes pet ownership more flexible and enjoyable.`,
+      ],
+      highlights: [
+        'One-hand fold for easy storage and transport',
+        'All-terrain wheels with suspension',
+        'Breathable mesh for airflow and visibility',
+        'Rear brake system for safety',
+        'Supports pets up to 30 lbs comfortably',
+      ],
+    };
+  }
+
+  if (/carrier|backpack/i.test(n + ' ' + c)) {
+    return {
+      heading: 'Why This Carrier Is a Travel Essential',
+      paragraphs: [
+        `Traveling with a pet shouldn't mean choosing between their comfort and your convenience. This carrier is designed to keep your pet safe, ventilated, and calm — whether you're heading to the vet, boarding a plane, or hiking a trail. The expandable design gives your pet extra room when you need it, and collapses flat when you don't.`,
+        `Multiple mesh ventilation panels ensure steady airflow from every angle, preventing overheating even in warmer conditions. The padded shoulder straps and waist belt distribute weight evenly, so you can carry your pet hands-free without back strain. Lockable zippers prevent escape attempts during moments of stress.`,
+        `Designed to fit under most airline cabin seats, this carrier meets size requirements for the majority of US domestic airlines. The removable, washable inner pad keeps things hygienic between trips, and the built-in safety tether clips to your pet's harness for an extra layer of security during transit.`,
+      ],
+      highlights: [
+        'Expandable design for extra pet room',
+        'Multi-point mesh ventilation',
+        'Airline cabin compatible dimensions',
+        'Padded hands-free shoulder straps',
+        'Lockable zippers and internal safety tether',
+      ],
+    };
+  }
+
   if (/toy|puzzle|feeder/i.test(n + ' ' + c)) {
     return {
       heading: 'Why Interactive Play Matters',

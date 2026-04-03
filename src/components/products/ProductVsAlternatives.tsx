@@ -8,7 +8,7 @@ interface ProductVsAlternativesProps {
 
 type ProductType =
   | 'bed' | 'harness' | 'toy' | 'carrier' | 'grooming'
-  | 'cat tree' | 'litter box' | 'default';
+  | 'cat tree' | 'litter box' | 'stroller' | 'default';
 
 interface ComparisonRow {
   feature: string;
@@ -26,6 +26,7 @@ function detectType(name: string, category: string): ProductType {
   const c = `${name} ${category}`.toLowerCase();
   if (/litter\s*box|self[\s-]*clean|automatic\s*litter/i.test(c)) return 'litter box';
   if (/cat\s*tree|cat\s*condo|cat\s*tower|scratching/i.test(c)) return 'cat tree';
+  if (c.includes('stroller')) return 'stroller';
   if (c.includes('harness') || c.includes('leash') || c.includes('collar')) return 'harness';
   if (c.includes('bed') || c.includes('cushion')) return 'bed';
   if (c.includes('toy') || c.includes('ball') || c.includes('chew')) return 'toy';
@@ -105,6 +106,18 @@ const DATA: Record<ProductType, ComparisonData> = {
       { feature: 'Padded comfort base', ours: true, generic: false },
       { feature: 'Multiple entry points', ours: true, generic: true },
       { feature: 'Shoulder strap included', ours: true, generic: true },
+    ],
+  },
+  stroller: {
+    heading: 'This Stroller vs. Carrying Your Pet',
+    summary: 'Carrying pets is tiring and unsafe for longer outings. A stroller gives your pet a smooth, comfortable ride while keeping your hands free.',
+    rows: [
+      { feature: 'All-terrain wheels', ours: true, generic: false },
+      { feature: 'One-hand fold mechanism', ours: true, generic: false },
+      { feature: 'Rear brake system', ours: true, generic: false },
+      { feature: 'Weatherproof canopy', ours: true, generic: false },
+      { feature: 'Under-seat storage', ours: true, generic: false },
+      { feature: 'Pet can see outside', ours: true, generic: true },
     ],
   },
   grooming: {

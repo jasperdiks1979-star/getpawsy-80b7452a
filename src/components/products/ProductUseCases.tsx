@@ -8,7 +8,7 @@ interface ProductUseCasesProps {
 
 type ProductType =
   | 'bed' | 'harness' | 'toy' | 'carrier' | 'grooming'
-  | 'cat tree' | 'litter box' | 'default';
+  | 'cat tree' | 'litter box' | 'stroller' | 'default';
 
 interface UseCase {
   persona: string;
@@ -19,6 +19,7 @@ function detectType(name: string, category: string): ProductType {
   const c = `${name} ${category}`.toLowerCase();
   if (/litter\s*box|self[\s-]*clean|automatic\s*litter/i.test(c)) return 'litter box';
   if (/cat\s*tree|cat\s*condo|cat\s*tower|scratching/i.test(c)) return 'cat tree';
+  if (c.includes('stroller')) return 'stroller';
   if (c.includes('harness') || c.includes('leash') || c.includes('collar')) return 'harness';
   if (c.includes('bed') || c.includes('cushion')) return 'bed';
   if (c.includes('toy') || c.includes('ball') || c.includes('chew')) return 'toy';
@@ -57,6 +58,12 @@ const USE_CASES: Record<ProductType, UseCase[]> = {
     { persona: 'High-energy breeds', scenario: 'Channels excess energy into constructive play instead of chewing furniture or shoes.' },
     { persona: 'Overweight pets', scenario: 'Interactive feeders slow eating speed and encourage physical movement during mealtimes.' },
     { persona: 'Teething puppies', scenario: 'Durable chew toys soothe gums and protect household items from puppy teeth.' },
+  ],
+  stroller: [
+    { persona: 'Senior dog owners', scenario: 'Aging dogs with limited mobility still get daily outdoor stimulation without overexertion.' },
+    { persona: 'Post-surgery recovery', scenario: 'Dogs recovering from surgery can enjoy fresh air and socializing while resting comfortably.' },
+    { persona: 'Urban pet parents', scenario: 'Navigate busy sidewalks, farmers markets, and outdoor dining areas safely with small dogs.' },
+    { persona: 'Multi-dog households', scenario: 'Stroller one pet while walking the other — both get outdoor time without exhaustion.' },
   ],
   carrier: [
     { persona: 'Frequent flyers', scenario: 'Airline-compliant dimensions fit under cabin seats for stress-free in-flight pet travel.' },

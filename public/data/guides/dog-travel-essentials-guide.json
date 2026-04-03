@@ -1,0 +1,50 @@
+{
+  "slug": "dog-travel-essentials-guide",
+  "title": "Dog Travel Essentials (2026) – Everything You Need for Safe Pet Travel",
+  "seoTitle": "Dog Travel Essentials 2026 – Complete Packing Guide | GetPawsy",
+  "metaDescription": "Complete guide to dog travel essentials: carriers, strollers, car safety, and packing checklist. Everything you need for stress-free pet travel in 2026.",
+  "excerpt": "Planning to travel with your dog? This guide covers carriers, strollers, car safety, and a complete packing checklist for stress-free trips.",
+  "quickAnswer": "The essential dog travel kit includes: a secure carrier or car restraint, collapsible water bowl, familiar bedding, waste bags, current ID tags, health records, and any regular medications. For longer trips, add a pet stroller for easy navigation and a portable food container.",
+  "category": "Dog Travel",
+  "keywords": ["dog travel essentials", "traveling with dogs", "pet travel guide", "dog travel checklist", "dog travel gear"],
+  "publishedAt": "2026-03-10",
+  "updatedAt": "2026-03-10",
+  "readingTime": 10,
+  "heroImage": "/og-image.png",
+  "relatedCategories": ["dog-travel", "pet-travel-accessories"],
+  "relatedGuides": ["best-dog-stroller", "best-pet-carrier-airline-approved", "pet-travel-checklist", "best-dog-car-seat"],
+  "sections": [
+    {
+      "heading": "Why Preparation Matters for Dog Travel",
+      "content": "<p>Traveling with a dog is fundamentally different from traveling alone. Without proper preparation, a routine road trip can turn into a stressful experience for both you and your pet. Dogs are creatures of habit — they thrive on routine, familiar smells, and predictable environments. Travel disrupts all of that.</p><p>The good news? With the right gear and planning, most dogs adapt well to travel. The key is minimizing stress triggers (unfamiliar spaces, temperature changes, motion) while maximizing comfort and safety.</p>"
+    },
+    {
+      "heading": "Choosing the Right Travel Carrier",
+      "content": "<p>Your carrier choice depends on how you are traveling:</p><p><strong>Air travel:</strong> You need an airline-approved carrier that fits under the seat in front of you (typically 17\" x 11\" x 10\" max). Soft-sided carriers with mesh ventilation work best. See our <a href='/guides/best-pet-carrier-airline-approved'>airline-approved carrier guide</a>.</p><p><strong>Car travel:</strong> A crash-tested car seat or restraint harness keeps your dog safe during sudden stops. Never let dogs ride unrestrained in a moving vehicle.</p><p><strong>Walking/urban travel:</strong> A <a href='/collections/dog-travel'>pet carrier backpack</a> gives you hands-free mobility in busy areas, airports, and public transit.</p>"
+    },
+    {
+      "heading": "When a Pet Stroller Makes Sense",
+      "content": "<p>Pet strollers are not just for pampered pets — they serve real practical purposes:</p><ul><li>Senior dogs with limited mobility who still need outdoor stimulation</li><li>Post-surgery recovery — fresh air without physical strain</li><li>Small breeds in crowded environments (farmers markets, festivals, busy streets)</li><li>Multi-dog households where one dog tires faster than the other</li><li>Hot pavement situations — protecting paw pads from burns</li></ul><p>Our <a href='/guides/best-dog-stroller'>dog stroller guide</a> covers weight limits, wheel types, and fold mechanisms in detail. Browse <a href='/collections/dog-travel'>all travel products</a> to find the right fit.</p>"
+    },
+    {
+      "heading": "The Complete Dog Travel Packing Checklist",
+      "content": "<p><strong>Safety essentials:</strong> Current ID tags, microchip info, vaccination records, emergency vet contact for your destination.</p><p><strong>Comfort items:</strong> Familiar blanket or bedding (scent matters), favorite toy, collapsible water bowl, portable food container with measured portions.</p><p><strong>Health supplies:</strong> Regular medications, basic first aid kit, anti-anxiety treats (if your dog is a nervous traveler), paw balm for hot or rough surfaces.</p><p><strong>Cleanup supplies:</strong> Waste bags, paper towels, stain/odor spray, extra leash.</p><p><strong>Travel gear:</strong> Appropriate carrier or car restraint, harness with ID, portable water bottle for walks.</p>"
+    },
+    {
+      "heading": "Car Travel Safety Tips",
+      "content": "<p>Dogs should never ride in the front seat (airbag risk) or unrestrained in the back. The safest options are:</p><ol><li><strong>Crash-tested car seat</strong> — for small dogs under 30 lbs. Elevates them for window viewing while keeping them secured.</li><li><strong>Travel harness with seatbelt tether</strong> — clips to the car's seatbelt system and your dog's harness.</li><li><strong>Cargo area barrier</strong> — for SUVs and wagons, contains your dog in the rear cargo space.</li></ol><p>Stop every 2-3 hours for bathroom breaks and leg stretching. Never leave your dog in a parked car, even with windows cracked — interior temperatures can reach dangerous levels within minutes.</p><p>For detailed car travel safety, read our <a href='/guides/best-dog-car-seat'>dog car seat guide</a>.</p>"
+    }
+  ],
+  "faq": [
+    { "question": "How do I calm my dog during travel?", "answer": "Use familiar bedding with your scent, maintain a calm voice, and consider calming treats or sprays. Short practice trips before a long journey help desensitize nervous dogs. Some veterinarians may recommend mild anti-anxiety supplements for severe cases." },
+    { "question": "Can I fly with my dog in the cabin?", "answer": "Most US domestic airlines allow small dogs (under 20 lbs including carrier) in the cabin for a fee ($95-$150). Your carrier must fit under the seat in front of you. Check your specific airline's pet policy before booking." },
+    { "question": "What is the safest way to travel with a dog in a car?", "answer": "A crash-tested car seat or seatbelt harness tether in the back seat is the safest option. Never allow dogs to ride unrestrained or in the front seat. Use a cargo barrier for larger dogs in SUVs." },
+    { "question": "How long can a dog travel in a carrier?", "answer": "For air travel, most flights are manageable for healthy dogs. For car travel, stop every 2-3 hours for bathroom breaks, water, and stretching. Puppies need more frequent stops." }
+  ],
+  "internalLinks": [
+    { "text": "pet travel products", "url": "/collections/dog-travel" },
+    { "text": "dog stroller guide", "url": "/guides/best-dog-stroller" },
+    { "text": "airline carrier guide", "url": "/guides/best-pet-carrier-airline-approved" },
+    { "text": "dog car seat guide", "url": "/guides/best-dog-car-seat" }
+  ]
+}

@@ -9,7 +9,7 @@ interface ProductProblemSolutionProps {
 type ProductType =
   | 'bed' | 'bowl' | 'collar' | 'toy' | 'carrier' | 'grooming'
   | 'clothing' | 'mat' | 'fountain' | 'food' | 'harness' | 'leash'
-  | 'cat tree' | 'litter box' | 'accessory';
+  | 'cat tree' | 'litter box' | 'stroller' | 'accessory';
 
 interface ProblemSolutionData {
   problem: string;
@@ -21,6 +21,7 @@ function detectType(name: string, category: string): ProductType {
   const c = `${name} ${category}`.toLowerCase();
   if (/cat\s*tree|cat\s*condo|cat\s*tower|scratching/i.test(c)) return 'cat tree';
   if (/litter\s*box|self[\s-]*clean|automatic\s*litter/i.test(c)) return 'litter box';
+  if (c.includes('stroller')) return 'stroller';
   if (c.includes('bed') || c.includes('cushion') || c.includes('pillow')) return 'bed';
   if (c.includes('bowl') || c.includes('feeder') || c.includes('dish')) return 'bowl';
   if (c.includes('harness')) return 'harness';
@@ -106,6 +107,11 @@ const DATA: Record<ProductType, ProblemSolutionData> = {
     problem: 'Still scooping your cat\'s litter every day? Traditional litter boxes are messy, smelly, and time-consuming. Odors spread through your home between cleanings, and cats may refuse to use a dirty box — leading to accidents elsewhere.',
     solution: 'Let the litter box clean itself. This smart system automatically removes waste after every use — keeping your home fresh without any effort. Sealed compartments trap smells at the source while sensors ensure your cat\'s safety.',
     benefits: ['No more scooping', 'Always odor-free', 'Multi-cat friendly'],
+  },
+  stroller: {
+    problem: 'Senior dogs, injured pets, and small breeds miss out on outdoor time because they can\'t walk long distances. Carrying them is exhausting, and leaving them home leads to boredom and anxiety.',
+    solution: 'This pet stroller gives your dog the outdoor experience without the physical strain. All-terrain wheels handle any surface, the one-hand fold fits in your trunk, and the breathable canopy keeps your pet comfortable in all weather conditions.',
+    benefits: ['Outdoor access for all dogs', 'Folds in seconds', 'Smooth all-terrain ride'],
   },
   accessory: {
     problem: "Finding quality pet accessories that actually work is frustrating. Many products look good online but break easily, don't fit properly, or aren't safe for daily use.",

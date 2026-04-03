@@ -12,12 +12,13 @@ interface Step {
 }
 
 type ProductType =
-  | 'litter box' | 'cat tree' | 'harness' | 'bed' | 'grooming' | 'carrier' | 'default';
+  | 'litter box' | 'cat tree' | 'harness' | 'bed' | 'grooming' | 'carrier' | 'stroller' | 'default';
 
 function detectType(name: string, category: string): ProductType {
   const c = `${name} ${category}`.toLowerCase();
   if (/litter\s*box|self[\s-]*clean|automatic\s*litter/i.test(c)) return 'litter box';
   if (/cat\s*tree|cat\s*condo|cat\s*tower|scratching/i.test(c)) return 'cat tree';
+  if (c.includes('stroller')) return 'stroller';
   if (c.includes('harness')) return 'harness';
   if (c.includes('bed') || c.includes('cushion')) return 'bed';
   if (c.includes('brush') || c.includes('groom') || c.includes('comb')) return 'grooming';
@@ -55,6 +56,11 @@ const STEPS: Record<ProductType, Step[]> = {
     { step: '1', title: 'Open the top or side entry', description: 'Multiple access points make loading stress-free for anxious pets.' },
     { step: '2', title: 'Secure your pet inside', description: 'Internal safety clip and lockable zippers keep your pet safe during transit.' },
     { step: '3', title: 'Travel with confidence', description: 'Ventilated mesh panels and a padded base keep your pet comfortable anywhere.' },
+  ],
+  stroller: [
+    { step: '1', title: 'Unfold in seconds', description: 'One-hand fold mechanism sets up the stroller in under 10 seconds. No tools needed.' },
+    { step: '2', title: 'Place your pet inside', description: 'Wide zippered opening lets you load your pet easily. Internal tether keeps them secure.' },
+    { step: '3', title: 'Walk, jog, or stroll', description: 'All-terrain wheels and rear brakes give you smooth, controlled movement on any surface.' },
   ],
   default: [
     { step: '1', title: 'Unbox your product', description: 'Everything you need is included — get set up in minutes.' },
