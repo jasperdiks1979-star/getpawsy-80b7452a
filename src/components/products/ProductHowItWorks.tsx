@@ -56,6 +56,11 @@ const STEPS: Record<ProductType, Step[]> = {
     { step: '2', title: 'Secure your pet inside', description: 'Internal safety clip and lockable zippers keep your pet safe during transit.' },
     { step: '3', title: 'Travel with confidence', description: 'Ventilated mesh panels and a padded base keep your pet comfortable anywhere.' },
   ],
+  stroller: [
+    { step: '1', title: 'Unfold in seconds', description: 'One-hand fold mechanism sets up the stroller in under 10 seconds. No tools needed.' },
+    { step: '2', title: 'Place your pet inside', description: 'Wide zippered opening lets you load your pet easily. Internal tether keeps them secure.' },
+    { step: '3', title: 'Walk, jog, or stroll', description: 'All-terrain wheels and rear brakes give you smooth, controlled movement on any surface.' },
+  ],
   default: [
     { step: '1', title: 'Unbox your product', description: 'Everything you need is included — get set up in minutes.' },
     { step: '2', title: 'Introduce to your pet', description: 'Let your pet explore at their own pace for a positive first experience.' },
