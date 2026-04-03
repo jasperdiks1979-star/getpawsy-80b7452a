@@ -201,7 +201,7 @@ export function buildCategoryTree(surface: 'menu' | 'search'): CategoryTreeNode[
  * All collections with <3 products redirect to their nearest valid parent.
  */
 export const SLUG_ALIASES: Record<string, string> = {
-  // ── Legacy slug aliases ──
+  // ── Legacy slug aliases → canonical active collection ──
   'best-cat-litter-boxes': 'cat-litter-boxes',
   'cat-condos': 'cat-trees-and-condos',
   'orthopedic-calming-dog-beds': 'dog-beds',
@@ -209,7 +209,7 @@ export const SLUG_ALIASES: Record<string, string> = {
   'dog': 'dogs',
   'cat': 'cats',
 
-  // ── Weak/empty collections → redirect to nearest valid parent ──
+  // ── Dead dog collections → nearest valid parent ──
   'best-interactive-cat-toys': 'cats',
   'best-slow-feeder-dog-bowls': 'dogs',
   'cat-beds': 'cats',
@@ -245,6 +245,87 @@ export const SLUG_ALIASES: Record<string, string> = {
   'automatic-cat-feeders': 'cats',
   'best-pet-strollers': 'dog-travel-accessories',
   'modern-cat-trees': 'cat-trees-and-condos',
+
+  // ── Orthopedic dog bed variants → dog-beds ──
+  'orthopedic-dog-beds': 'dog-beds',
+  'best-orthopedic-dog-bed-large-dogs': 'dog-beds',
+  'memory-foam-dog-beds': 'dog-beds',
+  'memory-foam-orthopedic-dog-bed': 'dog-beds',
+  'orthopedic-dog-bed-senior-dogs': 'dog-beds',
+  'orthopedic-dog-bed-arthritis': 'dog-beds',
+  'waterproof-orthopedic-dog-bed': 'dog-beds',
+  'cooling-orthopedic-dog-bed': 'dog-beds',
+  'premium-orthopedic-dog-bed-comparison': 'dog-beds',
+  'calming-anxiety-dog-beds': 'dog-beds',
+  'elevated-dog-beds': 'dog-beds',
+  'waterproof-dog-beds': 'dog-beds',
+  'best-dog-beds-for-large-dogs': 'dog-beds',
+  'best-elevated-dog-bed': 'dog-beds',
+  'cooling-dog-beds': 'dog-beds',
+
+  // ── Cat tree variants → cat-trees-and-condos ──
+  'cat-trees-for-large-cats': 'cat-trees-and-condos',
+  'extra-large-cat-trees': 'cat-trees-and-condos',
+  'cat-tree-for-two-cats': 'cat-trees-and-condos',
+  'best-cat-trees-for-small-apartments': 'cat-trees-and-condos',
+  'best-cat-tree-for-multiple-cats': 'cat-trees-and-condos',
+  'heavy-duty-cat-tree': 'cat-trees-and-condos',
+  'cat-condos-for-large-cats': 'cat-trees-and-condos',
+  'cat-tree-for-maine-coon': 'cat-trees-and-condos',
+
+  // ── Litter box variants → cat-litter-boxes ──
+  'best-litter-box-for-large-cats': 'cat-litter-boxes',
+  'cat-litter-box-furniture-guide': 'cat-litter-boxes',
+
+  // ── Dog toy variants → dogs ──
+  'best-interactive-dog-toys': 'dogs',
+  'dog-enrichment-toys': 'dogs',
+  'interactive-dog-toys': 'dogs',
+  'indestructible-dog-toys': 'dogs',
+  'best-chew-toys-for-aggressive-chewers': 'dogs',
+
+  // ── Dog travel variants → dog-travel-accessories ──
+  'best-dog-car-seats': 'dog-travel-accessories',
+  'dog-car-travel-safety-seats': 'dog-travel-accessories',
+  'crash-tested-dog-car-seat': 'dog-travel-accessories',
+  'dog-car-seat-cover': 'dog-travel-accessories',
+  'dog-carriers': 'dog-travel-accessories',
+
+  // ── Dog grooming → dogs ──
+  'dog-grooming': 'dogs',
+  'pet-grooming-tools': 'dogs',
+  'pet-grooming-vacuum-kits': 'dogs',
+
+  // ── Training collections → dogs (no real inventory) ──
+  'dog-training-accessories': 'dogs',
+  'no-pull-dog-harness': 'dogs',
+  'long-training-leashes': 'dogs',
+  'puppy-training-essentials': 'dogs',
+  'dog-potty-training': 'dogs',
+  'dog-leash-control': 'dogs',
+  'dog-anti-bark': 'dogs',
+
+  // ── Feeder / bowl variants → dogs or cats ──
+  'slow-feeder-dog-bowls': 'dogs',
+  'slow-feeder-dog-bowl': 'dogs',
+  'best-dog-water-bowl-for-messy-drinkers': 'dogs',
+  'automatic-pet-feeders': 'cats',
+
+  // ── Non-pet / small pet → /products (use 'all' virtual) ──
+  'small-pet-accessories': 'all',
+  'guinea-pig-cages': 'all',
+  'guinea-pig-cages-playpens': 'all',
+  'hamster-cages': 'all',
+  'rabbit-hutches': 'all',
+  'bird-houses': 'all',
+  'bird-accessories': 'all',
+
+  // ── Cat carrier/toy crosslinks → cats ──
+  'best-cat-carrier-for-vet-visits': 'cats',
+  'best-cat-toys-for-bored-cats': 'cats',
+
+  // ── Catch-all legacy Shopify patterns ──
+  'best-dog-harness-for-pulling': 'dogs',
 };
 
 /**
