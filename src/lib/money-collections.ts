@@ -28,7 +28,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Multi-level cat trees, condos, and climbing furniture for indoor cats of all sizes.',
     primaryKeyword: 'best cat trees',
     cluster: 'cat',
-    crossLinks: ['best-cat-scratching-posts', 'best-interactive-cat-toys', 'best-cat-beds'],
+    crossLinks: ['cat-litter-boxes', 'dog-beds'],
     supportArticles: [
       'best-cat-tree-for-large-cats-2026',
       'cat-tree-vs-scratching-post',
