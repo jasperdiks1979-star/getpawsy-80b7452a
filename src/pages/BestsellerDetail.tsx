@@ -305,6 +305,7 @@ const BestsellerDetail = () => {
   const { trigger } = useHaptic();
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
   const isMobile = useIsMobile();
+  useCanonical(`/product/${slug || ''}`);
   
   // A/B Test for bundle strategies
   // Variant A: Frequently Bought Together (FBT) - 10% discount
