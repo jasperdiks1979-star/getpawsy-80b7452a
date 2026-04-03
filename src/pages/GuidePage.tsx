@@ -796,6 +796,14 @@ const GuidePage = () => {
                 </a>
               </li>
             )}
+            {guide.notFor && guide.notFor.length > 0 && (
+              <li>
+                <a href="#not-for" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">✗</span>
+                  <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">Who This Is NOT For</span>
+                </a>
+              </li>
+            )}
             {safeFaq.length > 0 && (
               <li>
                 <a href="#faq" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
