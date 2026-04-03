@@ -2,76 +2,77 @@
  * Category → SEO Collection URL Mapping
  * 
  * Maps product category names/slugs to their canonical SEO collection URLs.
- * Used to prevent authority leakage to /products?category= filter pages.
+ * ONLY maps to verified active collection destinations.
+ * 
+ * Active collections (2026-04):
+ *   dogs, cats, dog-beds, dog-travel-accessories, cat-trees-and-condos, cat-litter-boxes, all
  */
 
 const CATEGORY_TO_COLLECTION: Record<string, string> = {
   // Top-level pet types
-  'dogs': '/collections/dog',
-  'cats': '/collections/cat',
+  'dogs': '/collections/dogs',
+  'cats': '/collections/cats',
 
-  // Dog subcategories
+  // Dog subcategories → nearest valid active collection
   'dog-beds': '/collections/dog-beds',
-  'orthopedic-dog-beds': '/collections/best-orthopedic-dog-beds',
-  'orthopedic-beds': '/collections/best-orthopedic-dog-beds',
-  'memory-foam-dog-beds': '/collections/memory-foam-orthopedic-dog-bed',
-  'senior-dog-beds': '/collections/orthopedic-dog-bed-senior-dogs',
-  'dog-toys': '/collections/best-interactive-dog-toys',
-  'dog-training': '/collections/all',
-  'dog-collars-leashes': '/collections/dog-collars-leashes',
-  'dog-carriers': '/collections/dog-carriers',
-  'dog-car-seats': '/collections/all',
-  'dog-car-safety': '/collections/all',
-  'dog-houses': '/collections/dog',
-  'dog-bowls-feeders': '/collections/best-slow-feeder-dog-bowls',
-  'dog-food-treats': '/collections/dog',
-  'dog-grooming': '/collections/best-dog-grooming-kits',
-  'dog-clothing': '/collections/dog',
+  'orthopedic-dog-beds': '/collections/dog-beds',
+  'orthopedic-beds': '/collections/dog-beds',
+  'memory-foam-dog-beds': '/collections/dog-beds',
+  'senior-dog-beds': '/collections/dog-beds',
+  'dog-toys': '/collections/dogs',
+  'dog-training': '/collections/dogs',
+  'dog-collars-leashes': '/collections/dogs',
+  'dog-carriers': '/collections/dog-travel-accessories',
+  'dog-car-seats': '/collections/dog-travel-accessories',
+  'dog-car-safety': '/collections/dog-travel-accessories',
+  'dog-houses': '/collections/dogs',
+  'dog-bowls-feeders': '/collections/dogs',
+  'dog-food-treats': '/collections/dogs',
+  'dog-grooming': '/collections/dogs',
+  'dog-clothing': '/collections/dogs',
 
-  // Cat subcategories
-  'cat-beds': '/collections/best-cat-beds',
-  'cat-trees-and-condos': '/collections/cat-condos',
-  'cat-toys': '/collections/best-cat-toys-for-indoor-cats',
+  // Cat subcategories → nearest valid active collection
+  'cat-beds': '/collections/cats',
+  'cat-trees-and-condos': '/collections/cat-trees-and-condos',
+  'cat-toys': '/collections/cats',
   'cat-litter-boxes': '/collections/cat-litter-boxes',
-  'cat-scratching-posts': '/collections/best-cat-scratching-posts',
+  'cat-scratching-posts': '/collections/cat-trees-and-condos',
   'cat-carriers': '/collections/cats',
-  'cat-bowls-feeders': '/collections/automatic-cat-feeders',
-  'cat-furniture': '/collections/cat-condos',
-  'cat-houses': '/collections/cat',
-  'cat-grooming': '/collections/cat',
-  'cat-collars-accessories': '/collections/cat',
-  'cat-hammocks': '/collections/best-cat-window-perches',
-  'cat-exercise-wheels': '/collections/indoor-cat-enrichment',
+  'cat-bowls-feeders': '/collections/cats',
+  'cat-furniture': '/collections/cat-trees-and-condos',
+  'cat-houses': '/collections/cats',
+  'cat-grooming': '/collections/cats',
+  'cat-collars-accessories': '/collections/cats',
+  'cat-hammocks': '/collections/cats',
+  'cat-exercise-wheels': '/collections/cats',
 
-  // Small pets
-  'guinea-pig-cages': '/collections/small-pet-accessories',
-  'guinea-pig-toys': '/collections/small-pet-accessories',
-  'hamster-cages': '/collections/hamster-cages',
-  'hamster-wheels': '/collections/small-pet-accessories',
-  'rabbit-cages': '/collections/rabbit-hutches',
-  'rabbit-hutches': '/collections/rabbit-hutches',
-  'rabbits': '/collections/rabbit-hutches',
-  'small-pets': '/collections/small-pet-accessories',
-  'small-pet-accessories': '/collections/small-pet-accessories',
-
-  // Bird supplies
-  'birds': '/collections/bird-houses',
-  'bird-cages': '/collections/bird-houses',
-  'bird-feeders': '/collections/bird-accessories',
-  'bird-bowls-feeders': '/collections/bird-accessories',
-  'bird-houses': '/collections/bird-houses',
-  'bird-nests': '/collections/bird-houses',
-  'bird-accessories': '/collections/bird-accessories',
-  'bird-perches': '/collections/bird-accessories',
-  'bird-toys': '/collections/bird-accessories',
+  // Small pets / birds / non-core → /products
+  'guinea-pig-cages': '/products',
+  'guinea-pig-toys': '/products',
+  'hamster-cages': '/products',
+  'hamster-wheels': '/products',
+  'rabbit-cages': '/products',
+  'rabbit-hutches': '/products',
+  'rabbits': '/products',
+  'small-pets': '/products',
+  'small-pet-accessories': '/products',
+  'birds': '/products',
+  'bird-cages': '/products',
+  'bird-feeders': '/products',
+  'bird-bowls-feeders': '/products',
+  'bird-houses': '/products',
+  'bird-nests': '/products',
+  'bird-accessories': '/products',
+  'bird-perches': '/products',
+  'bird-toys': '/products',
 
   // Pet generic
   'pet-beds': '/collections/dog-beds',
-  'pet-furniture': '/collections/cat-condos',
-  'pet-houses': '/collections/dog',
+  'pet-furniture': '/collections/cat-trees-and-condos',
+  'pet-houses': '/collections/dogs',
   'pet-collars-leashes': '/collections/dogs',
-  'pet-training': '/collections/all',
-  'pet-bags': '/collections/all',
+  'pet-training': '/collections/dogs',
+  'pet-bags': '/collections/dog-travel-accessories',
   'pet-supplies': '/products',
 };
 
@@ -90,12 +91,11 @@ function normalizeCategory(input: string): string {
 
 /**
  * Get the canonical SEO collection URL for a product category.
- * Falls back to /products?category=X if no mapping exists.
+ * Falls back to /products if no mapping exists.
  */
 export function getCategoryCollectionUrl(categoryNameOrSlug: string): string {
   const normalized = normalizeCategory(categoryNameOrSlug);
-  return CATEGORY_TO_COLLECTION[normalized]
-    || `/products?category=${encodeURIComponent(categoryNameOrSlug)}`;
+  return CATEGORY_TO_COLLECTION[normalized] || '/products';
 }
 
 /**

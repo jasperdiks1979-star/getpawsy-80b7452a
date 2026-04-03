@@ -60,14 +60,14 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     ],
   },
   {
-    slug: 'orthopedic-calming-dog-beds',
-    name: 'Orthopedic & Calming Dog Beds',
+    slug: 'dog-beds',
+    name: 'Dog Beds',
     shortName: 'Dog Beds',
     icon: '🛏️',
     description: 'Memory foam, orthopedic, and calming dog beds for joint support and anxiety relief.',
     primaryKeyword: 'orthopedic dog beds',
     cluster: 'dog',
-    crossLinks: ['best-dog-beds-for-large-dogs', 'best-elevated-dog-bed', 'cooling-dog-beds'],
+    crossLinks: ['dog-travel-accessories', 'cat-trees-and-condos'],
     supportArticles: [
       'orthopedic-dog-bed-buying-guide-2026',
       'best-dog-bed-for-senior-dogs',
