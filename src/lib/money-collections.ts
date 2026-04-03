@@ -163,7 +163,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Airline-approved, soft-sided, and backpack cat carriers for stress-free travel.',
     primaryKeyword: 'best cat carriers',
     cluster: 'cat',
-    crossLinks: ['best-cat-carrier-for-vet-visits', 'best-cat-beds'],
+    crossLinks: ['cats', 'cat-litter-boxes'],
     supportArticles: [
       'airline-approved-cat-carrier-guide',
       'how-to-get-cat-used-to-carrier',
