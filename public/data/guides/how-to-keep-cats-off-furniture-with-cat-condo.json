@@ -5,13 +5,21 @@
   "metaDescription": "Stop your cat from destroying furniture. Learn how a well-placed cat condo redirects scratching and climbing behavior naturally.",
   "excerpt": "Cats scratch furniture because they need vertical territory. A strategically placed cat condo solves the problem without sprays or punishment.",
   "category": "Cat Trees",
-  "keywords": ["keep cats off furniture", "cat condo redirect scratching", "stop cat scratching couch", "cat enrichment furniture"],
-  "relatedCategories": ["cat-condos", "best-cat-scratching-posts"],
+  "keywords": [
+    "keep cats off furniture",
+    "cat condo redirect scratching",
+    "stop cat scratching couch",
+    "cat enrichment furniture"
+  ],
+  "relatedCategories": [
+    "cat-condos",
+    "best-cat-scratching-posts"
+  ],
   "readingTime": 5,
   "sections": [
     {
       "heading": "Why Cats Climb and Scratch Your Furniture",
-      "content": "Cats aren't being destructive on purpose. Scratching serves three biological functions: claw maintenance (removing dead sheaths), territory marking (scent glands in paw pads), and stretching (engages shoulder and back muscles). Climbing satisfies their instinct to survey territory from an elevated vantage point.\n\nWhen you don't provide appropriate outlets for these behaviors, your couch, curtains, and bookshelves become the default options. Punishment doesn't work — it only makes cats anxious, which often increases destructive behavior."
+      "content": "Cats aren't being destructive on purpose. Scratching serves three biological functions: claw maintenance (removing dead sheaths), territory marking (scent glands in paw pads), and stretching (engages shoulder and back muscles). Climbing satisfies their instinct to survey territory from an elevated vantage point.\n\nWhen you don't provide appropriate outlets for these behaviors, your couch, curtains, and bookshelves become the default options. Punishment doesn't work \u2014 it only makes cats anxious, which often increases destructive behavior."
     },
     {
       "heading": "How a Cat Condo Solves the Problem",
@@ -31,8 +39,18 @@
     }
   ],
   "faq": [
-    { "question": "Will a cat condo definitely stop my cat from scratching furniture?", "answer": "In most cases, yes — if the condo has adequate scratching surfaces and is placed strategically near the furniture your cat currently targets. About 80% of cats redirect within 2 weeks." },
-    { "question": "What size cat condo do I need to keep my cat off counters?", "answer": "Choose a condo at least as tall as your countertops (36+ inches). Cats jump on counters for the height advantage — give them a taller alternative." },
-    { "question": "Should I still use deterrent sprays with a cat condo?", "answer": "Deterrent sprays alone rarely work long-term. Pairing them with a cat condo (positive alternative) is more effective than sprays alone." }
-  ]
+    {
+      "question": "Will a cat condo definitely stop my cat from scratching furniture?",
+      "answer": "In most cases, yes \u2014 if the condo has adequate scratching surfaces and is placed strategically near the furniture your cat currently targets. About 80% of cats redirect within 2 weeks."
+    },
+    {
+      "question": "What size cat condo do I need to keep my cat off counters?",
+      "answer": "Choose a condo at least as tall as your countertops (36+ inches). Cats jump on counters for the height advantage \u2014 give them a taller alternative."
+    },
+    {
+      "question": "Should I still use deterrent sprays with a cat condo?",
+      "answer": "Deterrent sprays alone rarely work long-term. Pairing them with a cat condo (positive alternative) is more effective than sprays alone."
+    }
+  ],
+  "updatedAt": "2026-04-01"
 }

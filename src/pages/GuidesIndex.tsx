@@ -117,25 +117,29 @@ const GuidesIndex = () => {
       return acc;
     }, {});
 
+  const totalGuideCount = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
+  const categoryKeys = Object.keys(grouped);
+
   return (
     <Layout>
       <Helmet>
-        <title>Pet Care Guides | GetPawsy</title>
-        <meta name="description" content="Expert pet care guides covering cat trees, dog training, travel safety, and more. Practical advice for pet parents." />
+        <title>Pet Care Guides & Expert Advice (2026) | GetPawsy</title>
+        <meta name="description" content="Browse 200+ expert pet care guides covering dog beds, cat trees, litter boxes, travel gear, and more. Honest advice to help you choose the right products for your pet." />
         <link rel="canonical" href={`${BASE_URL}/guides`} />
         <meta name="robots" content="index, follow, max-image-preview:large" />
-        <meta property="og:title" content="Pet Care Guides | GetPawsy" />
-        <meta property="og:description" content="Expert pet care guides covering cat trees, dog training, travel safety, and more." />
+        <meta property="og:title" content="Pet Care Guides & Expert Advice (2026) | GetPawsy" />
+        <meta property="og:description" content="Browse 200+ expert pet care guides. Honest advice for dog and cat owners." />
         <meta property="og:url" content={`${BASE_URL}/guides`} />
         <meta property="og:type" content="website" />
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
-            name: 'Pet Care Guides',
-            description: 'Expert pet care guides for dog and cat owners.',
+            name: 'Pet Care Guides & Expert Advice',
+            description: 'Expert pet care guides for dog and cat owners — covering beds, trees, litter, travel, and more.',
             url: `${BASE_URL}/guides`,
             publisher: { '@type': 'Organization', name: 'GetPawsy', url: BASE_URL },
+            numberOfItems: totalGuideCount,
           })}
         </script>
         <script type="application/ld+json">
@@ -158,8 +162,8 @@ const GuidesIndex = () => {
           <span className="text-foreground font-medium">Guides</span>
         </nav>
 
-        {/* Premium Header */}
-        <header className="mb-14">
+        {/* Premium Header with SEO intro */}
+        <header className="mb-10">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm">
               <BookOpen className="w-7 h-7 text-primary" />
@@ -169,22 +173,38 @@ const GuidesIndex = () => {
                 Pet Care Guides
               </h1>
               <p className="text-muted-foreground mt-1">
-                Practical, expert-backed guides to help you make the best choices for your pets.
+                {totalGuideCount}+ expert guides for dog and cat owners
               </p>
             </div>
           </div>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mt-3">
+            Whether you're choosing your first dog bed, comparing cat litter boxes, or planning a trip with your pet, our guides provide honest, research-backed advice. Every recommendation is independently selected — never influenced by sponsors.
+          </p>
         </header>
+
+        {/* Category quick-nav */}
+        <div className="flex flex-wrap gap-2 mb-10">
+          {categoryKeys.map(cat => (
+            <a
+              key={cat}
+              href={`#cat-${cat.toLowerCase().replace(/\s+/g, '-')}`}
+              className="text-xs font-medium bg-card border border-border rounded-full px-3.5 py-1.5 hover:border-primary/40 hover:text-primary transition-all"
+            >
+              {cat} ({grouped[cat].length})
+            </a>
+          ))}
+        </div>
 
         {/* Category Hub Sections */}
         {Object.entries(grouped).map(([category, categoryGuides]) => {
           const hub = CATEGORY_HUBS[category];
           return (
-            <section key={category} className="mb-16">
+            <section key={category} id={`cat-${category.toLowerCase().replace(/\s+/g, '-')}`} className="mb-16 scroll-mt-20">
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">
-                    {category}
+                    {category} <span className="text-sm font-normal text-muted-foreground ml-1">({categoryGuides.length} guides)</span>
                   </h2>
                 </div>
                 {hub && (

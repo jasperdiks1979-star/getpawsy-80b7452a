@@ -5,8 +5,16 @@
   "metaDescription": "Find the best cat condos for multi-cat households. Expert recommendations for space, stability, and territory management in 2026.",
   "excerpt": "Multiple cats need multiple perching levels. Here's how to choose a cat condo that keeps every cat happy and reduces territorial conflict.",
   "category": "Cat Trees",
-  "keywords": ["cat condo multiple cats", "multi-cat cat tree", "cat condo for 2 cats", "best cat tree multi-cat"],
-  "relatedCategories": ["cat-condos", "best-cat-beds"],
+  "keywords": [
+    "cat condo multiple cats",
+    "multi-cat cat tree",
+    "cat condo for 2 cats",
+    "best cat tree multi-cat"
+  ],
+  "relatedCategories": [
+    "cat-condos",
+    "best-cat-beds"
+  ],
   "readingTime": 6,
   "sections": [
     {
@@ -15,7 +23,7 @@
     },
     {
       "heading": "Key Features for Multi-Cat Condos",
-      "content": "**Stability**: The most critical factor. Multiple cats jumping and climbing simultaneously creates significant force. Look for wide, heavy bases (minimum 24×24 inches) and condos that can be wall-anchored.\n\n**Multiple entry points**: Each enclosed space should have two openings so no cat gets cornered by a dominant housemate.\n\n**Varied platform heights**: Cats establish hierarchy partly through height. Multiple heights allow natural social ordering without fights.\n\n**Scratching surfaces**: At least 2-3 sisal-wrapped posts to prevent competition over scratching territory.\n\n**Weight capacity**: Verify the total weight rating. Two 12-lb cats jumping simultaneously create impact forces of 50+ lbs."
+      "content": "**Stability**: The most critical factor. Multiple cats jumping and climbing simultaneously creates significant force. Look for wide, heavy bases (minimum 24\u00d724 inches) and condos that can be wall-anchored.\n\n**Multiple entry points**: Each enclosed space should have two openings so no cat gets cornered by a dominant housemate.\n\n**Varied platform heights**: Cats establish hierarchy partly through height. Multiple heights allow natural social ordering without fights.\n\n**Scratching surfaces**: At least 2-3 sisal-wrapped posts to prevent competition over scratching territory.\n\n**Weight capacity**: Verify the total weight rating. Two 12-lb cats jumping simultaneously create impact forces of 50+ lbs."
     },
     {
       "heading": "Size Recommendations",
@@ -31,8 +39,18 @@
     }
   ],
   "faq": [
-    { "question": "How many cat trees do I need for 3 cats?", "answer": "One large cat tree with 4+ levels is usually sufficient for 3 cats, provided it's stable and has multiple entry points. Consider adding a second smaller cat tree in a different room." },
-    { "question": "Should I get a ceiling-to-floor cat tree for multiple cats?", "answer": "Floor-to-ceiling cat trees provide maximum vertical space but must be properly tensioned. They work well for 2-3 cats but can become overcrowded with 4+." },
-    { "question": "How do I stop cats from fighting over the cat condo?", "answer": "Choose a condo with more perching levels than cats. Place food bowls separately from the condo area, and ensure each cat has their own litter box nearby." }
-  ]
+    {
+      "question": "How many cat trees do I need for 3 cats?",
+      "answer": "One large cat tree with 4+ levels is usually sufficient for 3 cats, provided it's stable and has multiple entry points. Consider adding a second smaller cat tree in a different room."
+    },
+    {
+      "question": "Should I get a ceiling-to-floor cat tree for multiple cats?",
+      "answer": "Floor-to-ceiling cat trees provide maximum vertical space but must be properly tensioned. They work well for 2-3 cats but can become overcrowded with 4+."
+    },
+    {
+      "question": "How do I stop cats from fighting over the cat condo?",
+      "answer": "Choose a condo with more perching levels than cats. Place food bowls separately from the condo area, and ensure each cat has their own litter box nearby."
+    }
+  ],
+  "updatedAt": "2026-04-01"
 }

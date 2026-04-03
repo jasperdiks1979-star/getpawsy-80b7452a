@@ -5,8 +5,16 @@
   "metaDescription": "Find the safest and most comfortable car seats for small dogs under 25 lbs. Booster seats, console seats, and carriers compared for 2026.",
   "excerpt": "Small dogs need elevated car seats for visibility and safety. Here's how to pick the right style for your Yorkie, Chihuahua, or toy breed.",
   "category": "Dog Car Seats",
-  "keywords": ["dog car seat small dog", "small dog booster seat", "car seat for chihuahua", "car seat for toy breed"],
-  "relatedCategories": ["best-dog-car-seats", "dog-travel-accessories"],
+  "keywords": [
+    "dog car seat small dog",
+    "small dog booster seat",
+    "car seat for chihuahua",
+    "car seat for toy breed"
+  ],
+  "relatedCategories": [
+    "best-dog-car-seats",
+    "dog-travel-accessories"
+  ],
   "readingTime": 5,
   "sections": [
     {
@@ -23,7 +31,7 @@
     },
     {
       "heading": "Common Mistakes to Avoid",
-      "content": "1. **Using a collar instead of a harness**: Tethering to a collar risks neck injury during sudden stops. Always use a harness with chest attachment.\n\n2. **Front seat placement**: Airbags are designed for adult humans and can injure or kill small dogs. Always use the back seat.\n\n3. **Loose installation**: If the car seat slides more than 1 inch when pushed, retighten the seatbelt anchor.\n\n4. **No tether inside the seat**: A car seat without an internal tether is just a raised dog bed — it won't restrain your dog during braking.\n\n5. **Buying based on looks alone**: Cute designs don't equal safety. Check weight ratings and tether systems first."
+      "content": "1. **Using a collar instead of a harness**: Tethering to a collar risks neck injury during sudden stops. Always use a harness with chest attachment.\n\n2. **Front seat placement**: Airbags are designed for adult humans and can injure or kill small dogs. Always use the back seat.\n\n3. **Loose installation**: If the car seat slides more than 1 inch when pushed, retighten the seatbelt anchor.\n\n4. **No tether inside the seat**: A car seat without an internal tether is just a raised dog bed \u2014 it won't restrain your dog during braking.\n\n5. **Buying based on looks alone**: Cute designs don't equal safety. Check weight ratings and tether systems first."
     },
     {
       "heading": "Shop Small Dog Car Seats",
@@ -31,8 +39,18 @@
     }
   ],
   "faq": [
-    { "question": "What is the weight limit for a small dog car seat?", "answer": "Most small dog car seats are rated for 15-25 lbs. Console seats typically max at 10-12 lbs. Always check the manufacturer's weight rating." },
-    { "question": "Can a puppy use a dog car seat?", "answer": "Yes, start training puppies in car seats as early as possible. Choose an adjustable model that grows with them, and begin with short drives to build positive associations." },
-    { "question": "Do small dogs get motion sickness in car seats?", "answer": "Elevated car seats actually reduce motion sickness by allowing dogs to see the horizon, which helps orient their inner ear. Keeping windows slightly open for fresh air also helps." }
-  ]
+    {
+      "question": "What is the weight limit for a small dog car seat?",
+      "answer": "Most small dog car seats are rated for 15-25 lbs. Console seats typically max at 10-12 lbs. Always check the manufacturer's weight rating."
+    },
+    {
+      "question": "Can a puppy use a dog car seat?",
+      "answer": "Yes, start training puppies in car seats as early as possible. Choose an adjustable model that grows with them, and begin with short drives to build positive associations."
+    },
+    {
+      "question": "Do small dogs get motion sickness in car seats?",
+      "answer": "Elevated car seats actually reduce motion sickness by allowing dogs to see the horizon, which helps orient their inner ear. Keeping windows slightly open for fresh air also helps."
+    }
+  ],
+  "updatedAt": "2026-04-01"
 }

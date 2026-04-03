@@ -5,8 +5,16 @@
   "metaDescription": "Learn whether dog car seats are actually safe. We cover crash testing, proper installation, and what to look for in a safe car seat for dogs.",
   "excerpt": "Dog car seats vary wildly in safety standards. Here's what the crash test data actually shows and how to pick a genuinely safe option.",
   "category": "Dog Car Seats",
-  "keywords": ["dog car seat safety", "are dog car seats safe", "crash tested dog car seat", "safest dog car seat"],
-  "relatedCategories": ["best-dog-car-seats", "dog-travel-accessories"],
+  "keywords": [
+    "dog car seat safety",
+    "are dog car seats safe",
+    "crash tested dog car seat",
+    "safest dog car seat"
+  ],
+  "relatedCategories": [
+    "best-dog-car-seats",
+    "dog-travel-accessories"
+  ],
   "readingTime": 6,
   "sections": [
     {
@@ -15,7 +23,7 @@
     },
     {
       "heading": "What Makes a Dog Car Seat Actually Safe",
-      "content": "Based on CPS testing and veterinary transport recommendations, a genuinely safe dog car seat needs:\n\n**Crash-tested certification**: Look specifically for CPS certification or independent crash test data. Marketing claims like 'safety tested' without specifics are meaningless.\n\n**Anchor system**: Must connect to your vehicle's LATCH system or seatbelt with reinforced attachment points — not just a strap looped around the headrest.\n\n**Internal harness**: The seat itself should have a harness that restrains the dog within the seat. A loose dog in an unrestrained seat becomes a projectile.\n\n**Appropriate size rating**: Oversized seats allow too much movement; undersized seats restrict breathing during impact.\n\n**Padded interior**: Absorbs impact energy and protects against bruising during sudden stops."
+      "content": "Based on CPS testing and veterinary transport recommendations, a genuinely safe dog car seat needs:\n\n**Crash-tested certification**: Look specifically for CPS certification or independent crash test data. Marketing claims like 'safety tested' without specifics are meaningless.\n\n**Anchor system**: Must connect to your vehicle's LATCH system or seatbelt with reinforced attachment points \u2014 not just a strap looped around the headrest.\n\n**Internal harness**: The seat itself should have a harness that restrains the dog within the seat. A loose dog in an unrestrained seat becomes a projectile.\n\n**Appropriate size rating**: Oversized seats allow too much movement; undersized seats restrict breathing during impact.\n\n**Padded interior**: Absorbs impact energy and protects against bruising during sudden stops."
     },
     {
       "heading": "Booster Seats vs Car Carriers vs Harnesses",
@@ -31,9 +39,22 @@
     }
   ],
   "faq": [
-    { "question": "Are dog booster seats safe in a crash?", "answer": "Most booster seats are designed for comfort and viewing, not crash protection. Only models with CPS certification or independent crash test data provide genuine safety." },
-    { "question": "Where is the safest place for a dog car seat?", "answer": "The back seat center position is safest, away from airbags and side impacts. Never place a dog car seat in the front passenger seat with active airbags." },
-    { "question": "Can I use a child car seat for my dog?", "answer": "Child car seats are not designed for dogs and won't provide proper restraint. Dog-specific seats account for different body proportions and movement patterns." },
-    { "question": "How do I know if my dog car seat is installed correctly?", "answer": "The seat should not move more than 1 inch side-to-side when pulled. The internal harness should be snug enough that you can fit two fingers between the harness and your dog's body." }
-  ]
+    {
+      "question": "Are dog booster seats safe in a crash?",
+      "answer": "Most booster seats are designed for comfort and viewing, not crash protection. Only models with CPS certification or independent crash test data provide genuine safety."
+    },
+    {
+      "question": "Where is the safest place for a dog car seat?",
+      "answer": "The back seat center position is safest, away from airbags and side impacts. Never place a dog car seat in the front passenger seat with active airbags."
+    },
+    {
+      "question": "Can I use a child car seat for my dog?",
+      "answer": "Child car seats are not designed for dogs and won't provide proper restraint. Dog-specific seats account for different body proportions and movement patterns."
+    },
+    {
+      "question": "How do I know if my dog car seat is installed correctly?",
+      "answer": "The seat should not move more than 1 inch side-to-side when pulled. The internal harness should be snug enough that you can fit two fingers between the harness and your dog's body."
+    }
+  ],
+  "updatedAt": "2026-04-01"
 }

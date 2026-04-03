@@ -21,6 +21,8 @@ import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBl
 import { GuideTopPick } from '@/components/guides/GuideTopPick';
 import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
 import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
+import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
+import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -1031,8 +1033,21 @@ const GuidePage = () => {
           </p>
         </section>
 
+        {/* Share & Freshness Signal */}
+        <GuideShareFreshness
+          title={guide.title}
+          url={`/guides/${guide.slug}`}
+          updatedAt={guide.updatedAt}
+          className="mb-8"
+        />
+
         {/* E-E-A-T Trust Block */}
         <WhyTrustGetPawsy variant="guide" className="mb-12" />
+
+        {/* People Also Read — session depth booster */}
+        {relatedGuides.length >= 2 && (
+          <PeopleAlsoRead guides={relatedGuides.slice(0, 6)} className="mb-12" />
+        )}
 
         <SectionErrorBoundary section="GuidePage-recommended-products">
           {safeRelatedCategories.length > 0 && (
