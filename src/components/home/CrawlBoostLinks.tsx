@@ -6,10 +6,14 @@
 
 const CATEGORY_LINKS = [
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos' },
-  { href: '/collections/dog-toys', label: 'Dog Toys' },
-  { href: '/collections/cat-litter-boxes', label: 'Cat Litter Boxes' },
-  { href: '/collections/dog-beds', label: 'Dog Beds' },
-  { href: '/bestsellers', label: 'Best Sellers' },
+  { href: '/collections/best-cat-litter-boxes', label: 'Cat Litter Boxes' },
+  { href: '/collections/orthopedic-calming-dog-beds', label: 'Dog Beds' },
+  { href: '/collections/dog-travel-accessories', label: 'Dog Travel' },
+  { href: '/collections/best-pet-strollers', label: 'Pet Strollers' },
+  { href: '/collections/best-interactive-cat-toys', label: 'Cat Toys' },
+  { href: '/bestsellers', label: 'Bestsellers' },
+  { href: '/products', label: 'All Products' },
+  { href: '/guides', label: 'Expert Guides' },
 ] as const;
 
 const FEATURED_PRODUCT = {

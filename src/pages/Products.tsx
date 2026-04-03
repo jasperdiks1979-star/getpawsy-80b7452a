@@ -894,6 +894,9 @@ const Products = () => {
           />
         )}
 
+        {/* Collection Shortcuts — quick links for crawl depth reduction */}
+        <ProductsCollectionShortcuts />
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Desktop Filters */}
           <aside className="hidden lg:block w-64 shrink-0">
