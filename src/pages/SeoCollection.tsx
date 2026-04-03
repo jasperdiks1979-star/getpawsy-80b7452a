@@ -815,7 +815,7 @@ const SeoCollection = () => {
                   <li><Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline">Cat Trees & Condos</Link></li>
                   <li><Link to="/collections/cat-litter-boxes" className="text-primary hover:underline">Cat Litter Boxes</Link></li>
                   <li><Link to="/collections/dog-beds" className="text-primary hover:underline">Dog Beds</Link></li>
-                  <li><Link to="/collections/dog-travel-accessories" className="text-primary hover:underline">Dog Travel Gear</Link></li>
+                  <li><Link to="/guides/dog-travel-essentials-guide" className="text-primary hover:underline">Dog Travel Guide</Link></li>
                   <li><Link to="/collections/dog-toys" className="text-primary hover:underline">Dog Toys</Link></li>
                   <li><Link to="/collections/cat-scratching-posts" className="text-primary hover:underline">Cat Scratching Posts</Link></li>
                 </ul>

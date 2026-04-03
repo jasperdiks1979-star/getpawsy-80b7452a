@@ -72,7 +72,7 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'pet-houses': '/collections/dogs',
   'pet-collars-leashes': '/collections/dogs',
   'pet-training': '/collections/dogs',
-  'pet-bags': '/collections/dog-travel-accessories',
+  'pet-bags': '/collections/dogs',
   'pet-supplies': '/products',
 };
 

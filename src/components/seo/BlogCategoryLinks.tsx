@@ -9,7 +9,7 @@ const categoryLinkMap: Record<string, Array<{ href: string; label: string; type:
   Dogs: [
     { href: '/collections/dogs', label: 'Browse Dog Essentials', type: 'collection' },
     { href: '/collections/dog-beds', label: 'Orthopedic & Calming Dog Beds', type: 'collection' },
-    { href: '/collections/dog-travel-accessories', label: 'Dog Travel Accessories', type: 'collection' },
+    { href: '/guides/dog-travel-essentials-guide', label: 'Dog Travel Guide', type: 'guide' },
     { href: '/guides/best-dog-bed-2026', label: 'How to Choose the Right Dog Bed', type: 'guide' },
   ],
   Cats: [

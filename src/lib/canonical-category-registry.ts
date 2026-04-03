@@ -243,7 +243,7 @@ export const SLUG_ALIASES: Record<string, string> = {
   'self-cleaning-litter-box': 'cat-litter-boxes',
   'indoor-cat-enrichment': 'cats',
   'automatic-cat-feeders': 'cats',
-  'best-pet-strollers': 'dog-travel-accessories',
+  'best-pet-strollers': 'dogs',
   'modern-cat-trees': 'cat-trees-and-condos',
 
   // ── Orthopedic dog bed variants → dog-beds ──

@@ -562,7 +562,7 @@ const Bestsellers = () => {
               { name: 'Dog Beds & Furniture', desc: 'Orthopedic and calming beds rated for comfort and durability.', link: '/collections/dog-beds' },
               { name: 'Cat Trees & Condos', desc: 'Multi-level play structures built for active indoor cats.', link: '/collections/cat-trees-and-condos' },
               { name: 'Cat Litter Boxes', desc: 'Self-cleaning and odor-control litter solutions for indoor cats.', link: '/collections/cat-litter-boxes' },
-              { name: 'Dog Travel Accessories', desc: 'Carriers, car seats, and travel bowls for pets on the go.', link: '/collections/dog-travel-accessories' },
+              { name: 'Dog Travel Guide', desc: 'Expert guide to carriers, car seats, and travel gear for dogs.', link: '/guides/dog-travel-essentials-guide' },
               { name: 'Shop Dogs', desc: 'Browse all dog products — beds, toys, training gear and more.', link: '/collections/dogs' },
               { name: 'Shop Cats', desc: 'Browse all cat products — trees, litter boxes, toys and more.', link: '/collections/cats' },
               { name: 'Expert Pet Guides', desc: 'In-depth buying guides to help you choose the best products.', link: '/guides' },

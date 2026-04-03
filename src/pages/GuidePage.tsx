@@ -46,7 +46,7 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'dog-car-seats': 'dog-car-travel-safety-seats',
   'dog-grooming': 'best-dog-grooming-kits',
   'dog-bowls': 'best-slow-feeder-dog-bowls',
-  'dog-travel': 'dog-travel-accessories',
+  'dog-travel': 'dogs',
   'dog-training': 'dog-training-accessories',
   'dog-potty': 'dog-potty-training',
   'dog-leash': 'dog-leash-control',

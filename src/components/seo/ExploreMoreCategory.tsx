@@ -49,7 +49,7 @@ const categoryToRelatedCollection: Record<string, { slug: string; label: string 
   'cat beds': { slug: 'cat-condos', label: 'Cat Condos' },
   'dog beds': { slug: 'best-orthopedic-dog-beds', label: 'Orthopedic Dog Beds' },
   'dog toys': { slug: 'best-interactive-dog-toys', label: 'Interactive Dog Toys' },
-  'dog car': { slug: 'dog-travel-accessories', label: 'Dog Travel Accessories' },
+  'dog car': { slug: 'dogs', label: 'Dog Products' },
   'dog harness': { slug: 'best-dog-car-seats', label: 'Dog Car Seats' },
   'dog grooming': { slug: 'dogs', label: 'All Dog Products' },
 };

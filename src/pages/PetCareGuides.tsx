@@ -69,7 +69,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
       { slug: 'crash-tested-dog-car-seat-guide', title: 'Crash-Tested Dog Car Seat Guide' },
       { slug: 'dog-booster-seat-vs-car-hammock', title: 'Booster Seat vs Car Hammock' },
     ],
-    collectionLink: { href: '/collections/dog-travel-accessories', label: 'Shop Travel Gear' },
+    collectionLink: { href: '/collections/dogs', label: 'Shop Dog Products' },
   },
   {
     id: 'dog-grooming',

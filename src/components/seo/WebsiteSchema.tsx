@@ -314,8 +314,8 @@ export function WebsiteSchema({
       {
         '@type': 'ListItem',
         position: 6,
-        name: 'Dog Travel Accessories',
-        url: `${url}/collections/dog-travel-accessories`,
+        name: 'Dog Travel Guide',
+        url: `${url}/guides/dog-travel-essentials-guide`,
       },
     ],
   };
