@@ -276,7 +276,7 @@ export function ProductSchema({
       <title>{seoTitle}</title>
       <meta name="description" content={metaDescription} />
       <meta name="keywords" content={keywords.join(', ')} />
-      <link rel="canonical" href={productUrl} />
+      {/* Canonical managed by useCanonical hook — not duplicated here */}
 
       {/* Hreflang Tags for International SEO */}
       <link rel="alternate" hrefLang="en" href={productUrl} />

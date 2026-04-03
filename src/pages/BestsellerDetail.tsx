@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import { useCanonical } from '@/components/seo/CanonicalTag';
 import { 
   ShoppingCart, 
   Heart, 
@@ -304,6 +305,7 @@ const BestsellerDetail = () => {
   const { trigger } = useHaptic();
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
   const isMobile = useIsMobile();
+  useCanonical(`/product/${slug || ''}`);
   
   // A/B Test for bundle strategies
   // Variant A: Frequently Bought Together (FBT) - 10% discount
@@ -778,8 +780,7 @@ const BestsellerDetail = () => {
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
         )}
-        {/* CANONICAL: Point to the product's canonical URL to prevent GSC "Duplicate without user-selected canonical" */}
-        <link rel="canonical" href={`https://getpawsy.pet/product/${product.slug || product.id}`} />
+        {/* Canonical managed by useCanonical hook — not duplicated here */}
         {/* NOINDEX: Bestseller pages are marketing views of canonical products, not separate indexable entities */}
         <meta name="robots" content="noindex, follow" />
         

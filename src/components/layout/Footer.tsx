@@ -127,8 +127,12 @@ export const Footer = () => {
                 <p>{BUSINESS_REGISTRATION} · VAT: {BUSINESS_VAT_ID}</p>
                 <p className="text-background/40 text-xs mt-1">Online-only business. No physical retail location.</p>
               </div>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline block mt-2">
-                {SUPPORT_EMAIL}
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="text-sm text-primary hover:underline block mt-2"
+                aria-label="Email customer support"
+              >
+                {'support' + '@' + 'getpawsy.pet'}
               </a>
 
               {/* Merchant Trust Signals */}

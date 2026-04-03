@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
+import { useCanonical } from "@/components/seo/CanonicalTag";
 import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 import { CrawlBoostLinks } from "@/components/home/CrawlBoostLinks";
@@ -40,6 +41,8 @@ const DOG_IDS = [
 ];
 
 const HomePage = () => {
+  useCanonical('/');
+
   return (
     <Layout>
       <Helmet>
@@ -48,7 +51,6 @@ const HomePage = () => {
           name="description"
           content="Shop premium pet products at GetPawsy. Top-rated essentials for dogs and cats with US shipping and 30-day returns."
         />
-        <link rel="canonical" href="https://getpawsy.pet/" />
       </Helmet>
 
       <HeroSection />
@@ -114,10 +116,10 @@ const HomePage = () => {
               We focus on practical pet solutions that make life easier for pet owners.
             </p>
             <p>
-              Customer support:{' '}
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">
-                {SUPPORT_EMAIL}
-              </a>{' '}
+               Customer support:{' '}
+               <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline" aria-label="Email customer support">
+                 {'support' + '@' + 'getpawsy.pet'}
+               </a>{' '}
               — we respond within 24 hours.
             </p>
             <p className="text-xs text-muted-foreground/60 mt-4">
