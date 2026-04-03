@@ -186,8 +186,8 @@ export interface SlugResolution {
 export function resolveCollectionSlug(slug: string): SlugResolution {
   const normalized = slug.toLowerCase().trim();
   
-  // Check alias mapping
-  const aliasTarget = SLUG_ALIASES[normalized];
+  // Check canonical registry aliases first, then local aliases
+  const aliasTarget = CANONICAL_ALIASES[normalized] || LOCAL_ALIASES[normalized];
   if (aliasTarget && aliasTarget !== normalized) {
     return {
       resolvedSlug: aliasTarget,
