@@ -163,9 +163,9 @@ export const Footer = () => {
               <LinkList links={footerLinks.shop} />
             </FooterSection>
 
-            {/* More */}
-            <FooterSection title="More Products">
-              <LinkList links={footerLinks.more} />
+            {/* Collections */}
+            <FooterSection title="Collections">
+              <LinkList links={footerLinks.collections} />
             </FooterSection>
 
             {/* Help */}
