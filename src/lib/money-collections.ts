@@ -211,7 +211,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Clickers, treat pouches, training pads, and behavior correction tools for all dog breeds.',
     primaryKeyword: 'best dog training tools',
     cluster: 'dog',
-    crossLinks: ['best-dog-harnesses', 'best-interactive-dog-toys', 'best-slow-feeder-dog-bowls'],
+    crossLinks: ['dog-beds', 'dog-travel-accessories'],
     supportArticles: [
       'best-dog-training-tools',
       'puppy-training-first-30-days',
