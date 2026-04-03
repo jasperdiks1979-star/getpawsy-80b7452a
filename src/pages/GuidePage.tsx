@@ -875,6 +875,10 @@ const GuidePage = () => {
                     benefit={inlineProduct.advantages?.[0]}
                   />
                 )}
+                {/* Mid-article "People Also Read" after section 4 */}
+                {i === 3 && relatedGuides.length >= 3 && (
+                  <PeopleAlsoRead guides={relatedGuides.slice(0, 4)} className="mb-12" />
+                )}
               </div>
             );
           })}
