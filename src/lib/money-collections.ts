@@ -195,7 +195,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Heavy-duty, foldable, and jogging pet strollers for dogs and cats of all sizes.',
     primaryKeyword: 'best pet strollers',
     cluster: 'dog',
-    crossLinks: ['best-dog-car-seats', 'best-cat-carriers', 'best-dog-harnesses'],
+    crossLinks: ['dog-travel-accessories', 'dog-beds'],
     supportArticles: [
       'pet-stroller-buying-guide-2026',
       'best-pet-stroller-for-large-dogs',
