@@ -228,7 +228,7 @@ export const SLUG_ALIASES: Record<string, string> = {
   'best-cat-window-perches': 'cats',
   'best-cat-beds': 'cats',
   'dog-bowls': 'dogs',
-  'dog-car-seats': 'dog-travel-accessories',
+  'dog-car-seats': 'dogs',
   'dog-coats-jackets': 'dogs',
   'dog-collars': 'dogs',
   'dog-collars-leashes': 'dogs',
