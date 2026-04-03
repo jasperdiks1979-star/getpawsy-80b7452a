@@ -1031,6 +1031,9 @@ const GuidePage = () => {
           </p>
         </section>
 
+        {/* E-E-A-T Trust Block */}
+        <WhyTrustGetPawsy variant="guide" className="mb-12" />
+
         <SectionErrorBoundary section="GuidePage-recommended-products">
           {safeRelatedCategories.length > 0 && (
             <RecommendedProductsBlock
