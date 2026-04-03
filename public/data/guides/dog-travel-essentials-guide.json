@@ -1,7 +1,7 @@
 {
   "slug": "dog-travel-essentials-guide",
-  "title": "Dog Travel Essentials (2026) – Everything You Need for Safe Pet Travel",
-  "seoTitle": "Dog Travel Essentials (2026) – Complete Packing Checklist | GetPawsy",
+  "title": "Dog Travel Essentials (2026) \u2013 Everything You Need for Safe Pet Travel",
+  "seoTitle": "Dog Travel Essentials (2026) \u2013 Complete Packing Checklist | GetPawsy",
   "metaDescription": "Complete guide to dog travel essentials: carriers, strollers, car safety, and packing checklist. Everything you need for stress-free pet travel in 2026.",
   "excerpt": "Planning to travel with your dog? This guide covers carriers, strollers, car safety, and a complete packing checklist for stress-free trips.",
   "quickAnswer": "The essential dog travel kit includes: a secure carrier or car restraint, collapsible water bowl, familiar bedding, waste bags, current ID tags, health records, and any regular medications. For longer trips, add a pet stroller for easy navigation and a portable food container.",
@@ -30,7 +30,7 @@
   "sections": [
     {
       "heading": "Why Preparation Matters for Dog Travel",
-      "content": "<p>Traveling with a dog is fundamentally different from traveling alone. Without proper preparation, a routine road trip can turn into a stressful experience for both you and your pet. Dogs are creatures of habit — they thrive on routine, familiar smells, and predictable environments. Travel disrupts all of that.</p><p>The good news? With the right gear and planning, most dogs adapt well to travel. The key is minimizing stress triggers (unfamiliar spaces, temperature changes, motion) while maximizing comfort and safety.</p>"
+      "content": "<p>Traveling with a dog is fundamentally different from traveling alone. Without proper preparation, a routine road trip can turn into a stressful experience for both you and your pet. Dogs are creatures of habit \u2014 they thrive on routine, familiar smells, and predictable environments. Travel disrupts all of that.</p><p>The good news? With the right gear and planning, most dogs adapt well to travel. The key is minimizing stress triggers (unfamiliar spaces, temperature changes, motion) while maximizing comfort and safety.</p>"
     },
     {
       "heading": "Choosing the Right Travel Carrier",
@@ -38,7 +38,7 @@
     },
     {
       "heading": "When a Pet Stroller Makes Sense",
-      "content": "<p>Pet strollers are not just for pampered pets — they serve real practical purposes:</p><ul><li>Senior dogs with limited mobility who still need outdoor stimulation</li><li>Post-surgery recovery — fresh air without physical strain</li><li>Small breeds in crowded environments (farmers markets, festivals, busy streets)</li><li>Multi-dog households where one dog tires faster than the other</li><li>Hot pavement situations — protecting paw pads from burns</li></ul><p>Our <a href='/guides/best-dog-stroller'>dog stroller guide</a> covers weight limits, wheel types, and fold mechanisms in detail. Browse <a href='/collections/dog-travel'>all travel products</a> to find the right fit.</p>"
+      "content": "<p>Pet strollers are not just for pampered pets \u2014 they serve real practical purposes:</p><ul><li>Senior dogs with limited mobility who still need outdoor stimulation</li><li>Post-surgery recovery \u2014 fresh air without physical strain</li><li>Small breeds in crowded environments (farmers markets, festivals, busy streets)</li><li>Multi-dog households where one dog tires faster than the other</li><li>Hot pavement situations \u2014 protecting paw pads from burns</li></ul><p>Our <a href='/guides/best-dog-stroller'>dog stroller guide</a> covers weight limits, wheel types, and fold mechanisms in detail. Browse <a href='/collections/dog-travel'>all travel products</a> to find the right fit.</p>"
     },
     {
       "heading": "The Complete Dog Travel Packing Checklist",
@@ -46,7 +46,7 @@
     },
     {
       "heading": "Car Travel Safety Tips",
-      "content": "<p>Dogs should never ride in the front seat (airbag risk) or unrestrained in the back. The safest options are:</p><ol><li><strong>Crash-tested car seat</strong> — for small dogs under 30 lbs. Elevates them for window viewing while keeping them secured.</li><li><strong>Travel harness with seatbelt tether</strong> — clips to the car's seatbelt system and your dog's harness.</li><li><strong>Cargo area barrier</strong> — for SUVs and wagons, contains your dog in the rear cargo space.</li></ol><p>Stop every 2-3 hours for bathroom breaks and leg stretching. Never leave your dog in a parked car, even with windows cracked — interior temperatures can reach dangerous levels within minutes.</p><p>For detailed car travel safety, read our <a href='/guides/best-dog-car-seat'>dog car seat guide</a>.</p>"
+      "content": "<p>Dogs should never ride in the front seat (airbag risk) or unrestrained in the back. The safest options are:</p><ol><li><strong>Crash-tested car seat</strong> \u2014 for small dogs under 30 lbs. Elevates them for window viewing while keeping them secured.</li><li><strong>Travel harness with seatbelt tether</strong> \u2014 clips to the car's seatbelt system and your dog's harness.</li><li><strong>Cargo area barrier</strong> \u2014 for SUVs and wagons, contains your dog in the rear cargo space.</li></ol><p>Stop every 2-3 hours for bathroom breaks and leg stretching. Never leave your dog in a parked car, even with windows cracked \u2014 interior temperatures can reach dangerous levels within minutes.</p><p>For detailed car travel safety, read our <a href='/guides/best-dog-car-seat'>dog car seat guide</a>.</p>"
     }
   ],
   "faq": [
@@ -65,6 +65,18 @@
     {
       "question": "How long can a dog travel in a carrier?",
       "answer": "For air travel, most flights are manageable for healthy dogs. For car travel, stop every 2-3 hours for bathroom breaks, water, and stretching. Puppies need more frequent stops."
+    },
+    {
+      "question": "Is it safe for dogs to ride in the front seat?",
+      "answer": "No \u2014 airbags can injure dogs in a collision. Always secure your dog in the back seat using a crash-tested harness, car seat, or travel crate for maximum safety."
+    },
+    {
+      "question": "What do I need for a road trip with my dog?",
+      "answer": "Pack a travel water bottle, collapsible bowl, waste bags, a familiar blanket, any medications, and a car seat or harness. Plan stops every 2\u20133 hours for bathroom breaks and stretching."
+    },
+    {
+      "question": "Can I take my dog on a plane?",
+      "answer": "Small dogs under 20 lbs can fly in-cabin in an airline-approved carrier. Larger dogs travel as cargo. Check your airline's pet policy at least 2 weeks before your flight and consult your vet about travel anxiety."
     }
   ],
   "internalLinks": [
@@ -89,12 +101,12 @@
     "A crash-tested car harness or carrier is the safest way to travel with your dog",
     "Pack a familiar blanket and toy to reduce travel anxiety",
     "Collapsible water bowls and portable food containers save space",
-    "Never leave your dog in a parked car — temperatures rise dangerously fast"
+    "Never leave your dog in a parked car \u2014 temperatures rise dangerously fast"
   ],
   "notFor": [
-    "Dogs with severe travel anxiety — consult your vet before road trips",
-    "Puppies without complete vaccinations — avoid public rest stops",
-    "Owners planning air travel — airline requirements differ significantly"
+    "Dogs with severe travel anxiety \u2014 consult your vet before road trips",
+    "Puppies without complete vaccinations \u2014 avoid public rest stops",
+    "Owners planning air travel \u2014 airline requirements differ significantly"
   ],
   "commonMistakes": [
     {
@@ -103,7 +115,7 @@
     },
     {
       "mistake": "Skipping rest stops on long drives",
-      "whyItMatters": "Dogs need a bathroom and stretch break every 2–3 hours to stay comfortable."
+      "whyItMatters": "Dogs need a bathroom and stretch break every 2\u20133 hours to stay comfortable."
     },
     {
       "mistake": "Forgetting to bring water",
