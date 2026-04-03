@@ -66,12 +66,10 @@ const footerLinks = {
     { label: 'All Collections', href: '/collections/all' },
   ],
   collections: [
-    { label: 'Dog Beds', href: '/collections/orthopedic-calming-dog-beds' },
-    { label: 'Dog Travel', href: '/collections/dog-travel-accessories' },
     { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
-    { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-    { label: 'Pet Strollers', href: '/collections/best-pet-strollers' },
-    { label: 'Cat Toys', href: '/collections/best-interactive-cat-toys' },
+    { label: 'Cat Litter Boxes', href: '/collections/cat-litter-boxes' },
+    { label: 'Dog Beds', href: '/collections/dog-beds' },
+    { label: 'Dog Travel', href: '/collections/dog-travel-accessories' },
   ],
   guides: [
     { label: 'Cat Litter Box Guide', href: '/guides/best-cat-litter-box-2026' },

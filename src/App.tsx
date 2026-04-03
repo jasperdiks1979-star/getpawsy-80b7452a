@@ -1220,7 +1220,7 @@ const App = () => {
                           {/* Category navigation routes — redirect to /collections/ */}
                           <Route
                             path="/dogs/dog-beds"
-                            element={<Navigate to="/collections/orthopedic-calming-dog-beds" replace />}
+                            element={<Navigate to="/collections/dog-beds" replace />}
                           />
                           <Route path="/dogs/dog-toys" element={<Navigate to="/collections/dog-toys" replace />} />
                           <Route path="/dogs/chew-toys" element={<Navigate to="/collections/dog-toys" replace />} />
@@ -1239,11 +1239,11 @@ const App = () => {
                           <Route path="/cats/cat-toys" element={<Navigate to="/collections/cat-toys" replace />} />
                           <Route
                             path="/cats/cat-litter"
-                            element={<Navigate to="/collections/best-cat-litter-boxes" replace />}
+                            element={<Navigate to="/collections/cat-litter-boxes" replace />}
                           />
                           <Route
                             path="/cats/litter-boxes"
-                            element={<Navigate to="/collections/best-cat-litter-boxes" replace />}
+                            element={<Navigate to="/collections/cat-litter-boxes" replace />}
                           />
                           <Route
                             path="/cats/cat-trees"
@@ -1256,7 +1256,7 @@ const App = () => {
                           />
                           <Route
                             path="/cats/cat-carriers"
-                            element={<Navigate to="/collections/best-cat-carriers" replace />}
+                            element={<Navigate to="/collections/cats" replace />}
                           />
                           <Route
                             path="/cats/automatic-feeders"

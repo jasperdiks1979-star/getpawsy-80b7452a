@@ -12,11 +12,13 @@
  * - `footerEligible`: shown in footer links
  * 
  * PRODUCT REALITY CHECK (2026-04):
- * Active inventory is limited to ~17 products across 5 DB categories:
+ * Active inventory: 17 products across 5 DB categories:
  *   Cat Trees & Condos (6), Cat Litter Boxes (5), Dog Beds (2), 
- *   Dog Travel (2), pet-supplies (2)
- * Categories without inventory are still valid seo_collections entries
- * and can match via keyword filters, but are deprioritized in navigation.
+ *   Dog Travel (2), Dog Toys (1), Cat Toys (1)
+ * 
+ * STRONG COLLECTIONS (3+ products): cat-trees-and-condos, cat-litter-boxes, dogs, cats
+ * BORDERLINE (2 products): dog-beds, dog-travel-accessories — kept for topical relevance
+ * ALL OTHERS: deactivated and aliased to nearest valid parent
  */
 
 export interface CanonicalCategory {
@@ -51,8 +53,6 @@ export interface CanonicalCategory {
  * ONLY categories listed here with active:true may appear in the UI.
  * 
  * Navigation eligibility is STRICTLY tied to hasInventory.
- * Categories without inventory are searchEligible only (they have seo_collections
- * entries with keyword filters that can surface products).
  */
 export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
   // ── Top-level: Dogs ──
@@ -68,7 +68,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 1,
     icon: '🐕',
-    hasInventory: true, // aggregates dog-prefixed products
+    hasInventory: true,
   },
   {
     key: 'dog-beds',
@@ -82,35 +82,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 1,
     icon: '🛏️',
-    hasInventory: true, // 2 products
-  },
-  {
-    key: 'dog-toys',
-    label: 'Dog Toys',
-    url: '/collections/dog-toys',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: false, // no dedicated Dog Toys category products
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 2,
-    icon: '🎾',
-    hasInventory: false,
-  },
-  {
-    key: 'dog-harness',
-    label: 'Dog Harnesses',
-    url: '/collections/dog-harness',
-    active: true,
-    parentKey: 'dogs',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 3,
-    icon: '🦮',
-    hasInventory: false,
+    hasInventory: true,
   },
   {
     key: 'dog-travel-accessories',
@@ -121,10 +93,10 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     menuEligible: true,
     homepageEligible: false,
     searchEligible: true,
-    footerEligible: false,
-    displayOrder: 4,
+    footerEligible: true,
+    displayOrder: 2,
     icon: '✈️',
-    hasInventory: true, // 2 products
+    hasInventory: true,
   },
 
   // ── Top-level: Cats ──
@@ -140,7 +112,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 2,
     icon: '🐱',
-    hasInventory: true, // aggregates cat-prefixed products
+    hasInventory: true,
   },
   {
     key: 'cat-trees-and-condos',
@@ -154,7 +126,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 1,
     icon: '🌲',
-    hasInventory: true, // 6 products
+    hasInventory: true,
   },
   {
     key: 'cat-litter-boxes',
@@ -168,35 +140,7 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     footerEligible: true,
     displayOrder: 2,
     icon: '🚽',
-    hasInventory: true, // 5 products
-  },
-  {
-    key: 'cat-toys',
-    label: 'Cat Toys',
-    url: '/collections/cat-toys',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 3,
-    icon: '🧶',
-    hasInventory: false,
-  },
-  {
-    key: 'cat-scratching-posts',
-    label: 'Cat Scratching Posts',
-    url: '/collections/cat-scratching-posts',
-    active: true,
-    parentKey: 'cats',
-    menuEligible: false,
-    homepageEligible: false,
-    searchEligible: true,
-    footerEligible: false,
-    displayOrder: 5,
-    icon: '🪵',
-    hasInventory: false,
+    hasInventory: true,
   },
 ];
 
@@ -252,27 +196,55 @@ export function buildCategoryTree(surface: 'menu' | 'search'): CategoryTreeNode[
   }));
 }
 
-/** Alias map: old/variant slugs → canonical slug for 301 redirects */
+/**
+ * Alias map: old/variant/weak slugs → canonical slug for 301 redirects.
+ * All collections with <3 products redirect to their nearest valid parent.
+ */
 export const SLUG_ALIASES: Record<string, string> = {
+  // ── Legacy slug aliases ──
   'best-cat-litter-boxes': 'cat-litter-boxes',
-  'best-cat-toys-for-indoor-cats': 'cat-toys',
-  'best-interactive-cat-toys': 'cat-toys',
-  'best-cat-scratching-posts': 'cat-scratching-posts',
-  'best-cat-carriers': 'cats',
-  'best-cat-beds': 'cats',
-  'best-cat-window-perches': 'cats',
   'cat-condos': 'cat-trees-and-condos',
-  'best-dog-harnesses': 'dog-harness',
-  'best-orthopedic-dog-beds': 'dog-beds',
   'orthopedic-calming-dog-beds': 'dog-beds',
-  'best-dog-grooming-kits': 'dogs',
-  'best-slow-feeder-dog-bowls': 'dogs',
-  'dog-collars-leashes': 'dogs',
-  'self-cleaning-litter-box': 'cat-litter-boxes',
-  'indoor-cat-enrichment': 'cat-toys',
-  'automatic-cat-feeders': 'cats',
+  'best-orthopedic-dog-beds': 'dog-beds',
   'dog': 'dogs',
   'cat': 'cats',
+
+  // ── Weak/empty collections → redirect to nearest valid parent ──
+  'best-interactive-cat-toys': 'cats',
+  'best-slow-feeder-dog-bowls': 'dogs',
+  'cat-beds': 'cats',
+  'cat-carriers': 'cats',
+  'best-cat-carriers': 'cats',
+  'cat-furniture': 'cat-trees-and-condos',
+  'cat-grooming-tools': 'cats',
+  'cat-harnesses': 'cats',
+  'cat-scratching-posts': 'cat-trees-and-condos',
+  'best-cat-scratching-posts': 'cat-trees-and-condos',
+  'cat-toys': 'cats',
+  'best-cat-toys-for-indoor-cats': 'cats',
+  'cat-tunnels': 'cats',
+  'cat-water-fountains': 'cats',
+  'cat-window-perches': 'cats',
+  'best-cat-window-perches': 'cats',
+  'best-cat-beds': 'cats',
+  'dog-bowls': 'dogs',
+  'dog-car-seats': 'dog-travel-accessories',
+  'dog-coats-jackets': 'dogs',
+  'dog-collars': 'dogs',
+  'dog-collars-leashes': 'dogs',
+  'dog-crates': 'dogs',
+  'dog-grooming-tools': 'dogs',
+  'best-dog-grooming-kits': 'dogs',
+  'dog-harness': 'dogs',
+  'best-dog-harnesses': 'dogs',
+  'dog-leashes': 'dogs',
+  'dog-toys': 'dogs',
+  'dog-training-tools': 'dogs',
+  'self-cleaning-litter-box': 'cat-litter-boxes',
+  'indoor-cat-enrichment': 'cats',
+  'automatic-cat-feeders': 'cats',
+  'best-pet-strollers': 'dog-travel-accessories',
+  'modern-cat-trees': 'cat-trees-and-condos',
 };
 
 /**

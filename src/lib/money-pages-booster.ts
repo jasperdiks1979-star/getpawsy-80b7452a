@@ -153,7 +153,7 @@ export const MONEY_PAGES: MoneyPage[] = [
     anchors: { exact: 'dog beds for senior dogs', partial: 'beds designed for aging pups', semantic: 'supportive rest for older dogs' },
   },
   {
-    path: '/collections/orthopedic-calming-dog-beds',
+    path: '/collections/dog-beds',
     type: 'collection', cluster: 'dog-beds', species: 'dog', boost: 1.5, minInbound: 20,
     targetKeyword: 'orthopedic dog beds',
     anchors: { exact: 'orthopedic dog beds', partial: 'shop dog beds', semantic: 'browse our dog bed collection' },

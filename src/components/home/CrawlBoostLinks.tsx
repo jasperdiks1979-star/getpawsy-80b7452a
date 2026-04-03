@@ -2,15 +2,17 @@
  * CrawlBoostLinks — Static HTML anchor links for SEO crawl signal boost.
  * Renders real <a href> links (not React Router <Link>) to ensure
  * Googlebot discovers these URLs in raw HTML without JS execution.
+ *
+ * ONLY links to collections with 3+ products or high-authority hubs.
  */
 
 const CATEGORY_LINKS = [
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos' },
-  { href: '/collections/best-cat-litter-boxes', label: 'Cat Litter Boxes' },
-  { href: '/collections/orthopedic-calming-dog-beds', label: 'Dog Beds' },
+  { href: '/collections/cat-litter-boxes', label: 'Cat Litter Boxes' },
+  { href: '/collections/dog-beds', label: 'Dog Beds' },
   { href: '/collections/dog-travel-accessories', label: 'Dog Travel' },
-  { href: '/collections/best-pet-strollers', label: 'Pet Strollers' },
-  { href: '/collections/best-interactive-cat-toys', label: 'Cat Toys' },
+  { href: '/collections/dogs', label: 'Shop Dogs' },
+  { href: '/collections/cats', label: 'Shop Cats' },
   { href: '/bestsellers', label: 'Bestsellers' },
   { href: '/products', label: 'All Products' },
   { href: '/guides', label: 'Expert Guides' },

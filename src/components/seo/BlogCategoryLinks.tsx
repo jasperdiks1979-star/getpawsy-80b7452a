@@ -11,19 +11,19 @@ const categoryLinkMap: Record<string, Array<{ href: string; label: string; type:
   Dogs: [
     { href: '/collections/dogs', label: 'Browse Dog Essentials', type: 'collection' },
     { href: '/collections/best-interactive-dog-toys', label: 'Top Interactive Dog Toys', type: 'collection' },
-    { href: '/collections/orthopedic-calming-dog-beds', label: 'Orthopedic & Calming Dog Beds', type: 'collection' },
-    { href: '/collections/best-dog-harnesses', label: 'Best Dog Harnesses & Leashes', type: 'collection' },
+    { href: '/collections/dog-beds', label: 'Orthopedic & Calming Dog Beds', type: 'collection' },
+    { href: '/collections/dogs', label: 'Best Dog Harnesses & Leashes', type: 'collection' },
     { href: '/guides/best-dog-beds-guide', label: 'How to Choose the Right Dog Bed', type: 'guide' },
   ],
   Cats: [
     { href: '/collections/cats', label: 'Explore Cat Products', type: 'collection' },
     { href: '/collections/cat-condos', label: 'Cat Condos & Hideaways', type: 'collection' },
-    { href: '/collections/best-cat-litter-boxes', label: 'Top-Rated Litter Boxes', type: 'collection' },
+    { href: '/collections/cat-litter-boxes', label: 'Top-Rated Litter Boxes', type: 'collection' },
     { href: '/collections/best-cat-toys-for-indoor-cats', label: 'Indoor Cat Toy Picks', type: 'collection' },
     { href: '/guides/best-cat-litter-box-2026', label: 'Complete Litter Box Guide 2026', type: 'guide' },
   ],
   Health: [
-    { href: '/collections/orthopedic-calming-dog-beds', label: 'Orthopedic Beds for Joint Support', type: 'collection' },
+    { href: '/collections/dog-beds', label: 'Orthopedic Beds for Joint Support', type: 'collection' },
     { href: '/collections/best-slow-feeder-dog-bowls', label: 'Slow Feeder Bowls for Healthier Eating', type: 'collection' },
     { href: '/collections/cats', label: 'GetPawsy Cat Health Collection', type: 'collection' },
     { href: '/guides/best-cat-litter-box-2026', label: 'Litter Box Hygiene & Health Guide', type: 'guide' },
@@ -35,7 +35,7 @@ const categoryLinkMap: Record<string, Array<{ href: string; label: string; type:
     { href: '/collections/dog-enrichment-toys', label: 'Enrichment Toys & Training Aids', type: 'collection' },
   ],
   Guides: [
-    { href: '/collections/orthopedic-calming-dog-beds', label: 'Recommended Orthopedic Dog Beds', type: 'collection' },
+    { href: '/collections/dog-beds', label: 'Recommended Orthopedic Dog Beds', type: 'collection' },
     { href: '/collections/cat-condos', label: 'Browse Cat Condos', type: 'collection' },
     { href: '/guides/best-cat-trees-small-apartments', label: 'Cat Trees for Small Spaces Guide', type: 'guide' },
     { href: '/collections/best-dog-grooming-kits', label: 'Grooming Kits Reviewed by Our Team', type: 'collection' },

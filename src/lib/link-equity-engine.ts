@@ -517,10 +517,10 @@ const AUTHORITY_LOOP_CONFIGS: AuthorityLoop[] = [
     pillarTitle: 'Best Cat Litter Boxes 2026 — Self-Cleaning & Odor Control',
     pillarWordTarget: '1,500–2,000',
     productSlugs: ['self-cleaning-cat-litter-box-automatic', 'enclosed-cat-litter-box-odor-control'],
-    collectionSlug: '/collections/best-cat-litter-boxes',
+    collectionSlug: '/collections/cat-litter-boxes',
     loopLinks: [
-      { from: '/guides/best-cat-litter-boxes', to: '/collections/best-cat-litter-boxes', anchor: 'shop litter boxes' },
-      { from: '/collections/best-cat-litter-boxes', to: '/guides/best-cat-litter-boxes', anchor: 'litter box buying guide' },
+      { from: '/guides/best-cat-litter-boxes', to: '/collections/cat-litter-boxes', anchor: 'shop litter boxes' },
+      { from: '/collections/cat-litter-boxes', to: '/guides/best-cat-litter-boxes', anchor: 'litter box buying guide' },
     ],
   },
   {
@@ -546,10 +546,10 @@ const AUTHORITY_LOOP_CONFIGS: AuthorityLoop[] = [
       'calming-donut-dog-bed-anti-anxiety',
       'orthopedic-dog-bed-large-breed-xl',
     ],
-    collectionSlug: '/collections/orthopedic-calming-dog-beds',
+    collectionSlug: '/collections/dog-beds',
     loopLinks: [
-      { from: '/collections/all', to: '/collections/orthopedic-calming-dog-beds', anchor: 'shop orthopedic dog beds' },
-      { from: '/collections/orthopedic-calming-dog-beds', to: '/collections/all', anchor: 'orthopedic bed buying guide' },
+      { from: '/collections/all', to: '/collections/dog-beds', anchor: 'shop orthopedic dog beds' },
+      { from: '/collections/dog-beds', to: '/collections/all', anchor: 'orthopedic bed buying guide' },
     ],
   },
 ];

@@ -1,19 +1,17 @@
 /**
  * ProductsCollectionShortcuts — Quick-nav collection links for /products page.
- * Reduces crawl depth and provides category hub entry points.
+ * Only links to collections with real inventory + guides hub.
  */
 
 import { Link } from 'react-router-dom';
 
 const SHORTCUTS = [
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
-  { href: '/collections/best-cat-litter-boxes', label: 'Litter Boxes' },
-  { href: '/collections/orthopedic-calming-dog-beds', label: 'Dog Beds' },
+  { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
+  { href: '/collections/dog-beds', label: 'Dog Beds' },
   { href: '/collections/dog-travel-accessories', label: 'Dog Travel' },
-  { href: '/collections/best-pet-strollers', label: 'Pet Strollers' },
-  { href: '/collections/best-interactive-cat-toys', label: 'Cat Toys' },
-  { href: '/collections/best-dog-harnesses', label: 'Dog Harnesses' },
-  { href: '/collections/best-cat-carriers', label: 'Cat Carriers' },
+  { href: '/collections/dogs', label: 'All Dog Products' },
+  { href: '/collections/cats', label: 'All Cat Products' },
   { href: '/bestsellers', label: 'Bestsellers' },
   { href: '/guides', label: 'Expert Guides' },
 ] as const;

@@ -491,7 +491,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'What type of cat litter is best?', answer: 'Most cats prefer unscented, fine-grain clumping clay litter. It mimics natural sand texture and makes scooping easy. Avoid heavily scented litters, pine pellets, and crystals until you know your cat accepts them — many cats are picky about texture and scent.' },
     ],
     relatedLinks: [
-      { to: '/collections/best-cat-litter-boxes', text: 'Best Cat Litter Boxes Compared' },
+      { to: '/collections/cat-litter-boxes', text: 'Best Cat Litter Boxes Compared' },
       { to: '/products?category=cat-grooming', text: 'Cat Grooming Supplies' },
       { to: '/products?category=cat-houses', text: 'Cat Houses & Hideaways' },
     ],
