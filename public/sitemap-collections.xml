@@ -1,38 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://getpawsy.pet/collections/dogs</loc>
-    <lastmod>2026-04-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/cats</loc>
-    <lastmod>2026-04-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/collections/dog-beds</loc>
-    <lastmod>2026-04-03</lastmod>
+    <loc>https://getpawsy.pet/collections/cat-litter-boxes</loc>
+    <lastmod>2026-03-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://getpawsy.pet/collections/cat-trees-and-condos</loc>
-    <lastmod>2026-04-03</lastmod>
+    <lastmod>2026-02-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/collections/cat-litter-boxes</loc>
-    <lastmod>2026-04-03</lastmod>
+    <loc>https://getpawsy.pet/collections/cats</loc>
+    <lastmod>2026-02-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/collections/dog-travel-accessories</loc>
-    <lastmod>2026-04-03</lastmod>
+    <loc>https://getpawsy.pet/collections/dog-beds</loc>
+    <lastmod>2026-04-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.pet/collections/dogs</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.pet/collections/self-cleaning-litter-box</loc>
+    <lastmod>2026-03-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
