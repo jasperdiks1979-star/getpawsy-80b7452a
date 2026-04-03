@@ -1597,6 +1597,9 @@ const ProductDetail = () => {
         {/* 4. Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
 
+        {/* E-E-A-T Trust Block */}
+        <WhyTrustGetPawsy variant="pdp" className="mt-8" />
+
         {/* 9. Final CTA Block — conversion closer */}
         <FinalCtaBlock
           onAddToCart={handleAddToCart}
