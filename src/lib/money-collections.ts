@@ -179,7 +179,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Electronic, laser, and feather toys to beat boredom and enrich indoor cats.',
     primaryKeyword: 'best interactive cat toys',
     cluster: 'cat',
-    crossLinks: ['best-cat-toys-for-indoor-cats', 'best-cat-toys-for-bored-cats'],
+    crossLinks: ['cat-trees-and-condos', 'cat-litter-boxes'],
     supportArticles: [
       'best-electronic-cat-toys-2026',
       'indoor-cat-enrichment-guide',
