@@ -147,7 +147,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Anti-gulp bowls and puzzle feeders to prevent bloat and promote healthy eating.',
     primaryKeyword: 'slow feeder dog bowls',
     cluster: 'dog',
-    crossLinks: ['dog-beds', 'dog-travel-accessories'],
+    crossLinks: ['dog-beds', 'dogs'],
     supportArticles: [
       'slow-feeder-bowl-benefits-dogs',
       'best-bowl-for-fast-eating-dog',
