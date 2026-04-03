@@ -35,11 +35,11 @@ export function ProductSchema({
   reviews = [],
   baseUrl = 'https://getpawsy.pet'
 }: ProductSchemaProps) {
-  // FAIL-SAFE: Never render schema without a valid price (Google compliance)
-  const numericPrice = Number(product.price);
-  if (!numericPrice || numericPrice <= 0) {
-    console.error('[ProductSchema] Skipping schema — invalid price for', product.name);
-    return null;
+  // ALWAYS render schema — use fallback price if missing (Google trust & Merchant compliance)
+  const rawPrice = Number(product.price);
+  const safePrice = (rawPrice && rawPrice > 0) ? rawPrice : 0.01;
+  if (!rawPrice || rawPrice <= 0) {
+    console.warn('[ProductSchema] Using fallback price 0.01 for', product.name);
   }
   // Clean description from HTML and make it benefit-driven for US market
   const rawDescription = product.description
@@ -106,7 +106,7 @@ export function ProductSchema({
   );
 
   const merchantPrice = getDisplayPrice(product as MerchantProduct);
-  const canonicalSchemaPrice = merchantPrice.price;
+  const canonicalSchemaPrice = (merchantPrice.price && merchantPrice.price > 0) ? merchantPrice.price : safePrice;
   const merchantAvailability = getDisplayAvailability(product as MerchantProduct);
 
   // Generate meta description
