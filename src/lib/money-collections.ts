@@ -37,14 +37,14 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     ],
   },
   {
-    slug: 'best-cat-litter-boxes',
-    name: 'Best Cat Litter Boxes',
+    slug: 'cat-litter-boxes',
+    name: 'Cat Litter Boxes',
     shortName: 'Litter Boxes',
     icon: '🧹',
     description: 'Self-cleaning, enclosed, and odor-control litter boxes for every cat household.',
     primaryKeyword: 'best cat litter boxes',
     cluster: 'cat',
-    crossLinks: ['cat-litter-box-furniture-guide', 'best-litter-box-for-large-cats'],
+    crossLinks: ['cat-trees-and-condos'],
     supportArticles: [
       'self-cleaning-litter-box-guide',
       'best-self-cleaning-litter-box-2026',
