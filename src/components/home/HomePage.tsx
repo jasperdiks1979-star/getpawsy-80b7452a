@@ -41,6 +41,8 @@ const DOG_IDS = [
 ];
 
 const HomePage = () => {
+  useCanonical('/');
+
   return (
     <Layout>
       <Helmet>
@@ -49,7 +51,6 @@ const HomePage = () => {
           name="description"
           content="Shop premium pet products at GetPawsy. Top-rated essentials for dogs and cats with US shipping and 30-day returns."
         />
-        <link rel="canonical" href="https://getpawsy.pet/" />
       </Helmet>
 
       <HeroSection />
