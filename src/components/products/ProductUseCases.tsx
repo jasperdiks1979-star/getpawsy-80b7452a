@@ -59,6 +59,12 @@ const USE_CASES: Record<ProductType, UseCase[]> = {
     { persona: 'Overweight pets', scenario: 'Interactive feeders slow eating speed and encourage physical movement during mealtimes.' },
     { persona: 'Teething puppies', scenario: 'Durable chew toys soothe gums and protect household items from puppy teeth.' },
   ],
+  stroller: [
+    { persona: 'Senior dog owners', scenario: 'Aging dogs with limited mobility still get daily outdoor stimulation without overexertion.' },
+    { persona: 'Post-surgery recovery', scenario: 'Dogs recovering from surgery can enjoy fresh air and socializing while resting comfortably.' },
+    { persona: 'Urban pet parents', scenario: 'Navigate busy sidewalks, farmers markets, and outdoor dining areas safely with small dogs.' },
+    { persona: 'Multi-dog households', scenario: 'Stroller one pet while walking the other — both get outdoor time without exhaustion.' },
+  ],
   carrier: [
     { persona: 'Frequent flyers', scenario: 'Airline-compliant dimensions fit under cabin seats for stress-free in-flight pet travel.' },
     { persona: 'Vet visit anxiety', scenario: 'Familiar enclosed space calms nervous pets during the car ride and waiting room.' },

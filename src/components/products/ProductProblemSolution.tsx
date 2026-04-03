@@ -108,6 +108,11 @@ const DATA: Record<ProductType, ProblemSolutionData> = {
     solution: 'Let the litter box clean itself. This smart system automatically removes waste after every use — keeping your home fresh without any effort. Sealed compartments trap smells at the source while sensors ensure your cat\'s safety.',
     benefits: ['No more scooping', 'Always odor-free', 'Multi-cat friendly'],
   },
+  stroller: {
+    problem: 'Senior dogs, injured pets, and small breeds miss out on outdoor time because they can\'t walk long distances. Carrying them is exhausting, and leaving them home leads to boredom and anxiety.',
+    solution: 'This pet stroller gives your dog the outdoor experience without the physical strain. All-terrain wheels handle any surface, the one-hand fold fits in your trunk, and the breathable canopy keeps your pet comfortable in all weather conditions.',
+    benefits: ['Outdoor access for all dogs', 'Folds in seconds', 'Smooth all-terrain ride'],
+  },
   accessory: {
     problem: "Finding quality pet accessories that actually work is frustrating. Many products look good online but break easily, don't fit properly, or aren't safe for daily use.",
     solution: 'This product is built with quality materials and practical design, tested to meet the demands of real pet ownership. It integrates seamlessly into your daily routine, making life easier for both you and your pet.',

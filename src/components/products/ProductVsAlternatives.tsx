@@ -108,6 +108,18 @@ const DATA: Record<ProductType, ComparisonData> = {
       { feature: 'Shoulder strap included', ours: true, generic: true },
     ],
   },
+  stroller: {
+    heading: 'This Stroller vs. Carrying Your Pet',
+    summary: 'Carrying pets is tiring and unsafe for longer outings. A stroller gives your pet a smooth, comfortable ride while keeping your hands free.',
+    rows: [
+      { feature: 'All-terrain wheels', ours: true, generic: false },
+      { feature: 'One-hand fold mechanism', ours: true, generic: false },
+      { feature: 'Rear brake system', ours: true, generic: false },
+      { feature: 'Weatherproof canopy', ours: true, generic: false },
+      { feature: 'Under-seat storage', ours: true, generic: false },
+      { feature: 'Pet can see outside', ours: true, generic: true },
+    ],
+  },
   grooming: {
     heading: 'Better Than Your Average Brush',
     summary: 'Standard brushes pull hair, miss the undercoat, and are a pain to clean. This tool is designed for efficiency and comfort.',
