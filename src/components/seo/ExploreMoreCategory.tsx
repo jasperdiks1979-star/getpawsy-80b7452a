@@ -26,7 +26,7 @@ const categoryToCollection: Record<string, { slug: string; label: string }> = {
   'dog grooming': { slug: 'best-dog-grooming-kits', label: 'Dog Grooming' },
   'dog food': { slug: 'best-slow-feeder-dog-bowls', label: 'Dog Feeding' },
   'dog bowl': { slug: 'best-slow-feeder-dog-bowls', label: 'Dog Bowls' },
-  'dog travel': { slug: 'dog-travel-accessories', label: 'Dog Travel' },
+  'dog travel': { slug: 'dogs', label: 'Dog Products' },
   'pet training': { slug: 'dogs', label: 'Dog Products' },
   'pet accessories': { slug: 'dogs', label: 'All Dog Products' },
   'pet grooming': { slug: 'best-dog-grooming-kits', label: 'Grooming Supplies' },
