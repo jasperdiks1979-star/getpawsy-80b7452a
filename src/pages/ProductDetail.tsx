@@ -96,6 +96,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
+  RETURN_WINDOW_DAYS,
 } from "@/lib/shipping-constants";
 import { VolumeDiscountSelector } from "@/components/products/VolumeDiscountSelector";
 import {
