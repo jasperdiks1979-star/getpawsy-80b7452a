@@ -9,7 +9,7 @@ interface ProductProblemSolutionProps {
 type ProductType =
   | 'bed' | 'bowl' | 'collar' | 'toy' | 'carrier' | 'grooming'
   | 'clothing' | 'mat' | 'fountain' | 'food' | 'harness' | 'leash'
-  | 'cat tree' | 'litter box' | 'accessory';
+  | 'cat tree' | 'litter box' | 'stroller' | 'accessory';
 
 interface ProblemSolutionData {
   problem: string;
