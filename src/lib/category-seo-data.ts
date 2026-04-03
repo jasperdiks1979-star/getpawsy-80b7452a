@@ -536,9 +536,9 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
       { question: 'Are automatic cat feeders reliable?', answer: 'Modern automatic feeders are very reliable with proper setup. Look for models with battery backup (essential for power outages), jam-resistant mechanisms, and portion accuracy within 5%. WiFi models let you monitor and adjust remotely.' },
     ],
     relatedLinks: [
-      { to: '/collections/automatic-cat-feeders', text: 'Automatic Cat Feeders' },
-      { to: '/products?category=cat-food-treats', text: 'Cat Food & Treats' },
-      { to: '/products?category=cat-toys', text: 'Cat Toys for Mealtime Enrichment' },
+      { to: '/collections/cats', text: 'Shop Cat Products' },
+      { to: '/collections/cat-litter-boxes', text: 'Cat Litter Boxes' },
+      { to: '/guides/best-cat-litter-box-2026', text: 'Best Litter Box Guide' },
     ],
     perfectFor: [
       'Cats experiencing whisker fatigue from deep bowls',
