@@ -79,7 +79,7 @@ const FAQ = () => {
       questions: [
         {
           question: 'Is checkout secure?',
-          answer: 'Yes. All payments are processed securely using industry-standard encryption. Your payment information is always protected.',
+          answer: 'Yes. All payments are processed securely using industry-standard encryption powered by Stripe. Your payment information is always protected.',
         },
         {
           question: 'What payment methods do you accept?',
