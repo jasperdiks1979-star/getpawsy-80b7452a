@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import heroDesktop from '@/assets/hero-lifestyle-desktop.webp';
-import heroMobile from '@/assets/hero-lifestyle-mobile.webp';
+// Use public directory images so index.html preload tags work (no Vite hash)
+const heroDesktop = '/hero/dog-training-hero-desktop.webp';
+const heroMobile = '/hero/dog-training-hero-mobile.webp';
 
 /**
  * Conversion-focused hero — dual CTA, compact trust row.

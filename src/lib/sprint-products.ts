@@ -26,7 +26,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'automatic cat litter box',
     conversionScore: 95,
     contentCluster: 'litter-boxes',
-    image: '/images/products/self-cleaning-litter-box.jpg',
+    image: '/images/products/self-cleaning-litter-box.webp',
   },
   {
     slug: 'all-in-one-cactus-cat-tree-with-climbing-frame-and-cozy-nest',
@@ -37,7 +37,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'cat tree cactus',
     conversionScore: 90,
     contentCluster: 'cat-trees',
-    image: '/images/products/cactus-cat-tree.jpg',
+    image: '/images/products/cactus-cat-tree.webp',
   },
   {
     slug: 'dog-cot-cooling-pet-bed-3',
@@ -48,7 +48,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'elevated cooling dog bed',
     conversionScore: 88,
     contentCluster: 'dog-beds',
-    image: '/images/products/elevated-cooling-dog-bed.jpg',
+    image: '/images/products/elevated-cooling-dog-bed.webp',
   },
   {
     slug: 'cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white',
@@ -59,7 +59,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'cat litter box furniture',
     conversionScore: 86,
     contentCluster: 'litter-boxes',
-    image: '/images/products/litter-box-furniture.jpg',
+    image: '/images/products/litter-box-furniture.webp',
   },
   {
     slug: '44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-0441',
@@ -70,7 +70,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'multi level cat tree',
     conversionScore: 84,
     contentCluster: 'cat-trees',
-    image: '/images/products/multi-level-cat-tree.jpg',
+    image: '/images/products/multi-level-cat-tree.webp',
   },
   {
     slug: 'pawhut-cat-litter-box-enclosure-with-tall-legs-scratching-board-dark-brown',
@@ -81,7 +81,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'hidden litter box',
     conversionScore: 82,
     contentCluster: 'litter-boxes',
-    image: '/images/products/hidden-litter-box.jpg',
+    image: '/images/products/hidden-litter-box.webp',
   },
   {
     slug: '35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c',
@@ -92,7 +92,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'modern cat tree',
     conversionScore: 80,
     contentCluster: 'cat-trees',
-    image: '/images/products/modern-cat-tree.jpg',
+    image: '/images/products/modern-cat-tree.webp',
   },
   {
     slug: 'dog-bed-pet-sofa',
@@ -103,7 +103,7 @@ export const SPRINT_PRODUCTS: SprintProduct[] = [
     primaryKeyword: 'dog sofa bed',
     conversionScore: 78,
     contentCluster: 'dog-beds',
-    image: '/images/products/dog-sofa-bed.jpg',
+    image: '/images/products/dog-sofa-bed.webp',
   },
 ];
 
