@@ -12,7 +12,7 @@ interface Step {
 }
 
 type ProductType =
-  | 'litter box' | 'cat tree' | 'harness' | 'bed' | 'grooming' | 'carrier' | 'default';
+  | 'litter box' | 'cat tree' | 'harness' | 'bed' | 'grooming' | 'carrier' | 'stroller' | 'default';
 
 function detectType(name: string, category: string): ProductType {
   const c = `${name} ${category}`.toLowerCase();
