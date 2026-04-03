@@ -83,7 +83,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'No-pull, front-clip, and comfortable dog harnesses for every breed and size.',
     primaryKeyword: 'best no-pull dog harness',
     cluster: 'dog',
-    crossLinks: ['best-dog-harness-for-pulling', 'dog-travel-accessories'],
+    crossLinks: ['dog-beds', 'dog-travel-accessories'],
     supportArticles: [
       'no-pull-harness-vs-collar-2026',
       'how-to-measure-dog-for-harness',
