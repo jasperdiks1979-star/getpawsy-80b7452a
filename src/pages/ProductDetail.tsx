@@ -20,6 +20,7 @@ import {
   Box,
   Info,
   Home,
+  CheckCircle,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileProductGallery } from "@/components/products/MobileProductGallery";
@@ -95,6 +96,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
+  RETURN_WINDOW_DAYS,
 } from "@/lib/shipping-constants";
 import { VolumeDiscountSelector } from "@/components/products/VolumeDiscountSelector";
 import {
@@ -973,20 +975,25 @@ const ProductDetail = () => {
 
             {/* Above-the-fold conversion block with winner badge */}
             <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={adIntent.bestFor} />
-            {/* Compact Trust Checkmarks — immediately visible */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-primary" />
-                Estimated delivery: 5–10 business days
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-primary" />
-                30-day returns
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5 text-primary" />
+            {/* Trust Stack — PDP merchant trust signals */}
+            <div className="bg-muted/40 rounded-xl p-4 space-y-2.5 border border-border/50">
+              <div className="flex items-center gap-2 text-sm text-foreground font-medium">
+                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                In stock — Ships to United States
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Truck className="w-4 h-4 text-primary flex-shrink-0" />
+                Estimated delivery: {DELIVERY_TIME_STANDARD}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Shield className="w-4 h-4 text-primary flex-shrink-0" />
                 Secure checkout
-              </span>
+              </div>
+              <div className="border-t border-border/50 pt-2.5 mt-1 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">✔ Free shipping over ${FREE_SHIPPING_THRESHOLD}</span>
+                <span className="flex items-center gap-1">✔ {RETURN_WINDOW_DAYS}-day returns</span>
+                <span className="flex items-center gap-1">✔ Secure checkout</span>
+              </div>
             </div>
 
             {/* Variants - PRIORITY: Show immediately after price for visibility */}

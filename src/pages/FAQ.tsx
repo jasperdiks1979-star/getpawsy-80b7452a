@@ -10,6 +10,7 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
   SUPPORT_EMAIL,
+  FLAT_RATE_MESSAGE,
 } from '@/lib/shipping-constants';
 
 const FAQ = () => {
@@ -78,7 +79,7 @@ const FAQ = () => {
       questions: [
         {
           question: 'Is checkout secure?',
-          answer: 'Yes. All payments are processed securely using industry-standard encryption. Your payment information is always protected.',
+          answer: 'Yes. All payments are processed securely using industry-standard encryption powered by Stripe. Your payment information is always protected.',
         },
         {
           question: 'What payment methods do you accept?',
@@ -92,7 +93,7 @@ const FAQ = () => {
       questions: [
         {
           question: 'How can I contact customer support?',
-          answer: `Email us at ${SUPPORT_EMAIL}. We respond within 24 business hours and are always happy to help.`,
+          answer: `Email us at ${SUPPORT_EMAIL}. We respond within 24 hours and are always happy to help. Email is our primary contact method.`,
         },
         {
           question: 'Can I change or cancel my order?',
