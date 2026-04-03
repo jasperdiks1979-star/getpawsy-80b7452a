@@ -20,6 +20,7 @@ import { getSeoTitle } from '@/lib/seo-title-ab';
 import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBlock';
 import { GuideTopPick } from '@/components/guides/GuideTopPick';
 import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
+import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
 
 const BASE_URL = 'https://getpawsy.pet';
 
