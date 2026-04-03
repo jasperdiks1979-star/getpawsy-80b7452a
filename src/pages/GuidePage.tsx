@@ -24,6 +24,7 @@ import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
 import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
 import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
 import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
+import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
 
 const BASE_URL = 'https://getpawsy.pet';
 
