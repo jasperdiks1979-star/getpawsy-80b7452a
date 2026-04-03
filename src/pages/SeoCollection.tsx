@@ -521,18 +521,8 @@ const SeoCollection = () => {
       aliasUsed: slugResolution?.aliasUsed || false,
       matchResult: 'not_found',
     });
-    // Show a proper "not found" page instead of silently redirecting to another collection
-    return (
-      <Layout>
-        <div className="container py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Collection Not Found</h1>
-          <p className="text-muted-foreground mb-6">
-            We couldn't find a collection matching "{rawSlug}". Browse all our products instead.
-          </p>
-          <Button asChild><Link to="/products">Browse All Products</Link></Button>
-        </div>
-      </Layout>
-    );
+    // Redirect unknown collection slugs to /products — never show "Collection Not Found"
+    return <Navigate to="/products" replace />;
   }
 
   // Thin collection guard: show "no products found" message instead of redirecting to /collections/all

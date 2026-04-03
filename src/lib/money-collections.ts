@@ -28,7 +28,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Multi-level cat trees, condos, and climbing furniture for indoor cats of all sizes.',
     primaryKeyword: 'best cat trees',
     cluster: 'cat',
-    crossLinks: ['best-cat-scratching-posts', 'best-interactive-cat-toys', 'best-cat-beds'],
+    crossLinks: ['cat-litter-boxes', 'dog-beds'],
     supportArticles: [
       'best-cat-tree-for-large-cats-2026',
       'cat-tree-vs-scratching-post',
@@ -37,14 +37,14 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     ],
   },
   {
-    slug: 'best-cat-litter-boxes',
-    name: 'Best Cat Litter Boxes',
+    slug: 'cat-litter-boxes',
+    name: 'Cat Litter Boxes',
     shortName: 'Litter Boxes',
     icon: '🧹',
     description: 'Self-cleaning, enclosed, and odor-control litter boxes for every cat household.',
     primaryKeyword: 'best cat litter boxes',
     cluster: 'cat',
-    crossLinks: ['cat-litter-box-furniture-guide', 'best-litter-box-for-large-cats'],
+    crossLinks: ['cat-trees-and-condos'],
     supportArticles: [
       'self-cleaning-litter-box-guide',
       'best-self-cleaning-litter-box-2026',
@@ -60,14 +60,14 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     ],
   },
   {
-    slug: 'orthopedic-calming-dog-beds',
-    name: 'Orthopedic & Calming Dog Beds',
+    slug: 'dog-beds',
+    name: 'Dog Beds',
     shortName: 'Dog Beds',
     icon: '🛏️',
     description: 'Memory foam, orthopedic, and calming dog beds for joint support and anxiety relief.',
     primaryKeyword: 'orthopedic dog beds',
     cluster: 'dog',
-    crossLinks: ['best-dog-beds-for-large-dogs', 'best-elevated-dog-bed', 'cooling-dog-beds'],
+    crossLinks: ['dog-travel-accessories', 'cat-trees-and-condos'],
     supportArticles: [
       'orthopedic-dog-bed-buying-guide-2026',
       'best-dog-bed-for-senior-dogs',
@@ -83,7 +83,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'No-pull, front-clip, and comfortable dog harnesses for every breed and size.',
     primaryKeyword: 'best no-pull dog harness',
     cluster: 'dog',
-    crossLinks: ['best-dog-harness-for-pulling', 'dog-travel-accessories'],
+    crossLinks: ['dog-beds', 'dog-travel-accessories'],
     supportArticles: [
       'no-pull-harness-vs-collar-2026',
       'how-to-measure-dog-for-harness',
@@ -99,7 +99,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Crash-tested dog car seats and booster seats for safe travel with your pet.',
     primaryKeyword: 'best dog car seats',
     cluster: 'dog',
-    crossLinks: ['dog-car-travel-safety-seats', 'crash-tested-dog-car-seat', 'dog-travel-accessories'],
+    crossLinks: ['dog-travel-accessories', 'dog-beds'],
     supportArticles: [
       'dog-car-seat-safety-guide-2026',
       'are-dog-booster-seats-safe',
@@ -115,7 +115,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Puzzle toys, enrichment toys, and indestructible chew toys for mental stimulation.',
     primaryKeyword: 'best interactive dog toys',
     cluster: 'dog',
-    crossLinks: ['dog-enrichment-toys', 'best-chew-toys-for-aggressive-chewers'],
+    crossLinks: ['dog-beds', 'dog-travel-accessories'],
     supportArticles: [
       'best-puzzle-toys-for-dogs-2026',
       'mental-stimulation-games-for-dogs',
@@ -131,7 +131,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Sisal, cardboard, and modern scratching posts to protect your furniture.',
     primaryKeyword: 'best cat scratching posts',
     cluster: 'cat',
-    crossLinks: ['cat-trees-and-condos', 'best-interactive-cat-toys'],
+    crossLinks: ['cat-trees-and-condos', 'cat-litter-boxes'],
     supportArticles: [
       'sisal-vs-cardboard-scratching-post',
       'how-to-stop-cat-scratching-furniture',
@@ -147,7 +147,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Anti-gulp bowls and puzzle feeders to prevent bloat and promote healthy eating.',
     primaryKeyword: 'slow feeder dog bowls',
     cluster: 'dog',
-    crossLinks: ['best-dog-water-bowl-for-messy-drinkers', 'best-elevated-dog-bed'],
+    crossLinks: ['dog-beds', 'dog-travel-accessories'],
     supportArticles: [
       'slow-feeder-bowl-benefits-dogs',
       'best-bowl-for-fast-eating-dog',
@@ -163,7 +163,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Airline-approved, soft-sided, and backpack cat carriers for stress-free travel.',
     primaryKeyword: 'best cat carriers',
     cluster: 'cat',
-    crossLinks: ['best-cat-carrier-for-vet-visits', 'best-cat-beds'],
+    crossLinks: ['cats', 'cat-litter-boxes'],
     supportArticles: [
       'airline-approved-cat-carrier-guide',
       'how-to-get-cat-used-to-carrier',
@@ -179,7 +179,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Electronic, laser, and feather toys to beat boredom and enrich indoor cats.',
     primaryKeyword: 'best interactive cat toys',
     cluster: 'cat',
-    crossLinks: ['best-cat-toys-for-indoor-cats', 'best-cat-toys-for-bored-cats'],
+    crossLinks: ['cat-trees-and-condos', 'cat-litter-boxes'],
     supportArticles: [
       'best-electronic-cat-toys-2026',
       'indoor-cat-enrichment-guide',
@@ -195,7 +195,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Heavy-duty, foldable, and jogging pet strollers for dogs and cats of all sizes.',
     primaryKeyword: 'best pet strollers',
     cluster: 'dog',
-    crossLinks: ['best-dog-car-seats', 'best-cat-carriers', 'best-dog-harnesses'],
+    crossLinks: ['dog-travel-accessories', 'dog-beds'],
     supportArticles: [
       'pet-stroller-buying-guide-2026',
       'best-pet-stroller-for-large-dogs',
@@ -211,7 +211,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Clickers, treat pouches, training pads, and behavior correction tools for all dog breeds.',
     primaryKeyword: 'best dog training tools',
     cluster: 'dog',
-    crossLinks: ['best-dog-harnesses', 'best-interactive-dog-toys', 'best-slow-feeder-dog-bowls'],
+    crossLinks: ['dog-beds', 'dog-travel-accessories'],
     supportArticles: [
       'best-dog-training-tools',
       'puppy-training-first-30-days',
@@ -227,7 +227,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     description: 'Car seat covers, travel water bottles, portable crates, and airline-approved gear for traveling with dogs.',
     primaryKeyword: 'best dog travel accessories',
     cluster: 'dog',
-    crossLinks: ['best-dog-car-seats', 'best-dog-harnesses', 'best-pet-strollers'],
+    crossLinks: ['dog-beds', 'cat-trees-and-condos'],
     supportArticles: [
       'dog-travel-checklist-2026',
       'flying-with-a-dog-guide',
