@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import { useCanonical } from '@/components/seo/CanonicalTag';
 import { 
   ShoppingCart, 
   Heart, 
