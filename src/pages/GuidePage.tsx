@@ -974,7 +974,26 @@ const GuidePage = () => {
           </section>
         )}
 
-        {/* FAQ Accordion — Premium */}
+        {/* Who This Is NOT For */}
+        {guide.notFor && guide.notFor.length > 0 && (
+          <section id="not-for" className="mb-12 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-5">
+              Who This Is NOT For
+            </h2>
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <ul className="space-y-2.5">
+                {guide.notFor.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground leading-relaxed">
+                    <XCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+
+
         {safeFaq.length > 0 && (
           <section id="faq" className="mb-12 scroll-mt-24">
             <h2 className="text-2xl font-display font-bold text-foreground mb-6">
