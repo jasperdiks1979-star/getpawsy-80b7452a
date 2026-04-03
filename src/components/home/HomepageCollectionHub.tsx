@@ -1,17 +1,17 @@
 /**
  * HomepageCollectionHub — Authority hub links from homepage to key collection pages.
- * Uses <a href> for raw HTML crawlability. Shows only collections with inventory.
+ * Uses <a href> for raw HTML crawlability. Shows only collections with real inventory (3+).
  */
 
 import { ArrowRight } from 'lucide-react';
 
 const HUB_COLLECTIONS = [
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos', icon: '🐈', desc: 'Multi-level climbing furniture for indoor cats' },
-  { href: '/collections/best-cat-litter-boxes', label: 'Cat Litter Boxes', icon: '🧹', desc: 'Self-cleaning, enclosed & odor-control options' },
-  { href: '/collections/orthopedic-calming-dog-beds', label: 'Dog Beds', icon: '🛏️', desc: 'Orthopedic, calming & elevated dog beds' },
-  { href: '/collections/dog-travel-accessories', label: 'Dog Travel', icon: '✈️', desc: 'Car seats, carriers & travel essentials' },
-  { href: '/collections/best-pet-strollers', label: 'Pet Strollers', icon: '🛒', desc: 'Heavy-duty strollers for dogs and cats' },
-  { href: '/collections/best-interactive-cat-toys', label: 'Cat Toys', icon: '🧶', desc: 'Electronic & interactive toys for indoor cats' },
+  { href: '/collections/cat-litter-boxes', label: 'Cat Litter Boxes', icon: '🧹', desc: 'Self-cleaning, enclosed & odor-control options' },
+  { href: '/collections/dog-beds', label: 'Dog Beds', icon: '🛏️', desc: 'Orthopedic, calming & elevated dog beds' },
+  { href: '/collections/dog-travel-accessories', label: 'Dog Travel', icon: '✈️', desc: 'Carriers, strollers & travel essentials' },
+  { href: '/guides', label: 'Expert Guides', icon: '📖', desc: 'In-depth buying advice from pet experts' },
+  { href: '/bestsellers', label: 'Bestsellers', icon: '⭐', desc: 'Our most popular picks for dogs & cats' },
 ] as const;
 
 export function HomepageCollectionHub() {
@@ -38,10 +38,10 @@ export function HomepageCollectionHub() {
         </div>
         <div className="mt-4 flex justify-center">
           <a
-            href="/collections/all"
+            href="/products"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
           >
-            View all collections <ArrowRight className="w-3.5 h-3.5" />
+            View all products <ArrowRight className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>
