@@ -1118,6 +1118,9 @@ const GuidePage = () => {
                 </Link>
               ))}
             </div>
+          </section>
+        )}
+
         {/* Read Next Guide CTA — session depth booster */}
         {relatedGuides.length > 0 && (
           <ReadNextGuideCTA guide={relatedGuides[0]} className="mt-10 mb-8" />
