@@ -56,13 +56,35 @@ function getIdealFor(name: string, cat: string): IdealForData {
     };
   }
 
-  if (/car.*seat|car.*cover|travel/i.test(c)) {
+  if (/car.*seat|car.*cover|travel/i.test(c) && !/stroller/i.test(c)) {
     return {
       audiences: [
         'Pet owners who travel with dogs in the car regularly',
         'Families wanting to protect vehicle upholstery',
         'Dogs that get anxious during car rides',
         'Anyone planning road trips with their pet',
+      ],
+    };
+  }
+
+  if (/stroller/i.test(c)) {
+    return {
+      audiences: [
+        'Senior dogs or pets recovering from surgery who need outdoor time',
+        'Small breed owners navigating busy urban environments',
+        'Multi-dog households where one pet tires faster',
+        'Pet parents who enjoy farmers markets, festivals, and outdoor dining',
+      ],
+    };
+  }
+
+  if (/carrier|backpack/i.test(c)) {
+    return {
+      audiences: [
+        'Pet owners who travel by air with small dogs or cats',
+        'Hikers and outdoor enthusiasts who bring their pet along',
+        'Urban commuters who use public transit with their pet',
+        'Frequent vet visitors looking for a calming transport solution',
       ],
     };
   }
