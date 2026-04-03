@@ -63,7 +63,10 @@ export default defineConfig(({ mode }) => ({
           }
 
           // ── App-level splits ─────────────────────────────────────────────
-          if (id.includes('/pages/admin/') || id.includes('/components/admin/')) return 'admin-dashboard';
+          // NOTE: admin-dashboard intentionally NOT manually chunked.
+          // Vite naturally code-splits via lazy(() => import('./pages/Admin')).
+          // Manual chunking pulled shared Radix/utility code INTO admin-dashboard,
+          // forcing the main entry to depend on a 3.6MB chunk. See: perf audit 2026-04-03
 
           // Heavy SEO engines — admin-only, never on public pages
           if (
