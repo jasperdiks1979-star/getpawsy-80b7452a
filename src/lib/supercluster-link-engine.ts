@@ -230,7 +230,7 @@ export const SUPERCLUSTERS: SuperclusterConfig[] = [
     label: 'Pet Travel Accessories',
     species: 'multi',
     pillarSlug: 'pet-travel-guide',
-    collectionSlug: 'dog-travel-accessories',
+    collectionSlug: 'dogs',
     relatedCollections: ['best-dog-car-seats', 'best-cat-carriers', 'best-pet-strollers', 'dog-car-travel-safety-seats'],
     guideSlugs: [
       'best-pet-carrier-airline-approved',
