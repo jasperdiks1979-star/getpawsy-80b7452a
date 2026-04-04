@@ -7,7 +7,7 @@ import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
  * Provides Google with business identity signals for Merchant Center compliance.
  */
 export function OrganizationSchema() {
-  const schema = {
+  const orgSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
@@ -20,10 +20,19 @@ export function OrganizationSchema() {
     taxID: 'NL003295015B69',
     description:
       'GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Orders are shipped directly to customers across the United States.',
+    sameAs: [
+      'https://pinterest.com/getpawsy',
+      'https://instagram.com/getpawsy',
+      'https://x.com/getpawsy',
+      'https://facebook.com/getpawsy',
+      'https://linkedin.com/company/getpawsy',
+      'https://youtube.com/@getpawsy',
+    ],
     address: {
       '@type': 'PostalAddress',
       addressRegion: 'Gelderland',
       addressLocality: 'Apeldoorn',
+      postalCode: '7312VG',
       addressCountry: 'NL',
     },
     contactPoint: {
@@ -44,6 +53,33 @@ export function OrganizationSchema() {
       returnFees: 'https://schema.org/ReturnShippingFees',
       refundType: 'https://schema.org/FullRefund',
     },
+  };
+
+  const localBusinessSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'OnlineBusiness',
+    '@id': `${SITE_URL}/#localbusiness`,
+    name: 'GetPawsy',
+    url: SITE_URL,
+    logo: `${SITE_URL}/favicon.png`,
+    email: SUPPORT_EMAIL,
+    description: 'Online pet supply store specializing in cat trees, cat condos, and premium pet products for US customers.',
+    priceRange: '$$',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Apeldoorn',
+      addressRegion: 'Gelderland',
+      postalCode: '7312VG',
+      addressCountry: 'NL',
+    },
+    sameAs: [
+      'https://pinterest.com/getpawsy',
+      'https://instagram.com/getpawsy',
+      'https://x.com/getpawsy',
+      'https://facebook.com/getpawsy',
+      'https://linkedin.com/company/getpawsy',
+      'https://youtube.com/@getpawsy',
+    ],
   };
 
   return (
