@@ -116,9 +116,9 @@ const HomePage = () => {
               We focus on practical pet solutions that make life easier for pet owners.
             </p>
             <p>
-               Customer support:{' '}
-               <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline" aria-label="Email customer support">
-                 {'support' + '@' + 'getpawsy.pet'}
+             Customer support:{' '}
+               <a href="/contact" className="text-primary hover:underline" aria-label="Contact customer support">
+                 Contact us
                </a>{' '}
               — we respond within 24 hours.
             </p>
