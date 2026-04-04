@@ -124,9 +124,9 @@ const Contact = () => {
               <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
                 Message Sent!
-              </h1>
+               </h2>
               <p className="text-muted-foreground text-lg mb-8">
                 Thank you for contacting us. We have received your message and will get back 
                 to you within 24 hours.
