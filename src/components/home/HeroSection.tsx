@@ -29,10 +29,10 @@ export function HeroSection() {
 
       <div className="relative z-10 container px-4 md:px-6 py-16 md:py-28 lg:py-36 text-center">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
-          Premium Pet Comfort Starts Here
+          Best Cat Trees &amp; Cat Condos for Indoor Cats
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/95 max-w-xl mx-auto drop-shadow">
-          Smart solutions for safer, cleaner, stress-free pet living.
+          Sturdy, modern cat trees and condos built for large and active cats. Vet-approved designs with fast US shipping.
         </p>
 
         <div className="mt-6 flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
