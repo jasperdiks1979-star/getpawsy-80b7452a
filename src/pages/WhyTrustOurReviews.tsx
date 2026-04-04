@@ -20,7 +20,7 @@ const WhyTrustOurReviews = () => {
     <Layout>
       <Helmet>
         <title>Why Trust Our Reviews – Honest Pet Product Testing | GetPawsy</title>
-        <meta name="description" content="GetPawsy's editorial team researches 15–20 hours per guide. Learn our testing methodology, editorial independence policy, and how we rank products for US pet owners." />
+        <meta name="description" content="How GetPawsy tests and reviews pet products. Learn our editorial process, testing methodology, and why US pet owners trust our recommendations." />
         <link rel="canonical" href={`${BASE_URL}/why-trust-our-reviews`} />
         <meta name="robots" content="index, follow" />
         <meta property="og:title" content="Why Trust Our Reviews | GetPawsy" />

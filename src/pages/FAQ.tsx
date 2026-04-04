@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { HelpCircle, Truck, RotateCcw, PawPrint, CreditCard, MessageCircle } from 'lucide-react';
@@ -103,8 +104,12 @@ const FAQ = () => {
     },
   ];
 
-  return (
+   return (
     <Layout>
+      <Helmet>
+        <title>FAQ – Shipping, Returns & Orders | GetPawsy</title>
+        <meta name="description" content="Answers to common questions about GetPawsy orders, shipping times, returns, and pet product quality. Free US shipping on orders over $35." />
+      </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div
