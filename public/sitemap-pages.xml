@@ -25,112 +25,34 @@
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/trending-pet-products</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/recent-products</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/dog</loc>
+    <loc>https://getpawsy.pet/collections/cats</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/cat</loc>
+    <loc>https://getpawsy.pet/collections/dogs</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/dog/training</loc>
+    <loc>https://getpawsy.pet/collections/cat-trees-and-condos</loc>
     <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.pet/collections/cat-litter-boxes</loc>
+    <lastmod>2026-04-04</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://getpawsy.pet/dog/travel</loc>
+    <loc>https://getpawsy.pet/collections/dog-beds</loc>
     <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/cat/training</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/cat/travel</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/lp/self-cleaning-litter-box</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/lp/cat-litter-box</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-cat-litter-box-2026</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-dog-car-seat-safety</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-interactive-cat-toys</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-dog-anxiety-solutions</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-cat-litter-box-reddit</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-litter-box-for-smell</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-litter-box-large-cats</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
-  <url>
-    <loc>https://getpawsy.pet/best-litter-boxes-apartments-2026</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://getpawsy.pet/slow-feeder-dog-bowls</loc>
