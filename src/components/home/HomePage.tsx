@@ -46,10 +46,10 @@ const HomePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>GetPawsy – Premium Pet Products | US Shipping</title>
+        <title>Best Cat Trees & Cat Condos (2026) | Large Cats Approved | GetPawsy</title>
         <meta
           name="description"
-          content="Shop premium pet products at GetPawsy. Top-rated essentials for dogs and cats with US shipping and 30-day returns."
+          content="Shop the best cat trees and cat condos for large and active cats. Stable, durable and vet-approved designs with fast US shipping. 30-day returns."
         />
       </Helmet>
 
@@ -63,19 +63,19 @@ const HomePage = () => {
       </div>
 
       <CuratedProductSection
-        title="Bestsellers — Cat Litter Solutions"
+        title="Best Cat Trees & Climbing Towers"
+        subtitle="Modern, sturdy cat trees and condos for large and active indoor cats"
+        productIds={CAT_TREE_IDS}
+      />
+
+      <CuratedProductSection
+        title="Top Cat Litter Box Solutions"
         subtitle="Self-cleaning, enclosed & furniture-style litter boxes"
         productIds={LITTER_BOX_IDS}
       />
 
       <CuratedProductSection
-        title="Cat Trees & Climbing Towers"
-        subtitle="Modern, multi-level activity centers for indoor cats"
-        productIds={CAT_TREE_IDS}
-      />
-
-      <CuratedProductSection
-        title="Dog Travel & Comfort"
+        title="Dog Travel & Comfort Essentials"
         subtitle="Strollers, carriers & elevated beds for dogs"
         productIds={DOG_IDS}
       />
