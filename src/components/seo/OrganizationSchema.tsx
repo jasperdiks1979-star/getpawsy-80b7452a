@@ -84,7 +84,8 @@ export function OrganizationSchema() {
 
   return (
     <Helmet>
-      <script type="application/ld+json">{JSON.stringify(schema)}</script>
+      <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
+      <script type="application/ld+json">{JSON.stringify(localBusinessSchema)}</script>
     </Helmet>
   );
 }
