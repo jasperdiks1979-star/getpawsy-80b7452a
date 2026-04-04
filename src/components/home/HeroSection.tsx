@@ -41,7 +41,7 @@ export function HeroSection() {
             size="lg"
             className="w-full min-h-[52px] rounded-xl px-10 text-base font-bold bg-primary text-white shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:brightness-110 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
           >
-            <Link to="/bestsellers">Shop Bestsellers</Link>
+            <Link to="/collections/cat-trees-and-condos">Shop Cat Trees</Link>
           </Button>
         </div>
 

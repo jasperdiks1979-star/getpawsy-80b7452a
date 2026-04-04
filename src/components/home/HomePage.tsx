@@ -63,19 +63,19 @@ const HomePage = () => {
       </div>
 
       <CuratedProductSection
-        title="Bestsellers — Cat Litter Solutions"
+        title="Best Cat Trees & Climbing Towers"
+        subtitle="Modern, sturdy cat trees and condos for large and active indoor cats"
+        productIds={CAT_TREE_IDS}
+      />
+
+      <CuratedProductSection
+        title="Top Cat Litter Box Solutions"
         subtitle="Self-cleaning, enclosed & furniture-style litter boxes"
         productIds={LITTER_BOX_IDS}
       />
 
       <CuratedProductSection
-        title="Cat Trees & Climbing Towers"
-        subtitle="Modern, multi-level activity centers for indoor cats"
-        productIds={CAT_TREE_IDS}
-      />
-
-      <CuratedProductSection
-        title="Dog Travel & Comfort"
+        title="Dog Travel & Comfort Essentials"
         subtitle="Strollers, carriers & elevated beds for dogs"
         productIds={DOG_IDS}
       />
