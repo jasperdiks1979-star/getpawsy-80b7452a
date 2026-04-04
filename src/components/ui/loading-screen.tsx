@@ -37,9 +37,9 @@ export const LoadingScreen = () => {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="text-center"
         >
-          <h1 className="font-display text-3xl font-bold text-foreground">
+          <div className="font-display text-3xl font-bold text-foreground" role="status" aria-label="Loading GetPawsy">
             Get<span className="text-primary">Pawsy</span>
-          </h1>
+          </div>
           <p className="text-muted-foreground text-sm mt-1">Premium Pet Products </p>
         </motion.div>
 
