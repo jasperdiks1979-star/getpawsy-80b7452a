@@ -152,7 +152,11 @@ async function main() {
     process.exit(1);
   }
 
-  // ── COLLECTIONS (all valid SEO collections) ──
+  // ── COLLECTIONS (locked to 5 active collections only) ──
+  const ACTIVE_COLLECTION_SLUGS = new Set([
+    "dogs", "cats", "dog-beds", "cat-trees-and-condos", "cat-litter-boxes",
+  ]);
+
   let collectionsRaw = await fetchAllPages(
     "seo_collections",
     "select=slug,updated_at,product_keyword_filter,product_category_filter&is_active=eq.true&order=updated_at.desc"
@@ -171,16 +175,15 @@ async function main() {
 
   let collections;
   if (collectionsRaw && collectionsRaw.length > 0) {
-    const candidates = collectionsRaw.filter((c) => c.slug && !isExcluded(`/collections/${c.slug}`));
-    const { validCollections } = filterValidCollectionCandidates(
-      candidates, productCatalog, { minProducts: COLLECTION_MIN_PRODUCTS }
-    );
-    collections = validCollections
-      .map((c) => ({ path: c.path, lastmod: c.updated_at }));
-    console.log(`[sitemaps] Collections: ${collections.length}`);
+    // Only include the 5 locked active collections
+    collections = collectionsRaw
+      .filter((c) => c.slug && ACTIVE_COLLECTION_SLUGS.has(c.slug))
+      .map((c) => ({ path: `/collections/${c.slug}`, lastmod: c.updated_at }));
+    console.log(`[sitemaps] Collections (locked active): ${collections.length}`);
   } else {
+    // Fallback: only include locked slugs
     collections = safeRead(joinRoot("data", "collections.json"), [])
-      .filter(e => e && e.path);
+      .filter(e => e && e.path && ACTIVE_COLLECTION_SLUGS.has(e.path.replace('/collections/', '')));
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
   }
 
@@ -264,58 +267,30 @@ async function main() {
   const staticPages = [
     // ── Core commerce ──
     { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
-    { path: "/shop", priority: 0.95, changefreq: "daily", lastmod: today },
-    { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
-    { path: "/bestsellers", priority: 0.90, changefreq: "daily", lastmod: today },
-    { path: "/trending-pet-products", priority: 0.85, changefreq: "daily", lastmod: today },
-    { path: "/recent-products", priority: 0.70, changefreq: "daily", lastmod: today },
-    // ── Category hubs ──
-    { path: "/dog", priority: 0.90, changefreq: "daily", lastmod: today },
-    { path: "/cat", priority: 0.90, changefreq: "daily", lastmod: today },
-    { path: "/dog/training", priority: 0.85, changefreq: "weekly", lastmod: today },
-    { path: "/dog/travel", priority: 0.85, changefreq: "weekly", lastmod: today },
-    { path: "/cat/training", priority: 0.85, changefreq: "weekly", lastmod: today },
-    { path: "/cat/travel", priority: 0.85, changefreq: "weekly", lastmod: today },
-    // ── Landing pages ──
-    { path: "/lp/self-cleaning-litter-box", priority: 0.90, changefreq: "weekly", lastmod: today },
-    { path: "/lp/cat-litter-box", priority: 0.90, changefreq: "weekly", lastmod: today },
-    // ── SEO money pages ──
-    { path: "/best-cat-litter-box-2026", priority: 0.90, changefreq: "weekly", lastmod: today },
-    { path: "/best-dog-car-seat-safety", priority: 0.90, changefreq: "weekly", lastmod: today },
-    { path: "/best-interactive-cat-toys", priority: 0.90, changefreq: "weekly", lastmod: today },
-    { path: "/best-dog-anxiety-solutions", priority: 0.90, changefreq: "weekly", lastmod: today },
-    { path: "/best-cat-litter-box-reddit", priority: 0.75, changefreq: "monthly", lastmod: today },
-    { path: "/best-litter-box-for-smell", priority: 0.75, changefreq: "monthly", lastmod: today },
-    { path: "/best-litter-box-large-cats", priority: 0.75, changefreq: "monthly", lastmod: today },
-    { path: "/best-litter-boxes-apartments-2026", priority: 0.75, changefreq: "monthly", lastmod: today },
-    { path: "/slow-feeder-dog-bowls", priority: 0.75, changefreq: "weekly", lastmod: today },
-    { path: "/indoor-cat-furniture", priority: 0.75, changefreq: "weekly", lastmod: today },
+    { path: "/shop", priority: 0.80, changefreq: "weekly", lastmod: today },
+    { path: "/products", priority: 0.80, changefreq: "weekly", lastmod: today },
+    { path: "/bestsellers", priority: 0.80, changefreq: "weekly", lastmod: today },
     // ── Content hubs ──
-    { path: "/blog", priority: 0.70, changefreq: "daily", lastmod: today },
-    { path: "/guides", priority: 0.80, changefreq: "weekly", lastmod: today },
-    { path: "/pet-care-guides", priority: 0.75, changefreq: "weekly", lastmod: today },
-    { path: "/site-map", priority: 0.60, changefreq: "weekly", lastmod: today },
+    { path: "/blog", priority: 0.60, changefreq: "weekly", lastmod: today },
+    { path: "/guides", priority: 0.70, changefreq: "weekly", lastmod: today },
+    { path: "/site-map", priority: 0.40, changefreq: "monthly", lastmod: today },
     // ── Trust pages ──
-    { path: "/about", priority: 0.50, changefreq: "monthly", lastmod: today },
-    { path: "/contact", priority: 0.50, changefreq: "monthly", lastmod: today },
-    { path: "/shipping", priority: 0.50, changefreq: "monthly", lastmod: today },
-    { path: "/returns", priority: 0.50, changefreq: "monthly", lastmod: today },
-    { path: "/faq", priority: 0.40, changefreq: "monthly", lastmod: today },
-    { path: "/how-we-test-products", priority: 0.40, changefreq: "monthly", lastmod: today },
-    { path: "/why-trust-our-reviews", priority: 0.40, changefreq: "monthly", lastmod: today },
-    { path: "/about-the-author", priority: 0.30, changefreq: "monthly", lastmod: today },
-    { path: "/privacy", priority: 0.20, changefreq: "monthly", lastmod: today },
-    { path: "/terms", priority: 0.20, changefreq: "monthly", lastmod: today },
-    { path: "/affiliate-disclosure", priority: 0.20, changefreq: "monthly", lastmod: today },
+    { path: "/about", priority: 0.60, changefreq: "monthly", lastmod: today },
+    { path: "/contact", priority: 0.60, changefreq: "monthly", lastmod: today },
+    { path: "/shipping", priority: 0.60, changefreq: "monthly", lastmod: today },
+    { path: "/returns", priority: 0.60, changefreq: "monthly", lastmod: today },
+    { path: "/faq", priority: 0.50, changefreq: "monthly", lastmod: today },
+    { path: "/privacy", priority: 0.30, changefreq: "monthly", lastmod: today },
+    { path: "/terms", priority: 0.30, changefreq: "monthly", lastmod: today },
   ].map((e) => ({
     loc: absUrl(BASE, e.path), lastmod: e.lastmod, changefreq: e.changefreq, priority: e.priority,
     _path: e.path, _updatedAt: e.lastmod,
   }));
 
-  const productEntries = makeDelta(products, { changefreq: "weekly", priority: 0.80 });
-  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.70 });
-  const guideEntries = makeDelta(guideEntriesRaw, { changefreq: "weekly", priority: 0.65 });
-  const blogPageEntries = makeDelta(blogEntries, { changefreq: "weekly", priority: 0.60 });
+  const productEntries = makeDelta(products, { changefreq: "daily", priority: 0.90 });
+  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.80 });
+  const guideEntries = makeDelta(guideEntriesRaw, { changefreq: "monthly", priority: 0.70 });
+  const blogPageEntries = makeDelta(blogEntries, { changefreq: "monthly", priority: 0.60 });
 
   // ── Record history ──
   const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries, ...blogPageEntries];
