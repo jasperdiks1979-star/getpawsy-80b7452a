@@ -287,10 +287,10 @@ async function main() {
     _path: e.path, _updatedAt: e.lastmod,
   }));
 
-  const productEntries = makeDelta(products, { changefreq: "weekly", priority: 0.80 });
-  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.70 });
-  const guideEntries = makeDelta(guideEntriesRaw, { changefreq: "weekly", priority: 0.65 });
-  const blogPageEntries = makeDelta(blogEntries, { changefreq: "weekly", priority: 0.60 });
+  const productEntries = makeDelta(products, { changefreq: "daily", priority: 0.90 });
+  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.80 });
+  const guideEntries = makeDelta(guideEntriesRaw, { changefreq: "monthly", priority: 0.70 });
+  const blogPageEntries = makeDelta(blogEntries, { changefreq: "monthly", priority: 0.60 });
 
   // ── Record history ──
   const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries, ...blogPageEntries];
