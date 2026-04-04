@@ -152,7 +152,11 @@ async function main() {
     process.exit(1);
   }
 
-  // ── COLLECTIONS (all valid SEO collections) ──
+  // ── COLLECTIONS (locked to 5 active collections only) ──
+  const ACTIVE_COLLECTION_SLUGS = new Set([
+    "dogs", "cats", "dog-beds", "cat-trees-and-condos", "cat-litter-boxes",
+  ]);
+
   let collectionsRaw = await fetchAllPages(
     "seo_collections",
     "select=slug,updated_at,product_keyword_filter,product_category_filter&is_active=eq.true&order=updated_at.desc"
@@ -171,16 +175,15 @@ async function main() {
 
   let collections;
   if (collectionsRaw && collectionsRaw.length > 0) {
-    const candidates = collectionsRaw.filter((c) => c.slug && !isExcluded(`/collections/${c.slug}`));
-    const { validCollections } = filterValidCollectionCandidates(
-      candidates, productCatalog, { minProducts: COLLECTION_MIN_PRODUCTS }
-    );
-    collections = validCollections
-      .map((c) => ({ path: c.path, lastmod: c.updated_at }));
-    console.log(`[sitemaps] Collections: ${collections.length}`);
+    // Only include the 5 locked active collections
+    collections = collectionsRaw
+      .filter((c) => c.slug && ACTIVE_COLLECTION_SLUGS.has(c.slug))
+      .map((c) => ({ path: `/collections/${c.slug}`, lastmod: c.updated_at }));
+    console.log(`[sitemaps] Collections (locked active): ${collections.length}`);
   } else {
+    // Fallback: only include locked slugs
     collections = safeRead(joinRoot("data", "collections.json"), [])
-      .filter(e => e && e.path);
+      .filter(e => e && e.path && ACTIVE_COLLECTION_SLUGS.has(e.path.replace('/collections/', '')));
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
   }
 
