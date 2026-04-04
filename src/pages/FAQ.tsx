@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { HelpCircle, Truck, RotateCcw, PawPrint, CreditCard, MessageCircle } from 'lucide-react';
