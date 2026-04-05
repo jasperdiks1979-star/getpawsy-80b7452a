@@ -78,7 +78,7 @@ export default function MerchantOAuthCallback() {
         {status === "error" && (
           <>
             <XCircle className="h-12 w-12 mx-auto text-destructive" />
-            <h1 className="text-xl font-semibold">Connection failed</h1>
+            <div className="text-xl font-semibold">Connection failed</div>
             <p className="text-muted-foreground text-sm">{errorMsg}</p>
             <button
               onClick={() => navigate("/admin/integrations/merchant")}

@@ -169,7 +169,7 @@ const Wishlist = () => {
         <div className="container px-4 md:px-6 py-16 text-center">
           <div className="max-w-md mx-auto">
             <Heart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Your wishlist is empty</h1>
+            <h2 className="text-2xl font-bold mb-2">Your wishlist is empty</h2>
             <p className="text-muted-foreground mb-6">
               Add products to your wishlist by clicking the heart icon.
             </p>

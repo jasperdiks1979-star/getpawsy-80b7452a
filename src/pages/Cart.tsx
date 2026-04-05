@@ -56,7 +56,7 @@ const Cart = () => {
             <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
               <ShoppingBag className="w-12 h-12 text-muted-foreground" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
+            <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
             <p className="text-muted-foreground mb-6">
               Looks like you haven't added any products yet. Let's find something for your furry friend!
             </p>

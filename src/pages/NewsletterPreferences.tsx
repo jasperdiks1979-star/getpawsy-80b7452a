@@ -189,9 +189,9 @@ const NewsletterPreferences = () => {
               <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mx-auto mb-6">
                 <AlertCircle className="w-10 h-10 text-yellow-600" />
               </div>
-              <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+              <h2 className="text-3xl font-display font-bold text-foreground mb-4">
                 Invalid Link
-              </h1>
+              </h2>
               <p className="text-muted-foreground text-lg mb-8">
                 This preference link appears to be invalid or expired.
                 Please use the link from your most recent newsletter email.

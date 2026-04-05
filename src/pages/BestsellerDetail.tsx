@@ -629,7 +629,7 @@ const BestsellerDetail = () => {
           <meta name="robots" content="noindex" />
         </Helmet>
         <div className="container px-4 py-20 text-center">
-          <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+          <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
           <p className="text-muted-foreground mb-6">
             This product may have been renamed or is no longer available.
           </p>

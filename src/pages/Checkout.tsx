@@ -379,7 +379,7 @@ const Checkout = () => {
       <Layout>
         <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
         <div className="container px-4 md:px-6 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
+          <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
           <Link to="/products">
             <Button>Start Shopping</Button>
           </Link>

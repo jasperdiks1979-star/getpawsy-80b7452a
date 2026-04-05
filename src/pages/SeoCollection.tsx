@@ -508,7 +508,7 @@ const SeoCollection = () => {
       return (
         <Layout>
           <div className="container py-16 text-center">
-            <h1 className="text-2xl font-bold mb-4">All Products</h1>
+            <h2 className="text-2xl font-bold mb-4">All Products</h2>
             <p className="text-muted-foreground mb-6">Our catalog is loading. Please try again shortly.</p>
             <Button asChild><Link to="/">Back to Home</Link></Button>
           </div>

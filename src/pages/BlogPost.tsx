@@ -279,7 +279,7 @@ const BlogPostPage = () => {
       <Layout>
         <div className="container py-12 text-center">
           <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Article Not Found</h1>
+          <h2 className="text-2xl font-bold mb-2">Article Not Found</h2>
           <p className="text-muted-foreground mb-6">This article doesn't exist or is no longer available.</p>
           <Link to="/blog">
             <Button>
