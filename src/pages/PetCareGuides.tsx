@@ -241,10 +241,10 @@ const PetCareGuides = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Pet Care Guides – Expert Advice for Dogs & Cats (2026) | GetPawsy</title>
+        <title>Pet Care Guides – Dogs & Cats (2026) | GetPawsy</title>
         <meta
           name="description"
-          content="Expert pet care guides for dogs & cats. Vet-reviewed advice on training, travel safety, grooming, litter boxes, cat trees & more. Updated for 2026."
+          content="Expert pet care guides for dogs and cats. Vet-reviewed advice on cat trees, litter boxes, dog beds, training and more. Shop smarter at GetPawsy."
         />
         <link rel="canonical" href={`${BASE_URL}/pet-care-guides`} />
         <meta name="robots" content="index, follow" />

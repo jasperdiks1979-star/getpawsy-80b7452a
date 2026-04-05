@@ -1169,7 +1169,7 @@ const Admin = () => {
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
           <ShieldAlert className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
           <p className="text-muted-foreground mb-6">
             You do not have permission to access this page. Admin access required.
           </p>

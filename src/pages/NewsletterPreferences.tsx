@@ -168,9 +168,9 @@ const NewsletterPreferences = () => {
         <div className="min-h-screen py-20 lg:py-32">
           <div className="container px-4 md:px-6 max-w-2xl mx-auto text-center">
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-6 animate-spin" />
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">
+            <div className="text-2xl font-display font-bold text-foreground mb-2">
               Loading preferences...
-            </h1>
+            </div>
           </div>
         </div>
       </Layout>
@@ -189,9 +189,9 @@ const NewsletterPreferences = () => {
               <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mx-auto mb-6">
                 <AlertCircle className="w-10 h-10 text-yellow-600" />
               </div>
-              <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+              <h2 className="text-3xl font-display font-bold text-foreground mb-4">
                 Invalid Link
-              </h1>
+              </h2>
               <p className="text-muted-foreground text-lg mb-8">
                 This preference link appears to be invalid or expired.
                 Please use the link from your most recent newsletter email.

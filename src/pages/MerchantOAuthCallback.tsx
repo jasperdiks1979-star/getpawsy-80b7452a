@@ -64,21 +64,21 @@ export default function MerchantOAuthCallback() {
         {status === "processing" && (
           <>
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-            <h1 className="text-xl font-semibold">Connecting Google Merchant Center…</h1>
+            <div className="text-xl font-semibold">Connecting Google Merchant Center…</div>
             <p className="text-muted-foreground text-sm">Please wait while we complete the authorization.</p>
           </>
         )}
         {status === "success" && (
           <>
             <CheckCircle2 className="h-12 w-12 mx-auto text-primary" />
-            <h1 className="text-xl font-semibold">Connected successfully!</h1>
+            <div className="text-xl font-semibold">Connected successfully!</div>
             <p className="text-muted-foreground text-sm">Redirecting to admin panel…</p>
           </>
         )}
         {status === "error" && (
           <>
             <XCircle className="h-12 w-12 mx-auto text-destructive" />
-            <h1 className="text-xl font-semibold">Connection failed</h1>
+            <div className="text-xl font-semibold">Connection failed</div>
             <p className="text-muted-foreground text-sm">{errorMsg}</p>
             <button
               onClick={() => navigate("/admin/integrations/merchant")}

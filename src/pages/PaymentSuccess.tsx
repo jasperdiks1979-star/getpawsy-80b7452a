@@ -109,7 +109,7 @@ const PaymentSuccess = () => {
       <Layout>
         <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
         <div className="container px-4 md:px-6 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Invalid Session</h1>
+          <h2 className="text-2xl font-bold mb-4">Invalid Session</h2>
           <p className="text-muted-foreground mb-8">
             We couldn't find your order. Please contact support if you believe this is an error.
           </p>

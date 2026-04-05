@@ -46,10 +46,10 @@ const HomePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Best Cat Trees & Cat Condos (2026) | Large Cats Approved | GetPawsy</title>
+        <title>Best Cat Trees & Condos for Large Cats | GetPawsy</title>
         <meta
           name="description"
-          content="Shop the best cat trees and cat condos for large and active cats. Stable, durable and vet-approved designs with fast US shipping. 30-day returns."
+          content="Shop the best cat trees and condos for large cats. Sturdy, vet-approved designs plus dog beds, litter boxes and more. 30-day returns. Discover GetPawsy."
         />
       </Helmet>
 

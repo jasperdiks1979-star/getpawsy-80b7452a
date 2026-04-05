@@ -76,7 +76,7 @@ const LiveMap = () => {
           <title>Geen toegang - GetPawsy</title>
         </Helmet>
         <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-          <h1 className="text-2xl font-bold mb-4">Geen toegang</h1>
+          <h2 className="text-2xl font-bold mb-4">Geen toegang</h2>
           <p className="text-muted-foreground mb-6 text-center">
             Je hebt geen toegang tot deze pagina. Log in als beheerder om de live kaart te bekijken.
           </p>
