@@ -338,8 +338,8 @@ const Bestsellers = () => {
         <link rel="canonical" href="https://getpawsy.pet/bestsellers" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
         <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta property="og:title" content="Best Pet Products 2026 – Top 20 Bestsellers Ranked | GetPawsy" />
-        <meta property="og:description" content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Free shipping on eligible orders over $35." />
+        <meta property="og:title" content="Best Pet Products (2026) – Top Rated | GetPawsy" />
+        <meta property="og:description" content="Discover the best-selling pet products in 2026, ranked by verified US pet owners. Shop trusted picks at GetPawsy." />
         <meta property="og:url" content="https://getpawsy.pet/bestsellers" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
