@@ -168,9 +168,9 @@ const NewsletterPreferences = () => {
         <div className="min-h-screen py-20 lg:py-32">
           <div className="container px-4 md:px-6 max-w-2xl mx-auto text-center">
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-6 animate-spin" />
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">
+            <div className="text-2xl font-display font-bold text-foreground mb-2">
               Loading preferences...
-            </h1>
+            </div>
           </div>
         </div>
       </Layout>
