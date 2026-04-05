@@ -250,7 +250,7 @@ const Unsubscribe = () => {
             </div>
             <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Invalid Unsubscribe Link
-            </h1>
+            </h2>
             <p className="text-muted-foreground text-lg mb-8">
               This unsubscribe link appears to be invalid or expired. 
               Please use the link from your most recent newsletter email.
