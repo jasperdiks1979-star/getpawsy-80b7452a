@@ -54,7 +54,7 @@ export default function TrendingProducts() {
   return (
     <Layout>
       <Helmet>
-        <title>Trending Pet Products 2026 | GetPawsy</title>
+        <title>Trending Pet Products (2026) | GetPawsy</title>
         <meta name="description" content="Shop trending pet products at GetPawsy. Discover popular dog toys, cat trees, beds, and more. Sorted by what's hot — updated daily. Free shipping available." />
         <link rel="canonical" href={canonicalUrl} />
         <meta name="robots" content="index, follow" />
