@@ -64,7 +64,7 @@ export default function MerchantOAuthCallback() {
         {status === "processing" && (
           <>
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-            <h1 className="text-xl font-semibold">Connecting Google Merchant Center…</h1>
+            <div className="text-xl font-semibold">Connecting Google Merchant Center…</div>
             <p className="text-muted-foreground text-sm">Please wait while we complete the authorization.</p>
           </>
         )}
