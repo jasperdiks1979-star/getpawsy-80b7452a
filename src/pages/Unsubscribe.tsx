@@ -223,7 +223,7 @@ const Unsubscribe = () => {
             </div>
             <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Something Went Wrong
-            </h1>
+            </h2>
             <p className="text-muted-foreground text-lg mb-8">
               {errorMessage}
             </p>
