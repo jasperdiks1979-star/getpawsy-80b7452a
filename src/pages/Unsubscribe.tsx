@@ -195,7 +195,7 @@ const Unsubscribe = () => {
             </div>
             <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Welcome Back! 🎉
-            </h1>
+            </h2>
             <p className="text-muted-foreground text-lg mb-2">
               You've been re-subscribed to our newsletter.
             </p>
