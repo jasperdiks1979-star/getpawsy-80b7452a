@@ -116,7 +116,7 @@ const Unsubscribe = () => {
             <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mx-auto mb-6">
               <MailX className="w-10 h-10 text-orange-600" />
             </div>
-            <h2 className="text-3xl font-display font-bold text-foreground mb-4">
+            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
               Unsubscribe from Newsletter
             </h1>
             <p className="text-muted-foreground text-lg mb-2">
