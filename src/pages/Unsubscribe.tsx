@@ -99,7 +99,7 @@ const Unsubscribe = () => {
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-6 animate-spin" />
             <div className="text-2xl font-display font-bold text-foreground mb-2">
               Processing...
-            </h1>
+            </div>
             <p className="text-muted-foreground">
               Please wait while we process your request.
             </p>
