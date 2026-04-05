@@ -97,7 +97,7 @@ const Unsubscribe = () => {
             className="text-center"
           >
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-6 animate-spin" />
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">
+            <div className="text-2xl font-display font-bold text-foreground mb-2">
               Processing...
             </h1>
             <p className="text-muted-foreground">
@@ -116,7 +116,7 @@ const Unsubscribe = () => {
             <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mx-auto mb-6">
               <MailX className="w-10 h-10 text-orange-600" />
             </div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+            <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Unsubscribe from Newsletter
             </h1>
             <p className="text-muted-foreground text-lg mb-2">
@@ -159,7 +159,7 @@ const Unsubscribe = () => {
             <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+            <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Successfully Unsubscribed
             </h1>
             <p className="text-muted-foreground text-lg mb-2">
@@ -193,7 +193,7 @@ const Unsubscribe = () => {
             <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+            <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Welcome Back! 🎉
             </h1>
             <p className="text-muted-foreground text-lg mb-2">
@@ -221,7 +221,7 @@ const Unsubscribe = () => {
             <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-6">
               <AlertCircle className="w-10 h-10 text-red-600" />
             </div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+            <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Something Went Wrong
             </h1>
             <p className="text-muted-foreground text-lg mb-8">
@@ -248,7 +248,7 @@ const Unsubscribe = () => {
             <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mx-auto mb-6">
               <AlertCircle className="w-10 h-10 text-yellow-600" />
             </div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+            <h2 className="text-3xl font-display font-bold text-foreground mb-4">
               Invalid Unsubscribe Link
             </h1>
             <p className="text-muted-foreground text-lg mb-8">
