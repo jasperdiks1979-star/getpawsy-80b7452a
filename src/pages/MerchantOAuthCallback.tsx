@@ -71,7 +71,7 @@ export default function MerchantOAuthCallback() {
         {status === "success" && (
           <>
             <CheckCircle2 className="h-12 w-12 mx-auto text-primary" />
-            <h1 className="text-xl font-semibold">Connected successfully!</h1>
+            <div className="text-xl font-semibold">Connected successfully!</div>
             <p className="text-muted-foreground text-sm">Redirecting to admin panel…</p>
           </>
         )}
