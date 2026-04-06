@@ -132,10 +132,7 @@ export function CategorySchema({
       <meta name="keywords" content={keywords.join(', ')} />
       {/* canonical managed by HostnameGuard — do not duplicate */}
 
-      {/* Hreflang Tags */}
-      <link rel="alternate" hrefLang="en" href={canonicalUrl} />
-      <link rel="alternate" hrefLang="en-US" href={canonicalUrl} />
-      <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
+      {/* hreflang managed by HostnameGuard — do not duplicate */}
 
       {/* Robots — search pages noindex; category/collection pages must be indexable for GMC */}
       <meta name="robots" content={isSearch ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />

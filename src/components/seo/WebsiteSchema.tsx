@@ -328,10 +328,7 @@ export function WebsiteSchema({
       <meta name="keywords" content={keywords} />
       {/* canonical managed by HostnameGuard — do not duplicate */}
 
-      {/* Hreflang Tags for International SEO */}
-      <link rel="alternate" hrefLang="en" href={url} />
-      <link rel="alternate" hrefLang="en-US" href={url} />
-      <link rel="alternate" hrefLang="x-default" href={url} />
+      {/* hreflang managed by HostnameGuard — do not duplicate */}
 
       {/* Robots */}
       <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
