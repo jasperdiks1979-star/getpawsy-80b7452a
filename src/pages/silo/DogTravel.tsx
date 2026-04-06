@@ -6,10 +6,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { SiloBackLinks } from '@/components/seo/SiloBackLinks';
+import { useCanonical } from '@/components/seo/CanonicalTag';
 
 const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
 
 const DogTravel = () => {
+  useCanonical('/collections/dogs');
   const { data: products, isLoading } = useQuery({
     queryKey: ['dog-travel-products'],
     queryFn: async () => {

@@ -18,7 +18,7 @@ const jsonLd = {
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
   dateModified: '2026-02-28',
-  mainEntityOfPage: 'https://getpawsy.pet/collections/all',
+  mainEntityOfPage: 'https://getpawsy.pet/collections/cats',
 };
 
 const faqJsonLd = {
