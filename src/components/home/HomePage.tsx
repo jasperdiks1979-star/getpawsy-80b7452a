@@ -47,17 +47,18 @@ const HomePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Premium Pet Products for Dogs & Cats | GetPawsy</title>
+        <title>Pet Products for Dogs & Cats | Fast US Shipping | GetPawsy</title>
         <meta
           name="description"
-          content="Shop quality cat trees, litter boxes, dog beds and travel essentials at GetPawsy. Free shipping on orders over $35. 30-day returns. Trusted by US pet owners."
+          content="Shop premium cat trees, litter boxes, dog beds and travel essentials at GetPawsy. Free shipping over $35. 30-day returns. Trusted by US pet owners."
         />
       </Helmet>
 
       <HeroSection />
 
-      {/* SEO crawl-boost: static anchor links above the fold */}
       <CrawlBoostLinks />
+
+      <CategoryEntryCards />
 
       <div className="container px-4 md:px-6">
         <TrustBadgesBlock />
@@ -101,6 +102,19 @@ const HomePage = () => {
 
       <HomepageFAQ />
 
+      {/* Social Proof */}
+      <section className="py-10 md:py-14 bg-muted/30 border-t border-border/30" aria-label="Trust block">
+        <div className="container px-4 md:px-6 max-w-2xl mx-auto text-center">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+            Trusted by Pet Owners Across the US
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+            Thousands of pet owners trust GetPawsy for quality, comfort, and reliability.
+            Every product is hand-selected for real-world usability and backed by our 30-day return policy.
+          </p>
+        </div>
+      </section>
+
       <section className="py-10 md:py-14 bg-background border-t border-border/30" aria-label="About GetPawsy">
         <div className="container px-4 md:px-6 max-w-2xl mx-auto text-center">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
@@ -111,10 +125,6 @@ const HomePage = () => {
                GetPawsy is a US-focused pet supply store dedicated to quality products
                for dogs, cats, and small animals. We serve customers across all 50 states with
                estimated delivery in {DELIVERY_TIME_STANDARD}.
-            </p>
-            <p>
-              Every product is carefully selected for quality, safety, and real-world usability.
-              We focus on practical pet solutions that make life easier for pet owners.
             </p>
             <p>
              Customer support:{' '}
