@@ -1,0 +1,1 @@
+ALTER TABLE public.pinterest_pin_queue ALTER COLUMN scheduled_at DROP NOT NULL;
