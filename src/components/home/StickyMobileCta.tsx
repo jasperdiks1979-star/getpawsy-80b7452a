@@ -32,10 +32,10 @@ export function StickyMobileCta() {
           <span className="text-[10px] text-muted-foreground">5–10 business day delivery</span>
         </div>
         <Link
-          to="/products"
+          to="/bestsellers"
           className="rounded-full px-6 py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
         >
-          Shop Now
+          Shop Bestsellers
         </Link>
       </div>
     </div>
