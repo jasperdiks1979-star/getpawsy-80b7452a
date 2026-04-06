@@ -7,7 +7,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-04-06T22:27:34.369Z</lastBuildDate>",
+    "    <lastBuildDate>2026-04-06T22:28:37.229Z</lastBuildDate>",
     "    <item>",
     "      <g:id>ab56a66b-dfaa-4caa-921a-de5bf544f9d8</g:id>",
     "      <g:title><![CDATA[Dog Toy – Dog Chew Toy Choke-proof Food Dispenser – Safe Chewing]]></g:title>",
@@ -33,7 +33,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-04-06T22:27:34.369Z</lastBuildDate>",
+    "    <lastBuildDate>2026-04-06T22:28:37.229Z</lastBuildDate>",
     "    <item>",
     "      <g:id>ab56a66b-dfaa-4caa-921a-de5bf544f9d8</g:id>",
     "      <g:title><![CDATA[Dog Toy – Dog Chew Toy Choke-proof Food Dispenser – Safe Chewing]]></g:title>",
@@ -50,5 +50,5 @@
   ],
   "contains_rss_tag": true,
   "contains_item_tag": true,
-  "deployed_at": "2026-04-06T22:27:34.374Z"
+  "deployed_at": "2026-04-06T22:28:37.236Z"
 }
