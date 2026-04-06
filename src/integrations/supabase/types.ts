@@ -4568,6 +4568,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
+          retries: number
           scheduled_at: string | null
           status: string
           updated_at: string
@@ -4592,6 +4593,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
+          retries?: number
           scheduled_at?: string | null
           status?: string
           updated_at?: string
@@ -4616,6 +4618,7 @@ export type Database = {
           product_id?: string
           product_name?: string
           product_slug?: string
+          retries?: number
           scheduled_at?: string | null
           status?: string
           updated_at?: string
@@ -4669,6 +4672,44 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_post_logs: {
+        Row: {
+          action: string
+          created_at: string
+          error_message: string | null
+          id: string
+          pin_queue_id: string | null
+          response_data: Json | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          pin_queue_id?: string | null
+          response_data?: Json | null
+          status: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          pin_queue_id?: string | null
+          response_data?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_post_logs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
           },
         ]
