@@ -1606,7 +1606,7 @@ const ProductDetail = () => {
           category={product.category || ""}
         />
 
-        {/* Reviews Section */}
+        {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1620,28 +1620,30 @@ const ProductDetail = () => {
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">Customer Reviews</h2>
-              {reviews.length > 0 ? (
+              {reviews.length >= 3 ? (
                 <p className="text-sm text-muted-foreground">
                   {reviews.length} verified review{reviews.length !== 1 ? "s" : ""} from our customers
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Trusted by pet owners across the United States
+                  Be the first to review this product
                 </p>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 w-full">
-            {/* Review Form */}
+            {/* Review Form — always visible */}
             <div className="lg:col-span-1">
               <ReviewForm productId={product.id} onReviewSubmitted={handleReviewsRefresh} />
             </div>
 
-            {/* Reviews List */}
-            <div className="lg:col-span-2">
-              <ReviewsList reviews={reviews} onReviewDeleted={handleReviewsRefresh} />
-            </div>
+            {/* Reviews List — only render when ≥3 reviews */}
+            {reviews.length >= 3 && (
+              <div className="lg:col-span-2">
+                <ReviewsList reviews={reviews} onReviewDeleted={handleReviewsRefresh} />
+              </div>
+            )}
           </div>
         </motion.section>
 

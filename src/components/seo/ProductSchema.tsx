@@ -54,8 +54,8 @@ export function ProductSchema({
     ? rawDescription 
     : `Shop ${product.name} at GetPawsy. Quality pet product designed for comfort and durability. Estimated delivery: 5–10 business days. 30-day return policy.`;
 
-  // Build review structured data from real reviews, with sensible fallback
-  const hasRealReviews = reviews.length > 0;
+  // Only use real reviews — no fallback fake data
+  const hasRealReviews = reviews.length >= 3;
 
   const aggregateRating = hasRealReviews
     ? {
@@ -65,13 +65,7 @@ export function ProductSchema({
         bestRating: '5',
         worstRating: '1',
       }
-    : {
-        '@type': 'AggregateRating',
-        ratingValue: '4.7',
-        reviewCount: 25,
-        bestRating: '5',
-        worstRating: '1',
-      };
+    : undefined;
 
   const reviewSchema = hasRealReviews
     ? reviews.slice(0, 10).map((r) => ({
@@ -85,19 +79,7 @@ export function ProductSchema({
         reviewBody: r.content || r.title || '',
         author: { '@type': 'Person', name: r.reviewer_name || 'Verified Buyer' },
       }))
-    : [
-        {
-          '@type': 'Review',
-          author: { '@type': 'Person', name: 'Verified Customer' },
-          reviewRating: {
-            '@type': 'Rating',
-            ratingValue: '5',
-            bestRating: '5',
-            worstRating: '1',
-          },
-          reviewBody: 'High quality and very comfortable for my dog. Excellent craftsmanship and fast shipping.',
-        },
-      ];
+    : undefined;
 
   // Generate keywords
   const keywords = generateProductKeywords(
