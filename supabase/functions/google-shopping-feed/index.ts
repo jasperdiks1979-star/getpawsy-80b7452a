@@ -523,27 +523,42 @@ Deno.serve(async (req) => {
     // Cap at MAX_EXPORT
     const capped = petSafe.slice(0, MAX_EXPORT);
 
-    // Build XML items with exclusion tracking
+    // Build XML items with exclusion and category tracking
     const items: string[] = [];
     let titleRewriteCount = 0;
     let descRewriteCount = 0;
+    const categoryLogs: Array<{ productId: string; original: string | null; mapped: string; taxonomyId: number; valid: boolean }> = [];
+    const invalidCategoryProducts: string[] = [];
 
     for (const p of capped) {
       const result = buildItemXml(p);
       if (result.excluded) {
         addExclusion(result.excluded);
       } else {
+        // Log category mapping
+        if (result.categoryLog) {
+          categoryLogs.push({ productId: p.id, ...result.categoryLog });
+          if (!result.categoryLog.valid) {
+            invalidCategoryProducts.push(p.id);
+            addExclusion("invalid_category");
+            continue; // Do NOT include products with invalid categories
+          }
+        }
         items.push(result.xml);
         if (!p.optimized_title) titleRewriteCount++;
         if (!p.optimized_description) descRewriteCount++;
       }
     }
 
-    // Metrics
-    const categoryCoverage = capped.filter(p => getGoogleProductCategory(p.name, p.category) !== "Animals & Pet Supplies > Pet Supplies").length;
+    // Category metrics
+    const taxonomyDistribution: Record<string, number> = {};
+    for (const cl of categoryLogs) {
+      taxonomyDistribution[cl.mapped] = (taxonomyDistribution[cl.mapped] || 0) + 1;
+    }
+    const categoryCoverage = categoryLogs.filter(cl => cl.mapped !== "pet_general").length;
     const exclusionRate = allProducts.length > 0 ? ((allProducts.length - items.length) / allProducts.length * 100).toFixed(1) : "0";
 
-    console.log(`[google-shopping-feed] Feed metrics: raw=${allProducts.length} petSafe=${petSafe.length} capped=${capped.length} exported=${items.length} exclusionRate=${exclusionRate}% categories=${categoryCoverage}/${items.length} titleRewrites=${titleRewriteCount} descRewrites=${descRewriteCount} excludedByReason=${JSON.stringify(excludedByReason)}`);
+    console.log(`[google-shopping-feed] Feed metrics: raw=${allProducts.length} petSafe=${petSafe.length} capped=${capped.length} exported=${items.length} exclusionRate=${exclusionRate}% categories=${categoryCoverage}/${items.length} titleRewrites=${titleRewriteCount} descRewrites=${descRewriteCount} excludedByReason=${JSON.stringify(excludedByReason)} taxonomyDistribution=${JSON.stringify(taxonomyDistribution)} invalidCategories=${invalidCategoryProducts.length}`);
 
     const now = new Date().toISOString();
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
