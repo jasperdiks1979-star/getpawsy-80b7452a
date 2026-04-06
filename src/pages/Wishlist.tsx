@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StarRating } from '@/components/ui/star-rating';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useCart } from '@/contexts/CartContext';
-import { useProductRatings } from '@/hooks/useProductRatings';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { safeString, safeNumber } from '@/lib/safe-render';
@@ -89,9 +89,6 @@ const Wishlist = () => {
     enabled: wishlist.length > 0,
   });
 
-  // Get product IDs for ratings
-  const productIds = useMemo(() => products?.map(p => p.id).filter((id): id is string => !!id) || [], [products]);
-  const { data: ratingsMap } = useProductRatings(productIds);
 
   // Get unique categories from products
   const categories = useMemo(() => {
@@ -291,7 +288,7 @@ const Wishlist = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
               {sortedProducts.map((product) => {
-                const productRating = product.id ? ratingsMap?.[product.id] : undefined;
+                
                 return (
                 <motion.div
                   key={product.id}
@@ -326,12 +323,6 @@ const Wishlist = () => {
                       </h3>
                     </Link>
 
-                    {/* Rating */}
-                    {productRating && productRating.reviewCount > 0 && (
-                      <div className="mt-2">
-                        <StarRating rating={productRating.averageRating} reviewCount={productRating.reviewCount} size="sm" />
-                      </div>
-                    )}
 
                     {/* Price */}
                     <div className="flex items-center gap-2 mt-2">

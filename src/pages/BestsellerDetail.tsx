@@ -1435,18 +1435,20 @@ const BestsellerDetail = () => {
                 )}
               </motion.div>
 
-              {/* Reviews List */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-              >
-                <ReviewsList
-                  reviews={reviews}
-                  onReviewDeleted={() => refetchReviews()}
-                />
-              </motion.div>
+              {/* Reviews List — only show when ≥3 reviews */}
+              {reviews.length >= 3 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <ReviewsList
+                    reviews={reviews}
+                    onReviewDeleted={() => refetchReviews()}
+                  />
+                </motion.div>
+              )}
             </div>
           </div>
         </section>

@@ -9,7 +9,7 @@ import { useProductPrefetch } from "@/hooks/useProductPrefetch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import { StarRating } from "@/components/ui/star-rating";
+import { getTrustLabel } from "@/lib/trust-labels";
 import { PawConfetti, usePawConfetti } from "@/components/products/PawConfetti";
 import { toast } from "sonner";
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from "@/lib/analytics";
@@ -48,8 +48,6 @@ interface ProductCardProps {
   listId?: string;
   listName?: string;
   position?: number;
-  rating?: number;
-  reviewCount?: number;
   priority?: boolean;
   popularChoice?: boolean;
   bestSeller?: boolean;
@@ -65,8 +63,6 @@ export const ProductCard = memo(
       listId = "products",
       listName = "Products",
       position = 0,
-      rating,
-      reviewCount,
       priority = false,
       popularChoice = false,
       bestSeller = false,
@@ -284,9 +280,7 @@ export const ProductCard = memo(
                 {safeString(product.name)}
               </h3>
 
-              {rating !== undefined && reviewCount !== undefined && reviewCount > 0 && (
-                <StarRating rating={rating} reviewCount={reviewCount} size="sm" />
-              )}
+              <p className="text-[10px] text-primary/80 font-medium mt-0.5">{getTrustLabel(product.id, position ?? 0)}</p>
 
               <div className="flex items-center gap-2">
                 <span className="text-lg font-bold text-primary">{cardCanonical.displayPrice}</span>

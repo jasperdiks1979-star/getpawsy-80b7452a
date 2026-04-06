@@ -24,7 +24,7 @@ import { CategoryFilter } from '@/components/products/CategoryFilter';
 import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
-import { useProductRatings } from '@/hooks/useProductRatings';
+
 import { CategorySchema } from '@/components/seo/CategorySchema';
 import { CategorySeoContent } from '@/components/seo/CategorySeoContent';
 import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
@@ -176,11 +176,6 @@ const Products = () => {
     ? (fullProductsLoading && categoryFastLoading) // On category pages, show data as soon as fast query resolves
     : fullProductsLoading;
 
-  // Get all product IDs for ratings query
-  const productIds = useMemo(() => products?.map(p => p.id).filter((id): id is string => !!id) || [], [products]);
-  
-  // Fetch ratings for all products
-  const { data: ratingsMap } = useProductRatings(productIds);
 
   // Set max price based on products
   useEffect(() => {
@@ -974,7 +969,7 @@ const Products = () => {
                   visibleItems={visibleItems}
                   categoryParam={categoryParam}
                   searchQuery={searchQuery}
-                  ratingsMap={ratingsMap}
+                  
                   onQuickView={setQuickViewProduct}
                 />
                 
@@ -1056,13 +1051,10 @@ const Products = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {recentlyViewedProducts.slice(0, 4).map((recentProduct) => {
-                const productRating = recentProduct.id ? ratingsMap?.[recentProduct.id] : undefined;
                 return (
                   <ProductCard 
                     key={recentProduct.id} 
                     product={recentProduct as Product}
-                    rating={productRating?.averageRating}
-                    reviewCount={productRating?.reviewCount}
                   />
                 );
               })}
@@ -1106,11 +1098,10 @@ interface ProductGridProps {
   visibleItems: any[];
   categoryParam: string | null;
   searchQuery: string;
-  ratingsMap: Record<string, { averageRating: number; reviewCount: number }> | undefined;
   onQuickView: (product: Product) => void;
 }
 
-const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap, onQuickView }: ProductGridProps) => {
+const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, onQuickView }: ProductGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const hasMarkedRef = useRef(false);
   // Progressive rendering: show first 4 cards immediately, defer the rest
@@ -1151,7 +1142,6 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
     <div ref={gridRef} data-testid="product-grid" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
       {/* Above-the-fold cards — rendered immediately, priority images */}
       {aboveFold.map((product, index) => {
-        const productRating = product.id ? ratingsMap?.[product.id] : undefined;
         return (
           <div key={product.id} className="relative group" data-testid="product-card">
             <ProductCard
@@ -1159,8 +1149,6 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
               listId={listId}
               listName={listName}
               position={index}
-              rating={productRating?.averageRating}
-              reviewCount={productRating?.reviewCount}
               priority={index < 2}
               bestSeller={getWinnerBadge(product.id)?.badge === 'best-seller'}
               topRated={getWinnerBadge(product.id)?.badge === 'top-pick'}
@@ -1181,7 +1169,6 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
       {/* Below-the-fold cards — deferred rendering + content-visibility:auto */}
       {belowFold.map((product, index) => {
         const realIndex = index + 4;
-        const productRating = product.id ? ratingsMap?.[product.id] : undefined;
         return (
           <div
             key={product.id}
@@ -1194,8 +1181,6 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
               listId={listId}
               listName={listName}
               position={realIndex}
-              rating={productRating?.averageRating}
-              reviewCount={productRating?.reviewCount}
               priority={false}
             />
             <Button
