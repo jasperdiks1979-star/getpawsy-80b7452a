@@ -4568,7 +4568,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
-          scheduled_at: string
+          scheduled_at: string | null
           status: string
           updated_at: string
         }
@@ -4592,7 +4592,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
-          scheduled_at?: string
+          scheduled_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -4616,7 +4616,7 @@ export type Database = {
           product_id?: string
           product_name?: string
           product_slug?: string
-          scheduled_at?: string
+          scheduled_at?: string | null
           status?: string
           updated_at?: string
         }
