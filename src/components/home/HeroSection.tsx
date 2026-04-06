@@ -57,6 +57,7 @@ export function HeroSection() {
           <span className="inline-flex items-center gap-1.5">✔ Free shipping over $35</span>
           <span className="inline-flex items-center gap-1.5">✔ 30-day returns</span>
           <span className="inline-flex items-center gap-1.5">✔ Secure checkout</span>
+          <span className="inline-flex items-center gap-1.5">✔ Support within 24h</span>
         </div>
       </div>
     </section>
