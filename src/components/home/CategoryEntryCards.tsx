@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 
 const ENTRIES = [
-  { to: '/collections/cat-litter-boxes', label: 'Shop Cat Litter Boxes', emoji: '🐱' },
-  { to: '/collections/cat-trees-and-condos', label: 'Shop Cat Trees', emoji: '🌳' },
-  { to: '/collections/dogs', label: 'Shop Dog Essentials', emoji: '🐶' },
+  { to: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos', emoji: '🌳' },
+  { to: '/collections/cat-litter-boxes', label: 'Cat Litter Boxes', emoji: '🐱' },
+  { to: '/collections/dog-beds', label: 'Dog Beds', emoji: '🛏️' },
+  { to: '/collections/dogs', label: 'Shop Dogs', emoji: '🐶' },
+  { to: '/collections/cats', label: 'Shop Cats', emoji: '🐈' },
 ] as const;
 
 export function CategoryEntryCards() {
