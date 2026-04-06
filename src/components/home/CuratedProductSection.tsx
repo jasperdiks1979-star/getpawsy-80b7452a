@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { getTrustLabel } from '@/lib/trust-labels';
 
 interface Props {
   title: string;
@@ -52,7 +53,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {products.map((p) => {
+          {products.map((p, idx) => {
             const price = typeof p.price === 'number' ? p.price : 0;
             return (
               <div key={p.id} className="flex flex-col">
@@ -78,7 +79,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                     <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                       {p.name}
                     </h3>
-                    <p className="text-[10px] text-primary/80 font-medium mt-1">⭐ 4.8/5 from pet owners</p>
+                    <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(p.id, idx)}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-bold text-primary">
                         ${price.toFixed(2)}
