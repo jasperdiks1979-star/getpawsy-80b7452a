@@ -145,9 +145,7 @@ const Contact = () => {
     <Layout>
       <Helmet>
         <title>Contact Us | GetPawsy</title>
-        <meta name="description" content="Contact GetPawsy customer support. Email support@getpawsy.pet for order help, shipping questions, and returns. We respond within 24 hours." />
-        <link rel="canonical" href="https://getpawsy.pet/contact" />
-      </Helmet>
+        <meta name="description" content="Contact GetPawsy customer support. Email support@getpawsy.pet for order help, shipping questions, and returns. We respond within 24 hours." /></Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6">
           <motion.div

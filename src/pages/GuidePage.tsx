@@ -488,9 +488,7 @@ const GuidePage = () => {
       <Helmet>
         <title>{activeSeoTitle || `${guide.title} | GetPawsy`}</title>
         <meta name="description" content={guide.seoDescription || guide.excerpt} />
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <link rel="canonical" href={guideUrl} />
-        <meta property="og:title" content={activeSeoTitle || guide.title} />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" /><meta property="og:title" content={activeSeoTitle || guide.title} />
         <meta property="og:description" content={guide.seoDescription || guide.excerpt} />
         <meta property="og:url" content={guideUrl} />
         <meta property="og:type" content="article" />

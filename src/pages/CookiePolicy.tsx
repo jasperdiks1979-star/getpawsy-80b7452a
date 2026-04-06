@@ -37,9 +37,7 @@ const CookiePolicy = () => {
     <Layout>
       <Helmet>
         <title>Cookie Policy | GetPawsy - How We Use Cookies</title>
-        <meta name="description" content="Learn how GetPawsy uses cookies to improve your shopping experience. Our cookie policy explains essential, functional, analytics, and marketing cookies." />
-        <link rel="canonical" href="https://getpawsy.pet/cookies" />
-      </Helmet>
+        <meta name="description" content="Learn how GetPawsy uses cookies to improve your shopping experience. Our cookie policy explains essential, functional, analytics, and marketing cookies." /></Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div

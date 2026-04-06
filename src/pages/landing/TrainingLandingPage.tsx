@@ -93,9 +93,7 @@ export default function TrainingLandingPage() {
       <Helmet>
         <title>{data.metaTitle}</title>
         <meta name="description" content={data.metaDescription} />
-        <meta name="robots" content="noindex, nofollow" />
-        <link rel="canonical" href={`${BASE}/landing/${data.slug}`} />
-      </Helmet>
+        <meta name="robots" content="noindex, nofollow" /></Helmet>
 
       {/* Minimal header — no full nav */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">

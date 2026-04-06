@@ -17,9 +17,7 @@ const About = () => {
     <Layout>
       <Helmet>
         <title>About GetPawsy | Trusted Pet Supplies for US Pet Owners</title>
-        <meta name="description" content="GetPawsy is a pet-first online store serving US customers. Free shipping on orders $35+, 30-day returns, and real customer support." />
-        <link rel="canonical" href="https://getpawsy.pet/about" />
-      </Helmet>
+        <meta name="description" content="GetPawsy is a pet-first online store serving US customers. Free shipping on orders $35+, 30-day returns, and real customer support." /></Helmet>
       <div className="min-h-screen">
         {/* Hero Section */}
         <section className="relative py-20 lg:py-28 overflow-hidden">

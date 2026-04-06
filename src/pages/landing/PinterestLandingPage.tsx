@@ -93,9 +93,7 @@ const PinterestLandingPage = () => {
     <>
       <Helmet>
         <title>{product.name} | GetPawsy</title>
-        <meta name="description" content={product.description?.substring(0, 155) || ''} />
-        <link rel="canonical" href={`https://getpawsy.pet/product/${product.slug}`} />
-        <meta name="robots" content="noindex, follow" />
+        <meta name="description" content={product.description?.substring(0, 155) || ''} /><meta name="robots" content="noindex, follow" />
       </Helmet>
 
       <ProductSchema product={product} />

@@ -103,9 +103,7 @@ const CatLitterBoxLanding = () => {
     <>
       <Helmet>
         <title>Stop Cleaning Your Cat's Litter Box Forever | GetPawsy</title>
-        <meta name="description" content="The 60L Smart Automatic Cat Litter Box with app control, deodorizer, and infrared safety sensors. Perfect for multi-cat homes. Free shipping available." />
-        <link rel="canonical" href={`https://getpawsy.pet/product/${LITTER_BOX_SLUG}`} />
-        <meta name="robots" content="noindex, follow" />
+        <meta name="description" content="The 60L Smart Automatic Cat Litter Box with app control, deodorizer, and infrared safety sensors. Perfect for multi-cat homes. Free shipping available." /><meta name="robots" content="noindex, follow" />
       </Helmet>
 
       <ProductSchema product={product} />

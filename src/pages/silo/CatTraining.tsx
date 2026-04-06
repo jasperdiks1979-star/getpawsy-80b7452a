@@ -30,9 +30,7 @@ const CatTraining = () => {
     <Layout>
       <Helmet>
         <title>Cat Enrichment & Training – Trees, Posts & Toys | GetPawsy</title>
-        <meta name="description" content="Cat trees, scratching posts, interactive toys & enrichment furniture. Keep indoor cats active and happy. US 5–10 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/collections/cats" />
-        <meta name="robots" content="noindex, follow" />
+        <meta name="description" content="Cat trees, scratching posts, interactive toys & enrichment furniture. Keep indoor cats active and happy. US 5–10 day shipping. 30-day return policy." /><meta name="robots" content="noindex, follow" />
       </Helmet>
 
       <section className="py-16 md:py-20 bg-sand/30">

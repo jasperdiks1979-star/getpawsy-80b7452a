@@ -30,9 +30,7 @@ const DogTravel = () => {
     <Layout>
       <Helmet>
         <title>Dog Travel Safety Gear – Car Seats & Carriers | GetPawsy</title>
-        <meta name="description" content="Crash-tested dog car seats, travel carriers, harnesses & back seat hammocks. Keep your dog safe on every trip. US 5–10 day shipping." />
-        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Crash-tested dog car seats, travel carriers, harnesses & back seat hammocks. Keep your dog safe on every trip. US 5–10 day shipping." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <section className="py-16 md:py-20 bg-sand/30">

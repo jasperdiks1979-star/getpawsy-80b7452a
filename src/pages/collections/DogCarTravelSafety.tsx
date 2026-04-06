@@ -113,9 +113,7 @@ export default function DogCarTravelSafety() {
     <Layout>
       <Helmet>
         <title>{PAGE_TITLE}</title>
-        <meta name="description" content={META_DESC} />
-        <link rel="canonical" href={CANONICAL} />
-        <meta property="og:title" content={PAGE_TITLE} />
+        <meta name="description" content={META_DESC} /><meta property="og:title" content={PAGE_TITLE} />
         <meta property="og:description" content={META_DESC} />
         <meta property="og:url" content={CANONICAL} />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>

@@ -55,9 +55,7 @@ export default function SeoClusterPage(props: SeoClusterPageProps) {
     <Layout>
       <Helmet>
         <title>{props.title}</title>
-        <meta name="description" content={props.metaDescription} />
-        <link rel="canonical" href={canonical} />
-        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+        <meta name="description" content={props.metaDescription} /><script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
       </Helmet>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">

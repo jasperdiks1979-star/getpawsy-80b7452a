@@ -10,9 +10,7 @@ const AffiliateDisclosure = () => {
     <Layout>
       <Helmet>
         <title>Affiliate Disclosure | GetPawsy</title>
-        <meta name="description" content="GetPawsy affiliate disclosure: how we earn commissions, our commitment to editorial independence, and what this means for you." />
-        <link rel="canonical" href={`${BASE_URL}/affiliate-disclosure`} />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="GetPawsy affiliate disclosure: how we earn commissions, our commitment to editorial independence, and what this means for you." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="container mx-auto px-4 py-12 max-w-3xl">

@@ -582,10 +582,7 @@ const SeoCollection = () => {
         <meta 
           name="keywords" 
           content={[collection.primary_keyword, ...collection.secondary_keywords].join(', ')} 
-        />
-        <link rel="canonical" href={`https://getpawsy.pet/collections/${collection.slug}`} />
-        
-        {/* Thin collection guard: noindex collections with <3 products */}
+        />{/* Thin collection guard: noindex collections with <3 products */}
         {products.length < 3 && (
           <>
             <meta name="robots" content="noindex, follow" />

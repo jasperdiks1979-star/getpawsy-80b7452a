@@ -173,9 +173,7 @@ export default function OrthopedicDogBeds() {
       <Helmet>
         <title>7 Best Orthopedic Dog Beds for Joint Support (2026)</title>
         <meta name="description" content="Dog waking up stiff? Supportive memory foam beds designed to relieve joint pain. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35." />
-        <meta name="keywords" content="orthopedic dog beds, memory foam dog bed, dog bed for arthritis, orthopedic dog bed large dogs, senior dog bed, joint pain dog bed, waterproof orthopedic dog bed, best orthopedic dog bed 2026" />
-        <link rel="canonical" href={CANONICAL} />
-        <link rel="alternate" hrefLang="en" href={CANONICAL} />
+        <meta name="keywords" content="orthopedic dog beds, memory foam dog bed, dog bed for arthritis, orthopedic dog bed large dogs, senior dog bed, joint pain dog bed, waterproof orthopedic dog bed, best orthopedic dog bed 2026" /><link rel="alternate" hrefLang="en" href={CANONICAL} />
         <link rel="alternate" hrefLang="x-default" href={CANONICAL} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />

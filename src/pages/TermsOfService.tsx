@@ -17,9 +17,7 @@ const TermsOfService = () => {
     <Layout>
       <Helmet>
         <title>Terms of Service | GetPawsy</title>
-        <meta name="description" content="GetPawsy terms of service. Read our terms and conditions for shopping, shipping, returns, and using the GetPawsy pet supply store." />
-        <link rel="canonical" href="https://getpawsy.pet/terms" />
-      </Helmet>
+        <meta name="description" content="GetPawsy terms of service. Read our terms and conditions for shopping, shipping, returns, and using the GetPawsy pet supply store." /></Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div

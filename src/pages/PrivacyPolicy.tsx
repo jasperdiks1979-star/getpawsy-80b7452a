@@ -11,9 +11,7 @@ const PrivacyPolicy = () => {
     <Layout>
       <Helmet>
         <title>Privacy Policy | GetPawsy</title>
-        <meta name="description" content="Read the GetPawsy privacy policy. Learn how we collect, use, and protect your personal data when you shop for pet products. Your privacy matters to us." />
-        <link rel="canonical" href="https://getpawsy.pet/privacy" />
-      </Helmet>
+        <meta name="description" content="Read the GetPawsy privacy policy. Learn how we collect, use, and protect your personal data when you shop for pet products. Your privacy matters to us." /></Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div

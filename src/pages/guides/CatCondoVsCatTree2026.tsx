@@ -73,9 +73,7 @@ export default function CatCondoVsCatTree2026() {
     <Layout>
       <Helmet>
         <title>Cat Condo vs Cat Tree 2026: Which Is Best for Indoor Cats? | GetPawsy</title>
-        <meta name="description" content="Expert comparison of cat condos and cat trees. Learn which design fits your cat's personality, space, and budget. Stability ratings, pros/cons, and buying guide." />
-        <link rel="canonical" href="https://getpawsy.pet/guides/cat-condo-vs-cat-tree-2026" />
-        <script type="application/ld+json">{JSON.stringify(BREADCRUMB_JSONLD)}</script>
+        <meta name="description" content="Expert comparison of cat condos and cat trees. Learn which design fits your cat's personality, space, and budget. Stability ratings, pros/cons, and buying guide." /><script type="application/ld+json">{JSON.stringify(BREADCRUMB_JSONLD)}</script>
         <script type="application/ld+json">{JSON.stringify(FAQ_JSONLD)}</script>
         <script type="application/ld+json">{JSON.stringify(ARTICLE_JSONLD)}</script>
       </Helmet>

@@ -197,9 +197,7 @@ export default function LockdownClusterArticle() {
     <Layout>
       <Helmet>
         <title>{title}</title>
-        <meta name="description" content={description} />
-        <link rel="canonical" href={canonical} />
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <meta name="description" content={description} /><meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:type" content="article" />

@@ -141,9 +141,7 @@ export default function DogBedSizeChart() {
     <Layout>
       <Helmet>
         <title>Dog Bed Size Chart (2026) – By Breed & Weight | GetPawsy</title>
-        <meta name="description" content="Find the perfect dog bed size with our interactive chart. Covers small to XL breeds with exact dimensions, weight ranges, and measuring tips. Free printable PDF." />
-        <link rel="canonical" href={PAGE_URL} />
-        <meta property="og:title" content="Dog Bed Size Chart – Find the Perfect Fit | GetPawsy" />
+        <meta name="description" content="Find the perfect dog bed size with our interactive chart. Covers small to XL breeds with exact dimensions, weight ranges, and measuring tips. Free printable PDF." /><meta property="og:title" content="Dog Bed Size Chart – Find the Perfect Fit | GetPawsy" />
         <meta property="og:description" content="Interactive dog bed size chart covering small to XL breeds. Free printable version included." />
         <meta property="og:url" content={PAGE_URL} />
         <meta property="og:type" content="article" />

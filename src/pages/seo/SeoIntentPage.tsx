@@ -85,9 +85,7 @@ function IntentContent({ pillar, intent, namespace }: { pillar: SeoPillar; inten
     <Layout>
       <Helmet>
         <title>{intent.title}</title>
-        <meta name="description" content={intent.intro.substring(0, 160)} />
-        <link rel="canonical" href={canonical} />
-        <meta property="og:title" content={intent.title} />
+        <meta name="description" content={intent.intro.substring(0, 160)} /><meta property="og:title" content={intent.title} />
         <meta property="og:description" content={intent.intro.substring(0, 160)} />
         <meta property="og:url" content={canonical} />
         <meta property="og:type" content="article" />
