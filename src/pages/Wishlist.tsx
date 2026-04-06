@@ -288,7 +288,7 @@ const Wishlist = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
               {sortedProducts.map((product) => {
-                const productRating = product.id ? ratingsMap?.[product.id] : undefined;
+                
                 return (
                 <motion.div
                   key={product.id}
