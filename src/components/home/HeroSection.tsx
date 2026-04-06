@@ -47,7 +47,7 @@ export function HeroSection() {
             asChild
             size="lg"
             variant="outline"
-            className="w-full sm:w-auto min-h-[52px] rounded-xl px-8 text-base font-bold border-white/40 text-white hover:bg-white/10 transition-all duration-200"
+            className="w-full sm:w-auto min-h-[52px] rounded-xl px-8 text-base font-bold border-2 border-primary bg-white text-foreground hover:bg-primary/10 transition-all duration-200"
           >
             <Link to="/collections/cats">Shop Cat Essentials</Link>
           </Button>
