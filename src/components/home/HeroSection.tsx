@@ -31,8 +31,8 @@ export function HeroSection() {
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
           Premium Pet Products for Dogs &amp; Cats
         </h1>
-        <p className="mt-3 text-base md:text-lg text-white/95 max-w-xl mx-auto drop-shadow">
-          Quality cat trees, litter boxes, dog beds &amp; travel essentials — hand-selected for comfort, safety, and durability.
+        <p className="mt-3 text-base md:text-lg text-white/95 max-w-xl mx-auto drop-shadow font-medium">
+          Fast US Shipping &bull; Secure Checkout &bull; Trusted Quality
         </p>
 
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
@@ -49,14 +49,14 @@ export function HeroSection() {
             variant="outline"
             className="w-full sm:w-auto min-h-[52px] rounded-xl px-8 text-base font-bold border-white/40 text-white hover:bg-white/10 transition-all duration-200"
           >
-            <Link to="/collections/cat-trees-and-condos">Shop Cat Trees</Link>
+            <Link to="/collections/cats">Shop Cat Essentials</Link>
           </Button>
         </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-sm font-medium text-white/90">
-          <span className="inline-flex items-center gap-1.5">✔ Free shipping on orders over $35</span>
-          <span className="inline-flex items-center gap-1.5">✔ Estimated delivery: 5–10 business days</span>
+          <span className="inline-flex items-center gap-1.5">✔ Free shipping over $35</span>
           <span className="inline-flex items-center gap-1.5">✔ 30-day returns</span>
+          <span className="inline-flex items-center gap-1.5">✔ Secure checkout</span>
         </div>
       </div>
     </section>

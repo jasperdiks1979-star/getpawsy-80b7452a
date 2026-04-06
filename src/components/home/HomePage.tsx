@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
 import { useCanonical } from "@/components/seo/CanonicalTag";
 import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
+import { CategoryEntryCards } from "@/components/home/CategoryEntryCards";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 import { CrawlBoostLinks } from "@/components/home/CrawlBoostLinks";
 import { WhyGetPawsy } from "@/components/shared/WhyGetPawsy";
