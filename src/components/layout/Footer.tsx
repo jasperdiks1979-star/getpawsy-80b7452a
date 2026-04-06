@@ -63,7 +63,7 @@ const footerLinks = {
     { label: 'Bestsellers', href: '/bestsellers' },
     { label: 'Shop Dogs', href: '/collections/dogs' },
     { label: 'Shop Cats', href: '/collections/cats' },
-    { label: 'All Collections', href: '/collections/all' },
+    { label: 'All Collections', href: '/products' },
   ],
   collections: [
     { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },

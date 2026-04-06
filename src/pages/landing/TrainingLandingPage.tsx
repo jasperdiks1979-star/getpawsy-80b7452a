@@ -42,7 +42,7 @@ export default function TrainingLandingPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Page Not Found</h1>
-          <Link to="/collections/all" className="text-primary underline">← Browse Training Gear</Link>
+          <Link to="/products" className="text-primary underline">← Browse Training Gear</Link>
         </div>
       </div>
     );

@@ -190,15 +190,15 @@ const DogTrainingTravelPillar = () => {
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Dog Travel Safety Gear →</h3>
                 <p className="text-sm text-muted-foreground">Car seats, travel harnesses & carriers</p>
               </Link>
-              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/products" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Training & Behavior Tools →</h3>
                 <p className="text-sm text-muted-foreground">Complete collection of training gear</p>
               </Link>
-              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/products" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Car Travel Safety →</h3>
                 <p className="text-sm text-muted-foreground">Car seats, harnesses & safety gear</p>
               </Link>
-              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/products" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Orthopedic Dog Beds →</h3>
                 <p className="text-sm text-muted-foreground">Memory foam beds for all breeds</p>
               </Link>
