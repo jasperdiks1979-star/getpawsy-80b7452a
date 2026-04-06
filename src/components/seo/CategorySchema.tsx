@@ -130,7 +130,7 @@ export function CategorySchema({
       <title>{pageTitle}</title>
       <meta name="description" content={pageDescription} />
       <meta name="keywords" content={keywords.join(', ')} />
-      <link rel="canonical" href={canonicalUrl} />
+      {/* canonical managed by HostnameGuard — do not duplicate */}
 
       {/* Hreflang Tags */}
       <link rel="alternate" hrefLang="en" href={canonicalUrl} />

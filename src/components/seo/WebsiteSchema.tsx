@@ -326,7 +326,7 @@ export function WebsiteSchema({
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
-      <link rel="canonical" href={url} />
+      {/* canonical managed by HostnameGuard — do not duplicate */}
 
       {/* Hreflang Tags for International SEO */}
       <link rel="alternate" hrefLang="en" href={url} />

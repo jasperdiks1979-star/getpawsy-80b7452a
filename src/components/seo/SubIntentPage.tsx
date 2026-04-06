@@ -71,7 +71,7 @@ export function SubIntentPage(props: SubIntentPageProps) {
       <Helmet>
         <title>{props.title}</title>
         <meta name="description" content={props.metaDesc} />
-        <link rel="canonical" href={props.canonical} />
+        {/* canonical managed by HostnameGuard — do not duplicate */}
         <meta property="og:title" content={props.title} />
         <meta property="og:description" content={props.metaDesc} />
         <meta property="og:url" content={props.canonical} />
