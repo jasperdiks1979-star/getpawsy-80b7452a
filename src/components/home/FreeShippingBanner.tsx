@@ -19,7 +19,7 @@ export function FreeShippingBanner() {
           Shipping to the United States · Estimated delivery: 5–10 business days
         </p>
         <Button asChild size="lg" className="rounded-xl px-8 font-bold">
-          <Link to="/products">Start Shopping</Link>
+          <Link to="/products">Browse Bestsellers</Link>
         </Button>
       </div>
     </section>
