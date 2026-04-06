@@ -48,7 +48,6 @@ interface ProductCardProps {
   listId?: string;
   listName?: string;
   position?: number;
-  position?: number;
   priority?: boolean;
   popularChoice?: boolean;
   bestSeller?: boolean;
@@ -64,8 +63,6 @@ export const ProductCard = memo(
       listId = "products",
       listName = "Products",
       position = 0,
-      rating,
-      reviewCount,
       priority = false,
       popularChoice = false,
       bestSeller = false,
