@@ -474,7 +474,7 @@ ${extra}      <g:product_type>${esc(p.product_type || getProductType(p.category)
         <g:price>${shippingCost} USD</g:price>
       </g:shipping>
     </item>`;
-  return { xml, excluded: null };
+  return { xml, excluded: null, categoryLog };
 }
 
 // ── Main handler ─────────────────────────────────────────────────────
