@@ -1886,6 +1886,10 @@ const App = () => {
                                 </Suspense>
                               }
                             />
+                            <Route
+                              path="test"
+                              element={<div style={{padding:40,fontSize:24,fontWeight:'bold'}}>ADMIN ROUTE WORKS</div>}
+                            />
                           </Route>
 
                           <Route
