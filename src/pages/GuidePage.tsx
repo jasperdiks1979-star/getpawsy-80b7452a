@@ -25,6 +25,7 @@ import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
 import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
 import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
 import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
+import { GuideMoneyLinks } from '@/components/guides/GuideMoneyLinks';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -546,6 +547,7 @@ const GuidePage = () => {
         </nav>
 
         {/* Header */}
+        <GuideMoneyLinks currentSlug={guide.slug} position="top" relatedCategories={safeRelatedCategories} />
         <header className="mb-12">
           <div className="flex flex-wrap items-center gap-2.5 text-sm text-muted-foreground mb-5">
             <span className="bg-gradient-to-r from-primary/15 to-primary/5 text-primary px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ring-1 ring-primary/10">
@@ -1051,6 +1053,7 @@ const GuidePage = () => {
         />
 
         {/* E-E-A-T Trust Block */}
+        <GuideMoneyLinks currentSlug={guide.slug} position="bottom" relatedCategories={safeRelatedCategories} />
         <WhyTrustGetPawsy variant="guide" className="mb-12" />
 
         {/* People Also Read — session depth booster */}
