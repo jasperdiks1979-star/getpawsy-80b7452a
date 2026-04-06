@@ -189,8 +189,8 @@ export function ProductSchema({
         },
       },
     },
-    aggregateRating,
-    review: reviewSchema,
+    ...(aggregateRating ? { aggregateRating } : {}),
+    ...(reviewSchema ? { review: reviewSchema } : {}),
   };
 
   // WebPage schema for product page
