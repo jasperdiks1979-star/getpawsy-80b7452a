@@ -44,6 +44,7 @@ const navItems = [
   { to: '/admin/integrations/merchant/readiness', label: 'Merchant Readiness', icon: ShieldAlert },
   { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert },
   { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
+  { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
 ];
 
 /**
