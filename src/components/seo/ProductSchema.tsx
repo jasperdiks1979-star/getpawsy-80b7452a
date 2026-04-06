@@ -26,6 +26,7 @@ interface ProductSchemaProps {
     rating: number;
     title?: string;
     content?: string | null;
+    reviewer_name?: string | null;
   }>;
   baseUrl?: string;
 }
@@ -82,7 +83,7 @@ export function ProductSchema({
           worstRating: 1,
         },
         reviewBody: r.content || r.title || '',
-        author: { '@type': 'Person', name: 'Verified Buyer' },
+        author: { '@type': 'Person', name: r.reviewer_name || 'Verified Buyer' },
       }))
     : [
         {

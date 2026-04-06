@@ -245,6 +245,11 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
           );
         })}
       </AnimatePresence>
+
+      {/* Trust footer */}
+      <p className="text-xs text-muted-foreground text-center pt-4 border-t border-border/30">
+        Based on customer feedback · All reviews are from verified purchases
+      </p>
     </div>
   );
 };
