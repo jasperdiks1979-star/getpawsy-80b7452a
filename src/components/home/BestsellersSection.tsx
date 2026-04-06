@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
+import { getTrustLabel } from '@/lib/trust-labels';
 
 /**
  * Bestsellers Right Now — conversion-optimized product grid + scroll.
@@ -98,7 +99,7 @@ export const BestsellersSection = () => {
             className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 -mx-4 px-4"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {bestsellers.slice(0, 8).map((bestseller) => {
+            {bestsellers.slice(0, 8).map((bestseller, idx) => {
               const product = bestseller.products_public;
               if (!product) return null;
 
@@ -133,10 +134,11 @@ export const BestsellersSection = () => {
                       <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                         {productName}
                       </h3>
+                      <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(product.id, idx)}</p>
                       <p className="text-sm font-bold text-primary mt-1">
                         ${price.toFixed(2)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">Estimated delivery: 5–10 business days</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Free shipping over $35</p>
                     </div>
                   </Link>
                   <button
