@@ -10,7 +10,6 @@ const CATEGORY_LINKS = [
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees & Condos' },
   { href: '/collections/cat-litter-boxes', label: 'Cat Litter Boxes' },
   { href: '/collections/dog-beds', label: 'Dog Beds' },
-  { href: '/guides/dog-travel-essentials-guide', label: 'Dog Travel Guide' },
   { href: '/collections/dogs', label: 'Shop Dogs' },
   { href: '/collections/cats', label: 'Shop Cats' },
   { href: '/bestsellers', label: 'Bestsellers' },
