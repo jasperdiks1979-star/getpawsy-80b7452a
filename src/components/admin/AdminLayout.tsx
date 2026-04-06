@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   Link,
   LineChart,
+  Pin,
   Zap,
   BookOpen,
   Activity,
