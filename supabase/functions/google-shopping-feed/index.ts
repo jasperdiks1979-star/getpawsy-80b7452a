@@ -205,64 +205,97 @@ function buildCleanDescription(p: Product): string {
   return truncate(desc, 5000);
 }
 
-// ── Google taxonomy ─────────────────────────────────────────────────
+// ── Google taxonomy (numeric IDs from official Google Product Taxonomy) ──
 
-function getGoogleProductCategory(name: string, cat: string | null): string {
+const GOOGLE_TAXONOMY_IDS: Record<string, number> = {
+  "cat_tree": 3367,        // Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture > Cat Trees & Condos
+  "litter_box": 5010,      // Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Litter Box Supplies > Cat Litter Boxes
+  "cat_furniture": 4433,   // Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture
+  "cat_toy": 5019,         // Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Toys
+  "cat_bed": 5008,         // Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture > Cat Beds
+  "cat_carrier": 6983,     // Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Carriers & Strollers
+  "cat_bowl": 5017,        // Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Feeding & Watering Supplies
+  "cat_general": 3261,     // Animals & Pet Supplies > Pet Supplies > Cat Supplies
+  "dog_bed": 4985,         // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds
+  "dog_toy": 5004,         // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Toys
+  "dog_collar": 5001,      // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Collars & Leashes
+  "dog_bowl": 4997,        // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Feeding & Watering Supplies
+  "dog_house": 6981,       // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Houses
+  "dog_carrier": 6981,     // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Carrier & Travel
+  "dog_grooming": 4993,    // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Grooming Supplies
+  "dog_apparel": 5003,     // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Apparel
+  "dog_training": 5005,    // Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Training Aids
+  "dog_general": 3262,     // Animals & Pet Supplies > Pet Supplies > Dog Supplies
+  "pet_stroller": 6978,    // Animals & Pet Supplies > Pet Supplies > Pet Carriers & Travel
+  "pet_feeding": 4997,     // Animals & Pet Supplies > Pet Supplies > Pet Feeding & Watering Supplies
+  "pet_general": 2,        // Animals & Pet Supplies > Pet Supplies (fallback)
+};
+
+interface CategoryResult {
+  taxonomyId: number;
+  taxonomyKey: string;
+  valid: boolean;
+  original: string | null;
+}
+
+function classifyGoogleProductCategory(name: string, cat: string | null): CategoryResult {
   const c = `${name} ${cat || ""}`.toLowerCase();
+  const original = cat;
 
   // Cat-specific
   if (c.includes("cat tree") || c.includes("cat tower") || c.includes("cat condo"))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Trees & Condos";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_tree, taxonomyKey: "cat_tree", valid: true, original };
   if (c.includes("litter box") || c.includes("self cleaning litter") || c.includes("self-cleaning litter"))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Litter Boxes";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.litter_box, taxonomyKey: "litter_box", valid: true, original };
   if (c.includes("cat") && c.includes("scratch"))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_furniture, taxonomyKey: "cat_furniture", valid: true, original };
   if (c.includes("cat") && c.includes("toy"))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Toys";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_toy, taxonomyKey: "cat_toy", valid: true, original };
   if (c.includes("cat") && c.includes("bed"))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_bed, taxonomyKey: "cat_bed", valid: true, original };
   if (c.includes("cat") && c.includes("carrier"))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Carriers";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_carrier, taxonomyKey: "cat_carrier", valid: true, original };
   if (c.includes("cat") && (c.includes("bowl") || c.includes("feeder") || c.includes("fountain")))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Bowls & Feeders";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_bowl, taxonomyKey: "cat_bowl", valid: true, original };
   if (c.includes("cat") && (c.includes("furniture") || c.includes("perch") || c.includes("hammock")))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_furniture, taxonomyKey: "cat_furniture", valid: true, original };
   if (c.includes("cat"))
-    return "Animals & Pet Supplies > Pet Supplies > Cat Supplies";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.cat_general, taxonomyKey: "cat_general", valid: true, original };
 
   // Dog-specific
   if (c.includes("dog bed") || c.includes("orthopedic dog bed") || c.includes("orthopedic bed"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_bed, taxonomyKey: "dog_bed", valid: true, original };
   if (c.includes("dog") && c.includes("toy"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Toys";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_toy, taxonomyKey: "dog_toy", valid: true, original };
   if (c.includes("dog") && (c.includes("collar") || c.includes("leash")))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Collars & Leads";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_collar, taxonomyKey: "dog_collar", valid: true, original };
   if (c.includes("dog") && c.includes("bowl"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Bowls & Feeders";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_bowl, taxonomyKey: "dog_bowl", valid: true, original };
   if (c.includes("slow feeder") || c.includes("slow feed"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Bowls & Feeders";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_bowl, taxonomyKey: "dog_bowl", valid: true, original };
   if (c.includes("dog") && c.includes("house"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Houses";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_house, taxonomyKey: "dog_house", valid: true, original };
   if (c.includes("dog") && c.includes("carrier"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Carriers & Travel";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_carrier, taxonomyKey: "dog_carrier", valid: true, original };
   if (c.includes("dog") && c.includes("groom"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Grooming Supplies";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_grooming, taxonomyKey: "dog_grooming", valid: true, original };
   if (c.includes("dog") && c.includes("cloth"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Apparel";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_apparel, taxonomyKey: "dog_apparel", valid: true, original };
   if (c.includes("dog") && c.includes("train"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Training Aids";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_training, taxonomyKey: "dog_training", valid: true, original };
   if (c.includes("dog"))
-    return "Animals & Pet Supplies > Pet Supplies > Dog Supplies";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.dog_general, taxonomyKey: "dog_general", valid: true, original };
 
   // Pet stroller
   if (c.includes("stroller"))
-    return "Animals & Pet Supplies > Pet Supplies > Pet Strollers";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.pet_stroller, taxonomyKey: "pet_stroller", valid: true, original };
 
   // Pet feeding general
   if (c.includes("bowl") || c.includes("feeder") || c.includes("fountain"))
-    return "Animals & Pet Supplies > Pet Supplies > Pet Feeding & Watering Supplies";
+    return { taxonomyId: GOOGLE_TAXONOMY_IDS.pet_feeding, taxonomyKey: "pet_feeding", valid: true, original };
 
-  return "Animals & Pet Supplies > Pet Supplies";
+  // Fallback — still valid (general pet supplies)
+  return { taxonomyId: GOOGLE_TAXONOMY_IDS.pet_general, taxonomyKey: "pet_general", valid: true, original };
 }
 
 function getProductType(cat: string | null): string {
@@ -424,7 +457,7 @@ ${priceXml}
       <g:content_language>en</g:content_language>
       <g:target_country>US</g:target_country>
 ${extra}      <g:product_type>${esc(p.product_type || getProductType(p.category))}</g:product_type>
-      <g:google_product_category>${esc(getGoogleProductCategory(p.name, p.category))}</g:google_product_category>
+      <g:google_product_category>${categoryResult.taxonomyId}</g:google_product_category>
       <g:shipping>
         <g:country>US</g:country>
         <g:service>Standard</g:service>
