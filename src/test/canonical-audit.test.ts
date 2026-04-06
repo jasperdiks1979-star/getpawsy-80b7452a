@@ -39,13 +39,11 @@ describe('Canonical & Redirect Audit', () => {
     expect(content).toContain('Disallow: /thank-you');
   });
 
-  it('robots.txt blocks tracking params', async () => {
+  it('robots.txt blocks all query parameter URLs', async () => {
     const fs = await import('fs');
     const path = await import('path');
     const robotsPath = path.resolve(__dirname, '../../public/robots.txt');
     const content = fs.readFileSync(robotsPath, 'utf-8');
-    expect(content).toContain('gclid=');
-    expect(content).toContain('fbclid=');
-    expect(content).toContain('utm_');
+    expect(content).toContain('Disallow: /*?*');
   });
 });
