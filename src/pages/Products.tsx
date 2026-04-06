@@ -969,7 +969,7 @@ const Products = () => {
                   visibleItems={visibleItems}
                   categoryParam={categoryParam}
                   searchQuery={searchQuery}
-                  ratingsMap={ratingsMap}
+                  
                   onQuickView={setQuickViewProduct}
                 />
                 
@@ -1098,11 +1098,10 @@ interface ProductGridProps {
   visibleItems: any[];
   categoryParam: string | null;
   searchQuery: string;
-  ratingsMap: Record<string, { averageRating: number; reviewCount: number }> | undefined;
   onQuickView: (product: Product) => void;
 }
 
-const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap, onQuickView }: ProductGridProps) => {
+const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, onQuickView }: ProductGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const hasMarkedRef = useRef(false);
   // Progressive rendering: show first 4 cards immediately, defer the rest
