@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/ui/optimized-image';
-import { StarRating } from '@/components/ui/star-rating';
+
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import { FAQSchema } from '@/components/seo/FAQSchema';
@@ -320,7 +320,7 @@ export default function SlowFeederDogBowls() {
                   <h2 className="font-display text-xl md:text-2xl font-bold text-foreground mb-2">
                     {featuredProduct.name}
                   </h2>
-                  <StarRating rating={4.8} reviewCount={0} size="sm" className="mb-4" />
+                  <p className="text-xs text-primary/80 font-medium mb-4">🔥 Bestseller</p>
 
                   <ul className="space-y-2 mb-5 text-sm text-foreground">
                     {['Vet recommended', 'Anti-slip base', 'Dishwasher safe', 'BPA free', 'Designed for US pet owners'].map((point) => (
@@ -411,7 +411,7 @@ export default function SlowFeederDogBowls() {
                           </h3>
                         </Link>
 
-                        <StarRating rating={4.5} reviewCount={0} size="sm" className="mb-2" />
+                        <p className="text-[10px] text-primary/80 font-medium mb-2">👍 Pet owner favorite</p>
 
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-lg font-bold text-primary">${safePrice(product.price)}</span>
