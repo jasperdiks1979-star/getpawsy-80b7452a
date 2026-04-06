@@ -6,10 +6,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { SiloBackLinks } from '@/components/seo/SiloBackLinks';
+import { useCanonical } from '@/components/seo/CanonicalTag';
 
 const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
 
 const CatTravel = () => {
+  useCanonical('/collections/cats');
   const { data: products, isLoading } = useQuery({
     queryKey: ['cat-travel-products'],
     queryFn: async () => {
@@ -30,9 +32,7 @@ const CatTravel = () => {
     <Layout>
       <Helmet>
         <title>Cat Travel Carriers – Airline-Approved & Vet Visit Ready | GetPawsy</title>
-        <meta name="description" content="Airline-approved cat carriers, travel bags & anxiety-reducing gear. Mesh ventilation, top-loading access. US 5–10 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/collections/cats" />
-        <meta name="robots" content="noindex, follow" />
+        <meta name="description" content="Airline-approved cat carriers, travel bags & anxiety-reducing gear. Mesh ventilation, top-loading access. US 5–10 day shipping. 30-day return policy." /><meta name="robots" content="noindex, follow" />
       </Helmet>
 
       <section className="py-16 md:py-20 bg-sand/30">

@@ -70,9 +70,7 @@ export default function IndoorCatFurnitureGuide() {
     <Layout>
       <Helmet>
         <title>Indoor Cat Furniture Guide 2026 – Wall Shelves, Modern Trees & Apartment Setups | GetPawsy</title>
-        <meta name="description" content="Complete guide to indoor cat furniture for 2026. Modern cat trees, wall-mounted shelves, apartment setups, and space-saving solutions. Expert comparison + 10 FAQ." />
-        <link rel="canonical" href={`${SITE}/indoor-cat-furniture`} />
-        <script type="application/ld+json">{JSON.stringify(BREADCRUMB_JSONLD)}</script>
+        <meta name="description" content="Complete guide to indoor cat furniture for 2026. Modern cat trees, wall-mounted shelves, apartment setups, and space-saving solutions. Expert comparison + 10 FAQ." /><script type="application/ld+json">{JSON.stringify(BREADCRUMB_JSONLD)}</script>
         <script type="application/ld+json">{JSON.stringify(FAQ_JSONLD)}</script>
         <script type="application/ld+json">{JSON.stringify(ARTICLE_JSONLD)}</script>
       </Helmet>

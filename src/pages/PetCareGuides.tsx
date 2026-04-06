@@ -245,9 +245,7 @@ const PetCareGuides = () => {
         <meta
           name="description"
           content="Expert pet care guides for dogs and cats. Vet-reviewed advice on cat trees, litter boxes, dog beds, training and more. Shop smarter at GetPawsy."
-        />
-        <link rel="canonical" href={`${BASE_URL}/pet-care-guides`} />
-        <meta name="robots" content="index, follow" />
+        /><meta name="robots" content="index, follow" />
         <meta property="og:title" content="Pet Care Guides – Expert Advice for Dogs & Cats (2026)" />
         <meta property="og:description" content="Expert pet care guides covering dog training, travel, grooming, cat litter & cat trees. Vet-reviewed, updated for 2026." />
         <meta property="og:url" content={`${BASE_URL}/pet-care-guides`} />

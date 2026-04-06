@@ -6,10 +6,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { SiloBackLinks } from '@/components/seo/SiloBackLinks';
+import { useCanonical } from '@/components/seo/CanonicalTag';
 
 const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
 
 const DogTraining = () => {
+  useCanonical('/collections/dogs');
   const { data: products, isLoading } = useQuery({
     queryKey: ['dog-training-products'],
     queryFn: async () => {
@@ -30,9 +32,7 @@ const DogTraining = () => {
     <Layout>
       <Helmet>
         <title>Dog Training Gear – No-Pull Harnesses & Leashes | GetPawsy</title>
-        <meta name="description" content="Shop dog training harnesses, leashes & behavior tools. No-pull designs, reflective stitching, adjustable fit. Estimated delivery: 5–10 business days. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Shop dog training harnesses, leashes & behavior tools. No-pull designs, reflective stitching, adjustable fit. Estimated delivery: 5–10 business days. 30-day return policy." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <section className="py-16 md:py-20 bg-sand/30">

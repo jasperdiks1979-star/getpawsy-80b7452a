@@ -31,9 +31,7 @@ const DogHub = () => {
     <Layout>
       <Helmet>
         <title>Dog Products – Beds, Harnesses & Travel Gear | GetPawsy</title>
-        <meta name="description" content="Shop premium dog beds, training harnesses, travel carriers and enrichment toys. Trusted quality for all breeds. 30-day returns. Browse now at GetPawsy." />
-        <link rel="canonical" href="https://getpawsy.pet/dog" />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Shop premium dog beds, training harnesses, travel carriers and enrichment toys. Trusted quality for all breeds. 30-day returns. Browse now at GetPawsy." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       {/* Hero */}

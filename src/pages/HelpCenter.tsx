@@ -74,9 +74,7 @@ const HelpCenter = () => (
       <meta
         name="description"
         content="Find answers about orders, shipping, returns and customer support at GetPawsy. US shipping, 30-day returns, secure checkout."
-      />
-      <link rel="canonical" href="https://getpawsy.pet/help" />
-    </Helmet>
+      /></Helmet>
 
     <div className="min-h-screen py-14 md:py-20">
       <div className="container px-4 md:px-6 max-w-4xl mx-auto">

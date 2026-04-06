@@ -29,9 +29,7 @@ export default function RecentProducts() {
     <Layout>
       <Helmet>
         <title>Recently Added Pet Products | GetPawsy</title>
-        <meta name="description" content="Discover the latest pet products added to GetPawsy. New dog toys, cat trees, beds, carriers and more — updated daily. Free shipping on qualifying orders." />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Discover the latest pet products added to GetPawsy. New dog toys, cat trees, beds, carriers and more — updated daily. Free shipping on qualifying orders." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">

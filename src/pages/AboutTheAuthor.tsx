@@ -13,9 +13,7 @@ const AboutTheAuthor = () => {
     <Layout>
       <Helmet>
         <title>{AUTHOR.name} - Pet Product Researcher | GetPawsy</title>
-        <meta name="description" content={`${AUTHOR.bio} Read expert pet product guides and recommendations on GetPawsy.`} />
-        <link rel="canonical" href={`${BASE_URL}/about-the-author`} />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content={`${AUTHOR.bio} Read expert pet product guides and recommendations on GetPawsy.`} /><meta name="robots" content="index, follow" />
         <meta property="og:title" content={`${AUTHOR.name} - Pet Product Researcher`} />
         <meta property="og:description" content={AUTHOR.bio} />
         <meta property="og:url" content={`${BASE_URL}/about-the-author`} />

@@ -257,9 +257,7 @@ export default function OrthopedicClusterArticle() {
       <ScrollProgressIndicator />
       <Helmet>
         <title>{cluster.seoTitle}</title>
-        <meta name="description" content={cluster.metaDesc} />
-        <link rel="canonical" href={canonical} />
-        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <meta name="description" content={cluster.metaDesc} /><meta name="robots" content="index, follow, max-image-preview:large" />
         <meta property="og:title" content={cluster.seoTitle} />
         <meta property="og:description" content={cluster.metaDesc} />
         <meta property="og:url" content={canonical} />

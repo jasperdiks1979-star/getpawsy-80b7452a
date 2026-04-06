@@ -302,10 +302,7 @@ const BlogPostPage = () => {
       <Helmet>
         <title>{post.meta_title || post.title} | GetPawsy Blog</title>
         <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={post.meta_keywords?.join(', ') || post.tags.join(', ')} />
-        <link rel="canonical" href={`https://getpawsy.pet/blog/${post.slug}`} />
-        
-        {/* Hreflang Tags */}
+        <meta name="keywords" content={post.meta_keywords?.join(', ') || post.tags.join(', ')} />{/* Hreflang Tags */}
         <link rel="alternate" hrefLang="en" href={`https://getpawsy.pet/blog/${post.slug}`} />
         <link rel="alternate" hrefLang="x-default" href={`https://getpawsy.pet/blog/${post.slug}`} />
         

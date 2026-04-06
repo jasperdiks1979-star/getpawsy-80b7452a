@@ -11,9 +11,7 @@ const EditorialGuidelines = () => {
     <Layout>
       <Helmet>
         <title>Editorial Guidelines | GetPawsy</title>
-        <meta name="description" content="Learn how GetPawsy researches, evaluates, and recommends pet products. Our editorial standards ensure honest, independent, and practical buying advice." />
-        <link rel="canonical" href={`${BASE_URL}/editorial-guidelines`} />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Learn how GetPawsy researches, evaluates, and recommends pet products. Our editorial standards ensure honest, independent, and practical buying advice." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="container mx-auto px-4 py-12 max-w-3xl">

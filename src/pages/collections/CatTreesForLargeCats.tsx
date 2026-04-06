@@ -139,9 +139,7 @@ export default function CatTreesForLargeCats() {
       {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       <Helmet>
         <title>{PAGE_TITLE}</title>
-        <meta name="description" content={META_DESC} />
-        <link rel="canonical" href={CANONICAL} />
-        <meta property="og:title" content={PAGE_TITLE} />
+        <meta name="description" content={META_DESC} /><meta property="og:title" content={PAGE_TITLE} />
         <meta property="og:description" content={META_DESC} />
         <meta property="og:url" content={CANONICAL} />
         <meta property="og:type" content="website" />

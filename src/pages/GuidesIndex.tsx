@@ -124,9 +124,7 @@ const GuidesIndex = () => {
     <Layout>
       <Helmet>
         <title>Pet Care Guides & Expert Advice (2026) | GetPawsy</title>
-        <meta name="description" content="Expert pet care guides on dog beds, cat trees, litter boxes & travel gear. Honest advice to choose the best products. Shop now at GetPawsy." />
-        <link rel="canonical" href={`${BASE_URL}/guides`} />
-        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <meta name="description" content="Expert pet care guides on dog beds, cat trees, litter boxes & travel gear. Honest advice to choose the best products. Shop now at GetPawsy." /><meta name="robots" content="index, follow, max-image-preview:large" />
         <meta property="og:title" content="Pet Care Guides & Expert Advice (2026) | GetPawsy" />
         <meta property="og:description" content="Browse 200+ expert pet care guides. Honest advice for dog and cat owners." />
         <meta property="og:url" content={`${BASE_URL}/guides`} />

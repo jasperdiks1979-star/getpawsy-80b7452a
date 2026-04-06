@@ -130,9 +130,7 @@ export default function SlowFeederDogBowls() {
     <>
       <Helmet>
         <title>Best Slow Feeder Dog Bowls (2026) | GetPawsy</title>
-        <meta name="description" content="Reduce bloating and choking with premium slow feeder dog bowls. Vet-recommended, dishwasher safe. Shop trusted picks at GetPawsy." />
-        <link rel="canonical" href={PAGE_URL} />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        <meta name="description" content="Reduce bloating and choking with premium slow feeder dog bowls. Vet-recommended, dishwasher safe. Shop trusted picks at GetPawsy." /><script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
       <FAQSchema faqs={PAGE_FAQS} pageUrl={PAGE_URL} />

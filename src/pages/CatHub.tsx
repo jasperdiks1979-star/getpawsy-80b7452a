@@ -31,9 +31,7 @@ const CatHub = () => {
     <Layout>
       <Helmet>
         <title>Cat Products – Trees, Carriers & Essentials | GetPawsy</title>
-        <meta name="description" content="Shop premium cat trees, carriers, enrichment toys and scratching posts. Trusted quality for indoor cats. 30-day returns. Browse now at GetPawsy." />
-        <link rel="canonical" href="https://getpawsy.pet/cat" />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Shop premium cat trees, carriers, enrichment toys and scratching posts. Trusted quality for indoor cats. 30-day returns. Browse now at GetPawsy." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       {/* Hero */}

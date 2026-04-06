@@ -55,9 +55,7 @@ export default function TrendingProducts() {
     <Layout>
       <Helmet>
         <title>Trending Pet Products (2026) | GetPawsy</title>
-        <meta name="description" content="Shop trending pet products at GetPawsy. Discover popular dog toys, cat trees, beds, and more. Sorted by what's hot — updated daily. Free shipping available." />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Shop trending pet products at GetPawsy. Discover popular dog toys, cat trees, beds, and more. Sorted by what's hot — updated daily. Free shipping available." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">

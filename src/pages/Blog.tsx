@@ -255,10 +255,7 @@ const Blog = () => {
       <Helmet>
         <title>{seoContent.title}</title>
         <meta name="description" content={seoContent.description} />
-        <meta name="keywords" content={seoContent.keywords.join(', ')} />
-        <link rel="canonical" href="https://getpawsy.pet/blog" />
-        
-        {/* Hreflang Tags */}
+        <meta name="keywords" content={seoContent.keywords.join(', ')} />{/* Hreflang Tags */}
         <link rel="alternate" hrefLang="en" href="https://getpawsy.pet/blog" />
         <link rel="alternate" hrefLang="x-default" href="https://getpawsy.pet/blog" />
         

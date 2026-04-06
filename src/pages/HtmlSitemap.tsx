@@ -86,9 +86,7 @@ export default function HtmlSitemap() {
     <>
       <Helmet>
         <title>Site Map | GetPawsy – All Pages Directory</title>
-        <meta name="description" content="Browse the full GetPawsy site directory. Find all products, collections, pet care guides, and informational pages in one place." />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta name="robots" content="index,follow" />
+        <meta name="description" content="Browse the full GetPawsy site directory. Find all products, collections, pet care guides, and informational pages in one place." /><meta name="robots" content="index,follow" />
       </Helmet>
 
       <div className="container px-4 py-12 max-w-5xl">

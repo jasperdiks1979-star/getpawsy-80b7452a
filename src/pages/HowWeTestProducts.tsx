@@ -11,9 +11,7 @@ const HowWeTestProducts = () => {
     <Layout>
       <Helmet>
         <title>How We Test & Evaluate Pet Products | GetPawsy</title>
-        <meta name="description" content="Our transparent testing methodology: how GetPawsy evaluates pet products for quality, safety, durability, and value before making recommendations." />
-        <link rel="canonical" href={`${BASE_URL}/how-we-test-products`} />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Our transparent testing methodology: how GetPawsy evaluates pet products for quality, safety, durability, and value before making recommendations." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="container mx-auto px-4 py-12 max-w-3xl">

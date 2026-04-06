@@ -53,9 +53,7 @@ export default function ShopHub() {
     <Layout>
       <Helmet>
         <title>Shop Pet Supplies – Dog & Cat Products | GetPawsy</title>
-        <meta name="description" content="Browse all pet supplies at GetPawsy. Shop dog toys, beds, carriers, cat trees, litter boxes and more. Free shipping on qualifying orders." />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="Browse all pet supplies at GetPawsy. Shop dog toys, beds, carriers, cat trees, litter boxes and more. Free shipping on qualifying orders." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">

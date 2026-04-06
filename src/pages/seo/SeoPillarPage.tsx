@@ -83,9 +83,7 @@ function PillarContent({ pillar, namespace }: { pillar: SeoPillar; namespace: Se
     <Layout>
       <Helmet>
         <title>{pillar.title}</title>
-        <meta name="description" content={pillar.intro.substring(0, 160)} />
-        <link rel="canonical" href={canonical} />
-        <meta property="og:title" content={pillar.title} />
+        <meta name="description" content={pillar.intro.substring(0, 160)} /><meta property="og:title" content={pillar.title} />
         <meta property="og:description" content={pillar.intro.substring(0, 160)} />
         <meta property="og:url" content={canonical} />
         <meta property="og:type" content="website" />

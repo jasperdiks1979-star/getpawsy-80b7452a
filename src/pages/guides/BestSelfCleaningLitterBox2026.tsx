@@ -76,9 +76,7 @@ export default function BestSelfCleaningLitterBox2026() {
     <Layout>
       <Helmet>
         <title>Best Self-Cleaning Litter Box 2026 – Noise, Cost & Multi-Cat Guide | GetPawsy</title>
-        <meta name="description" content="Expert comparison of the best self-cleaning litter boxes for 2026. Noise levels, multi-cat ratings, cost analysis, and top picks under $300. Updated February 2026." />
-        <link rel="canonical" href={`${SITE}/best-self-cleaning-litter-box-2026`} />
-        <script type="application/ld+json">{JSON.stringify(BREADCRUMB_JSONLD)}</script>
+        <meta name="description" content="Expert comparison of the best self-cleaning litter boxes for 2026. Noise levels, multi-cat ratings, cost analysis, and top picks under $300. Updated February 2026." /><script type="application/ld+json">{JSON.stringify(BREADCRUMB_JSONLD)}</script>
         <script type="application/ld+json">{JSON.stringify(FAQ_JSONLD)}</script>
         <script type="application/ld+json">{JSON.stringify(ARTICLE_JSONLD)}</script>
       </Helmet>

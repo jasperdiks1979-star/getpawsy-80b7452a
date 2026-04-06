@@ -99,9 +99,7 @@ export default function TrainingClusterArticle() {
     <Layout>
       <Helmet>
         <title>{data.metaTitle}</title>
-        <meta name="description" content={data.metaDescription} />
-        <link rel="canonical" href={data.canonical} />
-        <link rel="alternate" hrefLang="en" href={data.canonical} />
+        <meta name="description" content={data.metaDescription} /><link rel="alternate" hrefLang="en" href={data.canonical} />
         <link rel="alternate" hrefLang="x-default" href={data.canonical} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content={data.metaTitle} />

@@ -373,9 +373,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
     <Layout>
       <Helmet>
         <title>{props.title}</title>
-        <meta name="description" content={props.metaDescription} />
-        <link rel="canonical" href={canonical} />
-        <meta property="og:title" content={props.title} />
+        <meta name="description" content={props.metaDescription} /><meta property="og:title" content={props.title} />
         <meta property="og:description" content={props.metaDescription} />
         <meta property="og:url" content={canonical} />
         <meta property="og:type" content="article" />

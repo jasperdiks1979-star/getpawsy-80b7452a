@@ -18,7 +18,7 @@ const jsonLd = {
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
   dateModified: '2026-02-28',
-  mainEntityOfPage: 'https://getpawsy.pet/collections/all',
+  mainEntityOfPage: 'https://getpawsy.pet/collections/cats',
 };
 
 const faqJsonLd = {
@@ -74,9 +74,7 @@ const CatTrainingTravelPillar = () => {
     <Layout>
       <Helmet>
         <title>Best Cat Training & Travel Gear 2026 – Expert Buyer Guide | GetPawsy</title>
-        <meta name="description" content="2026 expert guide to the best cat trees, carriers, enrichment toys & scratching posts. Tested picks with US 5–10 day shipping. 30-day return policy." />
-        <link rel="canonical" href="https://getpawsy.pet/collections/all" />
-        <meta name="robots" content="index, follow" />
+        <meta name="description" content="2026 expert guide to the best cat trees, carriers, enrichment toys & scratching posts. Tested picks with US 5–10 day shipping. 30-day return policy." /><meta name="robots" content="index, follow" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
@@ -192,7 +190,7 @@ const CatTrainingTravelPillar = () => {
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Travel Essentials →</h3>
                 <p className="text-sm text-muted-foreground">Airline-approved carriers & travel gear</p>
               </Link>
-              <Link to="/collections/all" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+              <Link to="/products" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Trees for Large Cats →</h3>
                 <p className="text-sm text-muted-foreground">Stability-tested for 25+ lbs</p>
               </Link>

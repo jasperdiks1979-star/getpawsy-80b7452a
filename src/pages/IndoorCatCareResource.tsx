@@ -74,9 +74,7 @@ export default function IndoorCatCareResource() {
     <Layout>
       <Helmet>
         <title>Indoor Cat Care – Expert Guides & Products | GetPawsy</title>
-        <meta name="description" content="Complete indoor cat care hub: cat tree guides, litter box comparisons, enrichment tips and expert product picks. Shop trusted essentials at GetPawsy." />
-        <link rel="canonical" href={PAGE_URL} />
-        <meta property="og:title" content="Indoor Cat Care Resource Center | GetPawsy" />
+        <meta name="description" content="Complete indoor cat care hub: cat tree guides, litter box comparisons, enrichment tips and expert product picks. Shop trusted essentials at GetPawsy." /><meta property="og:title" content="Indoor Cat Care Resource Center | GetPawsy" />
         <meta property="og:description" content="Expert guides, product comparisons, and enrichment tips for indoor cats." />
         <meta property="og:url" content={PAGE_URL} />
         <meta property="og:type" content="website" />
