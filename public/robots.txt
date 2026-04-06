@@ -23,13 +23,6 @@ Disallow: /my-claims
 Disallow: /unsubscribe
 Disallow: /payment-success
 Disallow: /thank-you
-Disallow: /*?*gclid=
-Disallow: /*?*fbclid=
-Disallow: /*?*utm_
-Disallow: /*?*ref=
-Disallow: /*?*session=
-Disallow: /*?*sort=
-Disallow: /*?*filter=
-Disallow: /*?*variant=
+Disallow: /*?*
 
 Sitemap: https://getpawsy.pet/sitemap.xml
