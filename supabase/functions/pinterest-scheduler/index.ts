@@ -62,6 +62,7 @@ function generatePinVariants(product: {
   scheduled_at: string;
 }> {
   const BASE_URL = "https://getpawsy.pet";
+  const utm = `?utm_source=pinterest&utm_medium=organic&utm_campaign=auto_pin&utm_content=${product.slug}`;
   const board = detectBoard(product.name, product.category);
   const shortName = product.name.length > 60 ? product.name.slice(0, 57) + "..." : product.name;
   const desc = stripHtml(product.description || "").slice(0, 200);
@@ -91,7 +92,7 @@ function generatePinVariants(product: {
       pin_title: `This Changed Everything for ${category.includes("cat") ? "Cat" : "Pet"} Owners 🐾`,
       pin_description: `✔ ${desc}\n\nDiscover why thousands of pet parents switched to ${shortName}. Browse smart pet solutions on GetPawsy.\n\n${hashtags.join(" ")}`,
       pin_image_url: product.image_url,
-      destination_link: `${BASE_URL}/lp/${product.slug}`,
+      destination_link: `${BASE_URL}/lp/${product.slug}${utm}`,
       board_name: board,
       hashtags,
       priority,
@@ -105,7 +106,7 @@ function generatePinVariants(product: {
       pin_title: `Tired of the Daily Hassle? ${shortName.slice(0, 50)}`,
       pin_description: `The #1 complaint from pet owners — solved.\n\n✔ Saves time\n✔ Reduces mess\n✔ Works automatically\n\n${desc.slice(0, 100)}\n\nShop now on GetPawsy 🛒\n\n${hashtags.join(" ")}`,
       pin_image_url: product.image_url,
-      destination_link: `${BASE_URL}/lp/${product.slug}`,
+      destination_link: `${BASE_URL}/lp/${product.slug}${utm}`,
       board_name: board,
       hashtags,
       priority,
@@ -119,7 +120,7 @@ function generatePinVariants(product: {
       pin_title: `Why Pet Parents Love ${shortName.slice(0, 60)} ❤️`,
       pin_description: `✔ Convenience you'll wonder how you lived without\n✔ Built for busy pet parents\n✔ US shipping · 5–10 business days\n\n${desc.slice(0, 120)}\n\nExplore at GetPawsy.pet\n\n${hashtags.join(" ")}`,
       pin_image_url: product.image_url,
-      destination_link: `${BASE_URL}/lp/${product.slug}`,
+      destination_link: `${BASE_URL}/lp/${product.slug}${utm}`,
       board_name: board,
       hashtags,
       priority,
