@@ -353,6 +353,7 @@ const MerchantComplianceReport = lazyWithRetry(() => import("./pages/admin/Merch
 const MerchantSafePage = lazyWithRetry(() => import("./pages/admin/MerchantSafePage"));
 const PinterestTrafficMachinePage = lazyWithRetry(() => import("./pages/admin/PinterestTrafficMachinePage"));
 const PinterestScaleModePage = lazyWithRetry(() => import("./pages/admin/PinterestScaleModePage"));
+const PinterestAutomationPage = lazyWithRetry(() => import("./pages/admin/PinterestAutomationPage"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
 const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
@@ -1874,6 +1875,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestScaleModePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-automation"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestAutomationPage />
                                 </Suspense>
                               }
                             />
