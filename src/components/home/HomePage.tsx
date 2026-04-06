@@ -25,7 +25,7 @@ const LITTER_BOX_IDS = [
 ];
 
 const CAT_TREE_IDS = [
-  '133cdc48-0117-4…d5-9aaf-1a81131ca9bb',
+  '133cdc48-0117-40d5-9aaf-1a81131ca9bb',
   '11758292-6f06-492c-88a7-0acdeb5e417e',
   '352ddb8f-89f6-41b1-86b8-25af8ab1adb1',
   '07507c96-a445-431f-9724-340ee01d818f',
