@@ -60,7 +60,7 @@ const HomePage = () => {
 
       {/* 3. Customer Favorites — dominant product block */}
       <CuratedProductSection
-        title="Customer Favorites"
+        title="🔥 Most Loved by Pet Owners"
         subtitle="Top picks — limited availability"
         productIds={CUSTOMER_FAVORITES_IDS}
       />

@@ -78,6 +78,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                     <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                       {p.name}
                     </h3>
+                    <p className="text-[10px] text-primary/80 font-medium mt-1">⭐ 4.8/5 from pet owners</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-bold text-primary">
                         ${price.toFixed(2)}
@@ -90,7 +91,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                         )}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      Estimated delivery: 5–10 business days
+                      Free shipping over $35
                     </p>
                   </div>
                 </Link>

@@ -138,7 +138,7 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                  Orders are fulfilled through trusted logistics partners and shipped directly to customers across the United States. Every order includes tracking information so you can follow your package from dispatch to delivery.
+                  Orders are fulfilled through US-based fulfillment partners and shipped directly to customers across the United States. Every order includes tracking information so you can follow your package from dispatch to delivery.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   GetPawsy coordinates all fulfillment logistics and is fully responsible for ensuring your order reaches you safely and on time.
