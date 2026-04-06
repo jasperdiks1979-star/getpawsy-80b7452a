@@ -4376,6 +4376,75 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_board_mappings: {
+        Row: {
+          board_names: string[]
+          category_key: string
+          created_at: string
+          id: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          board_names?: string[]
+          category_key: string
+          created_at?: string
+          id?: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          board_names?: string[]
+          category_key?: string
+          created_at?: string
+          id?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_connection: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          account_name: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          last_publish_at: string | null
+          refresh_token: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_publish_at?: string | null
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_publish_at?: string | null
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_keyword_performance: {
         Row: {
           avg_ctr: number | null
@@ -4481,12 +4550,16 @@ export type Database = {
       pinterest_pin_queue: {
         Row: {
           board_name: string
+          category_key: string | null
           created_at: string
           destination_link: string
           error_message: string | null
           hashtags: string[] | null
+          hook_group: string | null
           id: string
+          overlay_text: string | null
           pin_description: string
+          pin_external_id: string | null
           pin_image_url: string | null
           pin_title: string
           pin_variant: string
@@ -4501,12 +4574,16 @@ export type Database = {
         }
         Insert: {
           board_name?: string
+          category_key?: string | null
           created_at?: string
           destination_link: string
           error_message?: string | null
           hashtags?: string[] | null
+          hook_group?: string | null
           id?: string
+          overlay_text?: string | null
           pin_description: string
+          pin_external_id?: string | null
           pin_image_url?: string | null
           pin_title: string
           pin_variant: string
@@ -4521,12 +4598,16 @@ export type Database = {
         }
         Update: {
           board_name?: string
+          category_key?: string | null
           created_at?: string
           destination_link?: string
           error_message?: string | null
           hashtags?: string[] | null
+          hook_group?: string | null
           id?: string
+          overlay_text?: string | null
           pin_description?: string
+          pin_external_id?: string | null
           pin_image_url?: string | null
           pin_title?: string
           pin_variant?: string
@@ -5079,6 +5160,15 @@ export type Database = {
           optimized_description: string | null
           optimized_title: string | null
           original_name: string | null
+          pinterest_board_override: string | null
+          pinterest_category: string | null
+          pinterest_disabled: boolean
+          pinterest_error: string | null
+          pinterest_last_generated_at: string | null
+          pinterest_last_posted_at: string | null
+          pinterest_priority: string
+          pinterest_ready: boolean
+          pinterest_status: string | null
           price: number
           primary_intent: string | null
           primary_keyword: string | null
@@ -5159,6 +5249,15 @@ export type Database = {
           optimized_description?: string | null
           optimized_title?: string | null
           original_name?: string | null
+          pinterest_board_override?: string | null
+          pinterest_category?: string | null
+          pinterest_disabled?: boolean
+          pinterest_error?: string | null
+          pinterest_last_generated_at?: string | null
+          pinterest_last_posted_at?: string | null
+          pinterest_priority?: string
+          pinterest_ready?: boolean
+          pinterest_status?: string | null
           price: number
           primary_intent?: string | null
           primary_keyword?: string | null
@@ -5239,6 +5338,15 @@ export type Database = {
           optimized_description?: string | null
           optimized_title?: string | null
           original_name?: string | null
+          pinterest_board_override?: string | null
+          pinterest_category?: string | null
+          pinterest_disabled?: boolean
+          pinterest_error?: string | null
+          pinterest_last_generated_at?: string | null
+          pinterest_last_posted_at?: string | null
+          pinterest_priority?: string
+          pinterest_ready?: boolean
+          pinterest_status?: string | null
           price?: number
           primary_intent?: string | null
           primary_keyword?: string | null
