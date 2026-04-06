@@ -152,6 +152,18 @@ async function main() {
     process.exit(1);
   }
 
+  // ── Priority page overrides for index domination ──
+  const PRIORITY_GUIDE_SLUGS = new Set([
+    "best-cat-litter-box-2026",
+    "best-cat-trees-for-large-cats-2026",
+    "best-dog-bed-2026",
+    "best-self-cleaning-litter-box-2026",
+    "best-dog-car-seats-safe-travel",
+  ]);
+  const PRIORITY_COLLECTION_SLUGS = new Set([
+    "cat-litter-boxes", "dogs", "cats", "cat-trees-and-condos", "dog-beds",
+  ]);
+
   // ── COLLECTIONS (locked to 5 active collections only) ──
   const ACTIVE_COLLECTION_SLUGS = new Set([
     "dogs", "cats", "dog-beds", "cat-trees-and-condos", "cat-litter-boxes",
@@ -287,10 +299,16 @@ async function main() {
     _path: e.path, _updatedAt: e.lastmod,
   }));
 
-  const productEntries = makeDelta(products, { changefreq: "daily", priority: 0.90 });
-  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.80 });
-  const guideEntries = makeDelta(guideEntriesRaw, { changefreq: "monthly", priority: 0.70 });
-  const blogPageEntries = makeDelta(blogEntries, { changefreq: "monthly", priority: 0.60 });
+  const productEntries = makeDelta(products, { changefreq: "daily", priority: 0.80 });
+  const collectionEntries = makeDelta(collections.map(c => {
+    const slug = c.path.replace('/collections/', '');
+    return { ...c, priority: PRIORITY_COLLECTION_SLUGS.has(slug) ? 0.90 : 0.70 };
+  }), { changefreq: "weekly", priority: 0.80 });
+  const guideEntries = makeDelta(guideEntriesRaw.map(g => {
+    const slug = g.path.replace('/guides/', '');
+    return { ...g, priority: PRIORITY_GUIDE_SLUGS.has(slug) ? 1.0 : 0.50 };
+  }), { changefreq: "monthly", priority: 0.50 });
+  const blogPageEntries = makeDelta(blogEntries, { changefreq: "monthly", priority: 0.40 });
 
   // ── Record history ──
   const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries, ...blogPageEntries];
