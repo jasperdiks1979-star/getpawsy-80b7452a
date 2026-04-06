@@ -8,8 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
-import { StarRating } from '@/components/ui/star-rating';
-import { useProductRatings } from '@/hooks/useProductRatings';
+import { getTrustLabel } from '@/lib/trust-labels';
 
 /**
  * Bestsellers Right Now — conversion-optimized product grid + scroll.
@@ -53,9 +52,6 @@ export const BestsellersSection = () => {
       });
     },
   });
-
-  const productIds = bestsellers?.map(b => b.products_public?.id).filter(Boolean) as string[] || [];
-  const { data: ratingsMap } = useProductRatings(productIds);
 
   if (!isLoading && (!bestsellers || bestsellers.length === 0)) return null;
 
@@ -103,7 +99,7 @@ export const BestsellersSection = () => {
             className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 -mx-4 px-4"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {bestsellers.slice(0, 8).map((bestseller) => {
+            {bestsellers.slice(0, 8).map((bestseller, idx) => {
               const product = bestseller.products_public;
               if (!product) return null;
 
@@ -112,7 +108,6 @@ export const BestsellersSection = () => {
               const imageUrl = product.image_url || '/placeholder.svg';
               const productName = bestseller.hero_headline || product.name || 'Product';
               const slug = (product as any).slug || bestseller.slug || product.id;
-              const rating = ratingsMap?.[product.id];
 
               return (
                 <div
@@ -139,16 +134,7 @@ export const BestsellersSection = () => {
                       <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                         {productName}
                       </h3>
-                      {rating && (
-                        <div className="mt-1">
-                          <StarRating
-                            rating={rating.averageRating}
-                            size="sm"
-                            showValue
-                            reviewCount={rating.reviewCount}
-                          />
-                        </div>
-                      )}
+                      <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(product.id, idx)}</p>
                       <p className="text-sm font-bold text-primary mt-1">
                         ${price.toFixed(2)}
                       </p>
