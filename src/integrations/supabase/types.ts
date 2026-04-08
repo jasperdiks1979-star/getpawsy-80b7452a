@@ -4484,6 +4484,21 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_oauth_states: {
+        Row: {
+          created_at: string | null
+          state: string
+        }
+        Insert: {
+          created_at?: string | null
+          state: string
+        }
+        Update: {
+          created_at?: string | null
+          state?: string
+        }
+        Relationships: []
+      }
       pinterest_pin_performance: {
         Row: {
           clicks: number | null
