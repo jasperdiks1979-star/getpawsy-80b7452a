@@ -14,10 +14,10 @@ export const Scene4PinCreation: React.FC = () => {
           fontFamily: poppinsFont, fontSize: 16, fontWeight: 600,
           color: "#E8793B", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8,
         }}>
-          Content Creation
+          Pinterest Pin Composer
         </div>
         <div style={{ fontFamily: poppinsFont, fontSize: 40, fontWeight: 700, color: "white" }}>
-          Product → Pinterest Pins
+          Product data becomes publish-ready Pinterest creatives
         </div>
       </div>
 
@@ -35,7 +35,8 @@ export const Scene4PinCreation: React.FC = () => {
             { k: "Name", v: "Self-Cleaning Cat Litter Box" },
             { k: "Price", v: "$149.99" },
             { k: "Category", v: "Cat Supplies" },
-            { k: "Link", v: "getpawsy.pet/products/..." },
+              { k: "Board", v: "Cat essentials" },
+              { k: "Link", v: "getpawsy.pet/products/self-cleaning-cat-litter-box" },
           ].map((item, i) => (
             <div key={i} style={{ marginBottom: 10 }}>
               <div style={{ fontFamily: interFont, fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3, textTransform: "uppercase", letterSpacing: 1 }}>
@@ -68,9 +69,9 @@ export const Scene4PinCreation: React.FC = () => {
         {/* Generated pin variants */}
         <div style={{ flex: 1, display: "flex", gap: 16 }}>
           {[
-            { hook: "Problem → Solution", title: "Stop Scooping Litter Forever", desc: "This self-cleaning box saves 30 min/day" },
-            { hook: "Curiosity", title: "Why Cat Owners Are Switching", desc: "2000+ happy customers can't be wrong" },
-            { hook: "Lifestyle", title: "The Clean Litter Box Solution", desc: "Built for busy pet parents" },
+            { hook: "Problem → Solution", title: "Stop Scooping Litter Forever", desc: "Clear benefit, product image and destination URL for Pinterest" },
+            { hook: "Curiosity", title: "Why Cat Owners Are Switching", desc: "Alternative hook generated from the same product record" },
+            { hook: "Lifestyle", title: "Cleaner Home, Happier Cat", desc: "A third Pinterest-ready pin variant for testing" },
           ].map((pin, i) => {
             const s = spring({ frame: frame - 38 - i * 12, fps, config: { damping: 15 } });
             return (
@@ -102,7 +103,20 @@ export const Scene4PinCreation: React.FC = () => {
                 <div style={{
                   marginTop: 8, fontFamily: interFont, fontSize: 10, color: "rgba(255,255,255,0.3)",
                 }}>
-                  → getpawsy.pet/products/...
+                  → getpawsy.pet/products/self-cleaning-cat-litter-box
+                </div>
+                <div style={{
+                  marginTop: 6,
+                  display: "inline-flex",
+                  padding: "4px 9px",
+                  borderRadius: 999,
+                  background: "rgba(230,0,35,0.1)",
+                  color: "#FF6B81",
+                  fontFamily: interFont,
+                  fontSize: 10,
+                  fontWeight: 600,
+                }}>
+                  Ready for Pinterest board posting
                 </div>
               </div>
             );

@@ -23,16 +23,16 @@ export const Scene6Closing: React.FC = () => {
         <div style={{
           fontFamily: interFont, fontSize: 18, color: "rgba(255,255,255,0.45)", opacity: titleOp, marginBottom: 12,
         }}>
-          Pinterest Integration Summary
+          Reviewer summary: Pinterest integration is visible end-to-end
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
           {[
-            "OAuth 2.0 authentication with secure token storage",
-            "Admin dashboard for pin queue management",
-            "AI-powered pin generation from product catalog",
-            "Automated scheduled publishing via Pinterest API v5",
-            "Rate limiting, token refresh & error logging",
+            "Native Pinterest settings screen shown inside GetPawsy",
+            "Complete OAuth flow shown: connect → consent → callback → secure tokens",
+            "Connected Pinterest account and synced boards visible in dashboard",
+            "Product records converted into Pinterest-ready pin creatives",
+            "Pins published to Pinterest boards through API v5 with logs",
           ].map((f, i) => (
             <div key={i} style={{
               fontFamily: interFont, fontSize: 16, color: "rgba(255,255,255,0.7)",
@@ -45,9 +45,9 @@ export const Scene6Closing: React.FC = () => {
 
         <div style={{
           marginTop: 16, fontFamily: interFont, fontSize: 15, color: "#E8793B", fontWeight: 600,
-          opacity: interpolate(frame, [75, 88], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }),
+          opacity: interpolate(frame, [78, 94], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }),
         }}>
-          getpawsy.pet
+          getpawsy.pet · Pinterest Standard Access demo
         </div>
       </div>
     </AbsoluteFill>

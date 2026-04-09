@@ -10,7 +10,7 @@ import { Scene6Closing } from "./scenes/Scene6Closing";
 
 export const MainVideo: React.FC = () => {
   const frame = useCurrentFrame();
-  const hueShift = interpolate(frame, [0, 600], [0, 20]);
+  const hueShift = interpolate(frame, [0, 630], [0, 18]);
 
   return (
     <AbsoluteFill
@@ -22,42 +22,42 @@ export const MainVideo: React.FC = () => {
       }}
     >
       <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={110}>
+        <TransitionSeries.Sequence durationInFrames={105}>
           <Scene1Intro />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={linearTiming({ durationInFrames: 15 })}
         />
-        <TransitionSeries.Sequence durationInFrames={120}>
+        <TransitionSeries.Sequence durationInFrames={145}>
           <Scene2OAuth />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={linearTiming({ durationInFrames: 15 })}
         />
-        <TransitionSeries.Sequence durationInFrames={110}>
+        <TransitionSeries.Sequence durationInFrames={120}>
           <Scene3Dashboard />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={linearTiming({ durationInFrames: 15 })}
         />
-        <TransitionSeries.Sequence durationInFrames={110}>
+        <TransitionSeries.Sequence durationInFrames={105}>
           <Scene4PinCreation />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={linearTiming({ durationInFrames: 15 })}
         />
-        <TransitionSeries.Sequence durationInFrames={110}>
+        <TransitionSeries.Sequence durationInFrames={115}>
           <Scene5Publishing />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={linearTiming({ durationInFrames: 15 })}
         />
-        <TransitionSeries.Sequence durationInFrames={100}>
+        <TransitionSeries.Sequence durationInFrames={115}>
           <Scene6Closing />
         </TransitionSeries.Sequence>
       </TransitionSeries>
