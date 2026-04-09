@@ -124,23 +124,40 @@ Deno.serve(async (req) => {
 
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000).toISOString();
 
-    // Upsert connection record
-    const { error: dbError } = await sb
+    const { data: existingConnection } = await sb
       .from("pinterest_connection")
-      .upsert({
-        id: "default",
-        account_name: accountName,
-        account_id: accountId,
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token || null,
-        token_expires_at: expiresAt,
-        status: "connected",
-        last_error: null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "id" });
+      .select("id")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const connectionPayload = {
+      account_name: accountName,
+      account_id: accountId,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token || null,
+      token_expires_at: expiresAt,
+      status: "connected",
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: dbError } = existingConnection?.id
+      ? await sb
+        .from("pinterest_connection")
+        .update(connectionPayload)
+        .eq("id", existingConnection.id)
+      : await sb
+        .from("pinterest_connection")
+        .insert(connectionPayload);
 
     if (dbError) {
       console.error("[pinterest-oauth-callback] DB error:", dbError);
+      await sb.from("pinterest_post_logs").insert({
+        action: "oauth_connect",
+        status: "failed",
+        error_message: `db_save_failed: ${dbError.message}`,
+      });
       return Response.redirect(`${adminUrl}?oauth_error=db_save_failed`, 302);
     }
 

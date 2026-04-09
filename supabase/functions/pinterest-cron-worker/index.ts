@@ -135,8 +135,24 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    let accessToken =
-      conn?.access_token || Deno.env.get("PINTEREST_ACCESS_TOKEN");
+    if (!conn || conn.status !== "connected" || !conn.access_token) {
+      await sb.from("pinterest_post_logs").insert({
+        action: "cron_tick",
+        status: "skipped",
+        error_message: "Pinterest not connected",
+      });
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: "Pinterest not connected. Connect Pinterest first.",
+          reauthRequired: true,
+          results: [],
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    let accessToken = conn.access_token;
 
     // Check expiry — refresh if within 5 minutes of expiration
     if (conn && conn.token_expires_at) {
@@ -167,22 +183,6 @@ Deno.serve(async (req) => {
           );
         }
       }
-    }
-
-    if (!accessToken) {
-      await sb.from("pinterest_post_logs").insert({
-        action: "cron_tick",
-        status: "skipped",
-        error_message: "No Pinterest access token configured",
-      });
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: "No Pinterest access token",
-          results: [],
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
     }
 
     // ── 3. Publish each pin with delay ──
