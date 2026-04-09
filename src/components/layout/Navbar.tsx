@@ -5,6 +5,7 @@ import Search from 'lucide-react/dist/esm/icons/search';
 import User from 'lucide-react/dist/esm/icons/user';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import Shield from 'lucide-react/dist/esm/icons/shield';
+import Pin from 'lucide-react/dist/esm/icons/pin';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import X from 'lucide-react/dist/esm/icons/x';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
@@ -540,19 +541,34 @@ export const Navbar = () => {
                         
                         {/* Admin link — only for admins */}
                         {user && isAdmin && (
-                          <SheetClose asChild>
-                            <Link
-                              to="/admin/growth-execution"
-                              className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors flex items-center gap-3 ${
-                                isActive('/admin')
-                                  ? 'text-primary bg-primary/10'
-                                  : 'hover:bg-muted'
-                              }`}
-                            >
-                              <Shield className="h-5 w-5" />
-                              Admin Dashboard
-                            </Link>
-                          </SheetClose>
+                          <>
+                            <SheetClose asChild>
+                              <Link
+                                to="/admin/growth-execution"
+                                className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors flex items-center gap-3 ${
+                                  isActive('/admin')
+                                    ? 'text-primary bg-primary/10'
+                                    : 'hover:bg-muted'
+                                }`}
+                              >
+                                <Shield className="h-5 w-5" />
+                                Admin Dashboard
+                              </Link>
+                            </SheetClose>
+                            <SheetClose asChild>
+                              <Link
+                                to="/admin/pinterest-automation"
+                                className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors flex items-center gap-3 ${
+                                  isActive('/admin/pinterest-automation')
+                                    ? 'text-primary bg-primary/10'
+                                    : 'hover:bg-muted'
+                                }`}
+                              >
+                                <Pin className="h-5 w-5" />
+                                Pinterest Auto
+                              </Link>
+                            </SheetClose>
+                          </>
                         )}
                       </div>
 
@@ -599,14 +615,24 @@ export const Navbar = () => {
                           </Link>
                         </SheetClose>
                         {isAdmin && (
-                          <SheetClose asChild>
-                            <Link to="/dashboard" className="block">
-                              <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
-                                <Shield className="h-4 w-4" />
-                                Admin Dashboard
-                              </Button>
-                            </Link>
-                          </SheetClose>
+                          <>
+                            <SheetClose asChild>
+                              <Link to="/dashboard" className="block">
+                                <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
+                                  <Shield className="h-4 w-4" />
+                                  Admin Dashboard
+                                </Button>
+                              </Link>
+                            </SheetClose>
+                            <SheetClose asChild>
+                              <Link to="/admin/pinterest-automation" className="block">
+                                <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
+                                  <Pin className="h-4 w-4" />
+                                  Pinterest Auto
+                                </Button>
+                              </Link>
+                            </SheetClose>
+                          </>
                         )}
                         <SheetClose asChild>
                           <Button
