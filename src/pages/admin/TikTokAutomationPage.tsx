@@ -127,7 +127,7 @@ export default function TikTokAutomationPage() {
       hashtags,
       post_variant: formData.post_variant,
       priority: formData.priority,
-      destination_link: formData.destination_link || `${BASE_URL}/lp/${slug}${utm}`,
+      destination_link: formData.destination_link || `${BASE_URL}/products/${slug}${utm}`,
       status: 'draft',
     });
 
