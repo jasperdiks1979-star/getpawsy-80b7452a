@@ -568,6 +568,19 @@ export const Navbar = () => {
                                 Pinterest Auto
                               </Link>
                             </SheetClose>
+                            <SheetClose asChild>
+                              <Link
+                                to="/admin/tiktok-automation"
+                                className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors flex items-center gap-3 ${
+                                  isActive('/admin/tiktok-automation')
+                                    ? 'text-primary bg-primary/10'
+                                    : 'hover:bg-muted'
+                                }`}
+                              >
+                                <Video className="h-5 w-5" />
+                                TikTok Auto
+                              </Link>
+                            </SheetClose>
                           </>
                         )}
                       </div>
@@ -629,6 +642,14 @@ export const Navbar = () => {
                                 <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
                                   <Pin className="h-4 w-4" />
                                   Pinterest Auto
+                                </Button>
+                              </Link>
+                            </SheetClose>
+                            <SheetClose asChild>
+                              <Link to="/admin/tiktok-automation" className="block">
+                                <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
+                                  <Video className="h-4 w-4" />
+                                  TikTok Auto
                                 </Button>
                               </Link>
                             </SheetClose>
