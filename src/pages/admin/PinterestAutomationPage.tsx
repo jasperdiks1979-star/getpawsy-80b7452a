@@ -138,7 +138,7 @@ function ConnectionCard({
   onPublishNow: () => Promise<void>;
 }) {
   const isConnected = connection?.status === "connected";
-  const canPublishNow = queuedCount > 0;
+  const canPublishNow = isConnected && queuedCount > 0;
 
   return (
     <Card>
