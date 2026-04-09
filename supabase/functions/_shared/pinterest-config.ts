@@ -2,9 +2,9 @@
  * Pinterest API configuration.
  * 
  * SANDBOX MODE: Set to true while awaiting Standard Access approval.
- * Once approved, flip USE_SANDBOX to false and redeploy.
+ * Once approved by Pinterest, no changes needed — already on production.
  */
-const USE_SANDBOX = true;
+const USE_SANDBOX = false;
 
 export const PINTEREST_API_BASE = USE_SANDBOX
   ? "https://api-sandbox.pinterest.com"
