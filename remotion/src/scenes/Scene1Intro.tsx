@@ -9,6 +9,7 @@ export const Scene1Intro: React.FC = () => {
   const titleOp = interpolate(frame, [15, 35], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
   const subtitleOp = interpolate(frame, [35, 55], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
   const badgeOp = interpolate(frame, [55, 75], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const footerOp = interpolate(frame, [68, 86], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
 
   return (
     <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
@@ -27,14 +28,14 @@ export const Scene1Intro: React.FC = () => {
           fontFamily: poppinsFont, fontSize: 64, fontWeight: 800,
           color: "white", letterSpacing: -2, opacity: titleOp,
         }}>
-          Pawsy Dashboard
+          GetPawsy × Pinterest
         </div>
 
         <div style={{
           fontFamily: interFont, fontSize: 24, color: "rgba(255,255,255,0.55)",
           opacity: subtitleOp, letterSpacing: 2, textTransform: "uppercase",
         }}>
-          Pinterest Integration Demo
+          Native Pinterest integration demo
         </div>
 
         <div style={{
@@ -42,7 +43,17 @@ export const Scene1Intro: React.FC = () => {
           background: "rgba(255,255,255,0.06)", padding: "10px 24px", borderRadius: 30,
           border: "1px solid rgba(255,255,255,0.1)", opacity: badgeOp, marginTop: 8,
         }}>
-          Automated pin creation, scheduling & publishing for pet products
+          Shows full OAuth flow, live account connection, board sync and pin publishing
+        </div>
+
+        <div style={{
+          fontFamily: interFont,
+          fontSize: 14,
+          color: "rgba(255,255,255,0.46)",
+          opacity: footerOp,
+          letterSpacing: 0.5,
+        }}>
+          Reviewer walkthrough for Pinterest Standard Access
         </div>
       </div>
     </AbsoluteFill>
