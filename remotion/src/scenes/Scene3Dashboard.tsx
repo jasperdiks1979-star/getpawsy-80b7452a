@@ -1,4 +1,4 @@
-import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig, Img, staticFile } from "remotion";
 import { poppinsFont, interFont } from "../fonts";
 
 export const Scene3Dashboard: React.FC = () => {
@@ -6,6 +6,10 @@ export const Scene3Dashboard: React.FC = () => {
   const { fps } = useVideoConfig();
 
   const headerOp = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+
+  // Products page screenshot reveal
+  const prodScreenOp = interpolate(frame, [20, 40], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const prodScreenY = interpolate(frame, [20, 40], [30, 0], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
 
   return (
     <AbsoluteFill style={{ padding: "60px 80px" }}>
@@ -48,41 +52,36 @@ export const Scene3Dashboard: React.FC = () => {
       </div>
 
       <div style={{ display: "flex", gap: 24, marginTop: 24 }}>
+        {/* Real products page screenshot */}
         <div style={{
-          width: 360,
-          background: "rgba(255,255,255,0.03)",
+          width: 440,
           borderRadius: 14,
-          border: "1px solid rgba(255,255,255,0.07)",
-          padding: 20,
-          opacity: interpolate(frame, [35, 52], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }),
+          overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.1)",
+          opacity: prodScreenOp,
+          transform: `translateY(${prodScreenY}px)`,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
         }}>
-          <div style={{ fontFamily: interFont, fontSize: 11, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 14 }}>
-            Synced Pinterest boards
-          </div>
-          {[
-            "Cat essentials",
-            "Dog travel",
-            "Pet tech",
-            "Healthy treats",
-            "Home grooming",
-            "Best sellers",
-          ].map((board, i) => (
-            <div key={board} style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 0",
-              borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.05)",
-              fontFamily: interFont,
-              fontSize: 14,
-              color: "rgba(255,255,255,0.78)",
-            }}>
-              <span>{board}</span>
-              <span style={{ color: "#E60023", fontSize: 12 }}>Pinterest board</span>
+          <div style={{
+            background: "rgba(255,255,255,0.06)", padding: "8px 14px",
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <div style={{ display: "flex", gap: 5 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF5F57" }} />
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FFBD2E" }} />
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#28C840" }} />
             </div>
-          ))}
+            <div style={{ fontFamily: interFont, fontSize: 10, color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.06)", padding: "3px 10px", borderRadius: 4, flex: 1 }}>
+              getpawsy.pet/products
+            </div>
+          </div>
+          <Img
+            src={staticFile("images/products-page.png")}
+            style={{ width: "100%", display: "block" }}
+          />
         </div>
 
+        {/* Publishing queue */}
         <div style={{
           flex: 1, background: "rgba(255,255,255,0.03)",
           borderRadius: 14, border: "1px solid rgba(255,255,255,0.07)",
