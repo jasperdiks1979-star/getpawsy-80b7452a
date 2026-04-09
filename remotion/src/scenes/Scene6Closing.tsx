@@ -5,64 +5,47 @@ export const Scene6Closing: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const logoScale = spring({ frame: frame - 10, fps, config: { damping: 12 } });
-  const titleOp = interpolate(frame, [20, 45], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
-  const listOp = (delay: number) => interpolate(frame, [delay, delay + 15], [0, 1], {
-    extrapolateRight: "clamp", extrapolateLeft: "clamp",
-  });
-
-  const features = [
-    "✅ OAuth 2.0 with secure token storage",
-    "✅ AI-powered pin generation from product catalog",
-    "✅ Automated scheduling & publishing via cron",
-    "✅ Rate limiting & token refresh",
-    "✅ Full admin dashboard with queue management",
-    "✅ Comprehensive logging & error handling",
-  ];
+  const logoScale = spring({ frame: frame - 5, fps, config: { damping: 14 } });
+  const titleOp = interpolate(frame, [15, 30], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const listOp = (d: number) => interpolate(frame, [d, d + 10], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
 
   return (
     <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 30,
-      }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+        <div style={{ fontSize: 50, transform: `scale(${logoScale})` }}>🐾</div>
+
         <div style={{
-          fontSize: 60, transform: `scale(${logoScale})`,
+          fontFamily: poppinsFont, fontSize: 40, fontWeight: 800, color: "white", opacity: titleOp,
         }}>
-          🐾
+          Pawsy Dashboard
         </div>
 
         <div style={{
-          fontFamily: poppinsFont, fontSize: 48, fontWeight: 800,
-          color: "white", opacity: titleOp, textAlign: "center",
+          fontFamily: interFont, fontSize: 18, color: "rgba(255,255,255,0.45)", opacity: titleOp, marginBottom: 12,
         }}>
-          GetPawsy × Pinterest
+          Pinterest Integration Summary
         </div>
 
-        <div style={{
-          fontFamily: interFont, fontSize: 22, color: "rgba(255,255,255,0.5)",
-          opacity: titleOp, textAlign: "center", marginBottom: 20,
-        }}>
-          Production-Ready Pinterest Integration
-        </div>
-
-        <div style={{
-          display: "flex", flexDirection: "column", gap: 12,
-          alignItems: "flex-start",
-        }}>
-          {features.map((f, i) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+          {[
+            "OAuth 2.0 authentication with secure token storage",
+            "Admin dashboard for pin queue management",
+            "AI-powered pin generation from product catalog",
+            "Automated scheduled publishing via Pinterest API v5",
+            "Rate limiting, token refresh & error logging",
+          ].map((f, i) => (
             <div key={i} style={{
-              fontFamily: interFont, fontSize: 20, color: "rgba(255,255,255,0.8)",
-              opacity: listOp(40 + i * 8),
+              fontFamily: interFont, fontSize: 16, color: "rgba(255,255,255,0.7)",
+              opacity: listOp(30 + i * 6), display: "flex", gap: 8, alignItems: "center",
             }}>
-              {f}
+              <span style={{ color: "#10B981" }}>✓</span> {f}
             </div>
           ))}
         </div>
 
         <div style={{
-          marginTop: 30, fontFamily: interFont, fontSize: 18,
-          color: "#E8793B", fontWeight: 600,
-          opacity: interpolate(frame, [110, 130], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }),
+          marginTop: 16, fontFamily: interFont, fontSize: 15, color: "#E8793B", fontWeight: 600,
+          opacity: interpolate(frame, [75, 88], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }),
         }}>
           getpawsy.pet
         </div>
