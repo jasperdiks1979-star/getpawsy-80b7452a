@@ -1,3 +1,5 @@
+import { PINTEREST_API_BASE } from "./pinterest-config.ts";
+
 type PinterestBoard = {
   id: string;
   name?: string | null;
@@ -8,7 +10,7 @@ async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[
   let bookmark: string | null = null;
 
   for (let page = 0; page < 5; page++) {
-    const url = new URL("https://api.pinterest.com/v5/boards");
+    const url = new URL(`${PINTEREST_API_BASE}/v5/boards`);
     url.searchParams.set("page_size", "250");
     if (bookmark) url.searchParams.set("bookmark", bookmark);
 

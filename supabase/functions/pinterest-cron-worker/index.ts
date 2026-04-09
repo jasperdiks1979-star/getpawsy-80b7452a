@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
+import { PINTEREST_API_BASE } from "../_shared/pinterest-config.ts";
 
 const MAX_RETRIES = 3;
 const BATCH_SIZE = 5; // max pins per cron run
@@ -204,7 +205,7 @@ Deno.serve(async (req) => {
           boardIdCache.set(boardRef, boardId);
         }
 
-        const pinRes = await fetch("https://api.pinterest.com/v5/pins", {
+        const pinRes = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -233,7 +234,7 @@ Deno.serve(async (req) => {
               accessToken = newToken;
               // Retry this pin once
               const retryRes = await fetch(
-                "https://api.pinterest.com/v5/pins",
+                `${PINTEREST_API_BASE}/v5/pins`,
                 {
                   method: "POST",
                   headers: {
