@@ -7409,6 +7409,7 @@ export type Database = {
           error_message: string | null
           hashtags: string[] | null
           id: string
+          media_urls: string[] | null
           post_variant: string
           posted_at: string | null
           priority: string
@@ -7430,6 +7431,7 @@ export type Database = {
           error_message?: string | null
           hashtags?: string[] | null
           id?: string
+          media_urls?: string[] | null
           post_variant?: string
           posted_at?: string | null
           priority?: string
@@ -7451,6 +7453,7 @@ export type Database = {
           error_message?: string | null
           hashtags?: string[] | null
           id?: string
+          media_urls?: string[] | null
           post_variant?: string
           posted_at?: string | null
           priority?: string
