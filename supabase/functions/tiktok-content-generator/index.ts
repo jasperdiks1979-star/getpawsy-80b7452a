@@ -93,7 +93,7 @@ function generateTikTokPosts(product: {
     caption: tpl.captionTemplate(product.name, desc, tagStr),
     hashtags,
     thumbnail_url: product.image_url,
-    destination_link: `${BASE_URL}/lp/${product.slug}${utm}`,
+    destination_link: `${BASE_URL}/products/${product.slug}${utm}`,
     priority: product.name.toLowerCase().includes("litter") ? "high" : "medium",
     status: "draft",
     scheduled_at: new Date(now.getTime() + i * 4 * 3600000).toISOString(),
