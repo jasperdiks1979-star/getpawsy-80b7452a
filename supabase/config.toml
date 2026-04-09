@@ -251,3 +251,15 @@ verify_jwt = false
 
 [functions.pinterest-scheduler]
 verify_jwt = false
+
+[functions.pinterest-automation]
+verify_jwt = false
+
+[functions.pinterest-oauth-start]
+verify_jwt = false
+
+[functions.pinterest-oauth-callback]
+verify_jwt = false
+
+[functions.pinterest-cron-worker]
+verify_jwt = false
