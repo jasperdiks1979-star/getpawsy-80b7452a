@@ -22,21 +22,18 @@ const HOOK_TEMPLATES = [
   { variant: "benefit" as const, prefix: "Why pet owners love", suffix: "" },
 ];
 
-const BOARDS: Record<string, string> = {
-  cat: "Smart Cat Gadgets",
-  dog: "Best Dog Products",
-  pet: "Smart Pet Gadgets",
-};
-
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function detectBoard(name: string, category: string): string {
   const lower = (name + " " + category).toLowerCase();
-  if (lower.includes("cat") || lower.includes("kitten") || lower.includes("litter")) return BOARDS.cat;
-  if (lower.includes("dog") || lower.includes("puppy") || lower.includes("canine")) return BOARDS.dog;
-  return BOARDS.pet;
+  if (lower.includes("tree") || lower.includes("tower")) return "Cat Trees for Large Cats";
+  if (lower.includes("litter")) return "Cat Essentials";
+  if (lower.includes("furniture") || lower.includes("shelf") || lower.includes("wall")) return "Cat Furniture";
+  if (lower.includes("cat") || lower.includes("kitten")) return "Cat Products";
+  if (lower.includes("dog") || lower.includes("puppy")) return "Cat Products";
+  return "Cat Products";
 }
 
 function generatePinVariants(product: {
