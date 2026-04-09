@@ -1,9 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
   "https://www.getpawsy.pet",
   "https://getpawsy.lovable.app",
+  "https://id-preview--597d7eb2-8207-4374-9ac1-67ffe0048ce1.lovable.app",
 ];
 
 function getCorsHeaders(req: Request) {
@@ -345,6 +347,7 @@ Deno.serve(async (req) => {
       if (!pin) return json(cors, { ok: true, message: "No pins ready to publish" });
 
       try {
+        const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
         const pinRes = await fetch("https://api.pinterest.com/v5/pins", {
           method: "POST",
           headers: {
@@ -354,7 +357,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             title: pin.pin_title,
             description: pin.pin_description,
-            board_id: pin.board_name,
+            board_id: boardId,
             media_source: {
               source_type: "image_url",
               url: pin.pin_image_url,

@@ -7,6 +7,17 @@ const ALLOWED_ORIGINS = [
   "https://id-preview--597d7eb2-8207-4374-9ac1-67ffe0048ce1.lovable.app",
 ];
 
+const DEFAULT_FRONTEND_BASE = Deno.env.get("APP_BASE_URL") || ALLOWED_ORIGINS[0];
+
+function resolveFrontendBase(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  return ALLOWED_ORIGINS.includes(origin) ? origin : DEFAULT_FRONTEND_BASE;
+}
+
+function encodeState(state: string, frontendBase: string) {
+  return `${state}::${btoa(frontendBase)}`;
+}
+
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -34,7 +45,7 @@ Deno.serve(async (req) => {
   }
 
   // Generate a random state for CSRF protection
-  const state = crypto.randomUUID();
+  const state = encodeState(crypto.randomUUID(), resolveFrontendBase(req));
 
   // Store state in DB for verification during callback
   const sb = createClient(

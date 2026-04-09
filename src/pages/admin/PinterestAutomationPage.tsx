@@ -8,7 +8,46 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { RefreshCw, Trash2, Play, RotateCcw, Loader2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Link2,
+  Loader2,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+  Wand2,
+  XCircle,
+} from "lucide-react";
+
+type PinterestConnection = {
+  id: string;
+  account_id: string | null;
+  account_name: string | null;
+  status: string;
+  token_expires_at: string | null;
+  last_publish_at: string | null;
+  last_error: string | null;
+};
+
+const PREPARE_QUEUE_COUNT = 3;
+
+function humanizeOauthError(error: string) {
+  return error.replace(/_/g, " ");
+}
+
+async function invokePinterestAction<T = any>(action: string, payload: Record<string, unknown> = {}) {
+  const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+    body: { action, ...payload },
+  });
+
+  if (error) throw error;
+  if (!data) throw new Error("No response from Pinterest backend");
+  if (data.ok === false) throw new Error(data.error || data.message || "Pinterest action failed");
+
+  return data as T;
+}
 
 /* ─── Error Boundary ─── */
 interface ErrorBoundaryState { hasError: boolean; errorMessage: string }
@@ -77,6 +116,83 @@ function AuthDebugCard() {
 function StatusBadge({ status }: { status: string }) {
   const variant = status === "posted" ? "default" : status === "failed" ? "destructive" : status === "queued" ? "secondary" : "outline";
   return <Badge variant={variant} className="text-xs">{status}</Badge>;
+}
+
+function ConnectionCard({
+  connection,
+  actionLoading,
+  onConnect,
+  onRefresh,
+  onGenerateDrafts,
+  onQueueDrafts,
+  onPublishNow,
+}: {
+  connection: PinterestConnection | null;
+  actionLoading: string | null;
+  onConnect: () => Promise<void>;
+  onRefresh: () => Promise<void>;
+  onGenerateDrafts: () => Promise<void>;
+  onQueueDrafts: () => Promise<void>;
+  onPublishNow: () => Promise<void>;
+}) {
+  const isConnected = connection?.status === "connected";
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-2">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            {isConnected ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <XCircle className="h-5 w-5 text-destructive" />}
+            Pinterest connection
+          </CardTitle>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Badge variant={isConnected ? "default" : "outline"}>
+              {isConnected ? "Connected" : "Not connected"}
+            </Badge>
+            {connection?.account_name && <span>Account: {connection.account_name}</span>}
+            {connection?.token_expires_at && (
+              <span>Token expires: {new Date(connection.token_expires_at).toLocaleString()}</span>
+            )}
+            {connection?.last_publish_at && (
+              <span>Last publish: {new Date(connection.last_publish_at).toLocaleString()}</span>
+            )}
+          </div>
+          {connection?.last_error && (
+            <p className="text-sm text-destructive">Last Pinterest error: {connection.last_error}</p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Voor de goedkeuringsvideo moet deze flow zichtbaar werken: verbinden, terugkomen met Connected en daarna een pin publiceren.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => void onConnect()} disabled={actionLoading === "connect"}>
+            {actionLoading === "connect" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
+            {isConnected ? "Reconnect Pinterest" : "Connect Pinterest"}
+          </Button>
+          <Button variant="outline" onClick={() => void onRefresh()} disabled={actionLoading === "refresh-connection"}>
+            {actionLoading === "refresh-connection" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Refresh status
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => void onGenerateDrafts()} disabled={!!actionLoading && actionLoading !== "generate-drafts"}>
+          {actionLoading === "generate-drafts" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+          Generate draft pins
+        </Button>
+        <Button variant="outline" onClick={() => void onQueueDrafts()} disabled={!!actionLoading && actionLoading !== "queue-drafts"}>
+          {actionLoading === "queue-drafts" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+          Queue {PREPARE_QUEUE_COUNT} drafts
+        </Button>
+        <Button onClick={() => void onPublishNow()} disabled={!isConnected || (!!actionLoading && actionLoading !== "publish-now")}>
+          {actionLoading === "publish-now" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+          Publish next pin now
+        </Button>
+      </CardContent>
+    </Card>
+  );
 }
 
 /* ─── Pin Queue Table ─── */
@@ -165,8 +281,10 @@ function LogViewer({ logs }: { logs: any[] }) {
 
 /* ─── Main Dashboard ─── */
 function PinterestDashboard() {
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [connection, setConnection] = useState<PinterestConnection | null>(null);
   const [drafts, setDrafts] = useState<any[]>([]);
   const [queued, setQueued] = useState<any[]>([]);
   const [posted, setPosted] = useState<any[]>([]);
@@ -176,25 +294,127 @@ function PinterestDashboard() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [draftRes, queuedRes, postedRes, failedRes, logRes] = await Promise.all([
+      const [draftRes, queuedRes, postedRes, failedRes, logRes, connectionRes] = await Promise.all([
         supabase.from("pinterest_pin_queue").select("*").eq("status", "draft").order("created_at", { ascending: false }).limit(50),
         supabase.from("pinterest_pin_queue").select("*").eq("status", "queued").order("scheduled_at", { ascending: true }).limit(50),
         supabase.from("pinterest_pin_queue").select("*").eq("status", "posted").order("posted_at", { ascending: false }).limit(20),
         supabase.from("pinterest_pin_queue").select("*").eq("status", "failed").order("updated_at", { ascending: false }).limit(50),
         supabase.from("pinterest_post_logs").select("*").order("created_at", { ascending: false }).limit(20),
+        invokePinterestAction<{ connection: PinterestConnection | null }>("get_connection"),
       ]);
+
+      const firstError = [draftRes, queuedRes, postedRes, failedRes, logRes].find((result) => result.error)?.error;
+      if (firstError) throw firstError;
+
       setDrafts(draftRes.data || []);
       setQueued(queuedRes.data || []);
       setPosted(postedRes.data || []);
       setFailed(failedRes.data || []);
       setLogs(logRes.data || []);
+      setConnection(connectionRes.connection || null);
     } catch (e) {
       console.error("Failed to fetch pinterest data:", e);
+      toast.error("Could not load Pinterest automation data");
     }
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const oauthSuccess = params.get("oauth_success");
+    const oauthError = params.get("oauth_error");
+
+    if (!oauthSuccess && !oauthError) return;
+
+    if (oauthSuccess === "true") {
+      toast.success("Pinterest connected successfully");
+    }
+
+    if (oauthError) {
+      toast.error(`Pinterest connect failed: ${humanizeOauthError(oauthError)}`);
+    }
+
+    void fetchAll();
+
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("oauth_success");
+    nextUrl.searchParams.delete("oauth_error");
+    window.history.replaceState({}, "", nextUrl.toString());
+  }, [fetchAll, location.search]);
+
+  const handleConnect = async () => {
+    setActionLoading("connect");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start");
+      if (error) throw error;
+      if (!data?.auth_url) throw new Error("No Pinterest auth URL returned");
+      window.location.assign(data.auth_url as string);
+      return;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Could not start Pinterest OAuth";
+      toast.error(message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRefreshConnection = async () => {
+    setActionLoading("refresh-connection");
+    await fetchAll();
+    setActionLoading(null);
+  };
+
+  const handleGenerateDrafts = async () => {
+    setActionLoading("generate-drafts");
+    try {
+      const data = await invokePinterestAction<{ products?: number; pinsGenerated?: number }>("bulk_generate");
+      toast.success(`${data.pinsGenerated || 0} draft pins generated`);
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Draft generation failed");
+    }
+    setActionLoading(null);
+  };
+
+  const handleQueueDrafts = async () => {
+    setActionLoading("queue-drafts");
+    try {
+      const data = await invokePinterestAction<{ queued?: number }>("queue_pins", { count: PREPARE_QUEUE_COUNT });
+      toast.success(`${data.queued || 0} pins queued for publishing`);
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not queue pins");
+    }
+    setActionLoading(null);
+  };
+
+  const handlePublishNow = async () => {
+    setActionLoading("publish-now");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-cron-worker", { body: {} });
+      if (error) throw error;
+      if (data?.ok === false) throw new Error(data.error || "Pinterest publish failed");
+
+      const results = Array.isArray(data?.results) ? data.results : [];
+      const postedCount = results.filter((result: { status?: string }) => result.status === "posted").length;
+      const firstError = results.find((result: { error?: string }) => result.error)?.error;
+
+      if (postedCount > 0) {
+        toast.success(`${postedCount} pin${postedCount === 1 ? "" : "s"} published to Pinterest`);
+      } else if (firstError) {
+        throw new Error(firstError);
+      } else {
+        toast("No queued pins are ready to publish yet");
+      }
+
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not publish to Pinterest");
+    }
+    setActionLoading(null);
+  };
 
   const handleAction = async (action: string, pinId: string) => {
     setActionLoading(pinId);
@@ -233,16 +453,7 @@ function PinterestDashboard() {
   };
 
   const handleForceRun = async () => {
-    setActionLoading("force-run");
-    try {
-      const { data, error } = await supabase.functions.invoke("pinterest-cron-worker", { body: {} });
-      if (error) throw error;
-      toast.success(`Cron run complete: ${data?.processed || 0} pins processed`);
-      await fetchAll();
-    } catch (e) {
-      toast.error("Force run failed");
-    }
-    setActionLoading(null);
+    await handlePublishNow();
   };
 
   if (loading) {
@@ -255,17 +466,27 @@ function PinterestDashboard() {
 
   return (
     <div className="space-y-4">
+      <ConnectionCard
+        connection={connection}
+        actionLoading={actionLoading}
+        onConnect={handleConnect}
+        onRefresh={handleRefreshConnection}
+        onGenerateDrafts={handleGenerateDrafts}
+        onQueueDrafts={handleQueueDrafts}
+        onPublishNow={handlePublishNow}
+      />
+
       {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Draft", count: drafts.length, color: "text-muted-foreground" },
-          { label: "Queued", count: queued.length, color: "text-blue-600" },
-          { label: "Posted", count: posted.length, color: "text-green-600" },
-          { label: "Failed", count: failed.length, color: "text-destructive" },
+          { label: "Draft", count: drafts.length },
+          { label: "Queued", count: queued.length },
+          { label: "Posted", count: posted.length },
+          { label: "Failed", count: failed.length },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="py-3 text-center">
-              <p className={`text-2xl font-bold ${s.color}`}>{s.count}</p>
+              <p className="text-2xl font-bold text-foreground">{s.count}</p>
               <p className="text-xs text-muted-foreground">{s.label}</p>
             </CardContent>
           </Card>
