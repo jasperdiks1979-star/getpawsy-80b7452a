@@ -6,6 +6,7 @@ import User from 'lucide-react/dist/esm/icons/user';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import Shield from 'lucide-react/dist/esm/icons/shield';
 import Pin from 'lucide-react/dist/esm/icons/pin';
+import Video from 'lucide-react/dist/esm/icons/video';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import X from 'lucide-react/dist/esm/icons/x';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
