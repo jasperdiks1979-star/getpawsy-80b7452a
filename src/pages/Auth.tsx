@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
 import { Layout } from '@/components/layout/Layout';
@@ -23,8 +23,13 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const nextPath = useMemo(() => {
+    const next = searchParams.get('next');
+    return next && next.startsWith('/') ? next : '/';
+  }, [searchParams]);
   
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -38,7 +43,7 @@ const Auth = () => {
 
   // Redirect if already logged in
   if (user) {
-    navigate('/');
+    navigate(nextPath);
     return null;
   }
 
@@ -68,7 +73,7 @@ const Auth = () => {
     } else {
       trackLogin('email');
       toast.success('Welcome back!');
-      navigate('/');
+      navigate(nextPath);
     }
   };
 
@@ -98,7 +103,7 @@ const Auth = () => {
     } else {
       trackSignUp('email');
       toast.success('Account created successfully!');
-      navigate('/');
+      navigate(nextPath);
     }
   };
 
