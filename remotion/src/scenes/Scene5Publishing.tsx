@@ -1,4 +1,4 @@
-import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig, Img, staticFile } from "remotion";
 import { poppinsFont, interFont } from "../fonts";
 
 export const Scene5Publishing: React.FC = () => {
@@ -64,6 +64,7 @@ export const Scene5Publishing: React.FC = () => {
         </div>
 
         <div style={{ width: 430, display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Live store product in pin preview */}
           <div style={{
             background: "rgba(255,255,255,0.03)",
             borderRadius: 14,
@@ -79,14 +80,9 @@ export const Scene5Publishing: React.FC = () => {
             </div>
             <div style={{ padding: 16, display: "flex", gap: 14 }}>
               <div style={{
-                width: 118,
-                aspectRatio: "2/3",
-                borderRadius: 12,
+                width: 118, aspectRatio: "2/3", borderRadius: 12,
                 background: "linear-gradient(160deg, rgba(232,121,59,0.95), rgba(126,58,16,0.9))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 36,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36,
               }}>
                 🐱
               </div>
@@ -95,7 +91,7 @@ export const Scene5Publishing: React.FC = () => {
                   Stop Scooping Litter Forever
                 </div>
                 <div style={{ fontFamily: interFont, fontSize: 12, lineHeight: 1.5, color: "rgba(255,255,255,0.62)", marginBottom: 10 }}>
-                  Posted to the Pinterest board “Cat essentials” with canonical link back to the product page.
+                  Posted to the Pinterest board "Cat essentials" with canonical link back to the product page.
                 </div>
                 <div style={{ fontFamily: interFont, fontSize: 11, color: "#E60023", fontWeight: 600 }}>
                   pinterest.com/pin/12345678
@@ -126,7 +122,7 @@ export const Scene5Publishing: React.FC = () => {
   "board_id": "board_cat_essentials",
   "title": "Stop Scooping Litter Forever",
   "link": "https://getpawsy.pet/products/self-cleaning-cat-litter-box",
-  "created_at": "2025-04-09T09:00:00Z"
+  "created_at": "2026-04-09T09:00:00Z"
 }`}
               </pre>
             </div>
