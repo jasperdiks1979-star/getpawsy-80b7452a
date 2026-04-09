@@ -46,6 +46,7 @@ const navItems = [
   { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert },
   { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
   { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
+  { to: '/admin/tiktok-automation', label: 'TikTok Auto', icon: Activity },
 ];
 
 /**
