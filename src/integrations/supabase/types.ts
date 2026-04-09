@@ -7401,6 +7401,87 @@ export type Database = {
         }
         Relationships: []
       }
+      tiktok_post_queue: {
+        Row: {
+          caption: string
+          created_at: string
+          destination_link: string | null
+          error_message: string | null
+          hashtags: string[] | null
+          id: string
+          post_variant: string
+          posted_at: string | null
+          priority: string
+          product_id: string | null
+          product_name: string
+          product_slug: string | null
+          scheduled_at: string | null
+          status: string
+          thumbnail_url: string | null
+          tiktok_post_id: string | null
+          tracking_params: Json | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          caption: string
+          created_at?: string
+          destination_link?: string | null
+          error_message?: string | null
+          hashtags?: string[] | null
+          id?: string
+          post_variant?: string
+          posted_at?: string | null
+          priority?: string
+          product_id?: string | null
+          product_name: string
+          product_slug?: string | null
+          scheduled_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          tiktok_post_id?: string | null
+          tracking_params?: Json | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          caption?: string
+          created_at?: string
+          destination_link?: string | null
+          error_message?: string | null
+          hashtags?: string[] | null
+          id?: string
+          post_variant?: string
+          posted_at?: string | null
+          priority?: string
+          product_id?: string | null
+          product_name?: string
+          product_slug?: string | null
+          scheduled_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          tiktok_post_id?: string | null
+          tracking_params?: Json | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_post_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_post_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
