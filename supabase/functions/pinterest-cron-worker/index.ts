@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
 
 const MAX_RETRIES = 3;
 const BATCH_SIZE = 5; // max pins per cron run
@@ -105,6 +106,7 @@ Deno.serve(async (req) => {
     error?: string;
     externalId?: string;
   }> = [];
+  const boardIdCache = new Map<string, string>();
 
   try {
     // ── 1. Fetch due pins ──
@@ -193,6 +195,15 @@ Deno.serve(async (req) => {
       }
 
       try {
+        const boardRef = pin.board_name || "";
+        const boardId = boardIdCache.has(boardRef)
+          ? boardIdCache.get(boardRef)!
+          : await resolvePinterestBoardId(accessToken, boardRef);
+
+        if (!boardIdCache.has(boardRef)) {
+          boardIdCache.set(boardRef, boardId);
+        }
+
         const pinRes = await fetch("https://api.pinterest.com/v5/pins", {
           method: "POST",
           headers: {
@@ -202,7 +213,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             title: pin.pin_title,
             description: pin.pin_description,
-            board_id: pin.board_name,
+            board_id: boardId,
             media_source: {
               source_type: "image_url",
               url: pin.pin_image_url,
@@ -232,7 +243,7 @@ Deno.serve(async (req) => {
                   body: JSON.stringify({
                     title: pin.pin_title,
                     description: pin.pin_description,
-                    board_id: pin.board_name,
+                    board_id: boardId,
                     media_source: {
                       source_type: "image_url",
                       url: pin.pin_image_url,

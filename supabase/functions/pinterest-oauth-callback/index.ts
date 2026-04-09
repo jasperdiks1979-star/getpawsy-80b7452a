@@ -1,5 +1,26 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 
+const ALLOWED_FRONTEND_BASES = [
+  "https://getpawsy.pet",
+  "https://www.getpawsy.pet",
+  "https://getpawsy.lovable.app",
+  "https://id-preview--597d7eb2-8207-4374-9ac1-67ffe0048ce1.lovable.app",
+];
+
+const DEFAULT_FRONTEND_BASE = Deno.env.get("APP_BASE_URL") || "https://getpawsy.pet";
+
+function decodeFrontendBaseFromState(state: string | null): string {
+  if (!state || !state.includes("::")) return DEFAULT_FRONTEND_BASE;
+
+  try {
+    const encodedBase = state.split("::").slice(1).join("::");
+    const decodedBase = atob(encodedBase);
+    return ALLOWED_FRONTEND_BASES.includes(decodedBase) ? decodedBase : DEFAULT_FRONTEND_BASE;
+  } catch {
+    return DEFAULT_FRONTEND_BASE;
+  }
+}
+
 /**
  * Pinterest OAuth 2.0 Callback Handler
  * 
@@ -14,7 +35,7 @@ Deno.serve(async (req) => {
   const error = url.searchParams.get("error");
 
   // Determine the frontend redirect base
-  const frontendBase = Deno.env.get("APP_BASE_URL") || "https://getpawsy.pet";
+  const frontendBase = decodeFrontendBaseFromState(state);
   const adminUrl = `${frontendBase}/admin/pinterest-automation`;
 
   if (error) {
