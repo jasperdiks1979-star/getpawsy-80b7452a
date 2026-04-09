@@ -331,10 +331,13 @@ Deno.serve(async (req) => {
     console.error("pinterest-cron-worker error:", e);
     const errMsg = e instanceof Error ? e.message : "Unknown error";
 
-    await sb
-      .from("pinterest_post_logs")
-      .insert({ action: "cron_tick", status: "error", error_message: errMsg })
-      .catch(() => {});
+    try {
+      await sb
+        .from("pinterest_post_logs")
+        .insert({ action: "cron_tick", status: "error", error_message: errMsg });
+    } catch {
+      // Ignore logging failures so the function can still return a structured error.
+    }
 
     return new Response(JSON.stringify({ ok: false, error: errMsg }), {
       status: 500,
