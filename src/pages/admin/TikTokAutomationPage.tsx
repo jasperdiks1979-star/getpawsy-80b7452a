@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import {
   Video,
   Plus,
@@ -23,6 +24,10 @@ import {
   Sparkles,
   ExternalLink,
   Music,
+  Rocket,
+  ImageIcon,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -36,6 +41,7 @@ type TikTokPost = {
   video_url: string | null;
   thumbnail_url: string | null;
   destination_link: string | null;
+  media_urls: string[] | null;
   status: string;
   priority: string;
   scheduled_at: string | null;
@@ -59,12 +65,18 @@ const HOOK_VARIANTS = [
   { value: 'trending', label: '🔥 Trending Sound/Format' },
 ];
 
+type PipelineStep = 'idle' | 'generating_content' | 'generating_media' | 'queueing' | 'done' | 'error';
+
 export default function TikTokAutomationPage() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<TikTokPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('draft');
+
+  // Pipeline state
+  const [pipelineStep, setPipelineStep] = useState<PipelineStep>('idle');
+  const [pipelineMessage, setPipelineMessage] = useState('');
+  const [postCount, setPostCount] = useState('5');
 
   // New post form
   const [showForm, setShowForm] = useState(false);
@@ -141,20 +153,113 @@ export default function TikTokAutomationPage() {
     }
   };
 
-  const handleGenerateAI = async () => {
-    setGenerating(true);
+  /**
+   * Full automated pipeline:
+   * 1. Generate AI content (captions, hashtags) via tiktok-content-generator
+   * 2. Generate slideshow images via tiktok-video-generator
+   * 3. Auto-queue all posts
+   */
+  const handleFullPipeline = async () => {
+    const count = Math.min(Math.max(parseInt(postCount) || 5, 1), 10);
+
     try {
-      const { data, error } = await supabase.functions.invoke('tiktok-content-generator', {
-        body: { count: 5 },
-      });
-      if (error) throw error;
-      toast.success(`Generated ${data?.queued ?? 0} TikTok post ideas`);
+      // Step 1: Generate content
+      setPipelineStep('generating_content');
+      setPipelineMessage(`Generating ${count} TikTok posts with AI captions & hashtags...`);
+
+      const { data: contentData, error: contentError } = await supabase.functions.invoke(
+        'tiktok-content-generator',
+        { body: { count } },
+      );
+      if (contentError) throw contentError;
+      if (!contentData?.ok) throw new Error(contentData?.error || 'Content generation failed');
+
+      const queued = contentData.queued || 0;
+      if (queued === 0) {
+        setPipelineStep('error');
+        setPipelineMessage('No products available to generate content from.');
+        return;
+      }
+
+      toast.success(`✅ Step 1: Generated ${queued} post ideas`);
+
+      // Step 2: Generate slideshow media
+      setPipelineStep('generating_media');
+      setPipelineMessage(`Creating slideshow images for ${queued} posts (this may take 1-2 min)...`);
+
+      const { data: mediaData, error: mediaError } = await supabase.functions.invoke(
+        'tiktok-video-generator',
+        { body: { batch: true } },
+      );
+      if (mediaError) throw mediaError;
+
+      const mediaProcessed = mediaData?.processed || 0;
+      toast.success(`✅ Step 2: Generated media for ${mediaProcessed} posts`);
+
+      // Step 3: Auto-queue posts that have media
+      setPipelineStep('queueing');
+      setPipelineMessage('Moving posts with media to queue...');
+
+      const { error: queueError } = await supabase
+        .from('tiktok_post_queue')
+        .update({ status: 'queued' })
+        .eq('status', 'draft')
+        .not('media_urls', 'is', null);
+
+      if (queueError) throw queueError;
+
+      toast.success('✅ Step 3: Posts queued and ready!');
+
+      setPipelineStep('done');
+      setPipelineMessage(
+        `Pipeline voltooid! ${queued} posts gegenereerd met slideshow-media. ` +
+        `Zodra TikTok API is gekoppeld, worden ze automatisch gepubliceerd.`,
+      );
+
       fetchPosts();
     } catch (e) {
-      console.error('AI generation error:', e);
-      toast.error('Failed to generate content. Make sure the backend function is deployed.');
+      console.error('Pipeline error:', e);
+      setPipelineStep('error');
+      setPipelineMessage(
+        `Pipeline fout: ${e instanceof Error ? e.message : 'Onbekende fout'}`,
+      );
+      toast.error('Pipeline failed — check the error message below');
     }
-    setGenerating(false);
+  };
+
+  const handleGenerateMediaForPost = async (postId: string) => {
+    toast.info('Generating slideshow media...');
+    try {
+      const { data, error } = await supabase.functions.invoke('tiktok-video-generator', {
+        body: { postId },
+      });
+      if (error) throw error;
+      if (data?.processed > 0) {
+        toast.success('Media generated successfully!');
+      } else {
+        toast.warning('No media could be generated');
+      }
+      fetchPosts();
+    } catch (e) {
+      toast.error('Failed to generate media');
+    }
+  };
+
+  const handlePublish = async (postId?: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('tiktok-publisher', {
+        body: postId ? { postId } : { publishAll: true },
+      });
+      if (error) throw error;
+      if (data?.reason === 'TIKTOK_NOT_CONFIGURED') {
+        toast.warning('TikTok API nog niet gekoppeld. Wacht op business verificatie.');
+        return;
+      }
+      toast.success(`Published ${data?.published || 0} posts to TikTok`);
+      fetchPosts();
+    } catch (e) {
+      toast.error('Publish failed');
+    }
   };
 
   const handleStatusChange = async (postId: string, newStatus: string) => {
@@ -188,6 +293,14 @@ export default function TikTokAutomationPage() {
     failed: posts.filter((p) => p.status === 'failed').length,
   };
 
+  const pipelineProgress =
+    pipelineStep === 'generating_content' ? 25 :
+    pipelineStep === 'generating_media' ? 55 :
+    pipelineStep === 'queueing' ? 85 :
+    pipelineStep === 'done' ? 100 : 0;
+
+  const isPipelineRunning = ['generating_content', 'generating_media', 'queueing'].includes(pipelineStep);
+
   return (
     <>
       <Helmet>
@@ -203,30 +316,97 @@ export default function TikTokAutomationPage() {
               TikTok Automation
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Plan, generate & schedule TikTok content for your products
+              Volledig geautomatiseerd: content, slideshow-media & publicatie
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={fetchPosts} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={fetchPosts} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
+
+        {/* ONE-CLICK PIPELINE */}
+        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Rocket className="h-5 w-5 text-primary" />
+              🚀 Volledig Geautomatiseerde TikTok Pipeline
+            </CardTitle>
+            <CardDescription>
+              1 klik = AI-captions + slideshow-media + auto-queue. Zodra TikTok API is gekoppeld wordt alles automatisch gepubliceerd.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Aantal posts:</span>
+                <Select value={postCount} onValueChange={setPostCount}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 5, 7, 10].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                onClick={handleFullPipeline}
+                disabled={isPipelineRunning}
+                className="bg-gradient-to-r from-primary to-primary/80"
+              >
+                {isPipelineRunning ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4 mr-2" />
+                )}
+                {isPipelineRunning ? 'Bezig...' : 'Generate Complete TikTok Feed'}
+              </Button>
+            </div>
+
+            {pipelineStep !== 'idle' && (
+              <div className="space-y-2">
+                <Progress value={pipelineProgress} className="h-2" />
+                <div className="flex items-center gap-2">
+                  {isPipelineRunning && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                  {pipelineStep === 'done' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
+                  {pipelineStep === 'error' && <XCircle className="h-3 w-3 text-destructive" />}
+                  <p className="text-xs text-muted-foreground">{pipelineMessage}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
+              <p><strong>Stap 1:</strong> AI genereert captions, hashtags & hooks op basis van je producten</p>
+              <p><strong>Stap 2:</strong> AI maakt slideshow-afbeeldingen (productfoto's + promo-frames)</p>
+              <p><strong>Stap 3:</strong> Posts worden automatisch in de wachtrij geplaatst</p>
+              <p><strong>Stap 4:</strong> 🔒 Publicatie naar TikTok (zodra API gekoppeld)</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* API Status Banner */}
         <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
           <CardContent className="py-3 flex items-start gap-3">
             <Clock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-sm text-amber-800 dark:text-amber-200">
                 TikTok Business Verificatie in behandeling
               </p>
               <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-                Je kunt alvast content voorbereiden. Zodra de verificatie is goedgekeurd en de API-credentials zijn
-                ingesteld, kan het automatisch publiceren worden ingeschakeld.
+                Content & media genereren werkt al. Automatisch publiceren wordt ingeschakeld zodra de API-credentials zijn ingesteld.
               </p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => handlePublish()}
+            >
+              <Upload className="h-3 w-3 mr-1" />
+              Publish All
+            </Button>
           </CardContent>
         </Card>
 
@@ -253,13 +433,13 @@ export default function TikTokAutomationPage() {
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setShowForm(!showForm)} size="sm">
+          <Button onClick={() => setShowForm(!showForm)} size="sm" variant="outline">
             <Plus className="h-4 w-4 mr-1" />
-            New Post
+            Handmatig Post
           </Button>
-          <Button variant="outline" size="sm" onClick={handleGenerateAI} disabled={generating}>
-            <Sparkles className={`h-4 w-4 mr-1 ${generating ? 'animate-spin' : ''}`} />
-            {generating ? 'Generating...' : 'AI Generate (5 posts)'}
+          <Button variant="outline" size="sm" onClick={() => handleGenerateMediaForPost('')} disabled={isPipelineRunning}>
+            <ImageIcon className="h-4 w-4 mr-1" />
+            Generate Media (Batch)
           </Button>
         </div>
 
@@ -344,6 +524,8 @@ export default function TikTokAutomationPage() {
                         post={post}
                         onStatusChange={handleStatusChange}
                         onDelete={handleDelete}
+                        onGenerateMedia={handleGenerateMediaForPost}
+                        onPublish={handlePublish}
                       />
                     ))}
                   </div>
@@ -379,13 +561,18 @@ function PostCard({
   post,
   onStatusChange,
   onDelete,
+  onGenerateMedia,
+  onPublish,
 }: {
   post: TikTokPost;
   onStatusChange: (id: string, status: string) => void;
   onDelete: (id: string) => void;
+  onGenerateMedia: (id: string) => void;
+  onPublish: (id: string) => void;
 }) {
   const cfg = STATUS_CONFIG[post.status] || STATUS_CONFIG.draft;
   const Icon = cfg.icon;
+  const hasMedia = post.media_urls && post.media_urls.length > 0;
 
   return (
     <Card>
@@ -402,6 +589,16 @@ function PostCard({
               {post.priority === 'high' && (
                 <Badge variant="destructive" className="text-[10px]">High</Badge>
               )}
+              {hasMedia ? (
+                <Badge className="text-[10px] bg-green-100 text-green-800">
+                  <ImageIcon className="h-3 w-3 mr-1" />
+                  {post.media_urls!.length} slides
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[10px]">
+                  No media
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{post.caption}</p>
             {post.hashtags?.length > 0 && (
@@ -413,10 +610,35 @@ function PostCard({
           </div>
         </div>
 
+        {/* Media preview */}
+        {hasMedia && (
+          <div className="flex gap-1.5 overflow-x-auto py-1">
+            {post.media_urls!.slice(0, 5).map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt={`Slide ${i + 1}`}
+                className="h-16 w-10 object-cover rounded border shrink-0"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center gap-1.5 flex-wrap">
+          {!hasMedia && (
+            <Button size="sm" variant="outline" onClick={() => onGenerateMedia(post.id)}>
+              <ImageIcon className="h-3 w-3 mr-1" /> Generate Media
+            </Button>
+          )}
           {post.status === 'draft' && (
             <Button size="sm" variant="outline" onClick={() => onStatusChange(post.id, 'queued')}>
               <Zap className="h-3 w-3 mr-1" /> Queue
+            </Button>
+          )}
+          {post.status === 'queued' && hasMedia && (
+            <Button size="sm" variant="default" onClick={() => onPublish(post.id)}>
+              <Upload className="h-3 w-3 mr-1" /> Publish
             </Button>
           )}
           {post.status === 'queued' && (
