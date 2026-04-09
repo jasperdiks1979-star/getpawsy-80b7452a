@@ -120,6 +120,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function ConnectionCard({
   connection,
+  queuedCount,
   actionLoading,
   onConnect,
   onRefresh,
@@ -128,6 +129,7 @@ function ConnectionCard({
   onPublishNow,
 }: {
   connection: PinterestConnection | null;
+  queuedCount: number;
   actionLoading: string | null;
   onConnect: () => Promise<void>;
   onRefresh: () => Promise<void>;
@@ -136,6 +138,7 @@ function ConnectionCard({
   onPublishNow: () => Promise<void>;
 }) {
   const isConnected = connection?.status === "connected";
+  const canPublishNow = queuedCount > 0;
 
   return (
     <Card>
@@ -186,7 +189,7 @@ function ConnectionCard({
           {actionLoading === "queue-drafts" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
           Queue {PREPARE_QUEUE_COUNT} drafts
         </Button>
-        <Button onClick={() => void onPublishNow()} disabled={!isConnected || (!!actionLoading && actionLoading !== "publish-now")}>
+        <Button onClick={() => void onPublishNow()} disabled={!canPublishNow || (!!actionLoading && actionLoading !== "publish-now")}>
           {actionLoading === "publish-now" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
           Publish next pin now
         </Button>
@@ -468,6 +471,7 @@ function PinterestDashboard() {
     <div className="space-y-4">
       <ConnectionCard
         connection={connection}
+        queuedCount={queued.length}
         actionLoading={actionLoading}
         onConnect={handleConnect}
         onRefresh={handleRefreshConnection}
