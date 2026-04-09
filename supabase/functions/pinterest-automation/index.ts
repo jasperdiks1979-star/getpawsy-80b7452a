@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
+import { PINTEREST_API_BASE } from "../_shared/pinterest-config.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
@@ -348,7 +349,7 @@ Deno.serve(async (req) => {
 
       try {
         const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
-        const pinRes = await fetch("https://api.pinterest.com/v5/pins", {
+        const pinRes = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${conn.access_token}`,
