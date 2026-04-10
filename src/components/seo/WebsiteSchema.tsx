@@ -20,7 +20,7 @@ interface WebsiteSchemaProps {
 
 export function WebsiteSchema({
   title = 'GetPawsy - Premium Pet Products & Supplies',
-  description = `Discover premium, eco-friendly pet products at GetPawsy. Shop quality dog beds, cat trees, pet toys, collars, grooming supplies and more. Free shipping on eligible orders over $${FREE_SHIPPING_THRESHOLD}. Vet-approved items for happy, healthy pets.`,
+  description = `Discover premium pet products at GetPawsy. Shop quality dog beds, cat trees, pet toys, collars, grooming supplies and more. Free shipping on eligible orders over $${FREE_SHIPPING_THRESHOLD}. Hand-selected for happy, healthy pets.`,
   keywords = SITE_KEYWORDS,
   image = '/og-image.png',
   url = 'https://getpawsy.pet',
@@ -220,7 +220,7 @@ export function WebsiteSchema({
         name: 'Are your pet products safe and high quality?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Yes, all GetPawsy products are carefully selected for quality and safety. We work with trusted suppliers and many of our products are vet-approved. We prioritize pet-safe materials and durability.',
+          text: 'Yes, all GetPawsy products are carefully selected for quality and safety. We work with trusted suppliers and hand-select every item for durability and pet-safe materials.',
         },
       },
       {
