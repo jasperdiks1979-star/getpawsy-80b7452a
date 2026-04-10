@@ -218,7 +218,7 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
 export const STOP_PULLING_LANDING: LandingPageData = {
   slug: 'stop-dog-pulling-fast',
   metaTitle: 'Stop Dog Pulling Fast — Protect Your Dog\'s Neck | GetPawsy',
-  metaDescription: 'Stop leash pulling without choking or pain. Vet-approved no-pull harness protects your dog\'s neck and trachea. US shipping. 30-day return policy.',
+  metaDescription: 'Stop leash pulling without choking or pain. Force-free no-pull harness protects your dog\'s neck and trachea. US shipping. 30-day return policy.',
   headline: 'Stop Choking Your Dog on Every Walk.',
   subheadline: 'Traditional collars put 100% of leash force on your dog\'s neck — damaging their trachea, thyroid, and cervical spine. There\'s a better way.',
   painPoints: [
@@ -230,12 +230,12 @@ export const STOP_PULLING_LANDING: LandingPageData = {
   ],
   beforeAfter: [
     { before: 'Dog choking and gagging on walks', after: 'Zero neck pressure — force distributed across chest' },
-    { before: 'Worrying about long-term neck damage', after: 'Vet-approved harness that protects the trachea' },
+    { before: 'Worrying about long-term neck damage', after: 'Harness designed to protect the trachea' },
     { before: 'Feeling guilty using aversive tools', after: 'Force-free control that\'s gentle and effective' },
   ],
   benefits: [
     'ZERO neck pressure — bypasses trachea entirely',
-    'Vet-approved: recommended by AVSAB, ASPCA, RSPCA',
+    'Recommended by professional trainers: AVSAB, ASPCA, RSPCA endorsed approach',
     'Padded chest plate prevents chafing',
     'Front-clip reduces pulling by 40-60%',
     'Reflective safety for dawn/dusk walks',

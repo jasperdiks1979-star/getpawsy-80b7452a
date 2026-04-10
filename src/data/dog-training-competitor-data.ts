@@ -433,7 +433,7 @@ export const CTR_WARFARE_UPGRADES: CTRUpgrade[] = [
     keyword: 'stop dog pulling harness',
     competitorTitle: 'How to Stop Your Dog From Pulling',
     competitorDesc: 'Learn how to train your dog to stop pulling on the leash.',
-    getpawsyTitle: 'Stop Dog Pulling Without Choking — 5 Vet-Approved Methods (2026)',
+    getpawsyTitle: 'Stop Dog Pulling Without Choking — 5 Trainer-Approved Methods (2026)',
     getpawsyDesc: 'Force-free methods that reduce pulling 40–60%. No prong collars. No choke chains. Step-by-step guide + recommended harnesses. Trainer approved.',
     expectedCTRLift: '+40–50%',
   },
