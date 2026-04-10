@@ -33,7 +33,7 @@ const TITLE_AB_TESTS: Record<string, TitleABConfig> = {
     rotationStartDate: '2026-02-13',
     winner: null,
     variants: [
-      { id: 'A', title: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas', description: 'Number + authority trigger + year.' },
+      { id: 'A', title: 'Outdoor Dog Games (2026) – 15 Premium Quality Ideas', description: 'Number + authority trigger + year.' },
       { id: 'B', title: '15 Best Outdoor Dog Games (2026 Guide)', description: 'List-first format.' },
       { id: 'C', title: 'Outdoor Dog Games Dogs Actually Love (2026)', description: 'Emotional/curiosity trigger.' },
     ],

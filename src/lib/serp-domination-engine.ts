@@ -35,7 +35,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
     namespace: 'dog',
     canonical: 'https://getpawsy.pet/collections/all',
     title: '7 Best Orthopedic Dog Beds for Joint Support (2026)',
-    metaDescription: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35.',
+    metaDescription: 'Dog waking up stiff? Premium quality memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35.',
     ogTitle: '7 Best Orthopedic Dog Beds for Joint Support (2026)',
     ogDescription: 'Premium memory foam dog beds for arthritis & hip dysplasia. Trusted by 10,000+ pet parents. Free shipping on eligible orders over $35.',
     h1: 'Best Orthopedic Dog Beds for Joint Support (2026)',

@@ -238,8 +238,8 @@ function buildClusterExpansion(keyword: string, url: string): SupportArticle[] {
 const CTR_REWRITES: Record<string, { before: string; after: string; meta: string }> = {
   'best orthopedic dog bed': {
     before: 'Best Orthopedic Dog Beds | GetPawsy',
-    after: 'Best Orthopedic Dog Beds – End Joint Pain Today (Vet-Approved 2026)',
-    meta: 'Vet-approved memory foam beds that relieve arthritis and hip dysplasia. Tested on 500+ dogs. Waterproof covers, all sizes. Free shipping available.',
+    after: 'Best Orthopedic Dog Beds – End Joint Pain Today (Premium Quality 2026)',
+    meta: 'Premium quality memory foam beds that relieve arthritis and hip dysplasia. Tested on 500+ dogs. Waterproof covers, all sizes. Free shipping available.',
   },
   'cat tree for large cats': {
     before: 'Cat Trees for Large Cats | GetPawsy',
@@ -264,7 +264,7 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   'best slow feeder dog bowl': {
     before: 'Best Slow Feeder Dog Bowl | GetPawsy',
     after: 'Stop Fast Eating & Prevent Bloat – Best Slow Feeder Bowls (2026)',
-    meta: 'Reduce eating speed by 80%. Vet-approved designs prevent bloat and improve digestion. Dishwasher safe. Free shipping available.',
+    meta: 'Reduce eating speed by 80%. Premium quality designs prevent bloat and improve digestion. Dishwasher safe. Free shipping available.',
   },
   'best interactive dog toys': {
     before: 'Best Interactive Dog Toys | GetPawsy',
@@ -340,7 +340,7 @@ function buildDefensiveVelocity(): DefensiveAction[] {
 function getBehavioralBoosts(intent: string): string[] {
   const base = [
     'Above-the-fold comparison table with "Best For" badges',
-    'Trust badge strip (Vet-Approved, 30-Day Returns, US Warehouse)',
+    'Trust badge strip (Premium Quality, 30-Day Returns, US Warehouse)',
     'Jump links / sticky Table of Contents',
     'Mid-content CTA blocks (2–3 per page)',
     'Clear shipping messaging above every CTA',

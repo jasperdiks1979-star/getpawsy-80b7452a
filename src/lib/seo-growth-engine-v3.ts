@@ -101,7 +101,7 @@ export interface GrowthEngineV3Result {
 // ============= CTR TITLE MODIFIERS =============
 
 const CTR_MODIFIERS = [
-  '(Vet Approved)',
+  '(Premium Quality)',
   '(Expert Guide)',
   '(2026 Edition)',
   '(Avoid These Mistakes)',
@@ -119,7 +119,7 @@ const TITLE_TEMPLATES: Record<string, (kw: string) => string> = {
 
 const META_TEMPLATES = [
   (kw: string) => `Discover the truth about ${kw}. Expert-reviewed advice, real comparisons, and actionable tips for pet owners in 2026.`,
-  (kw: string) => `Everything you need to know about ${kw}. Vet-approved recommendations and honest buying advice. Free shipping available.`,
+  (kw: string) => `Everything you need to know about ${kw}. Premium quality recommendations and honest buying advice. Free shipping available.`,
   (kw: string) => `Stop guessing about ${kw}. See real test results, expert picks, and avoid the mistakes most pet owners make.`,
 ];
 

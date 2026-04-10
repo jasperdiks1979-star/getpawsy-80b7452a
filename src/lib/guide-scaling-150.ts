@@ -246,7 +246,7 @@ export const SCALING_GUIDES: ScalingGuide[] = [
   { slug: 'best-pet-stroller-guide', title: 'Best Pet Strollers (2026) – For Dogs, Cats & Multi-Pet Families', primaryKW: 'best pet stroller', secondaryKWs: ['pet stroller for dogs', 'cat stroller', 'dog stroller for large dogs', 'pet buggy'], intent: 'commercial', priority: 90, cluster: 'dog-travel', week: 2, role: 'hub', internalLinksTarget: 10, linksTo: ['best-pet-carrier-for-travel', 'dog-travel-safety-guide'], difficulty: 'medium' },
 
   // ========== CLUSTER 12: ORTHOPEDIC DOG BEDS (promoted to cornerstone) ==========
-  { slug: 'best-orthopedic-dog-bed-2026', title: 'Best Orthopedic Dog Beds (2026) – Vet-Approved Picks for Joint Support', primaryKW: 'best orthopedic dog bed 2026', secondaryKWs: ['orthopedic dog bed review', 'vet recommended dog bed', 'memory foam dog bed 2026'], intent: 'commercial', priority: 96, cluster: 'dog-beds', week: 1, role: 'cornerstone', internalLinksTarget: 15, linksTo: ['best-dog-bed-2026', 'best-orthopedic-dog-bed', 'best-dog-bed-senior-dogs', 'best-dog-bed-for-hip-dysplasia', 'best-dog-bed-large-dogs'], difficulty: 'high' },
+  { slug: 'best-orthopedic-dog-bed-2026', title: 'Best Orthopedic Dog Beds (2026) – Premium Quality Picks for Joint Support', primaryKW: 'best orthopedic dog bed 2026', secondaryKWs: ['orthopedic dog bed review', 'vet recommended dog bed', 'memory foam dog bed 2026'], intent: 'commercial', priority: 96, cluster: 'dog-beds', week: 1, role: 'cornerstone', internalLinksTarget: 15, linksTo: ['best-dog-bed-2026', 'best-orthopedic-dog-bed', 'best-dog-bed-senior-dogs', 'best-dog-bed-for-hip-dysplasia', 'best-dog-bed-large-dogs'], difficulty: 'high' },
 
   // ========== CLUSTER SUPPORTING GUIDES (new) ==========
   // Cat litter cluster support

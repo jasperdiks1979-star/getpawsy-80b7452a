@@ -183,7 +183,7 @@ export const SEO_CONTENT_CLUSTERS: ContentCluster[] = [
       },
       {
         slug: 'calming-activities-for-dogs',
-        title: 'Calming Activities for Anxious Dogs – Vet-Approved Guide',
+        title: 'Calming Activities for Anxious Dogs – Premium Quality Guide',
         targetKeyword: 'calming activities for dogs',
         searchIntent: 'informational',
         linkedCollection: 'dog-enrichment-toys',
@@ -285,7 +285,7 @@ export const SEO_CONTENT_CLUSTERS: ContentCluster[] = [
     blogTopics: [
       {
         slug: 'best-orthopedic-dog-beds-2026',
-        title: 'Best Orthopedic Dog Beds (2026) – Vet-Approved Picks',
+        title: 'Best Orthopedic Dog Beds (2026) – Premium Quality Picks',
         targetKeyword: 'best orthopedic dog beds',
         searchIntent: 'commercial',
         linkedCollection: 'orthopedic-calming-dog-beds',

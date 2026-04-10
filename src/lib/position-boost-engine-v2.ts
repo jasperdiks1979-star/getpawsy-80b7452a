@@ -33,7 +33,7 @@ export interface PositionBoostResult {
 
 const BENEFIT_MODIFIERS = [
   'Expert-Tested',
-  'Vet-Approved',
+  'Premium Quality',
   'Top-Rated',
   'Best Value',
   'Pet Owner Favorite',

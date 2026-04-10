@@ -224,7 +224,7 @@ const Blog = () => {
       },
       Health: {
         title: 'Pet Health Blog 2026 | Wellness, Nutrition & Vet Tips | GetPawsy',
-        description: 'Comprehensive pet health resources: preventive care tips, nutrition advice, common illness guides & vet-approved wellness strategies. Keep your pet thriving!',
+        description: 'Comprehensive pet health resources: preventive care tips, nutrition advice, common illness guides & hand-selected wellness strategies. Keep your pet thriving!',
         keywords: ['pet health blog', 'pet wellness tips', 'vet advice for pets', 'pet nutrition guide', 'pet preventive care', 'common pet illnesses', 'pet health 2026'],
       },
       Guides: {

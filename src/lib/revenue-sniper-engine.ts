@@ -104,7 +104,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     sniperScore: 96,
     optimization: {
       newTitle: '7 Best Orthopedic Dog Beds for Joint Relief (2026)',
-      newMetaDescription: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35.',
+      newMetaDescription: 'Dog waking up stiff? Premium quality memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day return policy. Free shipping on eligible orders over $35.',
       faqSchema: [
         { question: 'What is the best orthopedic dog bed for large breeds?', answer: 'Large breeds (70+ lbs) need 6+ inches of 3.0 lb/ft³ density foam with 44×34" minimum sleeping surfaces. Our top picks are load-tested with 110 lb dogs for 12+ months.' },
         { question: 'Are orthopedic dog beds worth the money?', answer: 'Yes. They cost $60–$200 but last 3–5 years vs 6–12 months for standard beds. For dogs over 40 lbs or with joint issues, the cost-per-year is actually lower.' },
@@ -200,7 +200,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     sniperScore: 85,
     optimization: {
       newTitle: 'Best Orthopedic Beds for Large Dogs – 90+ lbs Tested',
-      newMetaDescription: 'Large breed dog beds that don\'t flatten. Load-tested for 90+ lb dogs with 6" high-density foam. Vet-approved, waterproof. Free shipping.',
+      newMetaDescription: 'Large breed dog beds that don\'t flatten. Load-tested for 90+ lb dogs with 6" high-density foam. Premium quality, waterproof. Free shipping.',
       faqSchema: [
         { question: 'What size orthopedic bed does a large dog need?', answer: 'Dogs 60–90 lbs need a minimum 44×34" bed with 5" foam. Dogs 90+ lbs need 52×36" with 6–7" foam. Always measure your dog lying stretched out and add 6 inches.' },
         { question: 'Do large dogs need thicker memory foam?', answer: 'Yes. Dogs over 70 lbs need at least 5 inches of high-density foam (2.0+ lb/ft³) to prevent bottoming out. Giant breeds (100+ lbs) benefit from 7-inch dual-layer construction.' },
