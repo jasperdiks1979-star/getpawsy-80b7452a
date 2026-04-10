@@ -266,7 +266,7 @@ function buildLockdownNiche(): LockdownNiche {
     clusterArticles: [
       { title: 'How to Choose the Right Orthopedic Dog Bed', type: 'Buying Guide', wordCount: 1800, linksToHub: 3 },
       { title: 'Memory Foam vs Egg-Crate Foam Dog Beds', type: 'Comparison', wordCount: 1400, linksToHub: 3 },
-      { title: 'Signs Your Dog Has Joint Pain (Vet-Approved)', type: 'Problem-Solution', wordCount: 1600, linksToHub: 2 },
+      { title: 'Signs Your Dog Has Joint Pain (Premium Quality)', type: 'Problem-Solution', wordCount: 1600, linksToHub: 2 },
       { title: 'Best Dog Beds for Large Breeds Over 80 lbs', type: 'Use-Case Guide', wordCount: 1500, linksToHub: 3 },
       { title: 'Orthopedic Dog Bed FAQ — 15 Questions Answered', type: 'FAQ Mega Guide', wordCount: 2200, linksToHub: 4 },
       { title: 'Orthopedic vs Regular Dog Beds: Worth the Price?', type: 'Comparison', wordCount: 1300, linksToHub: 2 },

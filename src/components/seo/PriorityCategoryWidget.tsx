@@ -12,7 +12,7 @@ const PRIORITY_LINKS = [
   {
     href: '/collections/all',
     title: 'Orthopedic Dog Beds',
-    desc: 'Vet-approved memory foam beds for joint pain & large breeds',
+    desc: 'Premium memory foam beds for joint support & large breeds',
     badge: '⭐ Top Rated',
   },
   {

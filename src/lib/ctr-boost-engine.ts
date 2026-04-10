@@ -59,14 +59,14 @@ const MANUAL_CTR_OVERRIDES: Record<string, { title: string; meta: string }> = {
   },
   'dog-enrichment-toys': {
     title: 'Dog Enrichment Toys (2026) – Mental Stimulation Guide',
-    meta: 'Reduce anxiety and destructive behavior with the right enrichment toys. Vet-approved picks for every dog size.',
+    meta: 'Reduce anxiety and destructive behavior with the right enrichment toys. Premium quality picks for every dog size.',
   },
 };
 
 // Power modifiers for title generation
 const POWER_MODIFIERS = [
   'Complete Guide', 'Expert Picks', 'Tested & Ranked', 'Step-by-Step',
-  'Avoid These Mistakes', 'What Actually Works', 'Vet-Approved',
+  'Avoid These Mistakes', 'What Actually Works', 'Premium Quality',
 ];
 
 function humanizeSlug(slug: string): string {

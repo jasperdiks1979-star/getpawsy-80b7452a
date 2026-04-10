@@ -277,7 +277,7 @@ export default function DogCarTravelSafety() {
               { icon: '🚚', title: 'US Shipping', desc: '5–10 day delivery across the US. Free shipping on orders over $35.' },
               { icon: '🔄', title: '30-Day Return Policy', desc: 'Not satisfied? Return within 30 days to arrange a return.' },
               { icon: '🛡️', title: 'Crash-Test Informed', desc: 'We only stock products with documented safety credentials and CPS-level testing.' },
-              { icon: '🏥', title: 'Vet-Approved Materials', desc: 'Padded, non-toxic materials safe for dogs of all sizes and breeds.' },
+              { icon: '🏥', title: 'Premium Quality Materials', desc: 'Padded, non-toxic materials safe for dogs of all sizes and breeds.' },
             ].map(item => (
               <div key={item.title} className="bg-card border rounded-2xl p-5 text-center">
                 <span className="text-3xl mb-3 block">{item.icon}</span>

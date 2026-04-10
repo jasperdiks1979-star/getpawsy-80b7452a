@@ -48,7 +48,7 @@ function getZone(position: number): RankingZone {
 function getZoneActions(zone: RankingZone, ctr: number, clicks: number): string[] {
   switch (zone) {
     case 'green':
-      if (clicks === 0) return ['ZERO CLICKS — Rewrite title with emotional hook', 'Add FAQ schema', 'Append CTR modifier (Vet Approved/Expert Guide)'];
+      if (clicks === 0) return ['ZERO CLICKS — Rewrite title with emotional hook', 'Add FAQ schema', 'Append CTR modifier (Premium Quality/Expert Guide)'];
       return ctr < 3
         ? ['Optimize title for higher CTR', 'Add FAQ schema', 'Test meta description variants']
         : ['Maintain current position', 'Monitor for ranking decay'];

@@ -307,7 +307,7 @@ function buildTopicalAuthorityMap(queries: GscQuery[]): TopicalAuthorityMap {
       linkFlow: 'hub → 10 spokes → hub (bidirectional)',
       authorityProjection: 68,
       clusters: [
-        { title: 'Outdoor Dog Games – 15 Vet-Approved Ideas', slug: 'outdoor-dog-games', wordCount: 3000, intent: 'informational', priority: 'high', linkedToPillar: true, ...getQueryStats(['outdoor dog games', 'games dogs outside']) },
+        { title: 'Outdoor Dog Games – 15 Fun Ideas for Every Breed', slug: 'outdoor-dog-games', wordCount: 3000, intent: 'informational', priority: 'high', linkedToPillar: true, ...getQueryStats(['outdoor dog games', 'games dogs outside']) },
         { title: 'Best Interactive Dog Toys 2026', slug: 'best-interactive-dog-toys', wordCount: 2500, intent: 'commercial', priority: 'high', linkedToPillar: true, ...getQueryStats(['interactive dog toys', 'dog puzzle toys']) },
         { title: 'Dog Enrichment Toys That Actually Work', slug: 'dog-enrichment-toys', wordCount: 2000, intent: 'commercial', priority: 'high', linkedToPillar: true, ...getQueryStats(['enrichment toys', 'dog enrichment']) },
         { title: 'Indoor Dog Enrichment Ideas', slug: 'indoor-dog-enrichment-ideas', wordCount: 2000, intent: 'informational', priority: 'high', linkedToPillar: true, ...getQueryStats(['indoor dog', 'bored dog']) },

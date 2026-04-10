@@ -981,7 +981,7 @@ const metaTemplates = {
     `${productName} - ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Free shipping on eligible orders over $35. Shop now at GetPawsy!`,
   
   emotional: (productName: string, hook: string, price?: number) =>
-    `${productName} - ${hook}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Premium quality, vet-approved. Order today at GetPawsy!`,
+    `${productName} - ${hook}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Premium quality, hand-selected. Order today at GetPawsy!`,
   
   problemSolving: (productName: string, problem: string, solution: string, price?: number) =>
     `Struggling with ${problem}? ${productName} is the ${solution}. ${price ? `Only $${price.toFixed(2)}. ` : ''}Shop at GetPawsy - free shipping!`,
@@ -990,7 +990,7 @@ const metaTemplates = {
     `Perfect for ${audience}: ${productName} offers ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Discover at GetPawsy today!`,
   
   premium: (productName: string, features: string, price?: number) =>
-    `Premium ${productName} with ${features}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Eco-friendly & vet-approved. Shop GetPawsy!`,
+    `Premium ${productName} with ${features}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Premium quality, hand-selected. Shop GetPawsy!`,
 };
 
 // Generate smart meta description with niche keywords
@@ -1039,7 +1039,7 @@ export function generateCategoryMetaDescription(categoryName: string): string {
   const categoryLower = categoryName.toLowerCase();
   
   const categoryDescriptions: Record<string, string> = {
-    dog: 'Discover premium dog supplies at GetPawsy. From cozy beds to durable toys, we have everything your furry friend needs. Vet-approved, eco-friendly products with free shipping on eligible orders over $35.',
+    dog: 'Discover premium dog supplies at GetPawsy. From cozy beds to durable toys, we have everything your furry friend needs. Premium quality, quality products with free shipping on eligible orders over $35.',
     cat: 'Shop the best cat products at GetPawsy. Cat trees, toys, feeding bowls & more. Premium quality, designed for happy cats. Free shipping on eligible orders over $35!',
     bed: 'Find the perfect pet bed at GetPawsy. Orthopedic, cooling, and cozy options for dogs & cats of all sizes. Help your pet sleep better. Free shipping on eligible orders over $35!',
     toy: 'Keep your pet entertained with premium toys from GetPawsy. Interactive, durable, and mentally stimulating options. Say goodbye to boredom! Free shipping on eligible orders over $35.',

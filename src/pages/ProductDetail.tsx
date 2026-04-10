@@ -1416,7 +1416,7 @@ const ProductDetail = () => {
                         "Safe for all pets",
                         "Easy to clean and maintain",
                         "Durable construction",
-                        "Eco-friendly packaging",
+                        "Carefully packaged for safe delivery",
                       ].map((feature, idx) => (
                         <motion.li
                           key={idx}

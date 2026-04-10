@@ -103,7 +103,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
     meta: 'End leash pulling on the first walk. Expert-tested no-pull harnesses ranked by real trainers. Metal hardware, padded comfort, free US shipping.',
   },
   'best orthopedic dog bed': {
-    title: 'Best Orthopedic Dog Beds (2026) — Vet-Approved for Joint Pain',
+    title: 'Best Orthopedic Dog Beds (2026) — Premium Quality for Joint Pain',
     meta: 'Relieve arthritis and hip pain with vet-recommended orthopedic beds. Memory foam, waterproof covers, all sizes. Ships free to US.',
   },
   'cat tree for large cats': {
@@ -116,7 +116,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
   },
   'best slow feeder dog bowl': {
     title: 'Best Slow Feeder Dog Bowls (2026) — Prevent Bloat & Fast Eating',
-    meta: 'Slow down fast eaters by 80%. Vet-approved designs prevent bloat, improve digestion. Dishwasher safe. Ships free across US.',
+    meta: 'Slow down fast eaters by 80%. Premium quality designs prevent bloat, improve digestion. Dishwasher safe. Ships free across US.',
   },
   'front clip vs back clip harness': {
     title: 'Front Clip vs Back Clip Harness — Which Actually Stops Pulling?',

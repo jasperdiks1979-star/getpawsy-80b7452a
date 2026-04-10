@@ -286,7 +286,7 @@ export function generateCTRTitles(): CTRTitle[] {
 
   const titleMap: Record<string, { title: string; formula: string }> = {
     'outdoor-dog-games-2026': {
-      title: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas',
+      title: 'Outdoor Dog Games (2026) – 15 Premium Quality Ideas',
       formula: '[KW] (Year) – [Number] [Authority] [Hook]',
     },
     'best-dog-bed-2026': {
@@ -298,7 +298,7 @@ export function generateCTRTitles(): CTRTitle[] {
       formula: '[KW] (Year) – [Number] [Method] [Benefit]',
     },
     'best-orthopedic-dog-bed': {
-      title: 'Best Orthopedic Dog Bed (2026) – Vet-Approved Joint Support',
+      title: 'Best Orthopedic Dog Bed (2026) – Premium Quality Joint Support',
       formula: '[KW] (Year) – [Authority] [Benefit]',
     },
   };

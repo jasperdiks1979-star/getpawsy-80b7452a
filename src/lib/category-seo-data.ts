@@ -122,7 +122,7 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySeoEntry> = {
 
   'dog-toys': {
     h1: 'Dog Toys — Interactive, Chew & Enrichment Toys for All Breeds',
-    metaDescription: 'Shop durable dog toys for every play style. Interactive puzzles, tough chew toys, fetch toys. Free shipping on eligible orders over $35. Vet-approved, non-toxic.',
+    metaDescription: 'Shop durable dog toys for every play style. Interactive puzzles, tough chew toys, fetch toys. Free shipping on eligible orders over $35. Non-toxic, pet-safe materials.',
     keywords: [
       'dog toys', 'interactive dog toys', 'chew toys for dogs', 'durable dog toys',
       'puzzle toys for dogs', 'squeaky dog toys', 'rope toys for dogs',

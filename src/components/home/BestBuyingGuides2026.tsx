@@ -24,7 +24,7 @@ const MONEY_PAGES = [
   {
     path: '/best-dog-anxiety-solutions',
     title: 'Best Dog Anxiety Solutions 2026 (What Actually Works)',
-    description: 'Vet-approved calming products tested with real anxious dogs.',
+    description: 'Premium quality calming products tested with real anxious dogs.',
     emoji: '🐕',
   },
 ] as const;

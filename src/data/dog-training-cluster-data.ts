@@ -140,7 +140,7 @@ export const HARNESS_CLUSTER: TrainingClusterData[] = [
     slug: 'how-to-stop-pulling-without-choking',
     title: 'How to Stop Your Dog From Pulling Without Choking — Safe Methods',
     metaTitle: 'Stop Dog Pulling Without Choking — 5 Safe Methods | GetPawsy',
-    metaDescription: 'Stop your dog from pulling on the leash without prong collars or choke chains. 5 vet-approved, force-free methods that actually work. Step-by-step guide.',
+    metaDescription: 'Stop your dog from pulling on the leash without prong collars or choke chains. 5 force-free, trainer-recommended methods that actually work. Step-by-step guide.',
     heroSubtitle: 'Choke chains and prong collars cause real harm. These 5 force-free methods reduce pulling by 40–60% without any pain or risk.',
     canonical: `${BASE}/dog/dog-training/how-to-stop-pulling-without-choking`,
     breadcrumbLabel: 'Stop Pulling Safely',

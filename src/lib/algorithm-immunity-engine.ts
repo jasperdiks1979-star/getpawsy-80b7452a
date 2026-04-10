@@ -155,7 +155,7 @@ function estimateCtr(pos: number): number {
 const CATEGORY_DEFS: { name: string; keywords: string[]; pillarTitle: string }[] = [
   { name: 'Dog Enrichment', keywords: ['enrichment', 'puzzle', 'interactive', 'mental', 'stimulat', 'bored', 'brain'], pillarTitle: 'Ultimate Dog Enrichment Guide – Mental Stimulation for Every Breed (2026)' },
   { name: 'Dog Training', keywords: ['train', 'command', 'obedience', 'teach', 'heel', 'sit', 'stay', 'recall', 'leash'], pillarTitle: 'Complete Dog Training Guide – From Puppy Basics to Advanced Commands (2026)' },
-  { name: 'Outdoor Dog Activities', keywords: ['outdoor', 'outside', 'park', 'hike', 'walk', 'game', 'fetch', 'agility', 'backyard', 'summer'], pillarTitle: 'Outdoor Dog Activities & Games – 25 Vet-Approved Ideas (2026)' },
+  { name: 'Outdoor Dog Activities', keywords: ['outdoor', 'outside', 'park', 'hike', 'walk', 'game', 'fetch', 'agility', 'backyard', 'summer'], pillarTitle: 'Outdoor Dog Activities & Games – 25 Fun Ideas for Every Breed (2026)' },
   { name: 'Puppy Development', keywords: ['puppy', 'puppies', 'teething', 'socialization', 'crate', 'potty', 'house train', 'whelp'], pillarTitle: 'Puppy Development Timeline – Week-by-Week Growth Guide (2026)' },
   { name: 'Cat Trees & Climbing', keywords: ['cat tree', 'cat tower', 'cat condo', 'climbing', 'scratching', 'kitten tree', 'cat house', 'kitty condo'], pillarTitle: 'Best Cat Trees & Condos – Complete Buyer Guide by Space & Budget (2026)' },
   { name: 'Behavioral Correction', keywords: ['anxiety', 'destructive', 'chew', 'bark', 'aggress', 'fear', 'separation', 'calm', 'stress'], pillarTitle: 'Dog Behavior Problems & Solutions – Expert Correction Guide (2026)' },
