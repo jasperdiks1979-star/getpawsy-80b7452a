@@ -869,7 +869,7 @@ export const VisitorWorldMap = () => {
 
       markersRef.current.push(marker);
     });
-  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter]);
+  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter]);
 
   // Update hot spot markers when data changes
   useEffect(() => {
