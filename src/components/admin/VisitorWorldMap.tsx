@@ -31,7 +31,32 @@ interface VisitorActivity {
   city: string | null;
   created_at: string;
   last_seen_at?: string;
+  referrer_category?: string | null;
+  utm_source?: string | null;
 }
+
+type SourceFilter = "all" | "pinterest" | "google" | "social" | "direct" | "organic" | "other";
+
+const SOURCE_COLORS: Record<string, string> = {
+  pinterest: "#E60023",
+  google: "#4285F4",
+  social: "#1DA1F2",
+  direct: "#6B7280",
+  email: "#F59E0B",
+  paid: "#8B5CF6",
+  organic: "#10B981",
+  other: "#6B7280",
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  all: "Alle bronnen",
+  pinterest: "Pinterest",
+  google: "Google",
+  social: "Social Media",
+  direct: "Direct",
+  organic: "Organisch",
+  other: "Overig",
+};
 
 const ACTIVITY_COLORS = {
   browsing: "#ef4444", // red
@@ -115,6 +140,7 @@ export const VisitorWorldMap = () => {
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
     return saved !== null ? saved === "true" : false;
@@ -350,9 +376,22 @@ export const VisitorWorldMap = () => {
       )
     : activities;
 
-  // Filter activities based on selected activity type
+  // Helper to check if activity matches source filter
+  const matchesSourceFilter = (a: VisitorActivity): boolean => {
+    if (sourceFilter === "all") return true;
+    if (sourceFilter === "pinterest") {
+      return a.referrer_category === "social" && (
+        a.utm_source === "pinterest" || 
+        (!a.utm_source && a.referrer_category === "social") // Pinterest often comes without utm_source
+      );
+    }
+    return a.referrer_category === sourceFilter;
+  };
+
+  // Filter activities based on selected activity type AND source
   const filteredActivities = displayActivities?.filter(a => 
-    activityFilter === "all" || a.activity_type === activityFilter
+    (activityFilter === "all" || a.activity_type === activityFilter) &&
+    matchesSourceFilter(a)
   );
 
   // Subscribe to realtime updates with checkout notifications
@@ -685,7 +724,20 @@ export const VisitorWorldMap = () => {
         dominantType = "cart";
       }
 
-      const color = ACTIVITY_COLORS[dominantType];
+      // Check if any activity is from Pinterest
+      const hasPinterest = groupActivities.some(a => 
+        a.utm_source === "pinterest" || 
+        (a.referrer_category === "social" && !a.utm_source)
+      );
+      const pinterestCount = groupActivities.filter(a => 
+        a.utm_source === "pinterest" || 
+        (a.referrer_category === "social" && !a.utm_source)
+      ).length;
+
+      // Determine marker color - use source color if filtering by source, otherwise activity color
+      const color = sourceFilter !== "all" 
+        ? (SOURCE_COLORS[sourceFilter] || ACTIVITY_COLORS[dominantType])
+        : ACTIVITY_COLORS[dominantType];
       const count = groupActivities.length;
       const size = Math.min(12 + count * 2, 30);
 
@@ -699,7 +751,7 @@ export const VisitorWorldMap = () => {
         width: ${size}px;
         height: ${size}px;
         background-color: ${color};
-        border: 2px solid white;
+        border: 2px solid ${hasPinterest && sourceFilter === "all" ? "#E60023" : "white"};
         border-radius: 50%;
         cursor: pointer;
         box-shadow: 0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40;
@@ -707,6 +759,27 @@ export const VisitorWorldMap = () => {
         display: ${showHeatmap ? "none" : "block"};
         position: relative;
       `;
+
+      // Add Pinterest badge icon when source filter is "all" and has Pinterest traffic
+      if (hasPinterest && sourceFilter === "all") {
+        const pinterestBadge = document.createElement("div");
+        pinterestBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>`;
+        pinterestBadge.style.cssText = `
+          position: absolute;
+          top: -10px;
+          left: -10px;
+          width: 18px;
+          height: 18px;
+          background: #E60023;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        `;
+        el.appendChild(pinterestBadge);
+      }
 
       // Add shopping cart icon for checkout activities
       if (hasCheckout) {
@@ -747,7 +820,14 @@ export const VisitorWorldMap = () => {
         document.head.appendChild(style);
       }
 
-      // Create popup content
+      // Build source breakdown for popup
+      const sourceBreakdown = new Map<string, number>();
+      groupActivities.forEach(a => {
+        const source = a.utm_source || a.referrer_category || "direct";
+        sourceBreakdown.set(source, (sourceBreakdown.get(source) || 0) + 1);
+      });
+
+      // Create popup content with source info
       const popupContent = `
         <div style="padding: 8px; min-width: 150px;">
           <strong>${groupActivities[0].city || groupActivities[0].country || "Onbekend"}</strong>
@@ -761,6 +841,22 @@ export const VisitorWorldMap = () => {
               return `<span style="background: ${c}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${typeCount} ${ACTIVITY_LABELS[type as keyof typeof ACTIVITY_LABELS]}</span>`;
             }).join("")}
           </div>
+          ${hasPinterest ? `
+            <div style="margin-top: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px;">
+              <span style="background: #E60023; color: white; padding: 2px 6px; border-radius: 4px; display: flex; align-items: center; gap: 3px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                ${pinterestCount} via Pinterest
+              </span>
+            </div>
+          ` : ""}
+          ${Array.from(sourceBreakdown.entries()).filter(([s]) => s !== "social" || !hasPinterest).length > 1 ? `
+            <div style="margin-top: 4px; font-size: 10px; color: #888;">
+              ${Array.from(sourceBreakdown.entries())
+                .filter(([s]) => !(s === "social" && hasPinterest))
+                .map(([source, cnt]) => `${SOURCE_LABELS[source] || source}: ${cnt}`)
+                .join(" · ")}
+            </div>
+          ` : ""}
         </div>
       `;
 
@@ -773,7 +869,7 @@ export const VisitorWorldMap = () => {
 
       markersRef.current.push(marker);
     });
-  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter]);
+  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter]);
 
   // Update hot spot markers when data changes
   useEffect(() => {
@@ -1391,6 +1487,51 @@ export const VisitorWorldMap = () => {
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.checkout }} />
                     Afrekenen
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Source/Referrer Filter */}
+            <Select value={sourceFilter} onValueChange={(value) => setSourceFilter(value as SourceFilter)}>
+              <SelectTrigger className={`w-[155px] h-9 ${sourceFilter === "pinterest" ? "border-[#E60023] bg-[#E60023]/10" : ""}`}>
+                <Target className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Bron" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    Alle bronnen
+                  </div>
+                </SelectItem>
+                <SelectItem value="pinterest">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#E60023" }} />
+                    Pinterest
+                  </div>
+                </SelectItem>
+                <SelectItem value="google">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#4285F4" }} />
+                    Google
+                  </div>
+                </SelectItem>
+                <SelectItem value="social">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1DA1F2" }} />
+                    Social Media
+                  </div>
+                </SelectItem>
+                <SelectItem value="direct">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#6B7280" }} />
+                    Direct
+                  </div>
+                </SelectItem>
+                <SelectItem value="organic">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#10B981" }} />
+                    Organisch
                   </div>
                 </SelectItem>
               </SelectContent>
