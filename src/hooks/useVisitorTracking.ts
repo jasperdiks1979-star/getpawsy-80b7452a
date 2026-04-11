@@ -165,7 +165,7 @@ const categorizeReferrer = (referrer: string | null, utmParams: UTMParams): Refe
   
   const socialPlatforms = [
     'facebook.com', 'fb.com', 'instagram.com', 'twitter.com', 'x.com',
-    'pinterest.com', 'linkedin.com', 'tiktok.com', 'youtube.com',
+    'pinterest.com', 'pin.it', 'linkedin.com', 'tiktok.com', 'youtube.com',
     'reddit.com', 'snapchat.com', 'whatsapp.com', 't.co'
   ];
   

@@ -691,6 +691,38 @@ export const VisitorWorldMap = () => {
     }
   }, [showHeatmap, filteredActivities, mapLoaded, activityFilter]);
 
+  // Auto-fly map to show filtered visitors when source filter changes
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !filteredActivities || filteredActivities.length === 0) return;
+    if (sourceFilter === "all") return; // Don't auto-fly for "all"
+
+    const withCoords = filteredActivities.filter(a => a.latitude && a.longitude);
+    if (withCoords.length === 0) return;
+
+    // Calculate bounding box
+    let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    withCoords.forEach(a => {
+      if (a.latitude! < minLat) minLat = a.latitude!;
+      if (a.latitude! > maxLat) maxLat = a.latitude!;
+      if (a.longitude! < minLng) minLng = a.longitude!;
+      if (a.longitude! > maxLng) maxLng = a.longitude!;
+    });
+
+    // Fly to the center of all filtered visitors
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    const latSpan = maxLat - minLat;
+    const lngSpan = maxLng - minLng;
+    const span = Math.max(latSpan, lngSpan);
+    const zoom = span < 1 ? 6 : span < 5 ? 4 : span < 20 ? 3 : 2;
+
+    map.current.flyTo({
+      center: [centerLng, centerLat],
+      zoom,
+      duration: 1500,
+    });
+  }, [sourceFilter, filteredActivities, mapLoaded]);
+
   // Update markers when activities change
   useEffect(() => {
     if (!map.current || !mapLoaded || !filteredActivities) return;
