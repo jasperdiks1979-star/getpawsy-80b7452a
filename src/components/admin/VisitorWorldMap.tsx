@@ -140,6 +140,7 @@ export const VisitorWorldMap = () => {
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
     return saved !== null ? saved === "true" : false;
