@@ -1492,6 +1492,51 @@ export const VisitorWorldMap = () => {
               </SelectContent>
             </Select>
 
+            {/* Source/Referrer Filter */}
+            <Select value={sourceFilter} onValueChange={(value) => setSourceFilter(value as SourceFilter)}>
+              <SelectTrigger className={`w-[155px] h-9 ${sourceFilter === "pinterest" ? "border-[#E60023] bg-[#E60023]/10" : ""}`}>
+                <Target className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Bron" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    Alle bronnen
+                  </div>
+                </SelectItem>
+                <SelectItem value="pinterest">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#E60023" }} />
+                    Pinterest
+                  </div>
+                </SelectItem>
+                <SelectItem value="google">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#4285F4" }} />
+                    Google
+                  </div>
+                </SelectItem>
+                <SelectItem value="social">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1DA1F2" }} />
+                    Social Media
+                  </div>
+                </SelectItem>
+                <SelectItem value="direct">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#6B7280" }} />
+                    Direct
+                  </div>
+                </SelectItem>
+                <SelectItem value="organic">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#10B981" }} />
+                    Organisch
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Map Projection Toggle */}
             <div className="flex items-center gap-2 px-2">
               <Switch
