@@ -376,9 +376,22 @@ export const VisitorWorldMap = () => {
       )
     : activities;
 
-  // Filter activities based on selected activity type
+  // Helper to check if activity matches source filter
+  const matchesSourceFilter = (a: VisitorActivity): boolean => {
+    if (sourceFilter === "all") return true;
+    if (sourceFilter === "pinterest") {
+      return a.referrer_category === "social" && (
+        a.utm_source === "pinterest" || 
+        (!a.utm_source && a.referrer_category === "social") // Pinterest often comes without utm_source
+      );
+    }
+    return a.referrer_category === sourceFilter;
+  };
+
+  // Filter activities based on selected activity type AND source
   const filteredActivities = displayActivities?.filter(a => 
-    activityFilter === "all" || a.activity_type === activityFilter
+    (activityFilter === "all" || a.activity_type === activityFilter) &&
+    matchesSourceFilter(a)
   );
 
   // Subscribe to realtime updates with checkout notifications
