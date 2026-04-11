@@ -31,7 +31,32 @@ interface VisitorActivity {
   city: string | null;
   created_at: string;
   last_seen_at?: string;
+  referrer_category?: string | null;
+  utm_source?: string | null;
 }
+
+type SourceFilter = "all" | "pinterest" | "google" | "social" | "direct" | "organic" | "other";
+
+const SOURCE_COLORS: Record<string, string> = {
+  pinterest: "#E60023",
+  google: "#4285F4",
+  social: "#1DA1F2",
+  direct: "#6B7280",
+  email: "#F59E0B",
+  paid: "#8B5CF6",
+  organic: "#10B981",
+  other: "#6B7280",
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  all: "Alle bronnen",
+  pinterest: "Pinterest",
+  google: "Google",
+  social: "Social Media",
+  direct: "Direct",
+  organic: "Organisch",
+  other: "Overig",
+};
 
 const ACTIVITY_COLORS = {
   browsing: "#ef4444", // red
