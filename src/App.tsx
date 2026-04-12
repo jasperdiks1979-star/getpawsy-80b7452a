@@ -6,7 +6,15 @@ const Sonner = lazy(() => import("@/components/ui/sonner").then((m) => ({ defaul
 const TooltipProvider = lazy(() => import("@/components/ui/tooltip").then((m) => ({ default: m.TooltipProvider })));
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from "react-router-dom";
+
+// Redirect /lp/:slug → /products/:slug (preserves UTM params from Pinterest pins)
+const LpRedirect = () => {
+  const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const search = searchParams.toString();
+  return <Navigate to={`/products/${slug}${search ? `?${search}` : ''}`} replace />;
+};
 import { CartProvider } from "@/contexts/CartContext";
 import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
