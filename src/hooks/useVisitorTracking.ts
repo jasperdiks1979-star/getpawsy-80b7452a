@@ -66,6 +66,12 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Detect Pinterest in-app browser via user agent
+const isPinterestInAppBrowser = (): boolean => {
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('pinterest') || ua.includes('pinterestbot');
+};
+
 // Extract all UTM parameters from URL, with Pinterest auto-detection
 const getUTMParams = (): UTMParams => {
   // First check if we already have UTM params stored
@@ -85,14 +91,17 @@ const getUTMParams = (): UTMParams => {
   // Check for Pinterest-specific parameters
   const hasPinterestParam = params.has('epik') || params.has('pin_id');
   
-  // Auto-detect Pinterest as source if their params are present
+  // Auto-detect Pinterest as source if their params are present OR in-app browser
+  const isPinterestApp = isPinterestInAppBrowser();
+  const isPinterest = hasPinterestParam || isPinterestApp;
+  
   let utm_source = params.get('utm_source');
-  if (!utm_source && hasPinterestParam) {
+  if (!utm_source && isPinterest) {
     utm_source = 'pinterest';
   }
   
-  const utm_medium = params.get('utm_medium') || (hasPinterestParam ? 'social' : null);
-  const utm_campaign = params.get('utm_campaign') || (hasPinterestParam ? 'pinterest_auto' : null);
+  const utm_medium = params.get('utm_medium') || (isPinterest ? 'social' : null);
+  const utm_campaign = params.get('utm_campaign') || (isPinterest ? 'pinterest_auto' : null);
   const utm_term = params.get('utm_term');
   const utm_content = params.get('utm_content');
   
@@ -147,6 +156,11 @@ const getDeviceInfo = (): DeviceInfo => {
 
 // Categorize the referrer source
 const categorizeReferrer = (referrer: string | null, utmParams: UTMParams): ReferrerCategory => {
+  // Pinterest in-app browser detection — overrides "direct" when referrer is stripped
+  if (utmParams.utm_source === 'pinterest' || isPinterestInAppBrowser()) {
+    return "social";
+  }
+
   if (utmParams.utm_medium === 'paid' || utmParams.utm_medium === 'cpc' || utmParams.utm_medium === 'ppc') {
     return "paid";
   }
