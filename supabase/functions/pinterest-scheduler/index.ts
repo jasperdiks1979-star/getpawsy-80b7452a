@@ -59,7 +59,7 @@ function generatePinVariants(product: {
   scheduled_at: string;
 }> {
   const BASE_URL = "https://getpawsy.pet";
-  const utm = `?utm_source=pinterest&utm_medium=organic&utm_campaign=auto_pin&utm_content=${product.slug}`;
+  const utm = `?utm_source=pinterest&utm_medium=social&utm_campaign=auto_pin&utm_content=${product.slug}`;
   const board = detectBoard(product.name, product.category);
   const shortName = product.name.length > 60 ? product.name.slice(0, 57) + "..." : product.name;
   const desc = stripHtml(product.description || "").slice(0, 200);
