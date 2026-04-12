@@ -520,13 +520,14 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // ── OOS exclusion: stock <= 0 means DO NOT export ──
-      const stockRaw = Number.isFinite(p.stock) ? Math.floor(p.stock as number) : 0;
-      if (stockRaw <= 0) {
+      // ── OOS exclusion: ONLY is_active === false means out of stock ──
+      // Stock numbers are informational only (fulfillment model). stock=0/null is NOT OOS.
+      if (p.is_active === false) {
         oosExcludedCount++;
         exclusionReport["oos"] = (exclusionReport["oos"] || 0) + 1;
         continue;
       }
+      const stockRaw = Number.isFinite(p.stock) ? Math.max(1, Math.floor(p.stock as number)) : 1;
 
       // Weight normalization (grams→kg; >1000 assume grams)
       const weightResult = normalizeWeight(p.weight, p.name || "");
