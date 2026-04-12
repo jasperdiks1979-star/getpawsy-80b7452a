@@ -828,8 +828,12 @@ const App = () => {
                               </Suspense>
                             }
                           />
+                          {/* Catch-all: redirect any /lp/:slug to /products/:slug for Pinterest pins */}
                           <Route
-                            path="/why-trust-our-reviews"
+                            path="/lp/:slug"
+                            element={<LpRedirect />}
+                          />
+                          <Route
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <WhyTrustOurReviews />
