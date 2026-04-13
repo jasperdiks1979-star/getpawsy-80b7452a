@@ -76,41 +76,7 @@ class PinterestPageErrorBoundary extends Component<{ children: ReactNode }, Erro
   }
 }
 
-/* ─── Auth Debug (compact) ─── */
-function AuthDebugCard() {
-  const location = useLocation();
-  const { user, isLoading, isAdmin } = useAuth();
-  const authenticated = !!user;
-  const emailMatch = isAdminEmail(user?.email);
-  const adminSource = isAdmin ? (emailMatch ? "email-allowlist" : "db-role") : "none";
-
-  return (
-    <Card className="border border-primary/20 bg-primary/5">
-      <CardContent className="flex flex-wrap items-center gap-3 py-3 text-xs font-mono">
-        {isLoading && <span className="animate-pulse text-muted-foreground">Loading…</span>}
-        <span>path: {location.pathname}</span>
-        <Badge variant={authenticated ? "default" : "destructive"}>
-          {authenticated ? `✅ ${user?.email}` : "❌ Not logged in"}
-        </Badge>
-        {authenticated && (
-          <Badge variant={isAdmin ? "default" : "destructive"}>
-            admin: {String(isAdmin)} ({adminSource})
-          </Badge>
-        )}
-        {!authenticated && (
-          <Button asChild size="sm" variant="outline" className="h-6 text-xs">
-            <Link to={`/auth?next=${encodeURIComponent(location.pathname)}`}>Login</Link>
-          </Button>
-        )}
-        {authenticated && (
-          <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}>
-            Logout
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+/* Auth debug card removed for production compliance */
 
 /* ─── Status badge helper ─── */
 function StatusBadge({ status }: { status: string }) {
