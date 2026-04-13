@@ -81,8 +81,8 @@ function generatePins(product: any, boards: Record<string, string[]>) {
       const hook = hooks[i];
       const board = boardList[pinNum % boardList.length];
       const destUrl = product.slug
-        ? `${BASE_URL}/product/${product.slug}`
-        : `${BASE_URL}/collections/${catKey.replace("_", "-")}`;
+        ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=auto_pin&utm_content=${product.slug}`
+        : `${BASE_URL}/collections/${catKey.replace("_", "-")}?utm_source=pinterest&utm_medium=organic&utm_campaign=auto_pin`;
 
       pins.push({
         product_id: product.id,

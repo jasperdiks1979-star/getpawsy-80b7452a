@@ -4,10 +4,44 @@ import { PINTEREST_API_BASE } from "../_shared/pinterest-config.ts";
 
 const MAX_RETRIES = 3;
 const BATCH_SIZE = 5; // max pins per cron run
-const DELAY_MS = 1500; // 1.5s between posts
+const MIN_DELAY_MS = 2000; // minimum 2s between posts
+const MAX_DELAY_MS = 5000; // maximum 5s between posts
+const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Human-like random delay between posts */
+function randomDelay(): number {
+  return MIN_DELAY_MS + Math.floor(Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS));
+}
+
+/** Exponential backoff delay for retries */
+function backoffDelay(attempt: number): number {
+  return Math.min(1000 * Math.pow(2, attempt), 30000) + Math.floor(Math.random() * 1000);
+}
+
+/** Validate pin payload before sending to Pinterest */
+function validatePinPayload(pin: any): string | null {
+  if (!pin.pin_title || pin.pin_title.length < 3 || pin.pin_title.length > 100) {
+    return `Invalid title length: ${pin.pin_title?.length || 0} (must be 3-100)`;
+  }
+  if (!pin.pin_description || pin.pin_description.length < 10) {
+    return `Description too short: ${pin.pin_description?.length || 0}`;
+  }
+  if (!pin.destination_link || !pin.destination_link.startsWith("https://getpawsy.pet/")) {
+    return `Invalid destination link: ${pin.destination_link}`;
+  }
+  if (!pin.pin_image_url || !pin.pin_image_url.startsWith("https://")) {
+    return `Invalid image URL: ${pin.pin_image_url}`;
+  }
+  // Check for test/placeholder content
+  const lowerTitle = pin.pin_title.toLowerCase();
+  if (["test", "demo", "placeholder", "lorem", "example"].some(w => lowerTitle.includes(w))) {
+    return `Title contains test/placeholder content: ${pin.pin_title}`;
+  }
+  return null;
 }
 
 /**
@@ -186,13 +220,67 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 3. Publish each pin with delay ──
+    // ── 3. Check hourly rate limit ──
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const { count: recentPostCount } = await sb
+      .from("pinterest_pin_queue")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "posted")
+      .gte("posted_at", oneHourAgo);
+    
+    if ((recentPostCount || 0) >= MAX_PINS_PER_HOUR) {
+      console.log(`[cron] Rate limit: ${recentPostCount} pins posted in last hour, skipping`);
+      return new Response(
+        JSON.stringify({ ok: true, message: "Hourly rate limit reached", results: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── 4. Publish each pin with human-like delay ──
     for (let i = 0; i < pins.length; i++) {
       const pin = pins[i];
 
-      // Rate-limit delay between posts (skip before first)
+      // Human-like random delay between posts (skip before first)
       if (i > 0) {
-        await sleep(DELAY_MS);
+        await sleep(randomDelay());
+      }
+
+      // Validate payload before sending
+      const validationError = validatePinPayload(pin);
+      if (validationError) {
+        console.warn(`[cron] Pin ${pin.id} failed validation: ${validationError}`);
+        await sb.from("pinterest_pin_queue").update({
+          status: "failed",
+          error_message: `Validation: ${validationError}`,
+        }).eq("id", pin.id);
+        await sb.from("pinterest_post_logs").insert({
+          pin_queue_id: pin.id,
+          action: "publish",
+          status: "failed",
+          error_message: `Validation: ${validationError}`,
+        });
+        results.push({ pinId: pin.id, status: "failed", error: validationError });
+        continue;
+      }
+
+      // Check for duplicate (same product + variant posted in last 7 days)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { count: dupeCount } = await sb
+        .from("pinterest_pin_queue")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", pin.product_id)
+        .eq("pin_variant", pin.pin_variant)
+        .eq("status", "posted")
+        .gte("posted_at", sevenDaysAgo);
+      
+      if ((dupeCount || 0) > 0) {
+        console.warn(`[cron] Pin ${pin.id} is a duplicate (same product+variant posted within 7 days), skipping`);
+        await sb.from("pinterest_pin_queue").update({
+          status: "failed",
+          error_message: "Duplicate: same product+variant posted within 7 days",
+        }).eq("id", pin.id);
+        results.push({ pinId: pin.id, status: "failed", error: "Duplicate pin" });
+        continue;
       }
 
       try {
