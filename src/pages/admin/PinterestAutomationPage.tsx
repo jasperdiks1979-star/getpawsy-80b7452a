@@ -129,9 +129,7 @@ function ConnectionCard({
           {connection?.last_error && (
             <p className="text-sm text-destructive">Last Pinterest error: {connection.last_error}</p>
           )}
-          <p className="text-sm text-muted-foreground">
-            Voor de goedkeuringsvideo moet deze flow zichtbaar werken: verbinden, terugkomen met Connected en daarna een pin publiceren.
-          </p>
+          
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -542,7 +540,7 @@ export default function PinterestAutomationPage() {
     <PinterestPageErrorBoundary>
       <section className="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
         <h1 className="text-2xl font-bold">Pinterest Automation</h1>
-        <AuthDebugCard />
+        
         <PinterestContent />
       </section>
     </PinterestPageErrorBoundary>
