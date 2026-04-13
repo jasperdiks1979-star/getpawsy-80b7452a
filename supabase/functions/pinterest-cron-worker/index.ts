@@ -220,13 +220,67 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 3. Publish each pin with delay ──
+    // ── 3. Check hourly rate limit ──
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const { count: recentPostCount } = await sb
+      .from("pinterest_pin_queue")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "posted")
+      .gte("posted_at", oneHourAgo);
+    
+    if ((recentPostCount || 0) >= MAX_PINS_PER_HOUR) {
+      console.log(`[cron] Rate limit: ${recentPostCount} pins posted in last hour, skipping`);
+      return new Response(
+        JSON.stringify({ ok: true, message: "Hourly rate limit reached", results: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── 4. Publish each pin with human-like delay ──
     for (let i = 0; i < pins.length; i++) {
       const pin = pins[i];
 
-      // Rate-limit delay between posts (skip before first)
+      // Human-like random delay between posts (skip before first)
       if (i > 0) {
-        await sleep(DELAY_MS);
+        await sleep(randomDelay());
+      }
+
+      // Validate payload before sending
+      const validationError = validatePinPayload(pin);
+      if (validationError) {
+        console.warn(`[cron] Pin ${pin.id} failed validation: ${validationError}`);
+        await sb.from("pinterest_pin_queue").update({
+          status: "failed",
+          error_message: `Validation: ${validationError}`,
+        }).eq("id", pin.id);
+        await sb.from("pinterest_post_logs").insert({
+          pin_queue_id: pin.id,
+          action: "publish",
+          status: "failed",
+          error_message: `Validation: ${validationError}`,
+        });
+        results.push({ pinId: pin.id, status: "failed", error: validationError });
+        continue;
+      }
+
+      // Check for duplicate (same product + variant posted in last 7 days)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { count: dupeCount } = await sb
+        .from("pinterest_pin_queue")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", pin.product_id)
+        .eq("pin_variant", pin.pin_variant)
+        .eq("status", "posted")
+        .gte("posted_at", sevenDaysAgo);
+      
+      if ((dupeCount || 0) > 0) {
+        console.warn(`[cron] Pin ${pin.id} is a duplicate (same product+variant posted within 7 days), skipping`);
+        await sb.from("pinterest_pin_queue").update({
+          status: "failed",
+          error_message: "Duplicate: same product+variant posted within 7 days",
+        }).eq("id", pin.id);
+        results.push({ pinId: pin.id, status: "failed", error: "Duplicate pin" });
+        continue;
       }
 
       try {
