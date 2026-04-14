@@ -91,8 +91,14 @@ const HomePage = () => {
       />
 
       <CuratedProductSection
+        title="Best Cat Trees & Condos"
+        subtitle="Scratching posts, climbing towers & cozy condos for cats"
+        productIds={CAT_TREE_IDS}
+      />
+
+      <CuratedProductSection
         title="Dog Travel & Comfort Essentials"
-        subtitle="Strollers, carriers & elevated beds for dogs"
+        subtitle="Elevated beds, carriers & cooling cots for dogs"
         productIds={DOG_IDS}
       />
 
