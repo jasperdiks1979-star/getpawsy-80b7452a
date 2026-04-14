@@ -18,25 +18,34 @@ import {
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
 
 const CUSTOMER_FAVORITES_IDS = [
-  '133cdc48-0117-40d5-9aaf-1a81131ca9bb',
-  '11758292-6f06-492c-88a7-0acdeb5e417e',
-  '352ddb8f-89f6-41b1-86b8-25af8ab1adb1',
-  '07507c96-a445-431f-9724-340ee01d818f',
-  '08a62345-c1bc-438b-8169-8a49687c1289',
-  '128e0207-8a94-4d71-b428-5b7f5002528f',
+  '128e0207-8a94-4d71-b428-5b7f5002528f', // Self-Cleaning Litter Box
+  '6b8973ab-a651-4e1d-955f-a3984d1b0229', // Cat Tree w/ Litter Box Enclosure
+  '8a7cad9a-edfb-443d-a8c8-dad93a349c66', // Elevated Cooling Dog Bed
+  '4cfa9189-9686-4649-b1bf-53fb7ecaa88f', // Moon & Star Cat Tree
+  '57279fcc-09cb-43a0-84fb-979b32ea6a49', // Memory Foam Pet Bed
+  'd3f8b8c6-5846-4d38-a39e-b89efe3dca7f', // Dog Puzzle Toy
+  '08a62345-c1bc-438b-8169-8a49687c1289', // Cactus Cat Tree
+  'b5f53c36-d5c3-4c87-a182-7ef80d56819a', // Top Entry Litter Box
 ];
 
 const LITTER_BOX_IDS = [
-  '128e0207-8a94-4d71-b428-5b7f5002528f',
-  'fe5ed2d6-0230-4c5a-8313-235a28ef4f21',
-  '1a1302e7-939f-4c94-96b7-d4e0c9d34a37',
-  '501e9150-42e0-42d7-8031-a7225a718558',
+  '128e0207-8a94-4d71-b428-5b7f5002528f', // Self-Cleaning
+  'fe5ed2d6-0230-4c5a-8313-235a28ef4f21', // Enclosed Litter Box
+  '1a1302e7-939f-4c94-96b7-d4e0c9d34a37', // Smart Litter Box
+  '501e9150-42e0-42d7-8031-a7225a718558', // XL Litter Box
+  'b5f53c36-d5c3-4c87-a182-7ef80d56819a', // Top Entry
+  '142bb614-8ed6-4b65-a552-d5e146a8f4a1', // Stainless Litter Box
+  '175ad360-d7ee-40ad-bbdf-b714cb596635', // Dome Covered
+  '71f38863-6b7c-4f23-86a4-7f9d0dbcac8e', // Hooded w/ Lid
 ];
 
 const DOG_IDS = [
-  '0381585e-8b6b-48a8-b541-c7298f99b0c9',
-  '18028997-901a-40b8-8790-9e7b3ec558bf',
-  'c7177ee4-5509-492f-965f-617402968f5c',
+  '0381585e-8b6b-48a8-b541-c7298f99b0c9', // Pet Carrier Backpack
+  'c7177ee4-5509-492f-965f-617402968f5c', // Elevated Cooling Dog Bed
+  'fc17c0f8-8e31-4990-a762-d4a9ee4587e9', // Elevated w/ Canopy
+  'be546356-901f-4a0d-9096-3317da3d313e', // Cooling Dog Bed Mesh
+  '57279fcc-09cb-43a0-84fb-979b32ea6a49', // Memory Foam Pet Bed
+  '84cd536c-9651-485a-aabf-cf7c388cb744', // Orthopedic Round Bed
 ];
 
 const HomePage = () => {
