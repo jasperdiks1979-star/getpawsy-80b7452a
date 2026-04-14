@@ -17,6 +17,15 @@ import {
 
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
 
+const CAT_TREE_IDS = [
+  '42eb633a-5a59-4b27-a512-4291b85fda86', // 102" Floor to Ceiling Cat Tree
+  '6b8973ab-a651-4e1d-955f-a3984d1b0229', // Cat Tree w/ Litter Box Enclosure
+  '4cfa9189-9686-4649-b1bf-53fb7ecaa88f', // Moon & Star Cat Tree
+  '08a62345-c1bc-438b-8169-8a49687c1289', // Cactus Cat Tree
+  '22c97654-a505-489f-bf96-81d4ceb17d71', // Gothic Cat Tree
+  'addf38e5-5190-4a64-bdd4-12a791f8c5fc', // Hanging Cat Tree
+];
+
 const CUSTOMER_FAVORITES_IDS = [
   '128e0207-8a94-4d71-b428-5b7f5002528f', // Self-Cleaning Litter Box
   '6b8973ab-a651-4e1d-955f-a3984d1b0229', // Cat Tree w/ Litter Box Enclosure
