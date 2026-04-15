@@ -29,10 +29,10 @@ export function HeroSection() {
 
       <div className="relative z-10 container px-4 md:px-6 py-16 md:py-28 lg:py-36 text-center">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
-          Premium Pet Products for Dogs &amp; Cats
+          Premium Pet Essentials for Everyday Comfort
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/95 max-w-xl mx-auto drop-shadow font-medium">
-          Fast US Shipping &bull; Secure Checkout &bull; Trusted Quality
+          Carefully Selected Products &bull; Fast US Shipping &bull; Trusted by Pet Owners
         </p>
 
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
