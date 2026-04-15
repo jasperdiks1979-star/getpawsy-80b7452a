@@ -41,10 +41,9 @@ const trustPoints = [
 ];
 
 const transparencyDetails = [
-  { label: 'Business name', value: 'GetPawsy' },
-  { label: 'Location', value: 'Apeldoorn, Netherlands' },
-  { label: 'Registration', value: 'KVK 78156955' },
-  { label: 'VAT ID', value: 'NL003295015B69' },
+  { label: 'Business name', value: 'GetPawsy LLC' },
+  { label: 'Location', value: 'New York, NY · United States' },
+  { label: 'Service area', value: 'All 50 US states' },
   { label: 'Support email', value: SUPPORT_EMAIL },
 ];
 
@@ -99,7 +98,7 @@ export const TrustTransparencySection = () => (
           </h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          GetPawsy is a registered pet supply business serving US customers.
+          GetPawsy LLC is a US-based pet supply company serving customers in all 50 states.
         </p>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           {transparencyDetails.map(({ label, value }) => (
@@ -110,7 +109,7 @@ export const TrustTransparencySection = () => (
           ))}
         </dl>
         <p className="text-sm text-muted-foreground mt-4">
-          Orders are fulfilled by US-based fulfillment partners to ensure reliable delivery across the United States.
+          Orders are fulfilled and shipped from US-based warehouses to ensure fast, reliable delivery.
         </p>
       </div>
     </div>

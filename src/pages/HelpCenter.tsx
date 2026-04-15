@@ -135,8 +135,8 @@ const HelpCenter = () => (
           </p>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div className="flex gap-2">
-              <dt className="text-muted-foreground">Registration:</dt>
-              <dd className="text-foreground font-medium">KVK 78156955</dd>
+              <dt className="text-muted-foreground">Business:</dt>
+              <dd className="text-foreground font-medium">GetPawsy LLC</dd>
             </div>
             <div className="flex gap-2">
               <dt className="text-muted-foreground">Customer support:</dt>

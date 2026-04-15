@@ -101,11 +101,11 @@ export default function ComplianceEvidence() {
     results.push({ name: "HTTPS Enforced", category: "Technical SEO", status: "pass", detail: "Site served over HTTPS" });
 
     // ── C) Business identity ──
-    results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "GetPawsy — visible in footer, /about, /contact" });
+    results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "GetPawsy LLC — visible in footer, /about, /contact" });
     results.push({ name: "Support Email", category: "Business Identity", status: "pass", detail: "support@getpawsy.pet — /contact, footer, and checkout" });
-    results.push({ name: "Business Registration", category: "Business Identity", status: "pass", detail: "KVK 78156955, VAT NL003295015B69 — footer" });
-    results.push({ name: "Physical Location", category: "Business Identity", status: "pass", detail: "Apeldoorn, Gelderland, Netherlands — /about and footer" });
-    results.push({ name: "Customer Service Hours", category: "Business Identity", status: "pass", detail: "Mon–Fri 09:00–17:00 CET, response within 24h" });
+    results.push({ name: "Business Entity", category: "Business Identity", status: "pass", detail: "GetPawsy LLC — footer and contact page" });
+    results.push({ name: "Location", category: "Business Identity", status: "pass", detail: "New York, NY — United States — /about and footer" });
+    results.push({ name: "Customer Service Hours", category: "Business Identity", status: "pass", detail: "Mon–Fri 9:00 AM–5:00 PM ET, response within 24h" });
 
     // ── D) Merchant feed compliance ──
     const idValid = MERCHANT_ID.length === 10 && /^\d+$/.test(MERCHANT_ID);
@@ -252,8 +252,8 @@ export default function ComplianceEvidence() {
           <CardContent className="text-sm space-y-2">
             <p>This auto-generated report provides evidence for Google Merchant Center reconsideration:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Business entity: <strong>GetPawsy</strong> (KVK 78156955, VAT NL003295015B69)</li>
-              <li>Registered address: Apeldoorn, Gelderland, Netherlands</li>
+              <li>Business entity: <strong>GetPawsy LLC</strong> — New York, NY, United States</li>
+              <li>US-based pet supply company serving all 50 states</li>
               <li>All policy pages publicly accessible with consistent business identity</li>
               <li>Prices in USD with transparent checkout (shipping + estimated tax shown before payment)</li>
               <li>Feed: Content API v2.1, validated images, sanitized titles, numeric taxonomy categories</li>
@@ -281,7 +281,7 @@ export default function ComplianceEvidence() {
                 <strong>Verify website ownership</strong> — Go to Settings → Business information → Website. Confirm <code>https://getpawsy.pet</code> is claimed and verified.
               </li>
               <li>
-                <strong>Confirm business information</strong> — Ensure business name is "GetPawsy", and address matches: Apeldoorn, Gelderland, Netherlands.
+                <strong>Confirm business information</strong> — Ensure business name is "GetPawsy LLC", and address matches: New York, NY, United States.
               </li>
               <li>
                 <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (5–10 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.
@@ -311,7 +311,7 @@ export default function ComplianceEvidence() {
             <div className="bg-muted p-4 rounded-lg font-mono text-xs space-y-1 whitespace-pre-wrap">
 {`We have completed a comprehensive compliance review of our store at https://getpawsy.pet to address the policy concerns:
 
-1. BUSINESS TRANSPARENCY: Our business entity (GetPawsy, KVK 78156955, VAT NL003295015B69) is clearly displayed in the footer, /about, and /contact pages. Support email (support@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
+1. BUSINESS TRANSPARENCY: Our business entity (GetPawsy LLC, New York, NY) is clearly displayed in the footer, /about, and /contact pages. Support email (support@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
 
 2. POLICY PAGES: All required pages (/shipping, /returns, /privacy, /terms, /contact, /about) are publicly accessible, contain specific and accurate information, and are linked from the global footer.
 
@@ -346,7 +346,7 @@ Evidence report: https://getpawsy.pet/compliance`}
           <CardContent className="text-sm space-y-2">
             <ol className="list-decimal pl-5 space-y-1">
               <li>Visit each policy page link above — confirm HTTP 200 and content visible</li>
-              <li>Check footer on any page — confirm business name, KVK, VAT, support email present</li>
+              <li>Check footer on any page — confirm business name, location, support email present</li>
               <li>Add a product to cart — confirm price, shipping, and total are clear</li>
               <li>Run <code>curl -sI https://www.getpawsy.pet/ | grep HTTP</code> — confirm 301 redirect to apex</li>
               <li>Visit <code>https://getpawsy.pet/robots.txt</code> and <code>/sitemap.xml</code> — confirm accessible</li>
