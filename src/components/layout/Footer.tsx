@@ -123,9 +123,9 @@ export const Footer = () => {
                 </span>
               </Link>
               <div className="text-sm text-background/60 space-y-1">
+                <p>GetPawsy LLC</p>
                 <p>{BUSINESS_LOCATION}</p>
-                <p>{BUSINESS_REGISTRATION} · VAT: {BUSINESS_VAT_ID}</p>
-                <p className="text-background/40 text-xs mt-1">Online-only business. No physical retail location.</p>
+                <p className="text-xs mt-0.5">Email: {SUPPORT_EMAIL}</p>
               </div>
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
@@ -156,7 +156,7 @@ export const Footer = () => {
               </div>
 
               <p className="text-xs text-background/40 mt-3 leading-relaxed">
-                GetPawsy is a registered pet supply business based in the Netherlands, serving customers in the United States with free shipping on orders over ${FREE_SHIPPING_THRESHOLD}.
+                GetPawsy LLC is a US pet supply company offering free shipping on orders over ${FREE_SHIPPING_THRESHOLD}.
               </p>
 
               {/* Social Links */}

@@ -96,25 +96,25 @@ export const RESPONSE_TIME = 'We typically respond within 24 hours';
 export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET (03:00 – 11:00 AM ET)';
 
 /** Business location */
-export const BUSINESS_LOCATION = 'Apeldoorn, Netherlands';
+export const BUSINESS_LOCATION = 'New York, NY · United States';
 
 /** Business name */
 export const BUSINESS_NAME = 'GetPawsy';
 
 /** Legal operator name */
-export const BUSINESS_OPERATOR = 'GetPawsy';
+export const BUSINESS_OPERATOR = 'GetPawsy LLC';
 
 /** Business registration */
-export const BUSINESS_REGISTRATION = 'KVK 78156955';
+export const BUSINESS_REGISTRATION = 'GetPawsy LLC';
 
 /** Business VAT ID */
-export const BUSINESS_VAT_ID = 'NL003295015B69';
+export const BUSINESS_VAT_ID = '';
 
 /** Service area */
 export const BUSINESS_SERVICE_AREA = 'Serving customers across the United States';
 
 /** Operating country display */
-export const OPERATING_COUNTRY = 'Apeldoorn, Netherlands (serving US customers)';
+export const OPERATING_COUNTRY = 'United States';
 
 // ============= TRUST BADGE MESSAGES =============
 

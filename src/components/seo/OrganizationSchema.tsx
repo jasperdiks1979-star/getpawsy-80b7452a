@@ -12,6 +12,7 @@ export function OrganizationSchema() {
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
     name: 'GetPawsy',
+    legalName: 'GetPawsy LLC',
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
     email: SUPPORT_EMAIL,
@@ -19,10 +20,8 @@ export function OrganizationSchema() {
       '@type': 'Brand',
       name: 'GetPawsy',
     },
-    vatID: 'NL003295015B69',
-    taxID: 'NL003295015B69',
     description:
-      'GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Orders are shipped directly to customers across the United States.',
+      'GetPawsy LLC is a US-based online pet supply store offering high-quality products for dogs and cats. Free shipping on orders over $35 to all 50 states.',
     sameAs: [
       'https://pinterest.com/getpawsy',
       'https://instagram.com/getpawsy',
@@ -33,16 +32,16 @@ export function OrganizationSchema() {
     ],
     address: {
       '@type': 'PostalAddress',
-      addressRegion: 'Gelderland',
-      addressLocality: 'Apeldoorn',
-      postalCode: '7312VG',
-      addressCountry: 'NL',
+      addressLocality: 'New York',
+      addressRegion: 'NY',
+      addressCountry: 'US',
     },
     contactPoint: {
       '@type': 'ContactPoint',
       email: SUPPORT_EMAIL,
       contactType: 'customer service',
       availableLanguage: 'English',
+      areaServed: 'US',
     },
     returnPolicy: {
       '@type': 'MerchantReturnPolicy',
@@ -70,10 +69,9 @@ export function OrganizationSchema() {
     priceRange: '$$',
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Apeldoorn',
-      addressRegion: 'Gelderland',
-      postalCode: '7312VG',
-      addressCountry: 'NL',
+      addressLocality: 'New York',
+      addressRegion: 'NY',
+      addressCountry: 'US',
     },
     sameAs: [
       'https://pinterest.com/getpawsy',

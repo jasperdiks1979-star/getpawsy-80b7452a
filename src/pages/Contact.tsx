@@ -98,15 +98,15 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'Apeldoorn, Netherlands (7312VG)',
-      description: 'We are an online-first brand and do not operate a physical retail store',
+      content: 'New York, NY · United States',
+      description: 'Online pet supply store serving all 50 US states',
       href: null,
     },
     {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday – Friday',
-      description: '09:00 – 17:00 CET',
+      description: '9:00 AM – 5:00 PM ET',
       href: null,
     },
   ];
