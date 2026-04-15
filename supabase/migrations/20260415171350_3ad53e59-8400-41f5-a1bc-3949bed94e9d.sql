@@ -1,0 +1,1 @@
+UPDATE pinterest_pin_queue SET scheduled_at = NOW() - INTERVAL '1 minute', status = 'queued', error_message = NULL, retries = 0 WHERE status IN ('queued', 'failed') AND id IN (SELECT id FROM pinterest_pin_queue WHERE status IN ('queued', 'failed') LIMIT 2);
