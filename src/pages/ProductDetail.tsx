@@ -1283,7 +1283,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Buy Now — Free Shipping Available
+                Add to Cart
               </Button>
 
               {/* Wishlist */}
@@ -1820,8 +1820,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span className="hidden md:inline">Buy Now — Free Shipping</span>
-                <span className="md:hidden">Buy Now</span>
+                Add to Cart
               </Button>
 
               {/* Wishlist Button */}
