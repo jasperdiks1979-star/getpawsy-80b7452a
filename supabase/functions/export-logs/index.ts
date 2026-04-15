@@ -11,9 +11,50 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate user — require admin role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const authSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Check admin role
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
+
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError || !roleData) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -47,18 +88,16 @@ Deno.serve(async (req) => {
       period: "last_24_hours",
       cron_job_logs: cronLogs.data || [],
       frontend_error_logs: frontendErrors.data || [],
-      frontend_error_summary: {},
+      frontend_error_summary: {} as Record<string, number>,
       monitoring_audit_logs: auditLogs.data || [],
       monitoring_alerts: alertLogs.data || [],
     };
 
     // Build summary
-    const summary: Record<string, number> = {};
-    for (const err of (frontendErrors.data || [])) {
+    for (const err of frontendErrors.data || []) {
       const key = `${err.error_type}:${err.component_name}`;
-      summary[key] = (summary[key] || 0) + 1;
+      exportData.frontend_error_summary[key] = (exportData.frontend_error_summary[key] || 0) + 1;
     }
-    exportData.frontend_error_summary = summary;
 
     const json = JSON.stringify(exportData, null, 2);
     const filename = `getpawsy-logs-${new Date().toISOString().split("T")[0]}.json`;
