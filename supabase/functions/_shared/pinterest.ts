@@ -76,5 +76,27 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
     return boardRef;
   }
 
-  throw new Error(`Pinterest board \"${boardRef}\" was not found for the connected account`);
+  // Auto-create the board if it doesn't exist
+  console.log(`[Pinterest] Board "${boardRef}" not found, creating it...`);
+  const createRes = await fetch(`${PINTEREST_API_BASE}/v5/boards`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: boardRef,
+      description: `Curated ${boardRef} by GetPawsy`,
+      privacy: "PUBLIC",
+    }),
+  });
+
+  if (!createRes.ok) {
+    const errText = await createRes.text();
+    throw new Error(`Failed to create board "${boardRef}" (${createRes.status}): ${errText}`);
+  }
+
+  const created = await createRes.json();
+  console.log(`[Pinterest] Board "${boardRef}" created with id ${created.id}`);
+  return String(created.id);
 }
