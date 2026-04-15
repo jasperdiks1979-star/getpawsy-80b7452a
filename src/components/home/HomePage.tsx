@@ -10,6 +10,7 @@ import { HomepageGuideLinks } from "@/components/home/HomepageGuideLinks";
 import { HomepageFAQ } from "@/components/home/HomepageFAQ";
 import { FreeShippingBanner } from "@/components/home/FreeShippingBanner";
 import { StickyMobileCta } from "@/components/home/StickyMobileCta";
+import { ValueProposition } from "@/components/home/ValueProposition";
 import {
   DELIVERY_TIME_STANDARD,
   SITE_LAST_UPDATED,
@@ -18,43 +19,43 @@ import {
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
 
 const CAT_TREE_IDS = [
-  '42eb633a-5a59-4b27-a512-4291b85fda86', // 102" Floor to Ceiling Cat Tree
-  '6b8973ab-a651-4e1d-955f-a3984d1b0229', // Cat Tree w/ Litter Box Enclosure
-  '4cfa9189-9686-4649-b1bf-53fb7ecaa88f', // Moon & Star Cat Tree
-  '08a62345-c1bc-438b-8169-8a49687c1289', // Cactus Cat Tree
-  '22c97654-a505-489f-bf96-81d4ceb17d71', // Gothic Cat Tree
-  'addf38e5-5190-4a64-bdd4-12a791f8c5fc', // Hanging Cat Tree
+  '42eb633a-5a59-4b27-a512-4291b85fda86',
+  '6b8973ab-a651-4e1d-955f-a3984d1b0229',
+  '4cfa9189-9686-4649-b1bf-53fb7ecaa88f',
+  '08a62345-c1bc-438b-8169-8a49687c1289',
+  '22c97654-a505-489f-bf96-81d4ceb17d71',
+  'addf38e5-5190-4a64-bdd4-12a791f8c5fc',
 ];
 
 const CUSTOMER_FAVORITES_IDS = [
-  '128e0207-8a94-4d71-b428-5b7f5002528f', // Self-Cleaning Litter Box
-  '6b8973ab-a651-4e1d-955f-a3984d1b0229', // Cat Tree w/ Litter Box Enclosure
-  '8a7cad9a-edfb-443d-a8c8-dad93a349c66', // Elevated Cooling Dog Bed
-  '4cfa9189-9686-4649-b1bf-53fb7ecaa88f', // Moon & Star Cat Tree
-  '57279fcc-09cb-43a0-84fb-979b32ea6a49', // Memory Foam Pet Bed
-  'd3f8b8c6-5846-4d38-a39e-b89efe3dca7f', // Dog Puzzle Toy
-  '08a62345-c1bc-438b-8169-8a49687c1289', // Cactus Cat Tree
-  'b5f53c36-d5c3-4c87-a182-7ef80d56819a', // Top Entry Litter Box
+  '128e0207-8a94-4d71-b428-5b7f5002528f',
+  '6b8973ab-a651-4e1d-955f-a3984d1b0229',
+  '8a7cad9a-edfb-443d-a8c8-dad93a349c66',
+  '4cfa9189-9686-4649-b1bf-53fb7ecaa88f',
+  '57279fcc-09cb-43a0-84fb-979b32ea6a49',
+  'd3f8b8c6-5846-4d38-a39e-b89efe3dca7f',
+  '08a62345-c1bc-438b-8169-8a49687c1289',
+  'b5f53c36-d5c3-4c87-a182-7ef80d56819a',
 ];
 
 const LITTER_BOX_IDS = [
-  '128e0207-8a94-4d71-b428-5b7f5002528f', // Self-Cleaning
-  'fe5ed2d6-0230-4c5a-8313-235a28ef4f21', // Enclosed Litter Box
-  '1a1302e7-939f-4c94-96b7-d4e0c9d34a37', // Smart Litter Box
-  '501e9150-42e0-42d7-8031-a7225a718558', // XL Litter Box
-  'b5f53c36-d5c3-4c87-a182-7ef80d56819a', // Top Entry
-  '142bb614-8ed6-4b65-a552-d5e146a8f4a1', // Stainless Litter Box
-  '175ad360-d7ee-40ad-bbdf-b714cb596635', // Dome Covered
-  '71f38863-6b7c-4f23-86a4-7f9d0dbcac8e', // Hooded w/ Lid
+  '128e0207-8a94-4d71-b428-5b7f5002528f',
+  'fe5ed2d6-0230-4c5a-8313-235a28ef4f21',
+  '1a1302e7-939f-4c94-96b7-d4e0c9d34a37',
+  '501e9150-42e0-42d7-8031-a7225a718558',
+  'b5f53c36-d5c3-4c87-a182-7ef80d56819a',
+  '142bb614-8ed6-4b65-a552-d5e146a8f4a1',
+  '175ad360-d7ee-40ad-bbdf-b714cb596635',
+  '71f38863-6b7c-4f23-86a4-7f9d0dbcac8e',
 ];
 
 const DOG_IDS = [
-  '0381585e-8b6b-48a8-b541-c7298f99b0c9', // Pet Carrier Backpack
-  'c7177ee4-5509-492f-965f-617402968f5c', // Elevated Cooling Dog Bed
-  'fc17c0f8-8e31-4990-a762-d4a9ee4587e9', // Elevated w/ Canopy
-  'be546356-901f-4a0d-9096-3317da3d313e', // Cooling Dog Bed Mesh
-  '57279fcc-09cb-43a0-84fb-979b32ea6a49', // Memory Foam Pet Bed
-  '84cd536c-9651-485a-aabf-cf7c388cb744', // Orthopedic Round Bed
+  '0381585e-8b6b-48a8-b541-c7298f99b0c9',
+  'c7177ee4-5509-492f-965f-617402968f5c',
+  'fc17c0f8-8e31-4990-a762-d4a9ee4587e9',
+  'be546356-901f-4a0d-9096-3317da3d313e',
+  '57279fcc-09cb-43a0-84fb-979b32ea6a49',
+  '84cd536c-9651-485a-aabf-cf7c388cb744',
 ];
 
 const HomePage = () => {
@@ -63,10 +64,10 @@ const HomePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Pet Products for Dogs & Cats | Fast US Shipping | GetPawsy</title>
+        <title>Premium Pet Essentials | Fast US Shipping | GetPawsy</title>
         <meta
           name="description"
-          content="Shop premium cat trees, litter boxes, dog beds and travel essentials at GetPawsy. Free shipping over $35. 30-day returns. Trusted by US pet owners."
+          content="Shop carefully selected pet essentials at GetPawsy. Cat trees, litter boxes, dog beds & more. Free shipping over $35. 30-day returns. Trusted by US pet owners."
         />
       </Helmet>
 
@@ -76,14 +77,17 @@ const HomePage = () => {
       {/* 2. Category cards */}
       <CategoryEntryCards />
 
-      {/* 3. Customer Favorites — dominant product block */}
+      {/* 3. Why Choose GetPawsy — value proposition */}
+      <ValueProposition />
+
+      {/* 4. Customer Favorites */}
       <CuratedProductSection
-        title="🔥 Most Loved by Pet Owners"
-        subtitle="Top picks — limited availability"
+        title="Most Loved by Pet Owners"
+        subtitle="Top picks chosen for comfort, quality, and everyday use"
         productIds={CUSTOMER_FAVORITES_IDS}
       />
 
-      {/* 4. Category product sections */}
+      {/* 5. Category product sections */}
       <CuratedProductSection
         title="Top Cat Litter Box Solutions"
         subtitle="Self-cleaning, enclosed & furniture-style litter boxes"
@@ -91,46 +95,53 @@ const HomePage = () => {
       />
 
       <CuratedProductSection
-        title="Best Cat Trees & Condos"
+        title="Cat Trees & Condos"
         subtitle="Scratching posts, climbing towers & cozy condos for cats"
         productIds={CAT_TREE_IDS}
       />
 
       <CuratedProductSection
-        title="Dog Travel & Comfort Essentials"
+        title="Dog Comfort & Travel Essentials"
         subtitle="Elevated beds, carriers & cooling cots for dogs"
         productIds={DOG_IDS}
       />
 
-      {/* 5. Free Shipping CTA */}
+      {/* 6. Free Shipping CTA */}
       <FreeShippingBanner />
 
-      {/* 6. Trust badges */}
+      {/* 7. Trust badges */}
       <div className="container px-4 md:px-6">
         <TrustBadgesBlock />
       </div>
 
-      {/* 7. Expert Guides */}
+      {/* 8. Expert Guides */}
       <HomepageGuideLinks />
 
-      {/* 8. Social Proof */}
-      <section className="py-8 md:py-10 bg-muted/30 border-t border-border/30" aria-label="Trust block">
-        <div className="container px-4 md:px-6 max-w-2xl mx-auto text-center">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">
+      {/* 9. Social Proof & Customer Reassurance */}
+      <section className="py-10 md:py-14 bg-muted/30 border-t border-border/30" aria-label="Customer reassurance">
+        <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
             Trusted by Pet Owners Across the US
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Thousands of pet owners trust GetPawsy for quality and reliability — backed by our 30-day return policy.
+          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+            Every order is backed by our 30-day return policy, secure checkout, and dedicated customer support.
+            We respond to every inquiry within 24 hours — because your experience matters as much as your pet's comfort.
           </p>
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">✔ Registered business (KVK 78156955)</span>
+            <span className="inline-flex items-center gap-1.5">✔ Secure payments via Stripe</span>
+            <span className="inline-flex items-center gap-1.5">✔ Real human support</span>
+            <span className="inline-flex items-center gap-1.5">✔ Free shipping on $35+</span>
+          </div>
         </div>
       </section>
 
-      {/* 9. Business Transparency */}
+      {/* 10. Business Transparency */}
       <Suspense fallback={null}>
         <TrustTransparencySection />
       </Suspense>
 
-      {/* 10. FAQ */}
+      {/* 11. FAQ */}
       <HomepageFAQ />
 
       {/* About — compact */}
@@ -140,7 +151,8 @@ const HomePage = () => {
             About GetPawsy
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            GetPawsy is a US-focused pet supply store serving all 50 states with estimated delivery in {DELIVERY_TIME_STANDARD}.
+            GetPawsy is a registered pet supply business serving all 50 US states with estimated delivery in {DELIVERY_TIME_STANDARD}.
+            We carefully select each product for quality, comfort, and everyday practicality.
           </p>
           <p className="text-xs text-muted-foreground/60 mt-3">
             Last updated: {SITE_LAST_UPDATED}
