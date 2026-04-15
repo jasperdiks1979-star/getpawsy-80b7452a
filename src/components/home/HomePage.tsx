@@ -10,7 +10,8 @@ import { HomepageGuideLinks } from "@/components/home/HomepageGuideLinks";
 import { HomepageFAQ } from "@/components/home/HomepageFAQ";
 import { FreeShippingBanner } from "@/components/home/FreeShippingBanner";
 import { StickyMobileCta } from "@/components/home/StickyMobileCta";
-import { ValueProposition } from "@/components/home/ValueProposition";
+import { BenefitsSection } from "@/components/home/BenefitsSection";
+import { HowItWorks } from "@/components/home/HowItWorks";
 import {
   DELIVERY_TIME_STANDARD,
   SITE_LAST_UPDATED,
@@ -64,30 +65,38 @@ const HomePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Premium Pet Essentials | Fast US Shipping | GetPawsy</title>
+        <title>Smart Pet Essentials | Free US Shipping $35+ | GetPawsy</title>
         <meta
           name="description"
-          content="Shop carefully selected pet essentials at GetPawsy. Cat trees, litter boxes, dog beds & more. Free shipping over $35. 30-day returns. Trusted by US pet owners."
+          content="Make pet care easier every day. Smart, practical products for a cleaner home and a happier pet. Free shipping over $35. 30-day returns. Trusted by US pet owners."
         />
       </Helmet>
 
       {/* 1. Hero */}
       <HeroSection />
 
-      {/* 2. Category cards */}
+      {/* 2. Trust badges — immediate reassurance */}
+      <div className="container px-4 md:px-6">
+        <TrustBadgesBlock />
+      </div>
+
+      {/* 3. Benefits — problem-solving messaging */}
+      <BenefitsSection />
+
+      {/* 4. Category cards */}
       <CategoryEntryCards />
 
-      {/* 3. Why Choose GetPawsy — value proposition */}
-      <ValueProposition />
-
-      {/* 4. Customer Favorites */}
+      {/* 5. Customer Favorites */}
       <CuratedProductSection
         title="Most Loved by Pet Owners"
         subtitle="Top picks chosen for comfort, quality, and everyday use"
         productIds={CUSTOMER_FAVORITES_IDS}
       />
 
-      {/* 5. Category product sections */}
+      {/* 6. How It Works */}
+      <HowItWorks />
+
+      {/* 7. Category product sections */}
       <CuratedProductSection
         title="Top Cat Litter Box Solutions"
         subtitle="Self-cleaning, enclosed & furniture-style litter boxes"
@@ -106,18 +115,13 @@ const HomePage = () => {
         productIds={DOG_IDS}
       />
 
-      {/* 6. Free Shipping CTA */}
+      {/* 8. Free Shipping CTA */}
       <FreeShippingBanner />
 
-      {/* 7. Trust badges */}
-      <div className="container px-4 md:px-6">
-        <TrustBadgesBlock />
-      </div>
-
-      {/* 8. Expert Guides */}
+      {/* 9. Expert Guides */}
       <HomepageGuideLinks />
 
-      {/* 9. Social Proof & Customer Reassurance */}
+      {/* 10. Social Proof */}
       <section className="py-10 md:py-14 bg-muted/30 border-t border-border/30" aria-label="Customer reassurance">
         <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
@@ -136,12 +140,12 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* 10. Business Transparency */}
+      {/* 11. Business Transparency */}
       <Suspense fallback={null}>
         <TrustTransparencySection />
       </Suspense>
 
-      {/* 11. FAQ */}
+      {/* 12. FAQ */}
       <HomepageFAQ />
 
       {/* About — compact */}
