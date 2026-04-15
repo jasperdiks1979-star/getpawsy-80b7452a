@@ -5,6 +5,19 @@ type PinterestBoard = {
   name?: string | null;
 };
 
+function normalizeBoardName(value: string): string {
+  return value
+    .normalize("NFKC")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/&/g, "and")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[]> {
   const boards: PinterestBoard[] = [];
   let bookmark: string | null = null;
@@ -12,6 +25,7 @@ async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[
   for (let page = 0; page < 5; page++) {
     const url = new URL(`${PINTEREST_API_BASE}/v5/boards`);
     url.searchParams.set("page_size", "250");
+    url.searchParams.set("privacy", "ALL");
     if (bookmark) url.searchParams.set("bookmark", bookmark);
 
     const response = await fetch(url, {
@@ -49,35 +63,40 @@ async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[
 }
 
 export async function resolvePinterestBoardId(accessToken: string, boardRef: string): Promise<string> {
-  const normalizedBoardRef = boardRef.trim().toLowerCase();
+  const trimmedBoardRef = boardRef.trim();
+  const normalizedBoardRef = normalizeBoardName(trimmedBoardRef);
 
   if (!normalizedBoardRef) {
     throw new Error("Missing Pinterest board reference");
   }
 
-  const boards = await listPinterestBoards(accessToken);
+  const findBoardId = (boards: PinterestBoard[]): string | null => {
+    const exactMatch = boards.find((board) => {
+      const boardName = typeof board.name === "string" ? normalizeBoardName(board.name) : "";
+      return board.id === trimmedBoardRef || boardName === normalizedBoardRef;
+    });
+    if (exactMatch?.id) return exactMatch.id;
 
-  const exactMatch = boards.find((board) => (
-    board.id === boardRef ||
-    board.name?.trim().toLowerCase() === normalizedBoardRef
-  ));
-  if (exactMatch?.id) return exactMatch.id;
+    const partialMatch = boards.find((board) => {
+      const boardName = typeof board.name === "string" ? normalizeBoardName(board.name) : "";
+      return Boolean(boardName) && (
+        boardName.includes(normalizedBoardRef) ||
+        normalizedBoardRef.includes(boardName)
+      );
+    });
+    return partialMatch?.id ?? null;
+  };
 
-  const partialMatch = boards.find((board) => {
-    const boardName = board.name?.trim().toLowerCase();
-    return Boolean(boardName) && (
-      boardName?.includes(normalizedBoardRef) ||
-      normalizedBoardRef.includes(boardName as string)
-    );
-  });
-  if (partialMatch?.id) return partialMatch.id;
+  const initialBoards = await listPinterestBoards(accessToken);
+  const existingBoardId = findBoardId(initialBoards);
+  if (existingBoardId) return existingBoardId;
 
-  if (!boardRef.includes(" ")) {
-    return boardRef;
+  if (!trimmedBoardRef.includes(" ")) {
+    return trimmedBoardRef;
   }
 
   // Auto-create the board if it doesn't exist
-  console.log(`[Pinterest] Board "${boardRef}" not found, creating it...`);
+  console.log(`[Pinterest] Board "${trimmedBoardRef}" not found, creating it...`);
   const createRes = await fetch(`${PINTEREST_API_BASE}/v5/boards`, {
     method: "POST",
     headers: {
@@ -85,18 +104,28 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      name: boardRef,
-      description: `Curated ${boardRef} by GetPawsy`,
+      name: trimmedBoardRef,
+      description: `Curated ${trimmedBoardRef} by GetPawsy`,
       privacy: "PUBLIC",
     }),
   });
 
   if (!createRes.ok) {
     const errText = await createRes.text();
-    throw new Error(`Failed to create board "${boardRef}" (${createRes.status}): ${errText}`);
+
+    if (createRes.status === 400 && errText.includes('"code":58')) {
+      const refreshedBoards = await listPinterestBoards(accessToken);
+      const recoveredBoardId = findBoardId(refreshedBoards);
+      if (recoveredBoardId) {
+        console.log(`[Pinterest] Reused existing board "${trimmedBoardRef}" with id ${recoveredBoardId} after duplicate-name response`);
+        return recoveredBoardId;
+      }
+    }
+
+    throw new Error(`Failed to create board "${trimmedBoardRef}" (${createRes.status}): ${errText}`);
   }
 
   const created = await createRes.json();
-  console.log(`[Pinterest] Board "${boardRef}" created with id ${created.id}`);
+  console.log(`[Pinterest] Board "${trimmedBoardRef}" created with id ${created.id}`);
   return String(created.id);
 }
