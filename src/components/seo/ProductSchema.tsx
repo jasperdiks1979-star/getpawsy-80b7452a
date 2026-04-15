@@ -130,7 +130,7 @@ export function ProductSchema({
       '@type': 'Brand',
       name: 'GetPawsy',
     },
-    category: product.google_product_category || product.category || 'Pet Supplies',
+    // category is conveyed via additionalProperty and OG meta — not a valid schema.org Product field
     ...(product.product_type ? {
       additionalProperty: [{
         '@type': 'PropertyValue',
