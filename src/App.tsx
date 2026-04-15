@@ -439,8 +439,8 @@ const TrainingLandingPage = lazyWithRetry(() => import("./pages/landing/Training
 const PinterestLandingPage = lazyWithRetry(() => import("./pages/landing/PinterestLandingPage"));
 const CatLitterBoxLanding = lazyWithRetry(() => import("./pages/landing/CatLitterBoxLanding"));
 const SelfCleaningLitterBoxLanding = lazyWithRetry(() => import("./pages/landing/SelfCleaningLitterBoxLanding"));
+const LitterBoxFunnel = lazyWithRetry(() => import("./pages/landing/LitterBoxFunnel"));
 
-// Generic SEO pages — wrapper components that pass namespace prop
 // Generic SEO pages — lazy-loaded wrapper components
 const DogPillarPage = lazyWithRetry(() =>
   import("./pages/seo/SeoPageWrappers").then((m) => ({ default: m.DogPillarPage })),
