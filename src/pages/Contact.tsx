@@ -98,15 +98,15 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'New York, NY · United States',
-      description: 'Online pet supply store serving all 50 US states',
+      content: 'Apeldoorn, Netherlands',
+      description: 'Online pet supply store shipping to the United States',
       href: null,
     },
     {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday – Friday',
-      description: '9:00 AM – 5:00 PM ET',
+      description: '09:00 – 17:00 CET',
       href: null,
     },
   ];
@@ -309,10 +309,13 @@ const Contact = () => {
                     <h3 className="font-semibold text-foreground mb-2">Business Information</h3>
                     <div className="space-y-1.5 text-sm">
                       <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">Legal name:</span> GetPawsy
+                        <span className="text-foreground font-medium">Legal name:</span> Skidzo
                       </p>
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">Trading as:</span> GetPawsy
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">Address:</span> De Haasstraat 11, 7312VG Apeldoorn
                       </p>
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">KVK:</span> 78156955
@@ -322,7 +325,7 @@ const Contact = () => {
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">
-                      GetPawsy is fully responsible for all orders, payments, shipping, and customer service.
+                      Skidzo (trading as GetPawsy) is fully responsible for all orders, payments, shipping, and customer service.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 italic">
                       GetPawsy is an independent online store focused on quality pet products for dogs and cats.

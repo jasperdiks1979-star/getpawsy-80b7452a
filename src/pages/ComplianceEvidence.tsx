@@ -101,11 +101,11 @@ export default function ComplianceEvidence() {
     results.push({ name: "HTTPS Enforced", category: "Technical SEO", status: "pass", detail: "Site served over HTTPS" });
 
     // ── C) Business identity ──
-    results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "GetPawsy LLC — visible in footer, /about, /contact" });
+    results.push({ name: "Business Name", category: "Business Identity", status: "pass", detail: "Skidzo (trading as GetPawsy) — visible in footer, /about, /contact" });
     results.push({ name: "Support Email", category: "Business Identity", status: "pass", detail: "support@getpawsy.pet — /contact, footer, and checkout" });
-    results.push({ name: "Business Entity", category: "Business Identity", status: "pass", detail: "GetPawsy LLC — footer and contact page" });
-    results.push({ name: "Location", category: "Business Identity", status: "pass", detail: "New York, NY — United States — /about and footer" });
-    results.push({ name: "Customer Service Hours", category: "Business Identity", status: "pass", detail: "Mon–Fri 9:00 AM–5:00 PM ET, response within 24h" });
+    results.push({ name: "Business Entity", category: "Business Identity", status: "pass", detail: "Skidzo · KVK 78156955 — footer and contact page" });
+    results.push({ name: "Location", category: "Business Identity", status: "pass", detail: "De Haasstraat 11, 7312VG Apeldoorn, Netherlands" });
+    results.push({ name: "Customer Service Hours", category: "Business Identity", status: "pass", detail: "Mon–Fri 09:00–17:00 CET, response within 24h" });
 
     // ── D) Merchant feed compliance ──
     const idValid = MERCHANT_ID.length === 10 && /^\d+$/.test(MERCHANT_ID);
@@ -252,8 +252,8 @@ export default function ComplianceEvidence() {
           <CardContent className="text-sm space-y-2">
             <p>This auto-generated report provides evidence for Google Merchant Center reconsideration:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Business entity: <strong>GetPawsy LLC</strong> — New York, NY, United States</li>
-              <li>US-based pet supply company serving all 50 states</li>
+              <li>Business entity: <strong>Skidzo</strong> (trading as GetPawsy) — Apeldoorn, Netherlands · KVK 78156955</li>
+              <li>Online pet supply store shipping to the United States</li>
               <li>All policy pages publicly accessible with consistent business identity</li>
               <li>Prices in USD with transparent checkout (shipping + estimated tax shown before payment)</li>
               <li>Feed: Content API v2.1, validated images, sanitized titles, numeric taxonomy categories</li>
@@ -281,7 +281,7 @@ export default function ComplianceEvidence() {
                 <strong>Verify website ownership</strong> — Go to Settings → Business information → Website. Confirm <code>https://getpawsy.pet</code> is claimed and verified.
               </li>
               <li>
-                <strong>Confirm business information</strong> — Ensure business name is "GetPawsy LLC", and address matches: New York, NY, United States.
+                <strong>Confirm business information</strong> — Ensure business name is "Skidzo", and address matches: De Haasstraat 11, 7312VG Apeldoorn, Netherlands.
               </li>
               <li>
                 <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (5–10 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.

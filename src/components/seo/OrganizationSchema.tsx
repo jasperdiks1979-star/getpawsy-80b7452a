@@ -12,7 +12,7 @@ export function OrganizationSchema() {
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
     name: 'GetPawsy',
-    legalName: 'GetPawsy LLC',
+    legalName: 'Skidzo',
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
     email: SUPPORT_EMAIL,
@@ -21,7 +21,7 @@ export function OrganizationSchema() {
       name: 'GetPawsy',
     },
     description:
-      'GetPawsy LLC is a US-based online pet supply store offering high-quality products for dogs and cats. Free shipping on orders over $35 to all 50 states.',
+      'GetPawsy is an online pet supply store offering high-quality products for dogs and cats. Free shipping on orders over $35 to the United States.',
     sameAs: [
       'https://pinterest.com/getpawsy',
       'https://instagram.com/getpawsy',
@@ -32,9 +32,11 @@ export function OrganizationSchema() {
     ],
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'New York',
-      addressRegion: 'NY',
-      addressCountry: 'US',
+      streetAddress: 'De Haasstraat 11',
+      addressLocality: 'Apeldoorn',
+      addressRegion: 'Gelderland',
+      postalCode: '7312VG',
+      addressCountry: 'NL',
     },
     contactPoint: {
       '@type': 'ContactPoint',
@@ -69,9 +71,11 @@ export function OrganizationSchema() {
     priceRange: '$$',
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'New York',
-      addressRegion: 'NY',
-      addressCountry: 'US',
+      streetAddress: 'De Haasstraat 11',
+      addressLocality: 'Apeldoorn',
+      addressRegion: 'Gelderland',
+      postalCode: '7312VG',
+      addressCountry: 'NL',
     },
     sameAs: [
       'https://pinterest.com/getpawsy',

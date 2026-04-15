@@ -131,12 +131,12 @@ const HelpCenter = () => (
             </h2>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            GetPawsy is a registered pet supply business.
+            GetPawsy is operated by Skidzo, a registered business in the Netherlands.
           </p>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div className="flex gap-2">
               <dt className="text-muted-foreground">Business:</dt>
-              <dd className="text-foreground font-medium">GetPawsy LLC</dd>
+              <dd className="text-foreground font-medium">Skidzo (KVK 78156955)</dd>
             </div>
             <div className="flex gap-2">
               <dt className="text-muted-foreground">Customer support:</dt>
