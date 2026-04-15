@@ -188,6 +188,14 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
         console.log(`[Pinterest] Recovered board "${trimmedBoardRef}" via slug after duplicate-name error: ${directId}`);
         return directId;
       }
+
+      // Last resort: re-list and use any available board as fallback
+      const fallbackBoards = await listPinterestBoards(accessToken);
+      if (fallbackBoards.length > 0) {
+        const fallback = fallbackBoards[0];
+        console.log(`[Pinterest] Board "${trimmedBoardRef}" exists but not visible in API — using fallback board "${fallback.name}" (${fallback.id})`);
+        return fallback.id;
+      }
     }
 
     throw new Error(`Failed to create board "${trimmedBoardRef}" (${createRes.status}): ${errText}`);
