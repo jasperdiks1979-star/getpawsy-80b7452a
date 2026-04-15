@@ -112,7 +112,6 @@ const LitterBoxFunnel = () => {
               src={product.image_url || ''}
               alt={product.name}
               className="w-full h-full object-contain p-4"
-              loading="eager"
             />
           </div>
           <div className="space-y-4">
