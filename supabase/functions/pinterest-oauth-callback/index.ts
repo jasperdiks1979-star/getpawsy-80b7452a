@@ -78,7 +78,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const tokenRes = await fetch("https://api.pinterest.com/v5/oauth/token", {
+    // Use sandbox API for token exchange when in sandbox mode
+    const { PINTEREST_API_BASE } = await import("../_shared/pinterest-config.ts");
+    const tokenRes = await fetch(`${PINTEREST_API_BASE}/v5/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -109,7 +111,7 @@ Deno.serve(async (req) => {
     let accountName = "Pinterest Account";
     let accountId = "";
     try {
-      const userRes = await fetch("https://api.pinterest.com/v5/user_account", {
+      const userRes = await fetch(`${PINTEREST_API_BASE}/v5/user_account`, {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
       });
       if (userRes.ok) {
