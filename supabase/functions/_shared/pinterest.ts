@@ -86,15 +86,20 @@ function boardNameToSlug(name: string): string {
  * This works even when the list endpoint returns 0 boards (sandbox quirk).
  */
 async function tryGetBoardBySlug(accessToken: string, boardName: string): Promise<string | null> {
-  // First get the authenticated user's username
   try {
     const userRes = await fetch(`${PINTEREST_API_BASE}/v5/user_account`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!userRes.ok) return null;
+    if (!userRes.ok) {
+      console.warn(`[Pinterest] user_account call failed: ${userRes.status}`);
+      return null;
+    }
     const userData = await userRes.json();
     const username = userData.username;
-    if (!username) return null;
+    if (!username) {
+      console.warn(`[Pinterest] No username in user_account response:`, JSON.stringify(userData));
+      return null;
+    }
 
     const slug = boardNameToSlug(boardName);
     const boardPath = `${username}/${slug}`;
@@ -103,7 +108,11 @@ async function tryGetBoardBySlug(accessToken: string, boardName: string): Promis
     const boardRes = await fetch(`${PINTEREST_API_BASE}/v5/boards/${boardPath}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!boardRes.ok) return null;
+    if (!boardRes.ok) {
+      const errText = await boardRes.text();
+      console.warn(`[Pinterest] Direct board GET failed (${boardRes.status}): ${errText}`);
+      return null;
+    }
     const boardData = await boardRes.json();
     if (boardData?.id) {
       console.log(`[Pinterest] Found board "${boardName}" via direct lookup: ${boardData.id}`);
