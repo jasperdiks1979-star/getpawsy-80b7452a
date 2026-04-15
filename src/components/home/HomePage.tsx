@@ -51,8 +51,6 @@ const HomePage = () => {
         title="Popular Picks for Pet Owners"
         subtitle="Our most-loved products, chosen for comfort and everyday use"
         productIds={FEATURED_IDS}
-        ctaLink="/products"
-        ctaLabel="View All Products"
       />
 
       {/* 4. Social Proof */}
