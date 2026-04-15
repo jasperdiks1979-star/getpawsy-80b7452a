@@ -56,7 +56,7 @@ export const DELIVERY_DISCLAIMER = 'Delivery times may vary depending on locatio
 export const PROCESSING_TIME = '1–2 business days';
 
 /** Sitewide trust freshness timestamp */
-export const SITE_LAST_UPDATED = 'March 30, 2026';
+export const SITE_LAST_UPDATED = 'April 15, 2026';
 
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
 export const US_FULFILLMENT_NOTE = 'Orders ship directly to customers across the United States';
