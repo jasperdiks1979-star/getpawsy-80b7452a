@@ -829,6 +829,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/offer/litter-box"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <LitterBoxFunnel />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/lp/self-cleaning-litter-box"
                             element={
                               <Suspense fallback={<RouteLoader />}>
