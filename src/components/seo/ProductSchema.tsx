@@ -284,9 +284,7 @@ export function ProductSchema({
       <meta name="twitter:description" content={metaDescription} />
       <meta name="twitter:image" content={primaryImage} />
 
-      {/* Robots — ALL products must be indexable for Google Merchant Center compliance */}
-      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-      <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+      {/* Robots managed by parent page (ProductDetail) to support per-tier noindex */}
 
       {/* JSON-LD Structured Data */}
       <script type="application/ld+json">
