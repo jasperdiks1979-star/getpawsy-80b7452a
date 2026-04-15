@@ -29,7 +29,7 @@ const VALUE_POINTS = [
   {
     icon: Star,
     title: 'Built for Pet Owners',
-    desc: 'We're pet owners too. Every product solves a real problem — cleaner homes, happier pets, easier routines.',
+    desc: "We're pet owners too. Every product solves a real problem — cleaner homes, happier pets, easier routines.",
   },
 ] as const;
 
