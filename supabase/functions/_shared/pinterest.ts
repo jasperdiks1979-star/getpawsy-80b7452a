@@ -144,8 +144,8 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
   const existingBoardId = findBoardId(initialBoards);
   if (existingBoardId) return existingBoardId;
 
-  // If list returned 0 boards, try direct slug lookup (sandbox API quirk)
-  if (initialBoards.length === 0 && trimmedBoardRef.includes(" ")) {
+  // Try direct slug lookup — list API may not return all boards (sandbox quirk)
+  if (trimmedBoardRef.includes(" ")) {
     const directId = await tryGetBoardBySlug(accessToken, trimmedBoardRef);
     if (directId) return directId;
   }
