@@ -9,7 +9,7 @@ const BENEFITS = [
   {
     icon: Heart,
     title: 'More Comfort for Your Pet',
-    desc: 'Every product is chosen for safety, durability, and your pet's everyday comfort.',
+    desc: 'Every product is chosen for safety, durability, and your pet\u0027s everyday comfort.',
   },
   {
     icon: Clock,
