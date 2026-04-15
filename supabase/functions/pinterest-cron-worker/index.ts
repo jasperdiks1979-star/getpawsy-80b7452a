@@ -61,7 +61,7 @@ async function refreshPinterestToken(
   }
 
   try {
-    const res = await fetch("https://api.pinterest.com/v5/oauth/token", {
+    const res = await fetch(`${PINTEREST_API_BASE}/v5/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
