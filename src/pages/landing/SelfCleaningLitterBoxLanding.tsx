@@ -158,8 +158,7 @@ export default function SelfCleaningLitterBoxLanding() {
         <div className="px-4 mb-4">
           <div className="max-w-xl mx-auto rounded-xl border border-border/40 bg-card/80 p-3 text-xs text-muted-foreground">
             <p><span className="font-medium text-foreground">Last updated:</span> {SITE_LAST_UPDATED}</p>
-            <p className="mt-1"><span className="font-medium text-foreground">Business:</span> GetPawsy · {BUSINESS_OPERATOR} · {BUSINESS_LOCATION}</p>
-            <p className="mt-1">{BUSINESS_REGISTRATION} · {BUSINESS_VAT_ID}</p>
+            <p className="mt-1"><span className="font-medium text-foreground">Business:</span> {BUSINESS_OPERATOR} · {BUSINESS_LOCATION}</p>
           </div>
         </div>
 
