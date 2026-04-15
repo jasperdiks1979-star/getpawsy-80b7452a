@@ -15,7 +15,10 @@ export function OrganizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
     email: SUPPORT_EMAIL,
-    brand: 'GetPawsy',
+    brand: {
+      '@type': 'Brand',
+      name: 'GetPawsy',
+    },
     vatID: 'NL003295015B69',
     taxID: 'NL003295015B69',
     description:
