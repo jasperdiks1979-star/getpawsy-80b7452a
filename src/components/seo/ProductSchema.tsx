@@ -163,14 +163,16 @@ export function ProductSchema({
         returnFees: 'https://schema.org/ReturnShippingFees',
         refundType: 'https://schema.org/FullRefund',
       },
-      // NOTE: Shipping rate in schema is per-item estimate; actual shipping is order-threshold based
-      // ($0 for orders >= $35, $5.99 for orders < $35) configured in Merchant Center settings.
-      // We omit shippingRate here to avoid mismatch with order-level logic.
       shippingDetails: {
         '@type': 'OfferShippingDetails',
         shippingDestination: {
           '@type': 'DefinedRegion',
           addressCountry: 'US',
+        },
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: canonicalSchemaPrice >= 35 ? '0.00' : '5.99',
+          currency: 'USD',
         },
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',
