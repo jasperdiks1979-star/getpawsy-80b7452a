@@ -1,0 +1,1 @@
+UPDATE pinterest_pin_queue SET status = 'draft', error_message = NULL, retries = 0 WHERE status = 'failed';
