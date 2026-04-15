@@ -4,10 +4,41 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // 1x1 transparent GIF
 const TRACKING_PIXEL = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), c => c.charCodeAt(0));
 
+// Allowed redirect domains
+const ALLOWED_REDIRECT_DOMAINS = [
+  "getpawsy.pet",
+  "www.getpawsy.pet",
+  "getpawsy.lovable.app",
+];
+
+function isAllowedRedirectUrl(rawUrl: string): boolean {
+  try {
+    const decoded = decodeURIComponent(rawUrl);
+    const parsed = new URL(decoded);
+    return ALLOWED_REDIRECT_DOMAINS.includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function safeRedirectOrFallback(linkUrl: string | null): Response {
+  if (linkUrl && isAllowedRedirectUrl(linkUrl)) {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: decodeURIComponent(linkUrl) },
+    });
+  }
+  // Fallback to homepage if URL is invalid or not allowed
+  return new Response(null, {
+    status: 302,
+    headers: { Location: "https://getpawsy.pet" },
+  });
+}
+
 // Simple in-memory rate limiting (per-IP tracking)
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per hour per IP
+const RATE_LIMIT_MAX_REQUESTS = 100;
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
@@ -26,7 +57,6 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// Cleanup old rate limit entries periodically
 function cleanupRateLimits() {
   const now = Date.now();
   for (const [ip, record] of rateLimitMap.entries()) {
@@ -36,7 +66,7 @@ function cleanupRateLimits() {
   }
 }
 
-// HMAC signature verification
+// HMAC signature verification — now includes linkUrl in the signed payload
 async function verifySignature(
   campaignId: string,
   email: string,
@@ -66,8 +96,14 @@ async function verifySignature(
   return signature === expectedSignature;
 }
 
+const PIXEL_HEADERS = {
+  "Content-Type": "image/gif",
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  "Pragma": "no-cache",
+  "Expires": "0",
+};
+
 const handler = async (req: Request): Promise<Response> => {
-  // Cleanup old rate limit entries
   cleanupRateLimits();
   
   const url = new URL(req.url);
@@ -75,55 +111,41 @@ const handler = async (req: Request): Promise<Response> => {
   const email = url.searchParams.get("e");
   const eventType = url.searchParams.get("t") || "open";
   const linkUrl = url.searchParams.get("url");
-  const signature = url.searchParams.get("s"); // HMAC signature
+  const signature = url.searchParams.get("s");
 
-  // Get IP for rate limiting
   const forwardedFor = req.headers.get("x-forwarded-for");
   const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
 
-  // Rate limit check - silent fail with valid response
+  // Rate limit check
   if (!checkRateLimit(ip)) {
     console.log(`Rate limit exceeded for IP: ${ip}`);
-    if (eventType === "click" && linkUrl) {
-      return new Response(null, {
-        status: 302,
-        headers: { Location: decodeURIComponent(linkUrl) },
-      });
+    if (eventType === "click") {
+      return safeRedirectOrFallback(linkUrl);
     }
-    return new Response(TRACKING_PIXEL, {
-      headers: {
-        "Content-Type": "image/gif",
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-      },
-    });
+    return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
   }
 
   if (!campaignId || !email) {
-    // Return pixel anyway to not break email
     if (eventType === "open") {
-      return new Response(TRACKING_PIXEL, {
-        headers: {
-          "Content-Type": "image/gif",
-          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0",
-        },
-      });
+      return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
     }
     return new Response("Missing parameters", { status: 400 });
   }
 
-  // Validate event type
   if (!["open", "click"].includes(eventType)) {
-    if (eventType === "open") {
-      return new Response(TRACKING_PIXEL, {
-        headers: { "Content-Type": "image/gif" },
-      });
-    }
-    return new Response("Invalid event type", { status: 400 });
+    return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
   }
 
-  // Verify HMAC signature if present
+  // Validate redirect URL BEFORE any processing
+  if (eventType === "click" && linkUrl && !isAllowedRedirectUrl(linkUrl)) {
+    console.log(`Blocked disallowed redirect URL: ${linkUrl}`);
+    return new Response(null, {
+      status: 302,
+      headers: { Location: "https://getpawsy.pet" },
+    });
+  }
+
+  // Verify HMAC signature if secret is configured
   const trackingSecret = Deno.env.get("TRACKING_HMAC_SECRET");
   if (trackingSecret && signature) {
     const decodedEmail = decodeURIComponent(email);
@@ -131,16 +153,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (!isValid) {
       console.log(`Invalid signature for campaign ${campaignId}, email ${decodedEmail}`);
-      // Silent fail - return valid response but don't record
-      if (eventType === "click" && linkUrl) {
-        return new Response(null, {
-          status: 302,
-          headers: { Location: decodeURIComponent(linkUrl) },
-        });
+      if (eventType === "click") {
+        return safeRedirectOrFallback(linkUrl);
       }
-      return new Response(TRACKING_PIXEL, {
-        headers: { "Content-Type": "image/gif" },
-      });
+      return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
     }
   }
 
@@ -152,10 +168,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const userAgent = req.headers.get("user-agent") || undefined;
     const ipAddress = ip !== "unknown" ? ip : undefined;
-
     const decodedEmail = decodeURIComponent(email);
 
-    // Validate campaign exists before inserting
+    // Validate campaign exists
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from("email_campaigns")
       .select("id, open_count, click_count, unique_opens, unique_clicks")
@@ -164,19 +179,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (campaignError || !campaign) {
       console.log(`Invalid campaign ID: ${campaignId}`);
-      // Silent fail with valid response
-      if (eventType === "click" && linkUrl) {
-        return new Response(null, {
-          status: 302,
-          headers: { Location: decodeURIComponent(linkUrl) },
-        });
+      if (eventType === "click") {
+        return safeRedirectOrFallback(linkUrl);
       }
-      return new Response(TRACKING_PIXEL, {
-        headers: { "Content-Type": "image/gif" },
-      });
+      return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
     }
 
-    // Check for duplicate events (same IP + user-agent within 1 minute)
+    // Deduplicate
     const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
     const { data: recentEvents } = await supabaseAdmin
       .from("email_campaign_events")
@@ -190,20 +199,13 @@ const handler = async (req: Request): Promise<Response> => {
       .limit(1);
 
     if (recentEvents && recentEvents.length > 0) {
-      console.log(`Duplicate event detected for ${decodedEmail} in campaign ${campaignId}`);
-      // Still return valid response but skip recording
-      if (eventType === "click" && linkUrl) {
-        return new Response(null, {
-          status: 302,
-          headers: { Location: decodeURIComponent(linkUrl) },
-        });
+      if (eventType === "click") {
+        return safeRedirectOrFallback(linkUrl);
       }
-      return new Response(TRACKING_PIXEL, {
-        headers: { "Content-Type": "image/gif" },
-      });
+      return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
     }
 
-    // Check if this is a unique event for this email/campaign
+    // Check uniqueness
     const { data: existingEvents } = await supabaseAdmin
       .from("email_campaign_events")
       .select("id")
@@ -243,39 +245,17 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", campaignId);
     }
 
-    // For click events, redirect to the actual URL
-    if (eventType === "click" && linkUrl) {
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: decodeURIComponent(linkUrl),
-        },
-      });
+    if (eventType === "click") {
+      return safeRedirectOrFallback(linkUrl);
     }
 
-    // For open events, return tracking pixel
-    return new Response(TRACKING_PIXEL, {
-      headers: {
-        "Content-Type": "image/gif",
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
-      },
-    });
+    return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
   } catch (error) {
     console.error("Error tracking event:", error);
-    
-    // Still return pixel/redirect to not break user experience
-    if (eventType === "click" && linkUrl) {
-      return new Response(null, {
-        status: 302,
-        headers: { Location: decodeURIComponent(linkUrl) },
-      });
+    if (eventType === "click") {
+      return safeRedirectOrFallback(linkUrl);
     }
-    
-    return new Response(TRACKING_PIXEL, {
-      headers: { "Content-Type": "image/gif" },
-    });
+    return new Response(TRACKING_PIXEL, { headers: PIXEL_HEADERS });
   }
 };
 
