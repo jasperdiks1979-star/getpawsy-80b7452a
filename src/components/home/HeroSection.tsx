@@ -29,10 +29,10 @@ export function HeroSection() {
 
       <div className="relative z-10 container px-4 md:px-6 py-16 md:py-28 lg:py-36 text-center">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white leading-tight max-w-2xl mx-auto drop-shadow-lg">
-          Premium Pet Essentials for Everyday Comfort
+          Make Pet Care Easier Every Day
         </h1>
         <p className="mt-3 text-base md:text-lg text-white/95 max-w-xl mx-auto drop-shadow font-medium">
-          Carefully Selected Products &bull; Fast US Shipping &bull; Trusted by Pet Owners
+          Smart, practical products designed to keep your home cleaner and your pet happier.
         </p>
 
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
@@ -41,15 +41,7 @@ export function HeroSection() {
             size="lg"
             className="w-full sm:w-auto min-h-[52px] rounded-xl px-10 text-base font-bold bg-primary text-white shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:brightness-110 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
           >
-            <Link to="/bestsellers">Shop Bestsellers</Link>
-          </Button>
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="w-full sm:w-auto min-h-[52px] rounded-xl px-8 text-base font-bold border-2 border-primary bg-white text-foreground hover:bg-primary/10 transition-all duration-200"
-          >
-            <Link to="/collections/cats">Shop Cat Essentials</Link>
+            <Link to="/bestsellers">Shop Now</Link>
           </Button>
         </div>
 
