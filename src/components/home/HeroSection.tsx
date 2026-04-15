@@ -46,10 +46,9 @@ export function HeroSection() {
         </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-sm font-medium text-white/90">
-          <span className="inline-flex items-center gap-1.5">✔ Free shipping over $35</span>
-          <span className="inline-flex items-center gap-1.5">✔ 30-day returns</span>
-          <span className="inline-flex items-center gap-1.5">✔ Secure checkout</span>
-          <span className="inline-flex items-center gap-1.5">✔ Support within 24h</span>
+          <span className="inline-flex items-center gap-1.5">✔ Secure Checkout</span>
+          <span className="inline-flex items-center gap-1.5">✔ 30-Day Returns</span>
+          <span className="inline-flex items-center gap-1.5">✔ Fast Shipping</span>
         </div>
       </div>
     </section>
