@@ -20,8 +20,6 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
   BUSINESS_LOCATION,
-  BUSINESS_REGISTRATION,
-  BUSINESS_VAT_ID,
   RESPONSE_TIME,
 } from '@/lib/shipping-constants';
 import { Truck, ShieldCheck, RotateCcw as ReturnIcon, Clock } from 'lucide-react';
