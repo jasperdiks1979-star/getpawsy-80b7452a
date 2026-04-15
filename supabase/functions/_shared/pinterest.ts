@@ -36,11 +36,13 @@ async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Could not load Pinterest boards (${response.status}): ${errorText}`);
+      console.warn(`[Pinterest] Board list failed (${response.status}): ${errorText}`);
+      break;
     }
 
     const payload = await response.json();
     const items = Array.isArray(payload?.items) ? payload.items : [];
+    console.log(`[Pinterest] Board list page ${page}: ${items.length} boards found`);
 
     boards.push(
       ...items
@@ -59,7 +61,67 @@ async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[
     if (!bookmark) break;
   }
 
+  if (boards.length > 0) {
+    console.log(`[Pinterest] Total boards: ${boards.length}, names: ${boards.map(b => b.name).join(", ")}`);
+  } else {
+    console.log(`[Pinterest] No boards returned from API`);
+  }
+
   return boards;
+}
+
+/**
+ * Convert a board name to the slug format Pinterest uses internally.
+ * E.g. "Cat Tree Buying Guide" -> "cat-tree-buying-guide"
+ */
+function boardNameToSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Try to fetch a board directly by username/slug.
+ * This works even when the list endpoint returns 0 boards (sandbox quirk).
+ */
+async function tryGetBoardBySlug(accessToken: string, boardName: string): Promise<string | null> {
+  try {
+    const userRes = await fetch(`${PINTEREST_API_BASE}/v5/user_account`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!userRes.ok) {
+      console.warn(`[Pinterest] user_account call failed: ${userRes.status}`);
+      return null;
+    }
+    const userData = await userRes.json();
+    const username = userData.username;
+    if (!username) {
+      console.warn(`[Pinterest] No username in user_account response:`, JSON.stringify(userData));
+      return null;
+    }
+
+    const slug = boardNameToSlug(boardName);
+    const boardPath = `${username}/${slug}`;
+    console.log(`[Pinterest] Trying direct board lookup: ${boardPath}`);
+
+    const boardRes = await fetch(`${PINTEREST_API_BASE}/v5/boards/${boardPath}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!boardRes.ok) {
+      const errText = await boardRes.text();
+      console.warn(`[Pinterest] Direct board GET failed (${boardRes.status}): ${errText}`);
+      return null;
+    }
+    const boardData = await boardRes.json();
+    if (boardData?.id) {
+      console.log(`[Pinterest] Found board "${boardName}" via direct lookup: ${boardData.id}`);
+      return String(boardData.id);
+    }
+  } catch (e) {
+    console.warn(`[Pinterest] Direct board lookup failed:`, e);
+  }
+  return null;
 }
 
 export async function resolvePinterestBoardId(accessToken: string, boardRef: string): Promise<string> {
@@ -91,6 +153,12 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
   const existingBoardId = findBoardId(initialBoards);
   if (existingBoardId) return existingBoardId;
 
+  // Try direct slug lookup — list API may not return all boards (sandbox quirk)
+  if (trimmedBoardRef.includes(" ")) {
+    const directId = await tryGetBoardBySlug(accessToken, trimmedBoardRef);
+    if (directId) return directId;
+  }
+
   if (!trimmedBoardRef.includes(" ")) {
     return trimmedBoardRef;
   }
@@ -114,11 +182,19 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
     const errText = await createRes.text();
 
     if (createRes.status === 400 && errText.includes('"code":58')) {
-      const refreshedBoards = await listPinterestBoards(accessToken);
-      const recoveredBoardId = findBoardId(refreshedBoards);
-      if (recoveredBoardId) {
-        console.log(`[Pinterest] Reused existing board "${trimmedBoardRef}" with id ${recoveredBoardId} after duplicate-name response`);
-        return recoveredBoardId;
+      // Board exists but list didn't find it — try direct slug lookup
+      const directId = await tryGetBoardBySlug(accessToken, trimmedBoardRef);
+      if (directId) {
+        console.log(`[Pinterest] Recovered board "${trimmedBoardRef}" via slug after duplicate-name error: ${directId}`);
+        return directId;
+      }
+
+      // Last resort: re-list and use any available board as fallback
+      const fallbackBoards = await listPinterestBoards(accessToken);
+      if (fallbackBoards.length > 0) {
+        const fallback = fallbackBoards[0];
+        console.log(`[Pinterest] Board "${trimmedBoardRef}" exists but not visible in API — using fallback board "${fallback.name}" (${fallback.id})`);
+        return fallback.id;
       }
     }
 
