@@ -664,7 +664,18 @@ function PostCard({
           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(post.id)}>
             <Trash2 className="h-3 w-3" />
           </Button>
+          <Button
+            size="sm"
+            variant={showHelper ? 'default' : 'secondary'}
+            className="ml-auto"
+            onClick={() => setShowHelper((s) => !s)}
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            {showHelper ? 'Hide' : 'Copy & Post Manually'}
+          </Button>
         </div>
+
+        {showHelper && <ManualPostingHelper post={post} />}
 
         <p className="text-[10px] text-muted-foreground">
           Created {new Date(post.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
