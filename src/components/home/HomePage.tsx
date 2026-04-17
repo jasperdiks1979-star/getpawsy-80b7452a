@@ -11,6 +11,7 @@ import { ProblemSolutionSection } from "@/components/home/ProblemSolutionSection
 import { HomepageFAQ } from "@/components/home/HomepageFAQ";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { StickyMobileCta } from "@/components/home/StickyMobileCta";
+import { SoftEmailCapture } from "@/components/email/SoftEmailCapture";
 import {
   DELIVERY_TIME_STANDARD,
   SITE_LAST_UPDATED,
@@ -55,6 +56,17 @@ const HomePage = () => {
 
       {/* 4. Social Proof */}
       <SocialProofSection />
+
+      {/* 4b. Email Capture — vang elke bezoeker */}
+      <section className="py-10 md:py-14 bg-muted/20" aria-label="Newsletter signup">
+        <div className="container px-4 md:px-6 max-w-3xl mx-auto">
+          <SoftEmailCapture
+            variant="collection"
+            headline="Get $5 off your first order"
+            description="Join 2,000+ US pet owners getting helpful product picks and care tips. No spam — unsubscribe anytime."
+          />
+        </div>
+      </section>
 
       {/* 5. How It Works */}
       <HowItWorks />
