@@ -101,10 +101,10 @@ export const Scene2Hero: React.FC = () => {
         />
       </div>
 
-      {/* Spec callouts */}
-      <SpecCallout label="01" value="Self-cleaning automation" delay={5} side="left" y={260} />
-      <SpecCallout label="02" value="Real-time app control" delay={20} side="right" y={780} />
-      <SpecCallout label="03" value="Sealed odor protection" delay={35} side="left" y={1320} />
+      {/* Spec callouts — placed to avoid the cat's face which sits roughly center-left at y~900-1300 */}
+      <SpecCallout label="01" value="Self-cleaning automation" delay={5} side="left" y={220} />
+      <SpecCallout label="02" value="Real-time app control" delay={20} side="right" y={400} />
+      <SpecCallout label="03" value="Sealed odor protection" delay={35} side="left" y={1500} />
 
       {/* Brand mark bottom */}
       <div
