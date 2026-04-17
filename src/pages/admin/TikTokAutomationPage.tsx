@@ -30,6 +30,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
 
 type TikTokPost = {
   id: string;
@@ -48,6 +49,7 @@ type TikTokPost = {
   posted_at: string | null;
   error_message: string | null;
   created_at: string;
+  tracking_params?: any;
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -573,6 +575,7 @@ function PostCard({
   const cfg = STATUS_CONFIG[post.status] || STATUS_CONFIG.draft;
   const Icon = cfg.icon;
   const hasMedia = post.media_urls && post.media_urls.length > 0;
+  const [showHelper, setShowHelper] = useState(false);
 
   return (
     <Card>
@@ -661,7 +664,18 @@ function PostCard({
           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(post.id)}>
             <Trash2 className="h-3 w-3" />
           </Button>
+          <Button
+            size="sm"
+            variant={showHelper ? 'default' : 'secondary'}
+            className="ml-auto"
+            onClick={() => setShowHelper((s) => !s)}
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            {showHelper ? 'Hide' : 'Copy & Post Manually'}
+          </Button>
         </div>
+
+        {showHelper && <ManualPostingHelper post={post} />}
 
         <p className="text-[10px] text-muted-foreground">
           Created {new Date(post.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
