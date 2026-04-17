@@ -32,11 +32,11 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: "/mnt/documents/getpawsy-pinterest-demo.mp4",
+  outputLocation: "/mnt/documents/getpawsy-litter-box-tiktok.mp4",
   puppeteerInstance: browser,
   muted: true,
   concurrency: 1,
 });
 
-console.log("Done! Saved to /mnt/documents/getpawsy-pinterest-demo.mp4");
+console.log("Done! Saved to /mnt/documents/getpawsy-litter-box-tiktok.mp4");
 await browser.close({ silent: false });
