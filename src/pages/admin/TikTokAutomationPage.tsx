@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
+import { TodayPostingChecklist } from '@/components/admin/TodayPostingChecklist';
 
 type TikTokPost = {
   id: string;
@@ -79,6 +80,23 @@ export default function TikTokAutomationPage() {
   const [pipelineStep, setPipelineStep] = useState<PipelineStep>('idle');
   const [pipelineMessage, setPipelineMessage] = useState('');
   const [postCount, setPostCount] = useState('5');
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
+
+  const handleSelectPostForHelper = (postId: string) => {
+    setHighlightedPostId(postId);
+    // Switch to the tab that contains the post
+    const target = posts.find((p) => p.id === postId);
+    if (target) setActiveTab(target.status);
+    // Scroll to the post after a tick
+    setTimeout(() => {
+      const el = document.getElementById(`post-${postId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Auto-clear highlight after 3s
+        setTimeout(() => setHighlightedPostId(null), 3000);
+      }
+    }, 150);
+  };
 
   // New post form
   const [showForm, setShowForm] = useState(false);
@@ -412,6 +430,9 @@ export default function TikTokAutomationPage() {
           </CardContent>
         </Card>
 
+        {/* TODAY'S POSTING CHECKLIST */}
+        <TodayPostingChecklist posts={posts} onSelectPost={handleSelectPostForHelper} />
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(stats).map(([key, count]) => {
@@ -524,6 +545,7 @@ export default function TikTokAutomationPage() {
                       <PostCard
                         key={post.id}
                         post={post}
+                        autoOpenHelper={highlightedPostId === post.id}
                         onStatusChange={handleStatusChange}
                         onDelete={handleDelete}
                         onGenerateMedia={handleGenerateMediaForPost}
@@ -561,12 +583,14 @@ export default function TikTokAutomationPage() {
 
 function PostCard({
   post,
+  autoOpenHelper = false,
   onStatusChange,
   onDelete,
   onGenerateMedia,
   onPublish,
 }: {
   post: TikTokPost;
+  autoOpenHelper?: boolean;
   onStatusChange: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onGenerateMedia: (id: string) => void;
@@ -577,8 +601,12 @@ function PostCard({
   const hasMedia = post.media_urls && post.media_urls.length > 0;
   const [showHelper, setShowHelper] = useState(false);
 
+  useEffect(() => {
+    if (autoOpenHelper) setShowHelper(true);
+  }, [autoOpenHelper]);
+
   return (
-    <Card>
+    <Card id={`post-${post.id}`} className={autoOpenHelper ? 'ring-2 ring-primary transition-all' : ''}>
       <CardContent className="py-3 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
