@@ -583,12 +583,14 @@ export default function TikTokAutomationPage() {
 
 function PostCard({
   post,
+  autoOpenHelper = false,
   onStatusChange,
   onDelete,
   onGenerateMedia,
   onPublish,
 }: {
   post: TikTokPost;
+  autoOpenHelper?: boolean;
   onStatusChange: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onGenerateMedia: (id: string) => void;
@@ -599,8 +601,12 @@ function PostCard({
   const hasMedia = post.media_urls && post.media_urls.length > 0;
   const [showHelper, setShowHelper] = useState(false);
 
+  useEffect(() => {
+    if (autoOpenHelper) setShowHelper(true);
+  }, [autoOpenHelper]);
+
   return (
-    <Card>
+    <Card id={`post-${post.id}`} className={autoOpenHelper ? 'ring-2 ring-primary transition-all' : ''}>
       <CardContent className="py-3 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
