@@ -532,29 +532,27 @@ export default function TikTokAutomationPage() {
 
           {['draft', 'queued', 'posted', 'failed'].map((tab) => (
             <TabsContent key={tab} value={tab}>
-              <ScrollArea className="max-h-[60vh]">
-                {filteredPosts.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                      No {tab} posts yet
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {filteredPosts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        autoOpenHelper={highlightedPostId === post.id}
-                        onStatusChange={handleStatusChange}
-                        onDelete={handleDelete}
-                        onGenerateMedia={handleGenerateMediaForPost}
-                        onPublish={handlePublish}
-                      />
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
+              {filteredPosts.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    No {tab} posts yet
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {filteredPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      autoOpenHelper={highlightedPostId === post.id}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDelete}
+                      onGenerateMedia={handleGenerateMediaForPost}
+                      onPublish={handlePublish}
+                    />
+                  ))}
+                </div>
+              )}
             </TabsContent>
           ))}
         </Tabs>
