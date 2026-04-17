@@ -575,6 +575,7 @@ function PostCard({
   const cfg = STATUS_CONFIG[post.status] || STATUS_CONFIG.draft;
   const Icon = cfg.icon;
   const hasMedia = post.media_urls && post.media_urls.length > 0;
+  const [showHelper, setShowHelper] = useState(false);
 
   return (
     <Card>
