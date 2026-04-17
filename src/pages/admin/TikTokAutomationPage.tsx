@@ -430,6 +430,9 @@ export default function TikTokAutomationPage() {
           </CardContent>
         </Card>
 
+        {/* TODAY'S POSTING CHECKLIST */}
+        <TodayPostingChecklist posts={posts} onSelectPost={handleSelectPostForHelper} />
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(stats).map(([key, count]) => {
