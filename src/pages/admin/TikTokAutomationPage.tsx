@@ -30,6 +30,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
 
 type TikTokPost = {
   id: string;
@@ -48,6 +49,7 @@ type TikTokPost = {
   posted_at: string | null;
   error_message: string | null;
   created_at: string;
+  tracking_params?: any;
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
