@@ -81,13 +81,16 @@ export const Scene2Hero: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ fontFamily: body.fontFamily }}>
-      {/* Product image */}
+      {/* Product image — pushed down so callouts have top breathing room */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
+          top: 480,
+          left: 0,
+          right: 0,
+          height: 1100,
           transform: `scale(${zoom}) translateY(${drift}px)`,
-          transformOrigin: "center 60%",
+          transformOrigin: "center center",
         }}
       >
         <Img
