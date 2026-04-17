@@ -545,6 +545,7 @@ export default function TikTokAutomationPage() {
                       <PostCard
                         key={post.id}
                         post={post}
+                        autoOpenHelper={highlightedPostId === post.id}
                         onStatusChange={handleStatusChange}
                         onDelete={handleDelete}
                         onGenerateMedia={handleGenerateMediaForPost}
