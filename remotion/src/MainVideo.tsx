@@ -1,4 +1,4 @@
-import { AbsoluteFill, Series, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { AbsoluteFill, Series, Audio, Sequence, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { Scene1Reveal } from "./scenes/Scene1Reveal";
 import { Scene2Hero } from "./scenes/Scene2Hero";
 import { Scene3App } from "./scenes/Scene3App";
@@ -33,24 +33,34 @@ const FilmGrain: React.FC = () => (
   />
 );
 
+// Scene durations: 90 + 135 + 135 + 150 + 150 = 660 frames (22s @ 30fps)
 export const MainVideo: React.FC = () => {
   return (
     <AbsoluteFill>
       <PersistentBackground />
+
+      {/* Soft, warm background music — very low so VO sits cleanly on top */}
+      <Audio src={staticFile("audio/music.mp3")} volume={0.09} />
+
+      {/* Warm voice-over starts at frame 15 (~0.5s) */}
+      <Sequence from={15}>
+        <Audio src={staticFile("audio/voiceover.mp3")} volume={1.0} />
+      </Sequence>
+
       <Series>
         <Series.Sequence durationInFrames={90}>
           <Scene1Reveal />
         </Series.Sequence>
-        <Series.Sequence durationInFrames={120}>
+        <Series.Sequence durationInFrames={135}>
           <Scene2Hero />
         </Series.Sequence>
-        <Series.Sequence durationInFrames={120}>
+        <Series.Sequence durationInFrames={135}>
           <Scene3App />
         </Series.Sequence>
-        <Series.Sequence durationInFrames={120}>
+        <Series.Sequence durationInFrames={150}>
           <Scene4Statement />
         </Series.Sequence>
-        <Series.Sequence durationInFrames={90}>
+        <Series.Sequence durationInFrames={150}>
           <Scene5CTA />
         </Series.Sequence>
       </Series>
