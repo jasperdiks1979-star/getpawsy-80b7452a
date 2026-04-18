@@ -5,20 +5,17 @@ import { loadFont as loadBody } from "@remotion/google-fonts/Inter";
 const display = loadDisplay("normal", { weights: ["400", "500"], subsets: ["latin"] });
 const body = loadBody("normal", { weights: ["300", "400", "600"], subsets: ["latin"] });
 
-// SCENE 4 — Editorial statement. Big numbers slam in. Days-without-scooping flex.
+// SCENE 4 — Editorial emotional moment. Reclaim your weekends.
+// Warmer copy, less "flex" — focus on what the owner gets back.
 export const Scene4Statement: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Ascending lines stagger in
   const line1 = spring({ frame: frame - 5, fps, config: { damping: 30, stiffness: 100 } });
-  const numEnter = spring({ frame: frame - 22, fps, config: { damping: 20, stiffness: 130 } });
-  const line2 = spring({ frame: frame - 50, fps, config: { damping: 30, stiffness: 100 } });
+  const headEnter = spring({ frame: frame - 22, fps, config: { damping: 22, stiffness: 110 } });
+  const subEnter = spring({ frame: frame - 50, fps, config: { damping: 30, stiffness: 100 } });
   const sigEnter = spring({ frame: frame - 75, fps, config: { damping: 30 } });
 
-  // The "30" number scales in dramatically then settles
-  const numScale = interpolate(numEnter, [0, 1], [0.4, 1]);
-  // Subtle continuous drift
   const drift = Math.sin(frame * 0.04) * 4;
 
   return (
@@ -32,88 +29,74 @@ export const Scene4Statement: React.FC = () => {
         padding: "0 80px",
       }}
     >
-      {/* Top line */}
+      {/* Eyebrow */}
       <div
         style={{
-          fontSize: 30,
+          fontSize: 28,
           letterSpacing: 8,
           textTransform: "uppercase",
           color: "#8b6f47",
           opacity: line1,
           transform: `translateY(${interpolate(line1, [0, 1], [20, 0])}px)`,
-          marginBottom: 60,
+          marginBottom: 80,
         }}
       >
-        ⸺  the result  ⸺
+        ⸺  what you get back  ⸺
       </div>
 
-      {/* Massive number */}
-      <div
-        style={{
-          position: "relative",
-          opacity: numEnter,
-          transform: `scale(${numScale}) translateY(${drift}px)`,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: display.fontFamily,
-            fontSize: 560,
-            fontWeight: 500,
-            lineHeight: 0.85,
-            color: "#d97435",
-            fontStyle: "italic",
-            textAlign: "center",
-            letterSpacing: -20,
-          }}
-        >
-          30
-        </div>
-        <div
-          style={{
-            fontSize: 38,
-            letterSpacing: 12,
-            textTransform: "uppercase",
-            color: "#1a1a1a",
-            textAlign: "center",
-            marginTop: 20,
-            fontWeight: 400,
-          }}
-        >
-          days
-        </div>
-      </div>
-
-      {/* Bottom line */}
+      {/* Hero line — emotional */}
       <div
         style={{
           fontFamily: display.fontFamily,
-          fontSize: 78,
+          fontSize: 138,
+          fontWeight: 400,
           color: "#1a1a1a",
           fontStyle: "italic",
           textAlign: "center",
-          marginTop: 80,
-          opacity: line2,
-          transform: `translateY(${interpolate(line2, [0, 1], [30, 0])}px)`,
-          lineHeight: 1.1,
+          lineHeight: 0.98,
+          opacity: headEnter,
+          transform: `translateY(${interpolate(headEnter, [0, 1], [40, 0])}px) translateY(${drift}px)`,
         }}
       >
-        without scooping.
+        your sundays.
+        <br />
+        <span style={{ color: "#d97435" }}>your peace.</span>
+        <br />
+        your home.
       </div>
 
-      {/* Tiny disclaimer / signature line */}
+      {/* Soft sub */}
+      <div
+        style={{
+          fontFamily: display.fontFamily,
+          fontSize: 56,
+          color: "#5a4a38",
+          fontStyle: "italic",
+          textAlign: "center",
+          marginTop: 80,
+          opacity: interpolate(subEnter, [0, 1], [0, 0.95]),
+          transform: `translateY(${interpolate(subEnter, [0, 1], [20, 0])}px)`,
+          lineHeight: 1.15,
+        }}
+      >
+        no more scooping.
+        <br />
+        just more love.
+      </div>
+
+      {/* Tiny line */}
       <div
         style={{
           fontSize: 22,
           letterSpacing: 4,
           textTransform: "uppercase",
           color: "#8b6f47",
-          marginTop: 120,
+          marginTop: 90,
           opacity: interpolate(sigEnter, [0, 1], [0, 0.7]),
           transform: `translateY(${interpolate(sigEnter, [0, 1], [10, 0])}px)`,
         }}
       >
-        based on average cleaning cycle
+        the way it should be
       </div>
     </AbsoluteFill>
   );
