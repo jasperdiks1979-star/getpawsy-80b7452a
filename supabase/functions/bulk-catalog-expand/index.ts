@@ -157,8 +157,10 @@ function buildSlug(name: string, suffix: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, 80);
-  return `${base}-${suffix.slice(0, 8)}`;
+    .slice(0, 70);
+  // Use last 12 chars of pid for higher uniqueness
+  const tail = suffix.slice(-12);
+  return `${base}-${tail}`;
 }
 
 // ───────────────────────────────────────────────────────────────────
