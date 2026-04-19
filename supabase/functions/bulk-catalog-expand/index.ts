@@ -349,30 +349,32 @@ Deno.serve(async (req) => {
         const slug = buildSlug(title, p.pid);
         const compareAt = Math.round((p.retailPrice * 1.35 + 0.99) * 100) / 100;
 
-        // Insert into products
+        // Insert into products (only columns that exist in schema)
         const { data: inserted_row, error } = await supabase
           .from("products")
           .insert({
             name: title,
             slug,
             description,
-            short_description: description.slice(0, 160),
             price: p.retailPrice,
             compare_at_price: compareAt,
             cost_price: p.cost,
             image_url: p.image,
+            images: p.image ? [p.image] : [],
             category: p.category,
-            tags: p.tags,
             cj_product_id: p.pid,
             weight: p.weight,
-            stock: 100, // default available
+            stock: 100,
             is_active: true,
-            is_featured: false,
+            supplier_name: "CJ Dropshipping",
+            supplier_warehouse: "US",
+            stock_source: "CJ",
             meta_title: title.slice(0, 60),
             meta_description: description.slice(0, 158),
-            meta_keywords: p.tags,
-            country_of_origin: "US",
-            shipping_origin_country: "US",
+            seo_keywords: p.tags,
+            primary_keyword: p.tags[0] || null,
+            animal_type: p.category.toLowerCase().includes("cat") ? "cat" : "dog",
+            primary_species: p.category.toLowerCase().includes("cat") ? "cat" : "dog",
           })
           .select("id, slug, name, category, price")
           .single();
