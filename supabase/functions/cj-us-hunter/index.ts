@@ -180,6 +180,112 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
+    // ── ACTION: scout-large — broad scan, save up to 250 winners (no delete) ──
+    if (action === "scout-large") {
+      const cjToken = await getCJAccessToken();
+      const allProducts: Map<string, any> = new Map();
+
+      const keywords = [
+        "cat tree", "cat condo", "cat tower", "cat scratching post", "cat scratcher",
+        "cat litter box", "self cleaning litter", "cat litter mat",
+        "cat toy", "interactive cat toy", "cat tunnel", "cat ball",
+        "cat carrier", "cat backpack", "cat bed", "cat hammock",
+        "cat fountain", "cat feeder", "cat bowl", "slow feeder cat",
+        "cat grooming", "cat brush", "cat nail",
+        "dog bed", "orthopedic dog bed", "elevated dog bed", "cooling dog bed",
+        "dog crate", "dog kennel", "dog house",
+        "dog stroller", "dog carrier", "pet carrier backpack",
+        "dog toy", "interactive dog toy", "puzzle dog toy", "chew toy", "rope toy",
+        "dog bowl", "slow feeder dog", "elevated dog bowl", "automatic pet feeder",
+        "pet water fountain", "dog fountain",
+        "dog grooming", "dog brush", "dog nail clipper", "deshedding",
+        "dog harness", "no pull harness", "dog leash", "retractable leash",
+        "dog collar", "padded collar",
+        "pet stairs", "dog ramp",
+      ];
+
+      for (const kw of keywords) {
+        try {
+          const result = await searchCJProducts(cjToken, 1, 50, kw);
+          if (result.result && result.data?.list) {
+            for (const p of result.data.list) {
+              const name = p.productNameEn || p.productName || "";
+              if (!isPetProduct(name)) continue;
+              if (isExcluded(name)) continue;
+
+              const price = p.sellPrice || 0;
+              if (price < 8 || price > 120) continue;
+
+              if (allProducts.has(p.pid)) continue;
+              allProducts.set(p.pid, {
+                pid: p.pid,
+                name,
+                price,
+                category: p.categoryName || kw,
+                searchKeyword: kw,
+                image: p.productImage || null,
+                weight: p.productWeight || null,
+              });
+            }
+          }
+          await new Promise(r => setTimeout(r, 350));
+        } catch (e) {
+          console.error(`Error searching "${kw}":`, e);
+        }
+      }
+
+      const all = Array.from(allProducts.values()).map(p => ({
+        ...p,
+        score: scoreProduct({ name: p.name, price: p.price, category: p.category, warehouse: "US" }),
+      }));
+      all.sort((a, b) => b.score - a.score);
+      const top = all.slice(0, 250);
+
+      let savedCount = 0;
+      let imageOkCount = 0;
+      for (const p of top) {
+        let imageOk = !!p.image;
+        // Quick image validation (sample only first 50 to save time)
+        if (p.image && savedCount < 50) {
+          try {
+            const imgRes = await fetch(p.image, { method: "HEAD", redirect: "follow" });
+            const ct = imgRes.headers.get("content-type");
+            if (!imgRes.ok || !ct || !ct.startsWith("image/")) imageOk = false;
+          } catch { imageOk = false; }
+        }
+        if (imageOk) imageOkCount++;
+
+        await supabase.from("cj_us_winners").upsert({
+          cj_product_id: p.pid,
+          name: p.name,
+          price: p.price,
+          warehouse: "US",
+          category: p.category,
+          score: p.score,
+          image_url: p.image,
+          image_ok: imageOk,
+          weight: p.weight,
+        }, { onConflict: "cj_product_id" });
+        savedCount++;
+      }
+
+      await supabase.from("cron_job_logs").insert({
+        job_name: "cj-us-hunter-scout-large",
+        status: "completed",
+        success: true,
+        items_processed: savedCount,
+        details: { scanned: all.length, saved: savedCount, imageOk: imageOkCount, keywords: keywords.length },
+      });
+
+      return Response.json({
+        ok: true,
+        scanned: all.length,
+        saved: savedCount,
+        imageOk: imageOkCount,
+        topScore: top[0]?.score,
+      }, { headers: corsHeaders });
+    }
+
     // ── ACTION: scan — search CJ, score, save top 30 ──
     if (action === "scan") {
       const cjToken = await getCJAccessToken();
