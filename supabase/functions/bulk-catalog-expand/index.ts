@@ -164,16 +164,36 @@ function buildSlug(name: string, suffix: string): string {
 // ───────────────────────────────────────────────────────────────────
 // CJ API helpers
 // ───────────────────────────────────────────────────────────────────
-async function getCJAccessToken(): Promise<string> {
-  const email = Deno.env.get("CJ_EMAIL")!;
-  const password = Deno.env.get("CJ_PASSWORD")!;
+async function getCJAccessToken(supabase: any): Promise<string> {
+  const { data: cached } = await supabase
+    .from("cj_token_cache")
+    .select("access_token, token_expiry")
+    .eq("id", "singleton")
+    .maybeSingle();
+
+  if (cached?.access_token && cached?.token_expiry && new Date(cached.token_expiry) > new Date()) {
+    return cached.access_token;
+  }
+
+  const email = Deno.env.get("CJ_EMAIL");
+  const apiKey = Deno.env.get("CJ_API_KEY");
+  if (!email || !apiKey) throw new Error("CJ_EMAIL or CJ_API_KEY not configured");
+
   const res = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, apiKey }),
   });
   const data = await res.json();
   if (!data.result) throw new Error(`CJ auth failed: ${data.message}`);
+
+  const expiryDate = new Date(data.data.accessTokenExpiryDate);
+  const safeExpiry = new Date(expiryDate.getTime() - 5 * 60 * 1000);
+  await supabase.from("cj_token_cache").upsert({
+    id: "singleton",
+    access_token: data.data.accessToken,
+    token_expiry: safeExpiry.toISOString(),
+  });
   return data.data.accessToken;
 }
 
