@@ -157,23 +157,45 @@ function buildSlug(name: string, suffix: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, 80);
-  return `${base}-${suffix.slice(0, 8)}`;
+    .slice(0, 70);
+  // Use last 12 chars of pid for higher uniqueness
+  const tail = suffix.slice(-12);
+  return `${base}-${tail}`;
 }
 
 // ───────────────────────────────────────────────────────────────────
 // CJ API helpers
 // ───────────────────────────────────────────────────────────────────
-async function getCJAccessToken(): Promise<string> {
-  const email = Deno.env.get("CJ_EMAIL")!;
-  const password = Deno.env.get("CJ_PASSWORD")!;
+async function getCJAccessToken(supabase: any): Promise<string> {
+  const { data: cached } = await supabase
+    .from("cj_token_cache")
+    .select("access_token, token_expiry")
+    .eq("id", "singleton")
+    .maybeSingle();
+
+  if (cached?.access_token && cached?.token_expiry && new Date(cached.token_expiry) > new Date()) {
+    return cached.access_token;
+  }
+
+  const email = Deno.env.get("CJ_EMAIL");
+  const apiKey = Deno.env.get("CJ_API_KEY");
+  if (!email || !apiKey) throw new Error("CJ_EMAIL or CJ_API_KEY not configured");
+
   const res = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, apiKey }),
   });
   const data = await res.json();
   if (!data.result) throw new Error(`CJ auth failed: ${data.message}`);
+
+  const expiryDate = new Date(data.data.accessTokenExpiryDate);
+  const safeExpiry = new Date(expiryDate.getTime() - 5 * 60 * 1000);
+  await supabase.from("cj_token_cache").upsert({
+    id: "singleton",
+    access_token: data.data.accessToken,
+    token_expiry: safeExpiry.toISOString(),
+  });
   return data.data.accessToken;
 }
 
@@ -206,26 +228,27 @@ Deno.serve(async (req) => {
     const dryRun = url.searchParams.get("dryRun") === "true";
 
     const KEYWORDS = [
-      "cat tree", "cat condo", "cat scratching post",
-      "cat litter box", "cat litter mat",
-      "cat toy", "interactive cat toy", "cat tunnel", "cat teaser",
-      "cat carrier", "cat backpack",
-      "cat bed", "cat hammock",
-      "cat fountain", "cat slow feeder", "cat bowl",
-      "cat grooming brush", "cat nail clipper",
-      "orthopedic dog bed", "elevated dog bed", "cooling dog bed", "dog bed plush",
-      "dog house outdoor",
-      "dog stroller", "pet carrier backpack", "dog car seat",
-      "dog chew toy", "dog rope toy", "puzzle dog toy", "interactive dog toy",
-      "automatic pet feeder", "slow feeder dog bowl", "elevated dog bowl", "pet water fountain",
-      "dog deshedding brush", "dog nail grinder",
-      "no pull dog harness", "padded dog collar", "retractable leash",
-      "training treat pouch", "pet stairs", "dog ramp",
+      "cat tree", "cat condo", "cat tower", "cat scratching post", "cat scratcher",
+      "cat litter box", "self cleaning litter box", "enclosed litter box", "cat litter mat",
+      "cat toy", "interactive cat toy", "cat tunnel", "cat teaser", "catnip toy", "cat ball toy", "cat puzzle",
+      "cat carrier", "cat backpack", "cat travel bag",
+      "cat bed", "cat hammock", "cat cave", "cat house", "kitten bed",
+      "cat fountain", "cat water dispenser", "cat slow feeder", "cat bowl", "automatic cat feeder",
+      "cat grooming brush", "cat nail clipper", "cat deshedding",
+      "cat collar", "cat harness",
+      "orthopedic dog bed", "elevated dog bed", "cooling dog bed", "memory foam dog bed", "dog bed plush", "large dog bed",
+      "dog house outdoor", "dog kennel",
+      "dog stroller", "pet carrier backpack", "dog car seat", "dog booster seat",
+      "dog chew toy", "dog rope toy", "puzzle dog toy", "interactive dog toy", "squeaky dog toy", "fetch ball",
+      "automatic pet feeder", "slow feeder dog bowl", "elevated dog bowl", "pet water fountain", "dog water bottle",
+      "dog deshedding brush", "dog nail grinder", "dog grooming kit",
+      "no pull dog harness", "padded dog collar", "retractable leash", "tactical dog harness",
+      "training treat pouch", "pet stairs", "dog ramp", "dog training pad",
     ];
 
     // ─── Phase 1: Scout ───
     const allCandidates = new Map<string, any>();
-    const cjToken = await getCJAccessToken();
+    const cjToken = await getCJAccessToken(supabase);
 
     for (const kw of KEYWORDS) {
       try {
@@ -290,24 +313,24 @@ Deno.serve(async (req) => {
     // ─── Phase 4: Pick top N with category balancing ───
     // Cap per category to avoid 80% in one bucket
     const CATEGORY_CAPS: Record<string, number> = {
-      "Cat Trees & Condos": 12,
-      "Cat Litter Boxes": 10,
-      "Cat Beds": 8,
-      "Cat Carriers": 6,
-      "Cat Toys": 14,
-      "Cat Bowls & Feeders": 10,
-      "Cat Grooming": 6,
-      "Cat Scratching Posts": 5,
-      "Cat Houses": 4,
-      "Cat Collars & Accessories": 4,
-      "Dog Beds": 14,
-      "Dog Houses": 4,
-      "Dog Carriers": 8,
-      "Dog Toys": 14,
-      "Dog Bowls & Feeders": 10,
-      "Dog Grooming": 6,
-      "Dog Collars & Leashes": 8,
-      "Dog Training": 5,
+      "Cat Trees & Condos": 14,
+      "Cat Litter Boxes": 14,
+      "Cat Beds": 10,
+      "Cat Carriers": 8,
+      "Cat Toys": 18,
+      "Cat Bowls & Feeders": 12,
+      "Cat Grooming": 8,
+      "Cat Scratching Posts": 8,
+      "Cat Houses": 6,
+      "Cat Collars & Accessories": 6,
+      "Dog Beds": 18,
+      "Dog Houses": 6,
+      "Dog Carriers": 10,
+      "Dog Toys": 18,
+      "Dog Bowls & Feeders": 12,
+      "Dog Grooming": 10,
+      "Dog Collars & Leashes": 12,
+      "Dog Training": 8,
     };
 
     const perCatCount: Record<string, number> = {};
@@ -349,30 +372,32 @@ Deno.serve(async (req) => {
         const slug = buildSlug(title, p.pid);
         const compareAt = Math.round((p.retailPrice * 1.35 + 0.99) * 100) / 100;
 
-        // Insert into products
+        // Insert into products (only columns that exist in schema)
         const { data: inserted_row, error } = await supabase
           .from("products")
           .insert({
             name: title,
             slug,
             description,
-            short_description: description.slice(0, 160),
             price: p.retailPrice,
             compare_at_price: compareAt,
             cost_price: p.cost,
             image_url: p.image,
+            images: p.image ? [p.image] : [],
             category: p.category,
-            tags: p.tags,
             cj_product_id: p.pid,
             weight: p.weight,
-            stock: 100, // default available
+            stock: 100,
             is_active: true,
-            is_featured: false,
+            supplier_name: "CJ Dropshipping",
+            supplier_warehouse: "US",
+            stock_source: "CJ",
             meta_title: title.slice(0, 60),
             meta_description: description.slice(0, 158),
-            meta_keywords: p.tags,
-            country_of_origin: "US",
-            shipping_origin_country: "US",
+            seo_keywords: p.tags,
+            primary_keyword: p.tags[0] || null,
+            animal_type: p.category.toLowerCase().includes("cat") ? "cat" : "dog",
+            primary_species: p.category.toLowerCase().includes("cat") ? "cat" : "dog",
           })
           .select("id, slug, name, category, price")
           .single();
