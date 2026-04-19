@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
 
     // ─── Phase 1: Scout ───
     const allCandidates = new Map<string, any>();
-    const cjToken = await getCJAccessToken();
+    const cjToken = await getCJAccessToken(supabase);
 
     for (const kw of KEYWORDS) {
       try {
