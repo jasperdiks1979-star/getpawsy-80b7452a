@@ -226,21 +226,22 @@ Deno.serve(async (req) => {
     const dryRun = url.searchParams.get("dryRun") === "true";
 
     const KEYWORDS = [
-      "cat tree", "cat condo", "cat scratching post",
-      "cat litter box", "cat litter mat",
-      "cat toy", "interactive cat toy", "cat tunnel", "cat teaser",
-      "cat carrier", "cat backpack",
-      "cat bed", "cat hammock",
-      "cat fountain", "cat slow feeder", "cat bowl",
-      "cat grooming brush", "cat nail clipper",
-      "orthopedic dog bed", "elevated dog bed", "cooling dog bed", "dog bed plush",
-      "dog house outdoor",
-      "dog stroller", "pet carrier backpack", "dog car seat",
-      "dog chew toy", "dog rope toy", "puzzle dog toy", "interactive dog toy",
-      "automatic pet feeder", "slow feeder dog bowl", "elevated dog bowl", "pet water fountain",
-      "dog deshedding brush", "dog nail grinder",
-      "no pull dog harness", "padded dog collar", "retractable leash",
-      "training treat pouch", "pet stairs", "dog ramp",
+      "cat tree", "cat condo", "cat tower", "cat scratching post", "cat scratcher",
+      "cat litter box", "self cleaning litter box", "enclosed litter box", "cat litter mat",
+      "cat toy", "interactive cat toy", "cat tunnel", "cat teaser", "catnip toy", "cat ball toy", "cat puzzle",
+      "cat carrier", "cat backpack", "cat travel bag",
+      "cat bed", "cat hammock", "cat cave", "cat house", "kitten bed",
+      "cat fountain", "cat water dispenser", "cat slow feeder", "cat bowl", "automatic cat feeder",
+      "cat grooming brush", "cat nail clipper", "cat deshedding",
+      "cat collar", "cat harness",
+      "orthopedic dog bed", "elevated dog bed", "cooling dog bed", "memory foam dog bed", "dog bed plush", "large dog bed",
+      "dog house outdoor", "dog kennel",
+      "dog stroller", "pet carrier backpack", "dog car seat", "dog booster seat",
+      "dog chew toy", "dog rope toy", "puzzle dog toy", "interactive dog toy", "squeaky dog toy", "fetch ball",
+      "automatic pet feeder", "slow feeder dog bowl", "elevated dog bowl", "pet water fountain", "dog water bottle",
+      "dog deshedding brush", "dog nail grinder", "dog grooming kit",
+      "no pull dog harness", "padded dog collar", "retractable leash", "tactical dog harness",
+      "training treat pouch", "pet stairs", "dog ramp", "dog training pad",
     ];
 
     // ─── Phase 1: Scout ───
