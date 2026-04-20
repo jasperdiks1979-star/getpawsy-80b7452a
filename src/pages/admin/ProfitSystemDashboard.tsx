@@ -192,7 +192,7 @@ export default function ProfitSystemDashboard() {
     const csv = [
       'Product,URL,CTR,ConversionRate,Revenue,Keyword',
       ...winners.map(w =>
-        `"${w.name}","https://getpawsy.com${w.url}",${(w.ctr * 100).toFixed(1)}%,${(w.conversionRate * 100).toFixed(1)}%,$${w.revenue.toFixed(2)},"${w.name.toLowerCase()}"`
+        `"${w.name}","https://getpawsy.pet${w.url}",${(w.ctr * 100).toFixed(1)}%,${(w.conversionRate * 100).toFixed(1)}%,$${w.revenue.toFixed(2)},"${w.name.toLowerCase()}"`
       ),
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
