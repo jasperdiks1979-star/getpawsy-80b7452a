@@ -23,7 +23,7 @@ export function OrganizationSchema() {
     description:
       'GetPawsy is an online pet supply store offering high-quality products for dogs and cats. Free shipping on orders over $35 to the United States.',
     sameAs: [
-      'https://pinterest.com/getpawsy',
+      'https://www.pinterest.com/getpawsystore/',
       'https://instagram.com/getpawsy',
       'https://x.com/getpawsy',
       'https://facebook.com/getpawsy',
@@ -78,7 +78,7 @@ export function OrganizationSchema() {
       addressCountry: 'NL',
     },
     sameAs: [
-      'https://pinterest.com/getpawsy',
+      'https://www.pinterest.com/getpawsystore/',
       'https://instagram.com/getpawsy',
       'https://x.com/getpawsy',
       'https://facebook.com/getpawsy',
