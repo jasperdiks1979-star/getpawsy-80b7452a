@@ -18,7 +18,7 @@ De veiligheid van GetPawsy en onze gebruikers is onze hoogste prioriteit. We waa
 Als je een beveiligingsprobleem hebt gevonden, volg dan deze stappen:
 
 1. **Meld het privé** - Stuur GEEN openbare issues voor beveiligingsproblemen
-2. **Email ons** - Stuur details naar: `security@getpawsy.com`
+2. **Email ons** - Stuur details naar: `security@getpawsy.pet`
 3. **Wacht op bevestiging** - We reageren binnen 48 uur
 4. **Werk samen** - Help ons het probleem te begrijpen en op te lossen
 
@@ -184,4 +184,4 @@ Dit security beleid wordt regelmatig bijgewerkt. Laatste update: Januari 2026
 
 ---
 
-**Vragen?** Neem contact op via `security@getpawsy.com`
+**Vragen?** Neem contact op via `security@getpawsy.pet`

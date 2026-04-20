@@ -38,7 +38,7 @@ Deze Code of Conduct is van toepassing binnen alle community-ruimtes, en is ook 
 
 Gevallen van beledigend, intimiderend of anderszins onaanvaardbaar gedrag kunnen worden gemeld aan de community leiders die verantwoordelijk zijn voor handhaving via:
 
-📧 **Email**: conduct@getpawsy.com
+📧 **Email**: conduct@getpawsy.pet
 
 Alle klachten zullen snel en eerlijk worden beoordeeld en onderzocht.
 

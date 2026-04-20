@@ -311,7 +311,7 @@ export default function ComplianceEvidence() {
             <div className="bg-muted p-4 rounded-lg font-mono text-xs space-y-1 whitespace-pre-wrap">
 {`We have completed a comprehensive compliance review of our store at https://getpawsy.pet to address the policy concerns:
 
-1. BUSINESS TRANSPARENCY: Our business entity (GetPawsy LLC, New York, NY) is clearly displayed in the footer, /about, and /contact pages. Support email (support@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
+1. BUSINESS TRANSPARENCY: GetPawsy is operated by Skidzo, based in the Netherlands (KVK 78156955, VAT NL003295015B69), serving customers in the United States. The legal entity, address, and registration details are clearly displayed in the footer, /about, and /contact pages. Support email (support@getpawsy.pet) is prominently shown with response time expectations (within 24 business hours).
 
 2. POLICY PAGES: All required pages (/shipping, /returns, /privacy, /terms, /contact, /about) are publicly accessible, contain specific and accurate information, and are linked from the global footer.
 

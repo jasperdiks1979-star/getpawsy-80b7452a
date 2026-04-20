@@ -255,7 +255,7 @@ function generateStatusUpdateEmail(disputeId: string, newStatus: string, message
               Making pets happy, one product at a time 🐕🐈
             </p>
             <p style="color: #bbb; font-size: 12px; margin-top: 10px;">
-              GetPawsy B.V. • The Netherlands
+              GetPawsy is operated by Skidzo • The Netherlands • Serving customers in the United States
             </p>
           </div>
         </div>

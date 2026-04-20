@@ -245,7 +245,7 @@ export const trackViewItemList = (
       price: item.price,
       item_category: item.category,
       index: item.position ?? index,
-      currency: 'EUR',
+      currency: 'USD',
     })),
   });
 };
