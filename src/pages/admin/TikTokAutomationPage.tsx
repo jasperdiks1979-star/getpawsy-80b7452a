@@ -32,6 +32,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
 import { TodayPostingChecklist } from '@/components/admin/TodayPostingChecklist';
+import { TikTokAdsManagerWorkflow } from '@/components/admin/TikTokAdsManagerWorkflow';
 
 type TikTokPost = {
   id: string;
@@ -344,6 +345,9 @@ export default function TikTokAutomationPage() {
             Refresh
           </Button>
         </div>
+
+        {/* TikTok Ads Manager — US-Only Geo Lock Workflow */}
+        <TikTokAdsManagerWorkflow />
 
         {/* ONE-CLICK PIPELINE */}
         <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
