@@ -346,6 +346,9 @@ export default function TikTokAutomationPage() {
           </Button>
         </div>
 
+        {/* TikTok Ads Manager — US-Only Geo Lock Workflow */}
+        <TikTokAdsManagerWorkflow />
+
         {/* ONE-CLICK PIPELINE */}
         <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
           <CardHeader className="pb-3">
