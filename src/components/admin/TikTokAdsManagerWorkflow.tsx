@@ -334,12 +334,12 @@ export function TikTokAdsManagerWorkflow() {
 
       {/* Final confirmation */}
       {allRequiredChecked ? (
-        <Alert className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800 dark:text-green-200">
+        <Alert className="border-primary/50 bg-primary/10">
+          <CheckCircle2 className="h-4 w-4 text-primary" />
+          <AlertTitle className="text-primary">
             Workflow compleet — klaar om te publiceren
           </AlertTitle>
-          <AlertDescription className="text-xs text-green-700 dark:text-green-300">
+          <AlertDescription className="text-xs text-foreground/80">
             Alle 10 verplichte stappen zijn afgevinkt. Klik in Ads Manager op "Submit" om de
             US-only campagne te starten. Houd de eerste 48 uur de "Audience Geographics" tab in de
             gaten — als je daar Nederland ziet verschijnen, pauzeer direct.
