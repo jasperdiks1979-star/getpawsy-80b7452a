@@ -365,7 +365,7 @@ export function TikTokAdsManagerWorkflow() {
         <CardContent className="text-xs space-y-1.5">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Location:</span>
-            <strong className="text-green-600">United States (only)</strong>
+            <strong className="text-primary">United States (only)</strong>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Exclude:</span>
