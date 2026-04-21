@@ -32,6 +32,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
 import { TodayPostingChecklist } from '@/components/admin/TodayPostingChecklist';
+import { TikTokAdsManagerWorkflow } from '@/components/admin/TikTokAdsManagerWorkflow';
 
 type TikTokPost = {
   id: string;
