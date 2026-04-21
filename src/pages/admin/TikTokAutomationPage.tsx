@@ -350,6 +350,9 @@ export default function TikTokAutomationPage() {
         {/* TikTok Ads Manager — US-Only Geo Lock Workflow */}
         <TikTokAdsManagerWorkflow />
 
+        {/* Daily Caption Generator — manual posting helper while API is pending */}
+        <DailyCaptionGenerator />
+
         {/* ONE-CLICK PIPELINE */}
         <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
           <CardHeader className="pb-3">
