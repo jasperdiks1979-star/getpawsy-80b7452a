@@ -33,6 +33,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
 import { TodayPostingChecklist } from '@/components/admin/TodayPostingChecklist';
 import { TikTokAdsManagerWorkflow } from '@/components/admin/TikTokAdsManagerWorkflow';
+import { DailyCaptionGenerator } from '@/components/admin/DailyCaptionGenerator';
 
 type TikTokPost = {
   id: string;
