@@ -137,7 +137,7 @@ const CHECKLIST: ChecklistItem[] = [
 function StatusBadge({ status }: { status: PMStatus | undefined }) {
   if (status === "active") {
     return (
-      <Badge className="bg-green-600/15 text-green-700 dark:text-green-400 border border-green-600/30 hover:bg-green-600/20">
+      <Badge className="bg-primary/15 text-primary border border-primary/30 hover:bg-primary/20">
         <CheckCircle2 className="h-3 w-3 mr-1" /> Active
       </Badge>
     );
@@ -277,7 +277,7 @@ export function ApplePayDomainPanel() {
                   <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Checking…
                 </Badge>
               ) : overallReady ? (
-                <Badge className="bg-green-600/15 text-green-700 dark:text-green-400 border border-green-600/30">
+                <Badge className="bg-primary/15 text-primary border border-primary/30">
                   <Shield className="h-3 w-3 mr-1" /> Ready for iOS Safari
                 </Badge>
               ) : (
@@ -415,7 +415,7 @@ export function ApplePayDomainPanel() {
                     aria-pressed={checked}
                     className={`mt-0.5 h-5 w-5 rounded flex-shrink-0 border flex items-center justify-center transition-colors ${
                       checked
-                        ? "bg-green-600/15 border-green-600/40 text-green-700 dark:text-green-400"
+                        ? "bg-primary/15 border-primary/40 text-primary"
                         : "bg-background border-border text-muted-foreground"
                     } ${isAuto ? "cursor-default" : "cursor-pointer hover:border-foreground/40"}`}
                   >
