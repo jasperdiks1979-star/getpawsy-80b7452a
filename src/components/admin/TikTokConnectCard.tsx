@@ -263,9 +263,9 @@ export function TikTokConnectCard() {
           )}
 
           {!currentMatches && (
-            <div className="flex items-start gap-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-              <span className="text-foreground">
+            <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <span className="text-muted-foreground">
                 Tip: also add this preview origin to TikTok's Redirect URIs if you plan to test from here.
               </span>
             </div>
