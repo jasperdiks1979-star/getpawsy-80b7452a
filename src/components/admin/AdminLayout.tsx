@@ -16,6 +16,7 @@ import {
   Zap,
   BookOpen,
   Activity,
+  Apple,
   Menu,
   X,
 } from 'lucide-react';
@@ -44,6 +45,7 @@ const navItems = [
   { to: '/admin/integrations/merchant', label: 'Merchant Center', icon: Globe },
   { to: '/admin/integrations/merchant/readiness', label: 'Merchant Readiness', icon: ShieldAlert },
   { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert },
+  { to: '/admin/integrations/stripe/apple-pay', label: 'Apple Pay Domain', icon: Apple },
   { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
   { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
   { to: '/admin/tiktok-automation', label: 'TikTok Auto', icon: Activity },
