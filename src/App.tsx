@@ -353,6 +353,7 @@ const ApplePayDomainPage = lazyWithRetry(() => import("./pages/admin/ApplePayDom
 const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/MerchantReadinessPage"));
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
+const TikTokOAuthCallback = lazyWithRetry(() => import("./pages/TikTokOAuthCallback"));
 const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/ShoppingOptimizerPage"));
 const ProductOptimizerPage = lazyWithRetry(() => import("./pages/admin/ProductOptimizerPage"));
 const ImageCompliancePage = lazyWithRetry(() => import("./pages/admin/ImageCompliancePage"));

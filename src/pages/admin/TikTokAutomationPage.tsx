@@ -34,6 +34,7 @@ import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
 import { TodayPostingChecklist } from '@/components/admin/TodayPostingChecklist';
 import { TikTokAdsManagerWorkflow } from '@/components/admin/TikTokAdsManagerWorkflow';
 import { DailyCaptionGenerator } from '@/components/admin/DailyCaptionGenerator';
+import { TikTokConnectCard } from '@/components/admin/TikTokConnectCard';
 
 type TikTokPost = {
   id: string;
@@ -349,6 +350,9 @@ export default function TikTokAutomationPage() {
 
         {/* TikTok Ads Manager — US-Only Geo Lock Workflow */}
         <TikTokAdsManagerWorkflow />
+
+        {/* TikTok OAuth Connection — required for direct posting via Content Posting API */}
+        <TikTokConnectCard />
 
         {/* Daily Caption Generator — manual posting helper while API is pending */}
         <DailyCaptionGenerator />

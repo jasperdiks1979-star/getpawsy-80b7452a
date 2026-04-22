@@ -35,23 +35,42 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
-    const TIKTOK_ACCESS_TOKEN = Deno.env.get("TIKTOK_ACCESS_TOKEN");
-    
-    if (!TIKTOK_ACCESS_TOKEN) {
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Pull connected TikTok account tokens from DB (set via OAuth flow)
+    const { data: tokenRow } = await sb
+      .from("tiktok_oauth_tokens")
+      .select("access_token, expires_at, open_id, display_name")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!tokenRow) {
       return new Response(
         JSON.stringify({
           ok: false,
-          reason: "TIKTOK_NOT_CONFIGURED",
-          message: "TikTok API credentials not yet configured. Complete business verification first.",
+          reason: "TIKTOK_NOT_CONNECTED",
+          message: "No TikTok account connected. Click 'Connect TikTok Account' in the admin panel first.",
         }),
         { headers: { ...cors, "Content-Type": "application/json" } },
       );
     }
 
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          reason: "TIKTOK_TOKEN_EXPIRED",
+          message: "TikTok access token expired. Please reconnect the account in the admin panel.",
+        }),
+        { headers: { ...cors, "Content-Type": "application/json" } },
+      );
+    }
+
+    const TIKTOK_ACCESS_TOKEN = tokenRow.access_token;
 
     const body = await req.json().catch(() => ({}));
     const postId = body.postId as string | undefined;
