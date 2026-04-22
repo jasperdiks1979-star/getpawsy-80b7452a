@@ -104,7 +104,7 @@ serve(async (req) => {
     // Create line items for Stripe checkout
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item) => ({
       price_data: {
-        currency: "eur",
+        currency: "usd",
         product_data: {
           name: item.name,
           images: item.image ? [item.image] : undefined,
@@ -148,9 +148,20 @@ serve(async (req) => {
       customer_email: customerId ? undefined : userEmail,
       line_items: lineItems,
       mode: "payment",
+      // Apple Pay & Google Pay surface automatically with `card`. Link is added
+      // explicitly so returning shoppers see the 1-click Stripe Link option.
+      payment_method_types: ["card", "link"],
       shipping_address_collection: {
-        allowed_countries: ["NL", "BE", "DE", "FR", "GB", "US"],
+        // US-only storefront: only accept US shipping addresses to prevent
+        // accidental international orders we cannot fulfill.
+        allowed_countries: ["US"],
       },
+      // Pre-fill phone (helps wallet payments + carrier delivery)
+      phone_number_collection: { enabled: true },
+      // Locale-tag UI as English for US shoppers
+      locale: "en",
+      // Improves wallet payments by surfacing it as the express choice
+      billing_address_collection: "auto",
       success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/checkout`,
       metadata: orderMetadata,
@@ -184,7 +195,7 @@ serve(async (req) => {
         stripe_session_id: session.id,
         status: "pending",
         total_amount: totalAmount,
-        currency: "eur",
+        currency: "usd",
         customer_email: userEmail,
         items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
         order_access_token: orderAccessToken,
