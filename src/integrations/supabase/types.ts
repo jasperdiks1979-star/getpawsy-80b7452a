@@ -7401,6 +7401,75 @@ export type Database = {
         }
         Relationships: []
       }
+      tiktok_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          redirect_to: string | null
+          state: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          redirect_to?: string | null
+          state: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          redirect_to?: string | null
+          state?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      tiktok_oauth_tokens: {
+        Row: {
+          access_token: string
+          avatar_url: string | null
+          connected_by: string | null
+          created_at: string
+          display_name: string | null
+          expires_at: string
+          id: string
+          open_id: string
+          refresh_expires_at: string | null
+          refresh_token: string
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          avatar_url?: string | null
+          connected_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at: string
+          id?: string
+          open_id: string
+          refresh_expires_at?: string | null
+          refresh_token: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          avatar_url?: string | null
+          connected_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string
+          id?: string
+          open_id?: string
+          refresh_expires_at?: string | null
+          refresh_token?: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tiktok_post_queue: {
         Row: {
           caption: string
