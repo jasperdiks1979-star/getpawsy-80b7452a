@@ -887,6 +887,12 @@ const ProductDetail = () => {
           >
             {/* Category & Title */}
             <div>
+              {/* Pinterest continuity banner — only when arriving from a pin */}
+              {adIntent.source === 'pinterest' && (
+                <div className="mb-3">
+                  <PinterestLandingBanner hook={adIntent.keyword} />
+                </div>
+              )}
               {product.category && (
                 <motion.p
                   initial={{ opacity: 0 }}
@@ -899,15 +905,15 @@ const ProductDetail = () => {
               <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
                 {safeString(product.name)}
               </h1>
-              {/* Ad intent headline — shown when ?kw= param matches */}
+              {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
               {adIntent.headline && (
                 <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
                   {adIntent.headline}
                 </p>
               )}
-              {/* Benefit subline — 1-sentence value prop */}
+              {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available. */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
-                {generateClarityIntro(product.name, product.category || "")}
+                {adIntent.subline || generateClarityIntro(product.name, product.category || "")}
               </p>
 
               {/* Rating — only shown when real verified reviews exist */}
