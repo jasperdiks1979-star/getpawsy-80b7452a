@@ -38,6 +38,56 @@ function loadScript(src: string): Promise<void> {
 let initialized = false;
 
 /**
+ * Initialize TikTok Pixel — loaded deferred to avoid blocking render.
+ * Pixel ID: D7KDRMBC77U9EB7RJROG (GetPawsy Pixel)
+ */
+function initTikTokPixel(): void {
+  try {
+    const w = window as any;
+    if (w.ttq && w.ttq._loaded) return;
+
+    w.TiktokAnalyticsObject = 'ttq';
+    const ttq = (w.ttq = w.ttq || []);
+    ttq.methods = ['page','track','identify','instances','debug','on','off','once','ready','alias','group','enableCookie','disableCookie','holdConsent','revokeConsent','grantConsent'];
+    ttq.setAndDefer = function(t: any, e: string) {
+      t[e] = function() { t.push([e].concat(Array.prototype.slice.call(arguments, 0))); };
+    };
+    for (let i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+    ttq.instance = function(t: string) {
+      const e = ttq._i[t] || [];
+      for (let n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
+      return e;
+    };
+    ttq.load = function(e: string, n?: any) {
+      const r = 'https://analytics.tiktok.com/i18n/pixel/events.js';
+      ttq._i = ttq._i || {};
+      ttq._i[e] = [];
+      ttq._i[e]._u = r;
+      ttq._t = ttq._t || {};
+      ttq._t[e] = +new Date();
+      ttq._o = ttq._o || {};
+      ttq._o[e] = n || {};
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.src = r + '?sdkid=' + e + '&lib=ttq';
+      const first = document.getElementsByTagName('script')[0];
+      first.parentNode?.insertBefore(script, first);
+    };
+
+    // GDPR: hold consent until user accepts. Storefront cookie banner can call ttq.grantConsent().
+    ttq.holdConsent && ttq.holdConsent();
+
+    ttq.load('D7KDRMBC77U9EB7RJROG');
+    ttq.page();
+    ttq._loaded = true;
+    console.log('[Analytics] TikTok Pixel loaded');
+  } catch (e) {
+    console.warn('[Analytics] TikTok Pixel init error (non-fatal):', e);
+  }
+}
+
+/**
  * Initialize all Google analytics/ads scripts.
  * Safe to call multiple times — only runs once.
  * Should be called AFTER React has mounted successfully.
@@ -65,6 +115,9 @@ export async function initDeferredAnalytics(): Promise<void> {
     gtag('config', 'G-5WYL8RJDZF');
     gtag('config', 'AW-381705659');
     gtag('config', 'GT-5D48HPG2');
+
+    // Load TikTok Pixel alongside Google scripts
+    initTikTokPixel();
 
     console.log('[Analytics] Deferred analytics loaded successfully');
   } catch (e) {
