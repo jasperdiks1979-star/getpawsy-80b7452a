@@ -480,13 +480,19 @@ const Checkout = () => {
               
               {/* Payment methods */}
               <div className="mt-4 pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-2">Accepted payment methods:</p>
-                <div className="flex gap-2">
+                <p className="text-sm text-muted-foreground mb-2">Express & card payments accepted:</p>
+                <div className="flex flex-wrap gap-2">
+                  <div className="bg-foreground text-background px-3 py-1.5 rounded text-xs font-semibold">Apple Pay</div>
+                  <div className="bg-muted px-3 py-1.5 rounded text-xs font-semibold">Google Pay</div>
                   <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Visa</div>
                   <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Mastercard</div>
                   <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Amex</div>
-                  <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">PayPal</div>
+                  <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Discover</div>
+                  <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Link</div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Apple Pay & Google Pay appear automatically on supported devices for 1-tap checkout.
+                </p>
               </div>
             </div>
 
