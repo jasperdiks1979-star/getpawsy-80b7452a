@@ -15,6 +15,16 @@ type ConnectedAccount = {
 };
 
 /**
+ * Redirect URIs that MUST be registered in the TikTok Developer Portal
+ * (Login Kit → Redirect URI section). Both apex and lovable.app are supported
+ * because admin OAuth can be initiated from either host.
+ */
+const EXPECTED_REDIRECT_URIS = [
+  "https://getpawsy.pet/auth/tiktok/callback",
+  "https://getpawsy.lovable.app/auth/tiktok/callback",
+] as const;
+
+/**
  * Connect TikTok button for the admin panel.
  * Initiates OAuth via tiktok-oauth-start and shows the connected account.
  */
