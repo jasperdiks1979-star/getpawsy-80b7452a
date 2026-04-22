@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Link as LinkIcon, Loader2, LogOut, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Link as LinkIcon, Loader2, LogOut, AlertTriangle, ShieldCheck, XCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 type ConnectedAccount = {
@@ -13,6 +13,16 @@ type ConnectedAccount = {
   expires_at: string;
   scope: string | null;
 };
+
+/**
+ * Redirect URIs that MUST be registered in the TikTok Developer Portal
+ * (Login Kit → Redirect URI section). Both apex and lovable.app are supported
+ * because admin OAuth can be initiated from either host.
+ */
+const EXPECTED_REDIRECT_URIS = [
+  "https://getpawsy.pet/auth/tiktok/callback",
+  "https://getpawsy.lovable.app/auth/tiktok/callback",
+] as const;
 
 /**
  * Connect TikTok button for the admin panel.
@@ -76,6 +86,24 @@ export function TikTokConnectCard() {
   };
 
   const tokenExpired = account && new Date(account.expires_at).getTime() < Date.now();
+
+  // Validator: which expected URI matches the current browser origin?
+  const currentCallback =
+    typeof window !== "undefined"
+      ? `${window.location.origin.replace(/\/$/, "")}/auth/tiktok/callback`
+      : "";
+  const currentMatches = EXPECTED_REDIRECT_URIS.includes(
+    currentCallback as (typeof EXPECTED_REDIRECT_URIS)[number],
+  );
+
+  const copyUri = async (uri: string) => {
+    try {
+      await navigator.clipboard.writeText(uri);
+      toast.success("Copied to clipboard");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
 
   return (
     <Card>
@@ -168,6 +196,81 @@ export function TikTokConnectCard() {
             </p>
           </div>
         )}
+
+        {/* Redirect URI validator */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              Redirect URI Validator
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Both URIs below must be registered in your TikTok Developer Portal under{" "}
+            <strong>Login Kit → Redirect URI</strong>. If either is missing, OAuth will fail with{" "}
+            <code className="text-[10px]">invalid_redirect</code> or{" "}
+            <code className="text-[10px]">invalid_client_key</code>.
+          </p>
+
+          <ul className="space-y-2">
+            {EXPECTED_REDIRECT_URIS.map((uri) => {
+              const isCurrent = uri === currentCallback;
+              return (
+                <li
+                  key={uri}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    <code className="text-xs font-mono truncate">{uri}</code>
+                    {isCurrent && (
+                      <Badge variant="secondary" className="text-[10px] shrink-0">
+                        Current origin
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => copyUri(uri)}
+                    aria-label={`Copy ${uri}`}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {currentMatches ? (
+            <div className="flex items-start gap-2 rounded-md bg-primary/10 px-3 py-2 text-xs">
+              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <span className="text-foreground">
+                This origin (<code>{window.location.origin}</code>) matches an expected redirect URI.
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs">
+              <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <span className="text-foreground">
+                Current origin <code>{currentCallback}</code> is <strong>not</strong> in the expected
+                list. OAuth from this host will be rejected by TikTok. Open the admin from{" "}
+                <code>getpawsy.pet</code> or <code>getpawsy.lovable.app</code> instead.
+              </span>
+            </div>
+          )}
+
+          {!currentMatches && (
+            <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <span className="text-muted-foreground">
+                Tip: also add this preview origin to TikTok's Redirect URIs if you plan to test from here.
+              </span>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
