@@ -87,6 +87,24 @@ export function TikTokConnectCard() {
 
   const tokenExpired = account && new Date(account.expires_at).getTime() < Date.now();
 
+  // Validator: which expected URI matches the current browser origin?
+  const currentCallback =
+    typeof window !== "undefined"
+      ? `${window.location.origin.replace(/\/$/, "")}/auth/tiktok/callback`
+      : "";
+  const currentMatches = EXPECTED_REDIRECT_URIS.includes(
+    currentCallback as (typeof EXPECTED_REDIRECT_URIS)[number],
+  );
+
+  const copyUri = async (uri: string) => {
+    try {
+      await navigator.clipboard.writeText(uri);
+      toast.success("Copied to clipboard");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
