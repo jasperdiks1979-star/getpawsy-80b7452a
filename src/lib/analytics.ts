@@ -1,5 +1,11 @@
 // Google Analytics 4 Event Tracking Utility
 import { getFounderModeStatus, getTrafficType, logFounderEvent } from '@/lib/founder-mode';
+import {
+  ttTrackViewContent,
+  ttTrackAddToCart,
+  ttTrackInitiateCheckout,
+  ttTrackPurchase,
+} from '@/lib/tiktok-pixel';
 
 declare global {
   interface Window {
@@ -109,6 +115,17 @@ export const trackAddToCart = (
       quantity,
     }],
   });
+
+  // TikTok Pixel — respect founder mode suppression
+  if (!getFounderModeStatus()) {
+    ttTrackAddToCart({
+      contentId: productId,
+      contentName: productName,
+      value: productPrice * quantity,
+      quantity,
+      currency: 'USD',
+    });
+  }
 };
 
 export const trackRemoveFromCart = (
@@ -146,6 +163,16 @@ export const trackViewItem = (
       item_category: category,
     }],
   });
+
+  // TikTok Pixel — respect founder mode suppression
+  if (!getFounderModeStatus()) {
+    ttTrackViewContent({
+      contentId: productId,
+      contentName: productName,
+      value: productPrice,
+      currency: 'USD',
+    });
+  }
 };
 
 // Search
@@ -170,6 +197,19 @@ export const trackBeginCheckout = (
       quantity: item.quantity,
     })),
   });
+
+  // TikTok Pixel — respect founder mode suppression
+  if (!getFounderModeStatus()) {
+    ttTrackInitiateCheckout({
+      value: totalValue,
+      currency: 'USD',
+      contents: items.map(item => ({
+        content_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    });
+  }
 };
 
 
@@ -204,6 +244,21 @@ export const trackPurchase = (
       quantity: item.quantity,
     })),
   });
+
+  // TikTok Pixel — respect founder mode suppression
+  if (!getFounderModeStatus()) {
+    ttTrackPurchase({
+      orderId: transactionId,
+      value: totalValue,
+      currency: 'USD',
+      contents: items.map(item => ({
+        content_id: item.id,
+        content_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    });
+  }
 };
 
 
