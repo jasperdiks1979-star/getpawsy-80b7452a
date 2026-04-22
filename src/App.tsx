@@ -746,6 +746,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/auth/tiktok/callback"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <TikTokOAuthCallback />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/track"
                             element={
                               <Suspense fallback={<RouteLoader />}>
