@@ -92,6 +92,7 @@ import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
 import { MicroFrictionBlock } from "@/components/products/MicroFrictionBlock";
 import { useAdIntent } from "@/hooks/useAdIntent";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
+import { PinterestLandingBanner } from "@/components/products/PinterestLandingBanner";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
   DELIVERY_TIME_STANDARD,
