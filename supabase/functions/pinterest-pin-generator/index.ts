@@ -41,7 +41,13 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const BASE_URL = "https://getpawsy.pet";
-    const productUrl = `${BASE_URL}/product/${product.slug}`;
+    const baseProductUrl = `${BASE_URL}/products/${product.slug}`;
+
+    // Hook groups MUST match useAdIntent.INTENT_MAP keys so the PDP swaps
+    // its headline + benefit subline on arrival. Keep this list in sync.
+    const HOOK_GROUPS = ["problem", "solution", "comparison", "transformation"] as const;
+    const buildPinUrl = (hookGroup: string) =>
+      `${baseProductUrl}?utm_source=pinterest&utm_medium=social&utm_campaign=organic_pin&hook=${hookGroup}`;
 
     const systemPrompt = `You are a Pinterest marketing expert for GetPawsy.pet, a US-based pet supply e-commerce store. You create high-CTR Pinterest pins that drive traffic and conversions.
 
@@ -54,12 +60,18 @@ STRICT RULES:
 - Use ✔ format for bullet benefits
 - Each pin MUST use a DIFFERENT angle/hook
 
-HOOK ANGLES (use a different one for each pin):
-1. Problem → Solution
-2. Curiosity ("This changed everything…")
-3. Lifestyle upgrade
-4. Time-saving
-5. Multi-pet / specific use case
+HOOK GROUPS (MANDATORY — set "hookGroup" to ONE of these exact lowercase values):
+- "problem"        → opens with a real, specific pain point
+- "solution"       → leads with the easier/smarter way
+- "comparison"     → why this beats the typical alternative
+- "transformation" → before vs. after, daily-life upgrade
+
+DESCRIPTION STRUCTURE (200–400 chars, NO hype, NO ALL-CAPS, NO clickbait):
+1. Problem-focused opening (1 sentence — what frustrates the owner today)
+2. Clear benefit (1 sentence — what changes once they have this)
+3. 2–3 ✔ benefit bullets (concrete, scannable)
+4. CTA: "Shop now" (or "See more" / "Browse the collection")
+5. 3–5 lowercase hashtags
 
 OUTPUT: Return valid JSON matching this exact structure:
 {
@@ -70,9 +82,10 @@ OUTPUT: Return valid JSON matching this exact structure:
   "pins": [
     {
       "pinNumber": 1,
-      "hookAngle": "string (which angle used)",
+      "hookGroup": "problem | solution | comparison | transformation",
+      "hookAngle": "string (short label of the angle used)",
       "title": "string (max 100 chars, high-CTR, keyword-rich)",
-      "description": "string (200-400 chars: Hook → Solution → ✔ Benefits → CTA → #hashtags)",
+      "description": "string (200-400 chars: Problem → Benefit → ✔ bullets → 'Shop now' CTA → hashtags)",
       "imagePrompt": "string (vertical 2:3 Pinterest style, clean product focus, emotional trigger, soft lighting, high contrast, include overlay text suggestion)",
       "suggestedOverlayText": "string (big bold headline for pin image)",
       "bestPostingTime": "string (morning/afternoon/evening US time)"
@@ -92,12 +105,12 @@ Product Name: ${product.name}
 Category: ${product.category || "Pet Products"}
 Price: $${product.price}
 Description: ${product.description || "No description"}
-Product URL: ${productUrl}
+Product URL (do NOT include in description, used for tracking only): ${baseProductUrl}
 
 Requirements:
-- 3 pins, each with a DIFFERENT hook angle
+- 3 pins, each with a DIFFERENT hookGroup from: problem, solution, comparison, transformation
 - Titles max 100 chars, keyword-rich, high-CTR
-- Descriptions 200-400 chars following: Hook → Solution → ✔ Benefits → CTA → 3-5 hashtags
+- Descriptions follow: Problem → Benefit → ✔ bullets → "Shop now" CTA → 3-5 hashtags
 - Image prompts for vertical 2:3 Pinterest format
 - Extract primary keyword from the product name/slug
 - Generate 5 long-tail keyword variations
@@ -135,12 +148,29 @@ Requirements:
 
     const parsed = JSON.parse(jsonMatch[0]);
 
+    // Tag every pin's destination URL with its hookGroup so the PDP can swap
+    // headline + subline on arrival (see src/hooks/useAdIntent.ts).
+    if (Array.isArray(parsed?.pins)) {
+      parsed.pins = parsed.pins.map((pin: any, idx: number) => {
+        const rawHook = String(pin?.hookGroup || "").toLowerCase().trim();
+        const hookGroup = (HOOK_GROUPS as readonly string[]).includes(rawHook)
+          ? rawHook
+          : HOOK_GROUPS[idx % HOOK_GROUPS.length];
+        return {
+          ...pin,
+          hookGroup,
+          destinationUrl: buildPinUrl(hookGroup),
+        };
+      });
+    }
+    parsed.productUrl = baseProductUrl;
+
     // Store in database
     await sb.from("pinterest_pins").upsert({
       product_id: product.id,
       product_slug: product.slug,
       product_name: product.name,
-      product_url: productUrl,
+      product_url: baseProductUrl,
       pin_data: parsed,
       generated_at: new Date().toISOString(),
     }, { onConflict: "product_id" });
