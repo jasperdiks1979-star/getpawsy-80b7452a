@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Link as LinkIcon, Loader2, LogOut, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Link as LinkIcon, Loader2, LogOut, AlertTriangle, ShieldCheck, XCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 type ConnectedAccount = {
