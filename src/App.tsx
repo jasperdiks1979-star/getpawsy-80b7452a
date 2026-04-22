@@ -349,6 +349,7 @@ const GscUrlInspectionHelper = lazyWithRetry(() => import("./pages/admin/GscUrlI
 const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChecklist"));
 const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/MerchantIntegrationPage"));
 const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantSettingsPage"));
+const ApplePayDomainPage = lazyWithRetry(() => import("./pages/admin/ApplePayDomainPage"));
 const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/MerchantReadinessPage"));
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
@@ -1824,6 +1825,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <MerchantHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="integrations/stripe/apple-pay"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ApplePayDomainPage />
                                 </Suspense>
                               }
                             />
