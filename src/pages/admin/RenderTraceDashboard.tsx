@@ -26,6 +26,7 @@ import {
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from '@/components/ui/chart';
+import { RenderTraceAlerts } from '@/components/admin/RenderTraceAlerts';
 
 // -----------------------------------------------------------------------------
 // Render-trace dashboard
