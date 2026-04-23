@@ -1179,6 +1179,54 @@ describe('usePdpBotRenderTrace — deterministic 8s watchdog across retry config
       // or any late "rendered" log.
       await advanceAndFlush(20_000);
       expect(getReportedStates()).toEqual(finalStates);
+
+      // ---- Duration-range assertions on the timeout payload -----------
+      // The watchdog fires at t=8000ms, so the timeout payload's
+      // `t_shell` (and `t_mount`, since shell fires at mount) MUST sit in
+      // a tight window around 8000ms. We allow [8000, 8050] to absorb
+      // microtask drain jitter but reject any value that suggests the
+      // watchdog fired early/late OR that we captured the wrong clock.
+      const timeoutCall = invokeMock.mock.calls.find(
+        ([fn, opts]) =>
+          fn === 'log-crawler-visit' &&
+          (opts as { body: { pageUrl: string; userAgent: string } }).body.pageUrl.includes(
+            `/product/${slug}`,
+          ) &&
+          (opts as { body: { userAgent: string } }).body.userAgent.includes(
+            'pdp-render-trace:timeout',
+          ),
+      );
+      expect(timeoutCall, `[${scenario.label}] timeout payload should exist`).toBeDefined();
+      const timeoutUa = (timeoutCall![1] as { body: { userAgent: string } }).body
+        .userAgent;
+
+      const readMs = (key: 't_mount' | 't_shell'): number | null => {
+        const m = timeoutUa.match(new RegExp(`${key}=(\\d+)ms`));
+        return m ? Number(m[1]) : null;
+      };
+
+      const tMount = readMs('t_mount');
+      const tShell = readMs('t_shell');
+      expect(tMount, `[${scenario.label}] timeout UA must carry t_mount`).not.toBeNull();
+      expect(tShell, `[${scenario.label}] timeout UA must carry t_shell`).not.toBeNull();
+
+      // 8000ms boundary ± 50ms drain jitter.
+      for (const [label, value] of [
+        ['t_mount', tMount!],
+        ['t_shell', tShell!],
+      ] as const) {
+        expect(
+          value,
+          `[${scenario.label}] timeout ${label} (${value}ms) must be ≥ 8000ms watchdog boundary`,
+        ).toBeGreaterThanOrEqual(8_000);
+        expect(
+          value,
+          `[${scenario.label}] timeout ${label} (${value}ms) must be ≤ 8050ms (boundary + jitter)`,
+        ).toBeLessThanOrEqual(8_050);
+      }
+      // Shell fires at mount → t_mount and t_shell on the timeout payload
+      // should agree closely.
+      expect(Math.abs(tMount! - tShell!)).toBeLessThanOrEqual(50);
     });
   }
 
