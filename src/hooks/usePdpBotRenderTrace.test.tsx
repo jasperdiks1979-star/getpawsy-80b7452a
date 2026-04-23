@@ -768,4 +768,93 @@ describe('usePdpBotRenderTrace', () => {
     });
     expect(getReportedStates().filter((s) => s === 'timeout')).toHaveLength(1);
   });
+
+  it('isolates watchdog cancellation per slug: rendering slug A does not cancel slug B\'s timeout', async () => {
+    const slugA = 'isolated-watchdog-A';
+    const slugB = 'isolated-watchdog-B';
+
+    // Mount slug A first.
+    const { rerender: rerenderA } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug: slugA, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Mount slug B concurrently — independent hook instance, independent watchdog.
+    renderHook(() =>
+      usePdpBotRenderTrace({ slug: slugB, isLoading: true, hasProduct: false }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Both should have logged their shell event and armed their own watchdogs.
+    const collectStatesForSlug = (slug: string): string[] =>
+      invokeMock.mock.calls
+        .filter(
+          ([fn, opts]) =>
+            fn === 'log-crawler-visit' &&
+            (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+        )
+        .map(([, opts]) => {
+          const ua = (opts as { body: { userAgent: string } }).body.userAgent;
+          return ua.match(/pdp-render-trace:(shell|rendered|timeout)/)?.[1] ?? 'unknown';
+        });
+
+    expect(collectStatesForSlug(slugA)).toEqual(['shell']);
+    expect(collectStatesForSlug(slugB)).toEqual(['shell']);
+
+    // Advance 5s — neither watchdog should have fired yet.
+    await act(async () => {
+      vi.advanceTimersByTime(5_000);
+      await Promise.resolve();
+    });
+
+    // Slug A receives data and renders successfully (cancels A's watchdog only).
+    rerenderA({ isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(collectStatesForSlug(slugA)).toEqual(['shell', 'rendered']);
+    // Critical: slug B must still be on the shell, watchdog still armed.
+    expect(collectStatesForSlug(slugB)).toEqual(['shell']);
+
+    // Cross slug B's 8s boundary (mounted ~0ms after A, so we need ≥3001ms more).
+    await act(async () => {
+      vi.advanceTimersByTime(3_001);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Slug B's timeout MUST have fired despite slug A having cancelled its own.
+    const statesB = collectStatesForSlug(slugB);
+    expect(statesB).toEqual(['shell', 'timeout']);
+
+    // Slug A must NOT have received a spurious timeout from B's watchdog leak.
+    const statesA = collectStatesForSlug(slugA);
+    expect(statesA).toEqual(['shell', 'rendered']);
+    expect(statesA).not.toContain('timeout');
+
+    // Confirm the timeout payload is unambiguously tagged to slug B.
+    const timeoutCall = invokeMock.mock.calls.find(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        (opts as { body: { userAgent: string; pageUrl: string } }).body.userAgent.includes(
+          'pdp-render-trace:timeout',
+        ) &&
+        (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slugB}`),
+    );
+    expect(timeoutCall).toBeDefined();
+    const { pageUrl } = (timeoutCall![1] as {
+      body: { pageUrl: string };
+    }).body;
+    expect(pageUrl).not.toContain(`/product/${slugA}`);
+  });
 });
