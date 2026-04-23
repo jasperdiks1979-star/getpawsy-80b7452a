@@ -906,18 +906,54 @@ serve(async (req) => {
       );
     }
 
-    const { error } = await supabase
-      .from('crawler_visits')
-      .insert({
-        page_url: pageUrl,
-        user_agent: userAgent,
-        is_googlebot: isGooglebot,
-        bot_type: loggedBotType,
-        ip_address: ipAddress,
-        referrer: referrer || null,
-      });
+    // -------------------------------------------------------------------------
+    // Idempotent insert
+    // -------------------------------------------------------------------------
+    // When the caller supplies `idempotencyKey`, retries (transient network
+    // failures, edge re-invocations, double-fired client effects) collapse to
+    // a single row thanks to the partial unique index on
+    // `crawler_visits.idempotency_key`. We use `upsert(..., { onConflict,
+    // ignoreDuplicates: true })` so the second call is a no-op rather than
+    // overwriting the first row's timestamp / metadata.
+    let dedupedByIdempotencyKey = false;
+    let dbError: unknown = null;
+    if (idempotencyKey) {
+      const { data: upserted, error: upsertErr } = await supabase
+        .from('crawler_visits')
+        .upsert(
+          {
+            page_url: pageUrl,
+            user_agent: userAgent,
+            is_googlebot: isGooglebot,
+            bot_type: loggedBotType,
+            ip_address: ipAddress,
+            referrer: referrer || null,
+            idempotency_key: idempotencyKey,
+          },
+          { onConflict: 'idempotency_key', ignoreDuplicates: true },
+        )
+        .select('id');
+      dbError = upsertErr;
+      // `ignoreDuplicates: true` returns an empty array when the row already
+      // existed, so we can detect (and surface) idempotent dedup cleanly.
+      if (!upsertErr && Array.isArray(upserted) && upserted.length === 0) {
+        dedupedByIdempotencyKey = true;
+      }
+    } else {
+      const { error: insertErr } = await supabase
+        .from('crawler_visits')
+        .insert({
+          page_url: pageUrl,
+          user_agent: userAgent,
+          is_googlebot: isGooglebot,
+          bot_type: loggedBotType,
+          ip_address: ipAddress,
+          referrer: referrer || null,
+        });
+      dbError = insertErr;
+    }
 
-    if (error) {
+    if (dbError) {
       console.error('Failed to log crawler visit:', error);
       return new Response(
         JSON.stringify({
@@ -929,7 +965,9 @@ serve(async (req) => {
     }
 
     console.log(
-      `Logged visit: ${pageUrl} | Bot: ${loggedBotType || 'None'} | VerifiedGooglebot: ${isGooglebot}`,
+      `Logged visit: ${pageUrl} | Bot: ${loggedBotType || 'None'} | VerifiedGooglebot: ${isGooglebot}${
+        dedupedByIdempotencyKey ? ' | deduped(idempotency_key)' : ''
+      }`,
     );
 
     // Send email notification only for verified Googlebot visits to appeal pages.
