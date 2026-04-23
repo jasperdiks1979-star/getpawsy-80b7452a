@@ -441,6 +441,16 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
                       {step.duration}
                     </Badge>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 gap-1 px-2 text-[11px]"
+                    onClick={() => setEvidenceStep(step.evidenceKind)}
+                    title="Toon volledige JSON evidence en logs"
+                  >
+                    <Code2 className="h-3 w-3" />
+                    JSON &amp; logs
+                  </Button>
                 </div>
               </div>
               <div className="mt-1">{step.result}</div>
@@ -448,6 +458,23 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
           </li>
         ))}
       </ol>
+      {evidenceStep && (() => {
+        const active = steps.find((s) => s.evidenceKind === evidenceStep);
+        if (!active) return null;
+        return (
+          <ReleaseStepEvidenceDialog
+            open={!!evidenceStep}
+            onOpenChange={(o) => !o && setEvidenceStep(null)}
+            kind={active.evidenceKind}
+            stepLabel={active.label}
+            releaseId={release.id}
+            releaseTitle={release.title}
+            payload={active.evidencePayload}
+            runId={active.evidenceRunId}
+            errorMessage={release.error_message}
+          />
+        );
+      })()}
       <ReleaseIssuesPanel
         releaseId={release.id}
         topFailReasons={
