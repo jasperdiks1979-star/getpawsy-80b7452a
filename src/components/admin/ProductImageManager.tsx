@@ -444,6 +444,98 @@ export const ProductImageManager = ({
         </div>
       </div>
 
+      {/* Pre-upload preview tray. Renders thumbnails for every file the
+          user picked (or dropped) so they can verify the SELECTION before
+          anything hits storage. Rejected files are shown greyed-out with
+          their reason instead of being silently dropped. */}
+      {pendingFiles.length > 0 && (
+        <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm">
+              <span className="font-medium">
+                {pendingFiles.length} file{pendingFiles.length === 1 ? "" : "s"} selected
+              </span>
+              {pendingFiles.some((p) => p.status === "rejected") && (
+                <span className="ml-2 text-xs text-destructive">
+                  · {pendingFiles.filter((p) => p.status === "rejected").length} will be skipped
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clearPending}
+                disabled={isUploading}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={confirmUpload}
+                disabled={isUploading || pendingFiles.every((p) => p.status === "rejected")}
+              >
+                {isUploading ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-1" />
+                )}
+                {isUploading && uploadProgress
+                  ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
+                  : `Upload ${pendingFiles.filter((p) => p.status === "ok").length} image${
+                      pendingFiles.filter((p) => p.status === "ok").length === 1 ? "" : "s"
+                    }`}
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            {pendingFiles.map((p) => {
+              const isRejected = p.status === "rejected";
+              return (
+                <div
+                  key={p.id}
+                  className={`relative group rounded-md border overflow-hidden bg-background ${
+                    isRejected ? "border-destructive/60" : "border-border"
+                  }`}
+                  title={isRejected ? `${p.file.name} — ${p.reason}` : p.file.name}
+                >
+                  <img
+                    src={p.previewUrl}
+                    alt={`Preview of ${p.file.name}`}
+                    className={`w-full aspect-square object-cover ${isRejected ? "opacity-40 grayscale" : ""}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePending(p.id)}
+                    disabled={isUploading}
+                    aria-label={`Remove ${p.file.name} from selection`}
+                    className="absolute top-1 right-1 bg-background/90 hover:bg-background rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <div className="absolute bottom-0 inset-x-0 bg-background/95 px-1.5 py-1">
+                    <p className="text-[10px] font-medium truncate" title={p.file.name}>
+                      {p.file.name}
+                    </p>
+                    <p
+                      className={`text-[10px] truncate ${
+                        isRejected ? "text-destructive" : "text-muted-foreground"
+                      }`}
+                    >
+                      {isRejected ? p.reason : formatBytes(p.file.size)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Image grid */}
       {images.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
