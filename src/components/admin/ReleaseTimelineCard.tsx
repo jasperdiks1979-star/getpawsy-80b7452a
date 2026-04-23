@@ -242,6 +242,7 @@ export function ReleaseTimelineCard() {
 function ReleaseTimeline({ release }: { release: ReleaseRow }) {
   const sync = release.sync_summary ?? {};
   const val = release.validation_summary ?? {};
+  const [evidenceStep, setEvidenceStep] = useState<StepEvidenceKind | null>(null);
 
   // Derive per-step start/end. Sync exposes startedAt/completedAt explicitly
   // (from the merchant-sync edge function). For validation we only have the
@@ -265,6 +266,17 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
       duration: fmtDuration(recordStart, recordEnd),
       done: true,
       failed: false,
+      evidenceKind: 'record' as StepEvidenceKind,
+      evidencePayload: {
+        id: release.id,
+        title: release.title,
+        notes: release.notes,
+        status: release.status,
+        created_at: release.created_at,
+        updated_at: release.updated_at,
+        completed_at: release.completed_at,
+      },
+      evidenceRunId: null as string | null,
       result: (
         <div className="text-xs text-muted-foreground space-y-0.5">
           <div>
@@ -286,6 +298,9 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
         release.status === 'failed' && !val.ok && !syncEnd
           ? true
           : Number(sync.errorCount ?? 0) > 0,
+      evidenceKind: 'sync' as StepEvidenceKind,
+      evidencePayload: sync,
+      evidenceRunId: (sync.runId as string | undefined) ?? release.sync_run_id ?? null,
       result:
         Object.keys(sync).length > 0 ? (
           <div className="text-xs text-muted-foreground space-y-0.5">
@@ -332,6 +347,12 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
       failed: release.status === 'failed' && !!syncEnd && !valEnd
         ? true
         : val.ok === false,
+      evidenceKind: 'validate' as StepEvidenceKind,
+      evidencePayload: val,
+      evidenceRunId:
+        (val.runId as string | undefined) ??
+        (val.jobRunId as string | undefined) ??
+        null,
       result:
         Object.keys(val).length > 0 ? (
           <div className="text-xs text-muted-foreground space-y-0.5">
