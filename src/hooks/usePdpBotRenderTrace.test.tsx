@@ -1261,4 +1261,92 @@ describe('usePdpBotRenderTrace — deterministic 8s watchdog across retry config
       expect(states).not.toContain('rendered');
     }
   });
+
+  it('two concurrent slugs: each log call carries only its own pdp-render-trace tag and slug, with zero cross-contamination', async () => {
+    // Two PDP hook instances are mounted at the same time, simulating two
+    // bot-rendered tabs/iframes (or a parent + portal). The shell-effect for
+    // each instance fires independently and the watchdogs run in parallel;
+    // any shared/leaky state inside the hook would surface here as a payload
+    // whose pageUrl points at slug A but whose UA tag mentions slug B —
+    // or vice versa.
+    const slugA = 'concurrent-slug-alpha';
+    const slugB = 'concurrent-slug-beta';
+
+    const { rerender: rerenderA, unmount: unmountA } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug: slugA, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+    const { rerender: rerenderB, unmount: unmountB } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug: slugB, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+
+    // Both shells should fire after a single drain, interleaved by React.
+    await actFlush();
+
+    // Resolve A as "rendered", leave B to time out — exercises both terminal
+    // paths concurrently so neither slug's terminal state can borrow tags
+    // from the other.
+    rerenderA({ isLoading: false, hasProduct: true });
+    await actFlush();
+
+    await advanceAndFlush(8_001);
+
+    unmountA();
+    unmountB();
+
+    type LogCall = { pageUrl: string; userAgent: string; referrer: string };
+    const allCalls = invokeMock.mock.calls
+      .filter(([fn]) => fn === 'log-crawler-visit')
+      .map(([, opts]) => (opts as { body: LogCall }).body)
+      .filter((body) =>
+        new RegExp(`/product/(${slugA}|${slugB})(?:[/?#]|$)`).test(body.pageUrl),
+      );
+
+    // Sanity: exactly the four events we expect — A: shell+rendered, B: shell+timeout.
+    expect(allCalls).toHaveLength(4);
+
+    const slugRe = /\/product\/(concurrent-slug-(?:alpha|beta))(?:[/?#]|$)/;
+    const tagRe = /pdp-render-trace:(shell|rendered|timeout)/g;
+
+    const bySlug = new Map<string, string[]>();
+    for (const body of allCalls) {
+      const slugMatch = body.pageUrl.match(slugRe);
+      expect(slugMatch, `pageUrl missing recognizable slug: ${body.pageUrl}`).not.toBeNull();
+      const ownSlug = slugMatch![1];
+      const otherSlug = ownSlug === slugA ? slugB : slugA;
+
+      // Cross-contamination guards on raw strings (not just parsed values):
+      // the UA, pageUrl, and referrer for one slug must never mention the
+      // other slug literally — that would mean a payload was reassembled
+      // from a sibling instance's state.
+      expect(body.userAgent).not.toContain(otherSlug);
+      expect(body.pageUrl).not.toContain(otherSlug);
+      expect(body.referrer ?? '').not.toContain(otherSlug);
+
+      // Exactly one render-state tag in the UA, and it belongs to this slug.
+      const tagMatches = [...body.userAgent.matchAll(tagRe)].map((m) => m[1]);
+      expect(
+        tagMatches.length,
+        `userAgent for ${ownSlug} must contain exactly one pdp-render-trace tag, got: ${body.userAgent}`,
+      ).toBe(1);
+
+      // Mirror in the URL: exactly one `_render=` param matching the UA tag.
+      const renderParamCount = (body.pageUrl.match(/[?&]_render=/g) ?? []).length;
+      expect(renderParamCount, `${ownSlug} pageUrl must carry exactly one _render= param`).toBe(1);
+      const parsedRender = new URL(body.pageUrl).searchParams.get('_render');
+      expect(parsedRender).toBe(tagMatches[0]);
+
+      const arr = bySlug.get(ownSlug) ?? [];
+      arr.push(tagMatches[0]);
+      bySlug.set(ownSlug, arr);
+    }
+
+    // Per-slug terminal sequences are exactly what each instance owns —
+    // no leakage of the sibling's terminal state into either bucket.
+    expect(bySlug.get(slugA)?.sort()).toEqual(['rendered', 'shell']);
+    expect(bySlug.get(slugB)?.sort()).toEqual(['shell', 'timeout']);
+  });
 });
