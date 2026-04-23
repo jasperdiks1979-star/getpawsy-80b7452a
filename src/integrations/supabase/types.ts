@@ -1406,6 +1406,66 @@ export type Database = {
         }
         Relationships: []
       }
+      crawler_sampling_decisions: {
+        Row: {
+          always_log: boolean
+          bot_type: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          is_appeal_page: boolean
+          looks_like_render_trace: boolean
+          outcome: string
+          page_url: string
+          reason: string
+          render_trace_state: string | null
+          sample_rate: number | null
+          sample_roll: number | null
+          spoofed_googlebot: boolean
+          ua_claims_googlebot: boolean
+          user_agent: string
+          verified_googlebot: boolean
+        }
+        Insert: {
+          always_log?: boolean
+          bot_type?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_appeal_page?: boolean
+          looks_like_render_trace?: boolean
+          outcome: string
+          page_url: string
+          reason: string
+          render_trace_state?: string | null
+          sample_rate?: number | null
+          sample_roll?: number | null
+          spoofed_googlebot?: boolean
+          ua_claims_googlebot?: boolean
+          user_agent: string
+          verified_googlebot?: boolean
+        }
+        Update: {
+          always_log?: boolean
+          bot_type?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_appeal_page?: boolean
+          looks_like_render_trace?: boolean
+          outcome?: string
+          page_url?: string
+          reason?: string
+          render_trace_state?: string | null
+          sample_rate?: number | null
+          sample_roll?: number | null
+          spoofed_googlebot?: boolean
+          ua_claims_googlebot?: boolean
+          user_agent?: string
+          verified_googlebot?: boolean
+        }
+        Relationships: []
+      }
       crawler_visits: {
         Row: {
           bot_type: string | null
@@ -8080,6 +8140,10 @@ export type Database = {
         Returns: Json
       }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
+      get_crawler_sampling_decision_stats: {
+        Args: { p_limit?: number; p_window_hours?: number }
+        Returns: Json
+      }
       get_render_trace_slug_timeline: {
         Args: { p_slug: string; p_window_days?: number }
         Returns: Json
