@@ -583,7 +583,12 @@ export default function RenderTraceDashboard() {
                       return (
                         <TableRow key={s.slug} className={isRegression ? 'bg-destructive/5' : undefined}>
                           <TableCell className="font-mono text-xs max-w-[260px] truncate" title={s.slug}>
-                            {s.slug}
+                            <Link
+                              to={slugDetailHref(s.slug, windowDays)}
+                              className="text-primary hover:underline"
+                            >
+                              {s.slug}
+                            </Link>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">{s.shell}</TableCell>
                           <TableCell className="text-right tabular-nums">{s.rendered}</TableCell>
