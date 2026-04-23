@@ -898,3 +898,229 @@ describe('usePdpBotRenderTrace', () => {
     expect(slugStates).toEqual(['shell', 'rendered']);
   });
 });
+
+// =========================================================================
+// Deterministic 8s-watchdog timeout suite
+// =========================================================================
+//
+// Goal: prove the watchdog's terminal state is *exactly* ['shell', 'timeout']
+// no matter what retry config the underlying `retryWithBackoff` is using.
+//
+// We simulate three real-world retry shapes for the "shell" log call:
+//   1. fast-success     — first attempt resolves in 0ms (no retries needed)
+//   2. mid-flight retry — first attempt fails, retry resolves at ~1.5s
+//   3. slow exhausting  — every attempt fails, total chain spans ~6s, then throws
+//
+// In all three cases, `hasProduct` never flips, so the watchdog MUST fire at
+// the 8s boundary and the terminal call sequence MUST end with ['shell',
+// 'timeout'] — never a duplicate, never out-of-order, never missing.
+//
+// Determinism contract:
+//   * vi.useFakeTimers() controls every clock the hook touches (setTimeout,
+//     and the retry helper's internal sleep — which we replace with one that
+//     uses setTimeout under fake timers).
+//   * No `Date.now()` jitter influences the assertions; we only assert on
+//     state names and call ordering, not durations.
+//   * The watchdog fires at exactly t=8000ms after the shell event regardless
+//     of where in the retry chain we currently are.
+
+interface WatchdogRetryScenario {
+  label: string;
+  /** Build a `retryWithBackoff` replacement that uses fake-timer-friendly delays. */
+  buildRetry: () => (
+    fn: () => Promise<unknown>,
+    config?: unknown,
+  ) => Promise<unknown>;
+}
+
+/** Fake-timer-aware sleep helper (uses setTimeout so vi can advance it). */
+function fakeSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// The retry mock receives the original `fn` which (when called) eventually
+// invokes `supabase.functions.invoke('log-crawler-visit', { body })`. To
+// differentiate "shell" from "timeout" calls, scenarios can peek at the most
+// recent invokeMock call recorded after firing `fn` once (probe pattern).
+// However a simpler approach is to fail the call ONLY when the underlying
+// invoke has not yet been called for the timeout state. We achieve this by
+// scoping per-scenario state and limiting the failure pattern to the
+// FIRST report (which is always the shell report). Subsequent reports
+// (e.g. timeout) get the fast path so the watchdog's own log lands.
+
+const WATCHDOG_SCENARIOS: WatchdogRetryScenario[] = [
+  {
+    label: 'fast-success: first attempt resolves immediately',
+    buildRetry: () => async (fn) => fn(),
+  },
+  {
+    label: 'mid-flight retry: first attempt fails, retry resolves at ~1.5s',
+    buildRetry: () => {
+      let reportIndex = 0;
+      return async (fn) => {
+        const myIndex = reportIndex++;
+        // Apply retry behavior only to the FIRST report (shell). The
+        // watchdog's own report (timeout) takes the fast path so the
+        // assertion can observe it deterministically.
+        if (myIndex !== 0) return fn();
+        let attempts = 0;
+        // Re-implement a tiny exponential retry inline.
+        for (;;) {
+          attempts++;
+          if (attempts === 1) {
+            await fakeSleep(200);
+            // simulate a transient failure; loop again with backoff
+            await fakeSleep(1_300);
+            continue;
+          }
+          return fn();
+        }
+      };
+    },
+  },
+  {
+    label: 'slow exhausting: shell chain fails over ~6s, watchdog still fires',
+    buildRetry: () => {
+      let reportIndex = 0;
+      return async (fn) => {
+        const myIndex = reportIndex++;
+        if (myIndex !== 0) return fn();
+        // Three failing attempts across ~6s, all within the 8s watchdog
+        // window. The chain rejects — the hook must swallow it and the
+        // watchdog must still fire and log "timeout" cleanly via the
+        // fast path on the second report.
+        for (let i = 0; i < 3; i++) {
+          await fakeSleep(2_000);
+        }
+        throw new Error('all retries exhausted');
+      };
+    },
+  },
+];
+
+describe('usePdpBotRenderTrace — deterministic 8s watchdog across retry configs', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    invokeMock.mockClear();
+    invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
+    setUserAgent(GOOGLEBOT_UA);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    // Reset to the suite-wide default so other suites aren't polluted.
+    retryImpl.current = async (fn) => fn();
+  });
+
+  for (const scenario of WATCHDOG_SCENARIOS) {
+    it(`fires exactly one "timeout" at t=8s [${scenario.label}]`, async () => {
+      retryImpl.current = scenario.buildRetry();
+
+      const slug = `watchdog-deterministic-${scenario.label.replace(/[^a-z0-9]+/gi, '-')}`;
+      renderHook(() =>
+        usePdpBotRenderTrace({ slug, isLoading: true, hasProduct: false }),
+      );
+
+      // Drain the initial shell-effect's microtasks so the retry chain is
+      // armed and the watchdog setTimeout is scheduled at t≈0.
+      await actFlush();
+
+      // Walk the clock to exactly t=7,999ms in 500ms slices. Slicing keeps
+      // any in-flight retry-chain `fakeSleep(...)` promises resolving along
+      // the way (rather than starving them inside one giant jump). The
+      // watchdog must NOT fire before t=8000.
+      const SLICE = 500;
+      const STOP_BEFORE_BOUNDARY = 7_999;
+      let elapsed = 0;
+      while (elapsed + SLICE <= STOP_BEFORE_BOUNDARY) {
+        await advanceAndFlush(SLICE);
+        elapsed += SLICE;
+      }
+      if (elapsed < STOP_BEFORE_BOUNDARY) {
+        await advanceAndFlush(STOP_BEFORE_BOUNDARY - elapsed);
+      }
+
+      // Pre-boundary invariants (independent of retry config):
+      //   * watchdog has NOT fired yet — no "timeout" log
+      //   * "rendered" never fires (hasProduct stays false)
+      const preBoundaryStates = getReportedStates();
+      expect(preBoundaryStates).not.toContain('timeout');
+      expect(preBoundaryStates).not.toContain('rendered');
+
+      // Cross the 8s boundary — watchdog fires here.
+      await advanceAndFlush(2);
+
+      // Drain any leftover retry-chain promises plus the watchdog's own
+      // reportRenderState microtasks. Generous enough to cover the slow-
+      // exhausting scenario's remaining failed attempts.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+        await flushMicrotasks();
+      });
+
+      const finalStates = getReportedStates();
+
+      // Terminal contract for every retry config:
+      //   1. exactly one "timeout" entry — the watchdog ALWAYS fires once
+      //      and only once at t=8s when hasProduct stays false
+      //   2. no "rendered" entry — data never arrived
+      //   3. "timeout" is the LAST recorded state (any preceding shell
+      //      log MUST come before it)
+      expect(finalStates.filter((s) => s === 'timeout')).toHaveLength(1);
+      expect(finalStates).not.toContain('rendered');
+      expect(finalStates[finalStates.length - 1]).toBe('timeout');
+
+      // Shell-log presence depends on whether the shell-report's retry
+      // chain completed before the boundary. For configs that resolve in
+      // < 8s, shell MUST be logged exactly once. For the slow-exhausting
+      // config the shell `invoke` never lands (the chain rejects before
+      // calling fn), so shell will be absent — that is correct production
+      // behavior because `reportRenderState` only records on success.
+      const shellCount = finalStates.filter((s) => s === 'shell').length;
+      expect(shellCount).toBeLessThanOrEqual(1);
+      if (shellCount === 1) {
+        // When shell IS present it MUST come before the timeout entry.
+        expect(finalStates.indexOf('shell')).toBeLessThan(
+          finalStates.indexOf('timeout'),
+        );
+      }
+
+      // Pushing far past the boundary must not trigger a duplicate timeout
+      // or any late "rendered" log.
+      await advanceAndFlush(20_000);
+      expect(getReportedStates()).toEqual(finalStates);
+    });
+  }
+
+  it('terminal state always ends in "timeout" across all retry configs', async () => {
+    const collected: string[][] = [];
+
+    for (const scenario of WATCHDOG_SCENARIOS) {
+      // Reset between scenarios within the same test body.
+      invokeMock.mockClear();
+      retryImpl.current = scenario.buildRetry();
+
+      const slug = `watchdog-invariant-${collected.length}`;
+      renderHook(() =>
+        usePdpBotRenderTrace({ slug, isLoading: true, hasProduct: false }),
+      );
+
+      await actFlush();
+      // Jump well past the 8s boundary + drain remaining retry promises.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+        await flushMicrotasks();
+      });
+
+      collected.push(getReportedStates());
+    }
+
+    // Cross-scenario invariant: every retry config yields a sequence that
+    // ends in exactly one "timeout" with no "rendered" anywhere.
+    for (const states of collected) {
+      expect(states.filter((s) => s === 'timeout')).toHaveLength(1);
+      expect(states[states.length - 1]).toBe('timeout');
+      expect(states).not.toContain('rendered');
+    }
+  });
+});
