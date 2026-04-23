@@ -434,13 +434,57 @@ serve(async (req) => {
   }
 
   try {
-    const { pageUrl, userAgent, referrer } = await req.json();
-    
-    if (!pageUrl || !userAgent) {
+    let rawBody: unknown;
+    try {
+      rawBody = await req.json();
+    } catch (parseErr) {
+      console.error('[log-crawler-visit] Malformed JSON body:', parseErr);
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
+    }
+
+    const parsed = PayloadSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      console.error(
+        '[log-crawler-visit] Rejecting malformed payload:',
+        JSON.stringify({ fieldErrors, received: rawBody }),
+      );
+      return new Response(
+        JSON.stringify({ error: 'Invalid payload', fieldErrors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const { pageUrl, userAgent, referrer } = parsed.data;
+
+    // If this looks like a pdp-render-trace ping, enforce that both a slug
+    // (extractable from pageUrl) and a recognised state tag are present.
+    const renderTagMatch = userAgent.match(RENDER_STATE_TAG_RE);
+    const looksLikeTrace = userAgent.toLowerCase().includes('pdp-render-trace');
+    if (looksLikeTrace) {
+      const slug = extractSlug(pageUrl);
+      const stateTag = renderTagMatch?.[1]?.toLowerCase() ?? null;
+      const missing: string[] = [];
+      if (!slug) missing.push('slug (from pageUrl)');
+      if (!stateTag) missing.push('pdp-render-trace state tag (from userAgent)');
+      else if (!VALID_RENDER_STATES.has(stateTag)) {
+        missing.push(`valid pdp-render-trace state (got "${stateTag}")`);
+      }
+      if (missing.length > 0) {
+        console.error(
+          '[log-crawler-visit] pdp-render-trace payload missing required fields:',
+          JSON.stringify({ missing, pageUrl, userAgent }),
+        );
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid pdp-render-trace payload',
+            missing,
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
     }
 
     // Get IP from headers (Cloudflare/proxy headers)
