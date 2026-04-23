@@ -429,6 +429,12 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
             ? release.validation_summary.topFailReasons
             : null
         }
+        sampleResults={
+          Array.isArray(release.validation_summary?.sampleResults)
+            ? release.validation_summary.sampleResults
+            : null
+        }
+        feedUrl={release.validation_summary?.feedUrl ?? null}
       />
     </div>
   );
