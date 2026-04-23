@@ -355,6 +355,7 @@ const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChec
 const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/MerchantIntegrationPage"));
 const MerchantReviewChecklistPage = lazyWithRetry(() => import("./pages/admin/MerchantReviewChecklistPage"));
 const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantSettingsPage"));
+const JobRetryPoliciesPage = lazyWithRetry(() => import("./pages/admin/JobRetryPoliciesPage"));
 const ApplePayDomainPage = lazyWithRetry(() => import("./pages/admin/ApplePayDomainPage"));
 const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/MerchantReadinessPage"));
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
