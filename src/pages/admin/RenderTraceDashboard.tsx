@@ -173,14 +173,34 @@ export default function RenderTraceDashboard() {
     staleTime: 30_000,
   });
 
-  const { totals, perDay, perSlug } = useMemo(() => {
+  const { totals, perDay, perSlug, malformed, malformedByReason } = useMemo(() => {
     const t = { shell: 0, rendered: 0, timeout: 0 };
     const dayMap = new Map<string, { date: string; shell: number; rendered: number; timeout: number }>();
     const slugMap = new Map<string, SlugStats>();
+    const bad: MalformedRow[] = [];
+    const byReason: Record<MalformedReason, number> = {
+      missing_state_tag: 0,
+      unknown_state_tag: 0,
+      unparseable_page_url: 0,
+      empty_slug_path: 0,
+    };
 
     for (const row of data ?? []) {
       const state = extractState(row.user_agent);
-      if (!state) continue;
+      if (!state) {
+        const cls = classifyRow(row);
+        if (cls) {
+          bad.push(cls);
+          byReason[cls.reason] += 1;
+        }
+        continue;
+      }
+      // State extracted cleanly — but the URL may still be malformed.
+      const cls = classifyRow(row);
+      if (cls && (cls.reason === 'unparseable_page_url' || cls.reason === 'empty_slug_path')) {
+        bad.push(cls);
+        byReason[cls.reason] += 1;
+      }
       t[state] += 1;
 
       const day = format(new Date(row.created_at), 'yyyy-MM-dd');
@@ -209,7 +229,9 @@ export default function RenderTraceDashboard() {
 
     const dayArr = Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
     const slugArr = Array.from(slugMap.values()).sort((a, b) => b.timeout - a.timeout || b.total - a.total);
-    return { totals: t, perDay: dayArr, perSlug: slugArr };
+    // Most recent first — easier to spot a regression that started today.
+    bad.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return { totals: t, perDay: dayArr, perSlug: slugArr, malformed: bad, malformedByReason: byReason };
   }, [data]);
 
   const filteredSlugs = useMemo(() => {
