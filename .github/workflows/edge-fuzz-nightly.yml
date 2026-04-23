@@ -97,4 +97,4 @@ jobs:
       - name: Surface fuzz config on failure
         if: failure()
         run: |
-          echo "::error title=Fuzz regression::Reproduce with FUZZ_SEED=${FUZZ_SEED} FUZZ_ITERATIONS=${FUZZ_ITERATIONS}"
+          echo "::error title=Fuzz regression::Reproduce with FUZZ_SEED=${FUZZ_SEED} FUZZ_ITERATIONS=${FUZZ_ITERATIONS} FUZZ_CONCURRENCY=${FUZZ_CONCURRENCY} (try FUZZ_CONCURRENCY=1 to rule out a race condition)"
