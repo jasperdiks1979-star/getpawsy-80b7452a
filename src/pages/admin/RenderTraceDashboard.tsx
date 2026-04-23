@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format, subDays } from 'date-fns';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, Legend,
@@ -113,8 +113,14 @@ const SLUG_PAGE_SIZE = 25;
 // pages in the per-slug table doesn't redraw the bar chart underneath it.
 const CHART_TOP_N = 15;
 
+// Build a drill-down URL preserving the active window so the detail page's
+// initial query matches the chart the user just clicked on.
+const slugDetailHref = (slug: string, windowDays: number) =>
+  `/dashboard/render-trace/slug/${encodeURIComponent(slug)}?w=${windowDays}`;
+
 export default function RenderTraceDashboard() {
   const [windowDays, setWindowDays] = useState<number>(7);
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   // Debounce the search so each keystroke doesn't fire a new RPC call.
@@ -517,12 +523,60 @@ export default function RenderTraceDashboard() {
                   <BarChart data={chartSlugs} layout="vertical" margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" allowDecimals={false} fontSize={12} />
-                    <YAxis type="category" dataKey="slug" width={140} fontSize={11} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis
+                      type="category"
+                      dataKey="slug"
+                      width={160}
+                      fontSize={11}
+                      tick={(props) => {
+                        const { x, y, payload } = props;
+                        const value = String(payload.value ?? '');
+                        const label = value.length > 20 ? value.slice(0, 19) + '…' : value;
+                        return (
+                          <g
+                            transform={`translate(${x},${y})`}
+                            className="cursor-pointer"
+                            onClick={() => navigate(slugDetailHref(value, windowDays))}
+                          >
+                            <title>{value} — open timeline</title>
+                            <text
+                              x={-4}
+                              y={0}
+                              dy={4}
+                              textAnchor="end"
+                              fontSize={11}
+                              fill="hsl(var(--primary))"
+                              style={{ textDecoration: 'underline' }}
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      }}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="shell" stackId="a" fill={STATE_COLORS.shell} />
-                    <Bar dataKey="rendered" stackId="a" fill={STATE_COLORS.rendered} />
-                    <Bar dataKey="timeout" stackId="a" fill={STATE_COLORS.timeout}>
+                    <Bar
+                      dataKey="shell"
+                      stackId="a"
+                      fill={STATE_COLORS.shell}
+                      className="cursor-pointer"
+                      onClick={(d: { slug?: string }) => d?.slug && navigate(slugDetailHref(d.slug, windowDays))}
+                    />
+                    <Bar
+                      dataKey="rendered"
+                      stackId="a"
+                      fill={STATE_COLORS.rendered}
+                      className="cursor-pointer"
+                      onClick={(d: { slug?: string }) => d?.slug && navigate(slugDetailHref(d.slug, windowDays))}
+                    />
+                    <Bar
+                      dataKey="timeout"
+                      stackId="a"
+                      fill={STATE_COLORS.timeout}
+                      className="cursor-pointer"
+                      onClick={(d: { slug?: string }) => d?.slug && navigate(slugDetailHref(d.slug, windowDays))}
+                    >
                       {chartSlugs.map((s) => (
                         <Cell key={s.slug} fill={STATE_COLORS.timeout} />
                       ))}
@@ -578,7 +632,12 @@ export default function RenderTraceDashboard() {
                       return (
                         <TableRow key={s.slug} className={isRegression ? 'bg-destructive/5' : undefined}>
                           <TableCell className="font-mono text-xs max-w-[260px] truncate" title={s.slug}>
-                            {s.slug}
+                            <Link
+                              to={slugDetailHref(s.slug, windowDays)}
+                              className="text-primary hover:underline"
+                            >
+                              {s.slug}
+                            </Link>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">{s.shell}</TableCell>
                           <TableCell className="text-right tabular-nums">{s.rendered}</TableCell>
