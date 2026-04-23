@@ -633,6 +633,60 @@ export const ProductImageManager = ({
         image. Uploaded files must be {PRODUCT_IMAGE_MAX_LABEL} or smaller —
         oversized files are blocked before the upload starts.
       </p>
+
+      {/* Confirmation dialog for image removal. We render a thumbnail of
+          the exact image being deleted (and call out when it's the main
+          image) so the user can sanity-check what they're about to lose. */}
+      <AlertDialog
+        open={pendingDeleteIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteIndex(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this image?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the image from the product. The file itself stays in
+              storage, but the product will no longer reference it.
+              {pendingDeleteIndex !== null &&
+                images[pendingDeleteIndex] === mainImage && (
+                  <span className="mt-2 block font-medium text-destructive">
+                    This is the current main image — the next image in the
+                    gallery will become the new main.
+                  </span>
+                )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {pendingDeleteIndex !== null && images[pendingDeleteIndex] && (
+            <div className="flex items-center gap-3 rounded-md border bg-muted/30 p-3">
+              <img
+                src={images[pendingDeleteIndex]}
+                alt={`Image ${pendingDeleteIndex + 1} preview`}
+                className="w-16 h-16 object-cover rounded"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder.svg";
+                }}
+              />
+              <div className="min-w-0 text-sm">
+                <p className="font-medium">Image {pendingDeleteIndex + 1} of {images.length}</p>
+                <p className="text-xs text-muted-foreground truncate" title={images[pendingDeleteIndex]}>
+                  {images[pendingDeleteIndex]}
+                </p>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveImage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove image
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
