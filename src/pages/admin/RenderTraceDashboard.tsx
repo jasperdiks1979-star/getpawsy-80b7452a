@@ -8,7 +8,7 @@ import {
   AreaChart, Area, ResponsiveContainer,
 } from 'recharts';
 import {
-  Activity, AlertTriangle, ArrowLeft, RefreshCw, Search, TrendingDown,
+  Activity, AlertTriangle, ArrowLeft, Download, RefreshCw, Search, TrendingDown,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -158,6 +158,68 @@ export default function RenderTraceDashboard() {
   const overallTimeoutRate = totals.shell > 0 ? totals.timeout / totals.shell : 0;
   const overallRenderRate = totals.shell > 0 ? Math.min(1, totals.rendered / totals.shell) : 0;
 
+  // ─── CSV export ──────────────────────────────────────────────────────────
+  // Bundles the three tables admins look at (totals, per-day, top slugs) into
+  // ONE file with section headers, so an analyst can open it in a spreadsheet
+  // without juggling multiple downloads. Top slugs is capped at the same 100
+  // rows we render in the table to keep the file tractable.
+  const handleExportCsv = () => {
+    const lines: string[] = [];
+    const stamp = format(new Date(), 'yyyy-MM-dd_HHmm');
+    const fromLabel = format(subDays(new Date(), windowDays - 1), 'yyyy-MM-dd');
+    const toLabel = format(new Date(), 'yyyy-MM-dd');
+
+    lines.push(`# Render-Trace Health export`);
+    lines.push(`# Window: ${fromLabel} to ${toLabel} (${windowDays} day${windowDays === 1 ? '' : 's'})`);
+    lines.push(`# Generated: ${new Date().toISOString()}`);
+    lines.push('');
+
+    // 1) Totals
+    lines.push('## Totals');
+    lines.push('metric,value');
+    lines.push(`total_events,${totalEvents}`);
+    lines.push(`shell,${totals.shell}`);
+    lines.push(`rendered,${totals.rendered}`);
+    lines.push(`timeout,${totals.timeout}`);
+    lines.push(`render_rate,${(overallRenderRate * 100).toFixed(2)}%`);
+    lines.push(`timeout_rate,${(overallTimeoutRate * 100).toFixed(2)}%`);
+    lines.push(`unique_slugs,${perSlug.length}`);
+    lines.push('');
+
+    // 2) Per-day
+    lines.push('## Per day');
+    lines.push('date,shell,rendered,timeout,total');
+    for (const d of perDay) {
+      const tot = d.shell + d.rendered + d.timeout;
+      lines.push(`${d.date},${d.shell},${d.rendered},${d.timeout},${tot}`);
+    }
+    lines.push('');
+
+    // 3) Top slugs (apply the active search filter so the export matches the
+    //    table the user is currently looking at).
+    lines.push('## Top slugs (filtered, max 100)');
+    lines.push('slug,shell,rendered,timeout,total,render_rate_pct,timeout_rate_pct');
+    for (const s of filteredSlugs.slice(0, 100)) {
+      // Quote the slug in case it ever contains a comma or quote.
+      const safeSlug = `"${s.slug.replace(/"/g, '""')}"`;
+      lines.push(
+        `${safeSlug},${s.shell},${s.rendered},${s.timeout},${s.total},` +
+          `${(s.renderRate * 100).toFixed(2)},${(s.timeoutRate * 100).toFixed(2)}`,
+      );
+    }
+
+    const csv = lines.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `render-trace_${windowDays}d_${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <Helmet>
@@ -194,6 +256,16 @@ export default function RenderTraceDashboard() {
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
               <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
               Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={isLoading || totalEvents === 0}
+              title={totalEvents === 0 ? 'No data to export' : 'Download totals, per-day & top slugs as CSV'}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export CSV
             </Button>
           </div>
         </div>
