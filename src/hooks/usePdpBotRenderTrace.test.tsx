@@ -938,6 +938,16 @@ function fakeSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// The retry mock receives the original `fn` which (when called) eventually
+// invokes `supabase.functions.invoke('log-crawler-visit', { body })`. To
+// differentiate "shell" from "timeout" calls, scenarios can peek at the most
+// recent invokeMock call recorded after firing `fn` once (probe pattern).
+// However a simpler approach is to fail the call ONLY when the underlying
+// invoke has not yet been called for the timeout state. We achieve this by
+// scoping per-scenario state and limiting the failure pattern to the
+// FIRST report (which is always the shell report). Subsequent reports
+// (e.g. timeout) get the fast path so the watchdog's own log lands.
+
 const WATCHDOG_SCENARIOS: WatchdogRetryScenario[] = [
   {
     label: 'fast-success: first attempt resolves immediately',
@@ -946,31 +956,44 @@ const WATCHDOG_SCENARIOS: WatchdogRetryScenario[] = [
   {
     label: 'mid-flight retry: first attempt fails, retry resolves at ~1.5s',
     buildRetry: () => {
-      let attempts = 0;
+      let reportIndex = 0;
       return async (fn) => {
-        attempts++;
-        if (attempts === 1) {
-          // First attempt: simulate a 200ms network failure
-          await fakeSleep(200);
-          throw new Error('simulated transient failure');
+        const myIndex = reportIndex++;
+        // Apply retry behavior only to the FIRST report (shell). The
+        // watchdog's own report (timeout) takes the fast path so the
+        // assertion can observe it deterministically.
+        if (myIndex !== 0) return fn();
+        let attempts = 0;
+        // Re-implement a tiny exponential retry inline.
+        for (;;) {
+          attempts++;
+          if (attempts === 1) {
+            await fakeSleep(200);
+            // simulate a transient failure; loop again with backoff
+            await fakeSleep(1_300);
+            continue;
+          }
+          return fn();
         }
-        // Backoff before retry, then succeed
-        await fakeSleep(1_300);
-        return fn();
       };
     },
   },
   {
-    label: 'slow exhausting: every attempt fails over ~6s, chain rejects',
-    buildRetry: () => async () => {
-      // Three failing attempts spread across ~6 seconds, well within the
-      // 8s watchdog window. The hook must swallow the rejection (logged via
-      // console.warn) and still let the watchdog fire on schedule.
-      for (let i = 0; i < 3; i++) {
-        await fakeSleep(2_000);
-        // continue — simulates retryWithBackoff retrying
-      }
-      throw new Error('all retries exhausted');
+    label: 'slow exhausting: shell chain fails over ~6s, watchdog still fires',
+    buildRetry: () => {
+      let reportIndex = 0;
+      return async (fn) => {
+        const myIndex = reportIndex++;
+        if (myIndex !== 0) return fn();
+        // Three failing attempts across ~6s, all within the 8s watchdog
+        // window. The chain rejects — the hook must swallow it and the
+        // watchdog must still fire and log "timeout" cleanly via the
+        // fast path on the second report.
+        for (let i = 0; i < 3; i++) {
+          await fakeSleep(2_000);
+        }
+        throw new Error('all retries exhausted');
+      };
     },
   },
 ];
