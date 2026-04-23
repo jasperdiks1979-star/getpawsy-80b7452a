@@ -593,6 +593,27 @@ describe('usePdpBotRenderTrace', () => {
     expect(new URL(shellCall.pageUrl).searchParams.get('_render')).toBe('shell');
     expect(new URL(renderedCall.pageUrl).searchParams.get('_render')).toBe('rendered');
 
+    // Raw-substring cross-contamination guard for the two PDP URLs:
+    // shell URL must contain `_render=shell` and NEITHER `_render=rendered`
+    // NOR `_render=timeout`; rendered URL is the symmetric inverse. This
+    // catches duplicated `_render` params that `searchParams.get()` would
+    // silently mask.
+    expect(shellCall.pageUrl).toContain('_render=shell');
+    expect(shellCall.pageUrl).not.toContain('_render=rendered');
+    expect(shellCall.pageUrl).not.toContain('_render=timeout');
+
+    expect(renderedCall.pageUrl).toContain('_render=rendered');
+    expect(renderedCall.pageUrl).not.toContain('_render=shell');
+    expect(renderedCall.pageUrl).not.toContain('_render=timeout');
+
+    for (const [label, url] of [
+      ['shell', shellCall.pageUrl],
+      ['rendered', renderedCall.pageUrl],
+    ] as const) {
+      const renderParamCount = (url.match(/[?&]_render=/g) ?? []).length;
+      expect(renderParamCount, `${label} pageUrl must contain exactly one _render= param`).toBe(1);
+    }
+
     // Belt-and-braces: no log call for this slug carries the timeout tag.
     const timeoutCallsForSlug = slugCalls.filter(([, opts]) =>
       (opts as { body: { userAgent: string } }).body.userAgent.includes(
