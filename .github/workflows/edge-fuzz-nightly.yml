@@ -45,9 +45,10 @@ jobs:
     timeout-minutes: 20
     env:
       # Distinct seed from the PR-CI default (0xC0FFEE) so the two
-      # workflows explore different streams. Bump this when you want
-      # the next nightly to surface a fresh sample.
-      FUZZ_SEED: ${{ github.event.inputs.fuzz_seed || '0xN1GHTLY' && '0x4E16H7LY' || '0x4E16H7LY' }}
+      # workflows explore different streams. Bump this constant when
+      # you want the next nightly to surface a fresh sample without
+      # changing the workflow logic.
+      FUZZ_SEED: ${{ github.event.inputs.fuzz_seed || '0xA1B2C3D4' }}
       FUZZ_ITERATIONS: ${{ github.event.inputs.fuzz_iterations || '25' }}
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
