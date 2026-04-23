@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Copy, Check, ScrollText, RefreshCw, Pause, Play } from 'lucide-react';
+import { Loader2, Copy, Check, ScrollText, RefreshCw, Pause, Play, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -233,6 +233,35 @@ export function ReleaseStepEvidenceDialog({
     jobLogs: jobData?.logs ?? null,
   };
 
+  const downloadEvidenceJson = () => {
+    try {
+      const enriched = {
+        ...fullEvidence,
+        exportedAt: new Date().toISOString(),
+      };
+      const blob = new Blob([JSON.stringify(enriched, null, 2)], {
+        type: 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const safeTitle = (releaseTitle || releaseId)
+        .toString()
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 50) || 'release';
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `release-evidence-${safeTitle}-${kind}-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Evidence JSON downloaded');
+    } catch {
+      toast.error('Download failed');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -253,7 +282,17 @@ export function ReleaseStepEvidenceDialog({
             <Badge variant="outline" className="font-mono">release: {releaseId.slice(0, 12)}</Badge>
             {runId && <Badge variant="outline" className="font-mono">run: {runId.slice(0, 12)}</Badge>}
             <Badge variant="secondary" className="capitalize">{kind}</Badge>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => downloadEvidenceJson()}
+                title="Download volledige evidence als .json bestand"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download .json
+              </Button>
               <CopyButton
                 text={JSON.stringify(fullEvidence, null, 2)}
                 label="Copy all evidence"
