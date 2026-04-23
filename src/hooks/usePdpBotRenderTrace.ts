@@ -118,7 +118,12 @@ async function reportRenderState(
 
     await retryWithBackoff(
       async () => {
-        const { error } = await supabase.functions.invoke('log-crawler-visit', {
+        // Render-trace pings are server-side classified as `alwaysLog` so
+        // they bypass `crawler_visit_sample_rate` and never come back with
+        // `sampled: false`. We still treat any 2xx response (including a
+        // theoretical sampled-out one) as success — only an explicit `error`
+        // from the SDK should trigger a retry.
+        const { data, error } = await supabase.functions.invoke('log-crawler-visit', {
           body: {
             pageUrl: taggedUrl,
             userAgent: `${navigator.userAgent} ${uaSuffix}`,
@@ -126,6 +131,13 @@ async function reportRenderState(
           },
         });
         if (error) throw error;
+        if (data && (data as { sampled?: boolean }).sampled === false) {
+          // Defensive: should never happen for render-trace pings, but if
+          // server policy changes we surface it instead of silently retrying.
+          console.debug(
+            '[PDP-Bot-Render] response reports sampled=false; treating as success',
+          );
+        }
       },
       {
         // Conservative: max 3 retries, 1s → 4s → 16s (capped at 20s) with jitter.
