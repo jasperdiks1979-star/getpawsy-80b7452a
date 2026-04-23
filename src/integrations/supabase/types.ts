@@ -4340,6 +4340,48 @@ export type Database = {
           },
         ]
       }
+      page_changelog_entries: {
+        Row: {
+          build_tag: string
+          changes: string[]
+          commit_ref: string
+          created_at: string
+          created_by: string | null
+          entry_date: string
+          id: string
+          is_published: boolean
+          page_key: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          build_tag: string
+          changes?: string[]
+          commit_ref: string
+          created_at?: string
+          created_by?: string | null
+          entry_date: string
+          id?: string
+          is_published?: boolean
+          page_key: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          build_tag?: string
+          changes?: string[]
+          commit_ref?: string
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          id?: string
+          is_published?: boolean
+          page_key?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       passkey_credentials: {
         Row: {
           counter: number
