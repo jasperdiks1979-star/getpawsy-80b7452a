@@ -326,4 +326,104 @@ describe('usePdpBotRenderTrace', () => {
     );
     expect(allRelevant).toHaveLength(4);
   });
+
+  it('payload shape: shell, rendered, and timeout each include the correct slug and pdp-render-trace tag', async () => {
+    const slug = 'payload-shape-bed';
+
+    // --- Case 1: shell + rendered -----------------------------------------
+    const { rerender, unmount } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    rerender({ isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    unmount();
+
+    // --- Case 2: timeout (separate slug to avoid the rendered short-circuit)
+    const timeoutSlug = 'payload-shape-timeout';
+    renderHook(() =>
+      usePdpBotRenderTrace({ slug: timeoutSlug, isLoading: true, hasProduct: false }),
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(8_001);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // --- Helper to grab the single payload for (slug, state) --------------
+    type LogCall = {
+      pageUrl: string;
+      userAgent: string;
+      referrer: string;
+    };
+
+    function payloadFor(targetSlug: string, state: RenderState): LogCall {
+      const matches = invokeMock.mock.calls
+        .filter(([fn]) => fn === 'log-crawler-visit')
+        .map(([, opts]) => (opts as { body: LogCall }).body)
+        .filter(
+          (body) =>
+            body.pageUrl.includes(`/product/${targetSlug}`) &&
+            body.userAgent.includes(`pdp-render-trace:${state}`),
+        );
+      expect(matches, `expected exactly 1 ${state} payload for ${targetSlug}`).toHaveLength(1);
+      return matches[0];
+    }
+
+    type RenderState = 'shell' | 'rendered' | 'timeout';
+
+    const shell = payloadFor(slug, 'shell');
+    const rendered = payloadFor(slug, 'rendered');
+    const timeout = payloadFor(timeoutSlug, 'timeout');
+
+    // --- Slug assertions: present in URL path, not leaked into the wrong UA tag
+    for (const [body, expectedSlug] of [
+      [shell, slug],
+      [rendered, slug],
+      [timeout, timeoutSlug],
+    ] as const) {
+      expect(body.pageUrl).toMatch(new RegExp(`/product/${expectedSlug}(?:[/?#]|$)`));
+    }
+
+    // --- State tag assertions in the user agent suffix --------------------
+    expect(shell.userAgent).toMatch(/\[pdp-render-trace:shell\b[^\]]*\]/);
+    expect(rendered.userAgent).toMatch(/\[pdp-render-trace:rendered\b[^\]]*\]/);
+    expect(timeout.userAgent).toMatch(/\[pdp-render-trace:timeout\b[^\]]*\]/);
+
+    // Mirror in the URL query so log analysis on either field agrees.
+    expect(new URL(shell.pageUrl).searchParams.get('_render')).toBe('shell');
+    expect(new URL(rendered.pageUrl).searchParams.get('_render')).toBe('rendered');
+    expect(new URL(timeout.pageUrl).searchParams.get('_render')).toBe('timeout');
+
+    // --- No cross-contamination: shell payload must NOT carry rendered/timeout tags
+    expect(shell.userAgent).not.toMatch(/pdp-render-trace:(rendered|timeout)/);
+    expect(rendered.userAgent).not.toMatch(/pdp-render-trace:(shell|timeout)/);
+    expect(timeout.userAgent).not.toMatch(/pdp-render-trace:(shell|rendered)/);
+
+    // --- Wrong-slug payloads must not exist for either slug ---------------
+    const wrongSlugShell = invokeMock.mock.calls.filter(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        (opts as { body: LogCall }).body.userAgent.includes('pdp-render-trace:shell') &&
+        !(opts as { body: LogCall }).body.pageUrl.includes(`/product/${slug}`) &&
+        !(opts as { body: LogCall }).body.pageUrl.includes(`/product/${timeoutSlug}`),
+    );
+    expect(wrongSlugShell).toHaveLength(0);
+  });
 });
