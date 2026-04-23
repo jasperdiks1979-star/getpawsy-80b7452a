@@ -3756,6 +3756,10 @@ Deno.test({
             // Aggregate accounting for the end-of-run sanity check.
             counterRunTotals.overLimitCalls += 1;
             counterRunTotals.byAxis[axis] += 1;
+            if (!counterRunTotals.firstSeenCounters) {
+              counterRunTotals.firstSeenCounters = { ...envelope.validationCounters };
+            }
+            counterRunTotals.lastSeenCounters = { ...envelope.validationCounters };
           }
 
           // -----------------------------------------------------------------
