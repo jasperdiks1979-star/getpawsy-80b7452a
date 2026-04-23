@@ -149,6 +149,31 @@ while IFS= read -r name; do
   fi
 done <<< "$NEW_FIXTURES"
 
+# Also surface the STABLE snapshot path written by the test (overwritten
+# on every violating run, lives next to the test file by default). This
+# is what most contributors actually want — a single, predictable file
+# they can `bash` to re-trigger the failure without scraping /tmp.
+SNAPSHOT_DIR_DEFAULT="$REPO_ROOT/supabase/functions/log-crawler-visit/__snapshots__"
+SNAPSHOT_DIR="${FUZZ_SNAPSHOT_DIR:-$SNAPSHOT_DIR_DEFAULT}"
+SNAPSHOT_JSON="$SNAPSHOT_DIR/latest-over-limit-fixture.json"
+SNAPSHOT_REPLAY="$SNAPSHOT_DIR/latest-over-limit-fixture.replay.sh"
+if [[ -f "$SNAPSHOT_JSON" ]]; then
+  echo
+  echo "[fuzz-cli] stable snapshot of the smallest failing case:"
+  echo "    snapshot     : $SNAPSHOT_JSON"
+  if [[ -f "$SNAPSHOT_REPLAY" ]]; then
+    echo "    replay (sh)  : bash $SNAPSHOT_REPLAY"
+  fi
+  if command -v jq >/dev/null 2>&1; then
+    SEED_HEX="$(jq -r '.seed // "unknown"' "$SNAPSHOT_JSON")"
+    AXIS="$(jq -r '.axis // "unknown"' "$SNAPSHOT_JSON")"
+    SHRUNK_LEN="$(jq -r '.shrunkLen // "?"' "$SNAPSHOT_JSON")"
+    echo "    seed         : $SEED_HEX"
+    echo "    axis         : $AXIS"
+    echo "    shrunk len   : $SHRUNK_LEN"
+  fi
+fi
+
 if [[ $KEEP_FIXTURES -eq 0 && "$FIXTURE_DIR" == "/tmp" ]]; then
   echo
   echo "[fuzz-cli] (fixtures left in /tmp; pass --keep-fixtures or --fixture-dir <persistent path> to retain across reboots)"
