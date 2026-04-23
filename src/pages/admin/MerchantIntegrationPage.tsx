@@ -423,6 +423,9 @@ export default function MerchantIntegrationPage() {
         {/* Post-publish quick action — refresh GMC feed and validate */}
         <RefreshFeedAfterPublishCard />
 
+        {/* At-a-glance feed status (last sync + live validation) */}
+        <FeedStatusCard />
+
         {/* Connection Status Card */}
         <Card>
           <CardHeader className="pb-3">
