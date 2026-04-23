@@ -7981,6 +7981,16 @@ export type Database = {
       cleanup_old_web_vitals: { Args: never; Returns: undefined }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
+      get_render_trace_stats: {
+        Args: {
+          p_malformed_limit?: number
+          p_search?: string
+          p_slug_limit?: number
+          p_slug_offset?: number
+          p_window_days?: number
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

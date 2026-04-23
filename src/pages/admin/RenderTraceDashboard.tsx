@@ -1,14 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, Legend,
   AreaChart, Area, ResponsiveContainer,
 } from 'recharts';
 import {
-  Activity, AlertTriangle, ArrowLeft, Download, RefreshCw, Search, ShieldAlert, TrendingDown,
+  Activity, AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Download, RefreshCw, Search, ShieldAlert, TrendingDown,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -51,38 +51,14 @@ const STATE_COLORS: Record<RenderState, string> = {
   timeout: 'hsl(0, 84%, 60%)',     // red — regression signal
 };
 
-const STATE_TAG_RE = /pdp-render-trace\/([a-z0-9_-]+)/i;
-
-function extractState(userAgent: string | null): RenderState | null {
-  if (!userAgent) return null;
-  const m = userAgent.match(STATE_TAG_RE);
-  if (!m) return null;
-  const tag = m[1].toLowerCase();
-  return (STATE_ORDER as string[]).includes(tag) ? (tag as RenderState) : null;
-}
-
-function extractSlug(pageUrl: string): string {
-  try {
-    const u = new URL(pageUrl, 'https://getpawsy.pet');
-    const parts = u.pathname.split('/').filter(Boolean);
-    return parts.length > 0 ? parts[parts.length - 1] : pageUrl;
-  } catch {
-    return pageUrl;
-  }
-}
-
-// ─── Malformed row detection ─────────────────────────────────────────────────
-// We expect every row returned by the dashboard query to (a) carry a
-// recognizable `pdp-render-trace/<state>` tag, and (b) have a `page_url`
-// that parses to a non-empty slug under a real path (e.g. `/products/foo`).
-// If either fails the upstream client is sending malformed pings — these are
-// the only events that silently drop out of every chart and table above, so
-// we surface them explicitly with a sample.
+// ─── Malformed row reasons ───────────────────────────────────────────────────
+// Mirrors the classification done by the `get_render_trace_stats` RPC so the
+// UI can label each sample row consistently.
 type MalformedReason =
-  | 'missing_state_tag'        // no pdp-render-trace/<x> match at all
-  | 'unknown_state_tag'        // matched, but tag isn't shell|rendered|timeout
-  | 'unparseable_page_url'     // URL() throws even with the base
-  | 'empty_slug_path';         // URL parsed but path was empty / no slug
+  | 'missing_state_tag'
+  | 'unknown_state_tag'
+  | 'unparseable_page_url'
+  | 'empty_slug_path';
 
 const REASON_LABELS: Record<MalformedReason, string> = {
   missing_state_tag: 'Missing state tag',
@@ -96,49 +72,7 @@ interface MalformedRow {
   page_url: string;
   user_agent: string;
   created_at: string;
-  rawTag: string | null;
-}
-
-function classifyRow(row: TraceRow): MalformedRow | null {
-  const ua = row.user_agent ?? '';
-  const m = ua.match(STATE_TAG_RE);
-  const rawTag = m ? m[1] : null;
-
-  let stateReason: MalformedReason | null = null;
-  if (!m) {
-    stateReason = 'missing_state_tag';
-  } else {
-    const tag = m[1].toLowerCase();
-    if (!(STATE_ORDER as string[]).includes(tag)) {
-      stateReason = 'unknown_state_tag';
-    }
-  }
-
-  let urlReason: MalformedReason | null = null;
-  try {
-    const u = new URL(row.page_url, 'https://getpawsy.pet');
-    const parts = u.pathname.split('/').filter(Boolean);
-    if (parts.length === 0) urlReason = 'empty_slug_path';
-  } catch {
-    urlReason = 'unparseable_page_url';
-  }
-
-  // State problems take precedence — they're the more common upstream bug.
-  const reason = stateReason ?? urlReason;
-  if (!reason) return null;
-  return {
-    reason,
-    page_url: row.page_url,
-    user_agent: ua,
-    created_at: row.created_at,
-    rawTag,
-  };
-}
-
-interface TraceRow {
-  page_url: string;
-  user_agent: string;
-  created_at: string;
+  raw_tag: string | null;
 }
 
 interface SlugStats {
@@ -147,109 +81,149 @@ interface SlugStats {
   rendered: number;
   timeout: number;
   total: number;
-  renderRate: number;
-  timeoutRate: number;
+  render_rate: number;
+  timeout_rate: number;
 }
+
+// ─── Server response shape ──────────────────────────────────────────────────
+// Mirrors what `public.get_render_trace_stats` returns. Keeping it explicit
+// here means the dashboard never has to decode jsonb shapes ad-hoc and the
+// RPC is the single source of truth for aggregation.
+interface PerDayBucket {
+  date: string;
+  shell: number;
+  rendered: number;
+  timeout: number;
+}
+
+interface RenderTraceStats {
+  window_days: number;
+  totals: { shell: number; rendered: number; timeout: number };
+  per_day: PerDayBucket[];
+  slug_total: number;
+  slug_limit: number;
+  slug_offset: number;
+  slugs: SlugStats[];
+  malformed_counts: Partial<Record<MalformedReason, number>>;
+  malformed_samples: MalformedRow[];
+}
+
+const SLUG_PAGE_SIZE = 25;
+// We always fetch the chart's top 15 slugs separately at offset 0 so changing
+// pages in the per-slug table doesn't redraw the bar chart underneath it.
+const CHART_TOP_N = 15;
 
 export default function RenderTraceDashboard() {
   const [windowDays, setWindowDays] = useState<number>(7);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  // Debounce the search so each keystroke doesn't fire a new RPC call.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(id);
+  }, [search]);
+  // Reset pagination whenever the user changes the window or search filter —
+  // otherwise page 4 of an old result set leaks into a fresh query.
+  useEffect(() => {
+    setPage(0);
+  }, [windowDays, debouncedSearch]);
 
-  const { data, isLoading, isRefetching, refetch, error } = useQuery({
-    queryKey: ['render-trace-dashboard', windowDays],
+  // ─── Overview query ─────────────────────────────────────────────────────
+  // This fetches totals, per-day counts, malformed samples, and the top
+  // CHART_TOP_N slugs that drive the bar chart. It is intentionally NOT
+  // re-fetched when the user paginates the per-slug table — only when the
+  // window or search filter changes.
+  const overview = useQuery({
+    queryKey: ['render-trace-overview', windowDays, debouncedSearch],
     queryFn: async () => {
-      const fromDate = startOfDay(subDays(new Date(), windowDays - 1));
-      const { data, error } = await supabase
-        .from('crawler_visits')
-        .select('page_url, user_agent, created_at')
-        .ilike('user_agent', '%pdp-render-trace%')
-        .gte('created_at', fromDate.toISOString())
-        .order('created_at', { ascending: true })
-        .limit(10000);
+      const { data, error } = await supabase.rpc('get_render_trace_stats', {
+        p_window_days: windowDays,
+        p_search: debouncedSearch || null,
+        p_slug_limit: CHART_TOP_N,
+        p_slug_offset: 0,
+        p_malformed_limit: 10,
+      });
       if (error) throw error;
-      return data as TraceRow[];
+      return data as unknown as RenderTraceStats;
     },
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
 
-  const { totals, perDay, perSlug, malformed, malformedByReason } = useMemo(() => {
-    const t = { shell: 0, rendered: 0, timeout: 0 };
-    const dayMap = new Map<string, { date: string; shell: number; rendered: number; timeout: number }>();
-    const slugMap = new Map<string, SlugStats>();
-    const bad: MalformedRow[] = [];
-    const byReason: Record<MalformedReason, number> = {
-      missing_state_tag: 0,
-      unknown_state_tag: 0,
-      unparseable_page_url: 0,
-      empty_slug_path: 0,
-    };
+  // ─── Paginated slug query ───────────────────────────────────────────────
+  // Page 0 reuses the overview's slug slice when no search is active and the
+  // page size matches; otherwise we issue a dedicated RPC call. We keep the
+  // previous page visible while a new one loads to avoid a flicker.
+  const slugPage = useQuery({
+    queryKey: ['render-trace-slugs', windowDays, debouncedSearch, page],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_render_trace_stats', {
+        p_window_days: windowDays,
+        p_search: debouncedSearch || null,
+        p_slug_limit: SLUG_PAGE_SIZE,
+        p_slug_offset: page * SLUG_PAGE_SIZE,
+        p_malformed_limit: 0, // overview already has them
+      });
+      if (error) throw error;
+      return data as unknown as RenderTraceStats;
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  });
 
-    for (const row of data ?? []) {
-      const state = extractState(row.user_agent);
-      if (!state) {
-        const cls = classifyRow(row);
-        if (cls) {
-          bad.push(cls);
-          byReason[cls.reason] += 1;
-        }
-        continue;
-      }
-      // State extracted cleanly — but the URL may still be malformed.
-      const cls = classifyRow(row);
-      if (cls && (cls.reason === 'unparseable_page_url' || cls.reason === 'empty_slug_path')) {
-        bad.push(cls);
-        byReason[cls.reason] += 1;
-      }
-      t[state] += 1;
+  const isLoading = overview.isLoading;
+  const isRefetching = overview.isFetching || slugPage.isFetching;
+  const error = overview.error ?? slugPage.error;
+  const refetch = () => {
+    overview.refetch();
+    slugPage.refetch();
+  };
 
-      const day = format(new Date(row.created_at), 'yyyy-MM-dd');
-      let dayBucket = dayMap.get(day);
-      if (!dayBucket) {
-        dayBucket = { date: day, shell: 0, rendered: 0, timeout: 0 };
-        dayMap.set(day, dayBucket);
-      }
-      dayBucket[state] += 1;
-
-      const slug = extractSlug(row.page_url);
-      let slugBucket = slugMap.get(slug);
-      if (!slugBucket) {
-        slugBucket = { slug, shell: 0, rendered: 0, timeout: 0, total: 0, renderRate: 0, timeoutRate: 0 };
-        slugMap.set(slug, slugBucket);
-      }
-      slugBucket[state] += 1;
-      slugBucket.total += 1;
-    }
-
-    for (const s of slugMap.values()) {
-      const denom = s.shell || s.total || 1;
-      s.renderRate = Math.min(1, s.rendered / denom);
-      s.timeoutRate = Math.min(1, s.timeout / denom);
-    }
-
-    const dayArr = Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-    const slugArr = Array.from(slugMap.values()).sort((a, b) => b.timeout - a.timeout || b.total - a.total);
-    // Most recent first — easier to spot a regression that started today.
-    bad.sort((a, b) => b.created_at.localeCompare(a.created_at));
-    return { totals: t, perDay: dayArr, perSlug: slugArr, malformed: bad, malformedByReason: byReason };
-  }, [data]);
-
-  const filteredSlugs = useMemo(() => {
-    if (!search.trim()) return perSlug;
-    const q = search.toLowerCase();
-    return perSlug.filter(s => s.slug.toLowerCase().includes(q));
-  }, [perSlug, search]);
+  const totals = overview.data?.totals ?? { shell: 0, rendered: 0, timeout: 0 };
+  const perDay = overview.data?.per_day ?? [];
+  const chartSlugs = overview.data?.slugs ?? [];
+  const slugTotal = overview.data?.slug_total ?? 0;
+  const malformed = overview.data?.malformed_samples ?? [];
+  const malformedByReason = overview.data?.malformed_counts ?? {};
+  const malformedTotal = useMemo(
+    () => Object.values(malformedByReason).reduce((a, b) => a + (b ?? 0), 0),
+    [malformedByReason],
+  );
+  const pageSlugs = slugPage.data?.slugs ?? [];
 
   const totalEvents = totals.shell + totals.rendered + totals.timeout;
   const overallTimeoutRate = totals.shell > 0 ? totals.timeout / totals.shell : 0;
   const overallRenderRate = totals.shell > 0 ? Math.min(1, totals.rendered / totals.shell) : 0;
 
+  const totalPages = Math.max(1, Math.ceil(slugTotal / SLUG_PAGE_SIZE));
+  const canPrev = page > 0;
+  const canNext = page < totalPages - 1;
+
   // ─── CSV export ──────────────────────────────────────────────────────────
-  // Bundles the three tables admins look at (totals, per-day, top slugs) into
-  // ONE file with section headers, so an analyst can open it in a spreadsheet
-  // without juggling multiple downloads. Top slugs is capped at the same 100
-  // rows we render in the table to keep the file tractable.
-  const handleExportCsv = () => {
+  // Bundles totals, per-day, and ALL slugs (capped at 500 by the RPC) into a
+  // single file with section headers. The export issues its own RPC call so
+  // the user gets the full dataset for the active filter, not just the page
+  // currently visible in the table.
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    let allSlugs: SlugStats[] = pageSlugs;
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_render_trace_stats', {
+        p_window_days: windowDays,
+        p_search: debouncedSearch || null,
+        p_slug_limit: 500,
+        p_slug_offset: 0,
+        p_malformed_limit: 0,
+      });
+      if (rpcError) throw rpcError;
+      allSlugs = (data as unknown as RenderTraceStats).slugs ?? allSlugs;
+    } catch (e) {
+      console.error('CSV export RPC failed, falling back to current page', e);
+    }
+
     const lines: string[] = [];
     const stamp = format(new Date(), 'yyyy-MM-dd_HHmm');
     const fromLabel = format(subDays(new Date(), windowDays - 1), 'yyyy-MM-dd');
@@ -257,6 +231,7 @@ export default function RenderTraceDashboard() {
 
     lines.push(`# Render-Trace Health export`);
     lines.push(`# Window: ${fromLabel} to ${toLabel} (${windowDays} day${windowDays === 1 ? '' : 's'})`);
+    if (debouncedSearch) lines.push(`# Filter: ${debouncedSearch}`);
     lines.push(`# Generated: ${new Date().toISOString()}`);
     lines.push('');
 
@@ -269,7 +244,7 @@ export default function RenderTraceDashboard() {
     lines.push(`timeout,${totals.timeout}`);
     lines.push(`render_rate,${(overallRenderRate * 100).toFixed(2)}%`);
     lines.push(`timeout_rate,${(overallTimeoutRate * 100).toFixed(2)}%`);
-    lines.push(`unique_slugs,${perSlug.length}`);
+    lines.push(`unique_slugs,${slugTotal}`);
     lines.push('');
 
     // 2) Per-day
@@ -281,16 +256,15 @@ export default function RenderTraceDashboard() {
     }
     lines.push('');
 
-    // 3) Top slugs (apply the active search filter so the export matches the
-    //    table the user is currently looking at).
-    lines.push('## Top slugs (filtered, max 100)');
+    // 3) Slugs — full set for the active filter (capped server-side at 500).
+    lines.push(`## Slugs (filtered, max 500 of ${slugTotal})`);
     lines.push('slug,shell,rendered,timeout,total,render_rate_pct,timeout_rate_pct');
-    for (const s of filteredSlugs.slice(0, 100)) {
+    for (const s of allSlugs) {
       // Quote the slug in case it ever contains a comma or quote.
       const safeSlug = `"${s.slug.replace(/"/g, '""')}"`;
       lines.push(
         `${safeSlug},${s.shell},${s.rendered},${s.timeout},${s.total},` +
-          `${(s.renderRate * 100).toFixed(2)},${(s.timeoutRate * 100).toFixed(2)}`,
+          `${(s.render_rate * 100).toFixed(2)},${(s.timeout_rate * 100).toFixed(2)}`,
       );
     }
 
@@ -304,6 +278,7 @@ export default function RenderTraceDashboard() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setIsExporting(false);
   };
 
   return (
@@ -365,14 +340,14 @@ export default function RenderTraceDashboard() {
           </Card>
         )}
 
-        {!isLoading && malformed.length > 0 && (
+        {!isLoading && malformedTotal > 0 && (
           <Card className="border-destructive/30 bg-destructive/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <ShieldAlert className="h-4 w-4 text-destructive" />
                 Malformed render-trace pings
                 <Badge variant="outline" className="ml-1 border-destructive/40 text-destructive">
-                  {malformed.length.toLocaleString()}
+                  {malformedTotal.toLocaleString()}
                 </Badge>
               </CardTitle>
               <CardDescription>
@@ -385,12 +360,12 @@ export default function RenderTraceDashboard() {
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {(Object.keys(REASON_LABELS) as MalformedReason[])
-                  .filter((r) => malformedByReason[r] > 0)
+                  .filter((r) => (malformedByReason[r] ?? 0) > 0)
                   .map((r) => (
                     <Badge key={r} variant="secondary" className="gap-1.5">
                       {REASON_LABELS[r]}
                       <span className="tabular-nums font-mono text-xs opacity-80">
-                        {malformedByReason[r].toLocaleString()}
+                        {(malformedByReason[r] ?? 0).toLocaleString()}
                       </span>
                     </Badge>
                   ))}
@@ -407,18 +382,18 @@ export default function RenderTraceDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {malformed.slice(0, 10).map((row, i) => (
+                    {malformed.map((row, i) => (
                       <TableRow key={`${row.created_at}-${i}`}>
                         <TableCell className="align-top">
                           <Badge variant="outline" className="text-[11px]">
                             {REASON_LABELS[row.reason]}
                           </Badge>
-                          {row.reason === 'unknown_state_tag' && row.rawTag && (
+                          {row.reason === 'unknown_state_tag' && row.raw_tag && (
                             <div
                               className="text-[11px] text-muted-foreground mt-1 font-mono truncate max-w-[160px]"
-                              title={row.rawTag}
+                              title={row.raw_tag}
                             >
-                              tag: {row.rawTag}
+                              tag: {row.raw_tag}
                             </div>
                           )}
                         </TableCell>
@@ -443,9 +418,9 @@ export default function RenderTraceDashboard() {
                 </Table>
               </div>
 
-              {malformed.length > 10 && (
+              {malformedTotal > malformed.length && (
                 <p className="text-xs text-muted-foreground">
-                  Showing 10 most recent of {malformed.length.toLocaleString()} malformed rows in this window.
+                  Showing {malformed.length} most recent of {malformedTotal.toLocaleString()} malformed rows in this window.
                 </p>
               )}
             </CardContent>
@@ -456,7 +431,7 @@ export default function RenderTraceDashboard() {
           <SummaryCard
             label="Total events"
             value={isLoading ? null : totalEvents.toLocaleString()}
-            hint={`${perSlug.length} unique slug${perSlug.length === 1 ? '' : 's'}`}
+            hint={`${slugTotal.toLocaleString()} unique slug${slugTotal === 1 ? '' : 's'}`}
           />
           <SummaryCard
             label="Shell"
@@ -527,7 +502,7 @@ export default function RenderTraceDashboard() {
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-[300px] w-full" />
-            ) : perSlug.length === 0 ? (
+            ) : chartSlugs.length === 0 ? (
               <EmptyState message="Nothing to chart yet." />
             ) : (
               <ChartContainer
@@ -539,7 +514,7 @@ export default function RenderTraceDashboard() {
                 className="h-[300px] w-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={perSlug.slice(0, 15)} layout="vertical" margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
+                  <BarChart data={chartSlugs} layout="vertical" margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" allowDecimals={false} fontSize={12} />
                     <YAxis type="category" dataKey="slug" width={140} fontSize={11} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
@@ -548,7 +523,7 @@ export default function RenderTraceDashboard() {
                     <Bar dataKey="shell" stackId="a" fill={STATE_COLORS.shell} />
                     <Bar dataKey="rendered" stackId="a" fill={STATE_COLORS.rendered} />
                     <Bar dataKey="timeout" stackId="a" fill={STATE_COLORS.timeout}>
-                      {perSlug.slice(0, 15).map((s) => (
+                      {chartSlugs.map((s) => (
                         <Cell key={s.slug} fill={STATE_COLORS.timeout} />
                       ))}
                     </Bar>
@@ -582,7 +557,7 @@ export default function RenderTraceDashboard() {
               <div className="space-y-2">
                 {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
               </div>
-            ) : filteredSlugs.length === 0 ? (
+            ) : pageSlugs.length === 0 ? (
               <EmptyState message={search ? 'No slugs match that filter.' : 'No render-trace data yet.'} />
             ) : (
               <div className="overflow-x-auto">
@@ -598,8 +573,8 @@ export default function RenderTraceDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSlugs.slice(0, 100).map((s) => {
-                      const isRegression = s.timeoutRate > 0.1 || (s.shell > 0 && s.rendered === 0);
+                    {pageSlugs.map((s) => {
+                      const isRegression = s.timeout_rate > 0.1 || (s.shell > 0 && s.rendered === 0);
                       return (
                         <TableRow key={s.slug} className={isRegression ? 'bg-destructive/5' : undefined}>
                           <TableCell className="font-mono text-xs max-w-[260px] truncate" title={s.slug}>
@@ -612,15 +587,15 @@ export default function RenderTraceDashboard() {
                               <span className="text-destructive font-medium">{s.timeout}</span>
                             ) : s.timeout}
                           </TableCell>
-                          <TableCell className="text-right tabular-nums">{(s.renderRate * 100).toFixed(0)}%</TableCell>
+                          <TableCell className="text-right tabular-nums">{(s.render_rate * 100).toFixed(0)}%</TableCell>
                           <TableCell className="text-right">
                             {isRegression ? (
                               <Badge variant="destructive" className="gap-1">
                                 <TrendingDown className="h-3 w-3" />
-                                {(s.timeoutRate * 100).toFixed(0)}%
+                                {(s.timeout_rate * 100).toFixed(0)}%
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground tabular-nums">{(s.timeoutRate * 100).toFixed(0)}%</span>
+                              <span className="text-muted-foreground tabular-nums">{(s.timeout_rate * 100).toFixed(0)}%</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -628,11 +603,37 @@ export default function RenderTraceDashboard() {
                     })}
                   </TableBody>
                 </Table>
-                {filteredSlugs.length > 100 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Showing top 100 of {filteredSlugs.length}. Refine the filter to narrow.
+                <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+                  <p className="text-xs text-muted-foreground">
+                    {slugTotal === 0
+                      ? 'No slugs'
+                      : `Showing ${page * SLUG_PAGE_SIZE + 1}–${Math.min((page + 1) * SLUG_PAGE_SIZE, slugTotal)} of ${slugTotal.toLocaleString()}`}
+                    {slugPage.isFetching && ' · loading…'}
                   </p>
-                )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={!canPrev || slugPage.isFetching}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Prev
+                    </Button>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      Page {page + 1} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={!canNext || slugPage.isFetching}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
