@@ -66,6 +66,7 @@ const sections = [
       { to: '/admin/edge-diagnostics', label: 'Edge Diagnostics', icon: Activity, desc: 'Edge function health' },
       { to: '/admin/sitemap-ping', label: 'Sitemap Ping', icon: Activity, desc: 'Google & Bing ping' },
       { to: '/admin/crawler-sample-rate', label: 'Crawler Sample Rate', icon: Gauge, desc: 'Tune crawler_visits log sampling (0–1)' },
+      { to: '/admin/crawler-sampling-decisions', label: 'Sampling Decisions', icon: Search, desc: 'Why each crawler-visit was kept or sampled out' },
       { to: '/admin/security-credentials', label: 'Security & Credentials', icon: ShieldAlert, desc: 'API key management' },
       { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert, desc: 'Anti-suspension shield' },
     ],
