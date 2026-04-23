@@ -672,9 +672,19 @@ serve(async (req) => {
           '[log-crawler-visit] pdp-render-trace payload missing required fields:',
           JSON.stringify({ missing, pageUrl, userAgent }),
         );
+        // Prefer INVALID_PDP_RENDER_STATE when the *only* problem is a
+        // bad/unknown state value; otherwise treat it as MISSING_FIELDS.
+        const onlyInvalidState =
+          stateTag !== null &&
+          !VALID_RENDER_STATES.has(stateTag) &&
+          slug !== null;
+        const code: ErrorCode = onlyInvalidState
+          ? ERROR_CODES.INVALID_PDP_RENDER_STATE
+          : ERROR_CODES.MISSING_FIELDS;
         return new Response(
           JSON.stringify({
             error: 'Invalid pdp-render-trace payload',
+            code,
             missing,
             validationCounters: getValidationCounters(),
           }),
