@@ -267,20 +267,31 @@ export const ProductImageManager = ({
     for (const file of rawFiles) {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       let status: PendingFile["status"] = "ok";
-      let reason: string | undefined;
+      let error: PendingError | undefined;
 
       if (!PRODUCT_IMAGE_ALLOWED_MIME.includes(file.type as typeof PRODUCT_IMAGE_ALLOWED_MIME[number])) {
         status = "rejected";
-        reason = `unsupported format (${file.type || "unknown"})`;
+        error = {
+          kind: "mime",
+          title: "Unsupported file type",
+          // Always name the file + the allowed list so the user knows
+          // exactly what to do (re-export, convert, etc.).
+          detail: `"${file.name}" is ${file.type || "an unknown format"}. Allowed: JPEG, PNG, WebP, GIF, AVIF.`,
+        };
       } else if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
         status = "rejected";
-        reason = `${formatBytes(file.size)} > ${PRODUCT_IMAGE_MAX_LABEL} per-file limit`;
+        error = {
+          kind: "size",
+          title: "File too large",
+          // Always name the file + show actual vs allowed size.
+          detail: `"${file.name}" is ${formatBytes(file.size)} — the limit is ${PRODUCT_IMAGE_MAX_LABEL} per file.`,
+        };
       }
 
       // Object URL is safe to create even for rejected files — it just lets
-      // the user see what they tried to upload. We revoke on remove/upload.
+      // the user see what they tried to upload. We revoke on remove/unmount.
       const previewUrl = URL.createObjectURL(file);
-      next.push({ id, file, previewUrl, status, reason });
+      next.push({ id, file, previewUrl, status, error });
       if (status === "ok") okCount++;
       else rejectedCount++;
     }
