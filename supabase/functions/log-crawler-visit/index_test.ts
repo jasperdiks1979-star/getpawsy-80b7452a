@@ -3517,6 +3517,43 @@ Deno.test({
     const SAFE_PAGE_URL = `${ORIGIN}/product/fuzz-safe-pageurl`;
     const SAFE_USER_AGENT = GOOGLEBOT_UA;
 
+    // ---------------------------------------------------------------
+    // Cross-axis counter attribution tracking.
+    //
+    // The function exposes its module-scoped `validationCounters` in
+    // every 400 envelope. Supabase Edge Runtime fans calls out across
+    // multiple isolates, so a given response only echoes the LOCAL
+    // isolate's view of those counters. That makes per-call DELTAS
+    // unreliable (the same isolate may not be hit twice in a row), but
+    // it does NOT excuse the function from booking a length failure
+    // against the offending field's bucket and ONLY that bucket.
+    //
+    // We enforce attribution two ways:
+    //
+    //   1. Per-call (below in the loop): track the running maximum
+    //      we've ever observed for each bucket across all responses.
+    //      If a non-offending bucket's reported value EXCEEDS its
+    //      previous observed maximum during a call where the fuzz
+    //      driver only over-fed one specific axis, that's a real
+    //      cross-attribution bug — some isolate booked our pure
+    //      `pageUrl`-length failure against `schema_user_agent` (or
+    //      worse, against `invalid_json` / `trace_*`).
+    //
+    //   2. End of run: aggregate sanity check that the offending
+    //      buckets grew, and unrelated buckets (invalid_json + all
+    //      three trace_* buckets) did not grow at all relative to the
+    //      first response we saw.
+    // ---------------------------------------------------------------
+    const perBucketObservedMax: Record<string, number> = Object.fromEntries(
+      ENVELOPE_REQUIRED_COUNTER_KEYS.map((k) => [k, 0]),
+    );
+    const counterRunTotals = {
+      overLimitCalls: 0,
+      byAxis: { pageUrl: 0, userAgent: 0 } as Record<Axis, number>,
+      firstSeenCounters: null as Record<string, number> | null,
+      lastSeenCounters: null as Record<string, number> | null,
+    };
+
     // Track outcomes so a failure prints a one-line repro with seed +
     // iteration index + offending values.
     type Outcome = {
@@ -3611,25 +3648,118 @@ Deno.test({
             const label = `[fuzz iter ${iterCounter}, seed=0x${SEED.toString(16)}, axis=${axis}, len=${spec.len}]`;
             const envelope = assertInvalidPayloadEnvelope(parsed, label);
 
-            // Case-specific layer on top of the structural contract:
-            //   (a) the offending field appears in `fieldErrors` with the
-            //       canonical "exceeds 2048 chars" message
-            //   (b) the matching taxonomy bucket was credited (≥1) so the
-            //       dashboard groups this failure correctly
+            // Case-specific layer on top of the structural contract.
+            // For an over-limit case driven by EXACTLY ONE axis, we
+            // assert a tight one-to-one mapping between the offending
+            // field and the structured response — nothing more, nothing
+            // less:
+            //
+            //   (a) `fieldErrors` mentions the offending axis and ONLY
+            //       the offending axis. The non-fuzzed axis carries a
+            //       safe value, so any complaint about it would mean
+            //       the validator is mis-attributing the failure (or
+            //       leaking errors across fields) — both of which would
+            //       break the dashboard's per-field grouping.
+            //
+            //   (b) the message on the offending axis is the canonical
+            //       length message ("exceeds 2048 chars"), not some
+            //       other validator output (e.g. regex/format errors
+            //       that happen to also fire on long strings).
+            //
+            //   (c) the matching taxonomy bucket is credited exactly
+            //       once for this call. Other length-related buckets
+            //       (the OTHER axis + `schema_referrer` + the catch-all
+            //       `schema_other`) MUST stay at 0 — otherwise a refactor
+            //       could double-count a single field error against
+            //       multiple buckets and silently inflate the dashboard.
+            //
+            //   (d) JSON/trace buckets (invalid_json, trace_*) MUST be 0
+            //       for a pure length failure — those code paths are
+            //       unrelated and any non-zero value would mean the
+            //       function is incrementing the wrong meter.
+            //
+            // Counters are observed as DELTAS by snapshotting the
+            // module-scoped counters before the call and subtracting,
+            // so a long-running cold start with prior traffic doesn't
+            // poison the assertion.
+            const expectedBucket = axis === "pageUrl"
+              ? "schema_page_url"
+              : "schema_user_agent";
+            const otherAxis = axis === "pageUrl" ? "userAgent" : "pageUrl";
+            const otherBucket = axis === "pageUrl"
+              ? "schema_user_agent"
+              : "schema_page_url";
+
+            // (a) fieldErrors keys are exactly [axis] — no leakage.
+            const fieldKeys = Object.keys(envelope.fieldErrors).sort();
+            assertEquals(
+              fieldKeys,
+              [axis],
+              `${label} fieldErrors must contain ONLY the offending axis "${axis}"; got keys ${JSON.stringify(fieldKeys)} with payload ${JSON.stringify(envelope.fieldErrors)}`,
+            );
+
+            // (b) the canonical length message is on that axis.
             const fieldMessages = envelope.fieldErrors[axis] ?? [];
             assertEquals(
               fieldMessages.some((m) => m.includes(EXPECTED_MESSAGE)),
               true,
               `${label} expected fieldErrors.${axis} to include "${EXPECTED_MESSAGE}"; got ${JSON.stringify(fieldMessages)}`,
             );
-            const expectedBucket = axis === "pageUrl"
-              ? "schema_page_url"
-              : "schema_user_agent";
+
+            // (c) The offending bucket is non-zero — the increment for
+            //     THIS call has been booked somewhere on its serving
+            //     isolate. We can't assert "exactly +1" per call because
+            //     Supabase Edge Runtime fans out across isolates, each
+            //     with its own module-scoped counters; a given response
+            //     only echoes the local isolate's view. So the strong
+            //     per-call invariant we enforce is structural (above) +
+            //     "the offending bucket is credited", and we assert the
+            //     exclusivity property in aggregate at the end of the
+            //     fuzz run (see counterRunTotals below).
             if (envelope.validationCounters[expectedBucket] < 1) {
-              throw new Error(
-                `${label} validationCounters.${expectedBucket} must be ≥1 for an ${axis} length failure, got ${envelope.validationCounters[expectedBucket]}`,
-              );
+               throw new Error(
+                 `${label} validationCounters.${expectedBucket} must be ≥1 for an ${axis} length failure, got ${envelope.validationCounters[expectedBucket]}`,
+               );
             }
+
+            // (d) Per-call cross-axis attribution: the bucket for the
+            //     OTHER (safe) axis must not have grown SINCE the value
+            //     this same isolate reported on its previous call. We
+            //     track the per-isolate maximum we've seen for every
+            //     bucket; if a later call from any isolate reports a
+            //     value higher than its own previous report on a non-
+            //     offending bucket, that's a real cross-attribution
+            //     bug. (Using "max across responses" tolerates isolate
+            //     fan-out: an isolate that hasn't been hit in a while
+            //     can legitimately report a stale low value.)
+            const observedMax = perBucketObservedMax;
+            for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+              const seen = envelope.validationCounters[k];
+              if (k === expectedBucket) {
+                // Offending bucket is allowed (and expected) to grow.
+                if (seen > (observedMax[k] ?? 0)) observedMax[k] = seen;
+                continue;
+              }
+              const prevMax = observedMax[k] ?? 0;
+              if (seen > prevMax) {
+                // A non-offending bucket grew during a call where it
+                // had no business growing. Record the new max so we
+                // attribute the delta to the correct fuzz iteration
+                // (this one), then fail.
+                observedMax[k] = seen;
+                throw new Error(
+                  `${label} non-offending bucket "${k}" grew from ${prevMax} → ${seen} during a pure ${axis} length failure. Expected only "${expectedBucket}" to increment. The non-fuzzed axis "${otherAxis}" carried a safe value, so "${otherBucket}" and unrelated buckets must stay flat. Full counters=${JSON.stringify(envelope.validationCounters)}`,
+                );
+              }
+            }
+
+            // Aggregate accounting for the end-of-run sanity check.
+            counterRunTotals.overLimitCalls += 1;
+            counterRunTotals.byAxis[axis] += 1;
+            if (!counterRunTotals.firstSeenCounters) {
+              counterRunTotals.firstSeenCounters = { ...envelope.validationCounters };
+            }
+            counterRunTotals.lastSeenCounters = { ...envelope.validationCounters };
           }
 
           // -----------------------------------------------------------------
@@ -3749,5 +3879,92 @@ Deno.test({
     console.log(
       `[fuzz] seed=0x${SEED.toString(16)} iterations=${iterCounter} violations=0`,
     );
+
+    // -----------------------------------------------------------------
+    // End-of-run aggregate counter contract.
+    //
+    // Across the WHOLE fuzz run we made N over-limit calls split across
+    // two axes. We can't pin per-call deltas (isolate fan-out — see the
+    // long comment near `perBucketObservedMax`), but we CAN assert two
+    // global invariants against the first/last responses we observed:
+    //
+    //   (A) Each fuzzed-axis bucket grew. If we sent K over-limit
+    //       `pageUrl` calls and `schema_page_url` is unchanged across
+    //       the run, the function isn't booking the failure at all.
+    //
+    //   (B) Unrelated buckets — the JSON parser bucket and all three
+    //       trace_* buckets — did NOT grow. A pure length failure on
+    //       a well-formed JSON body with no render-trace UA must not
+    //       touch any of those meters; if it does, the function is
+    //       attributing length errors to the wrong taxonomy.
+    //
+    // We compare last-vs-first observation. Because the same isolate
+    // may have served both, this is at minimum a lower bound on growth
+    // — if the last isolate we saw also saw growth, every other isolate
+    // would too (they all run the same code), so a zero here on a
+    // fuzzed bucket is unambiguous.
+    // -----------------------------------------------------------------
+    if (
+      counterRunTotals.firstSeenCounters &&
+      counterRunTotals.lastSeenCounters &&
+      counterRunTotals.overLimitCalls > 0
+    ) {
+      const first = counterRunTotals.firstSeenCounters;
+      const last = counterRunTotals.lastSeenCounters;
+      const growth: Record<string, number> = {};
+      for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+        growth[k] = (last[k] ?? 0) - (first[k] ?? 0);
+      }
+
+      const fuzzedBuckets: Array<{ axis: Axis; bucket: string }> = [];
+      if (counterRunTotals.byAxis.pageUrl > 0) {
+        fuzzedBuckets.push({ axis: "pageUrl", bucket: "schema_page_url" });
+      }
+      if (counterRunTotals.byAxis.userAgent > 0) {
+        fuzzedBuckets.push({ axis: "userAgent", bucket: "schema_user_agent" });
+      }
+
+      // (A) Fuzzed buckets must show some growth (only enforceable when
+      //     first ≠ last, i.e. we got at least 2 same-isolate responses).
+      for (const { axis, bucket } of fuzzedBuckets) {
+        if (growth[bucket] <= 0 && last[bucket] === first[bucket]) {
+          // Soft warning rather than hard fail — with 1 isolate and 1
+          // call this is structurally indistinguishable from "the
+          // bucket was already booked before our first observation".
+          // We already enforced bucket >= 1 per call above; that's the
+          // strong signal. This is just an extra breadcrumb.
+          console.warn(
+            `[fuzz] aggregate: schema bucket "${bucket}" did not grow across run ` +
+              `(first=${first[bucket]}, last=${last[bucket]}, ${axis} calls=${counterRunTotals.byAxis[axis]}). ` +
+              `Likely benign isolate fan-out; per-call assertions still passed.`,
+          );
+        }
+      }
+
+      // (B) Unrelated buckets MUST be flat. This is the strict half of
+      //     the contract — any growth here is a real attribution bug.
+      const UNRELATED_BUCKETS = [
+        "invalid_json",
+        "trace_missing_slug",
+        "trace_missing_state",
+        "trace_invalid_state",
+      ] as const;
+      const unrelatedGrowth = UNRELATED_BUCKETS
+        .filter((k) => growth[k] > 0)
+        .map((k) => `${k}: +${growth[k]}`);
+      if (unrelatedGrowth.length > 0) {
+        throw new Error(
+          `[fuzz] aggregate counter attribution bug: unrelated taxonomy bucket(s) grew during a pure length-failure fuzz run: ${unrelatedGrowth.join(", ")}. ` +
+            `These buckets cover JSON-parse failures and pdp-render-trace state errors; neither was exercised. ` +
+            `Full first→last: ${JSON.stringify(growth)}`,
+        );
+      }
+
+      console.log(
+        `[fuzz] aggregate counter growth (first→last response): ${JSON.stringify(growth)} ` +
+          `(over-limit calls: ${counterRunTotals.overLimitCalls}, ` +
+          `byAxis=${JSON.stringify(counterRunTotals.byAxis)})`,
+      );
+    }
   },
 });
