@@ -253,7 +253,17 @@ export function ReleaseStepEvidenceDialog({
             <Badge variant="outline" className="font-mono">release: {releaseId.slice(0, 12)}</Badge>
             {runId && <Badge variant="outline" className="font-mono">run: {runId.slice(0, 12)}</Badge>}
             <Badge variant="secondary" className="capitalize">{kind}</Badge>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => downloadEvidenceJson()}
+                title="Download volledige evidence als .json bestand"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download .json
+              </Button>
               <CopyButton
                 text={JSON.stringify(fullEvidence, null, 2)}
                 label="Copy all evidence"
