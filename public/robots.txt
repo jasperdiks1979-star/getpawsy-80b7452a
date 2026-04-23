@@ -23,6 +23,13 @@ Disallow: /my-claims
 Disallow: /unsubscribe
 Disallow: /payment-success
 Disallow: /thank-you
-Disallow: /*?*
+
+# Tracking / filter parameters: allow Google to crawl + follow canonical
+# (canonical tags + meta robots noindex,follow on the page handle de-indexing).
+# Blocking via robots.txt previously caused "Indexed, though blocked by robots.txt" warnings.
+Disallow: /*?fbclid=*
+Disallow: /*?gclid=*
+Disallow: /*&fbclid=*
+Disallow: /*&gclid=*
 
 Sitemap: https://getpawsy.pet/sitemap.xml

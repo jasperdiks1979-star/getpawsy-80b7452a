@@ -11,7 +11,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-04-09T17:41:46.542Z</lastBuildDate>",
+    "    <lastBuildDate>2026-04-23T13:48:12.892Z</lastBuildDate>",
     "    <item>",
     "      <g:id>ab56a66b-dfaa-4caa-921a-de5bf544f9d8</g:id>",
     "      <g:title><![CDATA[Dog Toy – Dog Chew Toy Choke-proof Food Dispenser – Safe Chewing]]></g:title>",
@@ -25,8 +25,7 @@
     "      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Toys</g:google_product_category>",
     "      <g:shipping_weight>1 kg</g:shipping_weight>",
     "      <g:sale_price>9.99 USD</g:sale_price>",
-    "      <g:identifier_exists>no</g:identifier_exists>",
-    "      <g:mpn>ab56a66b-dfaa-4caa-921a-de5bf544f9d8</g:mpn>",
+    "      <g:mpn>GP-DOGCHEWTOYCH</g:mpn>",
     "      <g:product_type>Pet Supplies &gt; Dogs &gt; Toys</g:product_type>",
     "      <g:custom_label_0>Mid-Margin</g:custom_label_0>",
     "      <g:custom_label_1>Standard</g:custom_label_1>",
@@ -34,7 +33,8 @@
     "    </item>",
     "    <item>",
     "      <g:id>35df9d09-a87f-483c-b5d7-261761ba865a</g:id>",
-    "      <g:title><![CDATA[Cat Toy – Cat Fish Toy – Durable Jute Squeaky Toy for Indoor Cats – Built to Last]]></g:title>"
+    "      <g:title><![CDATA[Cat Toy – Cat Fish Toy – Durable Jute Squeaky Toy for Indoor Cats – Built to Last]]></g:title>",
+    "      <g:description><![CDATA[Give your cat a realistic fish toy made from natural jute for hours of self-entertainment. Squeaky design triggers hunting instincts and keeps cats engaged. Durable construction withstands batting, biting, and bunny kicks. Helps reduce stress and boredom in indoor cats. Lightweight and easy to toss.]]></g:description>"
   ],
-  "file_size_bytes": 24704
+  "file_size_bytes": 388221
 }

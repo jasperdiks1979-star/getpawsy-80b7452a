@@ -105,24 +105,26 @@ export default function CatTreesForLargeCats() {
           '@id': `https://getpawsy.pet/product/${p.slug || p.id}`,
           name: p.name,
           image: p.images?.[0],
-          offers: {
-            '@type': 'Offer',
-            price: (p.price || 0).toFixed(2),
-            priceCurrency: 'USD',
-            availability: p.status === 'active' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            shippingDetails: {
-              '@type': 'OfferShippingDetails',
-              shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'USD' },
-              shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
-              deliveryTime: {
-                '@type': 'ShippingDeliveryTime',
-                handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
-                transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 7, unitCode: 'DAY' },
+          ...((p.price && Number(p.price) > 0) ? {
+            offers: {
+              '@type': 'Offer',
+              price: Number(p.price).toFixed(2),
+              priceCurrency: 'USD',
+              availability: p.status === 'active' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+              shippingDetails: {
+                '@type': 'OfferShippingDetails',
+                shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'USD' },
+                shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
+                deliveryTime: {
+                  '@type': 'ShippingDeliveryTime',
+                  handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
+                  transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 7, unitCode: 'DAY' },
+                },
               },
             },
-          },
+          } : {}),
         },
-      })),
+      })).filter((entry: any) => entry.item.offers),
     },
   };
 

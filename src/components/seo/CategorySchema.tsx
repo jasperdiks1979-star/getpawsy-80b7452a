@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { getKeywordsForCategory, SEO_KEYWORDS } from '@/lib/seo-keywords';
+import { buildSafeProductListItem, buildSafeOffer } from '@/lib/safe-offer';
 
 interface CategorySchemaProps {
   categoryName?: string;
@@ -60,23 +61,10 @@ export function CategorySchema({
       numberOfItems: productCount,
       itemListOrder: 'https://schema.org/ItemListUnordered',
       ...(products.length > 0 && {
-        itemListElement: products.slice(0, 10).map((product, index) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          item: {
-            '@type': 'Product',
-            '@id': `${baseUrl}/product/${product.slug || product.id}#product`,
-            name: product.name,
-            url: `${baseUrl}/product/${product.slug || product.id}`,
-            ...(product.image_url && { image: product.image_url }),
-            offers: {
-              '@type': 'Offer',
-              price: product.price.toFixed(2),
-              priceCurrency: 'USD',
-              availability: 'https://schema.org/InStock',
-            },
-          },
-        })),
+        itemListElement: products
+          .slice(0, 10)
+          .map((product, index) => buildSafeProductListItem(product, index + 1, baseUrl))
+          .filter(Boolean),
       }),
     },
     breadcrumb: {
@@ -111,17 +99,24 @@ export function CategorySchema({
     '@type': 'OfferCatalog',
     '@id': `${canonicalUrl}#offercatalog`,
     name: `${categoryName} - GetPawsy`,
-    itemListElement: products.slice(0, 5).map((product) => ({
-      '@type': 'Offer',
-      itemOffered: {
-        '@type': 'Product',
-        name: product.name,
-        url: `${baseUrl}/product/${product.slug || product.id}`,
-      },
-      price: product.price.toFixed(2),
-      priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock',
-    })),
+    itemListElement: products
+      .slice(0, 5)
+      .map((product) => {
+        const offer = buildSafeOffer(product, baseUrl);
+        if (!offer) return null;
+        return {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Product',
+            name: product.name,
+            url: `${baseUrl}/product/${product.slug || product.id}`,
+          },
+          price: offer.price,
+          priceCurrency: 'USD',
+          availability: offer.availability,
+        };
+      })
+      .filter(Boolean),
   } : null;
 
   return (
