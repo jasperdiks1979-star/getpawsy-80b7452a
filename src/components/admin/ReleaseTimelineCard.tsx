@@ -435,6 +435,7 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
             : null
         }
         feedUrl={release.validation_summary?.feedUrl ?? null}
+        releaseTitle={release.title ?? null}
       />
     </div>
   );
