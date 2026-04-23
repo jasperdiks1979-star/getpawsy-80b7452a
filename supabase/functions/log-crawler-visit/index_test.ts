@@ -2976,6 +2976,220 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
   return parsed;
 }
 
+// =============================================================================
+// Shrinking
+// =============================================================================
+// When the headline property fails (an over-limit input returned 2xx) the raw
+// failing payload is typically thousands of characters of random noise — useless
+// as a regression fixture. Shrinking reduces the failing input to the SMALLEST
+// over-limit string that still triggers the same bug, so the developer gets a
+// minimal, copy-pasteable repro.
+//
+// The strategy is intentionally simple (no jsr fast-check dep):
+//
+//   PHASE 1 — length minimization (binary search):
+//     We know the input is over-limit (length > MAX_LEN) AND triggers a 2xx.
+//     Binary-search the smallest length L in (MAX_LEN, originalLen] such that
+//     truncating the failing string to L characters still yields a 2xx. Each
+//     probe is a real network call; binary search caps it at ~log2(originalLen)
+//     calls (~12 for a 4096-char input) so this stays well within the test
+//     timeout even for many violations.
+//
+//   PHASE 2 — alphabet simplification:
+//     With the minimal length pinned, replace every character with 'a' (the
+//     simplest printable char). If the all-'a' variant still triggers the
+//     2xx, we use it as the fixture; otherwise we keep the original
+//     truncation. We don't do per-character delta-debugging because the
+//     length-based bug class we're catching here doesn't depend on
+//     individual character identity — but we leave a hook (`isCharSensitive`)
+//     so future bug classes (e.g. parser exploits) can opt out.
+//
+// The shrinker is invariant-preserving: it ONLY ever returns inputs that
+// (a) still violate the property (2xx for over-limit) AND (b) are still
+// over-limit themselves. If we can't reproduce the violation under
+// shrinking (e.g. the bug was flaky), we fall back to the original failing
+// input and annotate the fixture with `shrunk: false`.
+// -----------------------------------------------------------------------------
+
+/**
+ * Result of shrinking an over-limit failing input.
+ *
+ * `originalLen` and `shrunkLen` let the caller see the size reduction at
+ * a glance; `shrunk: false` means we couldn't reproduce the 2xx after
+ * any minimization, so the original is being reported verbatim.
+ */
+type ShrinkResult = {
+  axis: "pageUrl" | "userAgent";
+  shrunk: boolean;
+  originalLen: number;
+  shrunkLen: number;
+  shrunkValue: string;
+  // Per-phase telemetry — useful when triaging "why didn't it shrink further?"
+  phase1NetworkCalls: number;
+  phase2NetworkCalls: number;
+  phase2Applied: boolean;
+};
+
+/**
+ * Probe whether `(pageUrl, userAgent)` reproduces the over-limit 2xx bug.
+ * Returns `true` ONLY when both:
+ *   - the response is 2xx (the property violation)
+ *   - the targeted axis is still strictly > MAX_LEN (so we never declare
+ *     an at-or-under-limit input "still failing" — that would be a
+ *     different, valid behavior, not the bug we're shrinking)
+ */
+async function reproducesViolation(
+  axis: "pageUrl" | "userAgent",
+  pageUrl: string,
+  userAgent: string,
+  maxLen: number,
+  callFn: (body: { pageUrl: string; userAgent: string }) => Promise<Response>,
+): Promise<boolean> {
+  const targetLen = axis === "pageUrl" ? pageUrl.length : userAgent.length;
+  if (targetLen <= maxLen) return false;
+  const res = await callFn({ pageUrl, userAgent });
+  // Always drain the body to avoid Deno resource leaks.
+  await res.text();
+  return res.status >= 200 && res.status < 300;
+}
+
+/**
+ * Shrink a failing over-limit input down to the smallest reproducible
+ * fixture. See module-level comment for strategy.
+ *
+ * `safePageUrl` / `safeUserAgent` are the known-good values used on the
+ * non-shrinking axis so we isolate the bug to a single dimension.
+ */
+async function shrinkOverLimitInput(args: {
+  axis: "pageUrl" | "userAgent";
+  failingValue: string;
+  safePageUrl: string;
+  safeUserAgent: string;
+  maxLen: number;
+  callFn: (body: { pageUrl: string; userAgent: string }) => Promise<Response>;
+}): Promise<ShrinkResult> {
+  const { axis, failingValue, safePageUrl, safeUserAgent, maxLen, callFn } = args;
+  const originalLen = failingValue.length;
+
+  const buildPayload = (value: string) => ({
+    pageUrl: axis === "pageUrl" ? value : safePageUrl,
+    userAgent: axis === "userAgent" ? value : safeUserAgent,
+  });
+
+  // ---- PHASE 1: binary-search the minimum over-limit length -----------
+  //
+  // Invariant maintained across the loop:
+  //   * `bestValue` always reproduces the 2xx and is over-limit.
+  //   * `lo` is the largest length KNOWN to NOT reproduce (or the cap).
+  //   * `hi` is the smallest length KNOWN to reproduce.
+  // We narrow until `hi - lo <= 1`, at which point `hi` is the minimum.
+  let bestValue = failingValue;
+  let lo = maxLen; // anything ≤ MAX_LEN is by definition not-over-limit
+  let hi = originalLen;
+  let phase1NetworkCalls = 0;
+
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    const candidate = failingValue.slice(0, mid);
+    phase1NetworkCalls++;
+    const stillFails = await reproducesViolation(
+      axis,
+      buildPayload(candidate).pageUrl,
+      buildPayload(candidate).userAgent,
+      maxLen,
+      callFn,
+    );
+    if (stillFails) {
+      hi = mid;
+      bestValue = candidate;
+    } else {
+      lo = mid;
+    }
+  }
+
+  // ---- PHASE 2: alphabet simplification --------------------------------
+  // Replace the entire shrunk value with 'a'×len. If that still reproduces
+  // the bug, it's a much cleaner fixture (no random noise to read past).
+  const simplified = "a".repeat(bestValue.length);
+  let phase2Applied = false;
+  let phase2NetworkCalls = 0;
+
+  // Skip phase 2 if the failing value was already all-'a' (no information
+  // to gain) or if shrinking failed entirely (can't simplify what we
+  // couldn't reproduce).
+  if (simplified !== bestValue) {
+    phase2NetworkCalls++;
+    const simplifiedFails = await reproducesViolation(
+      axis,
+      buildPayload(simplified).pageUrl,
+      buildPayload(simplified).userAgent,
+      maxLen,
+      callFn,
+    );
+    if (simplifiedFails) {
+      bestValue = simplified;
+      phase2Applied = true;
+    }
+  }
+
+  return {
+    axis,
+    // `shrunk: false` ONLY when we couldn't make any progress at all —
+    // i.e. the original length is already the minimum AND phase 2 was
+    // a no-op. (`hi === originalLen` after phase 1 means binary search
+    // never confirmed a smaller length still failed.)
+    shrunk: bestValue.length < originalLen || phase2Applied,
+    originalLen,
+    shrunkLen: bestValue.length,
+    shrunkValue: bestValue,
+    phase1NetworkCalls,
+    phase2NetworkCalls,
+    phase2Applied,
+  };
+}
+
+/**
+ * Persist a shrunken fixture to `/tmp` so a developer can pull it down
+ * from CI artifacts (or read it locally) without copy-pasting from log
+ * output. Returns the path written, or `null` if the FS is read-only
+ * (e.g. some sandboxed CI runners) — we never fail the test on a
+ * fixture-write error since the test has already failed for a real
+ * reason and the in-memory summary is also printed.
+ */
+function writeShrunkFixture(
+  result: ShrinkResult,
+  meta: { seed: number; iter: number; httpStatus: number },
+): string | null {
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const path =
+    `/tmp/log-crawler-visit-fuzz-fixture-${result.axis}-${ts}.json`;
+  const payload = {
+    description:
+      "Shrunken fixture from log-crawler-visit fuzz test. Replay with `deno test --allow-net --allow-env supabase/functions/log-crawler-visit/index_test.ts` after pasting `value` into a manual fetch.",
+    capturedAt: new Date().toISOString(),
+    seed: `0x${meta.seed.toString(16)}`,
+    iteration: meta.iter,
+    httpStatusObserved: meta.httpStatus,
+    axis: result.axis,
+    originalLen: result.originalLen,
+    shrunkLen: result.shrunkLen,
+    shrunk: result.shrunk,
+    phase1NetworkCalls: result.phase1NetworkCalls,
+    phase2NetworkCalls: result.phase2NetworkCalls,
+    phase2Applied: result.phase2Applied,
+    value: result.shrunkValue,
+  };
+  try {
+    Deno.writeTextFileSync(path, JSON.stringify(payload, null, 2));
+    return path;
+  } catch (err) {
+    console.warn(
+      `[fuzz] could not persist shrunken fixture to ${path}: ${(err as Error).message}`,
+    );
+    return null;
+  }
+}
+
 /**
  * Build a string of EXACTLY `targetLen` UTF-16 code units using the given
  * RNG. We mix three character classes so the test exercises:
