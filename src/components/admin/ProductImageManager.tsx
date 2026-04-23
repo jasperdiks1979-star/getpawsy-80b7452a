@@ -59,6 +59,10 @@ export const ProductImageManager = ({
 }: ProductImageManagerProps) => {
   const [newImageUrl, setNewImageUrl] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // Slot the dragged image will land in if dropped right now. Decoupled
+  // from `draggedIndex` so we can render a "drop here" indicator without
+  // mutating the array on every dragOver tick.
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   // Bulk-upload progress: rendered into the upload buttons + drop zone so
   // the user can see "image 3 / 12 uploading" instead of an opaque spinner.
@@ -136,24 +140,53 @@ export const ProductImageManager = ({
     toast.success("Main image updated");
   };
 
-  const handleDragStart = (index: number) => {
+  // Tile drag-and-drop reordering.
+  //
+  // We commit the reorder ONCE, on `drop`, instead of mutating the array on
+  // every `dragOver` tick. That keeps the gallery stable while the cursor
+  // moves and avoids spamming the parent's `onChange` (which is what gets
+  // persisted). A separate `dragOverIndex` state drives the visual
+  // "insert here" indicator so the user can see exactly where the tile
+  // will land before they let go.
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
     setDraggedIndex(index);
+    // Required for Firefox to actually start the drag.
+    e.dataTransfer.effectAllowed = "move";
+    try {
+      e.dataTransfer.setData("text/plain", String(index));
+    } catch {
+      // Some browsers throw when setData is called outside a user gesture
+      // chain — safe to ignore, the React state above is the source of truth.
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleTileDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    // Only react to in-grid tile drags, not file drags from the OS — those
+    // belong to the bulk-upload zone.
+    if (draggedIndex === null) return;
+    if (e.dataTransfer.types.includes("Files")) return;
     e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverIndex !== index) setDragOverIndex(index);
+  };
 
-    const newImages = [...images];
-    const draggedImage = newImages[draggedIndex];
-    newImages.splice(draggedIndex, 1);
-    newImages.splice(index, 0, draggedImage);
-    onChange(newImages);
-    setDraggedIndex(index);
+  const handleTileDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    if (draggedIndex === null) return;
+    if (e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    if (draggedIndex !== index) {
+      const newImages = [...images];
+      const [moved] = newImages.splice(draggedIndex, 1);
+      newImages.splice(index, 0, moved);
+      onChange(newImages);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   // ---------------------------------------------------------------------------
