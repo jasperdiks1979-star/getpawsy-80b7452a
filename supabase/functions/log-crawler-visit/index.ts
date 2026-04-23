@@ -586,8 +586,14 @@ serve(async (req) => {
       rawBody = await req.json();
     } catch (parseErr) {
       console.error('[log-crawler-visit] Malformed JSON body:', parseErr);
+      recordValidationFailure('invalid_json', {
+        error: parseErr instanceof Error ? parseErr.message : String(parseErr),
+      });
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON body' }),
+        JSON.stringify({
+          error: 'Invalid JSON body',
+          validationCounters: getValidationCounters(),
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -599,8 +605,25 @@ serve(async (req) => {
         '[log-crawler-visit] Rejecting malformed payload:',
         JSON.stringify({ fieldErrors, received: rawBody }),
       );
+      // Increment one counter per offending field so a single bad payload
+      // hitting two fields gets credited to both buckets.
+      const offendingFields = Object.keys(fieldErrors);
+      if (offendingFields.length === 0) {
+        recordValidationFailure('schema_other', { reason: 'unknown_zod_shape' });
+      } else {
+        for (const field of offendingFields) {
+          recordValidationFailure(fieldErrorToType(field), {
+            field,
+            messages: fieldErrors[field as keyof typeof fieldErrors],
+          });
+        }
+      }
       return new Response(
-        JSON.stringify({ error: 'Invalid payload', fieldErrors }),
+        JSON.stringify({
+          error: 'Invalid payload',
+          fieldErrors,
+          validationCounters: getValidationCounters(),
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -614,10 +637,16 @@ serve(async (req) => {
       const slug = extractSlug(pageUrl);
       const stateTag = renderTagMatch?.[1]?.toLowerCase() ?? null;
       const missing: string[] = [];
-      if (!slug) missing.push('slug (from pageUrl)');
-      if (!stateTag) missing.push('pdp-render-trace state tag (from userAgent)');
-      else if (!VALID_RENDER_STATES.has(stateTag)) {
+      if (!slug) {
+        missing.push('slug (from pageUrl)');
+        recordValidationFailure('trace_missing_slug', { pageUrl });
+      }
+      if (!stateTag) {
+        missing.push('pdp-render-trace state tag (from userAgent)');
+        recordValidationFailure('trace_missing_state', { userAgent });
+      } else if (!VALID_RENDER_STATES.has(stateTag)) {
         missing.push(`valid pdp-render-trace state (got "${stateTag}")`);
+        recordValidationFailure('trace_invalid_state', { stateTag });
       }
       if (missing.length > 0) {
         console.error(
@@ -628,6 +657,7 @@ serve(async (req) => {
           JSON.stringify({
             error: 'Invalid pdp-render-trace payload',
             missing,
+            validationCounters: getValidationCounters(),
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
