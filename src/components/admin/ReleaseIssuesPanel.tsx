@@ -29,7 +29,8 @@ import {
   type ReleaseIssueStatus,
 } from '@/hooks/useReleaseIssues';
 import { cn } from '@/lib/utils';
-import { buildIssueEvidence, type SampleResult } from '@/lib/release/issueEvidence';
+import { buildIssueEvidence, type IssueEvidence, type SampleResult } from '@/lib/release/issueEvidence';
+import { useProductNames } from '@/hooks/useProductNames';
 
 const UNASSIGNED = '__unassigned__';
 
