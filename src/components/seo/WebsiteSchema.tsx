@@ -61,7 +61,9 @@ export function WebsiteSchema({
     ],
     address: {
       '@type': 'PostalAddress',
-      addressCountry: 'NL',
+      addressLocality: 'New York',
+      addressRegion: 'NY',
+      addressCountry: 'US',
     },
     knowsAbout: [
       'Dog Training Products',
