@@ -3386,6 +3386,18 @@ function writeShrunkFixture(
     phase1NetworkCalls: result.phase1NetworkCalls,
     phase2NetworkCalls: result.phase2NetworkCalls,
     phase2Applied: result.phase2Applied,
+    // Explicit "expected vs actual" length semantics. Mirrors the
+    // fields surfaced in the inline test failure so a human reading
+    // either the JSON fixture or the test stderr sees the same shape.
+    lengthSemantics: {
+      contract: `${result.axis}.length must be ≤ ${result.expectedMaxLen} UTF-16 code units`,
+      expectedMaxLen: result.expectedMaxLen,
+      actualLen: result.actualLen,
+      overBy: result.overBy,
+      reductionChars: result.reductionChars,
+      reductionPct: result.reductionPct,
+    },
+    minimalReproducer: result.minimalReproducer,
     value: result.shrunkValue,
   };
   try {
