@@ -419,6 +419,9 @@ export default function MerchantIntegrationPage() {
           </Button>
         </div>
 
+        {/* Post-publish quick action — refresh GMC feed and validate */}
+        <RefreshFeedAfterPublishCard />
+
         {/* Connection Status Card */}
         <Card>
           <CardHeader className="pb-3">
