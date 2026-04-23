@@ -3192,6 +3192,24 @@ type ShrinkResult = {
   phase1NetworkCalls: number;
   phase2NetworkCalls: number;
   phase2Applied: boolean;
+  // ---- Length semantics (explicit "expected vs actual") --------------
+  // The contract under test is: `value.length <= maxLen`. When it fails,
+  // we want a developer reading the fixture to see at a glance:
+  //   - the cap that was breached (`expectedMaxLen`)
+  //   - the length the shrinker landed on (`actualLen` == `shrunkLen`)
+  //   - by how many UTF-16 code units it overshoots (`overBy`)
+  //   - the size reduction delta vs the original failing payload
+  // These are derived (not authoritative new state), but precomputing
+  // them keeps the JSON fixture self-describing and avoids subtle
+  // off-by-one mistakes when humans eyeball the repro.
+  expectedMaxLen: number;
+  actualLen: number;
+  overBy: number;
+  reductionChars: number;
+  reductionPct: number; // 0..100, rounded to 1 decimal
+  // A short, copy-pasteable head/tail slice for inline log readability.
+  // The full value still lives in `shrunkValue` / the on-disk fixture.
+  minimalReproducer: string;
 };
 
 /**
