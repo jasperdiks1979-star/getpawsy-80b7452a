@@ -329,7 +329,7 @@ export const ProductImageManager = ({
     e.preventDefault();
     setIsDropTarget(false);
     const files = Array.from(e.dataTransfer.files ?? []);
-    await uploadFiles(files);
+    queuePreview(files);
   };
 
   return (
