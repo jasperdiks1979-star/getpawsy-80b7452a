@@ -521,16 +521,51 @@ describe('usePdpBotRenderTrace', () => {
     expect(states).toEqual(['shell', 'rendered']);
     expect(states).not.toContain('timeout');
 
-    // And no log call for this slug should carry the timeout tag.
-    const timeoutCallsForSlug = invokeMock.mock.calls.filter(
+    // ---- Per-payload userAgent tag assertions --------------------------
+    // The `getReportedStates()` helper above only verifies the ordered list
+    // of states. At the boundary-cancellation scenario we additionally
+    // assert each payload's `userAgent` carries the *correct* trace tag
+    // (and no cross-contamination), since the watchdog firing late is the
+    // most common way a stale `timeout` tag could leak into the rendered
+    // payload's UA suffix.
+    const slugCalls = invokeMock.mock.calls.filter(
       ([fn, opts]) =>
         fn === 'log-crawler-visit' &&
-        (opts as { body: { pageUrl: string; userAgent: string } }).body.pageUrl.includes(
-          `/product/${slug}`,
-        ) &&
-        (opts as { body: { userAgent: string } }).body.userAgent.includes(
-          'pdp-render-trace:timeout',
-        ),
+        (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+    );
+    expect(slugCalls).toHaveLength(2);
+
+    const [shellCall, renderedCall] = slugCalls.map(
+      ([, opts]) => (opts as { body: { userAgent: string; pageUrl: string } }).body,
+    );
+
+    // Shell payload: UA must carry exactly the shell trace tag (with the
+    // bracketed suffix and a t_mount duration), and must NOT carry rendered
+    // or timeout tags.
+    expect(shellCall.userAgent).toMatch(/\[pdp-render-trace:shell\b[^\]]*\]/);
+    expect(shellCall.userAgent).toMatch(/t_mount=\d+ms/);
+    expect(shellCall.userAgent).not.toMatch(/pdp-render-trace:rendered/);
+    expect(shellCall.userAgent).not.toMatch(/pdp-render-trace:timeout/);
+
+    // Rendered payload: UA must carry the rendered tag plus the
+    // since-shell delta (~7999ms, since data landed 7,999ms after shell).
+    // Critically, it must NOT carry a timeout tag — that's the leak this
+    // assertion is here to catch.
+    expect(renderedCall.userAgent).toMatch(/\[pdp-render-trace:rendered\b[^\]]*\]/);
+    expect(renderedCall.userAgent).toMatch(/t_shell=\d+ms/);
+    expect(renderedCall.userAgent).not.toMatch(/pdp-render-trace:shell\b/);
+    expect(renderedCall.userAgent).not.toMatch(/pdp-render-trace:timeout/);
+
+    // Mirror the state in the URL `_render` param so log analysis on either
+    // field agrees with the userAgent tag.
+    expect(new URL(shellCall.pageUrl).searchParams.get('_render')).toBe('shell');
+    expect(new URL(renderedCall.pageUrl).searchParams.get('_render')).toBe('rendered');
+
+    // Belt-and-braces: no log call for this slug carries the timeout tag.
+    const timeoutCallsForSlug = slugCalls.filter(([, opts]) =>
+      (opts as { body: { userAgent: string } }).body.userAgent.includes(
+        'pdp-render-trace:timeout',
+      ),
     );
     expect(timeoutCallsForSlug).toHaveLength(0);
   });
