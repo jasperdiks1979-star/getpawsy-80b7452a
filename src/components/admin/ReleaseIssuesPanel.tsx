@@ -31,6 +31,8 @@ import {
 import { cn } from '@/lib/utils';
 import { buildIssueEvidence, type IssueEvidence, type SampleResult } from '@/lib/release/issueEvidence';
 import { useProductNames } from '@/hooks/useProductNames';
+import { buildRecommendations } from '@/lib/release/issueRecommendations';
+import { ReleaseRecommendationsBanner } from './ReleaseRecommendationsBanner';
 
 const UNASSIGNED = '__unassigned__';
 
