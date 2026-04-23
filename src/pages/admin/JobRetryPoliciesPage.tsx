@@ -474,6 +474,50 @@ export default function JobRetryPoliciesPage() {
           </Button>
         </div>
 
+        {/* Import / export */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Download className="h-4 w-4 text-primary" />
+              Import / export
+            </CardTitle>
+            <CardDescription>
+              Download de huidige policies als JSON of CSV om te backuppen of naar een andere omgeving te kopiëren.
+              Upload een eerder export-bestand om bulk te importeren — duplicaten worden geüpdatet of overgeslagen.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleExport('json')} disabled={rows.length === 0}>
+                <FileJson className="h-4 w-4 mr-2" />
+                Export JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleExport('csv')} disabled={rows.length === 0}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <div className="ml-auto">
+                <Label htmlFor="import-file" className="sr-only">Import bestand</Label>
+                <Input
+                  id="import-file"
+                  type="file"
+                  accept=".json,.csv,application/json,text/csv"
+                  onChange={handleFileSelected}
+                  className="hidden"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => document.getElementById('import-file')?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importeer bestand
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
