@@ -156,53 +156,77 @@ export const ProductImageManager = ({
     bulkInputRef.current?.click();
   };
 
-  // Shared upload pipeline used by:
-  //   1. The single/few-file "Upload" button (file picker)
-  //   2. The dedicated "Bulk upload" button (file picker, semantic alias)
-  //   3. The drop zone (drag-and-drop, possibly dozens of files)
-  // All three paths run the SAME pre-flight validation and the SAME
-  // sequential per-file upload, so the 20 MB-per-file limit is enforced
-  // identically regardless of how the files entered the component.
-  const uploadFiles = async (rawFiles: File[]) => {
+  // Stage 1 of the upload pipeline. Files picked or dropped by the user are
+  // validated against the same 20 MB-per-file + MIME contract used by the
+  // storage bucket, then added to the preview tray with a real thumbnail
+  // (object URL). NOTHING is uploaded until the user clicks "Upload" in
+  // the tray. Rejected files are still shown — greyed out, with their
+  // reason — so the user can SEE what was skipped instead of guessing.
+  const queuePreview = (rawFiles: File[]) => {
     if (rawFiles.length === 0) return;
 
-    // Pre-flight: validate EVERY file first and collect *all* problems so
-    // the user gets one consolidated report instead of N stop-the-world
-    // toasts. Bulk uploads commonly include a stray screenshot or a HEIC
-    // from a phone — we want to skip those and still upload the rest.
-    const accepted: File[] = [];
-    const rejected: { file: File; reason: string }[] = [];
+    const next: PendingFile[] = [];
+    let okCount = 0;
+    let rejectedCount = 0;
     for (const file of rawFiles) {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      let status: PendingFile["status"] = "ok";
+      let reason: string | undefined;
+
       if (!PRODUCT_IMAGE_ALLOWED_MIME.includes(file.type as typeof PRODUCT_IMAGE_ALLOWED_MIME[number])) {
-        rejected.push({
-          file,
-          reason: `unsupported format (${file.type || "unknown"})`,
-        });
-        continue;
+        status = "rejected";
+        reason = `unsupported format (${file.type || "unknown"})`;
+      } else if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
+        status = "rejected";
+        reason = `${formatBytes(file.size)} > ${PRODUCT_IMAGE_MAX_LABEL} per-file limit`;
       }
-      if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
-        rejected.push({
-          file,
-          reason: `${formatBytes(file.size)} > ${PRODUCT_IMAGE_MAX_LABEL} per-file limit`,
-        });
-        continue;
-      }
-      accepted.push(file);
+
+      // Object URL is safe to create even for rejected files — it just lets
+      // the user see what they tried to upload. We revoke on remove/upload.
+      const previewUrl = URL.createObjectURL(file);
+      next.push({ id, file, previewUrl, status, reason });
+      if (status === "ok") okCount++;
+      else rejectedCount++;
     }
 
-    if (rejected.length > 0) {
-      // Show up to 3 individual reasons, then a count of the rest, so a
-      // user dragging in 30 mixed files isn't drowned in toasts.
-      const preview = rejected.slice(0, 3)
-        .map((r) => `"${r.file.name}" — ${r.reason}`)
-        .join("; ");
-      const overflow = rejected.length > 3 ? ` and ${rejected.length - 3} more` : "";
-      toast.error(
-        `Skipped ${rejected.length} file${rejected.length === 1 ? "" : "s"}: ${preview}${overflow}`,
+    setPendingFiles((prev) => [...prev, ...next]);
+
+    if (rejectedCount > 0) {
+      toast.warning(
+        `${rejectedCount} file${rejectedCount === 1 ? "" : "s"} can't be uploaded — see preview for details`,
       );
     }
+    if (okCount > 0) {
+      toast.success(
+        `${okCount} image${okCount === 1 ? "" : "s"} ready — review thumbnails and click Upload`,
+      );
+    }
+  };
 
-    if (accepted.length === 0) return;
+  const removePending = (id: string) => {
+    setPendingFiles((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  };
+
+  const clearPending = () => {
+    setPendingFiles((prev) => {
+      prev.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+      return [];
+    });
+  };
+
+  // Stage 2 of the upload pipeline. Uploads only the files that passed
+  // validation in the preview tray; rejected files are dropped silently
+  // (the user already saw their reason in the tray).
+  const confirmUpload = async () => {
+    const accepted = pendingFiles.filter((p) => p.status === "ok");
+    if (accepted.length === 0) {
+      toast.error("No valid files to upload");
+      return;
+    }
 
     setIsUploading(true);
     setUploadProgress({ done: 0, total: accepted.length });
@@ -210,7 +234,7 @@ export const ProductImageManager = ({
       const uploadedUrls: string[] = [];
       const failed: { name: string; reason: string }[] = [];
       for (let i = 0; i < accepted.length; i++) {
-        const file = accepted[i];
+        const { file } = accepted[i];
         // Build a collision-resistant path: timestamp + random suffix + ext.
         const ext = file.name.includes(".")
           ? file.name.split(".").pop()!.toLowerCase()
@@ -263,6 +287,10 @@ export const ProductImageManager = ({
         const overflow = failed.length > 3 ? ` and ${failed.length - 3} more` : "";
         toast.error(`Failed to upload ${failed.length}: ${preview}${overflow}`);
       }
+
+      // Clear the tray after a successful (or partially-successful) upload.
+      // Rejected files leave the tray too — they were never going to upload.
+      clearPending();
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
@@ -273,7 +301,7 @@ export const ProductImageManager = ({
     const files = Array.from(e.target.files ?? []);
     // Always reset the input so picking the same file again re-fires onChange.
     e.target.value = "";
-    await uploadFiles(files);
+    queuePreview(files);
   };
 
   // Drag-and-drop on the bulk zone. We intentionally do NOT mix this with
