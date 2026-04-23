@@ -62,6 +62,7 @@ export function ReportReleaseCard() {
             </CardTitle>
             <CardDescription className="mt-1">
               Logs a new release and automatically runs the Merchant Center sync + feed validation.
+              When validation completes, an evidence PDF (matrix + summary) is auto-downloaded for your GMC appeal.
             </CardDescription>
           </div>
           {phase !== 'idle' && (
