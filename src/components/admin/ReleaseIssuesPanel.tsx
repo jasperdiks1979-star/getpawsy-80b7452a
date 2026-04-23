@@ -159,6 +159,7 @@ export function ReleaseIssuesPanel({
             </span>
           )}
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant="outline"
           size="sm"
@@ -195,6 +196,7 @@ export function ReleaseIssuesPanel({
           <FileSpreadsheet className="h-3 w-3" />
           Export CSV
         </Button>
+        </div>
       </div>
 
       {showAdd && (
