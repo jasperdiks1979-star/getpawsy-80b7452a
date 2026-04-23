@@ -3412,6 +3412,165 @@ function writeShrunkFixture(
 }
 
 /**
+ * Persist the shrunken fixture to a STABLE snapshot path so a developer
+ * can always replay "the latest minimum failing case" without hunting
+ * through timestamped files in /tmp or CI artifact bundles.
+ *
+ * Two outputs:
+ *   1. supabase/functions/log-crawler-visit/__snapshots__/
+ *        latest-over-limit-fixture.json   (machine-readable, commit-friendly)
+ *   2. ...same dir.../latest-over-limit-fixture.replay.sh
+ *      (one-shot bash that re-POSTS the exact failing payload)
+ *
+ * The snapshot location is overridable via `FUZZ_SNAPSHOT_DIR` so CI
+ * can route it into an artifacts directory (or a tmpfs read-only
+ * runner can disable it by pointing it at /dev/null's parent).
+ *
+ * Returns `{ jsonPath, replayPath }` on success — either may be null
+ * if the FS is read-only. Snapshot failures are NEVER fatal: the test
+ * has already failed for a real reason, and the timestamped /tmp
+ * fixture + stderr summary are still emitted as fallbacks.
+ */
+function writeStableSnapshot(
+  result: ShrinkResult,
+  meta: { seed: number; iter: number; httpStatus: number },
+): { jsonPath: string | null; replayPath: string | null } {
+  // Default lives next to the test file so a contributor running
+  // `git status` after a local fuzz failure immediately sees what
+  // changed. Override with FUZZ_SNAPSHOT_DIR for CI artifact paths.
+  const dir = Deno.env.get("FUZZ_SNAPSHOT_DIR")?.trim() ||
+    new URL("./__snapshots__/", import.meta.url).pathname;
+  const jsonPath = `${dir.replace(/\/$/, "")}/latest-over-limit-fixture.json`;
+  const replayPath = `${dir.replace(/\/$/, "")}/latest-over-limit-fixture.replay.sh`;
+
+  const seedHex = `0x${meta.seed.toString(16)}`;
+  const snapshot = {
+    description:
+      "STABLE snapshot of the latest minimum failing over-limit fixture from " +
+      "the log-crawler-visit fuzz test. Overwritten on every run that finds " +
+      "a violation. The companion .replay.sh re-posts the exact payload.",
+    capturedAt: new Date().toISOString(),
+    seed: seedHex,
+    iteration: meta.iter,
+    httpStatusObserved: meta.httpStatus,
+    axis: result.axis,
+    originalLen: result.originalLen,
+    shrunkLen: result.shrunkLen,
+    shrunk: result.shrunk,
+    lengthSemantics: {
+      contract: `${result.axis}.length must be ≤ ${result.expectedMaxLen} UTF-16 code units`,
+      expectedMaxLen: result.expectedMaxLen,
+      actualLen: result.actualLen,
+      overBy: result.overBy,
+      reductionChars: result.reductionChars,
+      reductionPct: result.reductionPct,
+    },
+    minimalReproducer: result.minimalReproducer,
+    value: result.shrunkValue,
+    replay: {
+      // Re-running the test with these env vars deterministically
+      // re-streams the same RNG; the violating iteration still
+      // depends on the function being broken in the same way, but
+      // the input space explored is identical.
+      env: {
+        FUZZ_SEED: seedHex,
+        FUZZ_ITERATIONS: Deno.env.get("FUZZ_ITERATIONS") ?? "3",
+      },
+      command:
+        `FUZZ_SEED=${seedHex} FUZZ_ITERATIONS=${Deno.env.get("FUZZ_ITERATIONS") ?? "3"} ` +
+        `deno test --allow-net --allow-env --allow-read --allow-write ` +
+        `--filter "fuzz" supabase/functions/log-crawler-visit/index_test.ts`,
+    },
+  };
+
+  // Best-effort directory create — may already exist.
+  try {
+    Deno.mkdirSync(dir, { recursive: true });
+  } catch (err) {
+    if (!(err instanceof Deno.errors.AlreadyExists)) {
+      console.warn(
+        `[fuzz-snapshot] could not create snapshot dir ${dir}: ${(err as Error).message}`,
+      );
+      return { jsonPath: null, replayPath: null };
+    }
+  }
+
+  let writtenJson: string | null = null;
+  try {
+    Deno.writeTextFileSync(jsonPath, JSON.stringify(snapshot, null, 2));
+    writtenJson = jsonPath;
+  } catch (err) {
+    console.warn(
+      `[fuzz-snapshot] could not persist JSON snapshot to ${jsonPath}: ${(err as Error).message}`,
+    );
+  }
+
+  // Companion replay script — single-shot curl with the exact failing
+  // payload, JSON-encoded so even pathological characters round-trip.
+  // We deliberately don't depend on the original RNG: the value field
+  // IS the failing input, so re-posting it is sufficient to confirm
+  // the bug locally.
+  const escapedValue = JSON.stringify(result.shrunkValue);
+  const safeOther = result.axis === "pageUrl"
+    ? `"userAgent": ${JSON.stringify("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")}`
+    : `"pageUrl":   ${JSON.stringify("https://getpawsy.pet/product/fuzz-snapshot-replay")}`;
+  const bodyJson = result.axis === "pageUrl"
+    ? `{ "pageUrl": ${escapedValue}, ${safeOther.replace(/^"userAgent":\s*/, '"userAgent": ')} }`
+    : `{ ${safeOther.replace(/^"pageUrl":\s*/, '"pageUrl": ')}, "userAgent": ${escapedValue} }`;
+
+  const replayScript = [
+    `#!/usr/bin/env bash`,
+    `# Auto-generated by the log-crawler-visit fuzz test.`,
+    `# Replays the smallest known over-limit payload against the deployed`,
+    `# function. Captured ${new Date().toISOString()} from seed=${seedHex} iter=${meta.iter}.`,
+    `#`,
+    `#   axis        : ${result.axis}`,
+    `#   shrunk len  : ${result.shrunkLen} (was ${result.originalLen})`,
+    `#   over by     : +${result.overBy} units beyond the ${result.expectedMaxLen} cap`,
+    `#   reproducer  : ${result.minimalReproducer.slice(0, 120)}${result.minimalReproducer.length > 120 ? "…" : ""}`,
+    `#`,
+    `# Override SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY to target a`,
+    `# different env (defaults match the test harness).`,
+    `set -euo pipefail`,
+    ``,
+    `: "\${SUPABASE_URL:=${SUPABASE_URL}}"`,
+    `: "\${SUPABASE_PUBLISHABLE_KEY:=${SUPABASE_ANON_KEY || "REPLACE_WITH_PUBLISHABLE_KEY"}}"`,
+    ``,
+    `read -r -d '' BODY <<'JSON' || true`,
+    bodyJson,
+    `JSON`,
+    ``,
+    `echo "[replay] POST \$SUPABASE_URL/functions/v1/log-crawler-visit"`,
+    `curl -sS -X POST \\`,
+    `  -H "Content-Type: application/json" \\`,
+    `  -H "apikey: \$SUPABASE_PUBLISHABLE_KEY" \\`,
+    `  -H "Authorization: Bearer \$SUPABASE_PUBLISHABLE_KEY" \\`,
+    `  -d "\$BODY" \\`,
+    `  "\$SUPABASE_URL/functions/v1/log-crawler-visit" | tee /dev/stderr | jq . || true`,
+    `echo`,
+    `echo "[replay] expected: HTTP 400 with code=INVALID_PAYLOAD and a length error on '${result.axis}'."`,
+    ``,
+  ].join("\n");
+
+  let writtenReplay: string | null = null;
+  try {
+    Deno.writeTextFileSync(replayPath, replayScript);
+    try {
+      Deno.chmodSync(replayPath, 0o755);
+    } catch {
+      // Windows / restricted FS — non-fatal, user can `bash <path>`.
+    }
+    writtenReplay = replayPath;
+  } catch (err) {
+    console.warn(
+      `[fuzz-snapshot] could not persist replay script to ${replayPath}: ${(err as Error).message}`,
+    );
+  }
+
+  return { jsonPath: writtenJson, replayPath: writtenReplay };
+}
+
+/**
  * Build a string of EXACTLY `targetLen` UTF-16 code units using the given
  * RNG. We mix three character classes so the test exercises:
  *   - plain ASCII (1 unit)
