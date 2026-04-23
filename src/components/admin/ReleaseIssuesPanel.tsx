@@ -18,6 +18,10 @@ import {
   Trash2,
   UserCircle2,
   ListChecks,
+  ExternalLink,
+  FileSearch,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   useReleaseIssues,
@@ -25,6 +29,7 @@ import {
   type ReleaseIssueStatus,
 } from '@/hooks/useReleaseIssues';
 import { cn } from '@/lib/utils';
+import { buildIssueEvidence, type SampleResult } from '@/lib/release/issueEvidence';
 
 const UNASSIGNED = '__unassigned__';
 
@@ -58,6 +63,14 @@ function statusBadge(status: ReleaseIssueStatus) {
 interface Props {
   releaseId: string;
   topFailReasons: Array<[string, number]> | null | undefined;
+  /**
+   * Per-item validation results from `validate-merchant-feed`. Used to
+   * surface concrete evidence (product id + failed field + snippet) per
+   * issue. Null/empty when an older release didn't persist sample data.
+   */
+  sampleResults?: SampleResult[] | null;
+  /** Override for the live merchant feed URL shown in evidence links. */
+  feedUrl?: string | null;
 }
 
 /**
@@ -69,7 +82,12 @@ interface Props {
  * Validation_fail issues are auto-seeded by the hook; custom issues can
  * be added inline.
  */
-export function ReleaseIssuesPanel({ releaseId, topFailReasons }: Props) {
+export function ReleaseIssuesPanel({
+  releaseId,
+  topFailReasons,
+  sampleResults,
+  feedUrl,
+}: Props) {
   const {
     issues,
     assignees,
@@ -84,6 +102,7 @@ export function ReleaseIssuesPanel({ releaseId, topFailReasons }: Props) {
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [adding, setAdding] = useState(false);
+  const [evidenceOpen, setEvidenceOpen] = useState<Record<string, boolean>>({});
 
   const onAdd = async () => {
     setAdding(true);
