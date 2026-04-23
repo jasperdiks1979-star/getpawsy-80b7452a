@@ -36,6 +36,83 @@ const PayloadSchema = z.object({
 const RENDER_STATE_TAG_RE = /pdp-render-trace\/([a-z0-9_-]+)/i;
 const VALID_RENDER_STATES = new Set(['shell', 'rendered', 'timeout']);
 
+// -----------------------------------------------------------------------------
+// Lightweight validation-failure counters
+// -----------------------------------------------------------------------------
+// Track how often each *type* of malformed payload is rejected so we can
+// quantify churn without a schema migration. The counters live in module scope
+// so they accumulate per cold start; every increment also emits a structured
+// `[validation-counter]` log line that can be aggregated via the
+// `function_edge_logs` analytics table.
+//
+// Failure-type taxonomy:
+//   - invalid_json          → request body wasn't valid JSON
+//   - schema_page_url       → Zod rejection on `pageUrl`
+//   - schema_user_agent     → Zod rejection on `userAgent`
+//   - schema_referrer       → Zod rejection on `referrer`
+//   - schema_other          → Zod rejection on a field we don't break out
+//   - trace_missing_slug    → render-trace ping with no extractable slug
+//   - trace_missing_state   → render-trace ping with no state tag in the UA
+//   - trace_invalid_state   → render-trace ping with an unknown state value
+//
+// `getValidationCounters()` returns a snapshot for inclusion in error
+// responses (so callers/tests can introspect totals without scraping logs).
+type ValidationFailureType =
+  | 'invalid_json'
+  | 'schema_page_url'
+  | 'schema_user_agent'
+  | 'schema_referrer'
+  | 'schema_other'
+  | 'trace_missing_slug'
+  | 'trace_missing_state'
+  | 'trace_invalid_state';
+
+const validationCounters: Record<ValidationFailureType, number> = {
+  invalid_json: 0,
+  schema_page_url: 0,
+  schema_user_agent: 0,
+  schema_referrer: 0,
+  schema_other: 0,
+  trace_missing_slug: 0,
+  trace_missing_state: 0,
+  trace_invalid_state: 0,
+};
+
+function recordValidationFailure(
+  type: ValidationFailureType,
+  context: Record<string, unknown> = {},
+): void {
+  validationCounters[type] = (validationCounters[type] ?? 0) + 1;
+  // Structured single-line log so it can be grep'd / aggregated downstream.
+  console.warn(
+    `[validation-counter] ${JSON.stringify({
+      type,
+      count: validationCounters[type],
+      ts: new Date().toISOString(),
+      ...context,
+    })}`,
+  );
+}
+
+function getValidationCounters(): Record<ValidationFailureType, number> {
+  return { ...validationCounters };
+}
+
+// Map a Zod field-error key onto our taxonomy. Keeps the counter set small
+// so admins can scan the totals at a glance.
+function fieldErrorToType(field: string): ValidationFailureType {
+  switch (field) {
+    case 'pageUrl':
+      return 'schema_page_url';
+    case 'userAgent':
+      return 'schema_user_agent';
+    case 'referrer':
+      return 'schema_referrer';
+    default:
+      return 'schema_other';
+  }
+}
+
 function extractSlug(pageUrl: string): string | null {
   try {
     const u = new URL(pageUrl, 'https://getpawsy.pet');
@@ -509,8 +586,14 @@ serve(async (req) => {
       rawBody = await req.json();
     } catch (parseErr) {
       console.error('[log-crawler-visit] Malformed JSON body:', parseErr);
+      recordValidationFailure('invalid_json', {
+        error: parseErr instanceof Error ? parseErr.message : String(parseErr),
+      });
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON body' }),
+        JSON.stringify({
+          error: 'Invalid JSON body',
+          validationCounters: getValidationCounters(),
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -522,8 +605,25 @@ serve(async (req) => {
         '[log-crawler-visit] Rejecting malformed payload:',
         JSON.stringify({ fieldErrors, received: rawBody }),
       );
+      // Increment one counter per offending field so a single bad payload
+      // hitting two fields gets credited to both buckets.
+      const offendingFields = Object.keys(fieldErrors);
+      if (offendingFields.length === 0) {
+        recordValidationFailure('schema_other', { reason: 'unknown_zod_shape' });
+      } else {
+        for (const field of offendingFields) {
+          recordValidationFailure(fieldErrorToType(field), {
+            field,
+            messages: fieldErrors[field as keyof typeof fieldErrors],
+          });
+        }
+      }
       return new Response(
-        JSON.stringify({ error: 'Invalid payload', fieldErrors }),
+        JSON.stringify({
+          error: 'Invalid payload',
+          fieldErrors,
+          validationCounters: getValidationCounters(),
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -537,10 +637,16 @@ serve(async (req) => {
       const slug = extractSlug(pageUrl);
       const stateTag = renderTagMatch?.[1]?.toLowerCase() ?? null;
       const missing: string[] = [];
-      if (!slug) missing.push('slug (from pageUrl)');
-      if (!stateTag) missing.push('pdp-render-trace state tag (from userAgent)');
-      else if (!VALID_RENDER_STATES.has(stateTag)) {
+      if (!slug) {
+        missing.push('slug (from pageUrl)');
+        recordValidationFailure('trace_missing_slug', { pageUrl });
+      }
+      if (!stateTag) {
+        missing.push('pdp-render-trace state tag (from userAgent)');
+        recordValidationFailure('trace_missing_state', { userAgent });
+      } else if (!VALID_RENDER_STATES.has(stateTag)) {
         missing.push(`valid pdp-render-trace state (got "${stateTag}")`);
+        recordValidationFailure('trace_invalid_state', { stateTag });
       }
       if (missing.length > 0) {
         console.error(
@@ -551,6 +657,7 @@ serve(async (req) => {
           JSON.stringify({
             error: 'Invalid pdp-render-trace payload',
             missing,
+            validationCounters: getValidationCounters(),
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
