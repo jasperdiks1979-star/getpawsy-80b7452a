@@ -3611,6 +3611,47 @@ Deno.test({
       lastSeenCounters: null as Record<string, number> | null,
     };
 
+    // ---------------------------------------------------------------
+    // Validation-bucket coverage tracking.
+    //
+    // For every over-limit fuzz iteration we record which taxonomy
+    // bucket the function attributed the failure to (the *expected*
+    // bucket, derived from the axis we drove). At end-of-run we emit
+    // a single-line `[fuzz-coverage]` JSON summary so CI can parse it,
+    // and we fail the test if any *expected* bucket was hit fewer
+    // times than `FUZZ_BUCKET_MIN_HITS` (default: 1).
+    //
+    // Why this gate exists
+    // --------------------
+    // The fuzz suite already asserts the headline property
+    // ("over-limit → never 2xx") and the per-call envelope contract.
+    // But it's easy for a future refactor to silently stop driving
+    // one of the two axes — e.g. an `axes.filter(...)` that drops
+    // `userAgent` — leaving `schema_user_agent` at zero hits while
+    // every remaining iteration still passes. This gate makes that
+    // regression a CI failure instead of an invisible coverage hole.
+    //
+    // The gate is intentionally narrow:
+    //   - Only the axis-driven schema buckets are *required* to be
+    //     non-zero (schema_page_url + schema_user_agent).
+    //   - Other buckets (schema_referrer, schema_other, trace_*,
+    //     invalid_json) are *recorded* in the summary so trends are
+    //     visible, but their absence is expected — this fuzz suite
+    //     doesn't drive those code paths today.
+    //
+    // Override `FUZZ_BUCKET_MIN_HITS` only when intentionally widening
+    // (e.g. nightly with iterations=25 should easily hit ≥5 per axis).
+    // ---------------------------------------------------------------
+    const bucketHits: Record<string, number> = Object.fromEntries(
+      ENVELOPE_REQUIRED_COUNTER_KEYS.map((k) => [k, 0]),
+    );
+    /** Buckets this fuzz suite is structurally responsible for hitting. */
+    const REQUIRED_COVERAGE_BUCKETS = [
+      "schema_page_url",
+      "schema_user_agent",
+    ] as const;
+    const MIN_BUCKET_HITS = parsePositiveIntEnv("FUZZ_BUCKET_MIN_HITS", 1);
+
     // Track outcomes so a failure prints a one-line repro with seed +
     // iteration index + offending values.
     type Outcome = {
