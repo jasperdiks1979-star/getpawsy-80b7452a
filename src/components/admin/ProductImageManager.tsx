@@ -59,6 +59,17 @@ export const ProductImageManager = ({
   const [isDropTarget, setIsDropTarget] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bulkInputRef = useRef<HTMLInputElement | null>(null);
+  // Files picked/dropped by the user that are waiting in the preview tray.
+  // They are NOT uploaded until the user clicks "Upload N image(s)".
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+
+  // Revoke object URLs on unmount so blob: URLs don't leak.
+  useEffect(() => {
+    return () => {
+      pendingFiles.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddImage = () => {
     if (!newImageUrl.trim()) {
