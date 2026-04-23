@@ -37,6 +37,23 @@ const RENDER_STATE_TAG_RE = /pdp-render-trace\/([a-z0-9_-]+)/i;
 const VALID_RENDER_STATES = new Set(['shell', 'rendered', 'timeout']);
 
 // -----------------------------------------------------------------------------
+// Structured error codes
+// -----------------------------------------------------------------------------
+// Every non-2xx response carries a stable, SCREAMING_SNAKE_CASE `code` so
+// callers (tests, dashboards, log-greps) can branch on the failure reason
+// without parsing the human-readable `error` string. New codes MUST be added
+// here so the union stays exhaustive and grep-discoverable.
+export const ERROR_CODES = {
+  INVALID_JSON: 'INVALID_JSON',
+  INVALID_PAYLOAD: 'INVALID_PAYLOAD',
+  MISSING_FIELDS: 'MISSING_FIELDS',
+  INVALID_PDP_RENDER_STATE: 'INVALID_PDP_RENDER_STATE',
+  DB_INSERT_FAILED: 'DB_INSERT_FAILED',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+} as const;
+export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+
+// -----------------------------------------------------------------------------
 // Lightweight validation-failure counters
 // -----------------------------------------------------------------------------
 // Track how often each *type* of malformed payload is rejected so we can
@@ -592,6 +609,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: 'Invalid JSON body',
+          code: ERROR_CODES.INVALID_JSON,
           validationCounters: getValidationCounters(),
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -621,6 +639,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: 'Invalid payload',
+          code: ERROR_CODES.INVALID_PAYLOAD,
           fieldErrors,
           validationCounters: getValidationCounters(),
         }),
@@ -653,9 +672,19 @@ serve(async (req) => {
           '[log-crawler-visit] pdp-render-trace payload missing required fields:',
           JSON.stringify({ missing, pageUrl, userAgent }),
         );
+        // Prefer INVALID_PDP_RENDER_STATE when the *only* problem is a
+        // bad/unknown state value; otherwise treat it as MISSING_FIELDS.
+        const onlyInvalidState =
+          stateTag !== null &&
+          !VALID_RENDER_STATES.has(stateTag) &&
+          slug !== null;
+        const code: ErrorCode = onlyInvalidState
+          ? ERROR_CODES.INVALID_PDP_RENDER_STATE
+          : ERROR_CODES.MISSING_FIELDS;
         return new Response(
           JSON.stringify({
             error: 'Invalid pdp-render-trace payload',
+            code,
             missing,
             validationCounters: getValidationCounters(),
           }),
@@ -751,7 +780,10 @@ serve(async (req) => {
     if (error) {
       console.error('Failed to log crawler visit:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to log visit' }),
+        JSON.stringify({
+          error: 'Failed to log visit',
+          code: ERROR_CODES.DB_INSERT_FAILED,
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -783,7 +815,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in log-crawler-visit:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        code: ERROR_CODES.INTERNAL_ERROR,
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
