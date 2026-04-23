@@ -117,15 +117,16 @@ const generateCollectionJsonLd = (collection: SeoCollectionData, products: Colle
         '@id': `https://getpawsy.pet/product/${product.slug || product.id}`,
         name: product.name,
         image: product.image_url,
-        offers: {
-          '@type': 'Offer',
-          price: product.price.toFixed(2),
-          priceCurrency: 'USD',
-          // DROPSHIPPING MODEL: Use centralized availability logic
-          availability: getSchemaAvailability(product)
-        }
+        ...((product.price && Number(product.price) > 0) ? {
+          offers: {
+            '@type': 'Offer',
+            price: Number(product.price).toFixed(2),
+            priceCurrency: 'USD',
+            availability: getSchemaAvailability(product)
+          }
+        } : {})
       }
-    }))
+    })).filter((entry: any) => entry.item.offers)
   }
 });
 
