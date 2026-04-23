@@ -1860,6 +1860,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="integrations/merchant/review-checklist"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MerchantReviewChecklistPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="integrations/merchant/settings"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
