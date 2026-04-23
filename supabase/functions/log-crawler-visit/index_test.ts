@@ -4318,9 +4318,76 @@ Deno.test({
               );
             }
           }
-        }
-      }
     }
+
+    // ---------------------------------------------------------------
+    // Worker pool dispatcher.
+    //
+    // Spins up `effectiveConcurrency` async workers that race to pull
+    // the next job index off `cursor`. Each worker runs `processJob`
+    // sequentially within itself; concurrency between workers is what
+    // exercises the deployed edge function under simultaneous in-
+    // flight load. We use a shared cursor (single integer increment
+    // between awaits) instead of pre-sharding the job list so a fast
+    // worker doesn't sit idle while a slow worker crunches its
+    // backlog — the slowest worker finishes within ~1 job of the
+    // others, regardless of per-call latency variance.
+    //
+    // We also catch and rethrow the FIRST worker exception so the
+    // others can finish in flight (avoids dangling fetches in Deno),
+    // but we surface the original error verbatim so the test report
+    // points at the failing iteration.
+    // ---------------------------------------------------------------
+    const effectiveConcurrency = Math.min(
+      Math.max(1, CONCURRENCY),
+      Math.max(1, totalJobs),
+    );
+    if (effectiveConcurrency > 1) {
+      console.log(
+        `[fuzz] dispatching ${totalJobs} job(s) across ` +
+          `${effectiveConcurrency} concurrent worker(s) ` +
+          `(set FUZZ_CONCURRENCY=1 to serialise for race-condition triage)`,
+      );
+    }
+
+    let cursor = 0;
+    let firstError: unknown = null;
+    const workers: Promise<void>[] = [];
+    for (let w = 0; w < effectiveConcurrency; w++) {
+      const workerId = w;
+      workers.push((async () => {
+        // Pull-the-next-index loop. The increment-and-read is
+        // atomic within JS's single-threaded async model, so no
+        // mutex is needed; two workers cannot get the same index.
+        while (true) {
+          if (firstError !== null) return; // fail-fast
+          const idx = cursor++;
+          if (idx >= totalJobs) return;
+          const job = jobs[idx];
+          try {
+            await processJob(job);
+          } catch (err) {
+            // Capture only the first exception; let other workers
+            // drain their in-flight fetches (the cursor check above
+            // short-circuits any not-yet-started jobs).
+            if (firstError === null) {
+              firstError = err;
+              console.error(
+                `[fuzz] worker #${workerId} failed on iter ${job.iter} ` +
+                  `(axis=${job.axis}, kind=${job.kind}, len=${job.spec.len}): ` +
+                  `${(err as Error).message ?? err}`,
+              );
+            }
+            return;
+          }
+        }
+      })());
+    }
+    await Promise.all(workers);
+    if (firstError !== null) {
+      throw firstError;
+    }
+    const iterCounter = totalJobs; // for downstream summary lines
 
     // -- Headline-property report: zero tolerance for over-limit 2xx. -----
     if (violations.length > 0) {
