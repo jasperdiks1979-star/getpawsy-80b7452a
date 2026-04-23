@@ -590,7 +590,8 @@ export const ProductImageManager = ({
                     type="button"
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleRemoveImage(index)}
+                    onClick={() => requestRemoveImage(index)}
+                    aria-label={`Remove image ${index + 1}`}
                     className="h-8 w-8 p-0"
                   >
                     <X className="w-4 h-4" />
