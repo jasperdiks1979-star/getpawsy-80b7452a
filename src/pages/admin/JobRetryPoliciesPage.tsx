@@ -52,7 +52,21 @@ import {
   RefreshCw,
   ShieldCheck,
   Wrench,
+  Download,
+  Upload,
+  FileJson,
+  FileSpreadsheet,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
+import {
+  buildPoliciesCsv,
+  buildPoliciesJson,
+  parsePoliciesCsv,
+  parsePoliciesJson,
+  triggerDownload,
+  type ExportablePolicy,
+} from '@/lib/admin/jobRetryPoliciesIO';
 
 /**
  * Admin page to view and edit per-(provider, job_type) retry policies that
@@ -202,6 +216,12 @@ export default function JobRetryPoliciesPage() {
   const [form, setForm] = useState<PolicyForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<RetryPolicyRow | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importParsed, setImportParsed] = useState<ExportablePolicy[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importFileName, setImportFileName] = useState<string>('');
+  const [importStrategy, setImportStrategy] = useState<'upsert' | 'skip'>('upsert');
+  const [importing, setImporting] = useState(false);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -328,6 +348,100 @@ export default function JobRetryPoliciesPage() {
     });
   }, [rows]);
 
+  const handleExport = (format: 'json' | 'csv') => {
+    if (rows.length === 0) {
+      toast.error('Geen policies om te exporteren');
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (format === 'json') {
+      triggerDownload(
+        `job_retry_policies_${today}.json`,
+        buildPoliciesJson(rows),
+        'application/json',
+      );
+    } else {
+      triggerDownload(
+        `job_retry_policies_${today}.csv`,
+        buildPoliciesCsv(rows),
+        'text/csv',
+      );
+    }
+    toast.success(`${rows.length} policies geëxporteerd als ${format.toUpperCase()}`);
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting same file
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toast.error('Bestand te groot (max 1 MB)');
+      return;
+    }
+    setImportFileName(file.name);
+    const text = await file.text();
+    const isJson = file.name.toLowerCase().endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[');
+    const result = isJson ? parsePoliciesJson(text) : parsePoliciesCsv(text);
+    setImportParsed(result.valid);
+    setImportErrors(result.errors);
+    setImportStrategy('upsert');
+    setImportDialogOpen(true);
+  };
+
+  const handleImportConfirm = async () => {
+    if (importParsed.length === 0) {
+      toast.error('Geen geldige rijen om te importeren');
+      return;
+    }
+    setImporting(true);
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    // Build a quick lookup of existing rows by (provider, job_type) so we can
+    // decide between insert / update / skip without N round-trips.
+    const keyOf = (p: { provider: string | null; job_type: string | null }) =>
+      `${p.provider ?? ''}::${p.job_type ?? ''}`;
+    const existingByKey = new Map(rows.map((r) => [keyOf(r), r]));
+
+    for (const policy of importParsed) {
+      const existing = existingByKey.get(keyOf(policy));
+      try {
+        if (existing) {
+          if (importStrategy === 'skip') {
+            skipped++;
+            continue;
+          }
+          const { error } = await supabase
+            .from('job_retry_policies')
+            .update(policy)
+            .eq('id', existing.id);
+          if (error) throw error;
+          updated++;
+        } else {
+          const { error } = await supabase.from('job_retry_policies').insert(policy);
+          if (error) throw error;
+          inserted++;
+        }
+      } catch (err) {
+        failed++;
+        console.error('Import row failed', policy, err);
+      }
+    }
+    setImporting(false);
+    setImportDialogOpen(false);
+    const summary = [
+      inserted && `${inserted} toegevoegd`,
+      updated && `${updated} bijgewerkt`,
+      skipped && `${skipped} overgeslagen`,
+      failed && `${failed} gefaald`,
+    ].filter(Boolean).join(', ');
+    if (failed > 0) toast.error(`Import deels mislukt: ${summary}`);
+    else toast.success(`Import klaar: ${summary || 'geen wijzigingen'}`);
+    fetchRows();
+  };
+
   return (
     <>
       <Helmet>
@@ -359,6 +473,50 @@ export default function JobRetryPoliciesPage() {
             Nieuwe policy
           </Button>
         </div>
+
+        {/* Import / export */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Download className="h-4 w-4 text-primary" />
+              Import / export
+            </CardTitle>
+            <CardDescription>
+              Download de huidige policies als JSON of CSV om te backuppen of naar een andere omgeving te kopiëren.
+              Upload een eerder export-bestand om bulk te importeren — duplicaten worden geüpdatet of overgeslagen.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleExport('json')} disabled={rows.length === 0}>
+                <FileJson className="h-4 w-4 mr-2" />
+                Export JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleExport('csv')} disabled={rows.length === 0}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <div className="ml-auto">
+                <Label htmlFor="import-file" className="sr-only">Import bestand</Label>
+                <Input
+                  id="import-file"
+                  type="file"
+                  accept=".json,.csv,application/json,text/csv"
+                  onChange={handleFileSelected}
+                  className="hidden"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => document.getElementById('import-file')?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importeer bestand
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader className="pb-3">
@@ -614,6 +772,122 @@ export default function JobRetryPoliciesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import preview dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={(o) => !importing && setImportDialogOpen(o)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importeer policies</DialogTitle>
+            <DialogDescription>
+              Bestand: <code className="text-xs">{importFileName}</code> — {importParsed.length} geldige rij{importParsed.length === 1 ? '' : 'en'}
+              {importErrors.length > 0 && `, ${importErrors.length} fout${importErrors.length === 1 ? '' : 'en'}`}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {importErrors.length > 0 && (
+              <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3">
+                <div className="flex items-center gap-2 text-destructive text-sm font-medium mb-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Validatiefouten ({importErrors.length})
+                </div>
+                <ul className="text-xs text-destructive space-y-0.5 max-h-32 overflow-y-auto">
+                  {importErrors.slice(0, 30).map((err, i) => (
+                    <li key={i}>• {err}</li>
+                  ))}
+                  {importErrors.length > 30 && (
+                    <li className="italic">… en {importErrors.length - 30} meer</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {importParsed.length > 0 && (
+              <>
+                <div className="rounded-md border border-border p-3 max-h-64 overflow-y-auto">
+                  <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Preview ({importParsed.length} rijen)
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Scope</TableHead>
+                        <TableHead className="text-xs text-right">Attempts</TableHead>
+                        <TableHead className="text-xs">Backoff</TableHead>
+                        <TableHead className="text-xs">Aan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {importParsed.map((p, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs font-mono">
+                            {(p.provider ?? '*') + ' / ' + (p.job_type ?? '*')}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-mono">
+                            {p.max_attempts ?? 'env'}
+                          </TableCell>
+                          <TableCell className="text-xs font-mono">
+                            {p.backoff_minutes?.join(', ') ?? 'env'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {p.enabled ? 'ja' : 'nee'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="rounded-md border border-border p-3 space-y-2">
+                  <Label className="text-sm">Strategie bij bestaande scope (provider + job_type match)</Label>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="import-strategy"
+                        value="upsert"
+                        checked={importStrategy === 'upsert'}
+                        onChange={() => setImportStrategy('upsert')}
+                        className="mt-1"
+                      />
+                      <span>
+                        <strong>Upsert</strong> — bestaande policies bijwerken met geïmporteerde waarden.
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="import-strategy"
+                        value="skip"
+                        checked={importStrategy === 'skip'}
+                        onChange={() => setImportStrategy('skip')}
+                        className="mt-1"
+                      />
+                      <span>
+                        <strong>Skip</strong> — bestaande policies ongemoeid laten, alleen nieuwe toevoegen.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialogOpen(false)} disabled={importing}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleImportConfirm}
+              disabled={importing || importParsed.length === 0}
+            >
+              {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Importeer {importParsed.length} {importParsed.length === 1 ? 'policy' : 'policies'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
