@@ -139,6 +139,19 @@ export default function CrawlerSamplingDecisionsPage() {
     refetchInterval: 60_000,
   });
 
+  const lastHour = useQuery({
+    queryKey: ['crawler-sampling-last-hour'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_crawler_sampling_last_hour', {
+        p_minutes: 60,
+        p_top_pages: 20,
+      });
+      if (error) throw error;
+      return data as unknown as LastHourResponse;
+    },
+    refetchInterval: 30_000,
+  });
+
   const stats = query.data;
   const recent = stats?.recent ?? [];
   const filteredRecent = recent.filter((r) => {
