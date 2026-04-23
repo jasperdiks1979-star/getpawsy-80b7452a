@@ -329,3 +329,135 @@ export function ReleaseIssuesPanel({
     </div>
   );
 }
+
+/**
+ * Per-issue evidence block. Lives as its own component so we can call
+ * `useProductNames` per issue (each issue has its own slice of affected
+ * product ids), without violating React's rules-of-hooks inside the
+ * issues map. Renders:
+ *   - count badge (impacted product total)
+ *   - collapsible product list with name + snippet + fix link
+ */
+function EvidenceBlock({
+  evidence,
+  isOpen,
+  onToggle,
+}: {
+  evidence: IssueEvidence;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const ids = evidence.items.map((i) => i.productId);
+  // Only fetch names when the panel is open — keeps the initial render
+  // cheap when an admin scans 20+ issues without expanding any.
+  const namesMap = useProductNames(isOpen ? ids : []);
+  const count = evidence.totalAffected;
+
+  return (
+    <div className="rounded-md border border-dashed bg-muted/40 p-2">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-2 text-[11px] font-medium text-foreground"
+      >
+        <span className="flex items-center gap-1.5 flex-wrap">
+          <FileSearch className="h-3 w-3 text-primary" />
+          Evidence
+          <Badge variant="outline" className="text-[10px] font-mono">
+            {evidence.feedTag}
+          </Badge>
+          <Badge
+            variant={count > 0 ? 'destructive' : 'secondary'}
+            className="text-[10px] gap-1"
+          >
+            {count} product{count === 1 ? '' : 's'}
+          </Badge>
+        </span>
+        {isOpen ? (
+          <ChevronUp className="h-3 w-3 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="mt-2 space-y-2">
+          <p className="text-[11px] text-muted-foreground italic">{evidence.hint}</p>
+          <div className="flex items-center gap-2 text-[11px] flex-wrap">
+            <span className="text-muted-foreground">Bronpagina:</span>
+            <a
+              href={evidence.feedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline inline-flex items-center gap-1 font-mono break-all"
+            >
+              merchant-feed.xml
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <span className="text-muted-foreground">· veld:</span>
+            <code className="font-mono text-foreground">{evidence.feedField}</code>
+          </div>
+
+          {evidence.items.length > 0 ? (
+            <ul className="space-y-1 max-h-72 overflow-y-auto pr-1">
+              {evidence.items.map((it) => {
+                const meta = namesMap[it.productId];
+                const displayName = meta?.name ?? null;
+                const liveHref = meta?.slug ? `/products/${meta.slug}` : null;
+                return (
+                  <li
+                    key={it.productId}
+                    className="rounded border bg-background px-2 py-1 text-[11px] flex items-start justify-between gap-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {displayName ? (
+                          <span className="font-medium text-foreground truncate">
+                            {displayName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Loading…</span>
+                        )}
+                        {liveHref && (
+                          <a
+                            href={liveHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline inline-flex items-center gap-0.5 text-[10px]"
+                            title="Open live product page"
+                          >
+                            view
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        )}
+                      </div>
+                      <code className="block font-mono text-[10px] text-muted-foreground truncate">
+                        id: {it.productId}
+                      </code>
+                      <code className="block font-mono text-foreground break-all">
+                        {it.snippet}
+                      </code>
+                    </div>
+                    <a
+                      href={it.productAdminUrl}
+                      className="text-primary underline shrink-0 inline-flex items-center gap-0.5 text-[10px]"
+                      title="Open product in admin"
+                    >
+                      fix
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-[11px] text-muted-foreground italic">
+              Geen per-item evidence beschikbaar — herhaal de feed-validatie via
+              "Report Release" om sampleResults op te slaan.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
