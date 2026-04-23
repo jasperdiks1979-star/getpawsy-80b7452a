@@ -49,6 +49,61 @@ function getReportedStates(): string[] {
     });
 }
 
+// --- Timer / act drain helpers ------------------------------------------
+//
+// The hook fires effects that schedule async edge-function calls AND a
+// `setTimeout(..., 8000)` watchdog. Mixing fake timers with promise
+// microtasks is fragile: a stray missed flush leaves the hook in a half-
+// resolved state and produces order-dependent flakes (e.g. a "rendered"
+// payload measured before its `tSinceShellMs` is set).
+//
+// These helpers centralize the drain pattern so every watchdog test
+// follows the same recipe. Rules:
+//   * `flushMicrotasks` only resolves pending promises; it never advances
+//     fake timers, so it is safe at any point.
+//   * `advanceAndFlush` advances fake timers by `ms` THEN flushes
+//     microtasks, which is the only correct order when a setTimeout
+//     callback itself enqueues a Promise (our watchdog → reportRenderState).
+//   * `drainRetryBackoff` is the long form used after triggering a real
+//     `retryWithBackoff` chain (50ms covers 1ms+5ms tiny-delay configs
+//     plus jitter). Always call it inside `act()`.
+//
+// All helpers are async + idempotent: extra calls are harmless.
+
+/** Flush queued microtasks twice — covers `await invoke()` then `setState`. */
+async function flushMicrotasks(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+/** Drain pending promises inside an `act()` boundary. */
+async function actFlush(): Promise<void> {
+  await act(async () => {
+    await flushMicrotasks();
+  });
+}
+
+/** Advance fake timers by `ms`, then flush microtasks, all inside `act()`. */
+async function advanceAndFlush(ms: number): Promise<void> {
+  await act(async () => {
+    vi.advanceTimersByTime(ms);
+    await flushMicrotasks();
+  });
+}
+
+/**
+ * Drain a real `retryWithBackoff` chain configured with tiny delays
+ * (baseDelayMs: 1, maxDelayMs: 5). 50ms is generous enough to cover the
+ * full retry sequence including jitter without slowing the suite.
+ */
+async function drainRetryBackoff(): Promise<void> {
+  await act(async () => {
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(50);
+    await flushMicrotasks();
+  });
+}
+
 // --- Tests ---------------------------------------------------------------
 
 describe('usePdpBotRenderTrace', () => {
