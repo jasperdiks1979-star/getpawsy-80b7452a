@@ -1916,3 +1916,147 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name:
+    "log-crawler-visit rejects empty/whitespace-only pageUrl and userAgent with HTTP 400 + INVALID_PAYLOAD and field-specific zod messages",
+  async fn() {
+    // Focused, exhaustive coverage of the "trims to empty" boundary for
+    // BOTH validated string fields. The schema in index.ts uses
+    //   z.string().trim().min(1, '<field> must be a non-empty string')
+    // so any of these payloads must:
+    //   1. fail with HTTP 400
+    //   2. carry code === "INVALID_PAYLOAD"
+    //   3. include the exact field-specific zod message in
+    //      fieldErrors[<offending field>] — not a generic one
+    //   4. NOT mention the other field in fieldErrors (so a UI can
+    //      surface the right inline error without false positives)
+    //   5. NOT have created any DB row (no slug to clean up)
+    //
+    // Variants exercised per field: zero-length, ASCII spaces, tab,
+    // newline, carriage return, and a mixed whitespace blob.
+    const WHITESPACE_VARIANTS: Array<{ label: string; value: string }> = [
+      { label: "empty string", value: "" },
+      { label: "ASCII spaces", value: "   " },
+      { label: "tab characters", value: "\t\t" },
+      { label: "newline characters", value: "\n\n" },
+      { label: "carriage return", value: "\r\r" },
+      { label: "mixed whitespace", value: " \t\n\r " },
+    ];
+
+    type Case = {
+      label: string;
+      body: Record<string, unknown>;
+      offending: "pageUrl" | "userAgent";
+      otherField: "pageUrl" | "userAgent";
+      expectedMessage: string;
+    };
+
+    const cases: Case[] = [];
+    for (const v of WHITESPACE_VARIANTS) {
+      cases.push({
+        label: `pageUrl ${v.label}`,
+        body: { pageUrl: v.value, userAgent: GOOGLEBOT_UA },
+        offending: "pageUrl",
+        otherField: "userAgent",
+        expectedMessage: "pageUrl must be a non-empty string",
+      });
+      cases.push({
+        label: `userAgent ${v.label}`,
+        body: { pageUrl: `${ORIGIN}/product/whitespace-guard`, userAgent: v.value },
+        offending: "userAgent",
+        otherField: "pageUrl",
+        expectedMessage: "userAgent must be a non-empty string",
+      });
+    }
+
+    for (const c of cases) {
+      const res = await callFunction(c.body);
+      const text = await res.text();
+
+      assertEquals(
+        res.status,
+        400,
+        `[${c.label}] expected HTTP 400, got ${res.status}: ${text}`,
+      );
+
+      let json: Record<string, unknown>;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        throw new Error(
+          `[${c.label}] response body was not valid JSON: ${text} (${
+            (err as Error).message
+          })`,
+        );
+      }
+
+      // Field-specific error code — not the generic "MISSING_FIELDS"
+      // (which is reserved for pdp-render-trace pings) and not the
+      // "INVALID_JSON" code (the body parsed fine).
+      assertEquals(
+        json.code,
+        "INVALID_PAYLOAD",
+        `[${c.label}] expected code=INVALID_PAYLOAD, got ${
+          JSON.stringify(json.code)
+        }`,
+      );
+
+      assertExists(
+        json.fieldErrors,
+        `[${c.label}] response missing fieldErrors envelope`,
+      );
+      const fieldErrors = json.fieldErrors as Record<string, unknown>;
+
+      // Offending field is present, is a non-empty string[], and the
+      // exact zod message we configured shows up — guarding against
+      // accidental message edits that would silently re-bucket failures.
+      const offendingMsgs = fieldErrors[c.offending];
+      if (!Array.isArray(offendingMsgs) || offendingMsgs.length === 0) {
+        throw new Error(
+          `[${c.label}] fieldErrors.${c.offending} must be a non-empty array, got: ${
+            JSON.stringify(offendingMsgs)
+          }`,
+        );
+      }
+      const offendingJoined = (offendingMsgs as string[]).join(" | ");
+      if (!offendingJoined.includes(c.expectedMessage)) {
+        throw new Error(
+          `[${c.label}] fieldErrors.${c.offending} must contain "${c.expectedMessage}", got: ${offendingJoined}`,
+        );
+      }
+
+      // The OTHER field is clean — no spurious fieldErrors entry. This
+      // matters because the UI uses key presence to decide which input
+      // to highlight; bleeding errors across fields would surface a
+      // wrong red border for the user.
+      assertEquals(
+        fieldErrors[c.otherField],
+        undefined,
+        `[${c.label}] fieldErrors.${c.otherField} must NOT be set, got: ${
+          JSON.stringify(fieldErrors[c.otherField])
+        }`,
+      );
+
+      // The validation-counter snapshot must be present and must reflect
+      // a bump on the field-specific bucket (schema_page_url /
+      // schema_user_agent), not the catch-all schema_other.
+      assertExists(
+        json.validationCounters,
+        `[${c.label}] validationCounters snapshot missing`,
+      );
+      const counters = json.validationCounters as Record<string, number>;
+      const expectedBucket = c.offending === "pageUrl"
+        ? "schema_page_url"
+        : "schema_user_agent";
+      const bucketCount = counters[expectedBucket];
+      if (typeof bucketCount !== "number" || bucketCount < 1) {
+        throw new Error(
+          `[${c.label}] expected counter ${expectedBucket} >= 1, got ${
+            JSON.stringify(bucketCount)
+          }`,
+        );
+      }
+    }
+  },
+});
