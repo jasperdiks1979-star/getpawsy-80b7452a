@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format, subDays } from 'date-fns';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, Legend,
@@ -120,6 +120,7 @@ const slugDetailHref = (slug: string, windowDays: number) =>
 
 export default function RenderTraceDashboard() {
   const [windowDays, setWindowDays] = useState<number>(7);
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   // Debounce the search so each keystroke doesn't fire a new RPC call.
