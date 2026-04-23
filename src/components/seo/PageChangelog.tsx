@@ -74,6 +74,24 @@ export function PageChangelog({ pageKey, className }: PageChangelogProps) {
   const [open, setOpen] = useState(true);
   const { isAdmin } = useAuth();
   const [releases, setReleases] = useState<Record<string, ReleaseLookup>>({});
+  // Free-text filter on build tag, commit ref, date or change-bullet text.
+  // Lets visitors and reviewers drill into a specific release without
+  // scrolling the full history. Filter is presentation-only — the JSON-LD
+  // Dataset always emits the complete history so machine-readable
+  // freshness signals remain accurate.
+  const [filter, setFilter] = useState('');
+
+  const visibleEntries = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter((e) => {
+      if (e.build.toLowerCase().includes(q)) return true;
+      if (e.commit.toLowerCase().includes(q)) return true;
+      if (e.date.includes(q)) return true;
+      if (e.changes.some((c) => c.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }, [entries, filter]);
 
   // Unique build tags present on this page — used to fetch matching releases.
   const buildTags = useMemo(
@@ -230,8 +248,38 @@ export function PageChangelog({ pageKey, className }: PageChangelogProps) {
       </button>
 
       {open && (
-        <ol className="mt-4 space-y-4">
-          {entries.map((entry, idx) => {
+        <>
+          {entries.length > 1 && (
+            <div className="mt-4 relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                type="search"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter by build tag, commit or change…"
+                aria-label="Filter changelog by build, commit or change text"
+                className="w-full rounded-md border border-input bg-background pl-8 pr-8 py-1.5 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              {filter && (
+                <button
+                  type="button"
+                  onClick={() => setFilter('')}
+                  aria-label="Clear filter"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {visibleEntries.length === 0 ? (
+            <p className="mt-4 text-xs text-muted-foreground italic">
+              No changelog entries match “{filter}”.
+            </p>
+          ) : (
+            <ol className="mt-4 space-y-4">
+              {visibleEntries.map((entry, idx) => {
             const release = releases[entry.build];
             return (
               <li
@@ -269,8 +317,10 @@ export function PageChangelog({ pageKey, className }: PageChangelogProps) {
                 </ul>
               </li>
             );
-          })}
-        </ol>
+              })}
+            </ol>
+          )}
+        </>
       )}
     </section>
   );
