@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +8,44 @@ const corsHeaders = {
   'X-Robots-Tag': 'all',
   'X-Content-Served-Identically': 'true',
 };
+
+// -----------------------------------------------------------------------------
+// Runtime payload validation
+// -----------------------------------------------------------------------------
+// The crawler-visit endpoint is also reused by `usePdpBotRenderTrace` to ship
+// PDP render-state telemetry. We enforce a strict schema so malformed payloads
+// are rejected early with a clear, structured error log instead of polluting
+// `crawler_visits` with bad rows.
+const PayloadSchema = z.object({
+  pageUrl: z
+    .string({ required_error: 'pageUrl is required' })
+    .trim()
+    .min(1, 'pageUrl must be a non-empty string')
+    .max(2048, 'pageUrl exceeds 2048 chars'),
+  userAgent: z
+    .string({ required_error: 'userAgent is required' })
+    .trim()
+    .min(1, 'userAgent must be a non-empty string')
+    .max(2048, 'userAgent exceeds 2048 chars'),
+  referrer: z.string().trim().max(2048).optional().nullable(),
+});
+
+// Render-state tags emitted by the PDP bot-trace hook. We don't *require* a
+// state tag (regular crawler visits won't have one), but if the UA *looks*
+// like a pdp-render-trace ping, we validate that the state is one we expect.
+const RENDER_STATE_TAG_RE = /pdp-render-trace\/([a-z0-9_-]+)/i;
+const VALID_RENDER_STATES = new Set(['shell', 'rendered', 'timeout']);
+
+function extractSlug(pageUrl: string): string | null {
+  try {
+    const u = new URL(pageUrl, 'https://getpawsy.pet');
+    const parts = u.pathname.split('/').filter(Boolean);
+    // /products/:slug or /p/:slug etc — last non-empty segment is the slug.
+    return parts.length > 0 ? parts[parts.length - 1] : null;
+  } catch {
+    return null;
+  }
+}
 
 // Appeal pages that should trigger email notifications
 const APPEAL_PAGES = [
