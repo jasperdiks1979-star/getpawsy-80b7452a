@@ -523,12 +523,60 @@ export default function RenderTraceDashboard() {
                   <BarChart data={chartSlugs} layout="vertical" margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" allowDecimals={false} fontSize={12} />
-                    <YAxis type="category" dataKey="slug" width={140} fontSize={11} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis
+                      type="category"
+                      dataKey="slug"
+                      width={160}
+                      fontSize={11}
+                      tick={(props) => {
+                        const { x, y, payload } = props;
+                        const value = String(payload.value ?? '');
+                        const label = value.length > 20 ? value.slice(0, 19) + '…' : value;
+                        return (
+                          <g
+                            transform={`translate(${x},${y})`}
+                            className="cursor-pointer"
+                            onClick={() => navigate(slugDetailHref(value, windowDays))}
+                          >
+                            <title>{value} — open timeline</title>
+                            <text
+                              x={-4}
+                              y={0}
+                              dy={4}
+                              textAnchor="end"
+                              fontSize={11}
+                              fill="hsl(var(--primary))"
+                              style={{ textDecoration: 'underline' }}
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      }}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="shell" stackId="a" fill={STATE_COLORS.shell} />
-                    <Bar dataKey="rendered" stackId="a" fill={STATE_COLORS.rendered} />
-                    <Bar dataKey="timeout" stackId="a" fill={STATE_COLORS.timeout}>
+                    <Bar
+                      dataKey="shell"
+                      stackId="a"
+                      fill={STATE_COLORS.shell}
+                      className="cursor-pointer"
+                      onClick={(d: { slug?: string }) => d?.slug && navigate(slugDetailHref(d.slug, windowDays))}
+                    />
+                    <Bar
+                      dataKey="rendered"
+                      stackId="a"
+                      fill={STATE_COLORS.rendered}
+                      className="cursor-pointer"
+                      onClick={(d: { slug?: string }) => d?.slug && navigate(slugDetailHref(d.slug, windowDays))}
+                    />
+                    <Bar
+                      dataKey="timeout"
+                      stackId="a"
+                      fill={STATE_COLORS.timeout}
+                      className="cursor-pointer"
+                      onClick={(d: { slug?: string }) => d?.slug && navigate(slugDetailHref(d.slug, windowDays))}
+                    >
                       {chartSlugs.map((s) => (
                         <Cell key={s.slug} fill={STATE_COLORS.timeout} />
                       ))}
