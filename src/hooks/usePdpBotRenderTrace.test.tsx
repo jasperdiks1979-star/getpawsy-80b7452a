@@ -149,4 +149,112 @@ describe('usePdpBotRenderTrace', () => {
 
     expect(getReportedStates().filter((s) => s === 'shell')).toHaveLength(1);
   });
+
+  describe('user agent variants', () => {
+    // Each entry uses a unique slug so the module-level dedupe map doesn't
+    // suppress legitimate firings between cases.
+    const variants: Array<{ label: string; ua: string; slug: string }> = [
+      {
+        label: 'lower-case "googlebot"',
+        ua: 'mozilla/5.0 (compatible; googlebot/2.1; +http://www.google.com/bot.html)',
+        slug: 'ua-lowercase',
+      },
+      {
+        label: 'mixed-case "GoogleBot"',
+        ua: 'Mozilla/5.0 (compatible; GoogleBot/2.1; +http://www.google.com/bot.html)',
+        slug: 'ua-mixedcase',
+      },
+      {
+        label: 'all-caps "GOOGLEBOT"',
+        ua: 'Mozilla/5.0 (compatible; GOOGLEBOT/2.1; +http://www.google.com/bot.html)',
+        slug: 'ua-uppercase',
+      },
+      {
+        label: 'leading/trailing whitespace',
+        ua: '   Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)   ',
+        slug: 'ua-padding',
+      },
+      {
+        label: 'extra inner whitespace',
+        ua: 'Mozilla/5.0   (compatible;   Googlebot/2.1;   +http://www.google.com/bot.html)',
+        slug: 'ua-extra-spaces',
+      },
+      {
+        label: 'tab + newline whitespace',
+        ua: 'Mozilla/5.0\t(compatible;\nGooglebot/2.1;\t+http://www.google.com/bot.html)',
+        slug: 'ua-tabs-newlines',
+      },
+      {
+        label: 'AdsBot-Google variant',
+        ua: 'AdsBot-Google (+http://www.google.com/adsbot.html)',
+        slug: 'ua-adsbot',
+      },
+      {
+        label: 'bingbot lower-case',
+        ua: 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
+        slug: 'ua-bingbot',
+      },
+      {
+        label: 'BINGBOT upper-case',
+        ua: 'Mozilla/5.0 (compatible; BINGBOT/2.0; +http://www.bing.com/bingbot.htm)',
+        slug: 'ua-bingbot-upper',
+      },
+      {
+        label: 'HeadlessChrome (Google Web Rendering Service)',
+        ua: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.0.0 Safari/537.36',
+        slug: 'ua-headless-chrome',
+      },
+    ];
+
+    for (const { label, ua, slug } of variants) {
+      it(`detects bot with ${label}`, async () => {
+        setUserAgent(ua);
+
+        renderHook(() =>
+          usePdpBotRenderTrace({ slug, isLoading: true, hasProduct: false }),
+        );
+
+        await act(async () => {
+          await Promise.resolve();
+          await Promise.resolve();
+        });
+
+        const calls = invokeMock.mock.calls.filter(
+          ([fn, opts]) =>
+            fn === 'log-crawler-visit' &&
+            (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+        );
+
+        expect(calls).toHaveLength(1);
+        const sentUa = (calls[0][1] as { body: { userAgent: string } }).body.userAgent;
+        expect(sentUa).toMatch(/pdp-render-trace:shell/);
+      });
+    }
+
+    it('still ignores plainly non-bot UAs even with extra whitespace', async () => {
+      setUserAgent(
+        '  Mozilla/5.0   (Macintosh; Intel Mac OS X 10_15_7)\tAppleWebKit/605.1.15  Safari/605.1.15  ',
+      );
+
+      renderHook(() =>
+        usePdpBotRenderTrace({
+          slug: 'ua-human-spaces',
+          isLoading: true,
+          hasProduct: false,
+        }),
+      );
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      const calls = invokeMock.mock.calls.filter(
+        ([fn, opts]) =>
+          fn === 'log-crawler-visit' &&
+          (opts as { body: { pageUrl: string } }).body.pageUrl.includes('/product/ua-human-spaces'),
+      );
+      expect(calls).toHaveLength(0);
+    });
+  });
 });
