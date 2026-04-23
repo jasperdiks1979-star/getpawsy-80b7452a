@@ -49,6 +49,61 @@ function getReportedStates(): string[] {
     });
 }
 
+// --- Timer / act drain helpers ------------------------------------------
+//
+// The hook fires effects that schedule async edge-function calls AND a
+// `setTimeout(..., 8000)` watchdog. Mixing fake timers with promise
+// microtasks is fragile: a stray missed flush leaves the hook in a half-
+// resolved state and produces order-dependent flakes (e.g. a "rendered"
+// payload measured before its `tSinceShellMs` is set).
+//
+// These helpers centralize the drain pattern so every watchdog test
+// follows the same recipe. Rules:
+//   * `flushMicrotasks` only resolves pending promises; it never advances
+//     fake timers, so it is safe at any point.
+//   * `advanceAndFlush` advances fake timers by `ms` THEN flushes
+//     microtasks, which is the only correct order when a setTimeout
+//     callback itself enqueues a Promise (our watchdog → reportRenderState).
+//   * `drainRetryBackoff` is the long form used after triggering a real
+//     `retryWithBackoff` chain (50ms covers 1ms+5ms tiny-delay configs
+//     plus jitter). Always call it inside `act()`.
+//
+// All helpers are async + idempotent: extra calls are harmless.
+
+/** Flush queued microtasks twice — covers `await invoke()` then `setState`. */
+async function flushMicrotasks(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+/** Drain pending promises inside an `act()` boundary. */
+async function actFlush(): Promise<void> {
+  await act(async () => {
+    await flushMicrotasks();
+  });
+}
+
+/** Advance fake timers by `ms`, then flush microtasks, all inside `act()`. */
+async function advanceAndFlush(ms: number): Promise<void> {
+  await act(async () => {
+    vi.advanceTimersByTime(ms);
+    await flushMicrotasks();
+  });
+}
+
+/**
+ * Drain a real `retryWithBackoff` chain configured with tiny delays
+ * (baseDelayMs: 1, maxDelayMs: 5). 50ms is generous enough to cover the
+ * full retry sequence including jitter without slowing the suite.
+ */
+async function drainRetryBackoff(): Promise<void> {
+  await act(async () => {
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(50);
+    await flushMicrotasks();
+  });
+}
+
 // --- Tests ---------------------------------------------------------------
 
 describe('usePdpBotRenderTrace', () => {
@@ -74,9 +129,7 @@ describe('usePdpBotRenderTrace', () => {
       usePdpBotRenderTrace({ slug: 'cozy-bed', isLoading: true, hasProduct: false }),
     );
 
-    await act(async () => {
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(invokeMock).not.toHaveBeenCalled();
   });
@@ -89,20 +142,14 @@ describe('usePdpBotRenderTrace', () => {
     );
 
     // Allow the shell-effect's async invoke to settle.
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell']);
 
     // Product data arrives before the 8s timeout.
     rerender({ isLoading: false, hasProduct: true });
 
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell', 'rendered']);
 
@@ -120,19 +167,12 @@ describe('usePdpBotRenderTrace', () => {
       usePdpBotRenderTrace({ slug: 'stuck-bed', isLoading: true, hasProduct: false }),
     );
 
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell']);
 
     // Fast-forward past the 8s watchdog.
-    await act(async () => {
-      vi.advanceTimersByTime(8_001);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(8_001);
 
     expect(getReportedStates()).toEqual(['shell', 'timeout']);
   });
@@ -144,17 +184,13 @@ describe('usePdpBotRenderTrace', () => {
       { initialProps: { isLoading: true, hasProduct: false } },
     );
 
-    await act(async () => {
-      await Promise.resolve();
-    });
+    await actFlush();
 
     // Re-render multiple times while still loading.
     rerender({ isLoading: true, hasProduct: false });
     rerender({ isLoading: true, hasProduct: false });
 
-    await act(async () => {
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates().filter((s) => s === 'shell')).toHaveLength(1);
   });
@@ -223,10 +259,7 @@ describe('usePdpBotRenderTrace', () => {
           usePdpBotRenderTrace({ slug, isLoading: true, hasProduct: false }),
         );
 
-        await act(async () => {
-          await Promise.resolve();
-          await Promise.resolve();
-        });
+        await actFlush();
 
         const calls = invokeMock.mock.calls.filter(
           ([fn, opts]) =>
@@ -253,10 +286,7 @@ describe('usePdpBotRenderTrace', () => {
         }),
       );
 
-      await act(async () => {
-        await Promise.resolve();
-        await Promise.resolve();
-      });
+      await actFlush();
 
       const calls = invokeMock.mock.calls.filter(
         ([fn, opts]) =>
@@ -275,16 +305,10 @@ describe('usePdpBotRenderTrace', () => {
       { initialProps: { slug: 'multi-slug-a', isLoading: true, hasProduct: false } },
     );
 
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     rerenderA({ slug: 'multi-slug-a', isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     unmountA();
 
@@ -295,16 +319,10 @@ describe('usePdpBotRenderTrace', () => {
       { initialProps: { slug: 'multi-slug-b', isLoading: true, hasProduct: false } },
     );
 
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     rerenderB({ slug: 'multi-slug-b', isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     // Pull every log call and group by slug.
     const callsBySlug = new Map<string, string[]>();
@@ -346,16 +364,10 @@ describe('usePdpBotRenderTrace', () => {
       { initialProps: { isLoading: true, hasProduct: false } },
     );
 
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     rerender({ isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
     unmount();
 
     // --- Case 2: timeout (separate slug to avoid the rendered short-circuit)
@@ -364,16 +376,9 @@ describe('usePdpBotRenderTrace', () => {
       usePdpBotRenderTrace({ slug: timeoutSlug, isLoading: true, hasProduct: false }),
     );
 
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
-    await act(async () => {
-      vi.advanceTimersByTime(8_001);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(8_001);
 
     // --- Helper to grab the single payload for (slug, state) --------------
     type LogCall = {
@@ -460,13 +465,7 @@ describe('usePdpBotRenderTrace', () => {
     );
 
     // Drain mount + first failed attempt + small backoff + second success.
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-      await vi.advanceTimersByTimeAsync(50);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await drainRetryBackoff();
 
     // --- Assert: invoke called exactly twice (1 fail + 1 retry success) ---
     const slugCalls = invokeMock.mock.calls.filter(
@@ -500,36 +499,23 @@ describe('usePdpBotRenderTrace', () => {
     );
 
     // Drain the shell-effect's async invoke.
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     // Sit on the loading shell for 7,999ms — one millisecond shy of the
     // watchdog firing. No timeout should have been logged yet.
-    await act(async () => {
-      vi.advanceTimersByTime(7_999);
-      await Promise.resolve();
-    });
+    await advanceAndFlush(7_999);
 
     expect(getReportedStates()).toEqual(['shell']);
 
     // Product data lands at the very edge of the watchdog window.
     rerender({ isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell', 'rendered']);
 
     // Cross the original 8s boundary and well past it. If the watchdog were
     // still armed, it would now fire a "timeout" — it must not.
-    await act(async () => {
-      vi.advanceTimersByTime(5_000);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(5_000);
 
     const states = getReportedStates();
     expect(states).toEqual(['shell', 'rendered']);
@@ -585,20 +571,11 @@ describe('usePdpBotRenderTrace', () => {
     );
 
     // Drain mount + first failed attempt + small backoff + retry success.
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-      await vi.advanceTimersByTimeAsync(50);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await drainRetryBackoff();
 
     // Product data arrives well before the 8s watchdog.
     rerender({ isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     // Filter to calls for THIS slug to ignore noise from other tests / mounts.
     const slugCalls = invokeMock.mock.calls.filter(
@@ -652,20 +629,10 @@ describe('usePdpBotRenderTrace', () => {
     );
 
     // Drain mount + failed shell + backoff + retried shell success.
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-      await vi.advanceTimersByTimeAsync(50);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await drainRetryBackoff();
 
     // Cross the 8s watchdog boundary while still on the shell.
-    await act(async () => {
-      vi.advanceTimersByTime(8_001);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(8_001);
 
     const slugCalls = invokeMock.mock.calls.filter(
       ([fn, opts]) =>
@@ -700,36 +667,23 @@ describe('usePdpBotRenderTrace', () => {
     );
 
     // Drain the shell-effect's async invoke.
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell']);
 
     // Re-render multiple times with hasProduct still false, simulating a stuck
     // PDP where loading flickers but data never lands. The watchdog must not
     // be cancelled or duplicated by these re-renders.
-    await act(async () => {
-      vi.advanceTimersByTime(3_000);
-      await Promise.resolve();
-    });
+    await advanceAndFlush(3_000);
     rerender({ isLoading: true, hasProduct: false });
-    await act(async () => {
-      vi.advanceTimersByTime(3_000);
-      await Promise.resolve();
-    });
+    await advanceAndFlush(3_000);
     rerender({ isLoading: true, hasProduct: false });
 
     // Still on shell — no timeout yet (we're at 6s).
     expect(getReportedStates()).toEqual(['shell']);
 
     // Cross the 8s boundary.
-    await act(async () => {
-      vi.advanceTimersByTime(2_001);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(2_001);
 
     // Exactly one timeout fired, and no rendered ever escaped.
     const states = getReportedStates();
@@ -761,11 +715,7 @@ describe('usePdpBotRenderTrace', () => {
     expect(userAgent).toMatch(/t_shell=\d+ms/);
 
     // Push well past the boundary — the watchdog must not fire a second time.
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(10_000);
     expect(getReportedStates().filter((s) => s === 'timeout')).toHaveLength(1);
   });
 
@@ -779,19 +729,13 @@ describe('usePdpBotRenderTrace', () => {
         usePdpBotRenderTrace({ slug: slugA, isLoading, hasProduct }),
       { initialProps: { isLoading: true, hasProduct: false } },
     );
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     // Mount slug B concurrently — independent hook instance, independent watchdog.
     renderHook(() =>
       usePdpBotRenderTrace({ slug: slugB, isLoading: true, hasProduct: false }),
     );
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     // Both should have logged their shell event and armed their own watchdogs.
     const collectStatesForSlug = (slug: string): string[] =>
@@ -810,28 +754,18 @@ describe('usePdpBotRenderTrace', () => {
     expect(collectStatesForSlug(slugB)).toEqual(['shell']);
 
     // Advance 5s — neither watchdog should have fired yet.
-    await act(async () => {
-      vi.advanceTimersByTime(5_000);
-      await Promise.resolve();
-    });
+    await advanceAndFlush(5_000);
 
     // Slug A receives data and renders successfully (cancels A's watchdog only).
     rerenderA({ isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(collectStatesForSlug(slugA)).toEqual(['shell', 'rendered']);
     // Critical: slug B must still be on the shell, watchdog still armed.
     expect(collectStatesForSlug(slugB)).toEqual(['shell']);
 
     // Cross slug B's 8s boundary (mounted ~0ms after A, so we need ≥3001ms more).
-    await act(async () => {
-      vi.advanceTimersByTime(3_001);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(3_001);
 
     // Slug B's timeout MUST have fired despite slug A having cancelled its own.
     const statesB = collectStatesForSlug(slugB);
@@ -876,25 +810,16 @@ describe('usePdpBotRenderTrace', () => {
     );
 
     // Drain the shell-effect's async invoke.
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell']);
 
     // Sit on the shell briefly (well within 8s).
-    await act(async () => {
-      vi.advanceTimersByTime(1_000);
-      await Promise.resolve();
-    });
+    await advanceAndFlush(1_000);
 
     // Transition #1: hasProduct flips true → "rendered" should fire once.
     rerender({ isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell', 'rendered']);
 
@@ -902,32 +827,21 @@ describe('usePdpBotRenderTrace', () => {
     // Hook is allowed to no-op here; we just need it not to re-emit shell or
     // re-arm a watchdog that could later fire a stale "timeout".
     rerender({ isLoading: true, hasProduct: false });
-    await act(async () => {
-      vi.advanceTimersByTime(2_000);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(2_000);
 
     expect(getReportedStates()).toEqual(['shell', 'rendered']);
 
     // Transition #2: hasProduct flips true again — must NOT emit a second
     // "rendered" because the firedRef.rendered guard latches on first success.
     rerender({ isLoading: false, hasProduct: true });
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await actFlush();
 
     expect(getReportedStates()).toEqual(['shell', 'rendered']);
 
     // Cross well past the original 8s boundary. If the false dip had re-armed
     // a watchdog (or the original wasn't properly cleared), a "timeout" would
     // fire here. It must not.
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await advanceAndFlush(10_000);
 
     const finalStates = getReportedStates();
     expect(finalStates).toEqual(['shell', 'rendered']);
