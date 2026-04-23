@@ -434,6 +434,8 @@ export default function RenderTraceDashboard() {
           </Card>
         )}
 
+        <RenderTraceAlerts />
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SummaryCard
             label="Total events"
