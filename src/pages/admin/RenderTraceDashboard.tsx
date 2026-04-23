@@ -557,7 +557,7 @@ export default function RenderTraceDashboard() {
               <div className="space-y-2">
                 {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
               </div>
-            ) : filteredSlugs.length === 0 ? (
+            ) : pageSlugs.length === 0 ? (
               <EmptyState message={search ? 'No slugs match that filter.' : 'No render-trace data yet.'} />
             ) : (
               <div className="overflow-x-auto">
@@ -573,8 +573,8 @@ export default function RenderTraceDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSlugs.slice(0, 100).map((s) => {
-                      const isRegression = s.timeoutRate > 0.1 || (s.shell > 0 && s.rendered === 0);
+                    {pageSlugs.map((s) => {
+                      const isRegression = s.timeout_rate > 0.1 || (s.shell > 0 && s.rendered === 0);
                       return (
                         <TableRow key={s.slug} className={isRegression ? 'bg-destructive/5' : undefined}>
                           <TableCell className="font-mono text-xs max-w-[260px] truncate" title={s.slug}>
@@ -587,15 +587,15 @@ export default function RenderTraceDashboard() {
                               <span className="text-destructive font-medium">{s.timeout}</span>
                             ) : s.timeout}
                           </TableCell>
-                          <TableCell className="text-right tabular-nums">{(s.renderRate * 100).toFixed(0)}%</TableCell>
+                          <TableCell className="text-right tabular-nums">{(s.render_rate * 100).toFixed(0)}%</TableCell>
                           <TableCell className="text-right">
                             {isRegression ? (
                               <Badge variant="destructive" className="gap-1">
                                 <TrendingDown className="h-3 w-3" />
-                                {(s.timeoutRate * 100).toFixed(0)}%
+                                {(s.timeout_rate * 100).toFixed(0)}%
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground tabular-nums">{(s.timeoutRate * 100).toFixed(0)}%</span>
+                              <span className="text-muted-foreground tabular-nums">{(s.timeout_rate * 100).toFixed(0)}%</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -603,11 +603,37 @@ export default function RenderTraceDashboard() {
                     })}
                   </TableBody>
                 </Table>
-                {filteredSlugs.length > 100 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Showing top 100 of {filteredSlugs.length}. Refine the filter to narrow.
+                <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+                  <p className="text-xs text-muted-foreground">
+                    {slugTotal === 0
+                      ? 'No slugs'
+                      : `Showing ${page * SLUG_PAGE_SIZE + 1}–${Math.min((page + 1) * SLUG_PAGE_SIZE, slugTotal)} of ${slugTotal.toLocaleString()}`}
+                    {slugPage.isFetching && ' · loading…'}
                   </p>
-                )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={!canPrev || slugPage.isFetching}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Prev
+                    </Button>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      Page {page + 1} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={!canNext || slugPage.isFetching}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
