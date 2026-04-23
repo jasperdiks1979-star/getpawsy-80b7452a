@@ -4080,5 +4080,69 @@ Deno.test({
           `byAxis=${JSON.stringify(counterRunTotals.byAxis)})`,
       );
     }
+
+    // -----------------------------------------------------------------
+    // Validation-bucket coverage summary + CI gate.
+    //
+    // Emits a single grep-friendly `[fuzz-coverage]` JSON line that CI
+    // can scrape, and (best-effort) writes the same payload as a JSON
+    // file so workflows can upload it as an artifact. Then enforces
+    // the per-bucket minimum-hit threshold for the buckets this fuzz
+    // suite is structurally responsible for exercising.
+    // -----------------------------------------------------------------
+    const totalHits = Object.values(bucketHits).reduce((a, b) => a + b, 0);
+    const coverageSummary = {
+      seed: `0x${SEED.toString(16)}`,
+      iterationsPerPair: ITERATIONS,
+      totalIterations: iterCounter,
+      overLimitCalls: counterRunTotals.overLimitCalls,
+      bucketHits,
+      requiredBuckets: [...REQUIRED_COVERAGE_BUCKETS],
+      minBucketHits: MIN_BUCKET_HITS,
+      totalBucketHits: totalHits,
+    };
+
+    // Single-line summary — easy to grep in CI logs.
+    console.log(`[fuzz-coverage] ${JSON.stringify(coverageSummary)}`);
+
+    // Human-readable per-bucket table.
+    console.log("[fuzz-coverage] per-bucket hits:");
+    for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+      const required = (REQUIRED_COVERAGE_BUCKETS as readonly string[]).includes(k);
+      const tag = required ? "REQUIRED" : "optional";
+      console.log(`  ${k.padEnd(22)} ${String(bucketHits[k]).padStart(4)}  (${tag})`);
+    }
+
+    // Persist the summary as JSON so workflows can upload it as an
+    // artifact. We write to FUZZ_COVERAGE_OUT if set (CI), else /tmp
+    // for local introspection. Failures here are non-fatal — the gate
+    // below is the source of truth.
+    const coverageOut = Deno.env.get("FUZZ_COVERAGE_OUT")?.trim() ||
+      `/tmp/log-crawler-visit-fuzz-bucket-coverage.json`;
+    try {
+      Deno.writeTextFileSync(coverageOut, JSON.stringify(coverageSummary, null, 2));
+      console.log(`[fuzz-coverage] summary written to ${coverageOut}`);
+    } catch (err) {
+      console.warn(
+        `[fuzz-coverage] could not persist summary to ${coverageOut}: ${(err as Error).message}`,
+      );
+    }
+
+    // CI gate. A bucket this suite drives must hit at least
+    // FUZZ_BUCKET_MIN_HITS times — otherwise we've silently lost a
+    // dimension of coverage. Report ALL underhit buckets in one error
+    // so a contributor sees the whole picture in one CI run.
+    const underhit = REQUIRED_COVERAGE_BUCKETS
+      .filter((k) => (bucketHits[k] ?? 0) < MIN_BUCKET_HITS)
+      .map((k) => `${k}=${bucketHits[k] ?? 0}`);
+    if (underhit.length > 0) {
+      throw new Error(
+        `[fuzz-coverage] validation-bucket coverage regression: ` +
+          `required bucket(s) hit fewer than ${MIN_BUCKET_HITS} time(s) — ${underhit.join(", ")}. ` +
+          `Full hits=${JSON.stringify(bucketHits)}. ` +
+          `Either restore the missing fuzz axis, or — if the drop is intentional — ` +
+          `lower FUZZ_BUCKET_MIN_HITS in the workflow with reviewer sign-off.`,
+      );
+    }
   },
 });
