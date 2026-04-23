@@ -2897,3 +2897,349 @@ Deno.test({
     }
   },
 });
+
+// =============================================================================
+// Property-based (fuzz) tests around the 2048-char boundary
+// =============================================================================
+// The previous test suites cover the boundary with hand-picked values. This
+// suite generates random `pageUrl` and `userAgent` strings spanning a wide
+// length window around 2048 and pins the single most important contract:
+//
+//   For ANY input whose `pageUrl.length > 2048` OR `userAgent.length > 2048`,
+//   the edge function MUST NOT return a 2xx status.
+//
+// This is the "no silent acceptance" invariant — if it ever flips, an
+// attacker (or a misbehaving client) can flood `crawler_visits` with
+// arbitrarily large payloads. We assert it as a property because the exact
+// counter / fieldErrors / wording assertions live in the targeted tests
+// above; here we want WIDTH of inputs, not depth of contract.
+//
+// We additionally check the contrapositive for at-limit inputs:
+//   For ANY input whose `pageUrl.length <= 2048` AND `userAgent.length <= 2048`,
+//   the function MUST NOT reject specifically for the length cap (it may
+//   still reject for unrelated reasons — random bytes won't be a valid URL,
+//   and trace-shaped UAs trigger their own slug/state validation).
+//
+// Determinism: we use a seeded PRNG and log the seed on every iteration so
+// any failure is one paste away from a focused repro. The Deno test runner
+// surfaces stdout from failed tests, so the seed will appear in CI logs.
+// -----------------------------------------------------------------------------
+
+/**
+ * Tiny seeded PRNG (mulberry32) — gives us deterministic, reproducible
+ * fuzz iterations without pulling in a jsr/deno-fast-check dependency.
+ * Adequate for "is the property ever violated?" testing, NOT for crypto.
+ */
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return function () {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Build a string of EXACTLY `targetLen` UTF-16 code units using the given
+ * RNG. We mix three character classes so the test exercises:
+ *   - plain ASCII (1 unit)
+ *   - URL-encoded triplets like %7B (3 units of ASCII)
+ *   - astral emoji surrogate pairs (2 units, off-BMP)
+ * Padding pass at the end uses a 1-unit ASCII char so we always land on
+ * the exact target. Throws if it can't (defensive guard against silent
+ * miscounts that would invalidate the boundary assertion).
+ */
+function randomStringOfLength(rng: () => number, targetLen: number): string {
+  if (targetLen < 0) throw new Error(`targetLen must be ≥ 0, got ${targetLen}`);
+  // Char palettes, with their UTF-16 code-unit width.
+  const palette: ReadonlyArray<{ s: string; units: number }> = [
+    { s: "a", units: 1 },
+    { s: "Z", units: 1 },
+    { s: "0", units: 1 },
+    { s: "-", units: 1 },
+    { s: "/", units: 1 },
+    { s: ".", units: 1 },
+    { s: ":", units: 1 },
+    { s: " ", units: 1 },
+    { s: "%5B", units: 3 }, // URL-encoded "[" — 3 ASCII chars
+    { s: "%E2%98%83", units: 9 }, // URL-encoded snowman — 9 ASCII chars
+    { s: "🐾", units: 2 }, // astral emoji surrogate pair
+    { s: "🔥", units: 2 },
+  ];
+
+  let out = "";
+  // Greedy fill: pick a palette entry that still fits.
+  while (out.length < targetLen) {
+    const remaining = targetLen - out.length;
+    // Try a random palette entry; if it overshoots, fall back to ASCII pad.
+    const pick = palette[Math.floor(rng() * palette.length)];
+    if (pick.units <= remaining) {
+      out += pick.s;
+    } else {
+      out += "x"; // 1-unit safe filler
+    }
+  }
+
+  if (out.length !== targetLen) {
+    throw new Error(
+      `randomStringOfLength miscount: wanted ${targetLen}, got ${out.length}`,
+    );
+  }
+  return out;
+}
+
+/** A pageUrl that's structurally valid AT EVERY LENGTH so length is the
+ *  only variable. We stretch the path; the origin + leading slash are
+ *  fixed-cost (28 chars for "https://getpawsy.pet/product/").
+ */
+function fuzzPageUrl(rng: () => number, targetLen: number): string {
+  const prefix = `${ORIGIN}/product/`;
+  if (targetLen < prefix.length) {
+    // Below prefix length: just emit a short opaque path. Schema only cares
+    // about length + non-empty trim, not that it's a real product URL.
+    return randomStringOfLength(rng, targetLen);
+  }
+  const tail = randomStringOfLength(rng, targetLen - prefix.length)
+    // Strip slashes from the random tail so we keep a single-segment slug
+    // shape; this isn't required by the schema but keeps the URL parseable
+    // for downstream slug extraction in success cases.
+    .replace(/[/]/g, "-");
+  // Replacing slashes never changes length (1-for-1), so the final string
+  // is still exactly `targetLen` UTF-16 units.
+  const url = prefix + tail;
+  if (url.length !== targetLen) {
+    throw new Error(`fuzzPageUrl miscount: wanted ${targetLen}, got ${url.length}`);
+  }
+  return url;
+}
+
+/** A userAgent of exactly `targetLen` units, prefixed with a recognisable
+ *  Bot-ish string so a human reading raw logs can spot fuzz traffic.
+ */
+function fuzzUserAgent(rng: () => number, targetLen: number): string {
+  const prefix = "FuzzBot/1.0 ";
+  if (targetLen < prefix.length) {
+    return randomStringOfLength(rng, targetLen);
+  }
+  return prefix + randomStringOfLength(rng, targetLen - prefix.length);
+}
+
+Deno.test({
+  name:
+    "log-crawler-visit fuzz: never returns 2xx when pageUrl or userAgent exceed 2048 code units",
+  async fn() {
+    const MAX_LEN = 2048;
+    const EXPECTED_MESSAGE = "exceeds 2048 chars";
+
+    // Seed pinned for deterministic CI runs; bump to surface fresh inputs.
+    // The seed is logged on every iteration so a failure can be replayed
+    // by hard-coding both seed and iteration index.
+    const SEED = 0xC0FFEE;
+    const rng = mulberry32(SEED);
+
+    // Length-class generator. We deliberately oversample the boundary
+    // (±8 units) because that's where off-by-one bugs hide, while still
+    // hitting deep over-limit and well-under-limit values to confirm the
+    // property holds across the whole length window.
+    //
+    // 'kind' tells us which side of the boundary the input is on, so we
+    // can apply the right assertion polarity.
+    type Kind = "under" | "at" | "over";
+    type LenSpec = { kind: Kind; len: number };
+
+    const specs: LenSpec[] = [
+      // Well under the limit (cheap, should mostly behave normally).
+      { kind: "under", len: 64 },
+      { kind: "under", len: 512 },
+      { kind: "under", len: 1024 },
+      { kind: "under", len: 2000 },
+      // Just under the limit — the danger zone for off-by-one acceptors.
+      { kind: "under", len: MAX_LEN - 1 },
+      // Exactly at the limit — must NOT be rejected for length.
+      { kind: "at", len: MAX_LEN },
+      // Just over — the danger zone for off-by-one rejectors.
+      { kind: "over", len: MAX_LEN + 1 },
+      { kind: "over", len: MAX_LEN + 2 },
+      // Deep over (smallest sizes that still exercise the path; we keep
+      // them modest because each iteration is a real network round trip).
+      { kind: "over", len: MAX_LEN + 64 },
+      { kind: "over", len: MAX_LEN + 512 },
+    ];
+
+    // For each length spec, fuzz BOTH dimensions independently:
+    //   1. only pageUrl varies, userAgent is a fixed safe value
+    //   2. only userAgent varies, pageUrl is a fixed safe value
+    // We don't combine "both random over-limit" because the contract we
+    // care about (no 2xx for any over-limit input) is already proven by
+    // the single-axis cases via union — if either axis being over-limit
+    // forces non-2xx, then both being over-limit also forces non-2xx.
+    type Axis = "pageUrl" | "userAgent";
+    const axes: Axis[] = ["pageUrl", "userAgent"];
+
+    // Number of random samples per (spec, axis) pair. Total network calls
+    // = specs.length × axes.length × ITERATIONS. With 10 specs × 2 axes
+    // × 3 iters = 60 calls; comfortably under the test timeout.
+    const ITERATIONS = 3;
+
+    const SAFE_PAGE_URL = `${ORIGIN}/product/fuzz-safe-pageurl`;
+    const SAFE_USER_AGENT = GOOGLEBOT_UA;
+
+    // Track outcomes so a failure prints a one-line repro with seed +
+    // iteration index + offending values.
+    type Outcome = {
+      seed: number;
+      iter: number;
+      kind: Kind;
+      axis: Axis;
+      pageUrlLen: number;
+      userAgentLen: number;
+      status: number;
+      bodyPreview: string;
+    };
+    const violations: Outcome[] = [];
+
+    let iterCounter = 0;
+    for (const spec of specs) {
+      for (const axis of axes) {
+        for (let i = 0; i < ITERATIONS; i++) {
+          iterCounter++;
+
+          const pageUrl = axis === "pageUrl"
+            ? fuzzPageUrl(rng, spec.len)
+            : SAFE_PAGE_URL;
+          const userAgent = axis === "userAgent"
+            ? fuzzUserAgent(rng, spec.len)
+            : SAFE_USER_AGENT;
+
+          // Defensive: confirm we built the lengths we intended. If this
+          // ever fires, the property assertions below would be measuring
+          // the wrong thing, so fail LOUDLY here instead.
+          if (axis === "pageUrl" && pageUrl.length !== spec.len) {
+            throw new Error(
+              `fuzz iter ${iterCounter}: pageUrl.length = ${pageUrl.length}, expected ${spec.len}`,
+            );
+          }
+          if (axis === "userAgent" && userAgent.length !== spec.len) {
+            throw new Error(
+              `fuzz iter ${iterCounter}: userAgent.length = ${userAgent.length}, expected ${spec.len}`,
+            );
+          }
+
+          const res = await callFunction({ pageUrl, userAgent });
+          const text = await res.text();
+
+          const outcome: Outcome = {
+            seed: SEED,
+            iter: iterCounter,
+            kind: spec.kind,
+            axis,
+            pageUrlLen: pageUrl.length,
+            userAgentLen: userAgent.length,
+            status: res.status,
+            bodyPreview: text.slice(0, 240),
+          };
+
+          // -----------------------------------------------------------------
+          // PROPERTY 1 (the headline invariant):
+          //   over-limit input → MUST NOT be 2xx
+          // -----------------------------------------------------------------
+          if (spec.kind === "over") {
+            const is2xx = res.status >= 200 && res.status < 300;
+            if (is2xx) {
+              violations.push(outcome);
+              continue;
+            }
+
+            // Stronger sub-invariant: it should reject specifically with the
+            // length error, on the right field. We don't push to `violations`
+            // for these — the headline property is "no 2xx" — but we DO
+            // assert them so a regression to "rejected for the wrong reason"
+            // (e.g. a generic 500) trips the test.
+            assertEquals(
+              res.status,
+              400,
+              `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input must return 400, got ${res.status}; body=${outcome.bodyPreview}`,
+            );
+            const json = JSON.parse(text) as {
+              code?: string;
+              fieldErrors?: Record<string, string[]>;
+            };
+            assertEquals(
+              json.code,
+              "INVALID_PAYLOAD",
+              `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input must use INVALID_PAYLOAD code; got ${json.code}`,
+            );
+            const fieldMessages = json.fieldErrors?.[axis] ?? [];
+            assertEquals(
+              fieldMessages.some((m) => m.includes(EXPECTED_MESSAGE)),
+              true,
+              `[fuzz iter ${iterCounter}, seed=${SEED}] expected fieldErrors.${axis} to include "${EXPECTED_MESSAGE}"; got ${JSON.stringify(fieldMessages)}`,
+            );
+          }
+
+          // -----------------------------------------------------------------
+          // PROPERTY 2 (contrapositive):
+          //   at-limit input → MUST NOT be rejected with the length error.
+          //   It may still 4xx for unrelated reasons (e.g. a fuzzed
+          //   pageUrl that happens to look like a malformed render-trace
+          //   ping — though we don't include "pdp-render-trace" in the
+          //   fuzz palette, so this is mostly defensive).
+          // -----------------------------------------------------------------
+          if (spec.kind === "at" || spec.kind === "under") {
+            // If the response IS a 400, parse it and confirm no length
+            // error appears. A 2xx is unambiguously fine; a 4xx for other
+            // reasons is also fine — only "exceeds 2048 chars" is wrong.
+            if (res.status === 400) {
+              let json: { fieldErrors?: Record<string, string[]> };
+              try {
+                json = JSON.parse(text);
+              } catch {
+                throw new Error(
+                  `[fuzz iter ${iterCounter}, seed=${SEED}] non-JSON 400 body: ${outcome.bodyPreview}`,
+                );
+              }
+              const allMessages = Object.values(json.fieldErrors ?? {})
+                .flat()
+                .filter((m): m is string => typeof m === "string");
+              const wronglyLengthFlagged = allMessages.some((m) =>
+                m.includes(EXPECTED_MESSAGE)
+              );
+              assertEquals(
+                wronglyLengthFlagged,
+                false,
+                `[fuzz iter ${iterCounter}, seed=${SEED}, kind=${spec.kind}, len=${spec.len}, axis=${axis}] input is at/under the cap but was rejected for length; messages=${JSON.stringify(allMessages)}`,
+              );
+            }
+            // Server errors (5xx) are not the contract this test covers,
+            // so we don't fail on them — but we DO surface them in stdout
+            // so a CI run with a flaky backend leaves a breadcrumb.
+            if (res.status >= 500) {
+              console.warn(
+                `[fuzz iter ${iterCounter}, seed=${SEED}] non-2xx, non-4xx status ${res.status} for ${spec.kind} input (axis=${axis}, len=${spec.len}); ignoring (not a contract violation)`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // -- Headline-property report: zero tolerance for over-limit 2xx. -----
+    if (violations.length > 0) {
+      const summary = violations
+        .map((v) =>
+          `  iter=${v.iter} seed=0x${v.seed.toString(16)} axis=${v.axis} pageUrlLen=${v.pageUrlLen} userAgentLen=${v.userAgentLen} status=${v.status} body=${v.bodyPreview}`
+        )
+        .join("\n");
+      throw new Error(
+        `Property violation: ${violations.length} over-limit input(s) returned 2xx. The function MUST reject any payload where pageUrl.length > 2048 or userAgent.length > 2048.\n${summary}`,
+      );
+    }
+
+    // Sanity tally so a passing run leaves a footprint in CI logs.
+    console.log(
+      `[fuzz] seed=0x${SEED.toString(16)} iterations=${iterCounter} violations=0`,
+    );
+  },
+});
