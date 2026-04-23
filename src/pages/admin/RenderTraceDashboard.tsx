@@ -113,6 +113,11 @@ const SLUG_PAGE_SIZE = 25;
 // pages in the per-slug table doesn't redraw the bar chart underneath it.
 const CHART_TOP_N = 15;
 
+// Build a drill-down URL preserving the active window so the detail page's
+// initial query matches the chart the user just clicked on.
+const slugDetailHref = (slug: string, windowDays: number) =>
+  `/dashboard/render-trace/slug/${encodeURIComponent(slug)}?w=${windowDays}`;
+
 export default function RenderTraceDashboard() {
   const [windowDays, setWindowDays] = useState<number>(7);
   const [search, setSearch] = useState('');
