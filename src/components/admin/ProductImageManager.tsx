@@ -319,7 +319,9 @@ export const ProductImageManager = ({
       )}
 
       <p className="text-xs text-muted-foreground">
-        Drag images to reorder. The main image is used as the primary product image.
+        Drag images to reorder. The main image is used as the primary product
+        image. Uploaded files must be {PRODUCT_IMAGE_MAX_LABEL} or smaller —
+        oversized files are blocked before the upload starts.
       </p>
     </div>
   );
