@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { SUPPORT_EMAIL, INFO_EMAIL, RESPONSE_TIME } from '@/lib/shipping-constants';
+import { PageChangelog } from '@/components/seo/PageChangelog';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -169,6 +170,10 @@ const Contact = () => {
               <a href={`mailto:${INFO_EMAIL}`} className="text-primary hover:underline">{INFO_EMAIL}</a>.
             </p>
           </motion.div>
+
+          <div className="max-w-3xl mx-auto">
+            <PageChangelog pageKey="contact" />
+          </div>
 
           <div className="grid lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
             {/* Contact Form */}
