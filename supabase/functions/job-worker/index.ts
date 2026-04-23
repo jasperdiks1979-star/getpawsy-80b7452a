@@ -5,8 +5,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const BACKOFF_MINUTES = [1, 5, 15, 60, 360]; // 1m, 5m, 15m, 1h, 6h
-const MAX_ATTEMPTS = 5;
+// Default retry policy — can be overridden per environment via env vars:
+//   JOB_WORKER_MAX_ATTEMPTS         (integer, e.g. "5")
+//   JOB_WORKER_BACKOFF_MINUTES      (comma-separated list, e.g. "1,5,15,60,360")
+//   JOB_WORKER_BATCH_SIZE           (integer, e.g. "10")
+const DEFAULT_BACKOFF_MINUTES = [1, 5, 15, 60, 360]; // 1m, 5m, 15m, 1h, 6h
+const DEFAULT_MAX_ATTEMPTS = 5;
+const DEFAULT_BATCH_SIZE = 10;
+
+function parseBackoff(raw: string | undefined): number[] {
+  if (!raw) return DEFAULT_BACKOFF_MINUTES;
+  const parsed = raw
+    .split(',')
+    .map((s) => Number.parseFloat(s.trim()))
+    .filter((n) => Number.isFinite(n) && n >= 0);
+  return parsed.length > 0 ? parsed : DEFAULT_BACKOFF_MINUTES;
+}
+
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+const MAX_ATTEMPTS = parsePositiveInt(Deno.env.get('JOB_WORKER_MAX_ATTEMPTS'), DEFAULT_MAX_ATTEMPTS);
+const BACKOFF_MINUTES = parseBackoff(Deno.env.get('JOB_WORKER_BACKOFF_MINUTES'));
+const BATCH_SIZE = parsePositiveInt(Deno.env.get('JOB_WORKER_BATCH_SIZE'), DEFAULT_BATCH_SIZE);
+
+console.log(
+  `[job-worker] config: maxAttempts=${MAX_ATTEMPTS} backoffMinutes=[${BACKOFF_MINUTES.join(',')}] batchSize=${BATCH_SIZE}`,
+);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,14 +47,14 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // Pick due jobs (limit 10 per run)
+    // Pick due jobs (limit configurable via JOB_WORKER_BATCH_SIZE)
     const { data: jobs, error: fetchErr } = await supabase
       .from('marketing_jobs')
       .select('*')
       .in('status', ['queued', 'failed'])
       .lte('next_run_at', new Date().toISOString())
       .order('next_run_at', { ascending: true })
-      .limit(10);
+      .limit(BATCH_SIZE);
 
     if (fetchErr) throw fetchErr;
     if (!jobs || jobs.length === 0) {
