@@ -15,10 +15,15 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Code2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ReleaseIssuesPanel } from './ReleaseIssuesPanel';
+import {
+  ReleaseStepEvidenceDialog,
+  type StepEvidenceKind,
+} from './ReleaseStepEvidenceDialog';
 
 interface ReleaseRow {
   id: string;
