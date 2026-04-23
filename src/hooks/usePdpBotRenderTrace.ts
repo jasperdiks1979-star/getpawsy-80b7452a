@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { retryWithBackoff } from '@/hooks/useRetryWithBackoff';
 
 /**
  * usePdpBotRenderTrace
@@ -55,18 +56,78 @@ function detectBot(userAgent: string): string | null {
 
 type RenderState = 'shell' | 'rendered' | 'timeout';
 
+// In-flight + recent-success guard so we don't fire duplicate retries
+// for the same (slug, state) pair across re-renders or rapid bot revisits.
+const inflightReports = new Set<string>();
+const recentReports = new Map<string, number>();
+const RECENT_TTL_MS = 60_000; // suppress identical reports within 60s
+
 async function reportRenderState(slug: string, state: RenderState, botType: string) {
+  const key = `${slug}::${state}`;
+  const now = Date.now();
+  const lastSent = recentReports.get(key);
+  if (lastSent && now - lastSent < RECENT_TTL_MS) {
+    return; // already reported very recently — skip to avoid spam
+  }
+  if (inflightReports.has(key)) {
+    return; // a retry chain is already running for this key
+  }
+  inflightReports.add(key);
+
   try {
     // Encode render state in the URL so it lands in `crawler_visits.page_url`
     // without requiring a schema change.
     const taggedUrl = `${window.location.origin}/product/${slug}?_render=${state}`;
-    await supabase.functions.invoke('log-crawler-visit', {
-      body: {
-        pageUrl: taggedUrl,
-        userAgent: `${navigator.userAgent} [pdp-render-trace:${state}]`,
-        referrer: document.referrer,
+    await retryWithBackoff(
+      async () => {
+        const { error } = await supabase.functions.invoke('log-crawler-visit', {
+          body: {
+            pageUrl: taggedUrl,
+            userAgent: `${navigator.userAgent} [pdp-render-trace:${state}]`,
+            referrer: document.referrer,
+          },
+        });
+        if (error) throw error;
       },
-    });
+      {
+        // Conservative: max 3 retries, 1s → 4s → 16s (capped at 20s) with jitter.
+        // Total worst-case wait ≈ 21s spread across attempts → no spamming.
+        maxRetries: 3,
+        baseDelayMs: 1000,
+        backoffMultiplier: 4,
+        maxDelayMs: 20_000,
+        // Only retry on transient/unavailable errors. Skip on 4xx (bad payload, auth, etc).
+        shouldRetry: (err) => {
+          const msg = (err?.message || '').toLowerCase();
+          if (!msg) return true;
+          if (
+            msg.includes('401') ||
+            msg.includes('403') ||
+            msg.includes('400') ||
+            msg.includes('404') ||
+            msg.includes('422')
+          ) {
+            return false;
+          }
+          return true;
+        },
+        onRetry: (attempt, err, delayMs) => {
+          console.info(
+            `[PDP-Bot-Render] retrying log-crawler-visit (attempt ${attempt}, in ${Math.round(
+              delayMs,
+            )}ms): ${err.message}`,
+          );
+        },
+      },
+    );
+    recentReports.set(key, Date.now());
+    // Trim recentReports map opportunistically to keep it small.
+    if (recentReports.size > 200) {
+      const cutoff = Date.now() - RECENT_TTL_MS;
+      for (const [k, t] of recentReports) {
+        if (t < cutoff) recentReports.delete(k);
+      }
+    }
     // Also surface in the browser console for live debugging.
     console.info(
       `%c[PDP-Bot-Render]%c ${botType} → ${state} for /product/${slug}`,
@@ -75,7 +136,9 @@ async function reportRenderState(slug: string, state: RenderState, botType: stri
     );
   } catch (err) {
     // Never break the page for a logging failure
-    console.warn('[PDP-Bot-Render] log failed:', err);
+    console.warn('[PDP-Bot-Render] log failed after retries:', err);
+  } finally {
+    inflightReports.delete(key);
   }
 }
 
