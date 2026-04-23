@@ -33,6 +33,95 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/log-crawler-visit`;
 const ORIGIN = "https://getpawsy.pet";
 
+// =============================================================================
+// Failure taxonomy used by the admin dashboard
+// =============================================================================
+// The "Crawler Sampling Decisions" dashboard groups failures by a single
+// stable string so engineers can answer "are we losing pings to the network,
+// to slow servers, or to bad payloads?" without parsing free-form errors.
+//
+// We freeze the taxonomy here (mirroring `ERROR_CODES` in index.ts plus the
+// two client-side categories that never reach the server) so any future
+// drift in either layer fails a test instead of silently splitting a bucket.
+//
+//   * Server-side, returned in `body.code` for non-2xx responses:
+//       INVALID_JSON, INVALID_PAYLOAD, MISSING_FIELDS,
+//       INVALID_PDP_RENDER_STATE, DB_INSERT_FAILED, INTERNAL_ERROR
+//
+//   * Client-side, derived from the thrown `fetch` error:
+//       NETWORK_ERROR  — unreachable host, DNS failure, connection refused
+//       TIMEOUT_ERROR  — request aborted because it exceeded the deadline
+// -----------------------------------------------------------------------------
+const SERVER_VALIDATION_ERROR_CODES = new Set<string>([
+  "INVALID_JSON",
+  "INVALID_PAYLOAD",
+  "MISSING_FIELDS",
+  "INVALID_PDP_RENDER_STATE",
+]);
+
+const SERVER_INTERNAL_ERROR_CODES = new Set<string>([
+  "DB_INSERT_FAILED",
+  "INTERNAL_ERROR",
+]);
+
+const ALL_KNOWN_SERVER_CODES = new Set<string>([
+  ...SERVER_VALIDATION_ERROR_CODES,
+  ...SERVER_INTERNAL_ERROR_CODES,
+]);
+
+type DashboardFailureCode =
+  | "NETWORK_ERROR"
+  | "TIMEOUT_ERROR"
+  | "INVALID_JSON"
+  | "INVALID_PAYLOAD"
+  | "MISSING_FIELDS"
+  | "INVALID_PDP_RENDER_STATE"
+  | "DB_INSERT_FAILED"
+  | "INTERNAL_ERROR"
+  | "UNKNOWN_ERROR";
+
+/**
+ * Map a thrown `fetch` failure (or any caught Error) onto the dashboard's
+ * failure taxonomy. Mirrors the logic the client / cron monitor uses when it
+ * records an "outbound failure" so log queries can aggregate by `code` even
+ * for requests that never produced an HTTP response.
+ *
+ * Heuristics (cheap & deterministic):
+ *   * AbortError name OR /timed?\s*out|deadline/i in message → TIMEOUT_ERROR
+ *   * TypeError + /fetch|network|connect|dns|refused|unreachable/i message
+ *     OR ECONNREFUSED / ENOTFOUND / EAI_AGAIN system codes        → NETWORK_ERROR
+ *   * Anything else                                                → UNKNOWN_ERROR
+ */
+function classifyFetchFailure(err: unknown): DashboardFailureCode {
+  if (err === null || err === undefined) return "UNKNOWN_ERROR";
+  // DOMException with name AbortError is what AbortSignal.timeout() throws.
+  // It can also surface as `TimeoutError` on newer Deno builds.
+  // deno-lint-ignore no-explicit-any
+  const anyErr = err as any;
+  const name: string = String(anyErr?.name ?? "");
+  const message: string = String(anyErr?.message ?? "");
+  const sysCode: string = String(anyErr?.cause?.code ?? anyErr?.code ?? "");
+
+  if (
+    name === "AbortError" ||
+    name === "TimeoutError" ||
+    /timed?\s*out|deadline|aborted/i.test(message)
+  ) {
+    return "TIMEOUT_ERROR";
+  }
+
+  if (
+    err instanceof TypeError ||
+    /fetch|network|connect|dns|refused|unreachable|name not resolved|getaddrinfo/i
+      .test(message) ||
+    /ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ECONNRESET|EHOSTUNREACH/i.test(sysCode)
+  ) {
+    return "NETWORK_ERROR";
+  }
+
+  return "UNKNOWN_ERROR";
+}
+
 // Verified Googlebot UA — the function's UA-only detection will mark this as
 // `is_googlebot=true` only when the source IP also matches Google's published
 // ranges. We don't rely on that flag here; we only assert payload mapping.
