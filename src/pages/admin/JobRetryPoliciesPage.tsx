@@ -348,6 +348,100 @@ export default function JobRetryPoliciesPage() {
     });
   }, [rows]);
 
+  const handleExport = (format: 'json' | 'csv') => {
+    if (rows.length === 0) {
+      toast.error('Geen policies om te exporteren');
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (format === 'json') {
+      triggerDownload(
+        `job_retry_policies_${today}.json`,
+        buildPoliciesJson(rows),
+        'application/json',
+      );
+    } else {
+      triggerDownload(
+        `job_retry_policies_${today}.csv`,
+        buildPoliciesCsv(rows),
+        'text/csv',
+      );
+    }
+    toast.success(`${rows.length} policies geëxporteerd als ${format.toUpperCase()}`);
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting same file
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toast.error('Bestand te groot (max 1 MB)');
+      return;
+    }
+    setImportFileName(file.name);
+    const text = await file.text();
+    const isJson = file.name.toLowerCase().endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[');
+    const result = isJson ? parsePoliciesJson(text) : parsePoliciesCsv(text);
+    setImportParsed(result.valid);
+    setImportErrors(result.errors);
+    setImportStrategy('upsert');
+    setImportDialogOpen(true);
+  };
+
+  const handleImportConfirm = async () => {
+    if (importParsed.length === 0) {
+      toast.error('Geen geldige rijen om te importeren');
+      return;
+    }
+    setImporting(true);
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    // Build a quick lookup of existing rows by (provider, job_type) so we can
+    // decide between insert / update / skip without N round-trips.
+    const keyOf = (p: { provider: string | null; job_type: string | null }) =>
+      `${p.provider ?? ''}::${p.job_type ?? ''}`;
+    const existingByKey = new Map(rows.map((r) => [keyOf(r), r]));
+
+    for (const policy of importParsed) {
+      const existing = existingByKey.get(keyOf(policy));
+      try {
+        if (existing) {
+          if (importStrategy === 'skip') {
+            skipped++;
+            continue;
+          }
+          const { error } = await supabase
+            .from('job_retry_policies')
+            .update(policy)
+            .eq('id', existing.id);
+          if (error) throw error;
+          updated++;
+        } else {
+          const { error } = await supabase.from('job_retry_policies').insert(policy);
+          if (error) throw error;
+          inserted++;
+        }
+      } catch (err) {
+        failed++;
+        console.error('Import row failed', policy, err);
+      }
+    }
+    setImporting(false);
+    setImportDialogOpen(false);
+    const summary = [
+      inserted && `${inserted} toegevoegd`,
+      updated && `${updated} bijgewerkt`,
+      skipped && `${skipped} overgeslagen`,
+      failed && `${failed} gefaald`,
+    ].filter(Boolean).join(', ');
+    if (failed > 0) toast.error(`Import deels mislukt: ${summary}`);
+    else toast.success(`Import klaar: ${summary || 'geen wijzigingen'}`);
+    fetchRows();
+  };
+
   return (
     <>
       <Helmet>
