@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ExternalLink, GitCommit, History } from 'lucide-react';
+import { ChevronDown, ExternalLink, GitCommit, History, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { cn } from '@/lib/utils';
