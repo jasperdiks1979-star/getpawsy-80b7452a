@@ -366,12 +366,12 @@ export default function RenderTraceDashboard() {
         )}
 
         {!isLoading && malformed.length > 0 && (
-          <Card className="border-amber-500/40 bg-amber-500/5">
+          <Card className="border-destructive/30 bg-destructive/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-amber-600" />
+                <ShieldAlert className="h-4 w-4 text-destructive" />
                 Malformed render-trace pings
-                <Badge variant="outline" className="ml-1 border-amber-500/60 text-amber-700 dark:text-amber-400">
+                <Badge variant="outline" className="ml-1 border-destructive/40 text-destructive">
                   {malformed.length.toLocaleString()}
                 </Badge>
               </CardTitle>
