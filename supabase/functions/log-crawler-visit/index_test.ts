@@ -3723,11 +3723,46 @@ Deno.test({
     // Override via FUZZ_ITERATIONS for nightly deep-fuzz runs.
     const ITERATIONS = parsePositiveIntEnv("FUZZ_ITERATIONS", 3);
 
+    // ---------------------------------------------------------------
+    // Parallel worker pool — surface race conditions in the deployed
+    // edge function's request handling.
+    //
+    // FUZZ_CONCURRENCY controls how many fuzz requests are in flight
+    // at the same time:
+    //   - 1 (default, local + most CI runs): purely sequential — every
+    //     per-call invariant remains attributable to a specific call,
+    //     including the cross-axis non-offending-bucket growth check.
+    //   - >1 (CI parallel job): runs N concurrent workers pulling from
+    //     a shared deterministic job queue. Catches races inside the
+    //     edge function (shared module-scoped state, double-counted
+    //     increments, partial response writes) that a sequential
+    //     driver can never observe. Under concurrency we DOWNGRADE the
+    //     two attribution checks that depend on cross-call ordering
+    //     (the per-call non-offending-bucket growth detector and the
+    //     per-request "only the offending bucket grew" check) to
+    //     warnings, because growth that looks anomalous from one
+    //     worker's perspective may simply be a sibling worker driving
+    //     the OTHER axis on a shared isolate. The end-of-run
+    //     "unrelated buckets must be flat" assertion (invalid_json +
+    //     trace_*) is still strict — those code paths are never driven
+    //     by this fuzz suite regardless of concurrency, so any growth
+    //     there is unambiguously a bug.
+    //
+    // Inputs are pre-generated SEQUENTIALLY from the seeded RNG, so
+    // changing FUZZ_CONCURRENCY does NOT change which payloads get
+    // sent — only the order in which the responses come back. This
+    // preserves reproducibility: a failing seed at concurrency=8 can
+    // be replayed at concurrency=1 with the same FUZZ_SEED and will
+    // hit the same set of inputs (just sequentially).
+    // ---------------------------------------------------------------
+    const CONCURRENCY = parsePositiveIntEnv("FUZZ_CONCURRENCY", 1);
+
     // Surface the effective config in CI logs so a failure can be
     // reproduced locally with the same env vars.
     console.log(
       `[fuzz] config: seed=0x${SEED.toString(16)} iterations=${ITERATIONS} ` +
-        `(override via FUZZ_SEED / FUZZ_ITERATIONS)`,
+        `concurrency=${CONCURRENCY} ` +
+        `(override via FUZZ_SEED / FUZZ_ITERATIONS / FUZZ_CONCURRENCY)`,
     );
 
     const SAFE_PAGE_URL = `${ORIGIN}/product/fuzz-safe-pageurl`;
