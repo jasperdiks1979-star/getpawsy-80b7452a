@@ -4110,6 +4110,41 @@ Deno.test({
         httpStatus: primary.status,
       });
 
+      // Persist the smallest failing fixture to a STABLE path (and an
+      // accompanying replay script) so a developer can re-run the exact
+      // case locally without scraping CI logs. Unlike the timestamped
+      // /tmp fixture above, these paths are overwritten on every
+      // violating run — they always represent "the latest minimum
+      // failing case", which is what you want when triaging.
+      const snapshot = writeStableSnapshot(shrinkResult, {
+        seed: primary.seed,
+        iter: primary.iter,
+        httpStatus: primary.status,
+      });
+
+      // Big, grep-friendly banner — easy to spot in CI logs and to
+      // copy-paste into a local terminal.
+      const seedHex = `0x${primary.seed.toString(16)}`;
+      console.log("");
+      console.log("══════════════════════════════════════════════════════════════════");
+      console.log("  [fuzz-snapshot] smallest failing over-limit fixture captured");
+      console.log("══════════════════════════════════════════════════════════════════");
+      console.log(`  seed         : ${seedHex}`);
+      console.log(`  iteration    : ${primary.iter}`);
+      console.log(`  axis         : ${shrinkResult.axis}`);
+      console.log(`  shrunk len   : ${shrinkResult.shrunkLen}  (was ${shrinkResult.originalLen}, contract ≤ ${shrinkResult.expectedMaxLen}, overBy +${shrinkResult.overBy})`);
+      if (snapshot.jsonPath) {
+        console.log(`  snapshot     : ${snapshot.jsonPath}`);
+      }
+      if (snapshot.replayPath) {
+        console.log(`  replay (sh)  : bash ${snapshot.replayPath}`);
+      }
+      console.log(`  replay (test): FUZZ_SEED=${seedHex} FUZZ_ITERATIONS=${ITERATIONS} \\`);
+      console.log(`                   deno test --allow-net --allow-env --allow-read --allow-write \\`);
+      console.log(`                   --filter "fuzz" supabase/functions/log-crawler-visit/index_test.ts`);
+      console.log("══════════════════════════════════════════════════════════════════");
+      console.log("");
+
       const summary = violations
         .map((v) =>
           `  iter=${v.iter} seed=0x${v.seed.toString(16)} axis=${v.axis} pageUrlLen=${v.pageUrlLen} userAgentLen=${v.userAgentLen} status=${v.status} body=${v.bodyPreview}`
