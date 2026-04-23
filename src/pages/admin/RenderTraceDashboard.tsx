@@ -502,7 +502,7 @@ export default function RenderTraceDashboard() {
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-[300px] w-full" />
-            ) : perSlug.length === 0 ? (
+            ) : chartSlugs.length === 0 ? (
               <EmptyState message="Nothing to chart yet." />
             ) : (
               <ChartContainer
@@ -514,7 +514,7 @@ export default function RenderTraceDashboard() {
                 className="h-[300px] w-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={perSlug.slice(0, 15)} layout="vertical" margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
+                  <BarChart data={chartSlugs} layout="vertical" margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" allowDecimals={false} fontSize={12} />
                     <YAxis type="category" dataKey="slug" width={140} fontSize={11} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
@@ -523,7 +523,7 @@ export default function RenderTraceDashboard() {
                     <Bar dataKey="shell" stackId="a" fill={STATE_COLORS.shell} />
                     <Bar dataKey="rendered" stackId="a" fill={STATE_COLORS.rendered} />
                     <Bar dataKey="timeout" stackId="a" fill={STATE_COLORS.timeout}>
-                      {perSlug.slice(0, 15).map((s) => (
+                      {chartSlugs.map((s) => (
                         <Cell key={s.slug} fill={STATE_COLORS.timeout} />
                       ))}
                     </Bar>
