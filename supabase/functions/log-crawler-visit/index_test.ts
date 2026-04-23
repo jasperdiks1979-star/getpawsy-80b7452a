@@ -16,7 +16,7 @@ import {
   assertExists,
   assertMatch,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const SUPABASE_URL =
   Deno.env.get("VITE_SUPABASE_URL") ??
@@ -70,8 +70,9 @@ async function callFunction(body: unknown): Promise<Response> {
  * Polls `crawler_visits` until a row matching (page_url contains slug, ua
  * contains the state tag) is found, or the deadline is hit.
  */
+// deno-lint-ignore no-explicit-any
 async function waitForRow(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient<any, any, any>,
   slug: string,
   state: RenderState,
   timeoutMs = 10_000,
@@ -102,8 +103,9 @@ async function waitForRow(
   );
 }
 
+// deno-lint-ignore no-explicit-any
 async function cleanup(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient<any, any, any>,
   slugs: string[],
 ) {
   for (const slug of slugs) {
