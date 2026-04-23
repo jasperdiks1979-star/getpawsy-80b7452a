@@ -19,6 +19,7 @@ import {
   Apple,
   Menu,
   X,
+  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,6 +37,7 @@ const navItems = [
   { to: '/admin/seo-intelligence', label: 'SEO Intelligence', icon: LineChart },
   { to: '/admin/commerce-intelligence', label: 'Commerce Intel', icon: BarChart3 },
   { to: '/admin/reports', label: 'Reports', icon: FileText },
+  { to: '/admin/page-changelog', label: 'Page Changelog', icon: History },
   { to: '/admin/guides', label: 'Guides SEO', icon: BookOpen },
   { to: '/admin/internal-link-log', label: 'Internal Links', icon: Link },
   { to: '/admin/diagnostics', label: 'Diagnostics', icon: Stethoscope },
