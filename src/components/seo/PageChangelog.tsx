@@ -1,11 +1,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ExternalLink, GitCommit, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { cn } from '@/lib/utils';
 import { type PageChangelogKey } from '@/lib/page-changelogs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePageChangelog } from '@/hooks/usePageChangelog';
+
+/**
+ * Canonical absolute origin used for all `@id`/`url` fields in the
+ * structured-data emitted below. Hard-coded on purpose — the canonical
+ * host is enforced sitewide (see HostnameGuard / useCanonical), and any
+ * preview/staging host must NOT leak into JSON-LD because Google would
+ * then index a non-canonical surface.
+ */
+const CANONICAL_HOST = 'https://getpawsy.pet';
+
+/**
+ * Maps each pageKey to the public route the changelog renders on.
+ * Used to build the `mainEntityOfPage` URL inside the JSON-LD payload
+ * so reviewers (and Google) can match the changelog dataset 1:1 to the
+ * surface that was actually updated.
+ */
+const PAGE_PATHS: Record<PageChangelogKey, string> = {
+  contact: '/contact',
+  about: '/about',
+  shipping: '/shipping',
+  returns: '/return-policy',
+  privacy: '/privacy-policy',
+  terms: '/terms-of-service',
+  cookies: '/cookie-policy',
+};
+
+const PAGE_LABELS: Record<PageChangelogKey, string> = {
+  contact: 'Contact',
+  about: 'About GetPawsy',
+  shipping: 'Shipping Policy',
+  returns: 'Return Policy',
+  privacy: 'Privacy Policy',
+  terms: 'Terms of Service',
+  cookies: 'Cookie Policy',
+};
 
 interface PageChangelogProps {
   pageKey: PageChangelogKey;
@@ -78,6 +114,77 @@ export function PageChangelog({ pageKey, className }: PageChangelogProps) {
 
   if (!entries || entries.length === 0) return null;
 
+  // Build a Dataset JSON-LD payload describing the page's changelog.
+  //
+  // We deliberately use `Dataset` + `hasPart: CreativeWork[]` rather than
+  // plain `Article`s because:
+  //   1. The changelog is a collection of versioned change records, not
+  //      one editorial article — Dataset matches that semantic exactly.
+  //   2. Google Search and third-party SEO auditors (Ahrefs, Sitebulb,
+  //      OnCrawl) all parse `Dataset.dateModified` as the authoritative
+  //      "freshness" signal for the host page, which is what we want for
+  //      Merchant Center reviewers checking when policies were last revised.
+  //   3. Each CreativeWork part keeps the build tag (as `version`) and the
+  //      bullet points (as `description` + `text`) so an auditor can verify
+  //      the diff without scraping the rendered HTML.
+  const pagePath = PAGE_PATHS[pageKey];
+  const pageLabel = PAGE_LABELS[pageKey];
+  const pageUrl = `${CANONICAL_HOST}${pagePath}`;
+  const datasetId = `${pageUrl}#changelog`;
+  const latestDate = entries[0]?.date;
+  const earliestDate = entries[entries.length - 1]?.date;
+
+  const changelogJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    '@id': datasetId,
+    name: `${pageLabel} – page changelog`,
+    description:
+      `Versioned change log for the ${pageLabel} page on GetPawsy, ` +
+      `listing every visible policy/content update with date, build tag and commit reference.`,
+    url: datasetId,
+    inLanguage: 'en-US',
+    isAccessibleForFree: true,
+    license: `${CANONICAL_HOST}/terms-of-service`,
+    creator: {
+      '@type': 'Organization',
+      name: 'GetPawsy',
+      url: CANONICAL_HOST,
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': pageUrl,
+      url: pageUrl,
+      name: pageLabel,
+    },
+    ...(latestDate ? { dateModified: latestDate } : {}),
+    ...(earliestDate ? { datePublished: earliestDate } : {}),
+    variableMeasured: ['date', 'build', 'commit', 'changes'],
+    hasPart: entries.map((entry, idx) => {
+      const versionId = `${datasetId}-${entry.date}-${idx}`;
+      return {
+        '@type': 'CreativeWork',
+        '@id': versionId,
+        name: entry.build,
+        version: entry.build,
+        identifier: entry.commit,
+        datePublished: entry.date,
+        dateModified: entry.date,
+        // Short summary first, full bullet body in `text` so both compact
+        // SERP previews and full-evidence audits have what they need.
+        description: entry.changes.slice(0, 2).join(' '),
+        text: entry.changes.map((c) => `• ${c}`).join('\n'),
+        isPartOf: { '@id': datasetId },
+        about: {
+          '@type': 'WebPage',
+          '@id': pageUrl,
+          url: pageUrl,
+          name: pageLabel,
+        },
+      };
+    }),
+  };
+
   return (
     <section
       aria-label="Page changelog"
@@ -86,6 +193,19 @@ export function PageChangelog({ pageKey, className }: PageChangelogProps) {
         className,
       )}
     >
+      {/*
+        Emit changelog structured data into <head> via Helmet so it lands in
+        the initial HTML payload that Googlebot crawls — see
+        seo/static-shell-and-pre-hydration-metadata. Helmet de-duplicates by
+        innerHTML, so multiple <PageChangelog /> instances on the same page
+        (shouldn't happen but be safe) won't double-emit.
+      */}
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(changelogJsonLd)}
+        </script>
+      </Helmet>
+
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
