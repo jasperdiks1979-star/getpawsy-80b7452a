@@ -72,6 +72,10 @@ export const ProductImageManager = ({
   // Files picked/dropped by the user that are waiting in the preview tray.
   // They are NOT uploaded until the user clicks "Upload N image(s)".
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  // Index of the image the user clicked "remove" on. The actual deletion
+  // only runs after they confirm in the AlertDialog — so a single misclick
+  // on a 12-image gallery can't silently destroy the wrong tile.
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
 
   // Revoke object URLs on unmount so blob: URLs don't leak.
   useEffect(() => {
@@ -105,7 +109,15 @@ export const ProductImageManager = ({
     toast.success("Image added");
   };
 
-  const handleRemoveImage = (index: number) => {
+  // Two-step delete: clicking the X opens the confirmation dialog. The
+  // actual mutation happens in `confirmRemoveImage` once the user accepts.
+  const requestRemoveImage = (index: number) => {
+    setPendingDeleteIndex(index);
+  };
+
+  const confirmRemoveImage = () => {
+    if (pendingDeleteIndex === null) return;
+    const index = pendingDeleteIndex;
     const imageToRemove = images[index];
     const newImages = images.filter((_, i) => i !== index);
     onChange(newImages);
@@ -115,6 +127,7 @@ export const ProductImageManager = ({
       onMainImageChange(newImages[0]);
     }
 
+    setPendingDeleteIndex(null);
     toast.success("Image removed");
   };
 
