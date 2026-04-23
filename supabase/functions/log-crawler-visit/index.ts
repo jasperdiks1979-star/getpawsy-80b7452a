@@ -777,17 +777,102 @@ serve(async (req) => {
     const alwaysLog = looksLikeTrace || isGooglebot || spoofedGooglebot || isAppeal;
     let sampleRate = 1;
     let sampledOut = false;
+    let sampleRoll: number | null = null;
     if (!alwaysLog) {
       sampleRate = await getSampleRate(supabase);
-      if (sampleRate <= 0 || (sampleRate < 1 && Math.random() >= sampleRate)) {
+      if (sampleRate <= 0) {
         sampledOut = true;
+      } else if (sampleRate < 1) {
+        sampleRoll = Math.random();
+        if (sampleRoll >= sampleRate) sampledOut = true;
       }
     }
 
+    // -------------------------------------------------------------------------
+    // Structured sampling-decision audit log
+    // -------------------------------------------------------------------------
+    // Every decision (logged OR sampled-out) gets recorded in
+    // `crawler_sampling_decisions` so admins can later answer:
+    //   * "Why didn't this URL get persisted?"
+    //   * "How many requests are we always-logging vs sampling?"
+    //   * "How often do spoofed Googlebot UAs hit us?"
+    // The reason taxonomy is intentionally narrow so the dashboard can
+    // group cleanly without parsing free-form text.
+    const renderState = renderTagMatch?.[1]?.toLowerCase() ?? null;
+    let decisionReason:
+      | 'render_trace'
+      | 'appeal_page'
+      | 'verified_googlebot'
+      | 'spoofed_googlebot'
+      | 'sampled_in'
+      | 'sampled_out';
     if (sampledOut) {
-      console.log(
-        `[log-crawler-visit] Sampled out (rate=${sampleRate.toFixed(3)}): ${pageUrl}`,
-      );
+      decisionReason = 'sampled_out';
+    } else if (looksLikeTrace) {
+      decisionReason = 'render_trace';
+    } else if (isGooglebot) {
+      decisionReason = 'verified_googlebot';
+    } else if (spoofedGooglebot) {
+      decisionReason = 'spoofed_googlebot';
+    } else if (isAppeal) {
+      decisionReason = 'appeal_page';
+    } else {
+      decisionReason = 'sampled_in';
+    }
+
+    // Fire-and-forget — never block the response on the audit insert.
+    // The `crawler_sampling_decisions` table has its own indexes for
+    // dashboard queries; failures are logged but don't poison the request.
+    supabase
+      .from('crawler_sampling_decisions')
+      .insert({
+        page_url: pageUrl,
+        user_agent: userAgent,
+        ip_address: ipAddress,
+        outcome: sampledOut ? 'sampled_out' : 'logged',
+        always_log: alwaysLog,
+        reason: decisionReason,
+        looks_like_render_trace: looksLikeTrace,
+        render_trace_state: renderState,
+        is_appeal_page: isAppeal,
+        ua_claims_googlebot: uaIsGooglebot,
+        verified_googlebot: isGooglebot,
+        spoofed_googlebot: spoofedGooglebot,
+        bot_type: loggedBotType ?? null,
+        sample_rate: alwaysLog ? null : sampleRate,
+        sample_roll: sampleRoll,
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then((res: any) => {
+        if (res?.error) {
+          console.warn(
+            '[log-crawler-visit] Failed to persist sampling decision:',
+            res.error,
+          );
+        }
+      });
+
+    // Single-line structured log line so admins can grep edge logs even if
+    // the audit insert fails. Keys are stable & SCREAMING_snake-friendly.
+    console.log(
+      `[sampling-decision] ${JSON.stringify({
+        outcome: sampledOut ? 'sampled_out' : 'logged',
+        reason: decisionReason,
+        always_log: alwaysLog,
+        render_trace: looksLikeTrace,
+        render_state: renderState,
+        appeal: isAppeal,
+        ua_claims_googlebot: uaIsGooglebot,
+        verified_googlebot: isGooglebot,
+        spoofed_googlebot: spoofedGooglebot,
+        bot_type: loggedBotType ?? null,
+        sample_rate: alwaysLog ? null : sampleRate,
+        sample_roll: sampleRoll,
+        page_url: pageUrl,
+      })}`,
+    );
+
+    if (sampledOut) {
       return new Response(
         JSON.stringify({
           success: true,
@@ -797,6 +882,11 @@ serve(async (req) => {
           spoofed: spoofedGooglebot,
           sampled: false,
           sampleRate,
+          decision: {
+            reason: decisionReason,
+            alwaysLog,
+            sampleRoll,
+          },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
