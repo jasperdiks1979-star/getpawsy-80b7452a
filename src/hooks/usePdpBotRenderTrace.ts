@@ -56,13 +56,36 @@ function detectBot(userAgent: string): string | null {
 
 type RenderState = 'shell' | 'rendered' | 'timeout';
 
+/**
+ * Optional duration metrics captured by the hook.
+ * - `tMountMs`        : ms since hook mount when the event fired
+ * - `tSinceShellMs`   : for `rendered`/`timeout` only — ms since the shell was logged
+ */
+interface RenderDurations {
+  tMountMs: number;
+  tSinceShellMs?: number;
+}
+
+function nowMs(): number {
+  // Prefer high-resolution monotonic clock; fall back to Date.now().
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now();
+  }
+  return Date.now();
+}
+
 // In-flight + recent-success guard so we don't fire duplicate retries
 // for the same (slug, state) pair across re-renders or rapid bot revisits.
 const inflightReports = new Set<string>();
 const recentReports = new Map<string, number>();
 const RECENT_TTL_MS = 60_000; // suppress identical reports within 60s
 
-async function reportRenderState(slug: string, state: RenderState, botType: string) {
+async function reportRenderState(
+  slug: string,
+  state: RenderState,
+  botType: string,
+  durations: RenderDurations,
+) {
   const key = `${slug}::${state}`;
   const now = Date.now();
   const lastSent = recentReports.get(key);
@@ -75,15 +98,30 @@ async function reportRenderState(slug: string, state: RenderState, botType: stri
   inflightReports.add(key);
 
   try {
-    // Encode render state in the URL so it lands in `crawler_visits.page_url`
-    // without requiring a schema change.
-    const taggedUrl = `${window.location.origin}/product/${slug}?_render=${state}`;
+    // Encode render state + durations in the URL so they land in
+    // `crawler_visits.page_url` without requiring a schema change.
+    // Format: ?_render=<state>&_t_mount=<ms>[&_t_shell=<ms>]
+    const tMount = Math.max(0, Math.round(durations.tMountMs));
+    const params = new URLSearchParams();
+    params.set('_render', state);
+    params.set('_t_mount', String(tMount));
+    if (typeof durations.tSinceShellMs === 'number' && Number.isFinite(durations.tSinceShellMs)) {
+      params.set('_t_shell', String(Math.max(0, Math.round(durations.tSinceShellMs))));
+    }
+    const taggedUrl = `${window.location.origin}/product/${slug}?${params.toString()}`;
+
+    // Build a UA suffix that also encodes the durations, so log analysis tools
+    // that group by user_agent see the same numbers as the URL.
+    const uaSuffixParts = [`pdp-render-trace:${state}`, `t_mount=${tMount}ms`];
+    if (params.has('_t_shell')) uaSuffixParts.push(`t_shell=${params.get('_t_shell')}ms`);
+    const uaSuffix = `[${uaSuffixParts.join(' ')}]`;
+
     await retryWithBackoff(
       async () => {
         const { error } = await supabase.functions.invoke('log-crawler-visit', {
           body: {
             pageUrl: taggedUrl,
-            userAgent: `${navigator.userAgent} [pdp-render-trace:${state}]`,
+            userAgent: `${navigator.userAgent} ${uaSuffix}`,
             referrer: document.referrer,
           },
         });
@@ -129,8 +167,12 @@ async function reportRenderState(slug: string, state: RenderState, botType: stri
       }
     }
     // Also surface in the browser console for live debugging.
+    const durationLabel =
+      typeof durations.tSinceShellMs === 'number'
+        ? `+${Math.round(durations.tSinceShellMs)}ms since shell (mount+${tMount}ms)`
+        : `mount+${tMount}ms`;
     console.info(
-      `%c[PDP-Bot-Render]%c ${botType} → ${state} for /product/${slug}`,
+      `%c[PDP-Bot-Render]%c ${botType} → ${state} for /product/${slug} (${durationLabel})`,
       'color: #f59e0b; font-weight: bold',
       'color: inherit',
     );
