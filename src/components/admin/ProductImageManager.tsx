@@ -4,6 +4,16 @@ import { Input } from "@/components/ui/input";
 import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2, FolderUp, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // -----------------------------------------------------------------------------
 // File upload limits — kept in sync with the `product-images` storage bucket.
