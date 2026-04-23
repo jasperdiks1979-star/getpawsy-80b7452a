@@ -153,9 +153,11 @@ Deno.serve(async (req) => {
           throw new Error(result.reason || 'Provider returned ok:false');
         }
       } catch (err) {
+        const policy = resolvePolicy(job.provider, job.job_type, policies);
         const attempts = (job.attempts || 0) + 1;
-        const newStatus = attempts >= MAX_ATTEMPTS ? 'dead' : 'failed';
-        const backoffMinutes = BACKOFF_MINUTES[Math.min(attempts - 1, BACKOFF_MINUTES.length - 1)];
+        const newStatus = attempts >= policy.maxAttempts ? 'dead' : 'failed';
+        const backoffMinutes =
+          policy.backoffMinutes[Math.min(attempts - 1, policy.backoffMinutes.length - 1)];
         const nextRun = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
 
         await supabase.from('marketing_jobs').update({
@@ -171,7 +173,16 @@ Deno.serve(async (req) => {
           event_type: 'job_failed',
           severity: newStatus === 'dead' ? 'error' : 'warn',
           message: err instanceof Error ? err.message : String(err),
-          context: { jobId: job.id, attempts, jobType: job.job_type },
+          context: {
+            jobId: job.id,
+            attempts,
+            jobType: job.job_type,
+            maxAttempts: policy.maxAttempts,
+            backoffMinutes,
+            policyMatched: policy.matched
+              ? { provider: policy.matched.provider, jobType: policy.matched.job_type }
+              : null,
+          },
         });
 
         failed++;
