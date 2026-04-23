@@ -197,6 +197,8 @@ export function usePdpBotRenderTrace(params: {
   });
   const botTypeRef = useRef<string | null>(null);
   const timeoutHandleRef = useRef<number | null>(null);
+  const mountedAtRef = useRef<number>(nowMs());
+  const shellAtRef = useRef<number | null>(null);
 
   // Detect bot once on mount
   useEffect(() => {
@@ -210,7 +212,11 @@ export function usePdpBotRenderTrace(params: {
     if (!isLoading) return;
     if (firedRef.current.shell) return;
     firedRef.current.shell = true;
-    reportRenderState(slug, 'shell', botTypeRef.current);
+    const t = nowMs();
+    shellAtRef.current = t;
+    reportRenderState(slug, 'shell', botTypeRef.current, {
+      tMountMs: t - mountedAtRef.current,
+    });
 
     // Start a soft-404 watchdog: if we're still on the shell after 8s,
     // log a "timeout" event so the admin can spot bot-side render failures.
@@ -218,7 +224,12 @@ export function usePdpBotRenderTrace(params: {
       if (firedRef.current.rendered || firedRef.current.timeout) return;
       firedRef.current.timeout = true;
       if (slug && botTypeRef.current) {
-        reportRenderState(slug, 'timeout', botTypeRef.current);
+        const tNow = nowMs();
+        reportRenderState(slug, 'timeout', botTypeRef.current, {
+          tMountMs: tNow - mountedAtRef.current,
+          tSinceShellMs:
+            shellAtRef.current !== null ? tNow - shellAtRef.current : undefined,
+        });
       }
     }, 8000);
 
@@ -240,13 +251,20 @@ export function usePdpBotRenderTrace(params: {
       clearTimeout(timeoutHandleRef.current);
       timeoutHandleRef.current = null;
     }
-    reportRenderState(slug, 'rendered', botTypeRef.current);
+    const tNow = nowMs();
+    reportRenderState(slug, 'rendered', botTypeRef.current, {
+      tMountMs: tNow - mountedAtRef.current,
+      tSinceShellMs:
+        shellAtRef.current !== null ? tNow - shellAtRef.current : undefined,
+    });
   }, [slug, isLoading, hasProduct]);
 
   // Reset when slug changes (SPA navigation between PDPs)
   useEffect(() => {
     return () => {
       firedRef.current = { shell: false, rendered: false, timeout: false };
+      shellAtRef.current = null;
+      mountedAtRef.current = nowMs();
       if (timeoutHandleRef.current !== null) {
         clearTimeout(timeoutHandleRef.current);
         timeoutHandleRef.current = null;
