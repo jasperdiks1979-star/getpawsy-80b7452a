@@ -690,4 +690,82 @@ describe('usePdpBotRenderTrace', () => {
     // Logical-level: exactly one *distinct* shell and one *distinct* timeout.
     expect(new Set(slugStates)).toEqual(new Set(['shell', 'timeout']));
   });
+
+  it('emits a single timeout log with the correct slug + tag + duration when hasProduct stays false past 8s', async () => {
+    const slug = 'watchdog-stays-stuck-bed';
+    const { rerender } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+
+    // Drain the shell-effect's async invoke.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getReportedStates()).toEqual(['shell']);
+
+    // Re-render multiple times with hasProduct still false, simulating a stuck
+    // PDP where loading flickers but data never lands. The watchdog must not
+    // be cancelled or duplicated by these re-renders.
+    await act(async () => {
+      vi.advanceTimersByTime(3_000);
+      await Promise.resolve();
+    });
+    rerender({ isLoading: true, hasProduct: false });
+    await act(async () => {
+      vi.advanceTimersByTime(3_000);
+      await Promise.resolve();
+    });
+    rerender({ isLoading: true, hasProduct: false });
+
+    // Still on shell — no timeout yet (we're at 6s).
+    expect(getReportedStates()).toEqual(['shell']);
+
+    // Cross the 8s boundary.
+    await act(async () => {
+      vi.advanceTimersByTime(2_001);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Exactly one timeout fired, and no rendered ever escaped.
+    const states = getReportedStates();
+    expect(states).toEqual(['shell', 'timeout']);
+    expect(states.filter((s) => s === 'timeout')).toHaveLength(1);
+    expect(states).not.toContain('rendered');
+
+    // Validate the timeout payload shape: correct slug, render tag, and the
+    // duration markers (`_t_shell` >= 8000ms, UA suffix carries shell delta).
+    const timeoutCall = invokeMock.mock.calls.find(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        (opts as { body: { userAgent: string; pageUrl: string } }).body.userAgent.includes(
+          'pdp-render-trace:timeout',
+        ) &&
+        (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+    );
+    expect(timeoutCall).toBeDefined();
+    const { pageUrl, userAgent } = (timeoutCall![1] as {
+      body: { pageUrl: string; userAgent: string };
+    }).body;
+
+    expect(pageUrl).toContain(`/product/${slug}`);
+    expect(pageUrl).toContain('_render=timeout');
+    const tShellMatch = pageUrl.match(/_t_shell=(\d+)/);
+    expect(tShellMatch).not.toBeNull();
+    expect(Number(tShellMatch![1])).toBeGreaterThanOrEqual(8000);
+    expect(userAgent).toMatch(/pdp-render-trace:timeout\b/);
+    expect(userAgent).toMatch(/t_shell=\d+ms/);
+
+    // Push well past the boundary — the watchdog must not fire a second time.
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(getReportedStates().filter((s) => s === 'timeout')).toHaveLength(1);
+  });
 });
