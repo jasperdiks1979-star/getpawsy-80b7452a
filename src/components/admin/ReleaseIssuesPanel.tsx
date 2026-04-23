@@ -31,6 +31,8 @@ import {
 import { cn } from '@/lib/utils';
 import { buildIssueEvidence, type IssueEvidence, type SampleResult } from '@/lib/release/issueEvidence';
 import { useProductNames } from '@/hooks/useProductNames';
+import { buildRecommendations } from '@/lib/release/issueRecommendations';
+import { ReleaseRecommendationsBanner } from './ReleaseRecommendationsBanner';
 
 const UNASSIGNED = '__unassigned__';
 
@@ -127,8 +129,20 @@ export function ReleaseIssuesPanel({
       )
     : null;
 
+  // Aggregate per-issue product impact from the evidence builder so the
+  // recommendations banner can show "X products affected" per action.
+  const productCounts: Record<string, number> = {};
+  if (issues) {
+    for (const i of issues) {
+      const ev = buildIssueEvidence(i.issue_key, sampleResults ?? null, feedUrl ?? undefined);
+      if (ev) productCounts[i.id] = ev.totalAffected;
+    }
+  }
+  const recommendations = buildRecommendations(issues, productCounts);
+
   return (
     <div className="mt-3 rounded-md border bg-muted/20 p-3">
+      <ReleaseRecommendationsBanner recommendations={recommendations} />
       <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
         <div className="flex items-center gap-2 text-sm font-medium">
           <ListChecks className="h-4 w-4 text-primary" />
