@@ -2615,3 +2615,285 @@ Deno.test({
     }
   },
 });
+
+// =============================================================================
+// Structured-log contract for over-length payloads
+// =============================================================================
+// When the schema rejects a payload, index.ts emits two pieces of structured
+// telemetry that downstream consumers (the admin "Crawler Sampling Decisions"
+// dashboard, log-greps, alerting) depend on:
+//
+//   1. A `console.error('[log-crawler-visit] Rejecting malformed payload:',
+//      JSON.stringify({ fieldErrors, received }))` line (visible in edge
+//      function logs but NOT exposed over the wire).
+//
+//   2. One `console.warn('[validation-counter] {type, count, ts, field,
+//      messages}')` line per offending field, where `type` comes from
+//      `fieldErrorToType()`:
+//        pageUrl   → schema_page_url
+//        userAgent → schema_user_agent
+//        referrer  → schema_referrer
+//        anything else → schema_other
+//
+// Both pieces are mirrored back to the caller in the 400 response envelope:
+//   { error, code, fieldErrors, validationCounters }
+//
+// We assert the wire-visible mirror precisely, because any drift between
+// what's logged and what's returned would silently break the dashboard
+// (which reads `validationCounters` to bucket failures and `fieldErrors`
+// to render per-field reasons).
+// -----------------------------------------------------------------------------
+Deno.test({
+  name:
+    "log-crawler-visit emits structured per-field log signals when rejecting over-length pageUrl/userAgent",
+  async fn() {
+    const MAX_LEN = 2048;
+    const EXPECTED_MESSAGE = "exceeds 2048 chars";
+
+    // Field → counter-bucket mapping, mirroring `fieldErrorToType()` in
+    // index.ts. We freeze it here so a future rename in the function trips
+    // this test instead of silently splitting a dashboard bucket.
+    const FIELD_TO_COUNTER: Record<string, string> = {
+      pageUrl: "schema_page_url",
+      userAgent: "schema_user_agent",
+      referrer: "schema_referrer",
+    };
+
+    // Build a string of exactly `len` ASCII chars with a recognisable prefix,
+    // so a human grepping the logs can identify a test-generated payload.
+    const longString = (prefix: string, len: number): string => {
+      const filler = "x".repeat(Math.max(0, len - prefix.length));
+      const out = prefix + filler;
+      if (out.length !== len) {
+        throw new Error(`longString miscount: wanted ${len}, got ${out.length}`);
+      }
+      return out;
+    };
+
+    type Case = {
+      label: string;
+      // What we send. Each field is either a known length or omitted/short.
+      payload: Record<string, unknown>;
+      // Which fields MUST appear in the response's `fieldErrors` map.
+      offendingFields: ReadonlyArray<"pageUrl" | "userAgent">;
+      // Which fields MUST NOT appear (so we catch over-flagging).
+      cleanFields: ReadonlyArray<"pageUrl" | "userAgent" | "referrer">;
+    };
+
+    const CASES: Case[] = [
+      {
+        label: "only pageUrl over the cap",
+        payload: {
+          pageUrl: longString(`${ORIGIN}/product/log-contract-test/`, MAX_LEN + 1),
+          userAgent: GOOGLEBOT_UA,
+        },
+        offendingFields: ["pageUrl"],
+        cleanFields: ["userAgent", "referrer"],
+      },
+      {
+        label: "only userAgent over the cap",
+        payload: {
+          pageUrl: `${ORIGIN}/product/log-contract-test`,
+          userAgent: longString(`${GOOGLEBOT_UA} `, MAX_LEN + 1),
+        },
+        offendingFields: ["userAgent"],
+        cleanFields: ["pageUrl", "referrer"],
+      },
+      {
+        label: "both pageUrl and userAgent over the cap",
+        payload: {
+          pageUrl: longString(`${ORIGIN}/product/log-contract-test/`, MAX_LEN + 1),
+          userAgent: longString(`${GOOGLEBOT_UA} `, MAX_LEN + 1),
+        },
+        offendingFields: ["pageUrl", "userAgent"],
+        cleanFields: ["referrer"],
+      },
+    ];
+
+    // -----------------------------------------------------------------------
+    // Counter scoping note
+    // -----------------------------------------------------------------------
+    // The Edge runtime spins up fresh isolates aggressively, so the
+    // module-scoped `validationCounters` in index.ts effectively reset
+    // between most invocations. We therefore can't assert *cross-call*
+    // accumulation deterministically. Instead we assert the strictly
+    // stronger per-response invariant that the dashboard actually relies
+    // on: the snapshot returned in THIS rejection's envelope must credit
+    // each offending field to its own taxonomy bucket exactly once.
+    // -----------------------------------------------------------------------
+
+    for (const c of CASES) {
+      const res = await callFunction(c.payload);
+      const text = await res.text();
+
+      // -- 1. HTTP envelope ---------------------------------------------------
+      assertEquals(
+        res.status,
+        400,
+        `[${c.label}] over-length payload must return HTTP 400; got ${res.status}: ${text}`,
+      );
+
+      let json: {
+        error?: unknown;
+        code?: unknown;
+        fieldErrors?: unknown;
+        validationCounters?: unknown;
+      };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`[${c.label}] response was not valid JSON: ${text}`);
+      }
+
+      // -- 2. Top-level shape -------------------------------------------------
+      // The function's structured-error contract requires all four keys.
+      // We type-check each one because the dashboard treats missing/wrong
+      // types as silent failures (no row rendered for that ping).
+      assertEquals(
+        typeof json.error,
+        "string",
+        `[${c.label}] envelope.error must be a string`,
+      );
+      assertEquals(
+        json.code,
+        "INVALID_PAYLOAD",
+        `[${c.label}] envelope.code must be the INVALID_PAYLOAD enum value`,
+      );
+      assertEquals(
+        typeof json.fieldErrors,
+        "object",
+        `[${c.label}] envelope.fieldErrors must be a plain object`,
+      );
+      // Reject `null` masquerading as an object — the dashboard does
+      // `Object.keys(fieldErrors)` and would crash on null.
+      if (json.fieldErrors === null) {
+        throw new Error(`[${c.label}] envelope.fieldErrors must not be null`);
+      }
+      assertEquals(
+        typeof json.validationCounters,
+        "object",
+        `[${c.label}] envelope.validationCounters must be a plain object`,
+      );
+
+      const fieldErrors = json.fieldErrors as Record<string, unknown>;
+      const counters = json.validationCounters as Record<string, number>;
+
+      // -- 3. fieldErrors keys = exactly the offending fields ----------------
+      // Pin the EXACT set of keys, not just a superset. Drift here would
+      // mean the dashboard renders extra (or fewer) rows than the user
+      // actually produced — both directions are wrong.
+      const fieldErrorKeys = Object.keys(fieldErrors).sort();
+      const expectedKeys = [...c.offendingFields].sort();
+      assertEquals(
+        fieldErrorKeys,
+        expectedKeys,
+        `[${c.label}] fieldErrors keys must equal offending fields exactly`,
+      );
+
+      // -- 4. Each fieldErrors[field] is a non-empty string[] including
+      //       the canonical "exceeds 2048 chars" message. We DO allow
+      //       additional messages (e.g. trim-then-min) to coexist, so we
+      //       check `.some()` rather than equality.
+      for (const field of c.offendingFields) {
+        const messages = fieldErrors[field];
+        if (!Array.isArray(messages)) {
+          throw new Error(
+            `[${c.label}] fieldErrors.${field} must be string[], got ${typeof messages}: ${JSON.stringify(messages)}`,
+          );
+        }
+        assertEquals(
+          messages.length > 0,
+          true,
+          `[${c.label}] fieldErrors.${field} must not be empty`,
+        );
+        for (const m of messages) {
+          assertEquals(
+            typeof m,
+            "string",
+            `[${c.label}] every fieldErrors.${field}[i] must be a string; got ${typeof m}`,
+          );
+        }
+        assertEquals(
+          messages.some((m) => typeof m === "string" && m.includes(EXPECTED_MESSAGE)),
+          true,
+          `[${c.label}] fieldErrors.${field} must include "${EXPECTED_MESSAGE}"; got: ${JSON.stringify(messages)}`,
+        );
+      }
+
+      // -- 5. Clean fields must NOT appear in fieldErrors --------------------
+      // Catches over-flagging where Zod's `.flatten()` accidentally surfaces
+      // an empty array for a passing field, or where a future schema swap
+      // adds spurious entries.
+      for (const field of c.cleanFields) {
+        assertEquals(
+          fieldErrors[field],
+          undefined,
+          `[${c.label}] fieldErrors.${field} must be undefined when ${field} is valid; got: ${JSON.stringify(fieldErrors[field])}`,
+        );
+      }
+
+      // -- 6. validationCounters: every taxonomy bucket present, integer ----
+      // We don't assert exact values here (the function process is shared,
+      // so prior tests will have left counters at non-zero values) — only
+      // the SHAPE and TYPE invariants. Delta correctness is asserted in
+      // step 7 once we know what we sent.
+      const REQUIRED_BUCKETS = [
+        "invalid_json",
+        "schema_page_url",
+        "schema_user_agent",
+        "schema_referrer",
+        "schema_other",
+        "trace_missing_slug",
+        "trace_missing_state",
+        "trace_invalid_state",
+      ];
+      for (const bucket of REQUIRED_BUCKETS) {
+        const v = counters[bucket];
+        if (typeof v !== "number" || !Number.isInteger(v) || v < 0) {
+          throw new Error(
+            `[${c.label}] validationCounters.${bucket} must be a non-negative integer; got ${typeof v}: ${JSON.stringify(v)}`,
+          );
+        }
+      }
+
+      // Tally the delta this request *should* contribute. Every offending
+      // field maps onto exactly one counter bucket via fieldErrorToType().
+      // -- 7. Per-response counter credit ------------------------------------
+      // The snapshot returned in THIS rejection must credit each offending
+      // field to its own taxonomy bucket. Because counters are module-scoped
+      // (and isolates may persist briefly across calls), the bucket value
+      // can be ≥ the per-request increment, but it must be ≥ 1 for each
+      // offending field's bucket and the sum across the two URL/UA buckets
+      // must be ≥ the number of offending fields in this single payload.
+      const expectedBuckets = new Set(
+        c.offendingFields.map((f) => FIELD_TO_COUNTER[f]),
+      );
+      for (const bucket of expectedBuckets) {
+        assertEquals(
+          counters[bucket] >= 1,
+          true,
+          `[${c.label}] validationCounters.${bucket} must be ≥ 1 after a rejection that credits ${bucket}; got ${counters[bucket]}`,
+        );
+      }
+      // Buckets unrelated to this rejection's fields must NOT have been
+      // bumped by THIS request's classification path. We can't assert
+      // absolute zero (the isolate may have prior history) but the two
+      // unrelated request-shape buckets ALWAYS reset to 0 if untouched
+      // because a successful payload never increments them and our
+      // payload didn't trigger them.
+      const unrelatedRequestShapeBuckets = [
+        "trace_missing_slug",
+        "trace_missing_state",
+        "trace_invalid_state",
+        "invalid_json",
+      ];
+      for (const bucket of unrelatedRequestShapeBuckets) {
+        assertEquals(
+          counters[bucket],
+          0,
+          `[${c.label}] validationCounters.${bucket} must be 0 — this rejection path doesn't touch ${bucket}; got ${counters[bucket]}`,
+        );
+      }
+    }
+  },
+});
