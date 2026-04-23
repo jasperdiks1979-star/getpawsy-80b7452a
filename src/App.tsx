@@ -1878,6 +1878,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="job-retry-policies"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <JobRetryPoliciesPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="integrations/merchant/readiness"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
