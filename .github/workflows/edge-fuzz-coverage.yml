@@ -72,6 +72,11 @@ jobs:
       # Persist the per-bucket summary as JSON so we can upload it as
       # an artifact and grep it for trends across runs.
       FUZZ_COVERAGE_OUT: 'fuzz-bucket-coverage.json'
+      # Route the stable failing-fixture snapshot into the workspace
+      # so the upload step below picks it up. The fuzz test writes
+      #   $FUZZ_SNAPSHOT_DIR/latest-over-limit-fixture.{json,replay.sh}
+      # whenever a violation is detected.
+      FUZZ_SNAPSHOT_DIR: 'fuzz-snapshots'
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
