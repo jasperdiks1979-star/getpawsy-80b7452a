@@ -1471,6 +1471,7 @@ export type Database = {
           bot_type: string | null
           created_at: string
           id: string
+          idempotency_key: string | null
           ip_address: string | null
           is_googlebot: boolean
           page_url: string
@@ -1481,6 +1482,7 @@ export type Database = {
           bot_type?: string | null
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           ip_address?: string | null
           is_googlebot?: boolean
           page_url: string
@@ -1491,6 +1493,7 @@ export type Database = {
           bot_type?: string | null
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           ip_address?: string | null
           is_googlebot?: boolean
           page_url?: string
