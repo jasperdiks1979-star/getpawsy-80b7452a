@@ -80,6 +80,25 @@ const inflightReports = new Set<string>();
 const recentReports = new Map<string, number>();
 const RECENT_TTL_MS = 60_000; // suppress identical reports within 60s
 
+// One stable page-view id per tab/load. Combined with the slug + state below,
+// this composes the server-side idempotency key so that:
+//   * React StrictMode double-effect invocations,
+//   * automatic retries from `retryWithBackoff`,
+//   * and any edge function re-invocations
+// all collapse to a single `crawler_visits` row instead of N duplicates.
+function makePageViewId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* fall through */
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+const PAGE_VIEW_ID =
+  typeof window === 'undefined' ? 'ssr' : makePageViewId();
+
 async function reportRenderState(
   slug: string,
   state: RenderState,
@@ -110,6 +129,11 @@ async function reportRenderState(
     }
     const taggedUrl = `${window.location.origin}/product/${slug}?${params.toString()}`;
 
+    // Server-side idempotency key. Stable across all retry attempts of the
+    // same (page-view, slug, state) tuple, so the upsert in
+    // `log-crawler-visit` collapses retries onto the original row.
+    const idempotencyKey = `pdp:${PAGE_VIEW_ID}:${slug}:${state}`;
+
     // Build a UA suffix that also encodes the durations, so log analysis tools
     // that group by user_agent see the same numbers as the URL.
     const uaSuffixParts = [`pdp-render-trace:${state}`, `t_mount=${tMount}ms`];
@@ -128,6 +152,7 @@ async function reportRenderState(
             pageUrl: taggedUrl,
             userAgent: `${navigator.userAgent} ${uaSuffix}`,
             referrer: document.referrer,
+            idempotencyKey,
           },
         });
         if (error) throw error;

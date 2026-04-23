@@ -28,6 +28,20 @@ const PayloadSchema = z.object({
     .min(1, 'userAgent must be a non-empty string')
     .max(2048, 'userAgent exceeds 2048 chars'),
   referrer: z.string().trim().max(2048).optional().nullable(),
+  // Optional client-supplied idempotency key. When present, the row is
+  // upserted on `idempotency_key` so retried calls (network blip, edge
+  // function re-invocation, double-fired effect) collapse to a single
+  // `crawler_visits` row instead of creating duplicates. Format is
+  // intentionally permissive — clients compose it from a stable page-view
+  // id + render stage. We cap the length so the unique index stays cheap.
+  idempotencyKey: z
+    .string()
+    .trim()
+    .min(1, 'idempotencyKey must be non-empty when provided')
+    .max(200, 'idempotencyKey exceeds 200 chars')
+    .regex(/^[A-Za-z0-9._:\-]+$/, 'idempotencyKey contains unsupported chars')
+    .optional()
+    .nullable(),
 });
 
 // Render-state tags emitted by the PDP bot-trace hook. We don't *require* a
@@ -682,7 +696,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-    const { pageUrl, userAgent, referrer } = parsed.data;
+    const { pageUrl, userAgent, referrer, idempotencyKey } = parsed.data;
 
     // If this looks like a pdp-render-trace ping, enforce that both a slug
     // (extractable from pageUrl) and a recognised state tag are present.
@@ -892,19 +906,55 @@ serve(async (req) => {
       );
     }
 
-    const { error } = await supabase
-      .from('crawler_visits')
-      .insert({
-        page_url: pageUrl,
-        user_agent: userAgent,
-        is_googlebot: isGooglebot,
-        bot_type: loggedBotType,
-        ip_address: ipAddress,
-        referrer: referrer || null,
-      });
+    // -------------------------------------------------------------------------
+    // Idempotent insert
+    // -------------------------------------------------------------------------
+    // When the caller supplies `idempotencyKey`, retries (transient network
+    // failures, edge re-invocations, double-fired client effects) collapse to
+    // a single row thanks to the partial unique index on
+    // `crawler_visits.idempotency_key`. We use `upsert(..., { onConflict,
+    // ignoreDuplicates: true })` so the second call is a no-op rather than
+    // overwriting the first row's timestamp / metadata.
+    let dedupedByIdempotencyKey = false;
+    let dbError: unknown = null;
+    if (idempotencyKey) {
+      const { data: upserted, error: upsertErr } = await supabase
+        .from('crawler_visits')
+        .upsert(
+          {
+            page_url: pageUrl,
+            user_agent: userAgent,
+            is_googlebot: isGooglebot,
+            bot_type: loggedBotType,
+            ip_address: ipAddress,
+            referrer: referrer || null,
+            idempotency_key: idempotencyKey,
+          },
+          { onConflict: 'idempotency_key', ignoreDuplicates: true },
+        )
+        .select('id');
+      dbError = upsertErr;
+      // `ignoreDuplicates: true` returns an empty array when the row already
+      // existed, so we can detect (and surface) idempotent dedup cleanly.
+      if (!upsertErr && Array.isArray(upserted) && upserted.length === 0) {
+        dedupedByIdempotencyKey = true;
+      }
+    } else {
+      const { error: insertErr } = await supabase
+        .from('crawler_visits')
+        .insert({
+          page_url: pageUrl,
+          user_agent: userAgent,
+          is_googlebot: isGooglebot,
+          bot_type: loggedBotType,
+          ip_address: ipAddress,
+          referrer: referrer || null,
+        });
+      dbError = insertErr;
+    }
 
-    if (error) {
-      console.error('Failed to log crawler visit:', error);
+    if (dbError) {
+      console.error('Failed to log crawler visit:', dbError);
       return new Response(
         JSON.stringify({
           error: 'Failed to log visit',
@@ -915,7 +965,9 @@ serve(async (req) => {
     }
 
     console.log(
-      `Logged visit: ${pageUrl} | Bot: ${loggedBotType || 'None'} | VerifiedGooglebot: ${isGooglebot}`,
+      `Logged visit: ${pageUrl} | Bot: ${loggedBotType || 'None'} | VerifiedGooglebot: ${isGooglebot}${
+        dedupedByIdempotencyKey ? ' | deduped(idempotency_key)' : ''
+      }`,
     );
 
     // Send email notification only for verified Googlebot visits to appeal pages.
@@ -934,6 +986,8 @@ serve(async (req) => {
         spoofed: spoofedGooglebot,
         sampled: true,
         sampleRate,
+        deduped: dedupedByIdempotencyKey,
+        idempotencyKey: idempotencyKey ?? null,
         decision: {
           reason: decisionReason,
           alwaysLog,

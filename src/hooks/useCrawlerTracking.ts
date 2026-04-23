@@ -16,7 +16,28 @@ type LogCrawlerVisitResponse = {
   spoofed?: boolean;
   sampled?: boolean;
   sampleRate?: number;
+  // True when the row was deduplicated by `idempotency_key` (i.e. the
+  // server treated this call as a retry of an earlier successful insert).
+  deduped?: boolean;
+  idempotencyKey?: string | null;
 };
+
+// Compose a stable idempotency key for an ordinary page-view ping. We bind
+// it to a per-tab page-view id (one per useEffect mount) so React StrictMode
+// double-invokes, transient retries, and edge re-invocations all collapse to
+// a single `crawler_visits` row instead of N duplicates.
+function generatePageViewId(): string {
+  // Prefer crypto.randomUUID where available; fall back to a timestamped
+  // random string so we degrade gracefully on older runtimes.
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* ignore — fall through to fallback */
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /**
  * Hook to track page visits and detect Googlebot/crawlers
@@ -30,11 +51,17 @@ export const useCrawlerTracking = (pageName?: string) => {
         const userAgent = navigator.userAgent;
         const referrer = document.referrer;
 
+        // One key per page-view + stage. The "stage" for a generic page
+        // tracking ping is just `view`; the PDP render-trace hook uses its
+        // own (slug, render-state) keying scheme.
+        const idempotencyKey = `pv:${generatePageViewId()}:view`;
+
         const { data, error } = await supabase.functions.invoke('log-crawler-visit', {
           body: {
             pageUrl,
             userAgent,
             referrer,
+            idempotencyKey,
           },
         });
 
@@ -59,6 +86,12 @@ export const useCrawlerTracking = (pageName?: string) => {
         // Log to console if it's a verified Googlebot (for debugging).
         if (response.isGooglebot) {
           console.log(`🤖 Googlebot detected: ${response.botType ?? 'unknown'}`);
+        }
+
+        if (response.deduped) {
+          console.debug(
+            `[crawler-tracking] server deduped retry by idempotency_key (${idempotencyKey})`,
+          );
         }
       } catch (error) {
         // Silently fail - don't interrupt user experience
