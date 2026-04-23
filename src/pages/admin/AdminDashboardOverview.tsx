@@ -65,6 +65,7 @@ const sections = [
       { to: '/admin/crawl-health', label: 'Crawl Health', icon: Stethoscope, desc: 'Crawler monitoring' },
       { to: '/admin/edge-diagnostics', label: 'Edge Diagnostics', icon: Activity, desc: 'Edge function health' },
       { to: '/admin/sitemap-ping', label: 'Sitemap Ping', icon: Activity, desc: 'Google & Bing ping' },
+      { to: '/admin/crawler-sample-rate', label: 'Crawler Sample Rate', icon: Gauge, desc: 'Tune crawler_visits log sampling (0–1)' },
       { to: '/admin/security-credentials', label: 'Security & Credentials', icon: ShieldAlert, desc: 'API key management' },
       { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert, desc: 'Anti-suspension shield' },
     ],
