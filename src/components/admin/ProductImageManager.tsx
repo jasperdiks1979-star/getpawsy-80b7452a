@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2, FolderUp, Check, Trash2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  GripVertical,
+  Image as ImageIcon,
+  Upload,
+  Loader2,
+  FolderUp,
+  Check,
+  Trash2,
+  AlertCircle,
+  FileWarning,
+  WifiOff,
+  ServerCrash,
+  RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -36,12 +51,37 @@ const ACCEPT_ATTR = PRODUCT_IMAGE_ALLOWED_MIME.join(",");
 // A file selected by the user but NOT yet uploaded. We hold an object URL
 // so we can render a real thumbnail in the preview tray; revoking it on
 // removal/unmount prevents the browser from leaking blob memory.
+//
+// Errors are categorized so the tile can render the right icon + an
+// actionable message that always names the FILE and the LIMIT it broke.
+// "rejected" = failed pre-upload validation (size / mime).
+// "failed"   = upload itself errored (network / storage / duplicate).
+type PendingErrorKind =
+  | "size"        // > 20 MB
+  | "mime"        // not in PRODUCT_IMAGE_ALLOWED_MIME
+  | "network"     // fetch failed / offline
+  | "server"      // 5xx / unknown storage error
+  | "duplicate"   // already exists in storage (upsert: false)
+  | "size-server" // bucket-level 413 (defense-in-depth)
+  | "unknown";
+
+interface PendingError {
+  kind: PendingErrorKind;
+  /** Headline shown next to the icon (e.g. "Too large"). */
+  title: string;
+  /** One-sentence explanation including the filename and expected limit. */
+  detail: string;
+  /** Raw underlying error message, for the tooltip / "show details". */
+  raw?: string;
+}
+
 interface PendingFile {
   id: string;
   file: File;
   previewUrl: string;
-  status: "ok" | "rejected";
-  reason?: string;
+  /** "ok" = uploadable, "rejected" = blocked pre-upload, "failed" = upload attempt errored. */
+  status: "ok" | "rejected" | "failed";
+  error?: PendingError;
 }
 
 interface ProductImageManagerProps {
