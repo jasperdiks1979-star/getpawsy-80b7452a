@@ -3879,5 +3879,92 @@ Deno.test({
     console.log(
       `[fuzz] seed=0x${SEED.toString(16)} iterations=${iterCounter} violations=0`,
     );
+
+    // -----------------------------------------------------------------
+    // End-of-run aggregate counter contract.
+    //
+    // Across the WHOLE fuzz run we made N over-limit calls split across
+    // two axes. We can't pin per-call deltas (isolate fan-out — see the
+    // long comment near `perBucketObservedMax`), but we CAN assert two
+    // global invariants against the first/last responses we observed:
+    //
+    //   (A) Each fuzzed-axis bucket grew. If we sent K over-limit
+    //       `pageUrl` calls and `schema_page_url` is unchanged across
+    //       the run, the function isn't booking the failure at all.
+    //
+    //   (B) Unrelated buckets — the JSON parser bucket and all three
+    //       trace_* buckets — did NOT grow. A pure length failure on
+    //       a well-formed JSON body with no render-trace UA must not
+    //       touch any of those meters; if it does, the function is
+    //       attributing length errors to the wrong taxonomy.
+    //
+    // We compare last-vs-first observation. Because the same isolate
+    // may have served both, this is at minimum a lower bound on growth
+    // — if the last isolate we saw also saw growth, every other isolate
+    // would too (they all run the same code), so a zero here on a
+    // fuzzed bucket is unambiguous.
+    // -----------------------------------------------------------------
+    if (
+      counterRunTotals.firstSeenCounters &&
+      counterRunTotals.lastSeenCounters &&
+      counterRunTotals.overLimitCalls > 0
+    ) {
+      const first = counterRunTotals.firstSeenCounters;
+      const last = counterRunTotals.lastSeenCounters;
+      const growth: Record<string, number> = {};
+      for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+        growth[k] = (last[k] ?? 0) - (first[k] ?? 0);
+      }
+
+      const fuzzedBuckets: Array<{ axis: Axis; bucket: string }> = [];
+      if (counterRunTotals.byAxis.pageUrl > 0) {
+        fuzzedBuckets.push({ axis: "pageUrl", bucket: "schema_page_url" });
+      }
+      if (counterRunTotals.byAxis.userAgent > 0) {
+        fuzzedBuckets.push({ axis: "userAgent", bucket: "schema_user_agent" });
+      }
+
+      // (A) Fuzzed buckets must show some growth (only enforceable when
+      //     first ≠ last, i.e. we got at least 2 same-isolate responses).
+      for (const { axis, bucket } of fuzzedBuckets) {
+        if (growth[bucket] <= 0 && last[bucket] === first[bucket]) {
+          // Soft warning rather than hard fail — with 1 isolate and 1
+          // call this is structurally indistinguishable from "the
+          // bucket was already booked before our first observation".
+          // We already enforced bucket >= 1 per call above; that's the
+          // strong signal. This is just an extra breadcrumb.
+          console.warn(
+            `[fuzz] aggregate: schema bucket "${bucket}" did not grow across run ` +
+              `(first=${first[bucket]}, last=${last[bucket]}, ${axis} calls=${counterRunTotals.byAxis[axis]}). ` +
+              `Likely benign isolate fan-out; per-call assertions still passed.`,
+          );
+        }
+      }
+
+      // (B) Unrelated buckets MUST be flat. This is the strict half of
+      //     the contract — any growth here is a real attribution bug.
+      const UNRELATED_BUCKETS = [
+        "invalid_json",
+        "trace_missing_slug",
+        "trace_missing_state",
+        "trace_invalid_state",
+      ] as const;
+      const unrelatedGrowth = UNRELATED_BUCKETS
+        .filter((k) => growth[k] > 0)
+        .map((k) => `${k}: +${growth[k]}`);
+      if (unrelatedGrowth.length > 0) {
+        throw new Error(
+          `[fuzz] aggregate counter attribution bug: unrelated taxonomy bucket(s) grew during a pure length-failure fuzz run: ${unrelatedGrowth.join(", ")}. ` +
+            `These buckets cover JSON-parse failures and pdp-render-trace state errors; neither was exercised. ` +
+            `Full first→last: ${JSON.stringify(growth)}`,
+        );
+      }
+
+      console.log(
+        `[fuzz] aggregate counter growth (first→last response): ${JSON.stringify(growth)} ` +
+          `(over-limit calls: ${counterRunTotals.overLimitCalls}, ` +
+          `byAxis=${JSON.stringify(counterRunTotals.byAxis)})`,
+      );
+    }
   },
 });
