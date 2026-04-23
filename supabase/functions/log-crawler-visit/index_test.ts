@@ -33,6 +33,95 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/log-crawler-visit`;
 const ORIGIN = "https://getpawsy.pet";
 
+// =============================================================================
+// Failure taxonomy used by the admin dashboard
+// =============================================================================
+// The "Crawler Sampling Decisions" dashboard groups failures by a single
+// stable string so engineers can answer "are we losing pings to the network,
+// to slow servers, or to bad payloads?" without parsing free-form errors.
+//
+// We freeze the taxonomy here (mirroring `ERROR_CODES` in index.ts plus the
+// two client-side categories that never reach the server) so any future
+// drift in either layer fails a test instead of silently splitting a bucket.
+//
+//   * Server-side, returned in `body.code` for non-2xx responses:
+//       INVALID_JSON, INVALID_PAYLOAD, MISSING_FIELDS,
+//       INVALID_PDP_RENDER_STATE, DB_INSERT_FAILED, INTERNAL_ERROR
+//
+//   * Client-side, derived from the thrown `fetch` error:
+//       NETWORK_ERROR  — unreachable host, DNS failure, connection refused
+//       TIMEOUT_ERROR  — request aborted because it exceeded the deadline
+// -----------------------------------------------------------------------------
+const SERVER_VALIDATION_ERROR_CODES = new Set<string>([
+  "INVALID_JSON",
+  "INVALID_PAYLOAD",
+  "MISSING_FIELDS",
+  "INVALID_PDP_RENDER_STATE",
+]);
+
+const SERVER_INTERNAL_ERROR_CODES = new Set<string>([
+  "DB_INSERT_FAILED",
+  "INTERNAL_ERROR",
+]);
+
+const ALL_KNOWN_SERVER_CODES = new Set<string>([
+  ...SERVER_VALIDATION_ERROR_CODES,
+  ...SERVER_INTERNAL_ERROR_CODES,
+]);
+
+type DashboardFailureCode =
+  | "NETWORK_ERROR"
+  | "TIMEOUT_ERROR"
+  | "INVALID_JSON"
+  | "INVALID_PAYLOAD"
+  | "MISSING_FIELDS"
+  | "INVALID_PDP_RENDER_STATE"
+  | "DB_INSERT_FAILED"
+  | "INTERNAL_ERROR"
+  | "UNKNOWN_ERROR";
+
+/**
+ * Map a thrown `fetch` failure (or any caught Error) onto the dashboard's
+ * failure taxonomy. Mirrors the logic the client / cron monitor uses when it
+ * records an "outbound failure" so log queries can aggregate by `code` even
+ * for requests that never produced an HTTP response.
+ *
+ * Heuristics (cheap & deterministic):
+ *   * AbortError name OR /timed?\s*out|deadline/i in message → TIMEOUT_ERROR
+ *   * TypeError + /fetch|network|connect|dns|refused|unreachable/i message
+ *     OR ECONNREFUSED / ENOTFOUND / EAI_AGAIN system codes        → NETWORK_ERROR
+ *   * Anything else                                                → UNKNOWN_ERROR
+ */
+function classifyFetchFailure(err: unknown): DashboardFailureCode {
+  if (err === null || err === undefined) return "UNKNOWN_ERROR";
+  // DOMException with name AbortError is what AbortSignal.timeout() throws.
+  // It can also surface as `TimeoutError` on newer Deno builds.
+  // deno-lint-ignore no-explicit-any
+  const anyErr = err as any;
+  const name: string = String(anyErr?.name ?? "");
+  const message: string = String(anyErr?.message ?? "");
+  const sysCode: string = String(anyErr?.cause?.code ?? anyErr?.code ?? "");
+
+  if (
+    name === "AbortError" ||
+    name === "TimeoutError" ||
+    /timed?\s*out|deadline|aborted/i.test(message)
+  ) {
+    return "TIMEOUT_ERROR";
+  }
+
+  if (
+    err instanceof TypeError ||
+    /fetch|network|connect|dns|refused|unreachable|name not resolved|getaddrinfo/i
+      .test(message) ||
+    /ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ECONNRESET|EHOSTUNREACH/i.test(sysCode)
+  ) {
+    return "NETWORK_ERROR";
+  }
+
+  return "UNKNOWN_ERROR";
+}
+
 // Verified Googlebot UA — the function's UA-only detection will mark this as
 // `is_googlebot=true` only when the source IP also matches Google's published
 // ranges. We don't rely on that flag here; we only assert payload mapping.
@@ -1173,6 +1262,225 @@ Deno.test({
         .from("crawler_visits")
         .delete()
         .ilike("page_url", `%${humanPrefix}%`);
+    }
+  },
+});
+
+// =============================================================================
+// Failure-code grouping tests (network / timeout / validation / internal)
+// =============================================================================
+// These tests are dashboard-driven: every failure surface the admin
+// "Crawler Sampling Decisions" page groups by MUST resolve to a stable,
+// known string. Without that, regressions silently split a single bucket
+// into two ("network" vs "Network" vs "fetch failed: …") and the totals
+// stop adding up.
+//
+// We exercise each bucket through the real call path:
+//   * NETWORK_ERROR  — fetch a definitely-unreachable host
+//   * TIMEOUT_ERROR  — fire the real endpoint with AbortSignal.timeout(1)
+//   * INVALID_JSON / INVALID_PAYLOAD / MISSING_FIELDS / INVALID_PDP_RENDER_STATE
+//                    — single sweep that re-confirms every server-side
+//                      validation response carries a code from the frozen
+//                      `SERVER_VALIDATION_ERROR_CODES` set
+// =============================================================================
+
+Deno.test({
+  name:
+    "failure taxonomy: classifyFetchFailure() maps an unreachable host to NETWORK_ERROR",
+  // Hitting an unreachable IP-literal port is effectively offline-only; works
+  // in any sandbox that allows outbound TCP. We use the IETF documentation
+  // address space (192.0.2.0/24) which is guaranteed not to route, plus a
+  // short abort guard so the test never hangs if the network silently
+  // black-holes the SYN.
+  async fn() {
+    const unreachable =
+      "http://192.0.2.1:9/never-listens"; // TEST-NET-1, reserved by RFC 5737
+    let caught: unknown = null;
+    try {
+      await fetch(unreachable, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageUrl: "x", userAgent: "y" }),
+        // Cap at 3s so a flaky environment surfaces as a TIMEOUT_ERROR
+        // (still a known bucket) rather than an open-ended hang.
+        signal: AbortSignal.timeout(3_000),
+      });
+    } catch (err) {
+      caught = err;
+    }
+    assertExists(
+      caught,
+      "fetch to 192.0.2.1:9 must throw — either NETWORK_ERROR or TIMEOUT_ERROR",
+    );
+    const code = classifyFetchFailure(caught);
+    // Either bucket is acceptable for this address. The contract is that
+    // it MUST resolve to one of the two known dashboard buckets, never
+    // UNKNOWN_ERROR, so the dashboard can show a real category.
+    if (code !== "NETWORK_ERROR" && code !== "TIMEOUT_ERROR") {
+      throw new Error(
+        `classifyFetchFailure returned ${code} for unreachable host; ` +
+          `expected NETWORK_ERROR or TIMEOUT_ERROR. ` +
+          `Underlying error: name=${(caught as Error)?.name}, ` +
+          `message=${(caught as Error)?.message}`,
+      );
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "failure taxonomy: AbortSignal.timeout() against the real endpoint is classified as TIMEOUT_ERROR",
+  async fn() {
+    let caught: unknown = null;
+    try {
+      await fetch(FUNCTIONS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify(buildPayload("classify-timeout", "shell")),
+        // 1ms is virtually guaranteed to abort before any TLS handshake
+        // completes, regardless of network conditions.
+        signal: AbortSignal.timeout(1),
+      });
+    } catch (err) {
+      caught = err;
+    }
+    assertExists(caught, "1ms abort must throw");
+    const code = classifyFetchFailure(caught);
+    assertEquals(
+      code,
+      "TIMEOUT_ERROR",
+      `expected TIMEOUT_ERROR, got ${code}. ` +
+        `Underlying: name=${(caught as Error)?.name}, ` +
+        `message=${(caught as Error)?.message}`,
+    );
+  },
+});
+
+Deno.test({
+  name:
+    "failure taxonomy: classifyFetchFailure() returns UNKNOWN_ERROR for non-fetch errors (defensive default)",
+  fn() {
+    // The dashboard relies on UNKNOWN_ERROR being the *only* fallback so
+    // any new bucket can be added later without silently re-classifying
+    // other errors. Cover a handful of shapes the helper might see.
+    assertEquals(classifyFetchFailure(new Error("totally unrelated")), "UNKNOWN_ERROR");
+    assertEquals(classifyFetchFailure(null), "UNKNOWN_ERROR");
+    assertEquals(classifyFetchFailure(undefined), "UNKNOWN_ERROR");
+    assertEquals(classifyFetchFailure({ name: "WeirdError", message: "?" }), "UNKNOWN_ERROR");
+    // String-only throw (legacy code path) — still UNKNOWN_ERROR, never crashes.
+    assertEquals(classifyFetchFailure("oops"), "UNKNOWN_ERROR");
+
+    // Boundary: an Error whose message *contains* timeout-y words IS
+    // classified as TIMEOUT_ERROR — this is the dashboard contract for
+    // server-recorded timeout strings (e.g. "request deadline exceeded").
+    assertEquals(
+      classifyFetchFailure(new Error("request deadline exceeded")),
+      "TIMEOUT_ERROR",
+    );
+    // Boundary: a TypeError with a network-y message IS classified as
+    // NETWORK_ERROR — matches Deno's typical `fetch` failure shape.
+    assertEquals(
+      classifyFetchFailure(new TypeError("error sending request: connection refused")),
+      "NETWORK_ERROR",
+    );
+  },
+});
+
+Deno.test({
+  name:
+    "failure taxonomy: every server-side validation rejection returns a code in the frozen taxonomy",
+  // This is the dashboard's anchor: if a future change introduces a new
+  // server-side `code`, this test fails until the taxonomy is updated, so
+  // the dashboard never has to deal with surprise buckets.
+  async fn() {
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    type Case = {
+      label: string;
+      expectedCode: string;
+      // Either a JSON body (most cases) or a raw string body (INVALID_JSON).
+      body?: Record<string, unknown>;
+      raw?: string;
+    };
+    const cases: Case[] = [
+      {
+        label: "INVALID_JSON: malformed body",
+        expectedCode: "INVALID_JSON",
+        raw: "{not-json",
+      },
+      {
+        label: "INVALID_PAYLOAD: missing required fields",
+        expectedCode: "INVALID_PAYLOAD",
+        body: {},
+      },
+      {
+        label: "INVALID_PAYLOAD: oversized pageUrl",
+        expectedCode: "INVALID_PAYLOAD",
+        body: {
+          pageUrl: `${ORIGIN}/x?` + "a".repeat(4_000),
+          userAgent: GOOGLEBOT_UA,
+        },
+      },
+      {
+        label: "MISSING_FIELDS: trace UA without state segment",
+        expectedCode: "MISSING_FIELDS",
+        body: {
+          pageUrl: `${ORIGIN}/product/codes-missing-${runId}`,
+          userAgent: `${GOOGLEBOT_UA} pdp-render-trace`,
+        },
+      },
+      {
+        label: "INVALID_PDP_RENDER_STATE: trace UA with bogus state",
+        expectedCode: "INVALID_PDP_RENDER_STATE",
+        body: {
+          pageUrl: `${ORIGIN}/product/codes-bogus-${runId}?_render=halfrendered`,
+          userAgent: `${GOOGLEBOT_UA} [pdp-render-trace/halfrendered +1ms]`,
+        },
+      },
+    ];
+
+    const observed: string[] = [];
+    for (const c of cases) {
+      const res = c.raw !== undefined
+        ? await callFunctionRaw(c.raw)
+        : await callFunction(c.body!);
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `${c.label}: expected 400, got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(
+        json.code,
+        c.expectedCode,
+        `${c.label}: expected code=${c.expectedCode}, got ${json.code}`,
+      );
+      // The frozen-taxonomy assertion: this is what protects the dashboard
+      // from surprise codes shipping in a future migration.
+      if (!ALL_KNOWN_SERVER_CODES.has(String(json.code))) {
+        throw new Error(
+          `${c.label}: server returned code "${json.code}" which is not in the ` +
+            `frozen failure taxonomy. Update SERVER_VALIDATION_ERROR_CODES (or ` +
+            `SERVER_INTERNAL_ERROR_CODES) and the dashboard before merging.`,
+        );
+      }
+      observed.push(String(json.code));
+    }
+
+    // Sanity: every validation code we documented was actually exercised at
+    // least once. Catches the "code dropped from server but still listed in
+    // the test taxonomy" drift.
+    for (const code of SERVER_VALIDATION_ERROR_CODES) {
+      if (!observed.includes(code)) {
+        throw new Error(
+          `validation code "${code}" is in SERVER_VALIDATION_ERROR_CODES but ` +
+            `not exercised by any test case. Add a case or remove the code.`,
+        );
+      }
     }
   },
 });
