@@ -4163,9 +4163,26 @@ Deno.test({
                 // attribute the delta to the correct fuzz iteration
                 // (this one), then fail.
                 observedMax[k] = seen;
-                throw new Error(
-                  `${label} non-offending bucket "${k}" grew from ${prevMax} → ${seen} during a pure ${axis} length failure. Expected only "${expectedBucket}" to increment. The non-fuzzed axis "${otherAxis}" carried a safe value, so "${otherBucket}" and unrelated buckets must stay flat. Full counters=${JSON.stringify(envelope.validationCounters)}`,
-                );
+                if (CONCURRENCY === 1) {
+                  throw new Error(
+                    `${label} non-offending bucket "${k}" grew from ${prevMax} → ${seen} during a pure ${axis} length failure. Expected only "${expectedBucket}" to increment. The non-fuzzed axis "${otherAxis}" carried a safe value, so "${otherBucket}" and unrelated buckets must stay flat. Full counters=${JSON.stringify(envelope.validationCounters)}`,
+                  );
+                } else {
+                  // Under concurrency this is ambiguous: the growth
+                  // may belong to a sibling worker driving the OTHER
+                  // axis on the same isolate. We log it for triage
+                  // (so a real attribution bug still leaves a trail
+                  // and a re-run with FUZZ_CONCURRENCY=1 can confirm)
+                  // and fall back to the strict end-of-run aggregate
+                  // check on `invalid_json` + `trace_*`, which is
+                  // unaffected by axis interleaving.
+                  console.warn(
+                    `[fuzz] ${label} non-offending bucket "${k}" grew ${prevMax} → ${seen} ` +
+                      `under concurrency=${CONCURRENCY}; could be a sibling worker ` +
+                      `(axis=${otherAxis}) on the same isolate. Re-run with ` +
+                      `FUZZ_CONCURRENCY=1 FUZZ_SEED=0x${SEED.toString(16)} to disambiguate.`,
+                  );
+                }
               }
             }
 
