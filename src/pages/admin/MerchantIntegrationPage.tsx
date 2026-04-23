@@ -4,6 +4,7 @@ import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDi
 import { RefreshFeedAfterPublishCard } from '@/components/admin/RefreshFeedAfterPublishCard';
 import { FeedStatusCard } from '@/components/admin/FeedStatusCard';
 import { ReportReleaseCard } from '@/components/admin/ReportReleaseCard';
+import { ReleaseTimelineCard } from '@/components/admin/ReleaseTimelineCard';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -433,6 +434,9 @@ export default function MerchantIntegrationPage() {
 
         {/* Report a release → auto-runs sync + feed validation, persisted to release_reports */}
         <ReportReleaseCard />
+
+        {/* Per-release status timeline: record / merchant-sync / validate-merchant-feed */}
+        <ReleaseTimelineCard />
 
         {/* At-a-glance feed status (last sync + live validation) */}
         <FeedStatusCard />
