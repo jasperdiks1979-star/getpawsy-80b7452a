@@ -98,15 +98,15 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'Apeldoorn, Netherlands',
-      description: 'Online pet supply store shipping to the United States',
+      content: 'New York, NY · United States',
+      description: 'Online-only pet supply store serving customers across the US',
       href: null,
     },
     {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday – Friday',
-      description: '09:00 – 17:00 CET',
+      description: '9:00 AM – 5:00 PM Eastern Time',
       href: null,
     },
   ];
@@ -309,23 +309,21 @@ const Contact = () => {
                     <h3 className="font-semibold text-foreground mb-2">Business Information</h3>
                     <div className="space-y-1.5 text-sm">
                       <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">Legal name:</span> Skidzo
+                        <span className="text-foreground font-medium">Legal name:</span> GetPawsy LLC
                       </p>
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">Trading as:</span> GetPawsy
                       </p>
                       <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">Address:</span> De Haasstraat 11, 7312VG Apeldoorn
+                        <span className="text-foreground font-medium">Location:</span> New York, NY · United States
                       </p>
                       <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">KVK:</span> 78156955
-                      </p>
-                      <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">VAT ID:</span> NL003295015B69
+                        <span className="text-foreground font-medium">Contact:</span>{' '}
+                        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">
-                      Skidzo (trading as GetPawsy) is fully responsible for all orders, payments, shipping, and customer service.
+                      GetPawsy LLC is fully responsible for all orders, payments, shipping, and customer service.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 italic">
                       GetPawsy is an independent online store focused on quality pet products for dogs and cats.
@@ -348,7 +346,7 @@ const Contact = () => {
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground min-w-[120px]">Business Hours:</span>
-                    <span className="text-foreground font-medium">Monday – Friday, 09:00 – 17:00 CET</span>
+                    <span className="text-foreground font-medium">Monday – Friday, 9:00 AM – 5:00 PM Eastern Time</span>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-4">
