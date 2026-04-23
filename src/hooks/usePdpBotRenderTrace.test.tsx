@@ -57,6 +57,8 @@ describe('usePdpBotRenderTrace', () => {
     invokeMock.mockClear();
     invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
     setUserAgent(GOOGLEBOT_UA);
+    // Default: skip retries (fast path). Individual tests can override.
+    retryImpl.current = async (fn) => fn();
   });
 
   afterEach(() => {
