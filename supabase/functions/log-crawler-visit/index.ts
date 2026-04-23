@@ -28,6 +28,20 @@ const PayloadSchema = z.object({
     .min(1, 'userAgent must be a non-empty string')
     .max(2048, 'userAgent exceeds 2048 chars'),
   referrer: z.string().trim().max(2048).optional().nullable(),
+  // Optional client-supplied idempotency key. When present, the row is
+  // upserted on `idempotency_key` so retried calls (network blip, edge
+  // function re-invocation, double-fired effect) collapse to a single
+  // `crawler_visits` row instead of creating duplicates. Format is
+  // intentionally permissive — clients compose it from a stable page-view
+  // id + render stage. We cap the length so the unique index stays cheap.
+  idempotencyKey: z
+    .string()
+    .trim()
+    .min(1, 'idempotencyKey must be non-empty when provided')
+    .max(200, 'idempotencyKey exceeds 200 chars')
+    .regex(/^[A-Za-z0-9._:\-]+$/, 'idempotencyKey contains unsupported chars')
+    .optional()
+    .nullable(),
 });
 
 // Render-state tags emitted by the PDP bot-trace hook. We don't *require* a
