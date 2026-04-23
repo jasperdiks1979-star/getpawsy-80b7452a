@@ -74,10 +74,10 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  GetPawsy is a dedicated pet supply brand based in the Netherlands, serving US pet owners.
+                  GetPawsy is a dedicated pet supply brand serving pet owners across the United States.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  We focus on practical, well-reviewed pet products and ship them to customers in the United States through trusted fulfillment partners.
+                  We focus on practical, well-reviewed pet products and ship them to US customers through trusted fulfillment partners.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   We test product quality, delivery reliability, and customer feedback before adding items to our store. Not everything makes the cut — and that's the point.
@@ -109,7 +109,7 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  <strong>GetPawsy</strong> is a legally registered business under the Dutch Chamber of Commerce (Kamer van Koophandel).
+                  <strong>GetPawsy LLC</strong> is a US-based online pet supply company serving customers across the United States.
                 </p>
                 
                 <div className="bg-muted/50 rounded-xl p-5 mb-6">
@@ -117,19 +117,19 @@ const About = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Legal entity:</span>
-                      <span className="text-foreground font-medium">GetPawsy</span>
+                      <span className="text-foreground font-medium">GetPawsy LLC</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Trading name:</span>
                       <span className="text-foreground font-medium">GetPawsy</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-muted-foreground min-w-[140px]">Registration (KVK):</span>
-                      <span className="text-foreground font-medium">78156955</span>
+                      <span className="text-muted-foreground min-w-[140px]">Location:</span>
+                      <span className="text-foreground font-medium">New York, NY · United States</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-muted-foreground min-w-[140px]">VAT ID:</span>
-                      <span className="text-foreground font-medium">NL003295015B69</span>
+                      <span className="text-muted-foreground min-w-[140px]">Business type:</span>
+                      <span className="text-foreground font-medium">Online-only retailer</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Website:</span>
@@ -143,7 +143,7 @@ const About = () => {
                 </div>
 
                 <p className="text-muted-foreground mb-4">
-                  GetPawsy is responsible for all operations of the webshop, including:
+                  GetPawsy LLC is responsible for all operations of the webshop, including:
                 </p>
                 
                 <div className="space-y-3">
