@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ExternalLink, GitCommit, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { PAGE_CHANGELOGS, type PageChangelogKey } from '@/lib/page-changelogs';
+import { type PageChangelogKey } from '@/lib/page-changelogs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePageChangelog } from '@/hooks/usePageChangelog';
 
 interface PageChangelogProps {
   pageKey: PageChangelogKey;
@@ -33,7 +34,7 @@ interface ReleaseLookup {
  * row in the admin Release Status Timeline (`#release-<id>` anchor).
  */
 export function PageChangelog({ pageKey, className }: PageChangelogProps) {
-  const entries = PAGE_CHANGELOGS[pageKey];
+  const { entries } = usePageChangelog(pageKey);
   const [open, setOpen] = useState(true);
   const { isAdmin } = useAuth();
   const [releases, setReleases] = useState<Record<string, ReleaseLookup>>({});
