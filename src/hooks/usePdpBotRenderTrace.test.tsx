@@ -588,6 +588,43 @@ describe('usePdpBotRenderTrace', () => {
     expect(renderedCall.userAgent).not.toMatch(/pdp-render-trace:shell\b/);
     expect(renderedCall.userAgent).not.toMatch(/pdp-render-trace:timeout/);
 
+    // ---- Duration-range assertions (boundary-cancellation scenario) ----
+    // Shell fires at mount (t≈0). The rendered call lands at t≈7999ms when
+    // hasProduct flips true one tick before the watchdog. Both `t_mount`
+    // (mount→event) and `t_shell` (shell→event) on the rendered payload
+    // should be ~7999ms — and CRITICALLY less than the 8000ms watchdog
+    // boundary. A drift here would indicate either the wrong clock origin
+    // or a stale duration captured from the watchdog branch.
+    const parseMs = (ua: string, key: 't_mount' | 't_shell'): number | null => {
+      const m = ua.match(new RegExp(`${key}=(\\d+)ms`));
+      return m ? Number(m[1]) : null;
+    };
+
+    const shellTMount = parseMs(shellCall.userAgent, 't_mount');
+    expect(shellTMount).not.toBeNull();
+    // Shell logs at mount with no elapsed time → tightly bounded.
+    expect(shellTMount!).toBeGreaterThanOrEqual(0);
+    expect(shellTMount!).toBeLessThanOrEqual(50);
+    // Shell payload must NOT carry a t_shell marker (it IS the shell).
+    expect(parseMs(shellCall.userAgent, 't_shell')).toBeNull();
+
+    const renderedTMount = parseMs(renderedCall.userAgent, 't_mount');
+    const renderedTShell = parseMs(renderedCall.userAgent, 't_shell');
+    expect(renderedTMount).not.toBeNull();
+    expect(renderedTShell).not.toBeNull();
+    // Both deltas should sit inside [7900, 7999] — strictly under the 8000ms
+    // watchdog boundary, and within ~100ms of the staged 7,999ms tick.
+    for (const [label, value] of [
+      ['rendered.t_mount', renderedTMount!],
+      ['rendered.t_shell', renderedTShell!],
+    ] as const) {
+      expect(value, `${label} (${value}ms) must be ≥ 7900ms`).toBeGreaterThanOrEqual(7_900);
+      expect(value, `${label} (${value}ms) must be < 8000ms watchdog boundary`).toBeLessThan(8_000);
+    }
+    // Since shell fires at mount, t_mount and t_shell on the rendered
+    // payload should agree to within a few ms.
+    expect(Math.abs(renderedTMount! - renderedTShell!)).toBeLessThanOrEqual(50);
+
     // Mirror the state in the URL `_render` param so log analysis on either
     // field agrees with the userAgent tag.
     expect(new URL(shellCall.pageUrl).searchParams.get('_render')).toBe('shell');
