@@ -2942,6 +2942,41 @@ function mulberry32(seed: number): () => number {
 }
 
 /**
+ * Read a 32-bit unsigned integer from an env var. Accepts decimal
+ * (`"12345"`) or hex (`"0xC0FFEE"`). Falls back to `defaultValue` when
+ * the var is unset, empty, or unparseable. Used so CI can pin the fuzz
+ * seed per workflow (PR vs. nightly) without code changes.
+ */
+function parseSeedEnv(name: string, defaultValue: number): number {
+  const raw = Deno.env.get(name);
+  if (!raw || raw.trim() === "") return defaultValue >>> 0;
+  const trimmed = raw.trim();
+  const parsed = trimmed.startsWith("0x") || trimmed.startsWith("0X")
+    ? parseInt(trimmed.slice(2), 16)
+    : parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed)) {
+    console.warn(`[fuzz] ${name}="${raw}" is not a valid integer; using default 0x${defaultValue.toString(16)}`);
+    return defaultValue >>> 0;
+  }
+  return parsed >>> 0;
+}
+
+/**
+ * Read a positive integer from an env var (e.g. iteration count).
+ * Falls back to `defaultValue` when unset, empty, non-numeric, or ≤ 0.
+ */
+function parsePositiveIntEnv(name: string, defaultValue: number): number {
+  const raw = Deno.env.get(name);
+  if (!raw || raw.trim() === "") return defaultValue;
+  const parsed = parseInt(raw.trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.warn(`[fuzz] ${name}="${raw}" is not a positive integer; using default ${defaultValue}`);
+    return defaultValue;
+  }
+  return parsed;
+}
+
+/**
  * Build a string of EXACTLY `targetLen` UTF-16 code units using the given
  * RNG. We mix three character classes so the test exercises:
  *   - plain ASCII (1 unit)
