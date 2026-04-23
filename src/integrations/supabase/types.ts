@@ -5839,6 +5839,51 @@ export type Database = {
           },
         ]
       }
+      release_reports: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          notes: string | null
+          reported_by: string | null
+          status: string
+          sync_run_id: string | null
+          sync_summary: Json | null
+          title: string
+          updated_at: string
+          validation_summary: Json | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          reported_by?: string | null
+          status?: string
+          sync_run_id?: string | null
+          sync_summary?: Json | null
+          title: string
+          updated_at?: string
+          validation_summary?: Json | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          reported_by?: string | null
+          status?: string
+          sync_run_id?: string | null
+          sync_summary?: Json | null
+          title?: string
+          updated_at?: string
+          validation_summary?: Json | null
+        }
+        Relationships: []
+      }
       remarketing_emails: {
         Row: {
           clicked_at: string | null

@@ -3,6 +3,7 @@ import { SeoUrlChecker } from '@/components/admin/SeoUrlChecker';
 import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDiagnostics';
 import { RefreshFeedAfterPublishCard } from '@/components/admin/RefreshFeedAfterPublishCard';
 import { FeedStatusCard } from '@/components/admin/FeedStatusCard';
+import { ReportReleaseCard } from '@/components/admin/ReportReleaseCard';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -429,6 +430,9 @@ export default function MerchantIntegrationPage() {
 
         {/* Post-publish quick action — refresh GMC feed and validate */}
         <RefreshFeedAfterPublishCard />
+
+        {/* Report a release → auto-runs sync + feed validation, persisted to release_reports */}
+        <ReportReleaseCard />
 
         {/* At-a-glance feed status (last sync + live validation) */}
         <FeedStatusCard />
