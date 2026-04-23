@@ -27,6 +27,7 @@ import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from '@/components/ui/chart';
 import { RenderTraceAlerts } from '@/components/admin/RenderTraceAlerts';
+import { SamplingRateWidget } from '@/components/admin/SamplingRateWidget';
 
 // -----------------------------------------------------------------------------
 // Render-trace dashboard
@@ -435,6 +436,8 @@ export default function RenderTraceDashboard() {
         )}
 
         <RenderTraceAlerts />
+
+        <SamplingRateWidget />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SummaryCard
