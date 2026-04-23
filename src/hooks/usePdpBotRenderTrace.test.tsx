@@ -548,4 +548,146 @@ describe('usePdpBotRenderTrace', () => {
     );
     expect(timeoutCallsForSlug).toHaveLength(0);
   });
+
+  // ---------------------------------------------------------------------------
+  // Transient-failure invariants
+  // ---------------------------------------------------------------------------
+  // Even when the edge call fails or times out on its first attempt(s), the
+  // hook must still emit exactly one *logical* shell event and exactly one
+  // *logical* terminal event (rendered or timeout) per page view. Retries are
+  // a transport concern and should never duplicate state logs in the analytics
+  // dashboard. These tests pin that invariant.
+
+  it('logs exactly one shell + one rendered when the shell call fails once then recovers', async () => {
+    // Use the REAL retryWithBackoff with tiny delays so we exercise the
+    // backoff path without slowing the suite down.
+    const realModule = await vi.importActual<
+      typeof import('@/hooks/useRetryWithBackoff')
+    >('@/hooks/useRetryWithBackoff');
+    retryImpl.current = (fn, config) =>
+      realModule.retryWithBackoff(fn as () => Promise<unknown>, {
+        ...(config as object),
+        baseDelayMs: 1,
+        maxDelayMs: 5,
+      });
+
+    // Shell attempt #1 → transient 503. Everything after → success.
+    invokeMock.mockReset();
+    invokeMock
+      .mockResolvedValueOnce({ data: null, error: new Error('503 Service Unavailable') })
+      .mockResolvedValue({ data: { ok: true }, error: null });
+
+    const slug = 'transient-shell-fail-bed';
+    const { rerender } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+
+    // Drain mount + first failed attempt + small backoff + retry success.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(50);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Product data arrives well before the 8s watchdog.
+    rerender({ isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Filter to calls for THIS slug to ignore noise from other tests / mounts.
+    const slugCalls = invokeMock.mock.calls.filter(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+    );
+
+    // Distinct logical states reported = exactly one shell + one rendered.
+    // (The shell may have 2 transport attempts due to the retry, but the
+    // logical state count must stay at 1 per state.)
+    const slugStates = slugCalls.map(([, opts]) => {
+      const ua = (opts as { body: { userAgent: string } }).body.userAgent;
+      return ua.match(/pdp-render-trace:(shell|rendered|timeout)/)?.[1] ?? 'unknown';
+    });
+
+    const shellAttempts = slugStates.filter((s) => s === 'shell').length;
+    const renderedAttempts = slugStates.filter((s) => s === 'rendered').length;
+    const timeoutAttempts = slugStates.filter((s) => s === 'timeout').length;
+
+    // Transport-level: shell retried once → 2 attempts total. Rendered succeeded
+    // first try → 1 attempt. Timeout never fired.
+    expect(shellAttempts).toBe(2);
+    expect(renderedAttempts).toBe(1);
+    expect(timeoutAttempts).toBe(0);
+
+    // Logical-level: exactly one *distinct* shell and one *distinct* rendered.
+    expect(new Set(slugStates)).toEqual(new Set(['shell', 'rendered']));
+  });
+
+  it('logs exactly one shell + one timeout when the shell call fails once then recovers but data never arrives', async () => {
+    const realModule = await vi.importActual<
+      typeof import('@/hooks/useRetryWithBackoff')
+    >('@/hooks/useRetryWithBackoff');
+    retryImpl.current = (fn, config) =>
+      realModule.retryWithBackoff(fn as () => Promise<unknown>, {
+        ...(config as object),
+        baseDelayMs: 1,
+        maxDelayMs: 5,
+      });
+
+    // Shell attempt #1 → transient network blip. Everything after → success.
+    invokeMock.mockReset();
+    invokeMock
+      .mockResolvedValueOnce({ data: null, error: new Error('network timeout') })
+      .mockResolvedValue({ data: { ok: true }, error: null });
+
+    const slug = 'transient-shell-then-timeout-bed';
+    renderHook(() =>
+      usePdpBotRenderTrace({ slug, isLoading: true, hasProduct: false }),
+    );
+
+    // Drain mount + failed shell + backoff + retried shell success.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(50);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Cross the 8s watchdog boundary while still on the shell.
+    await act(async () => {
+      vi.advanceTimersByTime(8_001);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const slugCalls = invokeMock.mock.calls.filter(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+    );
+    const slugStates = slugCalls.map(([, opts]) => {
+      const ua = (opts as { body: { userAgent: string } }).body.userAgent;
+      return ua.match(/pdp-render-trace:(shell|rendered|timeout)/)?.[1] ?? 'unknown';
+    });
+
+    const shellAttempts = slugStates.filter((s) => s === 'shell').length;
+    const renderedAttempts = slugStates.filter((s) => s === 'rendered').length;
+    const timeoutAttempts = slugStates.filter((s) => s === 'timeout').length;
+
+    // Shell retried once → 2 attempts. Timeout fired once and succeeded → 1.
+    // Rendered must NOT have been emitted because data never arrived.
+    expect(shellAttempts).toBe(2);
+    expect(timeoutAttempts).toBe(1);
+    expect(renderedAttempts).toBe(0);
+
+    // Logical-level: exactly one *distinct* shell and one *distinct* timeout.
+    expect(new Set(slugStates)).toEqual(new Set(['shell', 'timeout']));
+  });
 });
