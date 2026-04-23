@@ -204,3 +204,36 @@ export function extractPdpRenderTraceState(ua: string): PdpRenderState | null {
   const m = ua.match(/pdp-render-trace[/:](shell|rendered|timeout)\b/i);
   return m ? (m[1].toLowerCase() as PdpRenderState) : null;
 }
+
+/**
+ * The frozen, canonical golden examples. Mirrored verbatim in the Deno
+ * fixture at `supabase/functions/log-crawler-visit/_fixtures/pdp_render_trace_tags.ts`.
+ *
+ * The contract test at `src/test/pdp-render-trace-fixtures.contract.test.ts`
+ * re-derives these strings from BOTH modules and asserts they agree. Any
+ * format change here MUST be reflected in the Deno mirror in the same PR
+ * or the contract test will fail.
+ */
+export const CANONICAL_GOLDEN_EXAMPLES = {
+  shell: {
+    slug: 'fixture-slug',
+    durations: DEFAULT_RENDER_DURATIONS.shell,
+    expectedUaSuffix: '[pdp-render-trace:shell t_mount=0ms]',
+    expectedPageUrl:
+      'https://getpawsy.pet/product/fixture-slug?_render=shell&_t_mount=0',
+  },
+  rendered: {
+    slug: 'fixture-slug',
+    durations: DEFAULT_RENDER_DURATIONS.rendered,
+    expectedUaSuffix: '[pdp-render-trace:rendered t_mount=120ms t_shell=120ms]',
+    expectedPageUrl:
+      'https://getpawsy.pet/product/fixture-slug?_render=rendered&_t_mount=120&_t_shell=120',
+  },
+  timeout: {
+    slug: 'fixture-slug',
+    durations: DEFAULT_RENDER_DURATIONS.timeout,
+    expectedUaSuffix: '[pdp-render-trace:timeout t_mount=8000ms t_shell=8000ms]',
+    expectedPageUrl:
+      'https://getpawsy.pet/product/fixture-slug?_render=timeout&_t_mount=8000&_t_shell=8000',
+  },
+} as const;
