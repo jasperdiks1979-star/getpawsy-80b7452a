@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ShieldCheck,
   FileDown,
+  AlertTriangle,
 } from 'lucide-react';
 import { useReleaseReport } from '@/hooks/useReleaseReport';
 import { downloadReleaseReportPdf } from '@/utils/releaseReportPdf';
@@ -27,7 +28,7 @@ import { toast } from 'sonner';
 export function ReportReleaseCard() {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
-  const { phase, result, error, reportRelease, reset } = useReleaseReport();
+  const { phase, result, error, retryInfo, reportRelease, reset } = useReleaseReport();
 
   const busy = phase === 'creating' || phase === 'syncing' || phase === 'validating';
 
@@ -102,8 +103,14 @@ export function ReportReleaseCard() {
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {phase === 'creating' && 'Creating release…'}
-              {phase === 'syncing' && 'Syncing Merchant Center…'}
-              {phase === 'validating' && 'Validating feed…'}
+              {phase === 'syncing' &&
+                (retryInfo?.fn === 'merchant-sync' && retryInfo.attempt > 1
+                  ? `Retrying Merchant sync (${retryInfo.attempt}/3)…`
+                  : 'Syncing Merchant Center…')}
+              {phase === 'validating' &&
+                (retryInfo?.fn === 'validate-merchant-feed' && retryInfo.attempt > 1
+                  ? `Retrying feed validation (${retryInfo.attempt}/3)…`
+                  : 'Validating feed…')}
             </>
           ) : (
             <>
@@ -112,6 +119,22 @@ export function ReportReleaseCard() {
             </>
           )}
         </Button>
+
+        {retryInfo && retryInfo.attempt > 1 && busy && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+            <div className="space-y-1">
+              <div className="font-medium text-amber-900 dark:text-amber-200">
+                Tijdelijke fout bij {retryInfo.fn} — automatisch opnieuw proberen ({retryInfo.attempt}/3)
+              </div>
+              {retryInfo.lastError && (
+                <div className="text-xs text-muted-foreground line-clamp-2">
+                  Laatste fout: {retryInfo.lastError}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Phase progress */}
         {phase !== 'idle' && (
@@ -139,7 +162,14 @@ export function ReportReleaseCard() {
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive flex items-start gap-2">
             <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
-            <div>{error}</div>
+            <div className="space-y-1">
+              <div className="font-medium">Release flow mislukt na automatische retries</div>
+              <div className="text-xs opacity-90 break-words">{error}</div>
+              <div className="text-xs opacity-70">
+                Probeer het over een paar minuten opnieuw. Als de fout aanhoudt, controleer de logs van{' '}
+                <code>merchant-sync</code> of <code>validate-merchant-feed</code>.
+              </div>
+            </div>
           </div>
         )}
 
