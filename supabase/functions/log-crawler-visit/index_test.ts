@@ -3593,21 +3593,43 @@ Deno.test({
               400,
               `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input must return 400, got ${res.status}; body=${outcome.bodyPreview}`,
             );
-            const json = JSON.parse(text) as {
-              code?: string;
-              fieldErrors?: Record<string, string[]>;
-            };
-            assertEquals(
-              json.code,
-              "INVALID_PAYLOAD",
-              `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input must use INVALID_PAYLOAD code; got ${json.code}`,
-            );
-            const fieldMessages = json.fieldErrors?.[axis] ?? [];
+
+            // Parse once and run the full envelope contract on EVERY
+            // over-limit rejection. This pins the per-call response to
+            // the same shape the dedicated envelope test enforces — so
+            // the fuzz loop catches drift (e.g. a missing counter
+            // bucket, a leaked stack trace) on any of its 60+ random
+            // inputs, not just the hand-picked envelope matrix.
+            let parsed: unknown;
+            try {
+              parsed = JSON.parse(text);
+            } catch {
+              throw new Error(
+                `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input returned non-JSON 400 body: ${outcome.bodyPreview}`,
+              );
+            }
+            const label = `[fuzz iter ${iterCounter}, seed=0x${SEED.toString(16)}, axis=${axis}, len=${spec.len}]`;
+            const envelope = assertInvalidPayloadEnvelope(parsed, label);
+
+            // Case-specific layer on top of the structural contract:
+            //   (a) the offending field appears in `fieldErrors` with the
+            //       canonical "exceeds 2048 chars" message
+            //   (b) the matching taxonomy bucket was credited (≥1) so the
+            //       dashboard groups this failure correctly
+            const fieldMessages = envelope.fieldErrors[axis] ?? [];
             assertEquals(
               fieldMessages.some((m) => m.includes(EXPECTED_MESSAGE)),
               true,
-              `[fuzz iter ${iterCounter}, seed=${SEED}] expected fieldErrors.${axis} to include "${EXPECTED_MESSAGE}"; got ${JSON.stringify(fieldMessages)}`,
+              `${label} expected fieldErrors.${axis} to include "${EXPECTED_MESSAGE}"; got ${JSON.stringify(fieldMessages)}`,
             );
+            const expectedBucket = axis === "pageUrl"
+              ? "schema_page_url"
+              : "schema_user_agent";
+            if (envelope.validationCounters[expectedBucket] < 1) {
+              throw new Error(
+                `${label} validationCounters.${expectedBucket} must be ≥1 for an ${axis} length failure, got ${envelope.validationCounters[expectedBucket]}`,
+              );
+            }
           }
 
           // -----------------------------------------------------------------
