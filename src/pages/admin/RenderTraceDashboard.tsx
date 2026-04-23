@@ -431,7 +431,7 @@ export default function RenderTraceDashboard() {
           <SummaryCard
             label="Total events"
             value={isLoading ? null : totalEvents.toLocaleString()}
-            hint={`${perSlug.length} unique slug${perSlug.length === 1 ? '' : 's'}`}
+            hint={`${slugTotal.toLocaleString()} unique slug${slugTotal === 1 ? '' : 's'}`}
           />
           <SummaryCard
             label="Shell"
