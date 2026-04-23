@@ -3314,19 +3314,46 @@ async function shrinkOverLimitInput(args: {
     }
   }
 
+  // Derive length semantics. These are the "expected vs actual" numbers
+  // a human needs when reading the failing fixture: the cap, the size
+  // the shrinker landed on, the overshoot, and how much we reduced the
+  // payload by vs the original failing input.
+  const actualLen = bestValue.length;
+  const overBy = Math.max(0, actualLen - maxLen);
+  const reductionChars = Math.max(0, originalLen - actualLen);
+  const reductionPct = originalLen > 0
+    ? Math.round((reductionChars / originalLen) * 1000) / 10
+    : 0;
+  // A bounded head/tail slice for inline log views. We show the first
+  // 32 + last 8 units around an ellipsis so the developer can confirm
+  // the boundary character without dumping a 2 KB+ string into stdout.
+  // The complete value is always available in `shrunkValue` and the
+  // on-disk fixture.
+  const HEAD = 32;
+  const TAIL = 8;
+  const minimalReproducer = actualLen <= HEAD + TAIL + 1
+    ? bestValue
+    : `${bestValue.slice(0, HEAD)}…${bestValue.slice(-TAIL)}`;
+
   return {
     axis,
     // `shrunk: false` ONLY when we couldn't make any progress at all —
     // i.e. the original length is already the minimum AND phase 2 was
     // a no-op. (`hi === originalLen` after phase 1 means binary search
     // never confirmed a smaller length still failed.)
-    shrunk: bestValue.length < originalLen || phase2Applied,
+    shrunk: actualLen < originalLen || phase2Applied,
     originalLen,
-    shrunkLen: bestValue.length,
+    shrunkLen: actualLen,
     shrunkValue: bestValue,
     phase1NetworkCalls,
     phase2NetworkCalls,
     phase2Applied,
+    expectedMaxLen: maxLen,
+    actualLen,
+    overBy,
+    reductionChars,
+    reductionPct,
+    minimalReproducer,
   };
 }
 
