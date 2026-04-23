@@ -50,6 +50,12 @@ jobs:
       # changing the workflow logic.
       FUZZ_SEED: ${{ github.event.inputs.fuzz_seed || '0xA1B2C3D4' }}
       FUZZ_ITERATIONS: ${{ github.event.inputs.fuzz_iterations || '25' }}
+      # Nightly drives ~25 iterations per (axis × spec); both axis-driven
+      # buckets should comfortably hit ≥5. Higher floor here than PR-CI so
+      # a partial regression (one axis broken) trips the gate even when
+      # the other axis still hits its quota.
+      FUZZ_BUCKET_MIN_HITS: '5'
+      FUZZ_COVERAGE_OUT: 'fuzz-bucket-coverage.json'
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
