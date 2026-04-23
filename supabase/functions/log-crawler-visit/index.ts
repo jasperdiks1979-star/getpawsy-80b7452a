@@ -593,6 +593,43 @@ serve(async (req) => {
     const loggedBotType = spoofedGooglebot
       ? `${botType ?? 'Googlebot'} (spoofed-ua)`
       : botType;
+
+    // -------------------------------------------------------------------------
+    // Sampling decision
+    // -------------------------------------------------------------------------
+    // Anything carrying a render-trace tag, hitting an appeal page, or coming
+    // from verified/spoofed Googlebot is "always log". Everything else is
+    // probabilistically sampled using the configured rate. We still return a
+    // 200 OK for sampled-out requests so the client never sees errors.
+    const isAppeal = isAppealPage(pageUrl);
+    const alwaysLog = looksLikeTrace || isGooglebot || spoofedGooglebot || isAppeal;
+    let sampleRate = 1;
+    let sampledOut = false;
+    if (!alwaysLog) {
+      sampleRate = await getSampleRate(supabase);
+      if (sampleRate <= 0 || (sampleRate < 1 && Math.random() >= sampleRate)) {
+        sampledOut = true;
+      }
+    }
+
+    if (sampledOut) {
+      console.log(
+        `[log-crawler-visit] Sampled out (rate=${sampleRate.toFixed(3)}): ${pageUrl}`,
+      );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          isGooglebot,
+          botType,
+          verified: verifiedGoogleIp,
+          spoofed: spoofedGooglebot,
+          sampled: false,
+          sampleRate,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     const { error } = await supabase
       .from('crawler_visits')
       .insert({
@@ -630,6 +667,8 @@ serve(async (req) => {
         botType,
         verified: verifiedGoogleIp,
         spoofed: spoofedGooglebot,
+        sampled: true,
+        sampleRate,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
