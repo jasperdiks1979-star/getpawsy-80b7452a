@@ -2977,6 +2977,170 @@ function parsePositiveIntEnv(name: string, defaultValue: number): number {
 }
 
 // =============================================================================
+// Canonical 400 INVALID_PAYLOAD envelope contract
+// =============================================================================
+// Two test surfaces enforce this contract: the dedicated envelope test
+// (lines ~2064–2390) sweeps a hand-picked matrix of failure causes; the
+// property-based fuzz loop (below) exercises it on every random over-limit
+// rejection. To keep both in lockstep — and to prevent the fuzz loop from
+// silently degrading to a weaker check if someone edits one site but not
+// the other — we extract the envelope assertions into a single helper.
+//
+// The contract, mirrored from index.ts:
+//   {
+//     error: string,                       // human-readable summary, non-empty
+//     code: "INVALID_PAYLOAD",             // exact string
+//     fieldErrors: { [field]: string[] },  // ≥1 keys, each non-empty string[]
+//     validationCounters: {                // ALL 8 taxonomy buckets present,
+//       invalid_json, schema_page_url,     // every value an integer ≥ 0
+//       schema_user_agent, schema_referrer,
+//       schema_other, trace_missing_slug,
+//       trace_missing_state, trace_invalid_state
+//     }
+//   }
+// No other top-level keys may leak (catches accidental zod-dump exposure
+// or stack-trace leakage on the error path).
+// -----------------------------------------------------------------------------
+
+/** Canonical taxonomy buckets — the dashboard depends on this exact set. */
+const ENVELOPE_REQUIRED_COUNTER_KEYS = [
+  "invalid_json",
+  "schema_page_url",
+  "schema_user_agent",
+  "schema_referrer",
+  "schema_other",
+  "trace_missing_slug",
+  "trace_missing_state",
+  "trace_invalid_state",
+] as const;
+
+/** Permitted top-level envelope keys; anything else is a leak. */
+const ENVELOPE_ALLOWED_TOP_LEVEL = new Set([
+  "error",
+  "code",
+  "fieldErrors",
+  "validationCounters",
+]);
+
+/**
+ * Assert that `body` is a structurally complete 400 INVALID_PAYLOAD
+ * envelope. Use the per-call `label` to disambiguate failures (e.g. fuzz
+ * iteration index + seed) — it's prepended to every error message so a
+ * test failure points straight at the offending call without ambiguity.
+ *
+ * Returns the parsed envelope so callers can layer additional case-
+ * specific assertions (e.g. "fieldErrors.userAgent contains the length
+ * message") without re-parsing the body.
+ */
+function assertInvalidPayloadEnvelope(
+  body: unknown,
+  label: string,
+): {
+  error: string;
+  code: "INVALID_PAYLOAD";
+  fieldErrors: Record<string, string[]>;
+  validationCounters: Record<string, number>;
+} {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new Error(
+      `${label} envelope must be a plain object, got: ${JSON.stringify(body)}`,
+    );
+  }
+  const env = body as Record<string, unknown>;
+
+  // ---- key 1: error (non-empty string) -------------------------------
+  if (typeof env.error !== "string" || env.error.trim() === "") {
+    throw new Error(
+      `${label} envelope.error must be a non-empty string, got: ${JSON.stringify(env.error)}`,
+    );
+  }
+
+  // ---- key 2: code (exact string) ------------------------------------
+  assertEquals(
+    env.code,
+    "INVALID_PAYLOAD",
+    `${label} envelope.code must be "INVALID_PAYLOAD", got: ${JSON.stringify(env.code)}`,
+  );
+
+  // ---- key 3: fieldErrors ({ [field]: non-empty string[] }) ----------
+  if (
+    typeof env.fieldErrors !== "object" ||
+    env.fieldErrors === null ||
+    Array.isArray(env.fieldErrors)
+  ) {
+    throw new Error(
+      `${label} envelope.fieldErrors must be a plain object, got: ${JSON.stringify(env.fieldErrors)}`,
+    );
+  }
+  const fieldErrors = env.fieldErrors as Record<string, unknown>;
+  const fieldKeys = Object.keys(fieldErrors);
+  if (fieldKeys.length === 0) {
+    throw new Error(
+      `${label} envelope.fieldErrors must have ≥1 key when code=INVALID_PAYLOAD; got {}`,
+    );
+  }
+  for (const k of fieldKeys) {
+    const v = fieldErrors[k];
+    if (
+      !Array.isArray(v) ||
+      v.length === 0 ||
+      !v.every((m) => typeof m === "string" && m.trim() !== "")
+    ) {
+      throw new Error(
+        `${label} envelope.fieldErrors.${k} must be a non-empty array of non-empty strings, got: ${JSON.stringify(v)}`,
+      );
+    }
+  }
+
+  // ---- key 4: validationCounters (full taxonomy, integers ≥ 0) ------
+  if (
+    typeof env.validationCounters !== "object" ||
+    env.validationCounters === null ||
+    Array.isArray(env.validationCounters)
+  ) {
+    throw new Error(
+      `${label} envelope.validationCounters must be a plain object, got: ${JSON.stringify(env.validationCounters)}`,
+    );
+  }
+  const counters = env.validationCounters as Record<string, unknown>;
+  const got = Object.keys(counters).sort();
+  const expected = [...ENVELOPE_REQUIRED_COUNTER_KEYS].sort();
+  assertEquals(
+    got,
+    expected,
+    `${label} validationCounters key set mismatch — got ${JSON.stringify(got)}, expected ${JSON.stringify(expected)}`,
+  );
+  for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+    const v = counters[k];
+    if (
+      typeof v !== "number" ||
+      !Number.isFinite(v) ||
+      !Number.isInteger(v) ||
+      v < 0
+    ) {
+      throw new Error(
+        `${label} validationCounters.${k} must be a non-negative integer, got: ${JSON.stringify(v)}`,
+      );
+    }
+  }
+
+  // ---- no stray top-level keys ---------------------------------------
+  const stray = Object.keys(env).filter((k) => !ENVELOPE_ALLOWED_TOP_LEVEL.has(k));
+  assertEquals(
+    stray,
+    [],
+    `${label} envelope leaked unexpected top-level keys: ${JSON.stringify(stray)}`,
+  );
+
+  return {
+    error: env.error as string,
+    code: env.code as "INVALID_PAYLOAD",
+    fieldErrors: fieldErrors as Record<string, string[]>,
+    validationCounters: counters as Record<string, number>,
+  };
+}
+
+// =============================================================================
 // Shrinking
 // =============================================================================
 // When the headline property fails (an over-limit input returned 2xx) the raw
@@ -3429,21 +3593,43 @@ Deno.test({
               400,
               `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input must return 400, got ${res.status}; body=${outcome.bodyPreview}`,
             );
-            const json = JSON.parse(text) as {
-              code?: string;
-              fieldErrors?: Record<string, string[]>;
-            };
-            assertEquals(
-              json.code,
-              "INVALID_PAYLOAD",
-              `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input must use INVALID_PAYLOAD code; got ${json.code}`,
-            );
-            const fieldMessages = json.fieldErrors?.[axis] ?? [];
+
+            // Parse once and run the full envelope contract on EVERY
+            // over-limit rejection. This pins the per-call response to
+            // the same shape the dedicated envelope test enforces — so
+            // the fuzz loop catches drift (e.g. a missing counter
+            // bucket, a leaked stack trace) on any of its 60+ random
+            // inputs, not just the hand-picked envelope matrix.
+            let parsed: unknown;
+            try {
+              parsed = JSON.parse(text);
+            } catch {
+              throw new Error(
+                `[fuzz iter ${iterCounter}, seed=${SEED}] over-limit input returned non-JSON 400 body: ${outcome.bodyPreview}`,
+              );
+            }
+            const label = `[fuzz iter ${iterCounter}, seed=0x${SEED.toString(16)}, axis=${axis}, len=${spec.len}]`;
+            const envelope = assertInvalidPayloadEnvelope(parsed, label);
+
+            // Case-specific layer on top of the structural contract:
+            //   (a) the offending field appears in `fieldErrors` with the
+            //       canonical "exceeds 2048 chars" message
+            //   (b) the matching taxonomy bucket was credited (≥1) so the
+            //       dashboard groups this failure correctly
+            const fieldMessages = envelope.fieldErrors[axis] ?? [];
             assertEquals(
               fieldMessages.some((m) => m.includes(EXPECTED_MESSAGE)),
               true,
-              `[fuzz iter ${iterCounter}, seed=${SEED}] expected fieldErrors.${axis} to include "${EXPECTED_MESSAGE}"; got ${JSON.stringify(fieldMessages)}`,
+              `${label} expected fieldErrors.${axis} to include "${EXPECTED_MESSAGE}"; got ${JSON.stringify(fieldMessages)}`,
             );
+            const expectedBucket = axis === "pageUrl"
+              ? "schema_page_url"
+              : "schema_user_agent";
+            if (envelope.validationCounters[expectedBucket] < 1) {
+              throw new Error(
+                `${label} validationCounters.${expectedBucket} must be ≥1 for an ${axis} length failure, got ${envelope.validationCounters[expectedBucket]}`,
+              );
+            }
           }
 
           // -----------------------------------------------------------------
