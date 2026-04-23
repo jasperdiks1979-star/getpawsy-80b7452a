@@ -772,6 +772,122 @@ export default function JobRetryPoliciesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import preview dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={(o) => !importing && setImportDialogOpen(o)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importeer policies</DialogTitle>
+            <DialogDescription>
+              Bestand: <code className="text-xs">{importFileName}</code> — {importParsed.length} geldige rij{importParsed.length === 1 ? '' : 'en'}
+              {importErrors.length > 0 && `, ${importErrors.length} fout${importErrors.length === 1 ? '' : 'en'}`}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {importErrors.length > 0 && (
+              <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3">
+                <div className="flex items-center gap-2 text-destructive text-sm font-medium mb-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Validatiefouten ({importErrors.length})
+                </div>
+                <ul className="text-xs text-destructive space-y-0.5 max-h-32 overflow-y-auto">
+                  {importErrors.slice(0, 30).map((err, i) => (
+                    <li key={i}>• {err}</li>
+                  ))}
+                  {importErrors.length > 30 && (
+                    <li className="italic">… en {importErrors.length - 30} meer</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {importParsed.length > 0 && (
+              <>
+                <div className="rounded-md border border-border p-3 max-h-64 overflow-y-auto">
+                  <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Preview ({importParsed.length} rijen)
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Scope</TableHead>
+                        <TableHead className="text-xs text-right">Attempts</TableHead>
+                        <TableHead className="text-xs">Backoff</TableHead>
+                        <TableHead className="text-xs">Aan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {importParsed.map((p, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs font-mono">
+                            {(p.provider ?? '*') + ' / ' + (p.job_type ?? '*')}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-mono">
+                            {p.max_attempts ?? 'env'}
+                          </TableCell>
+                          <TableCell className="text-xs font-mono">
+                            {p.backoff_minutes?.join(', ') ?? 'env'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {p.enabled ? 'ja' : 'nee'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="rounded-md border border-border p-3 space-y-2">
+                  <Label className="text-sm">Strategie bij bestaande scope (provider + job_type match)</Label>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="import-strategy"
+                        value="upsert"
+                        checked={importStrategy === 'upsert'}
+                        onChange={() => setImportStrategy('upsert')}
+                        className="mt-1"
+                      />
+                      <span>
+                        <strong>Upsert</strong> — bestaande policies bijwerken met geïmporteerde waarden.
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="import-strategy"
+                        value="skip"
+                        checked={importStrategy === 'skip'}
+                        onChange={() => setImportStrategy('skip')}
+                        className="mt-1"
+                      />
+                      <span>
+                        <strong>Skip</strong> — bestaande policies ongemoeid laten, alleen nieuwe toevoegen.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialogOpen(false)} disabled={importing}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleImportConfirm}
+              disabled={importing || importParsed.length === 0}
+            >
+              {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Importeer {importParsed.length} {importParsed.length === 1 ? 'policy' : 'policies'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
