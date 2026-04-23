@@ -365,6 +365,93 @@ export default function RenderTraceDashboard() {
           </Card>
         )}
 
+        {!isLoading && malformed.length > 0 && (
+          <Card className="border-amber-500/40 bg-amber-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-amber-600" />
+                Malformed render-trace pings
+                <Badge variant="outline" className="ml-1 border-amber-500/60 text-amber-700 dark:text-amber-400">
+                  {malformed.length.toLocaleString()}
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                These rows arrived with a <code>pdp-render-trace</code> marker but couldn't be
+                parsed into a valid <code>(slug, state)</code> pair, so they're excluded from every
+                chart above. A persistent count usually means the client-side hook or a referrer
+                is sending an unexpected <code>user_agent</code> or <code>page_url</code> shape.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(REASON_LABELS) as MalformedReason[])
+                  .filter((r) => malformedByReason[r] > 0)
+                  .map((r) => (
+                    <Badge key={r} variant="secondary" className="gap-1.5">
+                      {REASON_LABELS[r]}
+                      <span className="tabular-nums font-mono text-xs opacity-80">
+                        {malformedByReason[r].toLocaleString()}
+                      </span>
+                    </Badge>
+                  ))}
+              </div>
+
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[180px]">Reason</TableHead>
+                      <TableHead className="w-[160px]">When</TableHead>
+                      <TableHead>page_url</TableHead>
+                      <TableHead>user_agent</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {malformed.slice(0, 10).map((row, i) => (
+                      <TableRow key={`${row.created_at}-${i}`}>
+                        <TableCell className="align-top">
+                          <Badge variant="outline" className="text-[11px]">
+                            {REASON_LABELS[row.reason]}
+                          </Badge>
+                          {row.reason === 'unknown_state_tag' && row.rawTag && (
+                            <div
+                              className="text-[11px] text-muted-foreground mt-1 font-mono truncate max-w-[160px]"
+                              title={row.rawTag}
+                            >
+                              tag: {row.rawTag}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-top text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                          {format(new Date(row.created_at), 'MMM d, HH:mm:ss')}
+                        </TableCell>
+                        <TableCell
+                          className="align-top font-mono text-[11px] max-w-[280px] truncate"
+                          title={row.page_url}
+                        >
+                          {row.page_url || <span className="italic text-muted-foreground">(empty)</span>}
+                        </TableCell>
+                        <TableCell
+                          className="align-top font-mono text-[11px] max-w-[320px] truncate"
+                          title={row.user_agent}
+                        >
+                          {row.user_agent || <span className="italic text-muted-foreground">(empty)</span>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {malformed.length > 10 && (
+                <p className="text-xs text-muted-foreground">
+                  Showing 10 most recent of {malformed.length.toLocaleString()} malformed rows in this window.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SummaryCard
             label="Total events"
