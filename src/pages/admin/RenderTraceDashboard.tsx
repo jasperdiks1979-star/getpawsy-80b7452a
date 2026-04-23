@@ -257,6 +257,16 @@ export default function RenderTraceDashboard() {
               <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={isLoading || totalEvents === 0}
+              title={totalEvents === 0 ? 'No data to export' : 'Download totals, per-day & top slugs as CSV'}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export CSV
+            </Button>
           </div>
         </div>
 
