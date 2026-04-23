@@ -22,6 +22,7 @@ import {
   FileSearch,
   ChevronDown,
   ChevronUp,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   useReleaseIssues,
@@ -33,6 +34,8 @@ import { buildIssueEvidence, type IssueEvidence, type SampleResult } from '@/lib
 import { useProductNames } from '@/hooks/useProductNames';
 import { buildRecommendations } from '@/lib/release/issueRecommendations';
 import { ReleaseRecommendationsBanner } from './ReleaseRecommendationsBanner';
+import { downloadIssuesCsv } from '@/lib/release/issuesCsvExport';
+import { toast } from 'sonner';
 
 const UNASSIGNED = '__unassigned__';
 
@@ -74,6 +77,8 @@ interface Props {
   sampleResults?: SampleResult[] | null;
   /** Override for the live merchant feed URL shown in evidence links. */
   feedUrl?: string | null;
+  /** Optional release title — included as a header row in CSV exports. */
+  releaseTitle?: string | null;
 }
 
 /**
@@ -90,6 +95,7 @@ export function ReleaseIssuesPanel({
   topFailReasons,
   sampleResults,
   feedUrl,
+  releaseTitle,
 }: Props) {
   const {
     issues,
@@ -153,6 +159,7 @@ export function ReleaseIssuesPanel({
             </span>
           )}
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant="outline"
           size="sm"
@@ -162,6 +169,34 @@ export function ReleaseIssuesPanel({
           <Plus className="h-3 w-3" />
           Issue toevoegen
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1 text-xs"
+          disabled={!issues || issues.length === 0}
+          onClick={() => {
+            if (!issues || issues.length === 0) return;
+            try {
+              downloadIssuesCsv({
+                releaseId,
+                releaseTitle: releaseTitle ?? null,
+                issues,
+                assignees,
+                sampleResults: sampleResults ?? null,
+                feedUrl: feedUrl ?? null,
+              });
+              toast.success('Issues CSV gedownload');
+            } catch (e) {
+              console.error('CSV export failed:', e);
+              toast.error('CSV export mislukt');
+            }
+          }}
+          title="Download alle issues (severity, scope, suggested fix) als CSV"
+        >
+          <FileSpreadsheet className="h-3 w-3" />
+          Export CSV
+        </Button>
+        </div>
       </div>
 
       {showAdd && (
