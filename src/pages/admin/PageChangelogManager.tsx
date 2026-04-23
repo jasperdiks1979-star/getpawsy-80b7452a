@@ -379,19 +379,111 @@ export default function PageChangelogManager() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/*
+                  Per-page filter bar — lets admins narrow a long release
+                  history down to a single build/tag, commit prefix or
+                  publication state. Hidden when the page has no entries
+                  to keep the empty state uncluttered.
+                */}
+                {rows.some((r) => r.page_key === p.key) && (
+                  <div className="mb-4 flex flex-wrap items-end gap-2">
+                    <div className="relative flex-1 min-w-[220px]">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        value={buildFilter}
+                        onChange={(e) => setBuildFilter(e.target.value)}
+                        placeholder="Filter by build tag, commit or change text…"
+                        className="pl-8"
+                      />
+                    </div>
+                    <div className="w-[180px]">
+                      <Select
+                        value={buildFilter || '__all__'}
+                        onValueChange={(v) => setBuildFilter(v === '__all__' ? '' : v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Jump to build" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">All builds</SelectItem>
+                          {buildTagsForPage.map((tag) => (
+                            <SelectItem key={tag} value={tag}>
+                              {tag}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-[150px]">
+                      <Select
+                        value={statusFilter}
+                        onValueChange={(v) => setStatusFilter(v as 'all' | 'published' | 'draft')}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All statuses</SelectItem>
+                          <SelectItem value="published">Published</SelectItem>
+                          <SelectItem value="draft">Drafts</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {filtersActive && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setBuildFilter('');
+                          setStatusFilter('all');
+                        }}
+                        title="Clear filters"
+                      >
+                        <FilterX className="h-4 w-4 mr-1.5" />
+                        Clear
+                      </Button>
+                    )}
+                    <div className="ml-auto text-xs text-muted-foreground self-center">
+                      Showing <span className="font-medium text-foreground">{filtered.length}</span> of{' '}
+                      {counts[p.key].total} entries
+                    </div>
+                  </div>
+                )}
+
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : filtered.length === 0 ? (
                   <div className="text-center py-12 text-sm text-muted-foreground">
-                    No entries yet for this page.
-                    <div className="mt-3">
-                      <Button size="sm" onClick={() => setEditing(emptyDraft())}>
-                        <Plus className="h-4 w-4 mr-1.5" />
-                        Add the first entry
-                      </Button>
-                    </div>
+                    {filtersActive ? (
+                      <>
+                        No entries match the current filter.
+                        <div className="mt-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setBuildFilter('');
+                              setStatusFilter('all');
+                            }}
+                          >
+                            <FilterX className="h-4 w-4 mr-1.5" />
+                            Clear filters
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        No entries yet for this page.
+                        <div className="mt-3">
+                          <Button size="sm" onClick={() => setEditing(emptyDraft())}>
+                            <Plus className="h-4 w-4 mr-1.5" />
+                            Add the first entry
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <ol className="space-y-3">
