@@ -239,3 +239,158 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name:
+    "log-crawler-visit rejects pageUrl/userAgent above the 2048-char max length with HTTP 400 + INVALID_PAYLOAD",
+  async fn() {
+    // The Zod schema in index.ts caps both fields at 2048 chars. We exercise:
+    //   1. exact boundary (2048) → must NOT be rejected for length
+    //   2. boundary+1 (2049)     → must be rejected with INVALID_PAYLOAD
+    //   3. far-over (5000)       → must be rejected with INVALID_PAYLOAD
+    //   4. both fields oversized → fieldErrors must mention BOTH fields
+    const MAX_LEN = 2048;
+
+    // Build a pageUrl of exact length N. Pad the path with `a`s so the URL
+    // stays syntactically valid and the slug is unique per run.
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const buildPageUrlOfLength = (n: number) => {
+      const prefix = `${ORIGIN}/product/len-${runId}-`;
+      const padLen = Math.max(0, n - prefix.length);
+      return prefix + "a".repeat(padLen);
+    };
+    // Build a userAgent of exact length N by padding the Googlebot UA with
+    // a long bracketed suffix (preserves "looks like a real UA").
+    const buildUserAgentOfLength = (n: number) => {
+      const prefix = `${GOOGLEBOT_UA} [pad=`;
+      const suffix = `]`;
+      const padLen = Math.max(0, n - prefix.length - suffix.length);
+      return prefix + "x".repeat(padLen) + suffix;
+    };
+
+    // -----------------------------------------------------------------------
+    // 1. Exact boundary — must be ACCEPTED (length-wise). The function may
+    //    still return 200 OK; we only assert it is *not* a 400 with a
+    //    length-related field error, since other validation passes.
+    // -----------------------------------------------------------------------
+    {
+      const body = {
+        pageUrl: buildPageUrlOfLength(MAX_LEN),
+        userAgent: buildUserAgentOfLength(MAX_LEN),
+      };
+      assertEquals(body.pageUrl.length, MAX_LEN);
+      assertEquals(body.userAgent.length, MAX_LEN);
+
+      const res = await callFunction(body);
+      const text = await res.text();
+      // Must not be rejected purely for being too long.
+      // (200 is the happy path; anything else is acceptable as long as it
+      // doesn't claim a length violation.)
+      if (res.status === 400) {
+        assertEquals(
+          text.includes("exceeds 2048 chars"),
+          false,
+          `boundary-length payload (${MAX_LEN}) must not be rejected for length, got: ${text}`,
+        );
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. boundary+1 on pageUrl alone — must be 400 INVALID_PAYLOAD with a
+    //    fieldErrors entry mentioning pageUrl + "exceeds 2048 chars".
+    // -----------------------------------------------------------------------
+    {
+      const body = {
+        pageUrl: buildPageUrlOfLength(MAX_LEN + 1),
+        userAgent: GOOGLEBOT_UA,
+      };
+      assertEquals(body.pageUrl.length, MAX_LEN + 1);
+
+      const res = await callFunction(body);
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `expected 400 for over-long pageUrl (len=${body.pageUrl.length}), got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(json.code, "INVALID_PAYLOAD");
+      assertExists(json.fieldErrors?.pageUrl, "fieldErrors.pageUrl missing");
+      assertMatch(
+        String((json.fieldErrors.pageUrl as string[]).join(" | ")),
+        /exceeds 2048 chars/,
+        "pageUrl error message should mention the 2048-char cap",
+      );
+      // userAgent must NOT be flagged when only pageUrl is over the limit.
+      assertEquals(
+        json.fieldErrors?.userAgent,
+        undefined,
+        "userAgent must not be flagged when only pageUrl is over-long",
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. far-over on userAgent alone — same shape, mirrored field.
+    // -----------------------------------------------------------------------
+    {
+      const body = {
+        pageUrl: `${ORIGIN}/product/over-${runId}`,
+        userAgent: buildUserAgentOfLength(5000),
+      };
+      assertEquals(body.userAgent.length, 5000);
+
+      const res = await callFunction(body);
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `expected 400 for far-over userAgent (len=${body.userAgent.length}), got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(json.code, "INVALID_PAYLOAD");
+      assertExists(json.fieldErrors?.userAgent, "fieldErrors.userAgent missing");
+      assertMatch(
+        String((json.fieldErrors.userAgent as string[]).join(" | ")),
+        /exceeds 2048 chars/,
+        "userAgent error message should mention the 2048-char cap",
+      );
+      assertEquals(
+        json.fieldErrors?.pageUrl,
+        undefined,
+        "pageUrl must not be flagged when only userAgent is over-long",
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // 4. BOTH fields oversized — fieldErrors must surface BOTH violations
+    //    in a single response so callers can fix both at once.
+    // -----------------------------------------------------------------------
+    {
+      const body = {
+        pageUrl: buildPageUrlOfLength(MAX_LEN + 100),
+        userAgent: buildUserAgentOfLength(MAX_LEN + 100),
+      };
+      const res = await callFunction(body);
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `expected 400 when both fields are over-long, got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(json.code, "INVALID_PAYLOAD");
+      assertExists(json.fieldErrors?.pageUrl);
+      assertExists(json.fieldErrors?.userAgent);
+      assertMatch(
+        String((json.fieldErrors.pageUrl as string[]).join(" | ")),
+        /exceeds 2048 chars/,
+      );
+      assertMatch(
+        String((json.fieldErrors.userAgent as string[]).join(" | ")),
+        /exceeds 2048 chars/,
+      );
+      // Validation counters should reflect both fields incremented.
+      assertExists(json.validationCounters);
+    }
+  },
+});
