@@ -384,11 +384,11 @@ export default function PageChangelogManager() {
                                 {row.commit_ref}
                               </span>
                               {row.is_published ? (
-                                <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-700">
+                                <Badge variant="secondary" className="text-[10px]">
                                   Published
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700">
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground">
                                   Draft
                                 </Badge>
                               )}
