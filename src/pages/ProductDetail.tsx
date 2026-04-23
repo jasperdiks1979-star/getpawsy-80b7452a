@@ -63,6 +63,7 @@ import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
 import { StockNotificationForm } from "@/components/products/StockNotificationForm";
 import { RecentlyViewedCarousel } from "@/components/products/RecentlyViewedCarousel";
+import { usePdpBotRenderTrace } from "@/hooks/usePdpBotRenderTrace";
 import { RelatedProductsCarousel } from "@/components/products/RelatedProductsCarousel";
 import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
 import { useRelatedProducts } from "@/hooks/useRelatedProducts";
@@ -339,6 +340,14 @@ const ProductDetail = () => {
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
+  });
+
+  // Bot-render diagnostics: log whether crawlers see the loading shell
+  // or real product data on this PDP. No-op for human users.
+  usePdpBotRenderTrace({
+    slug,
+    isLoading,
+    hasProduct: !!product,
   });
 
   // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
