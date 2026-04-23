@@ -179,6 +179,12 @@ jobs:
             echo '```'
             cat coverage-summary.txt 2>/dev/null || echo '(no coverage summary generated)'
             echo '```'
+            echo
+            echo "### Validation-bucket coverage"
+            echo
+            echo '```json'
+            cat fuzz-bucket-coverage.json 2>/dev/null || echo '(no bucket-coverage summary generated)'
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage report
@@ -189,5 +195,6 @@ jobs:
           path: |
             coverage/
             coverage-summary.txt
+            fuzz-bucket-coverage.json
           if-no-files-found: warn
           retention-days: 14
