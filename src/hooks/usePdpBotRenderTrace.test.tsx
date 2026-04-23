@@ -490,4 +490,62 @@ describe('usePdpBotRenderTrace', () => {
     expect(states).toEqual(['shell', 'shell']); // 2 transport attempts...
     expect(new Set(states)).toEqual(new Set(['shell'])); // ...of 1 distinct state
   });
+
+  it('cancels the 8s watchdog when hasProduct flips true just before the boundary', async () => {
+    const slug = 'watchdog-edge-bed';
+    const { rerender } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+
+    // Drain the shell-effect's async invoke.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Sit on the loading shell for 7,999ms — one millisecond shy of the
+    // watchdog firing. No timeout should have been logged yet.
+    await act(async () => {
+      vi.advanceTimersByTime(7_999);
+      await Promise.resolve();
+    });
+
+    expect(getReportedStates()).toEqual(['shell']);
+
+    // Product data lands at the very edge of the watchdog window.
+    rerender({ isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getReportedStates()).toEqual(['shell', 'rendered']);
+
+    // Cross the original 8s boundary and well past it. If the watchdog were
+    // still armed, it would now fire a "timeout" — it must not.
+    await act(async () => {
+      vi.advanceTimersByTime(5_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const states = getReportedStates();
+    expect(states).toEqual(['shell', 'rendered']);
+    expect(states).not.toContain('timeout');
+
+    // And no log call for this slug should carry the timeout tag.
+    const timeoutCallsForSlug = invokeMock.mock.calls.filter(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        (opts as { body: { pageUrl: string; userAgent: string } }).body.pageUrl.includes(
+          `/product/${slug}`,
+        ) &&
+        (opts as { body: { userAgent: string } }).body.userAgent.includes(
+          'pdp-render-trace:timeout',
+        ),
+    );
+    expect(timeoutCallsForSlug).toHaveLength(0);
+  });
 });
