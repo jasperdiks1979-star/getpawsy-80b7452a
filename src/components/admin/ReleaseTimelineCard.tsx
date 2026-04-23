@@ -92,6 +92,9 @@ export function ReleaseTimelineCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const location = useLocation();
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const scrolledForHash = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -113,6 +116,27 @@ export function ReleaseTimelineCard() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Deep-link support: when navigating in with #release-<id>, auto-expand the
+  // matching row and scroll it into view once the data has loaded. We track
+  // which hash we've already handled so re-renders don't keep re-scrolling.
+  useEffect(() => {
+    if (!rows || rows.length === 0) return;
+    const hash = location.hash;
+    if (!hash || !hash.startsWith('#release-')) return;
+    if (scrolledForHash.current === hash) return;
+    const id = hash.slice('#release-'.length);
+    if (!rows.some((r) => r.id === id)) return;
+    setExpanded((s) => ({ ...s, [id]: true }));
+    scrolledForHash.current = hash;
+    // Defer scroll so the expanded panel has a chance to render.
+    requestAnimationFrame(() => {
+      const el = rowRefs.current[id];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }, [rows, location.hash]);
 
   return (
     <Card>
@@ -151,8 +175,19 @@ export function ReleaseTimelineCard() {
           <div className="space-y-4">
             {rows.map((r) => {
               const isOpen = !!expanded[r.id];
+              const isAnchored = location.hash === `#release-${r.id}`;
               return (
-                <div key={r.id} className="rounded-lg border bg-card">
+                <div
+                  key={r.id}
+                  id={`release-${r.id}`}
+                  ref={(el) => {
+                    rowRefs.current[r.id] = el;
+                  }}
+                  className={cn(
+                    'rounded-lg border bg-card scroll-mt-24 transition-shadow',
+                    isAnchored && 'border-primary ring-2 ring-primary/30',
+                  )}
+                >
                   <button
                     type="button"
                     onClick={() =>
