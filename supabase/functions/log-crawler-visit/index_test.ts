@@ -3912,17 +3912,29 @@ Deno.test({
         )
         .join("\n");
 
+      // Inline failure summary. Surfaces the same length semantics the
+      // JSON fixture records, so a developer triaging from CI logs alone
+      // (no artifact download) still gets:
+      //   - the contract that was breached (expected vs actual)
+      //   - the overshoot delta
+      //   - the minimised reproducer string (head…tail)
+      //   - how much the shrinker reduced the payload
       const shrunkSummary = shrinkResult.shrunk
         ? `Shrunken fixture: axis=${shrinkResult.axis} ` +
           `originalLen=${shrinkResult.originalLen} → shrunkLen=${shrinkResult.shrunkLen} ` +
           `(phase1 calls=${shrinkResult.phase1NetworkCalls}, phase2 calls=${shrinkResult.phase2NetworkCalls}, ` +
           `simplified=${shrinkResult.phase2Applied})\n` +
-          `  value preview: ${JSON.stringify(shrinkResult.shrunkValue.slice(0, 64))}…\n` +
+          `  length semantics: contract=${shrinkResult.axis}.length ≤ ${shrinkResult.expectedMaxLen}, ` +
+          `actual=${shrinkResult.actualLen}, overBy=+${shrinkResult.overBy}, ` +
+          `reduced=${shrinkResult.reductionChars} chars (${shrinkResult.reductionPct}%)\n` +
+          `  minimal reproducer (${shrinkResult.actualLen} units): ${JSON.stringify(shrinkResult.minimalReproducer)}\n` +
           (fixturePath
             ? `  full fixture: ${fixturePath}`
-            : `  (could not persist fixture file; full value above is truncated)`)
+            : `  (could not persist fixture file; minimal reproducer above is the truncated view)`)
         : `Shrinking could not reproduce the violation (likely flaky); ` +
-          `original failing input retained at length ${shrinkResult.originalLen}.`;
+          `original failing input retained at length ${shrinkResult.originalLen} ` +
+          `(contract: ${shrinkResult.axis}.length ≤ ${shrinkResult.expectedMaxLen}, ` +
+          `overBy=+${shrinkResult.overBy}).`;
 
       throw new Error(
         `Property violation: ${violations.length} over-limit input(s) returned 2xx. ` +
