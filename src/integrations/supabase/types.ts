@@ -8144,6 +8144,10 @@ export type Database = {
         Args: { p_limit?: number; p_window_hours?: number }
         Returns: Json
       }
+      get_crawler_sampling_last_hour: {
+        Args: { p_minutes?: number; p_top_pages?: number }
+        Returns: Json
+      }
       get_render_trace_slug_timeline: {
         Args: { p_slug: string; p_window_days?: number }
         Returns: Json
