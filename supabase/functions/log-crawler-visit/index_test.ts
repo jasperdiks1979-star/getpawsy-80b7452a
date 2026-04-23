@@ -3611,6 +3611,47 @@ Deno.test({
       lastSeenCounters: null as Record<string, number> | null,
     };
 
+    // ---------------------------------------------------------------
+    // Validation-bucket coverage tracking.
+    //
+    // For every over-limit fuzz iteration we record which taxonomy
+    // bucket the function attributed the failure to (the *expected*
+    // bucket, derived from the axis we drove). At end-of-run we emit
+    // a single-line `[fuzz-coverage]` JSON summary so CI can parse it,
+    // and we fail the test if any *expected* bucket was hit fewer
+    // times than `FUZZ_BUCKET_MIN_HITS` (default: 1).
+    //
+    // Why this gate exists
+    // --------------------
+    // The fuzz suite already asserts the headline property
+    // ("over-limit → never 2xx") and the per-call envelope contract.
+    // But it's easy for a future refactor to silently stop driving
+    // one of the two axes — e.g. an `axes.filter(...)` that drops
+    // `userAgent` — leaving `schema_user_agent` at zero hits while
+    // every remaining iteration still passes. This gate makes that
+    // regression a CI failure instead of an invisible coverage hole.
+    //
+    // The gate is intentionally narrow:
+    //   - Only the axis-driven schema buckets are *required* to be
+    //     non-zero (schema_page_url + schema_user_agent).
+    //   - Other buckets (schema_referrer, schema_other, trace_*,
+    //     invalid_json) are *recorded* in the summary so trends are
+    //     visible, but their absence is expected — this fuzz suite
+    //     doesn't drive those code paths today.
+    //
+    // Override `FUZZ_BUCKET_MIN_HITS` only when intentionally widening
+    // (e.g. nightly with iterations=25 should easily hit ≥5 per axis).
+    // ---------------------------------------------------------------
+    const bucketHits: Record<string, number> = Object.fromEntries(
+      ENVELOPE_REQUIRED_COUNTER_KEYS.map((k) => [k, 0]),
+    );
+    /** Buckets this fuzz suite is structurally responsible for hitting. */
+    const REQUIRED_COVERAGE_BUCKETS = [
+      "schema_page_url",
+      "schema_user_agent",
+    ] as const;
+    const MIN_BUCKET_HITS = parsePositiveIntEnv("FUZZ_BUCKET_MIN_HITS", 1);
+
     // Track outcomes so a failure prints a one-line repro with seed +
     // iteration index + offending values.
     type Outcome = {
@@ -3778,6 +3819,10 @@ Deno.test({
                  `${label} validationCounters.${expectedBucket} must be ≥1 for an ${axis} length failure, got ${envelope.validationCounters[expectedBucket]}`,
                );
             }
+
+            // Record a coverage hit for the bucket THIS iteration drove.
+            // Aggregated and gated at end-of-run.
+            bucketHits[expectedBucket] = (bucketHits[expectedBucket] ?? 0) + 1;
 
             // (d) Per-call cross-axis attribution: the bucket for the
             //     OTHER (safe) axis must not have grown SINCE the value
@@ -4033,6 +4078,70 @@ Deno.test({
         `[fuzz] aggregate counter growth (first→last response): ${JSON.stringify(growth)} ` +
           `(over-limit calls: ${counterRunTotals.overLimitCalls}, ` +
           `byAxis=${JSON.stringify(counterRunTotals.byAxis)})`,
+      );
+    }
+
+    // -----------------------------------------------------------------
+    // Validation-bucket coverage summary + CI gate.
+    //
+    // Emits a single grep-friendly `[fuzz-coverage]` JSON line that CI
+    // can scrape, and (best-effort) writes the same payload as a JSON
+    // file so workflows can upload it as an artifact. Then enforces
+    // the per-bucket minimum-hit threshold for the buckets this fuzz
+    // suite is structurally responsible for exercising.
+    // -----------------------------------------------------------------
+    const totalHits = Object.values(bucketHits).reduce((a, b) => a + b, 0);
+    const coverageSummary = {
+      seed: `0x${SEED.toString(16)}`,
+      iterationsPerPair: ITERATIONS,
+      totalIterations: iterCounter,
+      overLimitCalls: counterRunTotals.overLimitCalls,
+      bucketHits,
+      requiredBuckets: [...REQUIRED_COVERAGE_BUCKETS],
+      minBucketHits: MIN_BUCKET_HITS,
+      totalBucketHits: totalHits,
+    };
+
+    // Single-line summary — easy to grep in CI logs.
+    console.log(`[fuzz-coverage] ${JSON.stringify(coverageSummary)}`);
+
+    // Human-readable per-bucket table.
+    console.log("[fuzz-coverage] per-bucket hits:");
+    for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+      const required = (REQUIRED_COVERAGE_BUCKETS as readonly string[]).includes(k);
+      const tag = required ? "REQUIRED" : "optional";
+      console.log(`  ${k.padEnd(22)} ${String(bucketHits[k]).padStart(4)}  (${tag})`);
+    }
+
+    // Persist the summary as JSON so workflows can upload it as an
+    // artifact. We write to FUZZ_COVERAGE_OUT if set (CI), else /tmp
+    // for local introspection. Failures here are non-fatal — the gate
+    // below is the source of truth.
+    const coverageOut = Deno.env.get("FUZZ_COVERAGE_OUT")?.trim() ||
+      `/tmp/log-crawler-visit-fuzz-bucket-coverage.json`;
+    try {
+      Deno.writeTextFileSync(coverageOut, JSON.stringify(coverageSummary, null, 2));
+      console.log(`[fuzz-coverage] summary written to ${coverageOut}`);
+    } catch (err) {
+      console.warn(
+        `[fuzz-coverage] could not persist summary to ${coverageOut}: ${(err as Error).message}`,
+      );
+    }
+
+    // CI gate. A bucket this suite drives must hit at least
+    // FUZZ_BUCKET_MIN_HITS times — otherwise we've silently lost a
+    // dimension of coverage. Report ALL underhit buckets in one error
+    // so a contributor sees the whole picture in one CI run.
+    const underhit = REQUIRED_COVERAGE_BUCKETS
+      .filter((k) => (bucketHits[k] ?? 0) < MIN_BUCKET_HITS)
+      .map((k) => `${k}=${bucketHits[k] ?? 0}`);
+    if (underhit.length > 0) {
+      throw new Error(
+        `[fuzz-coverage] validation-bucket coverage regression: ` +
+          `required bucket(s) hit fewer than ${MIN_BUCKET_HITS} time(s) — ${underhit.join(", ")}. ` +
+          `Full hits=${JSON.stringify(bucketHits)}. ` +
+          `Either restore the missing fuzz axis, or — if the drop is intentional — ` +
+          `lower FUZZ_BUCKET_MIN_HITS in the workflow with reviewer sign-off.`,
       );
     }
   },
