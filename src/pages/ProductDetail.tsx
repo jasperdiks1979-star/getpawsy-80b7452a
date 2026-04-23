@@ -342,6 +342,14 @@ const ProductDetail = () => {
     gcTime: 1000 * 60 * 30,
   });
 
+  // Bot-render diagnostics: log whether crawlers see the loading shell
+  // or real product data on this PDP. No-op for human users.
+  usePdpBotRenderTrace({
+    slug,
+    isLoading,
+    hasProduct: !!product,
+  });
+
   // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
   useEffect(() => {
     if (product?._redirect) {
