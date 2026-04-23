@@ -77,6 +77,8 @@ interface Props {
   sampleResults?: SampleResult[] | null;
   /** Override for the live merchant feed URL shown in evidence links. */
   feedUrl?: string | null;
+  /** Optional release title — included as a header row in CSV exports. */
+  releaseTitle?: string | null;
 }
 
 /**
@@ -93,6 +95,7 @@ export function ReleaseIssuesPanel({
   topFailReasons,
   sampleResults,
   feedUrl,
+  releaseTitle,
 }: Props) {
   const {
     issues,
