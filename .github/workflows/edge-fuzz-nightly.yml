@@ -1,0 +1,82 @@
+# Nightly deep-fuzz run for the `log-crawler-visit` edge function.
+#
+# The same property test runs in PR CI with a small iteration count
+# (FUZZ_ITERATIONS=3 → 60 calls) so it stays under ~30s. This workflow
+# bumps the iteration count for a much wider random sample and uses a
+# distinct seed so PR runs and nightly runs explore different points in
+# the input space — increasing the odds of catching rare regressions
+# (e.g. encoding edge-cases, subtle off-by-one bugs around the 2048
+# code-unit boundary) without slowing down PR feedback.
+#
+# Failures are caught by the standard test-failure path; the seed and
+# iteration count are echoed to stdout by the test itself so any failure
+# can be reproduced locally with:
+#
+#   FUZZ_SEED=0xDEADBEEF FUZZ_ITERATIONS=25 \
+#     deno test --allow-net --allow-env \
+#       supabase/functions/log-crawler-visit/index_test.ts
+
+name: Edge Function Fuzz (Nightly)
+
+on:
+  schedule:
+    # 03:17 UTC — off-peak, slightly off the hour to avoid contention
+    # with other nightly jobs.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      fuzz_seed:
+        description: 'Seed for the fuzz PRNG (decimal or 0x-prefixed hex). Leave blank to use the nightly default.'
+        required: false
+        default: ''
+      fuzz_iterations:
+        description: 'Samples per (length-spec × axis) pair. Higher = more coverage, longer runtime.'
+        required: false
+        default: '25'
+
+concurrency:
+  group: edge-fuzz-nightly
+  cancel-in-progress: false
+
+jobs:
+  fuzz:
+    name: log-crawler-visit deep fuzz
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Distinct seed from the PR-CI default (0xC0FFEE) so the two
+      # workflows explore different streams. Bump this when you want
+      # the next nightly to surface a fresh sample.
+      FUZZ_SEED: ${{ github.event.inputs.fuzz_seed || '0xN1GHTLY' && '0x4E16H7LY' || '0x4E16H7LY' }}
+      FUZZ_ITERATIONS: ${{ github.event.inputs.fuzz_iterations || '25' }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Echo fuzz config
+        run: |
+          echo "FUZZ_SEED=${FUZZ_SEED}"
+          echo "FUZZ_ITERATIONS=${FUZZ_ITERATIONS}"
+          echo "Reproduce locally with the same env vars."
+
+      - name: Run deep fuzz test
+        run: |
+          deno test \
+            --allow-net \
+            --allow-env \
+            --allow-read \
+            supabase/functions/log-crawler-visit/index_test.ts \
+            --filter "fuzz"
+
+      - name: Surface fuzz config on failure
+        if: failure()
+        run: |
+          echo "::error title=Fuzz regression::Reproduce with FUZZ_SEED=${FUZZ_SEED} FUZZ_ITERATIONS=${FUZZ_ITERATIONS}"
