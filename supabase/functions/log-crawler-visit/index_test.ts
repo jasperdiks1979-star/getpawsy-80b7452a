@@ -4255,14 +4255,22 @@ Deno.test({
               if (k !== expectedBucket) {
                 const prevMax = perBucketObservedMax[k] ?? 0;
                 if (v > prevMax) {
-                  throw new Error(
-                    `${label} per-request invariant violated: only the ` +
-                      `expected bucket ("${expectedBucket}") may be ` +
-                      `incremented by an ${axis}-length failure, but ` +
-                      `bucket "${k}" went from ${prevMax} → ${v} on this ` +
-                      `single request. Full counters=` +
-                      `${JSON.stringify(envelope.validationCounters)}`,
-                  );
+                  if (CONCURRENCY === 1) {
+                    throw new Error(
+                      `${label} per-request invariant violated: only the ` +
+                        `expected bucket ("${expectedBucket}") may be ` +
+                        `incremented by an ${axis}-length failure, but ` +
+                        `bucket "${k}" went from ${prevMax} → ${v} on this ` +
+                        `single request. Full counters=` +
+                        `${JSON.stringify(envelope.validationCounters)}`,
+                    );
+                  }
+                  // Under concurrency, "new high on a non-offending
+                  // bucket" is potentially attributable to a sibling
+                  // worker on the same isolate driving the other axis;
+                  // the warning is already emitted by the (d) block
+                  // above. We deliberately do NOT re-warn here to
+                  // avoid duplicating the same line in CI logs.
                 }
               }
             }
