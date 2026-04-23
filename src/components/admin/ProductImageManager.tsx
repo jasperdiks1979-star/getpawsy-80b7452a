@@ -329,45 +329,102 @@ export const ProductImageManager = ({
   // validation in the preview tray; rejected files are dropped silently
   // (the user already saw their reason in the tray).
   const confirmUpload = async () => {
-    const accepted = pendingFiles.filter((p) => p.status === "ok");
+    // Re-uploadable items are anything currently OK *or* previously failed
+    // (so the user can hit "Upload" again after a network blip without
+    // re-picking the files). Pre-flight `rejected` items stay grey.
+    const accepted = pendingFiles.filter((p) => p.status === "ok" || p.status === "failed");
     if (accepted.length === 0) {
       toast.error("No valid files to upload");
       return;
     }
 
+    // Reset previous failures to "ok" so the spinner shows on every
+    // attempted tile, not just the new ones.
+    setPendingFiles((prev) =>
+      prev.map((p) => (p.status === "failed" ? { ...p, status: "ok", error: undefined } : p)),
+    );
+
     setIsUploading(true);
     setUploadProgress({ done: 0, total: accepted.length });
     try {
       const uploadedUrls: string[] = [];
-      const failed: { name: string; reason: string }[] = [];
+      const succeededIds: string[] = [];
+      const failedItems: { id: string; error: PendingError }[] = [];
       for (let i = 0; i < accepted.length; i++) {
-        const { file } = accepted[i];
+        const { id, file } = accepted[i];
         // Build a collision-resistant path: timestamp + random suffix + ext.
         const ext = file.name.includes(".")
           ? file.name.split(".").pop()!.toLowerCase()
           : "bin";
         const key = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("product-images")
-          .upload(key, file, {
-            contentType: file.type,
-            cacheControl: "3600",
-            upsert: false,
-          });
+        let uploadError: { message: string } | null = null;
+        try {
+          const res = await supabase.storage
+            .from("product-images")
+            .upload(key, file, {
+              contentType: file.type,
+              cacheControl: "3600",
+              upsert: false,
+            });
+          uploadError = res.error;
+        } catch (networkErr) {
+          // `supabase-js` throws (instead of returning `error`) when the
+          // browser fetch itself fails — DNS, offline, CORS, etc.
+          uploadError = {
+            message: networkErr instanceof Error ? networkErr.message : "Network request failed",
+          };
+        }
 
         if (uploadError) {
-          // Storage returns "Payload too large" (413) when bucket-level
-          // file_size_limit kicks in — surface a friendlier message.
-          const msg = /payload too large|exceeded the maximum/i.test(uploadError.message)
-            ? `exceeds the ${PRODUCT_IMAGE_MAX_LABEL} server limit`
-            : uploadError.message;
-          failed.push({ name: file.name, reason: msg });
+          // Categorize the error so the inline tile can show the RIGHT
+          // icon + message that always names the file and the limit.
+          const raw = uploadError.message;
+          const lower = raw.toLowerCase();
+          let pe: PendingError;
+          if (/payload too large|exceeded the maximum|413/.test(lower)) {
+            pe = {
+              kind: "size-server",
+              title: "Rejected by storage",
+              detail: `"${file.name}" exceeded the ${PRODUCT_IMAGE_MAX_LABEL} server limit.`,
+              raw,
+            };
+          } else if (/already exists|duplicate/.test(lower)) {
+            pe = {
+              kind: "duplicate",
+              title: "Already exists",
+              detail: `"${file.name}" is already uploaded under the same key. Try renaming the file.`,
+              raw,
+            };
+          } else if (/failed to fetch|network|offline|networkerror/.test(lower)) {
+            pe = {
+              kind: "network",
+              title: "Network error",
+              detail: `Couldn't reach storage while uploading "${file.name}". Check your connection and retry.`,
+              raw,
+            };
+          } else if (/5\d\d|server|internal/.test(lower)) {
+            pe = {
+              kind: "server",
+              title: "Storage error",
+              detail: `Storage rejected "${file.name}": ${raw}`,
+              raw,
+            };
+          } else {
+            pe = {
+              kind: "unknown",
+              title: "Upload failed",
+              detail: `"${file.name}" could not be uploaded: ${raw}`,
+              raw,
+            };
+          }
+          failedItems.push({ id, error: pe });
         } else {
           const { data: pub } = supabase.storage
             .from("product-images")
             .getPublicUrl(key);
           uploadedUrls.push(pub.publicUrl);
+          succeededIds.push(id);
         }
 
         setUploadProgress({ done: i + 1, total: accepted.length });
@@ -383,21 +440,37 @@ export const ProductImageManager = ({
         onChange(merged);
         toast.success(
           `Uploaded ${uploadedUrls.length} image${uploadedUrls.length === 1 ? "" : "s"}` +
-            (failed.length > 0 ? ` (${failed.length} failed)` : ""),
+            (failedItems.length > 0 ? ` · ${failedItems.length} failed — see details below` : ""),
         );
       }
 
-      if (failed.length > 0) {
-        const preview = failed.slice(0, 3)
-          .map((f) => `"${f.name}" — ${f.reason}`)
-          .join("; ");
-        const overflow = failed.length > 3 ? ` and ${failed.length - 3} more` : "";
-        toast.error(`Failed to upload ${failed.length}: ${preview}${overflow}`);
+      if (failedItems.length > 0) {
+        toast.error(
+          `${failedItems.length} upload${failedItems.length === 1 ? "" : "s"} failed — inline details shown below`,
+        );
       }
 
-      // Clear the tray after a successful (or partially-successful) upload.
-      // Rejected files leave the tray too — they were never going to upload.
-      clearPending();
+      // Update the tray: drop succeeded items (revoke their object URLs)
+      // and mark failed items with their structured error so the user
+      // sees inline, per-tile messages instead of just a transient toast.
+      setPendingFiles((prev) => {
+        const succeededSet = new Set(succeededIds);
+        const failedMap = new Map(failedItems.map((f) => [f.id, f.error]));
+        const kept: PendingFile[] = [];
+        for (const p of prev) {
+          if (succeededSet.has(p.id)) {
+            URL.revokeObjectURL(p.previewUrl);
+            continue;
+          }
+          const fe = failedMap.get(p.id);
+          if (fe) {
+            kept.push({ ...p, status: "failed", error: fe });
+          } else {
+            kept.push(p);
+          }
+        }
+        return kept;
+      });
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
