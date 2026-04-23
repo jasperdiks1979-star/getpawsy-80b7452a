@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2 } from "lucide-react";
+import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2, FolderUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -39,7 +39,15 @@ export const ProductImageManager = ({
   const [newImageUrl, setNewImageUrl] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  // Bulk-upload progress: rendered into the upload buttons + drop zone so
+  // the user can see "image 3 / 12 uploading" instead of an opaque spinner.
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  // Visual highlight for the bulk drag-and-drop target. Tracked separately
+  // from `draggedIndex` (which is for in-grid reordering) so dropping a
+  // file onto the zone never accidentally triggers a reorder.
+  const [isDropTarget, setIsDropTarget] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const bulkInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleAddImage = () => {
     if (!newImageUrl.trim()) {
@@ -122,33 +130,65 @@ export const ProductImageManager = ({
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    // Always reset the input so picking the same file again re-fires onChange.
-    e.target.value = "";
-    if (files.length === 0) return;
+  const handleBulkPick = () => {
+    bulkInputRef.current?.click();
+  };
 
-    // Pre-flight every file BEFORE we start uploading so the user sees all
-    // problems up front instead of getting interrupted mid-batch.
-    for (const file of files) {
+  // Shared upload pipeline used by:
+  //   1. The single/few-file "Upload" button (file picker)
+  //   2. The dedicated "Bulk upload" button (file picker, semantic alias)
+  //   3. The drop zone (drag-and-drop, possibly dozens of files)
+  // All three paths run the SAME pre-flight validation and the SAME
+  // sequential per-file upload, so the 20 MB-per-file limit is enforced
+  // identically regardless of how the files entered the component.
+  const uploadFiles = async (rawFiles: File[]) => {
+    if (rawFiles.length === 0) return;
+
+    // Pre-flight: validate EVERY file first and collect *all* problems so
+    // the user gets one consolidated report instead of N stop-the-world
+    // toasts. Bulk uploads commonly include a stray screenshot or a HEIC
+    // from a phone — we want to skip those and still upload the rest.
+    const accepted: File[] = [];
+    const rejected: { file: File; reason: string }[] = [];
+    for (const file of rawFiles) {
       if (!PRODUCT_IMAGE_ALLOWED_MIME.includes(file.type as typeof PRODUCT_IMAGE_ALLOWED_MIME[number])) {
-        toast.error(
-          `"${file.name}" is not a supported image format. Allowed: JPEG, PNG, WebP, GIF, AVIF.`,
-        );
-        return;
+        rejected.push({
+          file,
+          reason: `unsupported format (${file.type || "unknown"})`,
+        });
+        continue;
       }
       if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
-        toast.error(
-          `"${file.name}" is ${formatBytes(file.size)} — over the ${PRODUCT_IMAGE_MAX_LABEL} per-file limit.`,
-        );
-        return;
+        rejected.push({
+          file,
+          reason: `${formatBytes(file.size)} > ${PRODUCT_IMAGE_MAX_LABEL} per-file limit`,
+        });
+        continue;
       }
+      accepted.push(file);
     }
 
+    if (rejected.length > 0) {
+      // Show up to 3 individual reasons, then a count of the rest, so a
+      // user dragging in 30 mixed files isn't drowned in toasts.
+      const preview = rejected.slice(0, 3)
+        .map((r) => `"${r.file.name}" — ${r.reason}`)
+        .join("; ");
+      const overflow = rejected.length > 3 ? ` and ${rejected.length - 3} more` : "";
+      toast.error(
+        `Skipped ${rejected.length} file${rejected.length === 1 ? "" : "s"}: ${preview}${overflow}`,
+      );
+    }
+
+    if (accepted.length === 0) return;
+
     setIsUploading(true);
+    setUploadProgress({ done: 0, total: accepted.length });
     try {
       const uploadedUrls: string[] = [];
-      for (const file of files) {
+      const failed: { name: string; reason: string }[] = [];
+      for (let i = 0; i < accepted.length; i++) {
+        const file = accepted[i];
         // Build a collision-resistant path: timestamp + random suffix + ext.
         const ext = file.name.includes(".")
           ? file.name.split(".").pop()!.toLowerCase()
@@ -167,16 +207,17 @@ export const ProductImageManager = ({
           // Storage returns "Payload too large" (413) when bucket-level
           // file_size_limit kicks in — surface a friendlier message.
           const msg = /payload too large|exceeded the maximum/i.test(uploadError.message)
-            ? `"${file.name}" exceeds the ${PRODUCT_IMAGE_MAX_LABEL} server limit.`
-            : `Failed to upload "${file.name}": ${uploadError.message}`;
-          toast.error(msg);
-          continue;
+            ? `exceeds the ${PRODUCT_IMAGE_MAX_LABEL} server limit`
+            : uploadError.message;
+          failed.push({ name: file.name, reason: msg });
+        } else {
+          const { data: pub } = supabase.storage
+            .from("product-images")
+            .getPublicUrl(key);
+          uploadedUrls.push(pub.publicUrl);
         }
 
-        const { data: pub } = supabase.storage
-          .from("product-images")
-          .getPublicUrl(key);
-        uploadedUrls.push(pub.publicUrl);
+        setUploadProgress({ done: i + 1, total: accepted.length });
       }
 
       if (uploadedUrls.length > 0) {
@@ -188,12 +229,57 @@ export const ProductImageManager = ({
         }
         onChange(merged);
         toast.success(
-          `Uploaded ${uploadedUrls.length} image${uploadedUrls.length === 1 ? "" : "s"}`,
+          `Uploaded ${uploadedUrls.length} image${uploadedUrls.length === 1 ? "" : "s"}` +
+            (failed.length > 0 ? ` (${failed.length} failed)` : ""),
         );
+      }
+
+      if (failed.length > 0) {
+        const preview = failed.slice(0, 3)
+          .map((f) => `"${f.name}" — ${f.reason}`)
+          .join("; ");
+        const overflow = failed.length > 3 ? ` and ${failed.length - 3} more` : "";
+        toast.error(`Failed to upload ${failed.length}: ${preview}${overflow}`);
       }
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
     }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    // Always reset the input so picking the same file again re-fires onChange.
+    e.target.value = "";
+    await uploadFiles(files);
+  };
+
+  // Drag-and-drop on the bulk zone. We intentionally do NOT mix this with
+  // the in-grid reordering DnD: the zone is a separate target so a user
+  // dropping files never reorders existing images by accident, and a user
+  // dragging an existing image never uploads it as a new file.
+  const handleZoneDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    // Only treat this as a file drag if the OS is actually carrying files;
+    // otherwise we'd light up the zone whenever the user reorders a tile.
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    if (!isDropTarget) setIsDropTarget(true);
+  };
+
+  const handleZoneDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Only clear when the cursor actually leaves the zone, not when it
+    // crosses into a child element.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setIsDropTarget(false);
+  };
+
+  const handleZoneDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    setIsDropTarget(false);
+    const files = Array.from(e.dataTransfer.files ?? []);
+    await uploadFiles(files);
   };
 
   return (
@@ -237,10 +323,68 @@ export const ProductImageManager = ({
             ) : (
               <Upload className="w-4 h-4 mr-1" />
             )}
-            {isUploading ? "Uploading..." : "Upload"}
+            {isUploading && uploadProgress
+              ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
+              : "Upload"}
           </Button>
           <input
             ref={fileInputRef}
+            type="file"
+            accept={ACCEPT_ATTR}
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </div>
+
+        {/* Bulk upload zone — drag a folder/multi-select onto this target,
+            or click "Bulk upload" to open the OS picker pre-set to multi.
+            Both paths run the same 20 MB-per-file pre-flight + sequential
+            upload as the single-file button above. */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleBulkPick}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleBulkPick();
+            }
+          }}
+          onDragOver={handleZoneDragOver}
+          onDragLeave={handleZoneDragLeave}
+          onDrop={handleZoneDrop}
+          aria-label={`Bulk upload product images, maximum ${PRODUCT_IMAGE_MAX_LABEL} each`}
+          aria-disabled={isUploading}
+          className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            isDropTarget
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/50 hover:bg-muted/40"
+          } ${isUploading ? "pointer-events-none opacity-60" : ""}`}
+        >
+          {isUploading && uploadProgress ? (
+            <>
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              <p className="text-sm font-medium">
+                Uploading {uploadProgress.done} of {uploadProgress.total}…
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Each file is checked against the {PRODUCT_IMAGE_MAX_LABEL} limit before upload.
+              </p>
+            </>
+          ) : (
+            <>
+              <FolderUp className="w-6 h-6 text-muted-foreground" />
+              <p className="text-sm font-medium">
+                Bulk upload — drop images here or click to select multiple
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Up to {PRODUCT_IMAGE_MAX_LABEL} per file · JPEG, PNG, WebP, GIF, AVIF · oversized files are skipped automatically
+              </p>
+            </>
+          )}
+          <input
+            ref={bulkInputRef}
             type="file"
             accept={ACCEPT_ATTR}
             multiple
