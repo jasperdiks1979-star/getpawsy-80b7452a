@@ -1070,13 +1070,20 @@ describe('usePdpBotRenderTrace — deterministic 8s watchdog across retry config
       expect(finalStates).not.toContain('rendered');
       expect(finalStates[finalStates.length - 1]).toBe('timeout');
 
-      // Shell-log presence depends on whether the retry chain completed
-      // before the boundary. For configs that resolve in < 8s, shell MUST
-      // be logged exactly once. For configs that reject (no `invoke` call
-      // ever lands), shell will be absent — that is correct production
+      // Shell-log presence depends on whether the shell-report's retry
+      // chain completed before the boundary. For configs that resolve in
+      // < 8s, shell MUST be logged exactly once. For the slow-exhausting
+      // config the shell `invoke` never lands (the chain rejects before
+      // calling fn), so shell will be absent — that is correct production
       // behavior because `reportRenderState` only records on success.
       const shellCount = finalStates.filter((s) => s === 'shell').length;
       expect(shellCount).toBeLessThanOrEqual(1);
+      if (shellCount === 1) {
+        // When shell IS present it MUST come before the timeout entry.
+        expect(finalStates.indexOf('shell')).toBeLessThan(
+          finalStates.indexOf('timeout'),
+        );
+      }
 
       // Pushing far past the boundary must not trigger a duplicate timeout
       // or any late "rendered" log.
