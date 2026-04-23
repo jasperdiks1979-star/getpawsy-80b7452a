@@ -2942,6 +2942,41 @@ function mulberry32(seed: number): () => number {
 }
 
 /**
+ * Read a 32-bit unsigned integer from an env var. Accepts decimal
+ * (`"12345"`) or hex (`"0xC0FFEE"`). Falls back to `defaultValue` when
+ * the var is unset, empty, or unparseable. Used so CI can pin the fuzz
+ * seed per workflow (PR vs. nightly) without code changes.
+ */
+function parseSeedEnv(name: string, defaultValue: number): number {
+  const raw = Deno.env.get(name);
+  if (!raw || raw.trim() === "") return defaultValue >>> 0;
+  const trimmed = raw.trim();
+  const parsed = trimmed.startsWith("0x") || trimmed.startsWith("0X")
+    ? parseInt(trimmed.slice(2), 16)
+    : parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed)) {
+    console.warn(`[fuzz] ${name}="${raw}" is not a valid integer; using default 0x${defaultValue.toString(16)}`);
+    return defaultValue >>> 0;
+  }
+  return parsed >>> 0;
+}
+
+/**
+ * Read a positive integer from an env var (e.g. iteration count).
+ * Falls back to `defaultValue` when unset, empty, non-numeric, or ≤ 0.
+ */
+function parsePositiveIntEnv(name: string, defaultValue: number): number {
+  const raw = Deno.env.get(name);
+  if (!raw || raw.trim() === "") return defaultValue;
+  const parsed = parseInt(raw.trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.warn(`[fuzz] ${name}="${raw}" is not a positive integer; using default ${defaultValue}`);
+    return defaultValue;
+  }
+  return parsed;
+}
+
+/**
  * Build a string of EXACTLY `targetLen` UTF-16 code units using the given
  * RNG. We mix three character classes so the test exercises:
  *   - plain ASCII (1 unit)
@@ -3036,7 +3071,17 @@ Deno.test({
     // Seed pinned for deterministic CI runs; bump to surface fresh inputs.
     // The seed is logged on every iteration so a failure can be replayed
     // by hard-coding both seed and iteration index.
-    const SEED = 0xC0FFEE;
+    //
+    // CI overrides (set on GitHub Actions; ignored locally if unset):
+    //   FUZZ_SEED        — integer (decimal or 0x-prefixed hex) used to
+    //                      seed mulberry32. Pin per-branch so PR runs and
+    //                      nightly runs can use distinct deterministic
+    //                      streams.
+    //   FUZZ_ITERATIONS  — samples per (length-spec × axis) pair. Default
+    //                      3 (60 network calls). Nightly bumps this to
+    //                      surface rare regressions; never set so high
+    //                      that the test exceeds its 120s timeout.
+    const SEED = parseSeedEnv("FUZZ_SEED", 0xC0FFEE);
     const rng = mulberry32(SEED);
 
     // Length-class generator. We deliberately oversample the boundary
@@ -3081,7 +3126,15 @@ Deno.test({
     // Number of random samples per (spec, axis) pair. Total network calls
     // = specs.length × axes.length × ITERATIONS. With 10 specs × 2 axes
     // × 3 iters = 60 calls; comfortably under the test timeout.
-    const ITERATIONS = 3;
+    // Override via FUZZ_ITERATIONS for nightly deep-fuzz runs.
+    const ITERATIONS = parsePositiveIntEnv("FUZZ_ITERATIONS", 3);
+
+    // Surface the effective config in CI logs so a failure can be
+    // reproduced locally with the same env vars.
+    console.log(
+      `[fuzz] config: seed=0x${SEED.toString(16)} iterations=${ITERATIONS} ` +
+        `(override via FUZZ_SEED / FUZZ_ITERATIONS)`,
+    );
 
     const SAFE_PAGE_URL = `${ORIGIN}/product/fuzz-safe-pageurl`;
     const SAFE_USER_AGENT = GOOGLEBOT_UA;
