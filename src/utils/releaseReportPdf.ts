@@ -1,11 +1,27 @@
 import jsPDF from 'jspdf';
 import type { ReleaseReportResult } from '@/hooks/useReleaseReport';
+import { PAGE_CHANGELOGS, type PageChangelogKey } from '@/lib/page-changelogs';
 
 interface BuildOptions {
   title: string;
   notes?: string;
   result: ReleaseReportResult;
 }
+
+/**
+ * Maps each policy/contact page to the feed-validation field that proves
+ * the change is live in the GMC feed. Used to render the Evidence Matrix
+ * page in the auto-generated release PDF.
+ */
+const EVIDENCE_MAP: Record<PageChangelogKey, { surface: string; feedField: string }> = {
+  contact:  { surface: '/contact',         feedField: 'site_readiness.contact · OrganizationJSON-LD.address.addressCountry=US' },
+  about:    { surface: '/about',           feedField: 'site_readiness.about · OrganizationJSON-LD.address.addressLocality=New York' },
+  shipping: { surface: '/shipping',        feedField: 'site_readiness.shipping · feed g:shipping country=US, service=Standard, $5.99 / free $35+' },
+  returns:  { surface: '/return-policy',   feedField: 'site_readiness.returns · MerchantReturnPolicy.returnDays=30' },
+  privacy:  { surface: '/privacy-policy',  feedField: 'site_readiness.privacy' },
+  terms:    { surface: '/terms-of-service',feedField: 'site_readiness.terms' },
+  cookies:  { surface: '/cookie-policy',   feedField: 'site_readiness.terms (cookies addendum)' },
+};
 
 /**
  * Generate a single-file PDF summary of a Report Release run.
