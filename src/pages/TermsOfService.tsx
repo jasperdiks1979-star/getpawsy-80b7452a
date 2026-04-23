@@ -9,6 +9,7 @@ import {
   US_FULFILLMENT_NOTE,
   SITE_LAST_UPDATED,
 } from '@/lib/shipping-constants';
+import { PageChangelog } from '@/components/seo/PageChangelog';
 
 const TermsOfService = () => {
   const lastUpdated = SITE_LAST_UPDATED;
@@ -37,6 +38,8 @@ const TermsOfService = () => {
                 Last Updated: {lastUpdated}
               </p>
             </div>
+
+            <PageChangelog pageKey="terms" />
 
             {/* Content */}
             <div className="prose prose-lg max-w-none">
