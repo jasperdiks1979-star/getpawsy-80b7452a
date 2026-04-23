@@ -414,10 +414,16 @@ export default function MerchantIntegrationPage() {
               OAuth2 integration — products pushed via Content API.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/integrations/merchant/settings')}>
-            <Settings className="h-4 w-4 mr-1" />
-            Settings
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/integrations/merchant/review-checklist')}>
+              <ClipboardList className="h-4 w-4 mr-1" />
+              Review Checklist
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/integrations/merchant/settings')}>
+              <Settings className="h-4 w-4 mr-1" />
+              Settings
+            </Button>
+          </div>
         </div>
 
         {/* Post-publish quick action — refresh GMC feed and validate */}
