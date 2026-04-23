@@ -609,6 +609,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: 'Invalid JSON body',
+          code: ERROR_CODES.INVALID_JSON,
           validationCounters: getValidationCounters(),
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -638,6 +639,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: 'Invalid payload',
+          code: ERROR_CODES.INVALID_PAYLOAD,
           fieldErrors,
           validationCounters: getValidationCounters(),
         }),
