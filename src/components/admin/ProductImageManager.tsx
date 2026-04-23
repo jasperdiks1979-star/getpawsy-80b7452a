@@ -1,8 +1,27 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, GripVertical, Image as ImageIcon } from "lucide-react";
+import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+// -----------------------------------------------------------------------------
+// File upload limits — kept in sync with the `product-images` storage bucket.
+// The bucket itself enforces these as a hard ceiling (file_size_limit +
+// allowed_mime_types), so even if a client bypasses the checks below the
+// upload still fails server-side. We mirror them here to give the user fast,
+// friendly feedback BEFORE a 20 MB upload starts.
+// -----------------------------------------------------------------------------
+export const PRODUCT_IMAGE_MAX_BYTES = 20 * 1024 * 1024; // 20 MB
+export const PRODUCT_IMAGE_MAX_LABEL = "20 MB";
+export const PRODUCT_IMAGE_ALLOWED_MIME = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+] as const;
+const ACCEPT_ATTR = PRODUCT_IMAGE_ALLOWED_MIME.join(",");
 
 interface ProductImageManagerProps {
   images: string[];
@@ -19,6 +38,8 @@ export const ProductImageManager = ({
 }: ProductImageManagerProps) => {
   const [newImageUrl, setNewImageUrl] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleAddImage = () => {
     if (!newImageUrl.trim()) {
