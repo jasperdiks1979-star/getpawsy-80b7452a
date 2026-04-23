@@ -184,9 +184,13 @@ function clampSampleRate(raw: unknown): number {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getSampleRate(supabase: any): Promise<number> {
+async function getSampleRate(supabase: any, forceRefresh = false): Promise<number> {
   const now = Date.now();
-  if (cachedSampleRate !== null && now - sampleRateLoadedAt < SAMPLE_RATE_TTL_MS) {
+  if (
+    !forceRefresh &&
+    cachedSampleRate !== null &&
+    now - sampleRateLoadedAt < SAMPLE_RATE_TTL_MS
+  ) {
     return cachedSampleRate;
   }
 
