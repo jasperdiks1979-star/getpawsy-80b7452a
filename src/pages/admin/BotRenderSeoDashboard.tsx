@@ -118,11 +118,11 @@ export default function BotRenderSeoDashboard() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-orange-500" /> Pages at risk
+                <AlertTriangle className="h-4 w-4 text-warning" /> Pages at risk
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-500">{summary.pagesAtRisk}</div>
+              <div className="text-2xl font-bold text-warning">{summary.pagesAtRisk}</div>
               <div className="text-xs text-muted-foreground">High + critical risk</div>
             </CardContent>
           </Card>
@@ -240,7 +240,7 @@ export default function BotRenderSeoDashboard() {
                       </TableCell>
                       <TableCell className="text-right">{row.totalCrawls}</TableCell>
                       <TableCell className="text-right">{row.shellCount}</TableCell>
-                      <TableCell className="text-right text-green-600">{row.renderedCount}</TableCell>
+                      <TableCell className="text-right text-success">{row.renderedCount}</TableCell>
                       <TableCell className="text-right text-destructive">{row.timeoutCount}</TableCell>
                       <TableCell className="text-right">{fmtPct(row.shellPct)}</TableCell>
                       <TableCell className="text-right">{row.impressions || '—'}</TableCell>
