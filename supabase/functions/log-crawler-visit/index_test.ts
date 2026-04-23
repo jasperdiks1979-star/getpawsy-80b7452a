@@ -1014,6 +1014,209 @@ Deno.test({
 });
 
 // =============================================================================
+// Missing/empty duration-marker integrity test
+// =============================================================================
+// Regression guard for a class of bugs where the server (or a downstream log
+// transform) might "helpfully" synthesise duration markers — most dangerously
+// promoting an absent state to `pdp-render-trace:timeout` because timeout is
+// the longest / most-pessimistic default. The contract is the *opposite*:
+//
+//   * If the inbound UA has no `pdp-render-trace` tag at all → row is persisted
+//     verbatim, with NO `t_mount=`, NO `t_shell=`, and NO synthetic state tag.
+//   * If the inbound UA carries a valid trace state (`shell`/`rendered`) but
+//     no duration markers → row is persisted verbatim with the original state
+//     tag, and STILL no `t_mount=`/`t_shell=` markers. The function must not
+//     "fill in" zeros and must not escalate the state to `timeout`.
+//
+// We assert on the persisted DB row (not just the HTTP response) so any future
+// edge-side normaliser that mutates the UA before insert will fail this test.
+Deno.test({
+  name:
+    "log-crawler-visit preserves UA verbatim when duration markers are missing/empty (no synthetic timeout tag)",
+  ignore: !haveServiceRole,
+  async fn() {
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    // Each case produces a 200 response (the payload is *valid* — duration
+    // markers are an optional cosmetic suffix, not a required field) and a
+    // persisted row whose user_agent matches the inbound string.
+    type Case = {
+      label: string;
+      slug: string;
+      payload: { pageUrl: string; userAgent: string; referrer: string };
+      /** Trace state we expect (or `null` for non-trace UAs). */
+      expectedState: RenderState | null;
+    };
+
+    const cases: Case[] = [
+      {
+        label: "non-trace crawler UA (no pdp-render-trace tag at all)",
+        slug: `it-no-trace-${runId}`,
+        payload: {
+          pageUrl: `${ORIGIN}/product/it-no-trace-${runId}`,
+          // Plain Googlebot — no trace suffix. Must NOT gain a timeout tag.
+          userAgent: GOOGLEBOT_UA,
+          referrer: `${ORIGIN}/`,
+        },
+        expectedState: null,
+      },
+      {
+        label: "shell trace UA with state but NO duration markers",
+        slug: `it-shell-no-durations-${runId}`,
+        payload: {
+          pageUrl: `${ORIGIN}/product/it-shell-no-durations-${runId}?_render=shell`,
+          // Bracketed tag with state, but no `t_mount=`/`t_shell=` suffix.
+          userAgent: `${GOOGLEBOT_UA} [pdp-render-trace:shell]`,
+          referrer: `${ORIGIN}/`,
+        },
+        expectedState: "shell",
+      },
+      {
+        label: "rendered trace UA with EMPTY marker values (t_mount=ms)",
+        slug: `it-rendered-empty-markers-${runId}`,
+        payload: {
+          pageUrl: `${ORIGIN}/product/it-rendered-empty-markers-${runId}?_render=rendered`,
+          // Marker keys present but with no numeric value. The server must
+          // NOT coerce these to "0ms" (which would create a fake "0-duration
+          // render") and must NOT promote the state to timeout.
+          userAgent:
+            `${GOOGLEBOT_UA} [pdp-render-trace:rendered t_mount=ms t_shell=ms]`,
+          referrer: `${ORIGIN}/`,
+        },
+        expectedState: "rendered",
+      },
+    ];
+
+    const slugs = cases.map((c) => c.slug);
+
+    try {
+      // --- 1. POST each case and assert the function accepted it (200) ----
+      for (const c of cases) {
+        const res = await callFunction(c.payload);
+        const text = await res.text(); // always consume body (Deno guidance)
+        assertEquals(
+          res.status,
+          200,
+          `[${c.label}] expected 200, got ${res.status}: ${text}`,
+        );
+      }
+
+      // --- 2. Read each persisted row back and assert UA fidelity ---------
+      // We can't reuse `waitForRow` here because it filters on a state tag
+      // that the non-trace case explicitly lacks. Inline a slug-only poll.
+      const deadline = Date.now() + 10_000;
+      const rowsBySlug = new Map<string, Record<string, unknown>>();
+      while (Date.now() < deadline && rowsBySlug.size < cases.length) {
+        for (const c of cases) {
+          if (rowsBySlug.has(c.slug)) continue;
+          const { data, error } = await supabase
+            .from("crawler_visits")
+            .select("page_url,user_agent,bot_type,created_at")
+            .ilike("page_url", `%/product/${c.slug}%`)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (error) throw error;
+          if (data && data.length > 0) {
+            rowsBySlug.set(c.slug, data[0] as Record<string, unknown>);
+          }
+        }
+        if (rowsBySlug.size < cases.length) {
+          await new Promise((r) => setTimeout(r, 250));
+        }
+      }
+
+      if (rowsBySlug.size < cases.length) {
+        const missing = cases
+          .filter((c) => !rowsBySlug.has(c.slug))
+          .map((c) => c.slug);
+        throw new Error(
+          `Timed out waiting for crawler_visits rows. Missing slugs: ${
+            JSON.stringify(missing)
+          }`,
+        );
+      }
+
+      // --- 3. Per-case persistence assertions -----------------------------
+      for (const c of cases) {
+        const row = rowsBySlug.get(c.slug)!;
+        const persistedUa = String(row.user_agent);
+        const persistedUrl = String(row.page_url);
+
+        // (a) UA round-trips byte-for-byte. This is the keystone assertion:
+        //     if anything mutates the UA mid-flight (synthetic markers,
+        //     state coercion, normaliser stripping brackets, …) it dies here.
+        assertEquals(
+          persistedUa,
+          c.payload.userAgent,
+          `[${c.label}] persisted user_agent must equal the inbound UA verbatim`,
+        );
+
+        // (b) Slug round-trips inside the path so dashboards can group rows.
+        assertMatch(
+          persistedUrl,
+          new RegExp(`/product/${c.slug}(?:[/?#]|$)`),
+          `[${c.label}] page_url should contain /product/${c.slug}`,
+        );
+
+        // (c) Duration-marker absence — the central bug class this test
+        //     guards. Server must NOT synthesise `t_mount=<n>ms` /
+        //     `t_shell=<n>ms` markers anywhere in the persisted UA.
+        assertEquals(
+          /\bt_mount=\d+ms/.test(persistedUa),
+          false,
+          `[${c.label}] persisted UA must NOT contain a synthesised t_mount=<n>ms marker`,
+        );
+        assertEquals(
+          /\bt_shell=\d+ms/.test(persistedUa),
+          false,
+          `[${c.label}] persisted UA must NOT contain a synthesised t_shell=<n>ms marker`,
+        );
+
+        // (d) State-tag fidelity — this is the *anti-promotion* assertion.
+        //     A missing/empty-marker payload must NEVER be relabelled as
+        //     `pdp-render-trace:timeout`. The non-trace case must carry no
+        //     trace tag at all; the shell/rendered cases must carry their
+        //     original state and nothing else.
+        const otherStates = (
+          ["shell", "rendered", "timeout"] as RenderState[]
+        ).filter((s) => s !== c.expectedState);
+
+        if (c.expectedState === null) {
+          // Non-trace UA — server must not invent a trace tag.
+          assertEquals(
+            /pdp-render-trace[:/](shell|rendered|timeout)/i.test(persistedUa),
+            false,
+            `[${c.label}] non-trace UA must not gain ANY pdp-render-trace state tag`,
+          );
+        } else {
+          // Trace UA — original state preserved, no foreign tags injected.
+          assertMatch(
+            persistedUa,
+            new RegExp(`pdp-render-trace[:/]${c.expectedState}\\b`, "i"),
+            `[${c.label}] persisted UA must keep its original ${c.expectedState} tag`,
+          );
+          for (const other of otherStates) {
+            assertEquals(
+              new RegExp(`pdp-render-trace[:/]${other}\\b`, "i").test(
+                persistedUa,
+              ),
+              false,
+              `[${c.label}] persisted UA must NOT carry a synthetic ${other} tag`,
+            );
+          }
+        }
+      }
+    } finally {
+      await cleanup(supabase, slugs);
+    }
+  },
+});
+
+// =============================================================================
 // Sample-rate integration tests
 // =============================================================================
 // These tests mutate `site_settings.crawler_visit_sample_rate` and verify that
