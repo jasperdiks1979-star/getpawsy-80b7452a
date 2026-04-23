@@ -780,7 +780,10 @@ serve(async (req) => {
     if (error) {
       console.error('Failed to log crawler visit:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to log visit' }),
+        JSON.stringify({
+          error: 'Failed to log visit',
+          code: ERROR_CODES.DB_INSERT_FAILED,
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -812,7 +815,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in log-crawler-visit:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        code: ERROR_CODES.INTERNAL_ERROR,
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
