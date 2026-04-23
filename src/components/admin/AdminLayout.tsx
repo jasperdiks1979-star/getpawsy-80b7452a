@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   History,
+  Wrench,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,6 +52,7 @@ const navItems = [
   { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
   { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
   { to: '/admin/tiktok-automation', label: 'TikTok Auto', icon: Activity },
+  { to: '/admin/job-retry-policies', label: 'Job Retry Policies', icon: Wrench },
 ];
 
 /**
