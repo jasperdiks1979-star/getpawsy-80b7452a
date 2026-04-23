@@ -201,5 +201,6 @@ jobs:
             coverage/
             coverage-summary.txt
             fuzz-bucket-coverage.json
+            fuzz-snapshots/
           if-no-files-found: warn
           retention-days: 14
