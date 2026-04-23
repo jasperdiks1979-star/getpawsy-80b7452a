@@ -33,6 +33,10 @@ on:
         description: 'Samples per (length-spec × axis) pair. Higher = more coverage, longer runtime.'
         required: false
         default: '25'
+      fuzz_concurrency:
+        description: 'Concurrent in-flight fuzz workers (1 = serial). Higher values stress the edge function for race conditions.'
+        required: false
+        default: '8'
 
 concurrency:
   group: edge-fuzz-nightly
@@ -50,6 +54,13 @@ jobs:
       # changing the workflow logic.
       FUZZ_SEED: ${{ github.event.inputs.fuzz_seed || '0xA1B2C3D4' }}
       FUZZ_ITERATIONS: ${{ github.event.inputs.fuzz_iterations || '25' }}
+      # Nightly stresses the edge function with 8 simultaneous workers.
+      # With ITERATIONS=25 that's ~63 in-flight calls per worker over
+      # 500 total jobs — plenty of opportunity to surface module-scoped
+      # races (counter double-increments, partial-write responses,
+      # interleaved isolate state) that a serial driver can never hit.
+      # Bump for one-off stress runs via workflow_dispatch only.
+      FUZZ_CONCURRENCY: ${{ github.event.inputs.fuzz_concurrency || '8' }}
       # Nightly drives ~25 iterations per (axis × spec); both axis-driven
       # buckets should comfortably hit ≥5. Higher floor here than PR-CI so
       # a partial regression (one axis broken) trips the gate even when
