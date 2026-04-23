@@ -339,6 +339,7 @@ const BacklinkEnginePage = lazyWithRetry(() => import("./pages/admin/BacklinkEng
 const AdminResourcesPage = lazyWithRetry(() => import("./pages/admin/AdminResourcesPage"));
 const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/IndexingDiagnosticsPage"));
 const BotRenderSeoDashboard = lazyWithRetry(() => import("./pages/admin/BotRenderSeoDashboard"));
+const RenderTraceDashboard = lazyWithRetry(() => import("./pages/admin/RenderTraceDashboard"));
 const CatCondoGrowthDashboard = lazyWithRetry(() => import("./pages/admin/CatCondoGrowthDashboard"));
 const SeoAgentAutonomous = lazyWithRetry(() => import("./pages/admin/SeoAgentAutonomous"));
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
@@ -1667,6 +1668,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <BotRenderSeoDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="render-trace"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RenderTraceDashboard />
                                 </Suspense>
                               }
                             />
