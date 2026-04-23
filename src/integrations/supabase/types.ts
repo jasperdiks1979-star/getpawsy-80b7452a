@@ -5881,6 +5881,59 @@ export type Database = {
           },
         ]
       }
+      release_report_issues: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          issue_key: string
+          release_id: string
+          resolved_at: string | null
+          source: Database["public"]["Enums"]["release_issue_source"]
+          status: Database["public"]["Enums"]["release_issue_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          issue_key: string
+          release_id: string
+          resolved_at?: string | null
+          source?: Database["public"]["Enums"]["release_issue_source"]
+          status?: Database["public"]["Enums"]["release_issue_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          issue_key?: string
+          release_id?: string
+          resolved_at?: string | null
+          source?: Database["public"]["Enums"]["release_issue_source"]
+          status?: Database["public"]["Enums"]["release_issue_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "release_report_issues_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "release_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       release_reports: {
         Row: {
           completed_at: string | null
@@ -8259,6 +8312,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_admin_assignees: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          id: string
+        }[]
+      }
       update_session_heartbeat: {
         Args: { p_session_id: string }
         Returns: undefined
@@ -8266,6 +8327,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "customer"
+      release_issue_source: "validation_fail" | "custom"
+      release_issue_status: "open" | "in_progress" | "resolved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -8394,6 +8457,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "customer"],
+      release_issue_source: ["validation_fail", "custom"],
+      release_issue_status: ["open", "in_progress", "resolved"],
     },
   },
 } as const
