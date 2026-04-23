@@ -184,9 +184,13 @@ function clampSampleRate(raw: unknown): number {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getSampleRate(supabase: any): Promise<number> {
+async function getSampleRate(supabase: any, forceRefresh = false): Promise<number> {
   const now = Date.now();
-  if (cachedSampleRate !== null && now - sampleRateLoadedAt < SAMPLE_RATE_TTL_MS) {
+  if (
+    !forceRefresh &&
+    cachedSampleRate !== null &&
+    now - sampleRateLoadedAt < SAMPLE_RATE_TTL_MS
+  ) {
     return cachedSampleRate;
   }
 
@@ -598,6 +602,38 @@ serve(async (req) => {
   }
 
   try {
+    // -------------------------------------------------------------------------
+    // Admin probe: GET ?probe=sample-rate[&refresh=1]
+    // -------------------------------------------------------------------------
+    // Returns the sample rate the function would currently use for a *normal*
+    // (sampled) request. Lets the admin control page verify that updates to
+    // `site_settings.crawler_visit_sample_rate` have propagated past the
+    // 60-second in-memory cache. Pass `refresh=1` to force a cache bypass.
+    const url = new URL(req.url);
+    if (req.method === 'GET' && url.searchParams.get('probe') === 'sample-rate') {
+      const forceRefresh = url.searchParams.get('refresh') === '1';
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const cachedBefore = cachedSampleRate;
+      const cachedAge =
+        cachedSampleRate !== null ? Date.now() - sampleRateLoadedAt : null;
+      const effective = await getSampleRate(supabase, forceRefresh);
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          probe: 'sample-rate',
+          effectiveSampleRate: effective,
+          cachedBefore,
+          cachedAgeMs: cachedAge,
+          cacheTtlMs: SAMPLE_RATE_TTL_MS,
+          forcedRefresh: forceRefresh,
+          ts: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     let rawBody: unknown;
     try {
       rawBody = await req.json();
