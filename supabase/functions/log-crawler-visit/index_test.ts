@@ -923,3 +923,373 @@ Deno.test({
     }
   },
 });
+
+// =============================================================================
+// Sample-rate integration tests
+// =============================================================================
+// These tests mutate `site_settings.crawler_visit_sample_rate` and verify that
+// the deployed `log-crawler-visit` edge function honours it for *probabilistic*
+// (non-trace, non-bot, non-appeal) requests, while continuing to insert
+// `pdp-render-trace`-tagged requests unconditionally (the dashboard's source
+// of truth). They require:
+//   * SUPABASE_SERVICE_ROLE_KEY  — to write site_settings + read crawler_visits
+//   * a working live edge deploy of log-crawler-visit
+//
+// We bust the function's 60-second sample-rate cache by hitting the
+// `?probe=sample-rate&refresh=1` admin probe immediately after each setting
+// change, so each batch of N requests sees the rate we just installed.
+// =============================================================================
+
+/** A non-Googlebot, non-trace, non-appeal UA. The function will treat these
+ *  requests as ordinary human pings, eligible for probabilistic sampling. */
+const HUMAN_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 " +
+  "(KHTML, like Gecko) Version/17.4 Safari/605.1.15";
+
+/** Build an ordinary-page payload (no /product/ slug, no trace tag). */
+function buildHumanPayload(slug: string) {
+  return {
+    pageUrl: `${ORIGIN}/category/cat-trees/${slug}`,
+    userAgent: HUMAN_UA,
+    referrer: `${ORIGIN}/`,
+  };
+}
+
+/** Force the deployed function to drop its in-memory sample-rate cache so
+ *  the next request sees whatever value we just wrote into site_settings. */
+async function forceSampleRateRefresh(): Promise<number> {
+  const url = new URL(FUNCTIONS_URL);
+  url.searchParams.set("probe", "sample-rate");
+  url.searchParams.set("refresh", "1");
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+  });
+  const text = await res.text();
+  if (res.status !== 200) {
+    throw new Error(
+      `probe=sample-rate&refresh=1 returned ${res.status}: ${text}`,
+    );
+  }
+  const json = JSON.parse(text);
+  return Number(json.effectiveSampleRate);
+}
+
+/** Write the rate into site_settings and confirm the function picked it up. */
+// deno-lint-ignore no-explicit-any
+async function setSampleRate(
+  supabase: SupabaseClient<any, any, any>,
+  rate: number,
+) {
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert(
+      {
+        key: SAMPLE_RATE_KEY,
+        value: String(rate),
+        description: "Set by log-crawler-visit integration test",
+      },
+      { onConflict: "key" },
+    );
+  if (error) throw error;
+  // Wait for the cache bust to take effect; tolerate float jitter.
+  const effective = await forceSampleRateRefresh();
+  if (Math.abs(effective - rate) > 1e-6) {
+    throw new Error(
+      `forceSampleRateRefresh saw effectiveSampleRate=${effective}, expected ${rate}`,
+    );
+  }
+}
+
+/** site_settings key used by the edge function — kept in sync with index.ts. */
+const SAMPLE_RATE_KEY = "crawler_visit_sample_rate";
+
+/** Count rows that match a slug fragment in the `page_url` column. */
+// deno-lint-ignore no-explicit-any
+async function countRowsForSlugPrefix(
+  supabase: SupabaseClient<any, any, any>,
+  prefix: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("crawler_visits")
+    .select("id", { count: "exact", head: true })
+    .ilike("page_url", `%${prefix}%`);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/** Wait until the function has finished its fire-and-forget inserts. The
+ *  edge function uses `EdgeRuntime.waitUntil` for the DB write, so we poll
+ *  until the row count stops growing for two consecutive checks. */
+// deno-lint-ignore no-explicit-any
+async function waitForInsertsToSettle(
+  supabase: SupabaseClient<any, any, any>,
+  prefix: string,
+  expectedAtLeast: number,
+  timeoutMs = 15_000,
+): Promise<number> {
+  const deadline = Date.now() + timeoutMs;
+  let last = -1;
+  let stableTicks = 0;
+  while (Date.now() < deadline) {
+    const c = await countRowsForSlugPrefix(supabase, prefix);
+    if (c === last && c >= expectedAtLeast) {
+      stableTicks++;
+      if (stableTicks >= 2) return c;
+    } else {
+      stableTicks = 0;
+    }
+    last = c;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  return last < 0 ? 0 : last;
+}
+
+/** Restore the original site_settings value (or delete the row if there
+ *  wasn't one). Always called from a `finally` block so a mid-test failure
+ *  doesn't leave the production sample rate at 0. */
+// deno-lint-ignore no-explicit-any
+async function restoreSampleRate(
+  supabase: SupabaseClient<any, any, any>,
+  original: { existed: boolean; value: string | null },
+) {
+  if (original.existed && original.value !== null) {
+    await supabase
+      .from("site_settings")
+      .upsert(
+        { key: SAMPLE_RATE_KEY, value: original.value },
+        { onConflict: "key" },
+      );
+  } else {
+    // Roll back to "log everything" (the function's hard default) rather than
+    // deleting the row, so admins inspecting the table still see a value.
+    await supabase
+      .from("site_settings")
+      .upsert(
+        { key: SAMPLE_RATE_KEY, value: "1" },
+        { onConflict: "key" },
+      );
+  }
+  // Bust the cache so subsequent traffic uses the restored value immediately.
+  await forceSampleRateRefresh().catch(() => {});
+}
+
+Deno.test({
+  name:
+    "log-crawler-visit: sample_rate=0 drops 100% of non-trace requests, but pdp-render-trace pings are always inserted",
+  ignore: !haveServiceRole,
+  // Touching site_settings + waiting for fire-and-forget inserts can take a
+  // few seconds per batch; give the test plenty of headroom.
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+
+    // Snapshot the current rate so we can restore it at the end.
+    const { data: prior } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", SAMPLE_RATE_KEY)
+      .maybeSingle();
+    const originalRate = {
+      existed: prior !== null,
+      value: prior?.value ?? null,
+    };
+
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const humanPrefix = `it-rate0-human-${runId}`;
+    const traceSlug = `it-rate0-trace-${runId}`;
+    const REQUESTS = 20;
+
+    try {
+      // --- Install rate=0 and confirm it propagated to the running function -
+      await setSampleRate(supabase, 0);
+
+      // --- Fire 20 ordinary human pings (must all be sampled out) ---------
+      for (let i = 0; i < REQUESTS; i++) {
+        const res = await callFunction(buildHumanPayload(`${humanPrefix}-${i}`));
+        const text = await res.text();
+        assertEquals(
+          res.status,
+          200,
+          `human ping #${i} should return 200, got ${res.status}: ${text}`,
+        );
+        const json = JSON.parse(text);
+        // Contract: success=true + sampled=false means "we accepted the
+        // request but did not insert a row". This is what the client hooks
+        // were updated to treat as a non-error.
+        assertEquals(
+          json.success,
+          true,
+          `human ping #${i}: success should be true at rate=0`,
+        );
+        assertEquals(
+          json.sampled,
+          false,
+          `human ping #${i}: sampled should be false at rate=0`,
+        );
+        assertEquals(
+          Number(json.sampleRate),
+          0,
+          `human ping #${i}: sampleRate echoed back must equal the installed rate`,
+        );
+      }
+
+      // --- Fire one render-trace ping (must be inserted regardless) -------
+      const tracePayload = buildPayload(traceSlug, "shell");
+      const traceRes = await callFunction(tracePayload);
+      const traceText = await traceRes.text();
+      assertEquals(
+        traceRes.status,
+        200,
+        `render-trace ping should return 200 at rate=0, got ${traceRes.status}: ${traceText}`,
+      );
+
+      // --- Wait for fire-and-forget inserts to finish, then count ---------
+      // Trace ping must have produced exactly one row.
+      const traceRow = await waitForRow(supabase, traceSlug, "shell");
+      assertExists(traceRow, "render-trace ping must insert a crawler_visits row even at rate=0");
+
+      // Human pings must have produced ZERO rows. We give the runtime a
+      // grace window (2s) to flush any hypothetical stragglers.
+      await new Promise((r) => setTimeout(r, 2_000));
+      const humanCount = await countRowsForSlugPrefix(supabase, humanPrefix);
+      assertEquals(
+        humanCount,
+        0,
+        `at rate=0, expected 0 human rows persisted, got ${humanCount}`,
+      );
+    } finally {
+      // Restore production rate FIRST so any failure can't leave the live
+      // site sampled at 0. Cleanup of test rows comes second.
+      await restoreSampleRate(supabase, originalRate);
+      await cleanup(supabase, [traceSlug]);
+      await supabase
+        .from("crawler_visits")
+        .delete()
+        .ilike("page_url", `%${humanPrefix}%`);
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "log-crawler-visit: sample_rate=0.5 drops non-trace requests probabilistically (~50%), trace pings still always inserted",
+  ignore: !haveServiceRole,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+
+    const { data: prior } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", SAMPLE_RATE_KEY)
+      .maybeSingle();
+    const originalRate = {
+      existed: prior !== null,
+      value: prior?.value ?? null,
+    };
+
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const humanPrefix = `it-rate50-human-${runId}`;
+    const traceSlug = `it-rate50-trace-${runId}`;
+    // 60 requests gives a wide tolerance band (10–50 inserts) that's
+    // statistically robust enough to not flake while still catching gross
+    // regressions like "rate is being ignored" (would yield 60) or "rate
+    // collapsed to 0" (would yield 0).
+    const REQUESTS = 60;
+    const MIN_INSERTED = 10;
+    const MAX_INSERTED = 50;
+
+    try {
+      await setSampleRate(supabase, 0.5);
+
+      // --- Fire human pings, count how many the SERVER says it kept ------
+      // The function returns `sampled: true|false` per request, so we don't
+      // have to round-trip through the DB to know the intended outcome.
+      // We use that as the *primary* signal and cross-check against actual
+      // row count to catch insert-path regressions.
+      let serverKept = 0;
+      let serverDropped = 0;
+      for (let i = 0; i < REQUESTS; i++) {
+        const res = await callFunction(buildHumanPayload(`${humanPrefix}-${i}`));
+        const text = await res.text();
+        assertEquals(
+          res.status,
+          200,
+          `human ping #${i} should return 200, got ${res.status}: ${text}`,
+        );
+        const json = JSON.parse(text);
+        assertEquals(json.success, true);
+        if (json.sampled === true) serverKept++;
+        else if (json.sampled === false) serverDropped++;
+        else throw new Error(`human ping #${i}: server returned sampled=${json.sampled}`);
+        // Echoed sampleRate must reflect the installed rate.
+        assertEquals(Number(json.sampleRate), 0.5);
+      }
+
+      // Sanity: every response was classified one way or the other.
+      assertEquals(
+        serverKept + serverDropped,
+        REQUESTS,
+        "every human ping must be classified as sampled-in or sampled-out",
+      );
+      // Strong contract: at rate=0.5 across 60 requests, observing 0 kept
+      // or 60 kept means the rate is not being applied at all.
+      if (serverKept < MIN_INSERTED || serverKept > MAX_INSERTED) {
+        throw new Error(
+          `at rate=0.5, expected ${MIN_INSERTED}–${MAX_INSERTED} kept across ${REQUESTS} requests, got ${serverKept} kept / ${serverDropped} dropped. ` +
+            `This suggests sampling is not being applied as configured.`,
+        );
+      }
+
+      // --- Fire one render-trace ping (must always be inserted) ----------
+      const tracePayload = buildPayload(traceSlug, "rendered");
+      const traceRes = await callFunction(tracePayload);
+      const traceText = await traceRes.text();
+      assertEquals(
+        traceRes.status,
+        200,
+        `render-trace ping should return 200 at rate=0.5, got ${traceRes.status}: ${traceText}`,
+      );
+
+      // --- Cross-check the DB matches the server's view ------------------
+      const traceRow = await waitForRow(supabase, traceSlug, "rendered");
+      assertExists(
+        traceRow,
+        "render-trace ping must insert a crawler_visits row regardless of sample rate",
+      );
+
+      const dbHumanCount = await waitForInsertsToSettle(
+        supabase,
+        humanPrefix,
+        serverKept,
+      );
+      // The DB count should track the server's "kept" count exactly. Allow
+      // ±1 jitter to absorb the rare case where a fire-and-forget insert
+      // hadn't flushed yet despite the settle wait.
+      const drift = Math.abs(dbHumanCount - serverKept);
+      if (drift > 1) {
+        throw new Error(
+          `DB row count (${dbHumanCount}) drifted from server-reported kept count (${serverKept}) by ${drift}. ` +
+            `This suggests inserts are failing silently.`,
+        );
+      }
+    } finally {
+      await restoreSampleRate(supabase, originalRate);
+      await cleanup(supabase, [traceSlug]);
+      await supabase
+        .from("crawler_visits")
+        .delete()
+        .ilike("page_url", `%${humanPrefix}%`);
+    }
+  },
+});
