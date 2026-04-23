@@ -356,6 +356,7 @@ const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/Mercha
 const MerchantReviewChecklistPage = lazyWithRetry(() => import("./pages/admin/MerchantReviewChecklistPage"));
 const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantSettingsPage"));
 const JobRetryPoliciesPage = lazyWithRetry(() => import("./pages/admin/JobRetryPoliciesPage"));
+const JobRetryMetricsPage = lazyWithRetry(() => import("./pages/admin/JobRetryMetricsPage"));
 const ApplePayDomainPage = lazyWithRetry(() => import("./pages/admin/ApplePayDomainPage"));
 const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/MerchantReadinessPage"));
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
@@ -1882,6 +1883,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <JobRetryPoliciesPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="job-retry-metrics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <JobRetryMetricsPage />
                                 </Suspense>
                               }
                             />
