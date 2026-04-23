@@ -16,8 +16,8 @@ import { useBotRenderSeoCorrelation, type BotSeoRow } from '@/hooks/useBotRender
 function riskColor(label: BotSeoRow['riskLabel']): string {
   switch (label) {
     case 'critical': return 'bg-destructive text-destructive-foreground';
-    case 'high':     return 'bg-orange-500 text-white';
-    case 'medium':   return 'bg-yellow-500 text-foreground';
+    case 'high':     return 'bg-destructive/70 text-destructive-foreground';
+    case 'medium':   return 'bg-warning text-warning-foreground';
     default:         return 'bg-muted text-muted-foreground';
   }
 }
