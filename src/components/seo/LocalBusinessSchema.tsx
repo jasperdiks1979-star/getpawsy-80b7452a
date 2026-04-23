@@ -29,13 +29,11 @@ export function LocalBusinessSchema({
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
     email: SUPPORT_EMAIL,
-    vatID: 'NL003295015B69',
-    taxID: 'NL003295015B69',
     address: {
       '@type': 'PostalAddress',
-      addressRegion: 'Gelderland',
-      addressLocality: 'Apeldoorn',
-      addressCountry: 'NL',
+      addressLocality: 'New York',
+      addressRegion: 'NY',
+      addressCountry: 'US',
     },
     contactPoint: {
       '@type': 'ContactPoint',

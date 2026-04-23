@@ -1005,7 +1005,8 @@ const ProductDetail = () => {
               </div>
               <div className="border-t border-border/50 pt-2.5 mt-1 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">✔ Free shipping over ${FREE_SHIPPING_THRESHOLD}</span>
-                <span className="flex items-center gap-1">✔ {RETURN_WINDOW_DAYS}-day returns</span>
+                <a href="/returns" className="flex items-center gap-1 hover:text-primary hover:underline">✔ {RETURN_WINDOW_DAYS}-day returns</a>
+                <a href="/shipping" className="flex items-center gap-1 hover:text-primary hover:underline">✔ Shipping policy</a>
                 <span className="flex items-center gap-1">✔ Secure checkout</span>
               </div>
             </div>

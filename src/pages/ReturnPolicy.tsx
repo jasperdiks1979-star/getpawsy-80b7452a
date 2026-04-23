@@ -306,10 +306,10 @@ const ReturnPolicy = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-3">
-                  <strong>GetPawsy</strong> is a registered business (KVK: 78156955).
+                  <strong>GetPawsy LLC</strong> is a US-based online pet supply retailer headquartered in New York, NY.
                 </p>
                 <p className="text-muted-foreground">
-                  GetPawsy is responsible for processing all returns, issuing refunds, and handling customer service inquiries. When you contact us about a return, you are dealing directly with our team.
+                  GetPawsy LLC is responsible for processing all returns, issuing refunds, and handling customer service inquiries. When you contact us about a return, you are dealing directly with our team.
                 </p>
               </div>
             </section>
