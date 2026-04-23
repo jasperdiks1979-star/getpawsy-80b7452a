@@ -857,4 +857,95 @@ describe('usePdpBotRenderTrace', () => {
     }).body;
     expect(pageUrl).not.toContain(`/product/${slugA}`);
   });
+
+  it('logs shell + rendered exactly once when hasProduct toggles true→false→true within the watchdog window', async () => {
+    // Scenario: within the 8s watchdog window, the consumer briefly reports
+    // hasProduct=true (e.g. an optimistic cache hit), then back to false (cache
+    // invalidation / refetch flicker), then true again once the real fetch
+    // resolves. The hook must:
+    //   1. Emit "shell" exactly once on the initial loading skeleton.
+    //   2. Emit "rendered" exactly once on the FIRST true transition.
+    //   3. NEVER re-emit "rendered" on the second true transition.
+    //   4. NEVER fire "timeout" — the first rendered already cancelled the
+    //      watchdog and that cancellation must survive the false dip.
+    const slug = 'toggle-flicker-bed';
+    const { rerender } = renderHook(
+      ({ isLoading, hasProduct }: { isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug, isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+
+    // Drain the shell-effect's async invoke.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getReportedStates()).toEqual(['shell']);
+
+    // Sit on the shell briefly (well within 8s).
+    await act(async () => {
+      vi.advanceTimersByTime(1_000);
+      await Promise.resolve();
+    });
+
+    // Transition #1: hasProduct flips true → "rendered" should fire once.
+    rerender({ isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getReportedStates()).toEqual(['shell', 'rendered']);
+
+    // Mid-window: hasProduct flips back to false (refetch / cache miss flicker).
+    // Hook is allowed to no-op here; we just need it not to re-emit shell or
+    // re-arm a watchdog that could later fire a stale "timeout".
+    rerender({ isLoading: true, hasProduct: false });
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getReportedStates()).toEqual(['shell', 'rendered']);
+
+    // Transition #2: hasProduct flips true again — must NOT emit a second
+    // "rendered" because the firedRef.rendered guard latches on first success.
+    rerender({ isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getReportedStates()).toEqual(['shell', 'rendered']);
+
+    // Cross well past the original 8s boundary. If the false dip had re-armed
+    // a watchdog (or the original wasn't properly cleared), a "timeout" would
+    // fire here. It must not.
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const finalStates = getReportedStates();
+    expect(finalStates).toEqual(['shell', 'rendered']);
+    expect(finalStates.filter((s) => s === 'shell')).toHaveLength(1);
+    expect(finalStates.filter((s) => s === 'rendered')).toHaveLength(1);
+    expect(finalStates).not.toContain('timeout');
+
+    // Sanity: confirm those two events are bound to OUR slug, not bleed-through.
+    const slugStates = invokeMock.mock.calls
+      .filter(
+        ([fn, opts]) =>
+          fn === 'log-crawler-visit' &&
+          (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+      )
+      .map(([, opts]) => {
+        const ua = (opts as { body: { userAgent: string } }).body.userAgent;
+        return ua.match(/pdp-render-trace:(shell|rendered|timeout)/)?.[1] ?? 'unknown';
+      });
+    expect(slugStates).toEqual(['shell', 'rendered']);
+  });
 });
