@@ -121,10 +121,10 @@ export function ReportReleaseCard() {
         </Button>
 
         {retryInfo && retryInfo.attempt > 1 && busy && (
-          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+          <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
             <div className="space-y-1">
-              <div className="font-medium text-amber-900 dark:text-amber-200">
+              <div className="font-medium text-foreground">
                 Tijdelijke fout bij {retryInfo.fn} — automatisch opnieuw proberen ({retryInfo.attempt}/3)
               </div>
               {retryInfo.lastError && (
