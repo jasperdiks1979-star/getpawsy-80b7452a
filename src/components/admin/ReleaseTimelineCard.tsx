@@ -422,6 +422,14 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
           </li>
         ))}
       </ol>
+      <ReleaseIssuesPanel
+        releaseId={release.id}
+        topFailReasons={
+          Array.isArray(release.validation_summary?.topFailReasons)
+            ? release.validation_summary.topFailReasons
+            : null
+        }
+      />
     </div>
   );
 }
