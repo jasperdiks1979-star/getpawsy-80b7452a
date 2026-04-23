@@ -3192,6 +3192,24 @@ type ShrinkResult = {
   phase1NetworkCalls: number;
   phase2NetworkCalls: number;
   phase2Applied: boolean;
+  // ---- Length semantics (explicit "expected vs actual") --------------
+  // The contract under test is: `value.length <= maxLen`. When it fails,
+  // we want a developer reading the fixture to see at a glance:
+  //   - the cap that was breached (`expectedMaxLen`)
+  //   - the length the shrinker landed on (`actualLen` == `shrunkLen`)
+  //   - by how many UTF-16 code units it overshoots (`overBy`)
+  //   - the size reduction delta vs the original failing payload
+  // These are derived (not authoritative new state), but precomputing
+  // them keeps the JSON fixture self-describing and avoids subtle
+  // off-by-one mistakes when humans eyeball the repro.
+  expectedMaxLen: number;
+  actualLen: number;
+  overBy: number;
+  reductionChars: number;
+  reductionPct: number; // 0..100, rounded to 1 decimal
+  // A short, copy-pasteable head/tail slice for inline log readability.
+  // The full value still lives in `shrunkValue` / the on-disk fixture.
+  minimalReproducer: string;
 };
 
 /**
@@ -3296,19 +3314,46 @@ async function shrinkOverLimitInput(args: {
     }
   }
 
+  // Derive length semantics. These are the "expected vs actual" numbers
+  // a human needs when reading the failing fixture: the cap, the size
+  // the shrinker landed on, the overshoot, and how much we reduced the
+  // payload by vs the original failing input.
+  const actualLen = bestValue.length;
+  const overBy = Math.max(0, actualLen - maxLen);
+  const reductionChars = Math.max(0, originalLen - actualLen);
+  const reductionPct = originalLen > 0
+    ? Math.round((reductionChars / originalLen) * 1000) / 10
+    : 0;
+  // A bounded head/tail slice for inline log views. We show the first
+  // 32 + last 8 units around an ellipsis so the developer can confirm
+  // the boundary character without dumping a 2 KB+ string into stdout.
+  // The complete value is always available in `shrunkValue` and the
+  // on-disk fixture.
+  const HEAD = 32;
+  const TAIL = 8;
+  const minimalReproducer = actualLen <= HEAD + TAIL + 1
+    ? bestValue
+    : `${bestValue.slice(0, HEAD)}…${bestValue.slice(-TAIL)}`;
+
   return {
     axis,
     // `shrunk: false` ONLY when we couldn't make any progress at all —
     // i.e. the original length is already the minimum AND phase 2 was
     // a no-op. (`hi === originalLen` after phase 1 means binary search
     // never confirmed a smaller length still failed.)
-    shrunk: bestValue.length < originalLen || phase2Applied,
+    shrunk: actualLen < originalLen || phase2Applied,
     originalLen,
-    shrunkLen: bestValue.length,
+    shrunkLen: actualLen,
     shrunkValue: bestValue,
     phase1NetworkCalls,
     phase2NetworkCalls,
     phase2Applied,
+    expectedMaxLen: maxLen,
+    actualLen,
+    overBy,
+    reductionChars,
+    reductionPct,
+    minimalReproducer,
   };
 }
 
@@ -3341,6 +3386,18 @@ function writeShrunkFixture(
     phase1NetworkCalls: result.phase1NetworkCalls,
     phase2NetworkCalls: result.phase2NetworkCalls,
     phase2Applied: result.phase2Applied,
+    // Explicit "expected vs actual" length semantics. Mirrors the
+    // fields surfaced in the inline test failure so a human reading
+    // either the JSON fixture or the test stderr sees the same shape.
+    lengthSemantics: {
+      contract: `${result.axis}.length must be ≤ ${result.expectedMaxLen} UTF-16 code units`,
+      expectedMaxLen: result.expectedMaxLen,
+      actualLen: result.actualLen,
+      overBy: result.overBy,
+      reductionChars: result.reductionChars,
+      reductionPct: result.reductionPct,
+    },
+    minimalReproducer: result.minimalReproducer,
     value: result.shrunkValue,
   };
   try {
@@ -3855,17 +3912,29 @@ Deno.test({
         )
         .join("\n");
 
+      // Inline failure summary. Surfaces the same length semantics the
+      // JSON fixture records, so a developer triaging from CI logs alone
+      // (no artifact download) still gets:
+      //   - the contract that was breached (expected vs actual)
+      //   - the overshoot delta
+      //   - the minimised reproducer string (head…tail)
+      //   - how much the shrinker reduced the payload
       const shrunkSummary = shrinkResult.shrunk
         ? `Shrunken fixture: axis=${shrinkResult.axis} ` +
           `originalLen=${shrinkResult.originalLen} → shrunkLen=${shrinkResult.shrunkLen} ` +
           `(phase1 calls=${shrinkResult.phase1NetworkCalls}, phase2 calls=${shrinkResult.phase2NetworkCalls}, ` +
           `simplified=${shrinkResult.phase2Applied})\n` +
-          `  value preview: ${JSON.stringify(shrinkResult.shrunkValue.slice(0, 64))}…\n` +
+          `  length semantics: contract=${shrinkResult.axis}.length ≤ ${shrinkResult.expectedMaxLen}, ` +
+          `actual=${shrinkResult.actualLen}, overBy=+${shrinkResult.overBy}, ` +
+          `reduced=${shrinkResult.reductionChars} chars (${shrinkResult.reductionPct}%)\n` +
+          `  minimal reproducer (${shrinkResult.actualLen} units): ${JSON.stringify(shrinkResult.minimalReproducer)}\n` +
           (fixturePath
             ? `  full fixture: ${fixturePath}`
-            : `  (could not persist fixture file; full value above is truncated)`)
+            : `  (could not persist fixture file; minimal reproducer above is the truncated view)`)
         : `Shrinking could not reproduce the violation (likely flaky); ` +
-          `original failing input retained at length ${shrinkResult.originalLen}.`;
+          `original failing input retained at length ${shrinkResult.originalLen} ` +
+          `(contract: ${shrinkResult.axis}.length ≤ ${shrinkResult.expectedMaxLen}, ` +
+          `overBy=+${shrinkResult.overBy}).`;
 
       throw new Error(
         `Property violation: ${violations.length} over-limit input(s) returned 2xx. ` +
