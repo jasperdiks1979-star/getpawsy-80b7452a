@@ -1672,6 +1672,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="render-trace"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RenderTraceDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="perf-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
