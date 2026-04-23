@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -81,102 +81,125 @@ interface SlugStats {
   rendered: number;
   timeout: number;
   total: number;
-  renderRate: number;
-  timeoutRate: number;
+  render_rate: number;
+  timeout_rate: number;
 }
+
+// ─── Server response shape ──────────────────────────────────────────────────
+// Mirrors what `public.get_render_trace_stats` returns. Keeping it explicit
+// here means the dashboard never has to decode jsonb shapes ad-hoc and the
+// RPC is the single source of truth for aggregation.
+interface PerDayBucket {
+  date: string;
+  shell: number;
+  rendered: number;
+  timeout: number;
+}
+
+interface RenderTraceStats {
+  window_days: number;
+  totals: { shell: number; rendered: number; timeout: number };
+  per_day: PerDayBucket[];
+  slug_total: number;
+  slug_limit: number;
+  slug_offset: number;
+  slugs: SlugStats[];
+  malformed_counts: Partial<Record<MalformedReason, number>>;
+  malformed_samples: MalformedRow[];
+}
+
+const SLUG_PAGE_SIZE = 25;
+// We always fetch the chart's top 15 slugs separately at offset 0 so changing
+// pages in the per-slug table doesn't redraw the bar chart underneath it.
+const CHART_TOP_N = 15;
 
 export default function RenderTraceDashboard() {
   const [windowDays, setWindowDays] = useState<number>(7);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  // Debounce the search so each keystroke doesn't fire a new RPC call.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(id);
+  }, [search]);
+  // Reset pagination whenever the user changes the window or search filter —
+  // otherwise page 4 of an old result set leaks into a fresh query.
+  useEffect(() => {
+    setPage(0);
+  }, [windowDays, debouncedSearch]);
 
-  const { data, isLoading, isRefetching, refetch, error } = useQuery({
-    queryKey: ['render-trace-dashboard', windowDays],
+  // ─── Overview query ─────────────────────────────────────────────────────
+  // This fetches totals, per-day counts, malformed samples, and the top
+  // CHART_TOP_N slugs that drive the bar chart. It is intentionally NOT
+  // re-fetched when the user paginates the per-slug table — only when the
+  // window or search filter changes.
+  const overview = useQuery({
+    queryKey: ['render-trace-overview', windowDays, debouncedSearch],
     queryFn: async () => {
-      const fromDate = startOfDay(subDays(new Date(), windowDays - 1));
-      const { data, error } = await supabase
-        .from('crawler_visits')
-        .select('page_url, user_agent, created_at')
-        .ilike('user_agent', '%pdp-render-trace%')
-        .gte('created_at', fromDate.toISOString())
-        .order('created_at', { ascending: true })
-        .limit(10000);
+      const { data, error } = await supabase.rpc('get_render_trace_stats', {
+        p_window_days: windowDays,
+        p_search: debouncedSearch || null,
+        p_slug_limit: CHART_TOP_N,
+        p_slug_offset: 0,
+        p_malformed_limit: 10,
+      });
       if (error) throw error;
-      return data as TraceRow[];
+      return data as unknown as RenderTraceStats;
     },
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
 
-  const { totals, perDay, perSlug, malformed, malformedByReason } = useMemo(() => {
-    const t = { shell: 0, rendered: 0, timeout: 0 };
-    const dayMap = new Map<string, { date: string; shell: number; rendered: number; timeout: number }>();
-    const slugMap = new Map<string, SlugStats>();
-    const bad: MalformedRow[] = [];
-    const byReason: Record<MalformedReason, number> = {
-      missing_state_tag: 0,
-      unknown_state_tag: 0,
-      unparseable_page_url: 0,
-      empty_slug_path: 0,
-    };
+  // ─── Paginated slug query ───────────────────────────────────────────────
+  // Page 0 reuses the overview's slug slice when no search is active and the
+  // page size matches; otherwise we issue a dedicated RPC call. We keep the
+  // previous page visible while a new one loads to avoid a flicker.
+  const slugPage = useQuery({
+    queryKey: ['render-trace-slugs', windowDays, debouncedSearch, page],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_render_trace_stats', {
+        p_window_days: windowDays,
+        p_search: debouncedSearch || null,
+        p_slug_limit: SLUG_PAGE_SIZE,
+        p_slug_offset: page * SLUG_PAGE_SIZE,
+        p_malformed_limit: 0, // overview already has them
+      });
+      if (error) throw error;
+      return data as unknown as RenderTraceStats;
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  });
 
-    for (const row of data ?? []) {
-      const state = extractState(row.user_agent);
-      if (!state) {
-        const cls = classifyRow(row);
-        if (cls) {
-          bad.push(cls);
-          byReason[cls.reason] += 1;
-        }
-        continue;
-      }
-      // State extracted cleanly — but the URL may still be malformed.
-      const cls = classifyRow(row);
-      if (cls && (cls.reason === 'unparseable_page_url' || cls.reason === 'empty_slug_path')) {
-        bad.push(cls);
-        byReason[cls.reason] += 1;
-      }
-      t[state] += 1;
+  const isLoading = overview.isLoading;
+  const isRefetching = overview.isFetching || slugPage.isFetching;
+  const error = overview.error ?? slugPage.error;
+  const refetch = () => {
+    overview.refetch();
+    slugPage.refetch();
+  };
 
-      const day = format(new Date(row.created_at), 'yyyy-MM-dd');
-      let dayBucket = dayMap.get(day);
-      if (!dayBucket) {
-        dayBucket = { date: day, shell: 0, rendered: 0, timeout: 0 };
-        dayMap.set(day, dayBucket);
-      }
-      dayBucket[state] += 1;
-
-      const slug = extractSlug(row.page_url);
-      let slugBucket = slugMap.get(slug);
-      if (!slugBucket) {
-        slugBucket = { slug, shell: 0, rendered: 0, timeout: 0, total: 0, renderRate: 0, timeoutRate: 0 };
-        slugMap.set(slug, slugBucket);
-      }
-      slugBucket[state] += 1;
-      slugBucket.total += 1;
-    }
-
-    for (const s of slugMap.values()) {
-      const denom = s.shell || s.total || 1;
-      s.renderRate = Math.min(1, s.rendered / denom);
-      s.timeoutRate = Math.min(1, s.timeout / denom);
-    }
-
-    const dayArr = Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-    const slugArr = Array.from(slugMap.values()).sort((a, b) => b.timeout - a.timeout || b.total - a.total);
-    // Most recent first — easier to spot a regression that started today.
-    bad.sort((a, b) => b.created_at.localeCompare(a.created_at));
-    return { totals: t, perDay: dayArr, perSlug: slugArr, malformed: bad, malformedByReason: byReason };
-  }, [data]);
-
-  const filteredSlugs = useMemo(() => {
-    if (!search.trim()) return perSlug;
-    const q = search.toLowerCase();
-    return perSlug.filter(s => s.slug.toLowerCase().includes(q));
-  }, [perSlug, search]);
+  const totals = overview.data?.totals ?? { shell: 0, rendered: 0, timeout: 0 };
+  const perDay = overview.data?.per_day ?? [];
+  const chartSlugs = overview.data?.slugs ?? [];
+  const slugTotal = overview.data?.slug_total ?? 0;
+  const malformed = overview.data?.malformed_samples ?? [];
+  const malformedByReason = overview.data?.malformed_counts ?? {};
+  const malformedTotal = useMemo(
+    () => Object.values(malformedByReason).reduce((a, b) => a + (b ?? 0), 0),
+    [malformedByReason],
+  );
+  const pageSlugs = slugPage.data?.slugs ?? [];
 
   const totalEvents = totals.shell + totals.rendered + totals.timeout;
   const overallTimeoutRate = totals.shell > 0 ? totals.timeout / totals.shell : 0;
   const overallRenderRate = totals.shell > 0 ? Math.min(1, totals.rendered / totals.shell) : 0;
+
+  const totalPages = Math.max(1, Math.ceil(slugTotal / SLUG_PAGE_SIZE));
+  const canPrev = page > 0;
+  const canNext = page < totalPages - 1;
 
   // ─── CSV export ──────────────────────────────────────────────────────────
   // Bundles the three tables admins look at (totals, per-day, top slugs) into
