@@ -216,6 +216,12 @@ export default function JobRetryPoliciesPage() {
   const [form, setForm] = useState<PolicyForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<RetryPolicyRow | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importParsed, setImportParsed] = useState<ExportablePolicy[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importFileName, setImportFileName] = useState<string>('');
+  const [importStrategy, setImportStrategy] = useState<'upsert' | 'skip'>('upsert');
+  const [importing, setImporting] = useState(false);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
