@@ -281,11 +281,43 @@ export function ReleaseStepEvidenceDialog({
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold">Job run, steps &amp; logs</h4>
-                {jobLoading && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Loading…
-                  </span>
-                )}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {jobLoading ? (
+                    <span className="flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                    </span>
+                  ) : (
+                    lastFetchedAt && (
+                      <span aria-live="polite">
+                        {autoRefresh ? 'Auto' : 'Paused'} · updated{' '}
+                        {secondsAgo !== null && secondsAgo < 5
+                          ? 'just now'
+                          : `${secondsAgo}s ago`}
+                      </span>
+                    )
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2"
+                    onClick={() => fetchJobStatus('refresh')}
+                    disabled={jobLoading}
+                    title="Refresh now"
+                  >
+                    <RefreshCw className={cn('h-3 w-3', jobLoading && 'animate-spin')} />
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2"
+                    onClick={() => setAutoRefresh((v) => !v)}
+                    title={autoRefresh ? 'Pause auto-refresh' : 'Resume auto-refresh (10s)'}
+                  >
+                    {autoRefresh ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                    {autoRefresh ? 'Pause' : 'Auto 10s'}
+                  </Button>
+                </div>
               </div>
               {jobError && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
