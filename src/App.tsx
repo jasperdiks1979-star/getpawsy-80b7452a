@@ -338,6 +338,7 @@ const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthI
 const BacklinkEnginePage = lazyWithRetry(() => import("./pages/admin/BacklinkEnginePage"));
 const AdminResourcesPage = lazyWithRetry(() => import("./pages/admin/AdminResourcesPage"));
 const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/IndexingDiagnosticsPage"));
+const BotRenderSeoDashboard = lazyWithRetry(() => import("./pages/admin/BotRenderSeoDashboard"));
 const CatCondoGrowthDashboard = lazyWithRetry(() => import("./pages/admin/CatCondoGrowthDashboard"));
 const SeoAgentAutonomous = lazyWithRetry(() => import("./pages/admin/SeoAgentAutonomous"));
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
@@ -1658,6 +1659,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <IndexingDiagnosticsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="bot-render-seo"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <BotRenderSeoDashboard />
                                 </Suspense>
                               }
                             />
