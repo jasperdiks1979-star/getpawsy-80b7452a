@@ -342,6 +342,7 @@ const BotRenderSeoDashboard = lazyWithRetry(() => import("./pages/admin/BotRende
 const RenderTraceDashboard = lazyWithRetry(() => import("./pages/admin/RenderTraceDashboard"));
 const RenderTraceSlugDetail = lazyWithRetry(() => import("./pages/admin/RenderTraceSlugDetail"));
 const CrawlerSampleRatePage = lazyWithRetry(() => import("./pages/admin/CrawlerSampleRatePage"));
+const CrawlerSamplingDecisionsPage = lazyWithRetry(() => import("./pages/admin/CrawlerSamplingDecisionsPage"));
 const CatCondoGrowthDashboard = lazyWithRetry(() => import("./pages/admin/CatCondoGrowthDashboard"));
 const SeoAgentAutonomous = lazyWithRetry(() => import("./pages/admin/SeoAgentAutonomous"));
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
@@ -1694,6 +1695,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CrawlerSampleRatePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="crawler-sampling-decisions"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CrawlerSamplingDecisionsPage />
                                 </Suspense>
                               }
                             />
