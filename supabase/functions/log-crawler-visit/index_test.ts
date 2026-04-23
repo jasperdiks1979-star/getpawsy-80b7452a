@@ -3517,6 +3517,58 @@ Deno.test({
     const SAFE_PAGE_URL = `${ORIGIN}/product/fuzz-safe-pageurl`;
     const SAFE_USER_AGENT = GOOGLEBOT_UA;
 
+    // ---------------------------------------------------------------
+    // Counter baseline.
+    // The function exposes its module-scoped `validationCounters` in
+    // every 400 envelope. Those counters accumulate across the whole
+    // cold start, so to assert that a SINGLE fuzz call incremented
+    // exactly one bucket we need the per-call DELTA, not the absolute.
+    //
+    // We seed the baseline with one throwaway over-limit request (a
+    // pageUrl one code-unit over the cap). After that, every loop
+    // iteration uses the previous response's counters as its baseline,
+    // so the delta is always "what changed during THIS call".
+    // ---------------------------------------------------------------
+    let countersBefore: Record<string, number> = Object.fromEntries(
+      ENVELOPE_REQUIRED_COUNTER_KEYS.map((k) => [k, 0]),
+    );
+    {
+      const seedRes = await callFunction({
+        pageUrl: "a".repeat(MAX_LEN + 1),
+        userAgent: SAFE_USER_AGENT,
+      });
+      const seedText = await seedRes.text();
+      if (seedRes.status === 400) {
+        try {
+          const seedJson = JSON.parse(seedText);
+          if (
+            seedJson &&
+            typeof seedJson === "object" &&
+            seedJson.validationCounters &&
+            typeof seedJson.validationCounters === "object"
+          ) {
+            for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+              const v = (seedJson.validationCounters as Record<string, unknown>)[k];
+              if (typeof v === "number" && Number.isFinite(v)) {
+                countersBefore[k] = v;
+              }
+            }
+          }
+        } catch {
+          // Baseline parse failure isn't fatal — the per-iteration
+          // delta will just absorb whatever the first real call sees.
+          // Surface it so an unexplained delta in iter 1 has a trail.
+          console.warn(
+            `[fuzz] baseline counter probe returned non-JSON 400 body: ${seedText.slice(0, 240)}`,
+          );
+        }
+      } else {
+        console.warn(
+          `[fuzz] baseline counter probe returned status ${seedRes.status} (expected 400); proceeding with zeroed baseline`,
+        );
+      }
+    }
+
     // Track outcomes so a failure prints a one-line repro with seed +
     // iteration index + offending values.
     type Outcome = {
