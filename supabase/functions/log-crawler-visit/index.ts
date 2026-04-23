@@ -15,6 +15,181 @@ const APPEAL_PAGES = [
   '/appeal-response',
 ];
 
+// -----------------------------------------------------------------------------
+// Verified-Googlebot IP allowlist
+// -----------------------------------------------------------------------------
+// Google publishes the canonical IP ranges for its crawlers as JSON files.
+// We fetch + cache them per cold start (and refresh every 24h) so we can mark
+// requests as `verified: true` only when the source IP matches one of the
+// official ranges. Spoofed UAs from random IPs will be downgraded to
+// `is_googlebot=false` and won't trigger notifications.
+//
+// Docs: https://developers.google.com/search/docs/crawling-indexing/verifying-googlebot
+// -----------------------------------------------------------------------------
+const GOOGLE_IP_RANGE_URLS = [
+  'https://developers.google.com/static/search/apis/ipranges/googlebot.json',
+  'https://developers.google.com/static/search/apis/ipranges/special-crawlers.json',
+  'https://developers.google.com/static/search/apis/ipranges/user-triggered-fetchers.json',
+  // Includes Search Console rendering / Inspection Tool fetchers run from GCP.
+  'https://developers.google.com/static/search/apis/ipranges/user-triggered-fetchers-google.json',
+];
+
+// Optional override: comma-separated CIDRs treated as additional trusted
+// rendering services (e.g. internal QA proxies). Set GOOGLEBOT_EXTRA_CIDRS.
+const EXTRA_CIDRS = (Deno.env.get('GOOGLEBOT_EXTRA_CIDRS') || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+type ParsedRange = {
+  version: 4 | 6;
+  // For v4: 32-bit base & mask. For v6: bigint base & prefix length.
+  base: number | bigint;
+  mask: number | bigint;
+  prefix: number;
+};
+
+let cachedRanges: ParsedRange[] | null = null;
+let cachedAt = 0;
+const RANGE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+function ipv4ToInt(ip: string): number | null {
+  const parts = ip.split('.');
+  if (parts.length !== 4) return null;
+  let n = 0;
+  for (const p of parts) {
+    const v = Number(p);
+    if (!Number.isInteger(v) || v < 0 || v > 255) return null;
+    n = (n * 256) + v;
+  }
+  return n >>> 0;
+}
+
+function expandIpv6(ip: string): string | null {
+  // Strip zone id if present (e.g. fe80::1%eth0)
+  const clean = ip.split('%')[0];
+  // Handle "::" expansion
+  if (clean.indexOf(':::') !== -1) return null;
+  const hasDoubleColon = clean.indexOf('::') !== -1;
+  let parts: string[];
+  if (hasDoubleColon) {
+    const [head, tail] = clean.split('::');
+    const headParts = head ? head.split(':') : [];
+    const tailParts = tail ? tail.split(':') : [];
+    const missing = 8 - headParts.length - tailParts.length;
+    if (missing < 0) return null;
+    parts = [...headParts, ...Array(missing).fill('0'), ...tailParts];
+  } else {
+    parts = clean.split(':');
+  }
+  if (parts.length !== 8) return null;
+  return parts.map((p) => (p === '' ? '0' : p).padStart(4, '0')).join('');
+}
+
+function ipv6ToBigInt(ip: string): bigint | null {
+  const expanded = expandIpv6(ip);
+  if (!expanded) return null;
+  try {
+    return BigInt('0x' + expanded);
+  } catch {
+    return null;
+  }
+}
+
+function parseCidr(cidr: string): ParsedRange | null {
+  const [addr, prefixStr] = cidr.split('/');
+  const prefix = Number(prefixStr);
+  if (!Number.isInteger(prefix)) return null;
+
+  if (addr.includes(':')) {
+    if (prefix < 0 || prefix > 128) return null;
+    const base = ipv6ToBigInt(addr);
+    if (base === null) return null;
+    const maskBits = prefix === 0 ? 0n : ((1n << 128n) - (1n << BigInt(128 - prefix)));
+    return { version: 6, base: base & maskBits, mask: maskBits, prefix };
+  }
+
+  if (prefix < 0 || prefix > 32) return null;
+  const base = ipv4ToInt(addr);
+  if (base === null) return null;
+  const maskBits = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  return { version: 4, base: (base & maskBits) >>> 0, mask: maskBits, prefix };
+}
+
+function ipMatchesRange(ip: string, range: ParsedRange): boolean {
+  if (range.version === 4) {
+    if (ip.includes(':')) return false;
+    const n = ipv4ToInt(ip);
+    if (n === null) return false;
+    return ((n & (range.mask as number)) >>> 0) === (range.base as number);
+  }
+  // v6
+  if (!ip.includes(':')) return false;
+  const n = ipv6ToBigInt(ip);
+  if (n === null) return false;
+  return (n & (range.mask as bigint)) === (range.base as bigint);
+}
+
+async function loadGoogleRanges(): Promise<ParsedRange[]> {
+  const now = Date.now();
+  if (cachedRanges && now - cachedAt < RANGE_TTL_MS) return cachedRanges;
+
+  const ranges: ParsedRange[] = [];
+  for (const url of GOOGLE_IP_RANGE_URLS) {
+    try {
+      const res = await fetch(url, { headers: { 'cache-control': 'no-cache' } });
+      if (!res.ok) {
+        console.warn(`[crawler-allowlist] Failed to fetch ${url}: HTTP ${res.status}`);
+        continue;
+      }
+      const json = await res.json() as { prefixes?: Array<{ ipv4Prefix?: string; ipv6Prefix?: string }> };
+      for (const p of json.prefixes || []) {
+        const cidr = p.ipv4Prefix || p.ipv6Prefix;
+        if (!cidr) continue;
+        const parsed = parseCidr(cidr);
+        if (parsed) ranges.push(parsed);
+      }
+    } catch (err) {
+      console.warn(`[crawler-allowlist] Error fetching ${url}:`, err);
+    }
+  }
+
+  for (const cidr of EXTRA_CIDRS) {
+    const parsed = parseCidr(cidr);
+    if (parsed) ranges.push(parsed);
+    else console.warn(`[crawler-allowlist] Ignoring invalid GOOGLEBOT_EXTRA_CIDRS entry: ${cidr}`);
+  }
+
+  // If the fetch totally failed (e.g. cold start with network blip) keep the
+  // previous cache to avoid flapping; otherwise replace it.
+  if (ranges.length === 0 && cachedRanges) {
+    console.warn('[crawler-allowlist] Range fetch returned 0 entries; keeping stale cache');
+    return cachedRanges;
+  }
+
+  cachedRanges = ranges;
+  cachedAt = now;
+  console.log(`[crawler-allowlist] Loaded ${ranges.length} Google IP ranges`);
+  return ranges;
+}
+
+async function isVerifiedGoogleIp(ip: string): Promise<boolean> {
+  if (!ip || ip === 'unknown') return false;
+  // Strip IPv6 brackets / port suffix if any
+  const cleaned = ip.replace(/^\[/, '').replace(/\].*$/, '').split(' ')[0];
+  try {
+    const ranges = await loadGoogleRanges();
+    if (ranges.length === 0) return false;
+    for (const r of ranges) {
+      if (ipMatchesRange(cleaned, r)) return true;
+    }
+    return false;
+  } catch (err) {
+    console.warn('[crawler-allowlist] Verification error:', err);
+    return false;
+  }
+}
+
 // Googlebot and other Google crawler User-Agent patterns
 // Reference: https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers
 const GOOGLE_BOT_PATTERNS = [
@@ -235,21 +410,43 @@ serve(async (req) => {
                       req.headers.get('x-real-ip') ||
                       'unknown';
 
-    const { isGooglebot, botType } = detectBotType(userAgent);
+    const { isGooglebot: uaIsGooglebot, botType } = detectBotType(userAgent);
+
+    // Verify against Google's official published IP ranges.
+    // - If UA claims Googlebot AND the IP matches → fully trusted.
+    // - If UA claims Googlebot but IP does NOT match → spoofed; downgrade
+    //   `is_googlebot` to false so dashboards don't get polluted.
+    // - Other bots / humans pass through unchanged.
+    let verifiedGoogleIp = false;
+    if (uaIsGooglebot) {
+      verifiedGoogleIp = await isVerifiedGoogleIp(ipAddress);
+    }
+    const isGooglebot = uaIsGooglebot && verifiedGoogleIp;
+    const spoofedGooglebot = uaIsGooglebot && !verifiedGoogleIp;
+
+    if (spoofedGooglebot) {
+      console.warn(
+        `[crawler-allowlist] Spoofed Googlebot UA from non-Google IP ${ipAddress} → ${pageUrl}`,
+      );
+    }
 
     // Initialize Supabase client with service role for insert
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Log the visit
+    // Log the visit. We tag spoofed UAs in the `bot_type` column so they're
+    // still searchable but won't be treated as real Googlebot traffic.
+    const loggedBotType = spoofedGooglebot
+      ? `${botType ?? 'Googlebot'} (spoofed-ua)`
+      : botType;
     const { error } = await supabase
       .from('crawler_visits')
       .insert({
         page_url: pageUrl,
         user_agent: userAgent,
         is_googlebot: isGooglebot,
-        bot_type: botType,
+        bot_type: loggedBotType,
         ip_address: ipAddress,
         referrer: referrer || null,
       });
@@ -262,9 +459,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Logged visit: ${pageUrl} | Bot: ${botType || 'None'} | Googlebot: ${isGooglebot}`);
+    console.log(
+      `Logged visit: ${pageUrl} | Bot: ${loggedBotType || 'None'} | VerifiedGooglebot: ${isGooglebot}`,
+    );
 
-    // Send email notification if Googlebot visits an appeal page
+    // Send email notification only for verified Googlebot visits to appeal pages.
     if (isGooglebot && isAppealPage(pageUrl)) {
       console.log(`Googlebot visited appeal page: ${pageUrl} - sending notification`);
       const notificationEmail = await getNotificationEmail(supabase);
@@ -276,6 +475,8 @@ serve(async (req) => {
         success: true, 
         isGooglebot,
         botType,
+        verified: verifiedGoogleIp,
+        spoofed: spoofedGooglebot,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
