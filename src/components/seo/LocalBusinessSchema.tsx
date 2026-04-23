@@ -43,8 +43,8 @@ export function LocalBusinessSchema({
       hoursAvailable: {
         '@type': 'OpeningHoursSpecification',
         dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        opens: '09:00-05:00',
-        closes: '17:00-05:00',
+        opens: '09:00',
+        closes: '17:00',
       },
     },
     priceRange: '$$',
