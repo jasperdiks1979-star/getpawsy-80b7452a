@@ -4289,15 +4289,49 @@ Deno.test({
             // error appears. A 2xx is unambiguously fine; a 4xx for other
             // reasons is also fine — only "exceeds 2048 chars" is wrong.
             if (res.status === 400) {
-              let json: { fieldErrors?: Record<string, string[]> };
+              // Parse and run the FULL envelope contract on every 400 we
+              // observe for an under/at-limit input. A 400 here is
+              // permitted only if it's caused by something OTHER than the
+              // length cap — and even then, the envelope must still be
+              // structurally well-formed (stable `code`, no leaked stack
+              // traces, full `validationCounters` taxonomy). This catches
+              // two classes of regression that the previous "just look
+              // for length text" check missed:
+              //
+              //   (1) length-cap mis-attribution: the validator rejects
+              //       a 2048-or-shorter string as "too long" via a
+              //       different message wording, so the substring scan
+              //       passes but the user-facing behaviour is still
+              //       wrong. We now require that NO `validationCounters`
+              //       length-bucket (`schema_page_url` /
+              //       `schema_user_agent` for the axis we drove) is
+              //       credited by THIS request — i.e. its value did not
+              //       grow beyond the running observed max. This is the
+              //       contrapositive of the over-limit invariant
+              //       (above), enforced on the under/at side.
+              //
+              //   (2) envelope drift on the non-length 400 path: e.g. a
+              //       refactor that returns `{ error: "..." }` instead
+              //       of the full INVALID_PAYLOAD envelope when only
+              //       referrer is malformed. Routing the under-limit 400
+              //       through `assertInvalidPayloadEnvelope` keeps the
+              //       stable-shape contract enforced on EVERY 400 the
+              //       function emits, not just the ones produced by
+              //       length failures.
+              let parsed: unknown;
               try {
-                json = JSON.parse(text);
+                parsed = JSON.parse(text);
               } catch {
                 throw new Error(
                   `[fuzz iter ${iterCounter}, seed=${SEED}] non-JSON 400 body: ${outcome.bodyPreview}`,
                 );
               }
-              const allMessages = Object.values(json.fieldErrors ?? {})
+              const underLabel =
+                `[fuzz iter ${iterCounter}, seed=0x${SEED.toString(16)}, ` +
+                `kind=${spec.kind}, axis=${axis}, len=${spec.len}]`;
+              const envelope = assertInvalidPayloadEnvelope(parsed, underLabel);
+
+              const allMessages = Object.values(envelope.fieldErrors)
                 .flat()
                 .filter((m): m is string => typeof m === "string");
               const wronglyLengthFlagged = allMessages.some((m) =>
@@ -4306,8 +4340,81 @@ Deno.test({
               assertEquals(
                 wronglyLengthFlagged,
                 false,
-                `[fuzz iter ${iterCounter}, seed=${SEED}, kind=${spec.kind}, len=${spec.len}, axis=${axis}] input is at/under the cap but was rejected for length; messages=${JSON.stringify(allMessages)}`,
+                `${underLabel} input is at/under the 2048-char cap but ` +
+                  `was rejected with the length error "${EXPECTED_MESSAGE}"; ` +
+                  `pageUrlLen=${pageUrl.length}, userAgentLen=${userAgent.length}, ` +
+                  `messages=${JSON.stringify(allMessages)}, ` +
+                  `fieldErrors=${JSON.stringify(envelope.fieldErrors)}`,
               );
+
+              // Stronger sub-invariant for under/at-limit: even if the
+              // request 400s for some unrelated reason, fieldErrors MUST
+              // NOT mention the axis we drove with a length complaint.
+              // The previous check covered the GLOBAL "any field" case;
+              // this one pins the failure to the specific driven axis,
+              // so a regression that swaps the offending field in the
+              // error map (e.g. moves a length error from `pageUrl` to
+              // `userAgent`) still trips even if the overall message
+              // text remains "exceeds 2048 chars".
+              const drivenAxisErrors = envelope.fieldErrors[axis] ?? [];
+              const drivenAxisLengthFlagged = drivenAxisErrors.some((m) =>
+                m.includes(EXPECTED_MESSAGE)
+              );
+              assertEquals(
+                drivenAxisLengthFlagged,
+                false,
+                `${underLabel} the driven axis "${axis}" was flagged with ` +
+                  `the length error despite being ≤ ${MAX_LEN} chars; ` +
+                  `actual ${axis}.length=${
+                    axis === "pageUrl" ? pageUrl.length : userAgent.length
+                  }, fieldErrors.${axis}=${JSON.stringify(drivenAxisErrors)}`,
+              );
+
+              // Counter-attribution check on the under/at side: the
+              // length bucket for the driven axis MUST NOT have been
+              // credited by this call. We use the same "did not exceed
+              // running observed max" technique as the over-limit branch
+              // (per-isolate fan-out makes per-call deltas unreliable,
+              // but a brand-new high on a length bucket during an
+              // under-limit call is unambiguously a bug).
+              const drivenLengthBucket = axis === "pageUrl"
+                ? "schema_page_url"
+                : "schema_user_agent";
+              const drivenBucketSeen =
+                envelope.validationCounters[drivenLengthBucket];
+              const drivenBucketPrevMax =
+                perBucketObservedMax[drivenLengthBucket] ?? 0;
+              if (drivenBucketSeen > drivenBucketPrevMax) {
+                if (CONCURRENCY === 1) {
+                  throw new Error(
+                    `${underLabel} length-bucket "${drivenLengthBucket}" ` +
+                      `grew from ${drivenBucketPrevMax} → ${drivenBucketSeen} ` +
+                      `during an under/at-limit call (driven ${axis}.length=${
+                        axis === "pageUrl" ? pageUrl.length : userAgent.length
+                      } ≤ ${MAX_LEN}). The function credited a length-cap ` +
+                      `failure against a payload that was not over-limit. ` +
+                      `Full counters=${JSON.stringify(envelope.validationCounters)}`,
+                  );
+                } else {
+                  // Concurrency: a sibling worker driving an over-limit
+                  // case on the same isolate could legitimately have
+                  // grown this bucket between our pre-call snapshot and
+                  // the response we observed. Log for triage; the
+                  // sequential CI job (FUZZ_CONCURRENCY=1) is the
+                  // authority on this assertion.
+                  console.warn(
+                    `[fuzz] ${underLabel} length-bucket "${drivenLengthBucket}" ` +
+                      `grew ${drivenBucketPrevMax} → ${drivenBucketSeen} ` +
+                      `during under/at-limit call under concurrency=${CONCURRENCY}; ` +
+                      `likely a sibling over-limit worker on the same isolate. ` +
+                      `Re-run with FUZZ_CONCURRENCY=1 FUZZ_SEED=0x${SEED.toString(16)} ` +
+                      `to confirm.`,
+                  );
+                  // Track the new high so subsequent calls aren't
+                  // double-flagged for the same sibling-induced growth.
+                  perBucketObservedMax[drivenLengthBucket] = drivenBucketSeen;
+                }
+              }
             }
             // Server errors (5xx) are not the contract this test covers,
             // so we don't fail on them — but we DO surface them in stdout
