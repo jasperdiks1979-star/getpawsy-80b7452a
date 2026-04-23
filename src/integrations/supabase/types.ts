@@ -2390,6 +2390,42 @@ export type Database = {
         }
         Relationships: []
       }
+      job_retry_policies: {
+        Row: {
+          backoff_minutes: number[] | null
+          created_at: string
+          enabled: boolean
+          id: string
+          job_type: string | null
+          max_attempts: number | null
+          notes: string | null
+          provider: string | null
+          updated_at: string
+        }
+        Insert: {
+          backoff_minutes?: number[] | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          job_type?: string | null
+          max_attempts?: number | null
+          notes?: string | null
+          provider?: string | null
+          updated_at?: string
+        }
+        Update: {
+          backoff_minutes?: number[] | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          job_type?: string | null
+          max_attempts?: number | null
+          notes?: string | null
+          provider?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       job_run_logs: {
         Row: {
           context: Json | null
