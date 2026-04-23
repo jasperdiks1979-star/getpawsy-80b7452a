@@ -229,6 +229,13 @@ export function useReleaseReport() {
           okCount: Number(val.summary?.ok ?? 0),
           failCount: Number(val.summary?.fail ?? 0),
           topFailReasons: val.summary?.topFailReasons ?? [],
+          // Persist per-item evidence so the Issue panel can link each
+          // failreason back to a concrete product id + failed field. We
+          // cap defensively to keep release rows small.
+          sampleResults: Array.isArray(val.sampleResults)
+            ? val.sampleResults.slice(0, 50)
+            : [],
+          feedUrl: 'https://getpawsy.pet/merchant-feed.xml',
           attempts: valAttempts,
         };
 
