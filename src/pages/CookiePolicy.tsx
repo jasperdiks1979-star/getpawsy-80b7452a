@@ -2,6 +2,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Cookie, Mail } from 'lucide-react';
+import { PageChangelog } from '@/components/seo/PageChangelog';
 
 const CookiePolicy = () => {
   const lastUpdated = 'January 16, 2026';
@@ -57,6 +58,8 @@ const CookiePolicy = () => {
                 Last Updated: {lastUpdated}
               </p>
             </div>
+
+            <PageChangelog pageKey="cookies" />
 
             {/* Content */}
             <div className="prose prose-lg max-w-none">

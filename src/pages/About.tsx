@@ -11,6 +11,7 @@ import {
   RETURN_WINDOW_DAYS,
   SUPPORT_EMAIL,
 } from '@/lib/shipping-constants';
+import { PageChangelog } from '@/components/seo/PageChangelog';
 
 const About = () => {
   return (
@@ -163,6 +164,8 @@ const About = () => {
                 </div>
               </div>
             </motion.div>
+
+            <PageChangelog pageKey="about" />
           </div>
         </section>
 

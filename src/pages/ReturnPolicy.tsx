@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SUPPORT_EMAIL, RETURN_WINDOW_DAYS, SITE_LAST_UPDATED } from '@/lib/shipping-constants';
+import { PageChangelog } from '@/components/seo/PageChangelog';
 
 const ReturnPolicy = () => {
   const lastUpdated = SITE_LAST_UPDATED;
@@ -80,6 +81,8 @@ const ReturnPolicy = () => {
               </p>
               <p className="text-sm text-muted-foreground mt-2">Last updated: {lastUpdated}</p>
             </div>
+
+            <PageChangelog pageKey="returns" />
 
             {/* Quick Info Cards */}
             <div className="grid sm:grid-cols-3 gap-4 mb-12">

@@ -12,6 +12,7 @@ import {
   SUPPORT_EMAIL,
   SITE_LAST_UPDATED,
 } from '@/lib/shipping-constants';
+import { PageChangelog } from '@/components/seo/PageChangelog';
 
 const Shipping = () => {
   const lastUpdated = SITE_LAST_UPDATED;
@@ -41,6 +42,8 @@ const Shipping = () => {
               </p>
               <p className="text-sm text-muted-foreground mt-2">Last updated: {lastUpdated}</p>
             </div>
+
+            <PageChangelog pageKey="shipping" />
 
             {/* Quick Overview Cards */}
             <div className="grid sm:grid-cols-3 gap-4 mb-12">

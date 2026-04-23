@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Shield, Mail } from 'lucide-react';
 import { SITE_LAST_UPDATED } from '@/lib/shipping-constants';
+import { PageChangelog } from '@/components/seo/PageChangelog';
 
 const PrivacyPolicy = () => {
   const lastUpdated = SITE_LAST_UPDATED;
@@ -31,6 +32,8 @@ const PrivacyPolicy = () => {
                 Last Updated: {lastUpdated}
               </p>
             </div>
+
+            <PageChangelog pageKey="privacy" />
 
             {/* Content */}
             <div className="prose prose-lg max-w-none">
