@@ -37,6 +37,23 @@ const RENDER_STATE_TAG_RE = /pdp-render-trace\/([a-z0-9_-]+)/i;
 const VALID_RENDER_STATES = new Set(['shell', 'rendered', 'timeout']);
 
 // -----------------------------------------------------------------------------
+// Structured error codes
+// -----------------------------------------------------------------------------
+// Every non-2xx response carries a stable, SCREAMING_SNAKE_CASE `code` so
+// callers (tests, dashboards, log-greps) can branch on the failure reason
+// without parsing the human-readable `error` string. New codes MUST be added
+// here so the union stays exhaustive and grep-discoverable.
+export const ERROR_CODES = {
+  INVALID_JSON: 'INVALID_JSON',
+  INVALID_PAYLOAD: 'INVALID_PAYLOAD',
+  MISSING_FIELDS: 'MISSING_FIELDS',
+  INVALID_PDP_RENDER_STATE: 'INVALID_PDP_RENDER_STATE',
+  DB_INSERT_FAILED: 'DB_INSERT_FAILED',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+} as const;
+export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+
+// -----------------------------------------------------------------------------
 // Lightweight validation-failure counters
 // -----------------------------------------------------------------------------
 // Track how often each *type* of malformed payload is rejected so we can
