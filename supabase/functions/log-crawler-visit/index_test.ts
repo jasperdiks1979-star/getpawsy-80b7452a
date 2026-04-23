@@ -3820,6 +3820,10 @@ Deno.test({
                );
             }
 
+            // Record a coverage hit for the bucket THIS iteration drove.
+            // Aggregated and gated at end-of-run.
+            bucketHits[expectedBucket] = (bucketHits[expectedBucket] ?? 0) + 1;
+
             // (d) Per-call cross-axis attribution: the bucket for the
             //     OTHER (safe) axis must not have grown SINCE the value
             //     this same isolate reported on its previous call. We
