@@ -156,6 +156,19 @@ export function useReleaseReport() {
         toast.success(
           `Release reported · sync ${syncSummary.successCount}/${syncSummary.totalProducts} · feed ${validationSummary.okCount}/${validationSummary.sampleSize} OK`,
         );
+        // 4. Auto-generate the GMC evidence PDF (matrix + release summary)
+        //    so the operator can attach it to the appeal in one click.
+        try {
+          downloadReleaseReportPdf({
+            title,
+            notes,
+            result: final,
+          });
+          toast.success('Evidence PDF downloaded · ready for GMC appeal');
+        } catch (pdfErr) {
+          console.error('[useReleaseReport] PDF auto-generation failed:', pdfErr);
+          toast.error('Could not auto-generate PDF — use the manual Download button.');
+        }
         return final;
       } catch (e: any) {
         const msg = e?.message ?? 'Release report flow failed';
