@@ -5815,6 +5815,101 @@ export type Database = {
         }
         Relationships: []
       }
+      render_trace_alert_events: {
+        Row: {
+          alert_id: string
+          fired_at: string
+          id: string
+          observed_rate: number
+          observed_shell: number
+          observed_timeouts: number
+          scope: string
+          slug: string | null
+          threshold_rate: number
+          window_days: number
+        }
+        Insert: {
+          alert_id: string
+          fired_at?: string
+          id?: string
+          observed_rate: number
+          observed_shell: number
+          observed_timeouts: number
+          scope: string
+          slug?: string | null
+          threshold_rate: number
+          window_days: number
+        }
+        Update: {
+          alert_id?: string
+          fired_at?: string
+          id?: string
+          observed_rate?: number
+          observed_shell?: number
+          observed_timeouts?: number
+          scope?: string
+          slug?: string | null
+          threshold_rate?: number
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "render_trace_alert_events_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "render_trace_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      render_trace_alerts: {
+        Row: {
+          cooldown_minutes: number
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          id: string
+          last_triggered_at: string | null
+          min_sample: number
+          name: string
+          scope: string
+          slug_pattern: string | null
+          threshold_rate: number
+          updated_at: string
+          window_days: number
+        }
+        Insert: {
+          cooldown_minutes?: number
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          last_triggered_at?: string | null
+          min_sample?: number
+          name: string
+          scope: string
+          slug_pattern?: string | null
+          threshold_rate: number
+          updated_at?: string
+          window_days?: number
+        }
+        Update: {
+          cooldown_minutes?: number
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          last_triggered_at?: string | null
+          min_sample?: number
+          name?: string
+          scope?: string
+          slug_pattern?: string | null
+          threshold_rate?: number
+          updated_at?: string
+          window_days?: number
+        }
+        Relationships: []
+      }
       replenishment_reminders: {
         Row: {
           created_at: string
@@ -7980,6 +8075,10 @@ export type Database = {
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_old_web_vitals: { Args: never; Returns: undefined }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
+      evaluate_render_trace_alerts: {
+        Args: { p_record?: boolean }
+        Returns: Json
+      }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
       get_render_trace_slug_timeline: {
         Args: { p_slug: string; p_window_days?: number }
