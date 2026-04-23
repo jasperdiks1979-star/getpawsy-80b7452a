@@ -55,6 +55,76 @@ const APPEAL_PAGES = [
 ];
 
 // -----------------------------------------------------------------------------
+// Configurable log sampling
+// -----------------------------------------------------------------------------
+// Most page views generate a crawler-visit ping that we don't strictly need to
+// persist (e.g. ordinary human traffic on a non-appeal page). To keep the
+// `crawler_visits` table — and our storage costs — under control we apply a
+// configurable sampling rate to "uninteresting" payloads while ALWAYS keeping
+// the ones that actually matter:
+//
+//   * `pdp-render-trace` pings (shell/rendered/timeout) — never sampled out,
+//     because they're the source of truth for the bot-trace dashboard.
+//   * Verified Googlebot visits — never sampled out (rare + high signal).
+//   * Visits to appeal pages — never sampled out (drives email alerts).
+//   * Spoofed-Googlebot UAs — never sampled out (security signal).
+//
+// The sampling rate is a float in [0, 1] sourced from `site_settings`
+// (key: `crawler_visit_sample_rate`) with an env-var fallback
+// (`CRAWLER_VISIT_SAMPLE_RATE`) and a hard default of 1.0 (log everything).
+// The value is cached per cold start for `SAMPLE_RATE_TTL_MS` so admins can
+// tune it without redeploying but we don't hit the DB on every request.
+const SAMPLE_RATE_KEY = 'crawler_visit_sample_rate';
+const SAMPLE_RATE_TTL_MS = 60 * 1000; // 1 minute
+const DEFAULT_SAMPLE_RATE = 1.0;
+
+let cachedSampleRate: number | null = null;
+let sampleRateLoadedAt = 0;
+
+function clampSampleRate(raw: unknown): number {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_SAMPLE_RATE;
+  if (n <= 0) return 0;
+  if (n >= 1) return 1;
+  return n;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getSampleRate(supabase: any): Promise<number> {
+  const now = Date.now();
+  if (cachedSampleRate !== null && now - sampleRateLoadedAt < SAMPLE_RATE_TTL_MS) {
+    return cachedSampleRate;
+  }
+
+  let resolved = DEFAULT_SAMPLE_RATE;
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', SAMPLE_RATE_KEY)
+      .maybeSingle();
+    if (!error && data?.value !== undefined && data?.value !== null) {
+      resolved = clampSampleRate(data.value);
+    } else {
+      const envRate = Deno.env.get('CRAWLER_VISIT_SAMPLE_RATE');
+      if (envRate !== undefined && envRate !== null && envRate !== '') {
+        resolved = clampSampleRate(envRate);
+      }
+    }
+  } catch (err) {
+    console.warn('[log-crawler-visit] Failed to load sample rate, using default:', err);
+    const envRate = Deno.env.get('CRAWLER_VISIT_SAMPLE_RATE');
+    if (envRate !== undefined && envRate !== null && envRate !== '') {
+      resolved = clampSampleRate(envRate);
+    }
+  }
+
+  cachedSampleRate = resolved;
+  sampleRateLoadedAt = now;
+  return resolved;
+}
+
+// -----------------------------------------------------------------------------
 // Verified-Googlebot IP allowlist
 // -----------------------------------------------------------------------------
 // Google publishes the canonical IP ranges for its crawlers as JSON files.
@@ -523,6 +593,43 @@ serve(async (req) => {
     const loggedBotType = spoofedGooglebot
       ? `${botType ?? 'Googlebot'} (spoofed-ua)`
       : botType;
+
+    // -------------------------------------------------------------------------
+    // Sampling decision
+    // -------------------------------------------------------------------------
+    // Anything carrying a render-trace tag, hitting an appeal page, or coming
+    // from verified/spoofed Googlebot is "always log". Everything else is
+    // probabilistically sampled using the configured rate. We still return a
+    // 200 OK for sampled-out requests so the client never sees errors.
+    const isAppeal = isAppealPage(pageUrl);
+    const alwaysLog = looksLikeTrace || isGooglebot || spoofedGooglebot || isAppeal;
+    let sampleRate = 1;
+    let sampledOut = false;
+    if (!alwaysLog) {
+      sampleRate = await getSampleRate(supabase);
+      if (sampleRate <= 0 || (sampleRate < 1 && Math.random() >= sampleRate)) {
+        sampledOut = true;
+      }
+    }
+
+    if (sampledOut) {
+      console.log(
+        `[log-crawler-visit] Sampled out (rate=${sampleRate.toFixed(3)}): ${pageUrl}`,
+      );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          isGooglebot,
+          botType,
+          verified: verifiedGoogleIp,
+          spoofed: spoofedGooglebot,
+          sampled: false,
+          sampleRate,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     const { error } = await supabase
       .from('crawler_visits')
       .insert({
@@ -560,6 +667,8 @@ serve(async (req) => {
         botType,
         verified: verifiedGoogleIp,
         spoofed: spoofedGooglebot,
+        sampled: true,
+        sampleRate,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
