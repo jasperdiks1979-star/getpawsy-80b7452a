@@ -2777,7 +2777,6 @@ Deno.test({
 
       const fieldErrors = json.fieldErrors as Record<string, unknown>;
       const counters = json.validationCounters as Record<string, number>;
-      lastSnapshot = counters;
 
       // -- 3. fieldErrors keys = exactly the offending fields ----------------
       // Pin the EXACT set of keys, not just a superset. Drift here would
