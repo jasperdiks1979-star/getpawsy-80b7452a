@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/verify-us-address.mjs && vite build && node scripts/verify-us-address.mjs --dist",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -17,7 +17,9 @@
     "merchant:audit": "npx tsx scripts/merchant-safe-audit.ts",
     "merchant:audit:strict": "npx tsx scripts/merchant-safe-audit.ts --strict",
     "merchant:audit:google": "npx tsx scripts/merchant-safe-audit.ts --google",
-    "feed:verify-live": "node scripts/verify-live-feed.js"
+    "feed:verify-live": "node scripts/verify-live-feed.js",
+    "verify:us-address": "node scripts/verify-us-address.mjs",
+    "verify:us-address:dist": "node scripts/verify-us-address.mjs --dist"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.11.0",
