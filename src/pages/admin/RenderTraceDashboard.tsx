@@ -340,14 +340,14 @@ export default function RenderTraceDashboard() {
           </Card>
         )}
 
-        {!isLoading && malformed.length > 0 && (
+        {!isLoading && malformedTotal > 0 && (
           <Card className="border-destructive/30 bg-destructive/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <ShieldAlert className="h-4 w-4 text-destructive" />
                 Malformed render-trace pings
                 <Badge variant="outline" className="ml-1 border-destructive/40 text-destructive">
-                  {malformed.length.toLocaleString()}
+                  {malformedTotal.toLocaleString()}
                 </Badge>
               </CardTitle>
               <CardDescription>
@@ -360,12 +360,12 @@ export default function RenderTraceDashboard() {
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {(Object.keys(REASON_LABELS) as MalformedReason[])
-                  .filter((r) => malformedByReason[r] > 0)
+                  .filter((r) => (malformedByReason[r] ?? 0) > 0)
                   .map((r) => (
                     <Badge key={r} variant="secondary" className="gap-1.5">
                       {REASON_LABELS[r]}
                       <span className="tabular-nums font-mono text-xs opacity-80">
-                        {malformedByReason[r].toLocaleString()}
+                        {(malformedByReason[r] ?? 0).toLocaleString()}
                       </span>
                     </Badge>
                   ))}
@@ -382,18 +382,18 @@ export default function RenderTraceDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {malformed.slice(0, 10).map((row, i) => (
+                    {malformed.map((row, i) => (
                       <TableRow key={`${row.created_at}-${i}`}>
                         <TableCell className="align-top">
                           <Badge variant="outline" className="text-[11px]">
                             {REASON_LABELS[row.reason]}
                           </Badge>
-                          {row.reason === 'unknown_state_tag' && row.rawTag && (
+                          {row.reason === 'unknown_state_tag' && row.raw_tag && (
                             <div
                               className="text-[11px] text-muted-foreground mt-1 font-mono truncate max-w-[160px]"
-                              title={row.rawTag}
+                              title={row.raw_tag}
                             >
-                              tag: {row.rawTag}
+                              tag: {row.raw_tag}
                             </div>
                           )}
                         </TableCell>
@@ -418,9 +418,9 @@ export default function RenderTraceDashboard() {
                 </Table>
               </div>
 
-              {malformed.length > 10 && (
+              {malformedTotal > malformed.length && (
                 <p className="text-xs text-muted-foreground">
-                  Showing 10 most recent of {malformed.length.toLocaleString()} malformed rows in this window.
+                  Showing {malformed.length} most recent of {malformedTotal.toLocaleString()} malformed rows in this window.
                 </p>
               )}
             </CardContent>
