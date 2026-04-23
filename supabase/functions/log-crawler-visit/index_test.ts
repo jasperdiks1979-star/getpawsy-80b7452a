@@ -3933,35 +3933,82 @@ Deno.test({
     };
     const violations: Outcome[] = [];
 
-    let iterCounter = 0;
-    for (const spec of specs) {
-      for (const axis of axes) {
-        for (let i = 0; i < ITERATIONS; i++) {
-          iterCounter++;
-
-          const pageUrl = axis === "pageUrl"
-            ? fuzzPageUrl(rng, spec.len)
-            : SAFE_PAGE_URL;
-          const userAgent = axis === "userAgent"
-            ? fuzzUserAgent(rng, spec.len)
-            : SAFE_USER_AGENT;
-
-          // Defensive: confirm we built the lengths we intended. If this
-          // ever fires, the property assertions below would be measuring
-          // the wrong thing, so fail LOUDLY here instead.
-          if (axis === "pageUrl" && pageUrl.length !== spec.len) {
-            throw new Error(
-              `fuzz iter ${iterCounter}: pageUrl.length = ${pageUrl.length}, expected ${spec.len}`,
-            );
+    // ---------------------------------------------------------------
+    // Pre-generate ALL fuzz inputs sequentially from the seeded RNG.
+    //
+    // We generate first, dispatch second. Two reasons:
+    //   1. Reproducibility under concurrency. The PRNG is a single
+    //      shared stream; if we let N workers race to consume it, the
+    //      same FUZZ_SEED would produce different payloads depending
+    //      on the worker scheduler. Pre-generating means the input
+    //      set is identical at concurrency=1 and concurrency=8.
+    //   2. Cheaper. String generation is tiny compared to the
+    //      network round trip; doing it upfront keeps the hot loop
+    //      focused on dispatching requests.
+    // ---------------------------------------------------------------
+    type Job = {
+      iter: number;          // 1-based iteration index, stable across reruns
+      kind: Kind;
+      axis: Axis;
+      spec: LenSpec;
+      pageUrl: string;
+      userAgent: string;
+    };
+    const jobs: Job[] = [];
+    {
+      let iterCounter = 0;
+      for (const spec of specs) {
+        for (const axis of axes) {
+          for (let i = 0; i < ITERATIONS; i++) {
+            iterCounter++;
+            const pageUrl = axis === "pageUrl"
+              ? fuzzPageUrl(rng, spec.len)
+              : SAFE_PAGE_URL;
+            const userAgent = axis === "userAgent"
+              ? fuzzUserAgent(rng, spec.len)
+              : SAFE_USER_AGENT;
+            // Defensive: confirm we built the lengths we intended.
+            if (axis === "pageUrl" && pageUrl.length !== spec.len) {
+              throw new Error(
+                `fuzz iter ${iterCounter}: pageUrl.length = ${pageUrl.length}, expected ${spec.len}`,
+              );
+            }
+            if (axis === "userAgent" && userAgent.length !== spec.len) {
+              throw new Error(
+                `fuzz iter ${iterCounter}: userAgent.length = ${userAgent.length}, expected ${spec.len}`,
+              );
+            }
+            jobs.push({
+              iter: iterCounter,
+              kind: spec.kind,
+              axis,
+              spec,
+              pageUrl,
+              userAgent,
+            });
           }
-          if (axis === "userAgent" && userAgent.length !== spec.len) {
-            throw new Error(
-              `fuzz iter ${iterCounter}: userAgent.length = ${userAgent.length}, expected ${spec.len}`,
-            );
-          }
+        }
+      }
+    }
+    const totalJobs = jobs.length;
 
-          const res = await callFunction({ pageUrl, userAgent });
-          const text = await res.text();
+    // ---------------------------------------------------------------
+    // Per-call processor. Mutates shared state (violations,
+    // bucketHits, perBucketObservedMax, counterRunTotals,
+    // perBucketObservedMinNonZero). Safe under cooperative async
+    // concurrency because:
+    //   - JS is single-threaded; reads + writes between awaits are
+    //     atomic from the worker's perspective.
+    //   - The only awaits in this function are the network call
+    //     (`callFunction`) and `res.text()`; everything after is
+    //     synchronous, so two workers can't interleave a single
+    //     job's bookkeeping.
+    // ---------------------------------------------------------------
+    async function processJob(job: Job): Promise<void> {
+      const { iter: iterCounter, axis, spec, pageUrl, userAgent } = job;
+
+      const res = await callFunction({ pageUrl, userAgent });
+      const text = await res.text();
 
           const outcome: Outcome = {
             seed: SEED,
@@ -3982,7 +4029,7 @@ Deno.test({
             const is2xx = res.status >= 200 && res.status < 300;
             if (is2xx) {
               violations.push(outcome);
-              continue;
+              return;
             }
 
             // Stronger sub-invariant: it should reject specifically with the
