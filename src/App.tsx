@@ -1663,6 +1663,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="bot-render-seo"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <BotRenderSeoDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="perf-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
