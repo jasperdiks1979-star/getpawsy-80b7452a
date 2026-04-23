@@ -3611,23 +3611,97 @@ Deno.test({
             const label = `[fuzz iter ${iterCounter}, seed=0x${SEED.toString(16)}, axis=${axis}, len=${spec.len}]`;
             const envelope = assertInvalidPayloadEnvelope(parsed, label);
 
-            // Case-specific layer on top of the structural contract:
-            //   (a) the offending field appears in `fieldErrors` with the
-            //       canonical "exceeds 2048 chars" message
-            //   (b) the matching taxonomy bucket was credited (≥1) so the
-            //       dashboard groups this failure correctly
+            // Case-specific layer on top of the structural contract.
+            // For an over-limit case driven by EXACTLY ONE axis, we
+            // assert a tight one-to-one mapping between the offending
+            // field and the structured response — nothing more, nothing
+            // less:
+            //
+            //   (a) `fieldErrors` mentions the offending axis and ONLY
+            //       the offending axis. The non-fuzzed axis carries a
+            //       safe value, so any complaint about it would mean
+            //       the validator is mis-attributing the failure (or
+            //       leaking errors across fields) — both of which would
+            //       break the dashboard's per-field grouping.
+            //
+            //   (b) the message on the offending axis is the canonical
+            //       length message ("exceeds 2048 chars"), not some
+            //       other validator output (e.g. regex/format errors
+            //       that happen to also fire on long strings).
+            //
+            //   (c) the matching taxonomy bucket is credited exactly
+            //       once for this call. Other length-related buckets
+            //       (the OTHER axis + `schema_referrer` + the catch-all
+            //       `schema_other`) MUST stay at 0 — otherwise a refactor
+            //       could double-count a single field error against
+            //       multiple buckets and silently inflate the dashboard.
+            //
+            //   (d) JSON/trace buckets (invalid_json, trace_*) MUST be 0
+            //       for a pure length failure — those code paths are
+            //       unrelated and any non-zero value would mean the
+            //       function is incrementing the wrong meter.
+            //
+            // Counters are observed as DELTAS by snapshotting the
+            // module-scoped counters before the call and subtracting,
+            // so a long-running cold start with prior traffic doesn't
+            // poison the assertion.
+            const expectedBucket = axis === "pageUrl"
+              ? "schema_page_url"
+              : "schema_user_agent";
+            const otherAxis = axis === "pageUrl" ? "userAgent" : "pageUrl";
+            const otherBucket = axis === "pageUrl"
+              ? "schema_user_agent"
+              : "schema_page_url";
+
+            // (a) fieldErrors keys are exactly [axis] — no leakage.
+            const fieldKeys = Object.keys(envelope.fieldErrors).sort();
+            assertEquals(
+              fieldKeys,
+              [axis],
+              `${label} fieldErrors must contain ONLY the offending axis "${axis}"; got keys ${JSON.stringify(fieldKeys)} with payload ${JSON.stringify(envelope.fieldErrors)}`,
+            );
+
+            // (b) the canonical length message is on that axis.
             const fieldMessages = envelope.fieldErrors[axis] ?? [];
             assertEquals(
               fieldMessages.some((m) => m.includes(EXPECTED_MESSAGE)),
               true,
               `${label} expected fieldErrors.${axis} to include "${EXPECTED_MESSAGE}"; got ${JSON.stringify(fieldMessages)}`,
             );
-            const expectedBucket = axis === "pageUrl"
-              ? "schema_page_url"
-              : "schema_user_agent";
-            if (envelope.validationCounters[expectedBucket] < 1) {
+
+            // (c+d) Counter taxonomy: the offending bucket is the ONLY
+            // bucket that incremented for this call. We compute deltas
+            // from the snapshot taken just before `fetch()` so module-
+            // scoped accumulation across the test run is irrelevant.
+            const counterDeltas: Record<string, number> = {};
+            for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+              const after = envelope.validationCounters[k];
+              const before = countersBefore[k] ?? 0;
+              counterDeltas[k] = after - before;
+              if (counterDeltas[k] < 0) {
+                throw new Error(
+                  `${label} validationCounters.${k} went BACKWARDS (${before} → ${after}). The function must never decrement a counter.`,
+                );
+              }
+            }
+
+            if (counterDeltas[expectedBucket] !== 1) {
               throw new Error(
-                `${label} validationCounters.${expectedBucket} must be ≥1 for an ${axis} length failure, got ${envelope.validationCounters[expectedBucket]}`,
+                `${label} validationCounters.${expectedBucket} must increment by exactly 1 for an ${axis} length failure; delta=${counterDeltas[expectedBucket]} (before=${countersBefore[expectedBucket]}, after=${envelope.validationCounters[expectedBucket]})`,
+              );
+            }
+
+            // Every other bucket — the other axis, referrer, schema_other,
+            // invalid_json, and all three trace_* buckets — must be flat.
+            const offendingExtras = ENVELOPE_REQUIRED_COUNTER_KEYS.filter(
+              (k) => k !== expectedBucket && counterDeltas[k] !== 0,
+            );
+            if (offendingExtras.length > 0) {
+              const detail = offendingExtras
+                .map((k) => `${k}: +${counterDeltas[k]}`)
+                .join(", ");
+              throw new Error(
+                `${label} only validationCounters.${expectedBucket} should increment for an ${axis} length failure; also incremented: ${detail}. Full delta=${JSON.stringify(counterDeltas)}. The non-fuzzed axis "${otherAxis}" carried a safe value, so its bucket "${otherBucket}" (and every other bucket) must stay at 0.`,
               );
             }
           }
