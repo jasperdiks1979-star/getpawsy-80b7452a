@@ -62,6 +62,13 @@ jobs:
       # only for one-off investigations.
       FUZZ_SEED: '0xC0FFEE'
       FUZZ_ITERATIONS: '3'
+      # Drive the fuzz suite with parallel in-flight requests so the
+      # PR-CI run also exercises the edge function's request handling
+      # under simultaneous load. 4 workers × 60 jobs ≈ 15 jobs / worker
+      # — enough to surface obvious races without blowing the 15-min
+      # job budget. Override via `workflow_dispatch` for one-off
+      # higher-concurrency triage runs.
+      FUZZ_CONCURRENCY: '4'
       # Per-bucket coverage gate (see end of
       # supabase/functions/log-crawler-visit/index_test.ts).
       # The fuzz suite is structurally responsible for hitting
