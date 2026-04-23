@@ -3756,6 +3756,10 @@ Deno.test({
                 `${label} only validationCounters.${expectedBucket} should increment for an ${axis} length failure; also incremented: ${detail}. Full delta=${JSON.stringify(counterDeltas)}. The non-fuzzed axis "${otherAxis}" carried a safe value, so its bucket "${otherBucket}" (and every other bucket) must stay at 0.`,
               );
             }
+
+            // Roll the baseline forward so the NEXT iteration measures
+            // its delta against this call's post-state, not stale data.
+            countersBefore = { ...envelope.validationCounters };
           }
 
           // -----------------------------------------------------------------
