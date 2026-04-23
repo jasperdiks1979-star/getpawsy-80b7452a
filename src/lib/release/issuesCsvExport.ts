@@ -56,6 +56,12 @@ const CSV_HEADERS = [
   'assignee',
   'affected_products',
   'suggested_fix',
+  'feed_field',
+  'feed_tag',
+  'feed_hint',
+  'source_url',
+  'evidence_snippets',
+  'affected_product_ids',
   'issue_key',
   'created_at',
   'updated_at',
@@ -97,15 +103,56 @@ function severityFor(
   return { severity: top.severity, suggestedFix: fix };
 }
 
-function scopeFor(
+/** Cap snippets / IDs in the CSV so a single row doesn't blow past
+ *  spreadsheet cell limits (Excel = 32,767 chars). */
+const MAX_EVIDENCE_ITEMS = 25;
+
+interface EvidenceColumns {
+  scope: string;
+  feedField: string;
+  feedTag: string;
+  feedHint: string;
+  sourceUrl: string;
+  evidenceSnippets: string;
+  affectedProductIds: string;
+}
+
+function evidenceFor(
   issue: ReleaseIssue,
   sampleResults: SampleResult[] | null | undefined,
   feedUrl: string | null | undefined,
-): string {
+): EvidenceColumns {
   const ev = buildIssueEvidence(issue.issue_key, sampleResults ?? null, feedUrl ?? undefined);
-  if (ev) return `feed:${ev.feedField}`;
-  if (issue.source === 'custom') return 'custom';
-  return 'unknown';
+  if (!ev) {
+    return {
+      scope: issue.source === 'custom' ? 'custom' : 'unknown',
+      feedField: '',
+      feedTag: '',
+      feedHint: '',
+      sourceUrl: feedUrl ?? '',
+      evidenceSnippets: '',
+      affectedProductIds: '',
+    };
+  }
+  const capped = ev.items.slice(0, MAX_EVIDENCE_ITEMS);
+  // "productId :: snippet" per line keeps both pieces joinable in Excel
+  // via Text-to-Columns on " :: " if the admin wants to split them.
+  const snippets = capped
+    .map((it) => `${it.productId} :: ${it.snippet}`)
+    .join(' | ');
+  const ids = ev.items.map((it) => it.productId).join(', ');
+  const overflow = ev.items.length > MAX_EVIDENCE_ITEMS
+    ? ` (+${ev.items.length - MAX_EVIDENCE_ITEMS} more)`
+    : '';
+  return {
+    scope: `feed:${ev.feedField}`,
+    feedField: ev.feedField,
+    feedTag: ev.feedTag,
+    feedHint: ev.hint,
+    sourceUrl: ev.feedUrl,
+    evidenceSnippets: snippets + overflow,
+    affectedProductIds: ids,
+  };
 }
 
 function assigneeFor(
@@ -154,7 +201,7 @@ export function buildIssuesCsv({
   const enriched = issues.map((issue) => ({
     issue,
     ...severityFor(issue, productCounts),
-    scope: scopeFor(issue, sampleResults, feedUrl),
+    evidence: evidenceFor(issue, sampleResults, feedUrl),
     assignee: assigneeFor(issue, assignees),
     affected: productCounts[issue.id] ?? 0,
   }));
@@ -186,12 +233,18 @@ export function buildIssuesCsv({
       e.issue.status,
       e.severity,
       e.issue.source,
-      e.scope,
+      e.evidence.scope,
       e.issue.title,
       e.issue.description ?? '',
       e.assignee,
       e.affected,
       e.suggestedFix,
+      e.evidence.feedField,
+      e.evidence.feedTag,
+      e.evidence.feedHint,
+      e.evidence.sourceUrl,
+      e.evidence.evidenceSnippets,
+      e.evidence.affectedProductIds,
       e.issue.issue_key,
       e.issue.created_at,
       e.issue.updated_at,
