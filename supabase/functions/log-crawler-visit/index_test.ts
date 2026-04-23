@@ -2060,3 +2060,331 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name:
+    "log-crawler-visit 400 INVALID_PAYLOAD envelope is structurally consistent across all length + schema failures (code, fieldErrors, validationCounters)",
+  async fn() {
+    // Cross-cutting envelope contract: every 400 caused by Zod must return
+    // the SAME response shape so dashboards, retries, and admin tooling can
+    // parse one structure without per-case branches:
+    //
+    //   {
+    //     error: string,                       // human-readable, non-empty
+    //     code: "INVALID_PAYLOAD",             // stable enum value
+    //     fieldErrors: { [field]: string[] },  // 1+ keys, each a non-empty
+    //                                          // string[] of zod messages
+    //     validationCounters: {                // ALL 8 buckets present,
+    //       invalid_json: number,              // every value an integer >= 0
+    //       schema_page_url: number,
+    //       schema_user_agent: number,
+    //       schema_referrer: number,
+    //       schema_other: number,
+    //       trace_missing_slug: number,
+    //       trace_missing_state: number,
+    //       trace_invalid_state: number,
+    //     }
+    //   }
+    //
+    // Failure cases below cover every Zod entry point in the schema:
+    //   pageUrl: missing, wrong-type, empty, whitespace, over-length
+    //   userAgent: missing, wrong-type, empty, whitespace, over-length
+    //   referrer: over-length
+    //   idempotencyKey: regex violation, over-length
+    //   multi-field: pageUrl+userAgent both over-length
+    // Each case asserts the envelope, not just the offending field — so a
+    // future regression that drops one of the four envelope keys (or returns
+    // partial counters) fails uniformly across the whole matrix.
+
+    const REQUIRED_COUNTER_KEYS = [
+      "invalid_json",
+      "schema_page_url",
+      "schema_user_agent",
+      "schema_referrer",
+      "schema_other",
+      "trace_missing_slug",
+      "trace_missing_state",
+      "trace_invalid_state",
+    ] as const;
+
+    const MAX_LEN = 2048;
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const buildPageUrlOfLength = (n: number) => {
+      const prefix = `${ORIGIN}/product/env-${runId}-`;
+      const padLen = Math.max(0, n - prefix.length);
+      return prefix + "a".repeat(padLen);
+    };
+    const buildUserAgentOfLength = (n: number) => {
+      const prefix = `${GOOGLEBOT_UA} [pad=`;
+      const suffix = `]`;
+      const padLen = Math.max(0, n - prefix.length - suffix.length);
+      return prefix + "x".repeat(padLen) + suffix;
+    };
+
+    type Case = {
+      label: string;
+      body: Record<string, unknown>;
+      // The fields we expect to surface in fieldErrors. Order-insensitive.
+      expectFields: Array<"pageUrl" | "userAgent" | "referrer" | "idempotencyKey">;
+    };
+
+    const cases: Case[] = [
+      // --- length boundary: single-field over-length -----------------------
+      {
+        label: "pageUrl over MAX_LEN",
+        body: {
+          pageUrl: buildPageUrlOfLength(MAX_LEN + 1),
+          userAgent: GOOGLEBOT_UA,
+        },
+        expectFields: ["pageUrl"],
+      },
+      {
+        label: "userAgent over MAX_LEN",
+        body: {
+          pageUrl: `${ORIGIN}/product/ok-${runId}`,
+          userAgent: buildUserAgentOfLength(MAX_LEN + 1),
+        },
+        expectFields: ["userAgent"],
+      },
+      // --- length boundary: multi-field over-length ------------------------
+      {
+        label: "pageUrl + userAgent both over MAX_LEN",
+        body: {
+          pageUrl: buildPageUrlOfLength(MAX_LEN + 50),
+          userAgent: buildUserAgentOfLength(MAX_LEN + 50),
+        },
+        expectFields: ["pageUrl", "userAgent"],
+      },
+      {
+        label: "referrer over MAX_LEN",
+        body: {
+          pageUrl: `${ORIGIN}/product/ok-${runId}`,
+          userAgent: GOOGLEBOT_UA,
+          referrer: "https://example.com/" + "a".repeat(MAX_LEN + 1),
+        },
+        expectFields: ["referrer"],
+      },
+      // --- missing required fields ----------------------------------------
+      {
+        label: "missing pageUrl",
+        body: { userAgent: GOOGLEBOT_UA },
+        expectFields: ["pageUrl"],
+      },
+      {
+        label: "missing userAgent",
+        body: { pageUrl: `${ORIGIN}/product/ok-${runId}` },
+        expectFields: ["userAgent"],
+      },
+      {
+        label: "empty body — both required fields missing",
+        body: {},
+        expectFields: ["pageUrl", "userAgent"],
+      },
+      // --- type violations -------------------------------------------------
+      {
+        label: "pageUrl wrong type (number)",
+        body: { pageUrl: 42, userAgent: GOOGLEBOT_UA },
+        expectFields: ["pageUrl"],
+      },
+      {
+        label: "userAgent wrong type (null)",
+        body: { pageUrl: `${ORIGIN}/product/ok-${runId}`, userAgent: null },
+        expectFields: ["userAgent"],
+      },
+      // --- empty / whitespace (post-trim) ---------------------------------
+      {
+        label: "pageUrl empty string",
+        body: { pageUrl: "", userAgent: GOOGLEBOT_UA },
+        expectFields: ["pageUrl"],
+      },
+      {
+        label: "userAgent whitespace-only",
+        body: { pageUrl: `${ORIGIN}/product/ok-${runId}`, userAgent: "   \t\n" },
+        expectFields: ["userAgent"],
+      },
+      // --- idempotencyKey: regex + length ---------------------------------
+      {
+        label: "idempotencyKey contains unsupported chars",
+        body: {
+          pageUrl: `${ORIGIN}/product/ok-${runId}`,
+          userAgent: GOOGLEBOT_UA,
+          idempotencyKey: "bad key with spaces!",
+        },
+        expectFields: ["idempotencyKey"],
+      },
+      {
+        label: "idempotencyKey over 200 chars",
+        body: {
+          pageUrl: `${ORIGIN}/product/ok-${runId}`,
+          userAgent: GOOGLEBOT_UA,
+          idempotencyKey: "a".repeat(201),
+        },
+        expectFields: ["idempotencyKey"],
+      },
+    ];
+
+    for (const c of cases) {
+      const res = await callFunction(c.body);
+      const text = await res.text();
+
+      // Every case must be a 400 — never 200, never 5xx.
+      assertEquals(
+        res.status,
+        400,
+        `[${c.label}] expected HTTP 400, got ${res.status}: ${text}`,
+      );
+
+      let json: Record<string, unknown>;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        throw new Error(
+          `[${c.label}] response body was not valid JSON: ${text} (${
+            (err as Error).message
+          })`,
+        );
+      }
+
+      // ---- envelope key 1: error -----------------------------------------
+      if (typeof json.error !== "string" || json.error.length === 0) {
+        throw new Error(
+          `[${c.label}] response.error must be a non-empty string, got: ${
+            JSON.stringify(json.error)
+          }`,
+        );
+      }
+
+      // ---- envelope key 2: code (stable enum) ----------------------------
+      assertEquals(
+        json.code,
+        "INVALID_PAYLOAD",
+        `[${c.label}] expected code=INVALID_PAYLOAD, got ${
+          JSON.stringify(json.code)
+        }`,
+      );
+
+      // ---- envelope key 3: fieldErrors -----------------------------------
+      // Must be a plain object, with at least one key, and every value is
+      // a non-empty string[] (zod's flatten().fieldErrors shape).
+      assertExists(
+        json.fieldErrors,
+        `[${c.label}] envelope missing fieldErrors`,
+      );
+      const fieldErrors = json.fieldErrors as Record<string, unknown>;
+      if (
+        typeof fieldErrors !== "object" ||
+        fieldErrors === null ||
+        Array.isArray(fieldErrors)
+      ) {
+        throw new Error(
+          `[${c.label}] fieldErrors must be a plain object, got: ${
+            JSON.stringify(fieldErrors)
+          }`,
+        );
+      }
+      const fieldKeys = Object.keys(fieldErrors);
+      if (fieldKeys.length === 0) {
+        throw new Error(
+          `[${c.label}] fieldErrors must contain at least one entry, got: ${
+            JSON.stringify(fieldErrors)
+          }`,
+        );
+      }
+      for (const k of fieldKeys) {
+        const v = fieldErrors[k];
+        if (
+          !Array.isArray(v) ||
+          v.length === 0 ||
+          !v.every((m) => typeof m === "string" && m.length > 0)
+        ) {
+          throw new Error(
+            `[${c.label}] fieldErrors.${k} must be a non-empty string[], got: ${
+              JSON.stringify(v)
+            }`,
+          );
+        }
+      }
+
+      // Every field we expect must be present; nothing else may be flagged.
+      // (Symmetry guard — prevents accidental fan-out of field errors.)
+      for (const f of c.expectFields) {
+        assertExists(
+          fieldErrors[f],
+          `[${c.label}] fieldErrors.${f} must be present`,
+        );
+      }
+      const unexpected = fieldKeys.filter(
+        (k) => !c.expectFields.includes(k as typeof c.expectFields[number]),
+      );
+      assertEquals(
+        unexpected,
+        [],
+        `[${c.label}] unexpected fieldErrors keys: ${JSON.stringify(unexpected)}`,
+      );
+
+      // ---- envelope key 4: validationCounters (full taxonomy) ------------
+      assertExists(
+        json.validationCounters,
+        `[${c.label}] envelope missing validationCounters`,
+      );
+      const counters = json.validationCounters as Record<string, unknown>;
+      if (
+        typeof counters !== "object" ||
+        counters === null ||
+        Array.isArray(counters)
+      ) {
+        throw new Error(
+          `[${c.label}] validationCounters must be a plain object, got: ${
+            JSON.stringify(counters)
+          }`,
+        );
+      }
+      // ALL 8 taxonomy buckets must always be present so log aggregations
+      // never have to handle "missing key vs zero" — and no extra keys may
+      // sneak in (catches typos / silent taxonomy drift).
+      const counterKeys = Object.keys(counters).sort();
+      const expectedKeys = [...REQUIRED_COUNTER_KEYS].sort();
+      assertEquals(
+        counterKeys,
+        expectedKeys,
+        `[${c.label}] validationCounters key set mismatch — got ${
+          JSON.stringify(counterKeys)
+        }, expected ${JSON.stringify(expectedKeys)}`,
+      );
+      for (const k of REQUIRED_COUNTER_KEYS) {
+        const v = counters[k];
+        if (
+          typeof v !== "number" ||
+          !Number.isFinite(v) ||
+          !Number.isInteger(v) ||
+          v < 0
+        ) {
+          throw new Error(
+            `[${c.label}] validationCounters.${k} must be a non-negative integer, got: ${
+              JSON.stringify(v)
+            }`,
+          );
+        }
+      }
+
+      // No stray top-level keys leak into the envelope (e.g. raw zod
+      // dump, internal stack traces). Future additions must be added here
+      // intentionally so we don't quietly start exposing new fields.
+      const ALLOWED_TOP_LEVEL = new Set([
+        "error",
+        "code",
+        "fieldErrors",
+        "validationCounters",
+      ]);
+      const stray = Object.keys(json).filter((k) => !ALLOWED_TOP_LEVEL.has(k));
+      assertEquals(
+        stray,
+        [],
+        `[${c.label}] envelope leaked unexpected top-level keys: ${
+          JSON.stringify(stray)
+        }`,
+      );
+    }
+  },
+});
