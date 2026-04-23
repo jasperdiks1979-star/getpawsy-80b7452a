@@ -62,6 +62,16 @@ jobs:
       # only for one-off investigations.
       FUZZ_SEED: '0xC0FFEE'
       FUZZ_ITERATIONS: '3'
+      # Per-bucket coverage gate (see end of
+      # supabase/functions/log-crawler-visit/index_test.ts).
+      # The fuzz suite is structurally responsible for hitting
+      # `schema_page_url` and `schema_user_agent` on every PR run; this
+      # threshold makes a silent loss of either axis a CI failure.
+      # Bump only when iterations are intentionally raised.
+      FUZZ_BUCKET_MIN_HITS: '1'
+      # Persist the per-bucket summary as JSON so we can upload it as
+      # an artifact and grep it for trends across runs.
+      FUZZ_COVERAGE_OUT: 'fuzz-bucket-coverage.json'
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
