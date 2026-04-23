@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2, FolderUp } from "lucide-react";
+import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2, FolderUp, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,6 +22,17 @@ export const PRODUCT_IMAGE_ALLOWED_MIME = [
   "image/avif",
 ] as const;
 const ACCEPT_ATTR = PRODUCT_IMAGE_ALLOWED_MIME.join(",");
+
+// A file selected by the user but NOT yet uploaded. We hold an object URL
+// so we can render a real thumbnail in the preview tray; revoking it on
+// removal/unmount prevents the browser from leaking blob memory.
+interface PendingFile {
+  id: string;
+  file: File;
+  previewUrl: string;
+  status: "ok" | "rejected";
+  reason?: string;
+}
 
 interface ProductImageManagerProps {
   images: string[];
