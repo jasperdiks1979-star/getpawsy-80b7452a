@@ -422,3 +422,171 @@ function StatCard({
     </Card>
   );
 }
+
+function LastHourPanel({
+  query,
+}: {
+  query: ReturnType<typeof useQuery<LastHourResponse, Error>>;
+}) {
+  const data = query.data;
+  const totals = data?.totals;
+  const sampleRate = totals && totals.total > 0
+    ? (totals.sampled_out / totals.total) * 100
+    : null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Last hour at a glance</CardTitle>
+        <CardDescription>
+          Sampling decisions in the last 60 minutes — how many pings were kept
+          (logged) vs dropped (sampled out), broken down by page and bot state.
+          Refreshes every 30s.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {query.isError && (
+          <p className="text-sm text-destructive">
+            Failed to load: {(query.error as Error)?.message ?? 'unknown error'}
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <MiniStat label="Total pings" value={totals?.total ?? 0} />
+          <MiniStat label="Logged" value={totals?.logged ?? 0} tone="success" />
+          <MiniStat label="Sampled out" value={totals?.sampled_out ?? 0} tone="muted" />
+          <MiniStat label="Always-log" value={totals?.always_log ?? 0} />
+          <MiniStat
+            label="Sampled-out rate"
+            value={sampleRate === null ? '—' : `${sampleRate.toFixed(1)}%`}
+          />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <h3 className="mb-2 text-sm font-medium">By bot state</h3>
+            {!data || data.by_bot_state.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No pings in the last hour.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>State</TableHead>
+                    <TableHead className="text-right">Logged</TableHead>
+                    <TableHead className="text-right">Sampled out</TableHead>
+                    <TableHead className="text-right">Always</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.by_bot_state.map((row) => (
+                    <TableRow key={row.bot_state}>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            row.bot_state === 'spoofed_bot'
+                              ? 'destructive'
+                              : row.bot_state === 'verified_bot'
+                              ? 'default'
+                              : row.bot_state === 'ua_only_bot'
+                              ? 'outline'
+                              : 'secondary'
+                          }
+                        >
+                          {BOT_STATE_LABEL[row.bot_state]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">{row.logged}</TableCell>
+                      <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                        {row.sampled_out}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">{row.always_log}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{row.total}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-sm font-medium">
+              Top pages{' '}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({data?.distinct_pages ?? 0} distinct)
+              </span>
+            </h3>
+            {!data || data.by_page.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No pings in the last hour.</p>
+            ) : (
+              <div className="max-h-[320px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Page</TableHead>
+                      <TableHead className="text-right">Logged</TableHead>
+                      <TableHead className="text-right">Sampled</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.by_page.map((row) => (
+                      <TableRow key={row.page_url}>
+                        <TableCell
+                          className="max-w-[260px] truncate font-mono text-xs"
+                          title={row.page_url}
+                        >
+                          {row.page_url}
+                          {row.render_trace > 0 && (
+                            <Badge variant="secondary" className="ml-1">
+                              trace
+                            </Badge>
+                          )}
+                          {row.spoofed_bot > 0 && (
+                            <Badge variant="destructive" className="ml-1">
+                              spoofed
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs">{row.logged}</TableCell>
+                        <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                          {row.sampled_out}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs">{row.total}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string;
+  value: number | string;
+  tone?: 'default' | 'success' | 'muted';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'text-foreground'
+      : tone === 'muted'
+      ? 'text-muted-foreground'
+      : 'text-foreground';
+  return (
+    <div className="rounded-md border bg-card p-3">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-lg font-semibold ${toneClass}`}>
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </p>
+    </div>
+  );
+}
