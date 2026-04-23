@@ -22,6 +22,7 @@ import {
   FileSearch,
   ChevronDown,
   ChevronUp,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   useReleaseIssues,
@@ -33,6 +34,8 @@ import { buildIssueEvidence, type IssueEvidence, type SampleResult } from '@/lib
 import { useProductNames } from '@/hooks/useProductNames';
 import { buildRecommendations } from '@/lib/release/issueRecommendations';
 import { ReleaseRecommendationsBanner } from './ReleaseRecommendationsBanner';
+import { downloadIssuesCsv } from '@/lib/release/issuesCsvExport';
+import { toast } from 'sonner';
 
 const UNASSIGNED = '__unassigned__';
 
