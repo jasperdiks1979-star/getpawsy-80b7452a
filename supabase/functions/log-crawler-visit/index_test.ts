@@ -1177,6 +1177,118 @@ Deno.test({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Idempotency-key dedupe
+// ---------------------------------------------------------------------------
+// When a client supplies the same `idempotencyKey` for repeated calls (e.g.
+// the edge function gets retried, or a render-trace ping fires twice for the
+// same page-view), the server must collapse them to a single
+// `crawler_visits` row instead of inserting duplicates. We verify both:
+//   1. The first call inserts and returns `deduped: false`.
+//   2. Every subsequent call with the same key returns `deduped: true` and
+//      the DB still has exactly one matching row.
+Deno.test({
+  name:
+    "log-crawler-visit: repeated calls with the same idempotencyKey are deduplicated to a single row",
+  ignore: !haveServiceRole,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const slug = `idem-${crypto.randomUUID().slice(0, 8)}`;
+    const idempotencyKey = `pdp:${crypto.randomUUID()}:${slug}:rendered`;
+    const payload = { ...buildPayload(slug, "rendered"), idempotencyKey };
+
+    try {
+      // --- First call: should insert ---------------------------------------
+      const first = await callFunction(payload);
+      const firstJson = await first.json();
+      assertEquals(first.status, 200, `first call status: ${first.status}`);
+      assertEquals(firstJson.success, true, "first call should succeed");
+      assertEquals(
+        firstJson.deduped,
+        false,
+        "first call must not be flagged as deduped",
+      );
+      assertEquals(
+        firstJson.idempotencyKey,
+        idempotencyKey,
+        "server should echo back the supplied idempotency key",
+      );
+
+      // Wait for the row to land before issuing retries.
+      await waitForRow(supabase, slug, "rendered");
+
+      // --- Retries: same key → server reports deduped, DB count stays at 1 -
+      const RETRIES = 4;
+      for (let i = 0; i < RETRIES; i++) {
+        const res = await callFunction(payload);
+        const json = await res.json();
+        assertEquals(
+          res.status,
+          200,
+          `retry #${i + 1} should return 200, got ${res.status}`,
+        );
+        assertEquals(
+          json.success,
+          true,
+          `retry #${i + 1} should succeed`,
+        );
+        assertEquals(
+          json.deduped,
+          true,
+          `retry #${i + 1} must be flagged as deduped`,
+        );
+      }
+
+      // --- DB check: exactly one row for this idempotency key --------------
+      const { data: rows, error } = await supabase
+        .from("crawler_visits")
+        .select("id, idempotency_key, page_url, user_agent")
+        .eq("idempotency_key", idempotencyKey);
+      if (error) throw error;
+      assertEquals(
+        (rows ?? []).length,
+        1,
+        `expected exactly 1 row for idempotency_key=${idempotencyKey} after ${
+          RETRIES + 1
+        } calls, got ${(rows ?? []).length}`,
+      );
+      assertMatch(
+        String((rows ?? [])[0].user_agent),
+        /pdp-render-trace:rendered/,
+      );
+
+      // --- Different key, same payload → must insert a SECOND row ----------
+      const otherKey = `pdp:${crypto.randomUUID()}:${slug}:rendered`;
+      const otherPayload = { ...payload, idempotencyKey: otherKey };
+      const otherRes = await callFunction(otherPayload);
+      const otherJson = await otherRes.json();
+      assertEquals(otherRes.status, 200);
+      assertEquals(
+        otherJson.deduped,
+        false,
+        "a fresh idempotency key must NOT be deduped against a previous key",
+      );
+
+      const { data: allRows, error: allErr } = await supabase
+        .from("crawler_visits")
+        .select("id, idempotency_key")
+        .ilike("page_url", `%/product/${slug}%`);
+      if (allErr) throw allErr;
+      assertEquals(
+        (allRows ?? []).length,
+        2,
+        `expected exactly 2 rows for slug=${slug} (one per distinct key), got ${
+          (allRows ?? []).length
+        }`,
+      );
+    } finally {
+      await cleanup(supabase, [slug]);
+    }
+  },
+});
+
 Deno.test({
   name:
     "log-crawler-visit: sample_rate=0.5 drops non-trace requests probabilistically (~50%), trace pings still always inserted",
