@@ -1,11 +1,27 @@
 import jsPDF from 'jspdf';
 import type { ReleaseReportResult } from '@/hooks/useReleaseReport';
+import { PAGE_CHANGELOGS, type PageChangelogKey } from '@/lib/page-changelogs';
 
 interface BuildOptions {
   title: string;
   notes?: string;
   result: ReleaseReportResult;
 }
+
+/**
+ * Maps each policy/contact page to the feed-validation field that proves
+ * the change is live in the GMC feed. Used to render the Evidence Matrix
+ * page in the auto-generated release PDF.
+ */
+const EVIDENCE_MAP: Record<PageChangelogKey, { surface: string; feedField: string }> = {
+  contact:  { surface: '/contact',         feedField: 'site_readiness.contact · OrganizationJSON-LD.address.addressCountry=US' },
+  about:    { surface: '/about',           feedField: 'site_readiness.about · OrganizationJSON-LD.address.addressLocality=New York' },
+  shipping: { surface: '/shipping',        feedField: 'site_readiness.shipping · feed g:shipping country=US, service=Standard, $5.99 / free $35+' },
+  returns:  { surface: '/return-policy',   feedField: 'site_readiness.returns · MerchantReturnPolicy.returnDays=30' },
+  privacy:  { surface: '/privacy-policy',  feedField: 'site_readiness.privacy' },
+  terms:    { surface: '/terms-of-service',feedField: 'site_readiness.terms' },
+  cookies:  { surface: '/cookie-policy',   feedField: 'site_readiness.terms (cookies addendum)' },
+};
 
 /**
  * Generate a single-file PDF summary of a Report Release run.
@@ -141,6 +157,80 @@ export function downloadReleaseReportPdf({ title, notes, result }: BuildOptions)
     h2('Error');
     body(result.error_message);
   }
+
+  // ---- Evidence Matrix (per-page changelog ↔ feed validation field) ----
+  doc.addPage();
+  y = 20;
+  h1('Evidence Matrix');
+  small(
+    'Per modified contact/policy page: what changed, the source URL, and the exact ' +
+    'feed-validation field that proves the change is live. Attach this page to ' +
+    'GMC Account Issues → Request Review.',
+  );
+
+  const tableX = margin;
+  const colW = [38, 70, 60]; // Page · Changes · Feed validation field
+  const headerH = 8;
+
+  const drawHeader = () => {
+    checkPage(headerH + 4);
+    doc.setFillColor(15, 23, 42);
+    doc.rect(tableX, y - 5, colW[0] + colW[1] + colW[2], headerH, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text('Page / Build', tableX + 2, y);
+    doc.text('Changes',      tableX + colW[0] + 2, y);
+    doc.text('Feed field',   tableX + colW[0] + colW[1] + 2, y);
+    y += headerH;
+    doc.setTextColor(0, 0, 0);
+  };
+
+  drawHeader();
+
+  let rowIdx = 0;
+  (Object.keys(PAGE_CHANGELOGS) as PageChangelogKey[]).forEach((key) => {
+    const entries = PAGE_CHANGELOGS[key];
+    if (!entries?.length) return;
+    const latest = entries[0];
+    const ev = EVIDENCE_MAP[key];
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(30, 41, 59);
+    const pageCell = doc.splitTextToSize(
+      `${ev.surface}\n${latest.build}\n${latest.commit} · ${latest.date}`, colW[0] - 4,
+    );
+    const changesCell = doc.splitTextToSize(latest.changes.join(' • '), colW[1] - 4);
+    const fieldCell = doc.splitTextToSize(ev.feedField, colW[2] - 4);
+
+    const rowH = Math.max(
+      pageCell.length * 4,
+      changesCell.length * 4,
+      fieldCell.length * 4,
+    ) + 4;
+
+    if (y + rowH > pageHeight - 15) {
+      doc.addPage(); y = 20;
+      drawHeader();
+    }
+
+    if (rowIdx % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(tableX, y - 4, colW[0] + colW[1] + colW[2], rowH, 'F');
+    }
+    doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.1);
+    doc.line(tableX, y - 4 + rowH, tableX + colW[0] + colW[1] + colW[2], y - 4 + rowH);
+
+    doc.setTextColor(30, 41, 59); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+    doc.text(pageCell,    tableX + 2, y);
+    doc.text(changesCell, tableX + colW[0] + 2, y);
+    doc.text(fieldCell,   tableX + colW[0] + colW[1] + 2, y);
+    y += rowH;
+    rowIdx++;
+  });
+
+  y += 4;
+  small(
+    'Cross-reference: each "Feed field" can be re-verified by re-running ' +
+    '"validate-merchant-feed" — its summary appears under Run summary on page 1.',
+  );
 
   // ---- Footer attribution ----
   const totalPages = doc.getNumberOfPages();
