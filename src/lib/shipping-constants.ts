@@ -93,28 +93,22 @@ export const INFO_EMAIL = 'support@getpawsy.pet';
 export const RESPONSE_TIME = 'We typically respond within 24 hours';
 
 /** Business hours */
-export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET';
+export const BUSINESS_HOURS = 'Monday – Friday, 9:00 AM – 5:00 PM ET';
 
 /** Business location */
-export const BUSINESS_LOCATION = 'Apeldoorn, Gelderland · Netherlands';
+export const BUSINESS_LOCATION = 'New York, NY · United States';
 
 /** Business name */
 export const BUSINESS_NAME = 'GetPawsy';
 
 /** Legal operator name */
-export const BUSINESS_OPERATOR = 'Skidzo';
-
-/** Business registration */
-export const BUSINESS_REGISTRATION = 'KVK 78156955';
-
-/** Business VAT ID */
-export const BUSINESS_VAT_ID = 'NL003295015B69';
+export const BUSINESS_OPERATOR = 'GetPawsy LLC';
 
 /** Service area */
 export const BUSINESS_SERVICE_AREA = 'Serving customers across the United States';
 
 /** Operating country display */
-export const OPERATING_COUNTRY = 'Netherlands';
+export const OPERATING_COUNTRY = 'United States';
 
 // ============= TRUST BADGE MESSAGES =============
 
