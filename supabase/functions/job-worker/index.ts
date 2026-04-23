@@ -36,6 +36,54 @@ console.log(
   `[job-worker] config: maxAttempts=${MAX_ATTEMPTS} backoffMinutes=[${BACKOFF_MINUTES.join(',')}] batchSize=${BATCH_SIZE}`,
 );
 
+interface RetryPolicy {
+  provider: string | null;
+  job_type: string | null;
+  max_attempts: number | null;
+  backoff_minutes: number[] | null;
+}
+
+/**
+ * Pick the most-specific enabled policy for a given (provider, job_type).
+ * Specificity ranking (highest wins):
+ *   1. exact provider + exact job_type
+ *   2. exact provider, wildcard job_type (NULL)
+ *   3. wildcard provider (NULL), exact job_type
+ *   4. both wildcard (effectively a global override)
+ * Falls back to env defaults when no policy applies.
+ */
+function resolvePolicy(
+  provider: string,
+  jobType: string,
+  policies: RetryPolicy[],
+): { maxAttempts: number; backoffMinutes: number[]; matched: RetryPolicy | null } {
+  const score = (p: RetryPolicy) => {
+    let s = 0;
+    if (p.provider && p.provider === provider) s += 2;
+    if (p.job_type && p.job_type === jobType) s += 1;
+    return s;
+  };
+  const candidates = policies
+    .filter(
+      (p) =>
+        (p.provider === null || p.provider === provider) &&
+        (p.job_type === null || p.job_type === jobType),
+    )
+    .sort((a, b) => score(b) - score(a));
+  const matched = candidates[0] ?? null;
+  const backoff =
+    Array.isArray(matched?.backoff_minutes) && matched.backoff_minutes.length > 0
+      ? matched.backoff_minutes.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n >= 0)
+      : BACKOFF_MINUTES;
+  const maxAttempts =
+    matched?.max_attempts && matched.max_attempts > 0 ? matched.max_attempts : MAX_ATTEMPTS;
+  return {
+    maxAttempts,
+    backoffMinutes: backoff.length > 0 ? backoff : BACKOFF_MINUTES,
+    matched,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -47,6 +95,14 @@ Deno.serve(async (req) => {
   );
 
   try {
+    // Load all enabled retry policies once per worker run. Tiny table —
+    // safe to fetch in full and filter in-memory rather than per-job RPC.
+    const { data: policiesRaw } = await supabase
+      .from('job_retry_policies')
+      .select('provider, job_type, max_attempts, backoff_minutes')
+      .eq('enabled', true);
+    const policies = (policiesRaw ?? []) as RetryPolicy[];
+
     // Pick due jobs (limit configurable via JOB_WORKER_BATCH_SIZE)
     const { data: jobs, error: fetchErr } = await supabase
       .from('marketing_jobs')
@@ -97,9 +153,11 @@ Deno.serve(async (req) => {
           throw new Error(result.reason || 'Provider returned ok:false');
         }
       } catch (err) {
+        const policy = resolvePolicy(job.provider, job.job_type, policies);
         const attempts = (job.attempts || 0) + 1;
-        const newStatus = attempts >= MAX_ATTEMPTS ? 'dead' : 'failed';
-        const backoffMinutes = BACKOFF_MINUTES[Math.min(attempts - 1, BACKOFF_MINUTES.length - 1)];
+        const newStatus = attempts >= policy.maxAttempts ? 'dead' : 'failed';
+        const backoffMinutes =
+          policy.backoffMinutes[Math.min(attempts - 1, policy.backoffMinutes.length - 1)];
         const nextRun = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
 
         await supabase.from('marketing_jobs').update({
@@ -115,7 +173,16 @@ Deno.serve(async (req) => {
           event_type: 'job_failed',
           severity: newStatus === 'dead' ? 'error' : 'warn',
           message: err instanceof Error ? err.message : String(err),
-          context: { jobId: job.id, attempts, jobType: job.job_type },
+          context: {
+            jobId: job.id,
+            attempts,
+            jobType: job.job_type,
+            maxAttempts: policy.maxAttempts,
+            backoffMinutes,
+            policyMatched: policy.matched
+              ? { provider: policy.matched.provider, jobType: policy.matched.job_type }
+              : null,
+          },
         });
 
         failed++;
