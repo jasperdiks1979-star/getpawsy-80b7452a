@@ -140,6 +140,13 @@ export default function PageChangelogManager() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<DraftEntry | null>(null);
   const [saving, setSaving] = useState(false);
+  // Filters scoped to the active page tab. `buildFilter` is a free-text
+  // substring match against build_tag/commit_ref/bullet text so the
+  // operator can drill into a specific release (e.g. "v2026.04" or a
+  // commit prefix). `statusFilter` lets you focus on drafts vs live
+  // entries when staging a multi-release rollout.
+  const [buildFilter, setBuildFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
 
   const loadRows = async () => {
     setLoading(true);
@@ -165,9 +172,34 @@ export default function PageChangelogManager() {
   }, []);
 
   const filtered = useMemo(
-    () => rows.filter((r) => r.page_key === activeKey),
-    [rows, activeKey],
+    () => {
+      const q = buildFilter.trim().toLowerCase();
+      return rows.filter((r) => {
+        if (r.page_key !== activeKey) return false;
+        if (statusFilter === 'published' && !r.is_published) return false;
+        if (statusFilter === 'draft' && r.is_published) return false;
+        if (!q) return true;
+        if (r.build_tag.toLowerCase().includes(q)) return true;
+        if (r.commit_ref.toLowerCase().includes(q)) return true;
+        if (r.entry_date.includes(q)) return true;
+        if ((r.changes ?? []).some((c) => c.toLowerCase().includes(q))) return true;
+        return false;
+      });
+    },
+    [rows, activeKey, buildFilter, statusFilter],
   );
+
+  // Distinct build tags on the active page — used for the dropdown shortcut
+  // so admins can jump to one specific release without typing.
+  const buildTagsForPage = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (r.page_key === activeKey) set.add(r.build_tag);
+    }
+    return Array.from(set).sort();
+  }, [rows, activeKey]);
+
+  const filtersActive = buildFilter.trim().length > 0 || statusFilter !== 'all';
 
   const counts = useMemo(() => {
     const map: Record<PageKey, { total: number; published: number }> = {
