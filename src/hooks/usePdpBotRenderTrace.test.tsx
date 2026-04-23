@@ -257,4 +257,73 @@ describe('usePdpBotRenderTrace', () => {
       expect(calls).toHaveLength(0);
     });
   });
+
+  it('keeps dedupe state per-slug: two slugs each emit their own shell + rendered', async () => {
+    // First PDP: cozy-bed-A
+    const { rerender: rerenderA, unmount: unmountA } = renderHook(
+      ({ slug, isLoading, hasProduct }: { slug: string; isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug, isLoading, hasProduct }),
+      { initialProps: { slug: 'multi-slug-a', isLoading: true, hasProduct: false } },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    rerenderA({ slug: 'multi-slug-a', isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    unmountA();
+
+    // Second PDP: cozy-bed-B (simulates SPA navigation to a new product)
+    const { rerender: rerenderB } = renderHook(
+      ({ slug, isLoading, hasProduct }: { slug: string; isLoading: boolean; hasProduct: boolean }) =>
+        usePdpBotRenderTrace({ slug, isLoading, hasProduct }),
+      { initialProps: { slug: 'multi-slug-b', isLoading: true, hasProduct: false } },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    rerenderB({ slug: 'multi-slug-b', isLoading: false, hasProduct: true });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Pull every log call and group by slug.
+    const callsBySlug = new Map<string, string[]>();
+    for (const [fn, opts] of invokeMock.mock.calls) {
+      if (fn !== 'log-crawler-visit') continue;
+      const body = (opts as { body: { pageUrl: string; userAgent: string } }).body;
+      const slugMatch = body.pageUrl.match(/\/product\/(multi-slug-[ab])/);
+      if (!slugMatch) continue;
+      const stateMatch = body.userAgent.match(/pdp-render-trace:(shell|rendered|timeout)/);
+      if (!stateMatch) continue;
+      const slug = slugMatch[1];
+      const arr = callsBySlug.get(slug) ?? [];
+      arr.push(stateMatch[1]);
+      callsBySlug.set(slug, arr);
+    }
+
+    // Each slug must independently emit exactly one shell + one rendered.
+    expect(callsBySlug.get('multi-slug-a')).toEqual(['shell', 'rendered']);
+    expect(callsBySlug.get('multi-slug-b')).toEqual(['shell', 'rendered']);
+
+    // Sanity: 4 events total, no cross-slug dedupe collision.
+    const allRelevant = invokeMock.mock.calls.filter(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        /\/product\/multi-slug-[ab]/.test(
+          (opts as { body: { pageUrl: string } }).body.pageUrl,
+        ),
+    );
+    expect(allRelevant).toHaveLength(4);
+  });
 });
