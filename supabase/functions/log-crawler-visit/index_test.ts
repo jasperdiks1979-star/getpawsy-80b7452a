@@ -4094,6 +4094,79 @@ Deno.test({
               counterRunTotals.firstSeenCounters = { ...envelope.validationCounters };
             }
             counterRunTotals.lastSeenCounters = { ...envelope.validationCounters };
+
+            // -----------------------------------------------------------------
+            // Per-request counter invariants (i)/(ii)/(iii) — see the long
+            // comment block above `MAX_COUNTER_PER_RESPONSE` for rationale.
+            //
+            // These are intentionally per-call so a failure points to the
+            // EXACT request that violated the contract — not an aggregate
+            // delta that's hard to attribute to a specific iteration.
+            // -----------------------------------------------------------------
+            for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+              const v = envelope.validationCounters[k];
+
+              // (i) ceiling: no bucket may exceed MAX_COUNTER_PER_RESPONSE
+              //     on a single response. Sized well above realistic
+              //     shared-isolate history; if this fires, suspect an
+              //     int-wrap, sign-flip, or runaway double-count.
+              if (v > MAX_COUNTER_PER_RESPONSE) {
+                throw new Error(
+                  `${label} validationCounters.${k} = ${v} exceeds the ` +
+                    `per-request ceiling of ${MAX_COUNTER_PER_RESPONSE}. ` +
+                    `A single response should never report a counter this ` +
+                    `large — likely an int-overflow / sign-flip / ` +
+                    `runaway-increment bug. Full counters=` +
+                    `${JSON.stringify(envelope.validationCounters)}`,
+                );
+              }
+
+              // (ii) decrement guard: counters are increment-only, so a
+              //      negative value is always a bug regardless of which
+              //      isolate served the call. The structural envelope
+              //      check already proves v is a non-negative integer,
+              //      but we restate it here with a label tailored to the
+              //      "decrement" failure mode so a regression in counter
+              //      arithmetic (e.g. `counters[k]--` slipping into a
+              //      cleanup path) produces an unambiguous error.
+              if (v < 0) {
+                throw new Error(
+                  `${label} validationCounters.${k} = ${v} is negative — ` +
+                    `module-scoped counters are increment-only and must never ` +
+                    `decrement. Suspect a stray decrement or signed-int ` +
+                    `underflow. Full counters=` +
+                    `${JSON.stringify(envelope.validationCounters)}`,
+                );
+              }
+              if (v > 0 && v < perBucketObservedMinNonZero[k]) {
+                perBucketObservedMinNonZero[k] = v;
+              }
+
+              // (iii) only-expected-bucket-incremented: any non-offending
+              //       bucket in this response must NOT be strictly greater
+              //       than the running observed max recorded *before* this
+              //       very iteration's offending-bucket update. The earlier
+              //       cross-axis block (above) catches the same regression
+              //       using `perBucketObservedMax`; here we double-check
+              //       with a self-contained per-request statement so the
+              //       error message clearly says "this single request
+              //       incremented something it shouldn't have", which is
+              //       what most contributors will be searching the logs
+              //       for after a counter-attribution bug.
+              if (k !== expectedBucket) {
+                const prevMax = perBucketObservedMax[k] ?? 0;
+                if (v > prevMax) {
+                  throw new Error(
+                    `${label} per-request invariant violated: only the ` +
+                      `expected bucket ("${expectedBucket}") may be ` +
+                      `incremented by an ${axis}-length failure, but ` +
+                      `bucket "${k}" went from ${prevMax} → ${v} on this ` +
+                      `single request. Full counters=` +
+                      `${JSON.stringify(envelope.validationCounters)}`,
+                  );
+                }
+              }
+            }
           }
 
           // -----------------------------------------------------------------
