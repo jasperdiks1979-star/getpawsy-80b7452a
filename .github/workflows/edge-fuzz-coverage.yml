@@ -1,0 +1,183 @@
+# Fuzz coverage gate for the `log-crawler-visit` edge function.
+#
+# Why this exists
+# ---------------
+# The property-based fuzz suite in
+#   supabase/functions/log-crawler-visit/index_test.ts
+# has multiple branches (axis = pageUrl vs userAgent, length specs around
+# the 2048 boundary, ASCII/Unicode/emoji palettes, the shrinker path,
+# validation-counter assertions, etc). It's easy for a refactor to
+# accidentally short-circuit one of those branches so the suite still
+# passes but is silently exercising less of its own contract.
+#
+# This job runs the fuzz tests under `deno coverage`, scopes the report
+# to the test file itself (the only in-repo file the test transitively
+# touches — `index.ts` runs server-side in the deployed function and is
+# covered by integration assertions, not in-process execution), prints
+# the human-readable summary, and fails the build if line coverage drops
+# below the agreed threshold.
+#
+# Updating the threshold
+# ----------------------
+# Bump `MIN_LINE_COVERAGE_PCT` only when you have intentionally added
+# more branches to the suite and verified the new floor on `main`. Never
+# lower it without explicit review — that's the whole point of the gate.
+
+name: Edge Function Fuzz Coverage
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/log-crawler-visit/**'
+      - '.github/workflows/edge-fuzz-coverage.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/log-crawler-visit/**'
+      - '.github/workflows/edge-fuzz-coverage.yml'
+  workflow_dispatch:
+    inputs:
+      min_line_coverage_pct:
+        description: 'Override the minimum line-coverage % for this run.'
+        required: false
+        default: ''
+
+concurrency:
+  group: edge-fuzz-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: log-crawler-visit fuzz coverage gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Threshold is an integer percent (0–100). The gate compares
+      # floor(line_pct) >= MIN so we don't fail on rounding noise.
+      # Calibrated against `main` on 2026-04-23 (~78%). Bump as the
+      # suite grows — never silently lower.
+      MIN_LINE_COVERAGE_PCT: '75'
+      # Use the same defaults as PR-CI so the coverage shape matches
+      # what the rest of CI exercises. Override via workflow_dispatch
+      # only for one-off investigations.
+      FUZZ_SEED: '0xC0FFEE'
+      FUZZ_ITERATIONS: '3'
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Resolve threshold
+        id: threshold
+        run: |
+          override="${{ github.event.inputs.min_line_coverage_pct }}"
+          if [[ -n "$override" ]]; then
+            echo "min=$override" >> "$GITHUB_OUTPUT"
+            echo "Using workflow_dispatch override: min=$override%"
+          else
+            echo "min=$MIN_LINE_COVERAGE_PCT" >> "$GITHUB_OUTPUT"
+            echo "Using repo default: min=$MIN_LINE_COVERAGE_PCT%"
+          fi
+
+      - name: Run fuzz tests with coverage
+        run: |
+          rm -rf coverage
+          deno test \
+            --allow-net \
+            --allow-env \
+            --allow-read \
+            --allow-write \
+            --coverage=coverage \
+            --filter "fuzz" \
+            supabase/functions/log-crawler-visit/index_test.ts
+
+      - name: Generate coverage summary
+        id: report
+        run: |
+          # Scope the report to the in-repo fuzz test file. Remote
+          # modules (deno.land/std, esm.sh) are excluded — they're not
+          # the artifact whose coverage we care about.
+          deno coverage coverage \
+            --include='supabase/functions/log-crawler-visit/index_test\.ts$' \
+            > coverage-summary.txt
+          echo
+          echo "===== Fuzz coverage summary ====="
+          cat coverage-summary.txt
+          echo "================================="
+
+      - name: Enforce coverage threshold
+        run: |
+          MIN="${{ steps.threshold.outputs.min }}"
+          summary="coverage-summary.txt"
+
+          if [[ ! -s "$summary" ]]; then
+            echo "::error title=Coverage report missing::deno coverage produced no output. Did the fuzz tests actually run?"
+            exit 1
+          fi
+
+          # `deno coverage` prints a final "All files | <branch>% | <line>%"
+          # row. We pull the line column from that row. If the format
+          # changes in a future Deno release this regex will need a tweak,
+          # but we'd rather fail loudly than silently bypass the gate.
+          line_pct="$(awk '
+            /^All files/ {
+              # Columns: "All files | <branch>% | <line>%"
+              # Extract the last numeric token.
+              for (i = NF; i >= 1; i--) {
+                if ($i ~ /^[0-9]+(\.[0-9]+)?%?$/) {
+                  gsub("%", "", $i); print $i; exit
+                }
+              }
+            }
+          ' "$summary")"
+
+          if [[ -z "$line_pct" ]]; then
+            echo "::error title=Coverage parse failure::Could not extract line-coverage % from deno coverage output."
+            echo "Raw summary:"
+            cat "$summary"
+            exit 1
+          fi
+
+          # Compare integer floors so 74.99% rounds to 74 and fails
+          # against a 75 floor — no silent regressions inside a percent.
+          floor="${line_pct%.*}"
+          echo "Measured line coverage: ${line_pct}% (floor=${floor}%)"
+          echo "Required minimum:       ${MIN}%"
+
+          if (( floor < MIN )); then
+            echo "::error title=Fuzz coverage regression::Line coverage ${line_pct}% is below the required ${MIN}%. Restore the missing branches or, if the drop is intentional, lower MIN_LINE_COVERAGE_PCT in this workflow with reviewer sign-off."
+            exit 1
+          fi
+
+          echo "::notice title=Fuzz coverage OK::Line coverage ${line_pct}% ≥ ${MIN}%"
+
+      - name: Append summary to job page
+        if: always()
+        run: |
+          {
+            echo "## log-crawler-visit fuzz coverage"
+            echo
+            echo "- **Required minimum:** ${{ steps.threshold.outputs.min }}%"
+            echo
+            echo '```'
+            cat coverage-summary.txt 2>/dev/null || echo '(no coverage summary generated)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-crawler-visit-fuzz-coverage
+          path: |
+            coverage/
+            coverage-summary.txt
+          if-no-files-found: warn
+          retention-days: 14
