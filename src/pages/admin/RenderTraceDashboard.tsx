@@ -8,7 +8,7 @@ import {
   AreaChart, Area, ResponsiveContainer,
 } from 'recharts';
 import {
-  Activity, AlertTriangle, ArrowLeft, Download, RefreshCw, Search, TrendingDown,
+  Activity, AlertTriangle, ArrowLeft, Download, RefreshCw, Search, ShieldAlert, TrendingDown,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -69,6 +69,70 @@ function extractSlug(pageUrl: string): string {
   } catch {
     return pageUrl;
   }
+}
+
+// ─── Malformed row detection ─────────────────────────────────────────────────
+// We expect every row returned by the dashboard query to (a) carry a
+// recognizable `pdp-render-trace/<state>` tag, and (b) have a `page_url`
+// that parses to a non-empty slug under a real path (e.g. `/products/foo`).
+// If either fails the upstream client is sending malformed pings — these are
+// the only events that silently drop out of every chart and table above, so
+// we surface them explicitly with a sample.
+type MalformedReason =
+  | 'missing_state_tag'        // no pdp-render-trace/<x> match at all
+  | 'unknown_state_tag'        // matched, but tag isn't shell|rendered|timeout
+  | 'unparseable_page_url'     // URL() throws even with the base
+  | 'empty_slug_path';         // URL parsed but path was empty / no slug
+
+const REASON_LABELS: Record<MalformedReason, string> = {
+  missing_state_tag: 'Missing state tag',
+  unknown_state_tag: 'Unknown state tag',
+  unparseable_page_url: 'Unparseable page_url',
+  empty_slug_path: 'Empty slug path',
+};
+
+interface MalformedRow {
+  reason: MalformedReason;
+  page_url: string;
+  user_agent: string;
+  created_at: string;
+  rawTag: string | null;
+}
+
+function classifyRow(row: TraceRow): MalformedRow | null {
+  const ua = row.user_agent ?? '';
+  const m = ua.match(STATE_TAG_RE);
+  const rawTag = m ? m[1] : null;
+
+  let stateReason: MalformedReason | null = null;
+  if (!m) {
+    stateReason = 'missing_state_tag';
+  } else {
+    const tag = m[1].toLowerCase();
+    if (!(STATE_ORDER as string[]).includes(tag)) {
+      stateReason = 'unknown_state_tag';
+    }
+  }
+
+  let urlReason: MalformedReason | null = null;
+  try {
+    const u = new URL(row.page_url, 'https://getpawsy.pet');
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length === 0) urlReason = 'empty_slug_path';
+  } catch {
+    urlReason = 'unparseable_page_url';
+  }
+
+  // State problems take precedence — they're the more common upstream bug.
+  const reason = stateReason ?? urlReason;
+  if (!reason) return null;
+  return {
+    reason,
+    page_url: row.page_url,
+    user_agent: ua,
+    created_at: row.created_at,
+    rawTag,
+  };
 }
 
 interface TraceRow {
