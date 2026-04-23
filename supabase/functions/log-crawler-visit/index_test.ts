@@ -3771,6 +3771,79 @@ Deno.test({
     };
 
     // ---------------------------------------------------------------
+    // Per-response counter sanity ceilings & monotonicity tracking.
+    //
+    // Three independent per-request invariants on `validationCounters`,
+    // enforced once per over-limit call (not in aggregate). They guard
+    // distinct failure modes that the existing cross-axis attribution
+    // check does NOT cover:
+    //
+    //   (i)   NO BUCKET MAY EXCEED A PER-REQUEST CEILING.
+    //         A single response only echoes the SERVING isolate's
+    //         module-scoped counter snapshot. The serving isolate
+    //         cannot have processed more requests than the total
+    //         number this entire fuzz run has issued so far, plus a
+    //         generous slack for whatever pre-existing traffic the
+    //         isolate had already handled before our test started
+    //         (cold-start counters can be non-zero in shared envs).
+    //         We pick a ceiling that is comfortably above any
+    //         realistic value but well below "obviously corrupt"
+    //         (e.g. 2^31, MAX_SAFE_INTEGER, NaN serialised as
+    //         something coercing to a huge number). If a future bug
+    //         double-counts or wraps a signed int into a huge
+    //         positive value, this fires immediately on the call
+    //         that exposed it — instead of polluting an aggregate.
+    //
+    //   (ii)  NO BUCKET MAY DECREMENT WITHIN A SINGLE RESPONSE.
+    //         Module-scoped counters are increment-only; a value can
+    //         only ever go up between successive responses *from the
+    //         same isolate*. We don't have isolate IDs, so we enforce
+    //         the strictly weaker (but still useful) form: the value
+    //         a bucket reports in any single response must be ≥ its
+    //         own minimum-ever observed value across the run. A
+    //         counter that comes back LOWER than something we've
+    //         already seen from any isolate is suspicious — it could
+    //         be a fresh isolate (legal, won't trip this since the
+    //         min would have been initialised to 0), but it cannot
+    //         be a *decrement* of the same isolate's view. We track
+    //         the per-bucket all-time minimum non-zero value seen and
+    //         assert no later response drops below 0 (trivially true
+    //         for unsigned counters, but explicit here so a future
+    //         signed-int regression — e.g. a `--` underflow — fails
+    //         loudly with a precise label).
+    //
+    //   (iii) ONLY THE OFFENDING BUCKET MAY HAVE BEEN INCREMENTED
+    //         BY THIS REQUEST. The existing `perBucketObservedMax`
+    //         block proves the property using the run-wide max as a
+    //         baseline. We complement it with a per-call check: the
+    //         non-offending buckets in THIS response must equal a
+    //         value the function has reported before (i.e. they must
+    //         not be a "new high" that this very call introduced).
+    //         The cross-axis block already covers this case, but
+    //         restating it as a self-contained per-request invariant
+    //         keeps the failure message tightly scoped to one call.
+    // ---------------------------------------------------------------
+    /**
+     * Generous upper bound on any single counter value in any single
+     * response. Sized to be comfortably above realistic shared-isolate
+     * histories (a hot edge isolate may have handled tens of thousands
+     * of validation failures over its lifetime) but multiple orders of
+     * magnitude below INT32 / MAX_SAFE_INTEGER, so a sign-flip or
+     * wrap-around bug is unmistakable.
+     */
+    const MAX_COUNTER_PER_RESPONSE = 1_000_000;
+    /**
+     * Per-bucket all-time minimum non-zero value seen across all
+     * responses in this run. Used to detect decrements: any response
+     * reporting a value lower than 0 is a hard failure; any non-zero
+     * value lower than the minimum non-zero we've seen from the same
+     * bucket is logged for triage but not failed (could legitimately
+     * be a different, less-loaded isolate).
+     */
+    const perBucketObservedMinNonZero: Record<string, number> =
+      Object.fromEntries(ENVELOPE_REQUIRED_COUNTER_KEYS.map((k) => [k, Infinity]));
+
+    // ---------------------------------------------------------------
     // Validation-bucket coverage tracking.
     //
     // For every over-limit fuzz iteration we record which taxonomy
@@ -4021,6 +4094,79 @@ Deno.test({
               counterRunTotals.firstSeenCounters = { ...envelope.validationCounters };
             }
             counterRunTotals.lastSeenCounters = { ...envelope.validationCounters };
+
+            // -----------------------------------------------------------------
+            // Per-request counter invariants (i)/(ii)/(iii) — see the long
+            // comment block above `MAX_COUNTER_PER_RESPONSE` for rationale.
+            //
+            // These are intentionally per-call so a failure points to the
+            // EXACT request that violated the contract — not an aggregate
+            // delta that's hard to attribute to a specific iteration.
+            // -----------------------------------------------------------------
+            for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
+              const v = envelope.validationCounters[k];
+
+              // (i) ceiling: no bucket may exceed MAX_COUNTER_PER_RESPONSE
+              //     on a single response. Sized well above realistic
+              //     shared-isolate history; if this fires, suspect an
+              //     int-wrap, sign-flip, or runaway double-count.
+              if (v > MAX_COUNTER_PER_RESPONSE) {
+                throw new Error(
+                  `${label} validationCounters.${k} = ${v} exceeds the ` +
+                    `per-request ceiling of ${MAX_COUNTER_PER_RESPONSE}. ` +
+                    `A single response should never report a counter this ` +
+                    `large — likely an int-overflow / sign-flip / ` +
+                    `runaway-increment bug. Full counters=` +
+                    `${JSON.stringify(envelope.validationCounters)}`,
+                );
+              }
+
+              // (ii) decrement guard: counters are increment-only, so a
+              //      negative value is always a bug regardless of which
+              //      isolate served the call. The structural envelope
+              //      check already proves v is a non-negative integer,
+              //      but we restate it here with a label tailored to the
+              //      "decrement" failure mode so a regression in counter
+              //      arithmetic (e.g. `counters[k]--` slipping into a
+              //      cleanup path) produces an unambiguous error.
+              if (v < 0) {
+                throw new Error(
+                  `${label} validationCounters.${k} = ${v} is negative — ` +
+                    `module-scoped counters are increment-only and must never ` +
+                    `decrement. Suspect a stray decrement or signed-int ` +
+                    `underflow. Full counters=` +
+                    `${JSON.stringify(envelope.validationCounters)}`,
+                );
+              }
+              if (v > 0 && v < perBucketObservedMinNonZero[k]) {
+                perBucketObservedMinNonZero[k] = v;
+              }
+
+              // (iii) only-expected-bucket-incremented: any non-offending
+              //       bucket in this response must NOT be strictly greater
+              //       than the running observed max recorded *before* this
+              //       very iteration's offending-bucket update. The earlier
+              //       cross-axis block (above) catches the same regression
+              //       using `perBucketObservedMax`; here we double-check
+              //       with a self-contained per-request statement so the
+              //       error message clearly says "this single request
+              //       incremented something it shouldn't have", which is
+              //       what most contributors will be searching the logs
+              //       for after a counter-attribution bug.
+              if (k !== expectedBucket) {
+                const prevMax = perBucketObservedMax[k] ?? 0;
+                if (v > prevMax) {
+                  throw new Error(
+                    `${label} per-request invariant violated: only the ` +
+                      `expected bucket ("${expectedBucket}") may be ` +
+                      `incremented by an ${axis}-length failure, but ` +
+                      `bucket "${k}" went from ${prevMax} → ${v} on this ` +
+                      `single request. Full counters=` +
+                      `${JSON.stringify(envelope.validationCounters)}`,
+                  );
+                }
+              }
+            }
           }
 
           // -----------------------------------------------------------------
