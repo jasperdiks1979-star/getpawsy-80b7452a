@@ -14,8 +14,15 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 // Bypass the real exponential backoff so tests stay fast and deterministic.
+// Tests can swap `retryImpl.current` to exercise real retry behavior.
+const retryImpl: {
+  current: (fn: () => Promise<unknown>, config?: unknown) => Promise<unknown>;
+} = {
+  current: async (fn) => fn(),
+};
 vi.mock('@/hooks/useRetryWithBackoff', () => ({
-  retryWithBackoff: async (fn: () => Promise<unknown>) => fn(),
+  retryWithBackoff: (fn: () => Promise<unknown>, config?: unknown) =>
+    retryImpl.current(fn, config),
 }));
 
 import { usePdpBotRenderTrace } from './usePdpBotRenderTrace';
