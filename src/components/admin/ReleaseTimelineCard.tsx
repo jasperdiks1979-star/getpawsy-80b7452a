@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { ReleaseIssuesPanel } from './ReleaseIssuesPanel';
 
 interface ReleaseRow {
   id: string;
@@ -421,6 +422,14 @@ function ReleaseTimeline({ release }: { release: ReleaseRow }) {
           </li>
         ))}
       </ol>
+      <ReleaseIssuesPanel
+        releaseId={release.id}
+        topFailReasons={
+          Array.isArray(release.validation_summary?.topFailReasons)
+            ? release.validation_summary.topFailReasons
+            : null
+        }
+      />
     </div>
   );
 }
