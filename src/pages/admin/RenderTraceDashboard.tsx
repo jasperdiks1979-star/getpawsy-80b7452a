@@ -27,6 +27,7 @@ import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from '@/components/ui/chart';
 import { RenderTraceAlerts } from '@/components/admin/RenderTraceAlerts';
+import { SamplingRateWidget } from '@/components/admin/SamplingRateWidget';
 
 // -----------------------------------------------------------------------------
 // Render-trace dashboard
