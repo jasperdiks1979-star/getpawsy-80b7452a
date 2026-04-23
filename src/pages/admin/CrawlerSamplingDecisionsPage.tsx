@@ -56,6 +56,53 @@ type StatsResponse = {
   recent: RecentRow[];
 };
 
+type BotState = 'verified_bot' | 'spoofed_bot' | 'ua_only_bot' | 'human_or_unknown';
+
+type LastHourResponse = {
+  window_minutes: number;
+  from: string;
+  distinct_pages: number;
+  totals: {
+    total: number;
+    logged: number;
+    sampled_out: number;
+    always_log: number;
+    sampled_probabilistic: number;
+    render_trace: number;
+    appeal: number;
+    verified_bot: number;
+    spoofed_bot: number;
+    ua_claims_bot: number;
+  };
+  by_page: Array<{
+    page_url: string;
+    logged: number;
+    sampled_out: number;
+    always_log: number;
+    sampled_probabilistic: number;
+    render_trace: number;
+    verified_bot: number;
+    spoofed_bot: number;
+    total: number;
+  }>;
+  by_bot_state: Array<{
+    bot_state: BotState;
+    logged: number;
+    sampled_out: number;
+    always_log: number;
+    sampled_probabilistic: number;
+    render_trace: number;
+    total: number;
+  }>;
+};
+
+const BOT_STATE_LABEL: Record<BotState, string> = {
+  verified_bot: 'Verified Googlebot',
+  spoofed_bot: 'Spoofed Googlebot',
+  ua_only_bot: 'UA claims bot',
+  human_or_unknown: 'Human / unknown',
+};
+
 const REASON_LABEL: Record<Reason, string> = {
   render_trace: 'Render trace',
   appeal_page: 'Appeal page',
