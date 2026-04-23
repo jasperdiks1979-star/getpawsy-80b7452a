@@ -8,7 +8,7 @@ import {
   AreaChart, Area, ResponsiveContainer,
 } from 'recharts';
 import {
-  Activity, AlertTriangle, ArrowLeft, Download, RefreshCw, Search, TrendingDown,
+  Activity, AlertTriangle, ArrowLeft, Download, RefreshCw, Search, ShieldAlert, TrendingDown,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -71,6 +71,70 @@ function extractSlug(pageUrl: string): string {
   }
 }
 
+// ─── Malformed row detection ─────────────────────────────────────────────────
+// We expect every row returned by the dashboard query to (a) carry a
+// recognizable `pdp-render-trace/<state>` tag, and (b) have a `page_url`
+// that parses to a non-empty slug under a real path (e.g. `/products/foo`).
+// If either fails the upstream client is sending malformed pings — these are
+// the only events that silently drop out of every chart and table above, so
+// we surface them explicitly with a sample.
+type MalformedReason =
+  | 'missing_state_tag'        // no pdp-render-trace/<x> match at all
+  | 'unknown_state_tag'        // matched, but tag isn't shell|rendered|timeout
+  | 'unparseable_page_url'     // URL() throws even with the base
+  | 'empty_slug_path';         // URL parsed but path was empty / no slug
+
+const REASON_LABELS: Record<MalformedReason, string> = {
+  missing_state_tag: 'Missing state tag',
+  unknown_state_tag: 'Unknown state tag',
+  unparseable_page_url: 'Unparseable page_url',
+  empty_slug_path: 'Empty slug path',
+};
+
+interface MalformedRow {
+  reason: MalformedReason;
+  page_url: string;
+  user_agent: string;
+  created_at: string;
+  rawTag: string | null;
+}
+
+function classifyRow(row: TraceRow): MalformedRow | null {
+  const ua = row.user_agent ?? '';
+  const m = ua.match(STATE_TAG_RE);
+  const rawTag = m ? m[1] : null;
+
+  let stateReason: MalformedReason | null = null;
+  if (!m) {
+    stateReason = 'missing_state_tag';
+  } else {
+    const tag = m[1].toLowerCase();
+    if (!(STATE_ORDER as string[]).includes(tag)) {
+      stateReason = 'unknown_state_tag';
+    }
+  }
+
+  let urlReason: MalformedReason | null = null;
+  try {
+    const u = new URL(row.page_url, 'https://getpawsy.pet');
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length === 0) urlReason = 'empty_slug_path';
+  } catch {
+    urlReason = 'unparseable_page_url';
+  }
+
+  // State problems take precedence — they're the more common upstream bug.
+  const reason = stateReason ?? urlReason;
+  if (!reason) return null;
+  return {
+    reason,
+    page_url: row.page_url,
+    user_agent: ua,
+    created_at: row.created_at,
+    rawTag,
+  };
+}
+
 interface TraceRow {
   page_url: string;
   user_agent: string;
@@ -109,14 +173,34 @@ export default function RenderTraceDashboard() {
     staleTime: 30_000,
   });
 
-  const { totals, perDay, perSlug } = useMemo(() => {
+  const { totals, perDay, perSlug, malformed, malformedByReason } = useMemo(() => {
     const t = { shell: 0, rendered: 0, timeout: 0 };
     const dayMap = new Map<string, { date: string; shell: number; rendered: number; timeout: number }>();
     const slugMap = new Map<string, SlugStats>();
+    const bad: MalformedRow[] = [];
+    const byReason: Record<MalformedReason, number> = {
+      missing_state_tag: 0,
+      unknown_state_tag: 0,
+      unparseable_page_url: 0,
+      empty_slug_path: 0,
+    };
 
     for (const row of data ?? []) {
       const state = extractState(row.user_agent);
-      if (!state) continue;
+      if (!state) {
+        const cls = classifyRow(row);
+        if (cls) {
+          bad.push(cls);
+          byReason[cls.reason] += 1;
+        }
+        continue;
+      }
+      // State extracted cleanly — but the URL may still be malformed.
+      const cls = classifyRow(row);
+      if (cls && (cls.reason === 'unparseable_page_url' || cls.reason === 'empty_slug_path')) {
+        bad.push(cls);
+        byReason[cls.reason] += 1;
+      }
       t[state] += 1;
 
       const day = format(new Date(row.created_at), 'yyyy-MM-dd');
@@ -145,7 +229,9 @@ export default function RenderTraceDashboard() {
 
     const dayArr = Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
     const slugArr = Array.from(slugMap.values()).sort((a, b) => b.timeout - a.timeout || b.total - a.total);
-    return { totals: t, perDay: dayArr, perSlug: slugArr };
+    // Most recent first — easier to spot a regression that started today.
+    bad.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return { totals: t, perDay: dayArr, perSlug: slugArr, malformed: bad, malformedByReason: byReason };
   }, [data]);
 
   const filteredSlugs = useMemo(() => {
@@ -275,6 +361,93 @@ export default function RenderTraceDashboard() {
             <CardContent className="pt-6 flex items-center gap-2 text-destructive text-sm">
               <AlertTriangle className="h-4 w-4" />
               Failed to load render-trace events.
+            </CardContent>
+          </Card>
+        )}
+
+        {!isLoading && malformed.length > 0 && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-destructive" />
+                Malformed render-trace pings
+                <Badge variant="outline" className="ml-1 border-destructive/40 text-destructive">
+                  {malformed.length.toLocaleString()}
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                These rows arrived with a <code>pdp-render-trace</code> marker but couldn't be
+                parsed into a valid <code>(slug, state)</code> pair, so they're excluded from every
+                chart above. A persistent count usually means the client-side hook or a referrer
+                is sending an unexpected <code>user_agent</code> or <code>page_url</code> shape.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(REASON_LABELS) as MalformedReason[])
+                  .filter((r) => malformedByReason[r] > 0)
+                  .map((r) => (
+                    <Badge key={r} variant="secondary" className="gap-1.5">
+                      {REASON_LABELS[r]}
+                      <span className="tabular-nums font-mono text-xs opacity-80">
+                        {malformedByReason[r].toLocaleString()}
+                      </span>
+                    </Badge>
+                  ))}
+              </div>
+
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[180px]">Reason</TableHead>
+                      <TableHead className="w-[160px]">When</TableHead>
+                      <TableHead>page_url</TableHead>
+                      <TableHead>user_agent</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {malformed.slice(0, 10).map((row, i) => (
+                      <TableRow key={`${row.created_at}-${i}`}>
+                        <TableCell className="align-top">
+                          <Badge variant="outline" className="text-[11px]">
+                            {REASON_LABELS[row.reason]}
+                          </Badge>
+                          {row.reason === 'unknown_state_tag' && row.rawTag && (
+                            <div
+                              className="text-[11px] text-muted-foreground mt-1 font-mono truncate max-w-[160px]"
+                              title={row.rawTag}
+                            >
+                              tag: {row.rawTag}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-top text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                          {format(new Date(row.created_at), 'MMM d, HH:mm:ss')}
+                        </TableCell>
+                        <TableCell
+                          className="align-top font-mono text-[11px] max-w-[280px] truncate"
+                          title={row.page_url}
+                        >
+                          {row.page_url || <span className="italic text-muted-foreground">(empty)</span>}
+                        </TableCell>
+                        <TableCell
+                          className="align-top font-mono text-[11px] max-w-[320px] truncate"
+                          title={row.user_agent}
+                        >
+                          {row.user_agent || <span className="italic text-muted-foreground">(empty)</span>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {malformed.length > 10 && (
+                <p className="text-xs text-muted-foreground">
+                  Showing 10 most recent of {malformed.length.toLocaleString()} malformed rows in this window.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
