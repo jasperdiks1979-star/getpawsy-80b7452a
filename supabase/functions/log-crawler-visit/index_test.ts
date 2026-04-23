@@ -2388,3 +2388,230 @@ Deno.test({
     }
   },
 });
+
+// =============================================================================
+// URL-encoded + Unicode/emoji length semantics
+// =============================================================================
+// The Zod schema in index.ts uses `.max(2048)` on `userAgent` and `pageUrl`,
+// which is enforced against JavaScript's `String.length` — i.e. the count of
+// UTF-16 code units, NOT byte length and NOT user-perceived characters.
+//
+// This matters for two real-world UA shapes that have historically tripped
+// other validators:
+//
+//   1. URL-encoded ASCII (e.g. percent-encoded brackets in instrumentation
+//      tags like `%5Bpdp-render-trace:shell%5D`). Each `%XX` triplet must
+//      count as exactly 3 units — the function must not decode-then-measure,
+//      which would silently let payloads ~3x larger through.
+//
+//   2. Unicode / emoji characters that occupy more than one UTF-16 code unit:
+//        - BMP char (e.g. '☃' U+2603)            → 1 unit
+//        - Astral emoji (e.g. '🐾' U+1F43E)        → 2 units (surrogate pair)
+//        - Flag (e.g. '🇺🇸' = 2 regional indicators)→ 4 units
+//      The cap must be applied in code units so an attacker can't smuggle
+//      4096 visible glyphs through by using surrogate pairs.
+//
+// We pin both behaviours so a future schema swap (e.g. counting bytes via
+// TextEncoder, or normalizing with `.normalize('NFC')` before measuring)
+// fails loudly here instead of silently changing the wire contract.
+// -----------------------------------------------------------------------------
+Deno.test({
+  name:
+    "log-crawler-visit enforces 2048-char cap by UTF-16 code units for URL-encoded and Unicode/emoji userAgent strings",
+  async fn() {
+    const MAX_LEN = 2048;
+
+    // Sanity check the JS runtime semantics our assertions depend on. If any
+    // of these change, every other assertion below becomes meaningless.
+    assertEquals("%5B".length, 3, "URL-encoded triplet must be 3 code units");
+    assertEquals("☃".length, 1, "BMP char must be 1 code unit");
+    assertEquals("🐾".length, 2, "Astral emoji must be 2 code units (surrogate pair)");
+    assertEquals("🇺🇸".length, 4, "Flag emoji must be 4 code units (2 regional indicators)");
+
+    // -------------------------------------------------------------------------
+    // Helper: pad a base UA with `filler` (any string) until total .length
+    // hits exactly `target`. Throws if the filler character set can't land
+    // exactly on the target — this guards against silently mis-measured
+    // payloads where we *think* we're at the boundary but aren't.
+    // -------------------------------------------------------------------------
+    function padUserAgentTo(base: string, filler: string, target: number): string {
+      if (base.length > target) {
+        throw new Error(`base UA already longer (${base.length}) than target ${target}`);
+      }
+      const remaining = target - base.length;
+      if (remaining % filler.length !== 0) {
+        throw new Error(
+          `cannot land exactly on ${target}: remaining ${remaining} not divisible by filler.length ${filler.length}`,
+        );
+      }
+      const ua = base + filler.repeat(remaining / filler.length);
+      // Defensive: assert we actually hit the target before sending. The whole
+      // point of this test is to verify the boundary, so a miscount here would
+      // make the assertion below meaningless.
+      if (ua.length !== target) {
+        throw new Error(`padding miscount: wanted ${target}, got ${ua.length}`);
+      }
+      return ua;
+    }
+
+    type Case = {
+      label: string;
+      filler: string;
+      // Sanity: how many code units the filler occupies. We assert this so
+      // a future "fix" that swaps the filler doesn't silently break the test.
+      fillerUnits: number;
+    };
+
+    const FILLERS: Case[] = [
+      // 3 ASCII chars → 3 code units. Mirrors a UA that includes encoded
+      // brackets/spaces from a tracing tag pushed through encodeURIComponent.
+      { label: "url-encoded ASCII triplet (%5B)", filler: "%5B", fillerUnits: 3 },
+      // 1 BMP char → 1 code unit. Catches a regression where someone
+      // measures bytes and miscounts UTF-8-encoded multibyte chars.
+      { label: "BMP unicode (☃)", filler: "☃", fillerUnits: 1 },
+      // 1 astral codepoint → 2 code units. Catches a regression where
+      // someone counts codepoints (Array.from(...).length) instead of
+      // .length, which would let twice as much payload through.
+      { label: "astral emoji (🐾)", filler: "🐾", fillerUnits: 2 },
+      // 1 user-perceived glyph (flag) → 4 code units. Same regression class
+      // as above but more extreme — would let 4x as much payload through.
+      { label: "flag emoji (🇺🇸)", filler: "🇺🇸", fillerUnits: 4 },
+    ];
+
+    for (const c of FILLERS) {
+      assertEquals(
+        c.filler.length,
+        c.fillerUnits,
+        `[${c.label}] filler code-unit count drifted; update test`,
+      );
+
+      // Use a short, fixed base so every filler can land on MAX_LEN exactly.
+      // Base length is chosen so (MAX_LEN - base.length) is divisible by
+      // every fillerUnits in {1,2,3,4}. lcm(1,2,3,4)=12 → pick base.length
+      // such that (2048 - base.length) % 12 === 0. 2048 % 12 === 8, so we
+      // need base.length % 12 === 8. The literal below is exactly 8 chars.
+      const base = "GBot/1; ";
+      assertEquals(base.length, 8, "base UA length must stay aligned (mod 12)");
+
+      // -----------------------------------------------------------------------
+      // 1. Boundary: exactly MAX_LEN code units must be ACCEPTED.
+      // -----------------------------------------------------------------------
+      {
+        const ua = padUserAgentTo(base, c.filler, MAX_LEN);
+        assertEquals(
+          ua.length,
+          MAX_LEN,
+          `[${c.label}] boundary UA must be exactly ${MAX_LEN} code units`,
+        );
+
+        const res = await callFunction({
+          pageUrl: `${ORIGIN}/product/unicode-len-test`,
+          userAgent: ua,
+        });
+        const text = await res.text();
+
+        // Boundary length must NOT be flagged as too long. We allow any
+        // non-length failure (e.g. DB issues in CI) to bubble up via the
+        // explicit error-message check rather than asserting status==200,
+        // because this test's contract is "length cap behaves correctly",
+        // not "the whole insert pipeline is healthy".
+        if (res.status === 400) {
+          const json = JSON.parse(text) as { fieldErrors?: Record<string, string[]> };
+          const uaErrors = json.fieldErrors?.userAgent ?? [];
+          assertEquals(
+            uaErrors.some((e) => e.includes("exceeds 2048 chars")),
+            false,
+            `[${c.label}] boundary UA (${MAX_LEN} units) must not be rejected for length; got: ${text}`,
+          );
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 2. Just over the boundary: MAX_LEN + fillerUnits must be REJECTED
+      //    with the standard "exceeds 2048 chars" message on `userAgent`.
+      // -----------------------------------------------------------------------
+      {
+        const ua = padUserAgentTo(base, c.filler, MAX_LEN + c.fillerUnits);
+        assertEquals(
+          ua.length,
+          MAX_LEN + c.fillerUnits,
+          `[${c.label}] over-boundary UA must be exactly ${MAX_LEN + c.fillerUnits} code units`,
+        );
+
+        const res = await callFunction({
+          pageUrl: `${ORIGIN}/product/unicode-len-test`,
+          userAgent: ua,
+        });
+        const text = await res.text();
+
+        assertEquals(
+          res.status,
+          400,
+          `[${c.label}] UA at ${MAX_LEN + c.fillerUnits} units must be rejected with 400; got ${res.status}: ${text}`,
+        );
+
+        const json = JSON.parse(text) as {
+          code?: string;
+          fieldErrors?: Record<string, string[]>;
+        };
+        assertEquals(
+          json.code,
+          "INVALID_PAYLOAD",
+          `[${c.label}] over-boundary UA must use INVALID_PAYLOAD code`,
+        );
+        const uaErrors = json.fieldErrors?.userAgent ?? [];
+        assertEquals(
+          uaErrors.some((e) => e.includes("exceeds 2048 chars")),
+          true,
+          `[${c.label}] expected userAgent fieldError to mention 2048-char cap; got: ${JSON.stringify(uaErrors)}`,
+        );
+        // The cap is on userAgent only — pageUrl was well under the limit,
+        // so it must NOT show up in fieldErrors.
+        assertEquals(
+          json.fieldErrors?.pageUrl,
+          undefined,
+          `[${c.label}] pageUrl must not be flagged when only userAgent is over the cap`,
+        );
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. Cross-check: a UA that LOOKS short by user-perceived characters but
+    //    is over the cap in code units must STILL be rejected. This is the
+    //    "smuggling" regression we most care about — it would let an
+    //    attacker triple the effective payload size with emojis.
+    //
+    //    1025 paw-print emojis × 2 code units each = 2050 code units > 2048.
+    // -------------------------------------------------------------------------
+    {
+      const smuggled = "🐾".repeat(1025);
+      assertEquals(smuggled.length, 2050, "smuggled UA must be 2050 code units");
+      // Codepoint count (what a naive validator using Array.from might use)
+      // is only 1025 — well under 2048. If the function ever switches to
+      // codepoint counting, this payload would slip through.
+      assertEquals(Array.from(smuggled).length, 1025);
+
+      const res = await callFunction({
+        pageUrl: `${ORIGIN}/product/unicode-len-test`,
+        userAgent: smuggled,
+      });
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `emoji-smuggled UA (1025 glyphs / 2050 units) must be rejected; got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text) as {
+        code?: string;
+        fieldErrors?: Record<string, string[]>;
+      };
+      assertEquals(json.code, "INVALID_PAYLOAD");
+      const uaErrors = json.fieldErrors?.userAgent ?? [];
+      assertEquals(
+        uaErrors.some((e) => e.includes("exceeds 2048 chars")),
+        true,
+        `emoji-smuggled UA must hit the same length error path; got: ${JSON.stringify(uaErrors)}`,
+      );
+    }
+  },
+});
