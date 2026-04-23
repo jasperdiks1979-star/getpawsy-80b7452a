@@ -233,6 +233,35 @@ export function ReleaseStepEvidenceDialog({
     jobLogs: jobData?.logs ?? null,
   };
 
+  const downloadEvidenceJson = () => {
+    try {
+      const enriched = {
+        ...fullEvidence,
+        exportedAt: new Date().toISOString(),
+      };
+      const blob = new Blob([JSON.stringify(enriched, null, 2)], {
+        type: 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const safeTitle = (releaseTitle || releaseId)
+        .toString()
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 50) || 'release';
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `release-evidence-${safeTitle}-${kind}-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Evidence JSON downloaded');
+    } catch {
+      toast.error('Download failed');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
