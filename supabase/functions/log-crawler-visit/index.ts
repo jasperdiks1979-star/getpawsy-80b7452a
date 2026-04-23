@@ -954,7 +954,7 @@ serve(async (req) => {
     }
 
     if (dbError) {
-      console.error('Failed to log crawler visit:', error);
+      console.error('Failed to log crawler visit:', dbError);
       return new Response(
         JSON.stringify({
           error: 'Failed to log visit',
@@ -986,6 +986,8 @@ serve(async (req) => {
         spoofed: spoofedGooglebot,
         sampled: true,
         sampleRate,
+        deduped: dedupedByIdempotencyKey,
+        idempotencyKey: idempotencyKey ?? null,
         decision: {
           reason: decisionReason,
           alwaysLog,
