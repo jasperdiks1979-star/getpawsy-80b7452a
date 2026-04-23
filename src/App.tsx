@@ -358,6 +358,7 @@ const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantS
 const ApplePayDomainPage = lazyWithRetry(() => import("./pages/admin/ApplePayDomainPage"));
 const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/MerchantReadinessPage"));
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
+const PageChangelogManager = lazyWithRetry(() => import("./pages/admin/PageChangelogManager"));
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
 const TikTokOAuthCallback = lazyWithRetry(() => import("./pages/TikTokOAuthCallback"));
 const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/ShoppingOptimizerPage"));
@@ -1888,6 +1889,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <MerchantHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="page-changelog"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PageChangelogManager />
                                 </Suspense>
                               }
                             />
