@@ -202,11 +202,28 @@ export default function RenderTraceDashboard() {
   const canNext = page < totalPages - 1;
 
   // ─── CSV export ──────────────────────────────────────────────────────────
-  // Bundles the three tables admins look at (totals, per-day, top slugs) into
-  // ONE file with section headers, so an analyst can open it in a spreadsheet
-  // without juggling multiple downloads. Top slugs is capped at the same 100
-  // rows we render in the table to keep the file tractable.
-  const handleExportCsv = () => {
+  // Bundles totals, per-day, and ALL slugs (capped at 500 by the RPC) into a
+  // single file with section headers. The export issues its own RPC call so
+  // the user gets the full dataset for the active filter, not just the page
+  // currently visible in the table.
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    let allSlugs: SlugStats[] = pageSlugs;
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_render_trace_stats', {
+        p_window_days: windowDays,
+        p_search: debouncedSearch || null,
+        p_slug_limit: 500,
+        p_slug_offset: 0,
+        p_malformed_limit: 0,
+      });
+      if (rpcError) throw rpcError;
+      allSlugs = (data as unknown as RenderTraceStats).slugs ?? allSlugs;
+    } catch (e) {
+      console.error('CSV export RPC failed, falling back to current page', e);
+    }
+
     const lines: string[] = [];
     const stamp = format(new Date(), 'yyyy-MM-dd_HHmm');
     const fromLabel = format(subDays(new Date(), windowDays - 1), 'yyyy-MM-dd');
@@ -214,6 +231,7 @@ export default function RenderTraceDashboard() {
 
     lines.push(`# Render-Trace Health export`);
     lines.push(`# Window: ${fromLabel} to ${toLabel} (${windowDays} day${windowDays === 1 ? '' : 's'})`);
+    if (debouncedSearch) lines.push(`# Filter: ${debouncedSearch}`);
     lines.push(`# Generated: ${new Date().toISOString()}`);
     lines.push('');
 
@@ -226,7 +244,7 @@ export default function RenderTraceDashboard() {
     lines.push(`timeout,${totals.timeout}`);
     lines.push(`render_rate,${(overallRenderRate * 100).toFixed(2)}%`);
     lines.push(`timeout_rate,${(overallTimeoutRate * 100).toFixed(2)}%`);
-    lines.push(`unique_slugs,${perSlug.length}`);
+    lines.push(`unique_slugs,${slugTotal}`);
     lines.push('');
 
     // 2) Per-day
@@ -238,16 +256,15 @@ export default function RenderTraceDashboard() {
     }
     lines.push('');
 
-    // 3) Top slugs (apply the active search filter so the export matches the
-    //    table the user is currently looking at).
-    lines.push('## Top slugs (filtered, max 100)');
+    // 3) Slugs — full set for the active filter (capped server-side at 500).
+    lines.push(`## Slugs (filtered, max 500 of ${slugTotal})`);
     lines.push('slug,shell,rendered,timeout,total,render_rate_pct,timeout_rate_pct');
-    for (const s of filteredSlugs.slice(0, 100)) {
+    for (const s of allSlugs) {
       // Quote the slug in case it ever contains a comma or quote.
       const safeSlug = `"${s.slug.replace(/"/g, '""')}"`;
       lines.push(
         `${safeSlug},${s.shell},${s.rendered},${s.timeout},${s.total},` +
-          `${(s.renderRate * 100).toFixed(2)},${(s.timeoutRate * 100).toFixed(2)}`,
+          `${(s.render_rate * 100).toFixed(2)},${(s.timeout_rate * 100).toFixed(2)}`,
       );
     }
 
@@ -261,6 +278,7 @@ export default function RenderTraceDashboard() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setIsExporting(false);
   };
 
   return (
