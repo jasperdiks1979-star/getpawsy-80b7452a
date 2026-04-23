@@ -103,24 +103,151 @@ export const ProductImageManager = ({
     setDraggedIndex(null);
   };
 
+  // ---------------------------------------------------------------------------
+  // File upload
+  //
+  // Validation order matches the storage bucket's contract so the user gets
+  // the most helpful error first:
+  //   1. MIME type — must be one of PRODUCT_IMAGE_ALLOWED_MIME
+  //   2. Size     — must be ≤ PRODUCT_IMAGE_MAX_BYTES (20 MB)
+  // The bucket enforces both server-side as a defense-in-depth layer.
+  // ---------------------------------------------------------------------------
+  const formatBytes = (bytes: number): string => {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
+  };
+
+  const handleFilePick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    // Always reset the input so picking the same file again re-fires onChange.
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    // Pre-flight every file BEFORE we start uploading so the user sees all
+    // problems up front instead of getting interrupted mid-batch.
+    for (const file of files) {
+      if (!PRODUCT_IMAGE_ALLOWED_MIME.includes(file.type as typeof PRODUCT_IMAGE_ALLOWED_MIME[number])) {
+        toast.error(
+          `"${file.name}" is not a supported image format. Allowed: JPEG, PNG, WebP, GIF, AVIF.`,
+        );
+        return;
+      }
+      if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
+        toast.error(
+          `"${file.name}" is ${formatBytes(file.size)} — over the ${PRODUCT_IMAGE_MAX_LABEL} per-file limit.`,
+        );
+        return;
+      }
+    }
+
+    setIsUploading(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        // Build a collision-resistant path: timestamp + random suffix + ext.
+        const ext = file.name.includes(".")
+          ? file.name.split(".").pop()!.toLowerCase()
+          : "bin";
+        const key = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("product-images")
+          .upload(key, file, {
+            contentType: file.type,
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          // Storage returns "Payload too large" (413) when bucket-level
+          // file_size_limit kicks in — surface a friendlier message.
+          const msg = /payload too large|exceeded the maximum/i.test(uploadError.message)
+            ? `"${file.name}" exceeds the ${PRODUCT_IMAGE_MAX_LABEL} server limit.`
+            : `Failed to upload "${file.name}": ${uploadError.message}`;
+          toast.error(msg);
+          continue;
+        }
+
+        const { data: pub } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(key);
+        uploadedUrls.push(pub.publicUrl);
+      }
+
+      if (uploadedUrls.length > 0) {
+        // De-dupe against existing images so an accidental re-upload doesn't
+        // create a duplicate tile in the gallery.
+        const merged = [...images];
+        for (const url of uploadedUrls) {
+          if (!merged.includes(url)) merged.push(url);
+        }
+        onChange(merged);
+        toast.success(
+          `Uploaded ${uploadedUrls.length} image${uploadedUrls.length === 1 ? "" : "s"}`,
+        );
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Product Images ({images.length})</label>
+        <span className="text-xs text-muted-foreground">
+          Max {PRODUCT_IMAGE_MAX_LABEL} per file · JPEG, PNG, WebP, GIF, AVIF
+        </span>
       </div>
 
-      {/* Add new image */}
-      <div className="flex gap-2">
-        <Input
-          placeholder="Enter image URL..."
-          value={newImageUrl}
-          onChange={(e) => setNewImageUrl(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddImage())}
-        />
-        <Button type="button" variant="outline" onClick={handleAddImage}>
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
+      {/* Add new image — by URL or by file upload */}
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Enter image URL..."
+            value={newImageUrl}
+            onChange={(e) => setNewImageUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddImage())}
+            disabled={isUploading}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAddImage}
+            disabled={isUploading}
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleFilePick}
+            disabled={isUploading}
+            aria-label={`Upload image files, maximum ${PRODUCT_IMAGE_MAX_LABEL} each`}
+            title={`Maximum file size: ${PRODUCT_IMAGE_MAX_LABEL}`}
+          >
+            {isUploading ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4 mr-1" />
+            )}
+            {isUploading ? "Uploading..." : "Upload"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPT_ATTR}
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
 
       {/* Image grid */}
