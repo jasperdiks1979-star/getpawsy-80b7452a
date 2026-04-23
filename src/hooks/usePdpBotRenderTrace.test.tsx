@@ -435,4 +435,59 @@ describe('usePdpBotRenderTrace', () => {
     );
     expect(wrongSlugShell).toHaveLength(0);
   });
+
+  it('retries the edge function once on transient failure without firing duplicate state logs', async () => {
+    // Use the REAL retryWithBackoff (with tiny delays) for this test only.
+    const realModule = await vi.importActual<
+      typeof import('@/hooks/useRetryWithBackoff')
+    >('@/hooks/useRetryWithBackoff');
+    retryImpl.current = (fn, config) =>
+      realModule.retryWithBackoff(fn as () => Promise<unknown>, {
+        ...(config as object),
+        baseDelayMs: 1,
+        maxDelayMs: 5,
+      });
+
+    // First call fails (transient 503), second call succeeds.
+    invokeMock.mockReset();
+    invokeMock
+      .mockResolvedValueOnce({ data: null, error: new Error('503 Service Unavailable') })
+      .mockResolvedValue({ data: { ok: true }, error: null });
+
+    const slug = 'retry-once-bed';
+    renderHook(() =>
+      usePdpBotRenderTrace({ slug, isLoading: true, hasProduct: false }),
+    );
+
+    // Drain mount + first failed attempt + small backoff + second success.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(50);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // --- Assert: invoke called exactly twice (1 fail + 1 retry success) ---
+    const slugCalls = invokeMock.mock.calls.filter(
+      ([fn, opts]) =>
+        fn === 'log-crawler-visit' &&
+        (opts as { body: { pageUrl: string } }).body.pageUrl.includes(`/product/${slug}`),
+    );
+    expect(slugCalls).toHaveLength(2);
+
+    // Both attempts must carry the SAME shell tag — never escalate to rendered/timeout.
+    for (const [, opts] of slugCalls) {
+      const body = (opts as { body: { userAgent: string } }).body;
+      expect(body.userAgent).toMatch(/pdp-render-trace:shell\b/);
+      expect(body.userAgent).not.toMatch(/pdp-render-trace:(rendered|timeout)/);
+    }
+
+    // --- Assert: only ONE logical "shell" state was emitted ---------------
+    // The hook's firedRef ensures the shell effect runs once; the two invoke
+    // calls are the same logical state retrying, not two distinct state logs.
+    const states = getReportedStates();
+    expect(states).toEqual(['shell', 'shell']); // 2 transport attempts...
+    expect(new Set(states)).toEqual(new Set(['shell'])); // ...of 1 distinct state
+  });
 });
