@@ -435,6 +435,9 @@ export default function MerchantIntegrationPage() {
         {/* Report a release → auto-runs sync + feed validation, persisted to release_reports */}
         <ReportReleaseCard />
 
+        {/* Per-release status timeline: record / merchant-sync / validate-merchant-feed */}
+        <ReleaseTimelineCard />
+
         {/* At-a-glance feed status (last sync + live validation) */}
         <FeedStatusCard />
 
