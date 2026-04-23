@@ -934,6 +934,11 @@ serve(async (req) => {
         spoofed: spoofedGooglebot,
         sampled: true,
         sampleRate,
+        decision: {
+          reason: decisionReason,
+          alwaysLog,
+          sampleRoll,
+        },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
