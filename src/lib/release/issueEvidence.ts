@@ -42,7 +42,6 @@ export interface IssueEvidence {
 }
 
 const FEED_URL = 'https://getpawsy.pet/merchant-feed.xml';
-const ITEM_DISPLAY_CAP = 5;
 
 /**
  * Per-reason metadata. Keys match the strings emitted by
