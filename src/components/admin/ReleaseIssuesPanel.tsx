@@ -168,6 +168,33 @@ export function ReleaseIssuesPanel({
           <Plus className="h-3 w-3" />
           Issue toevoegen
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1 text-xs"
+          disabled={!issues || issues.length === 0}
+          onClick={() => {
+            if (!issues || issues.length === 0) return;
+            try {
+              downloadIssuesCsv({
+                releaseId,
+                releaseTitle: releaseTitle ?? null,
+                issues,
+                assignees,
+                sampleResults: sampleResults ?? null,
+                feedUrl: feedUrl ?? null,
+              });
+              toast.success('Issues CSV gedownload');
+            } catch (e) {
+              console.error('CSV export failed:', e);
+              toast.error('CSV export mislukt');
+            }
+          }}
+          title="Download alle issues (severity, scope, suggested fix) als CSV"
+        >
+          <FileSpreadsheet className="h-3 w-3" />
+          Export CSV
+        </Button>
       </div>
 
       {showAdd && (
