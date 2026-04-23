@@ -3518,56 +3518,41 @@ Deno.test({
     const SAFE_USER_AGENT = GOOGLEBOT_UA;
 
     // ---------------------------------------------------------------
-    // Counter baseline.
-    // The function exposes its module-scoped `validationCounters` in
-    // every 400 envelope. Those counters accumulate across the whole
-    // cold start, so to assert that a SINGLE fuzz call incremented
-    // exactly one bucket we need the per-call DELTA, not the absolute.
+    // Cross-axis counter attribution tracking.
     //
-    // We seed the baseline with one throwaway over-limit request (a
-    // pageUrl one code-unit over the cap). After that, every loop
-    // iteration uses the previous response's counters as its baseline,
-    // so the delta is always "what changed during THIS call".
+    // The function exposes its module-scoped `validationCounters` in
+    // every 400 envelope. Supabase Edge Runtime fans calls out across
+    // multiple isolates, so a given response only echoes the LOCAL
+    // isolate's view of those counters. That makes per-call DELTAS
+    // unreliable (the same isolate may not be hit twice in a row), but
+    // it does NOT excuse the function from booking a length failure
+    // against the offending field's bucket and ONLY that bucket.
+    //
+    // We enforce attribution two ways:
+    //
+    //   1. Per-call (below in the loop): track the running maximum
+    //      we've ever observed for each bucket across all responses.
+    //      If a non-offending bucket's reported value EXCEEDS its
+    //      previous observed maximum during a call where the fuzz
+    //      driver only over-fed one specific axis, that's a real
+    //      cross-attribution bug — some isolate booked our pure
+    //      `pageUrl`-length failure against `schema_user_agent` (or
+    //      worse, against `invalid_json` / `trace_*`).
+    //
+    //   2. End of run: aggregate sanity check that the offending
+    //      buckets grew, and unrelated buckets (invalid_json + all
+    //      three trace_* buckets) did not grow at all relative to the
+    //      first response we saw.
     // ---------------------------------------------------------------
-    let countersBefore: Record<string, number> = Object.fromEntries(
+    const perBucketObservedMax: Record<string, number> = Object.fromEntries(
       ENVELOPE_REQUIRED_COUNTER_KEYS.map((k) => [k, 0]),
     );
-    {
-      const seedRes = await callFunction({
-        pageUrl: "a".repeat(MAX_LEN + 1),
-        userAgent: SAFE_USER_AGENT,
-      });
-      const seedText = await seedRes.text();
-      if (seedRes.status === 400) {
-        try {
-          const seedJson = JSON.parse(seedText);
-          if (
-            seedJson &&
-            typeof seedJson === "object" &&
-            seedJson.validationCounters &&
-            typeof seedJson.validationCounters === "object"
-          ) {
-            for (const k of ENVELOPE_REQUIRED_COUNTER_KEYS) {
-              const v = (seedJson.validationCounters as Record<string, unknown>)[k];
-              if (typeof v === "number" && Number.isFinite(v)) {
-                countersBefore[k] = v;
-              }
-            }
-          }
-        } catch {
-          // Baseline parse failure isn't fatal — the per-iteration
-          // delta will just absorb whatever the first real call sees.
-          // Surface it so an unexplained delta in iter 1 has a trail.
-          console.warn(
-            `[fuzz] baseline counter probe returned non-JSON 400 body: ${seedText.slice(0, 240)}`,
-          );
-        }
-      } else {
-        console.warn(
-          `[fuzz] baseline counter probe returned status ${seedRes.status} (expected 400); proceeding with zeroed baseline`,
-        );
-      }
-    }
+    const counterRunTotals = {
+      overLimitCalls: 0,
+      byAxis: { pageUrl: 0, userAgent: 0 } as Record<Axis, number>,
+      firstSeenCounters: null as Record<string, number> | null,
+      lastSeenCounters: null as Record<string, number> | null,
+    };
 
     // Track outcomes so a failure prints a one-line repro with seed +
     // iteration index + offending values.
