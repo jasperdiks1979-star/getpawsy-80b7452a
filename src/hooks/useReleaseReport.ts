@@ -28,6 +28,63 @@ interface ReportOptions {
 }
 
 /**
+ * Retry policy for transient failures of the merchant-sync and
+ * validate-merchant-feed edge functions. We retry on:
+ *   - network/abort errors (no response)
+ *   - HTTP 408, 425, 429, 500, 502, 503, 504
+ * Non-transient errors (4xx other than the above) fail fast.
+ */
+const MAX_ATTEMPTS = 3;
+const BASE_BACKOFF_MS = 1500;
+const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+class TransientFnError extends Error {
+  constructor(public status: number | null, message: string) {
+    super(message);
+    this.name = 'TransientFnError';
+  }
+}
+class PermanentFnError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'PermanentFnError';
+  }
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Retry wrapper that emits per-attempt callbacks for UI feedback. */
+async function withRetry<T>(
+  fnName: string,
+  invoke: () => Promise<T>,
+  onAttempt?: (attempt: number, lastError?: string) => void,
+): Promise<{ value: T; attempts: number }> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    onAttempt?.(attempt, lastErr instanceof Error ? lastErr.message : undefined);
+    try {
+      const value = await invoke();
+      return { value, attempts: attempt };
+    } catch (e) {
+      lastErr = e;
+      const transient =
+        e instanceof TransientFnError ||
+        (e instanceof TypeError) || // fetch network failure
+        (e instanceof Error && /abort|timeout|network/i.test(e.message));
+      if (!transient || attempt === MAX_ATTEMPTS) {
+        throw e;
+      }
+      // Exponential backoff with jitter
+      const wait = BASE_BACKOFF_MS * Math.pow(2, attempt - 1) + Math.random() * 400;
+      console.warn(`[useReleaseReport] ${fnName} attempt ${attempt} failed (transient). Retrying in ${Math.round(wait)}ms`, e);
+      await sleep(wait);
+    }
+  }
+  // Unreachable, but TypeScript-safe
+  throw lastErr instanceof Error ? lastErr : new Error('Unknown retry failure');
+}
+
+/**
  * Reports a new release and automatically:
  *  1. Triggers `merchant-sync` (live mode) — pushes latest product data to GMC
  *  2. Triggers `validate-merchant-feed` — validates the public feed
@@ -37,24 +94,41 @@ export function useReleaseReport() {
   const [phase, setPhase] = useState<ReleaseReportPhase>('idle');
   const [result, setResult] = useState<ReleaseReportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryInfo, setRetryInfo] = useState<{
+    fn: 'merchant-sync' | 'validate-merchant-feed';
+    attempt: number;
+    lastError?: string;
+  } | null>(null);
 
   const callFn = useCallback(async (name: string, body: unknown) => {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
-    const res = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/${name}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/${name}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(body ?? {}),
+          // Hard ceiling so a hung edge function doesn't wedge the UI
+          signal: AbortSignal.timeout(60_000),
         },
-        body: JSON.stringify(body ?? {}),
-      },
-    );
+      );
+    } catch (e: any) {
+      // Network / timeout — always transient
+      throw new TransientFnError(null, `${name} network error: ${e?.message ?? 'unknown'}`);
+    }
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
-      throw new Error(`${name} ${res.status}: ${txt.slice(0, 200)}`);
+      const snippet = txt.slice(0, 200);
+      if (TRANSIENT_STATUSES.has(res.status)) {
+        throw new TransientFnError(res.status, `${name} ${res.status}: ${snippet}`);
+      }
+      throw new PermanentFnError(res.status, `${name} ${res.status}: ${snippet}`);
     }
     return res.json();
   }, []);
@@ -63,6 +137,7 @@ export function useReleaseReport() {
     async ({ title, notes }: ReportOptions) => {
       setError(null);
       setResult(null);
+      setRetryInfo(null);
       setPhase('creating');
 
       const { data: userData } = await supabase.auth.getUser();
@@ -98,7 +173,19 @@ export function useReleaseReport() {
       try {
         // 2. Trigger merchant-sync (live)
         setPhase('syncing');
-        const sync = await callFn('merchant-sync', { mode: 'live' });
+        const { value: sync, attempts: syncAttempts } = await withRetry(
+          'merchant-sync',
+          () => callFn('merchant-sync', { mode: 'live' }),
+          (attempt, lastError) => {
+            setRetryInfo({ fn: 'merchant-sync', attempt, lastError });
+            if (attempt > 1) {
+              toast.warning(
+                `Merchant sync hapert · poging ${attempt}/${MAX_ATTEMPTS}…`,
+                { description: lastError?.slice(0, 140) },
+              );
+            }
+          },
+        );
         const syncSummary = {
           runId: sync.runId ?? null,
           mode_effective: sync.mode_effective ?? null,
@@ -107,6 +194,7 @@ export function useReleaseReport() {
           totalProducts: Number(sync.totalProducts ?? 0),
           startedAt: sync.startedAt ?? null,
           completedAt: sync.completedAt ?? null,
+          attempts: syncAttempts,
         };
 
         await supabase
@@ -120,7 +208,20 @@ export function useReleaseReport() {
 
         // 3. Trigger validate-merchant-feed
         setPhase('validating');
-        const val = await callFn('validate-merchant-feed', {});
+        setRetryInfo(null);
+        const { value: val, attempts: valAttempts } = await withRetry(
+          'validate-merchant-feed',
+          () => callFn('validate-merchant-feed', {}),
+          (attempt, lastError) => {
+            setRetryInfo({ fn: 'validate-merchant-feed', attempt, lastError });
+            if (attempt > 1) {
+              toast.warning(
+                `Feed-validatie hapert · poging ${attempt}/${MAX_ATTEMPTS}…`,
+                { description: lastError?.slice(0, 140) },
+              );
+            }
+          },
+        );
         const validationSummary = {
           ok: !!val.ok,
           totalItemsInFeed: Number(val.totalItemsInFeed ?? 0),
@@ -128,6 +229,7 @@ export function useReleaseReport() {
           okCount: Number(val.summary?.ok ?? 0),
           failCount: Number(val.summary?.fail ?? 0),
           topFailReasons: val.summary?.topFailReasons ?? [],
+          attempts: valAttempts,
         };
 
         const completedAt = new Date().toISOString();
@@ -153,6 +255,7 @@ export function useReleaseReport() {
         };
         setResult(final);
         setPhase('completed');
+        setRetryInfo(null);
         toast.success(
           `Release reported · sync ${syncSummary.successCount}/${syncSummary.totalProducts} · feed ${validationSummary.okCount}/${validationSummary.sampleSize} OK`,
         );
@@ -171,7 +274,17 @@ export function useReleaseReport() {
         }
         return final;
       } catch (e: any) {
-        const msg = e?.message ?? 'Release report flow failed';
+        const isTransient = e instanceof TransientFnError;
+        const isPermanent = e instanceof PermanentFnError;
+        const phaseLabel = isTransient || isPermanent
+          ? (e.message.startsWith('merchant-sync') ? 'Merchant sync' : 'Feed-validatie')
+          : 'Release flow';
+        const reason = isTransient
+          ? `${phaseLabel} bleef tijdelijke fouten geven na ${MAX_ATTEMPTS} pogingen. ${e.message}`
+          : isPermanent
+            ? `${phaseLabel} faalde permanent (HTTP ${e.status}). ${e.message}`
+            : (e?.message ?? 'Release report flow failed');
+        const msg = reason;
         await supabase
           .from('release_reports')
           .update({
@@ -182,7 +295,11 @@ export function useReleaseReport() {
           .eq('id', row.id);
         setError(msg);
         setPhase('failed');
-        toast.error(msg);
+        setRetryInfo(null);
+        toast.error(`${phaseLabel} mislukt`, {
+          description: msg.slice(0, 220),
+          duration: 10_000,
+        });
         return null;
       }
     },
@@ -193,7 +310,8 @@ export function useReleaseReport() {
     setPhase('idle');
     setResult(null);
     setError(null);
+    setRetryInfo(null);
   }, []);
 
-  return { phase, result, error, reportRelease, reset };
+  return { phase, result, error, retryInfo, reportRelease, reset };
 }
