@@ -29,13 +29,11 @@ export function LocalBusinessSchema({
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
     email: SUPPORT_EMAIL,
-    vatID: 'NL003295015B69',
-    taxID: 'NL003295015B69',
     address: {
       '@type': 'PostalAddress',
-      addressRegion: 'Gelderland',
-      addressLocality: 'Apeldoorn',
-      addressCountry: 'NL',
+      addressLocality: 'New York',
+      addressRegion: 'NY',
+      addressCountry: 'US',
     },
     contactPoint: {
       '@type': 'ContactPoint',
@@ -45,8 +43,8 @@ export function LocalBusinessSchema({
       hoursAvailable: {
         '@type': 'OpeningHoursSpecification',
         dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        opens: '09:00',
-        closes: '17:00',
+        opens: '09:00-05:00',
+        closes: '17:00-05:00',
       },
     },
     priceRange: '$$',

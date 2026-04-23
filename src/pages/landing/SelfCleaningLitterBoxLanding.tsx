@@ -434,7 +434,7 @@ export default function SelfCleaningLitterBoxLanding() {
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-lg font-bold text-foreground mb-2">About GetPawsy</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              GetPawsy provides pet products designed to make daily life easier for pet owners. Registered business based in Apeldoorn, Netherlands (KVK 78156955, VAT NL003295015B69).
+              GetPawsy provides pet products designed to make daily life easier for pet owners. Operated by GetPawsy LLC, a US-based online retailer headquartered in New York, NY.
             </p>
           </div>
         </section>
@@ -452,7 +452,7 @@ export default function SelfCleaningLitterBoxLanding() {
             </div>
             <div className="text-xs text-background/40 space-y-1">
               <p>GetPawsy — Pet Supplies for US Pet Owners</p>
-              <p>Apeldoorn, Netherlands · KVK 78156955 · VAT NL003295015B69</p>
+              <p>GetPawsy LLC · New York, NY · United States</p>
               <p><a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
             </div>
             <p className="text-[10px] text-background/30">

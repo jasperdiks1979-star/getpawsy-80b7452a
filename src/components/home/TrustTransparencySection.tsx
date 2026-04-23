@@ -41,9 +41,9 @@ const trustPoints = [
 ];
 
 const transparencyDetails = [
-  { label: 'Operator', value: 'Skidzo (trading as GetPawsy)' },
-  { label: 'Location', value: 'Apeldoorn, Netherlands' },
-  { label: 'KVK', value: '78156955' },
+  { label: 'Operator', value: 'GetPawsy LLC' },
+  { label: 'Location', value: 'New York, NY · United States' },
+  { label: 'Business type', value: 'Online-only retailer' },
   { label: 'Service area', value: 'United States (all 50 states)' },
   { label: 'Support email', value: SUPPORT_EMAIL },
 ];
@@ -99,7 +99,7 @@ export const TrustTransparencySection = () => (
           </h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          GetPawsy is operated by Skidzo, a registered business in the Netherlands, serving US customers.
+          GetPawsy is operated by GetPawsy LLC, a US-based online pet supply retailer headquartered in New York, NY.
         </p>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           {transparencyDetails.map(({ label, value }) => (

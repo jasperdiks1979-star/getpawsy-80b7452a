@@ -12,7 +12,7 @@ export function OrganizationSchema() {
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
     name: 'GetPawsy',
-    legalName: 'Skidzo',
+    legalName: 'GetPawsy LLC',
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
     email: SUPPORT_EMAIL,
@@ -32,11 +32,9 @@ export function OrganizationSchema() {
     ],
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'De Haasstraat 11',
-      addressLocality: 'Apeldoorn',
-      addressRegion: 'Gelderland',
-      postalCode: '7312VG',
-      addressCountry: 'NL',
+      addressLocality: 'New York',
+      addressRegion: 'NY',
+      addressCountry: 'US',
     },
     contactPoint: {
       '@type': 'ContactPoint',
@@ -71,11 +69,9 @@ export function OrganizationSchema() {
     priceRange: '$$',
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'De Haasstraat 11',
-      addressLocality: 'Apeldoorn',
-      addressRegion: 'Gelderland',
-      postalCode: '7312VG',
-      addressCountry: 'NL',
+      addressLocality: 'New York',
+      addressRegion: 'NY',
+      addressCountry: 'US',
     },
     sameAs: [
       'https://www.pinterest.com/getpawsystore/',
