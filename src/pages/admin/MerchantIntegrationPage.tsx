@@ -4,6 +4,7 @@ import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDi
 import { RefreshFeedAfterPublishCard } from '@/components/admin/RefreshFeedAfterPublishCard';
 import { FeedStatusCard } from '@/components/admin/FeedStatusCard';
 import { ReportReleaseCard } from '@/components/admin/ReportReleaseCard';
+import { ReleaseTimelineCard } from '@/components/admin/ReleaseTimelineCard';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
