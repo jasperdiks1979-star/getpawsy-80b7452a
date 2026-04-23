@@ -410,21 +410,43 @@ serve(async (req) => {
                       req.headers.get('x-real-ip') ||
                       'unknown';
 
-    const { isGooglebot, botType } = detectBotType(userAgent);
+    const { isGooglebot: uaIsGooglebot, botType } = detectBotType(userAgent);
+
+    // Verify against Google's official published IP ranges.
+    // - If UA claims Googlebot AND the IP matches → fully trusted.
+    // - If UA claims Googlebot but IP does NOT match → spoofed; downgrade
+    //   `is_googlebot` to false so dashboards don't get polluted.
+    // - Other bots / humans pass through unchanged.
+    let verifiedGoogleIp = false;
+    if (uaIsGooglebot) {
+      verifiedGoogleIp = await isVerifiedGoogleIp(ipAddress);
+    }
+    const isGooglebot = uaIsGooglebot && verifiedGoogleIp;
+    const spoofedGooglebot = uaIsGooglebot && !verifiedGoogleIp;
+
+    if (spoofedGooglebot) {
+      console.warn(
+        `[crawler-allowlist] Spoofed Googlebot UA from non-Google IP ${ipAddress} → ${pageUrl}`,
+      );
+    }
 
     // Initialize Supabase client with service role for insert
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Log the visit
+    // Log the visit. We tag spoofed UAs in the `bot_type` column so they're
+    // still searchable but won't be treated as real Googlebot traffic.
+    const loggedBotType = spoofedGooglebot
+      ? `${botType ?? 'Googlebot'} (spoofed-ua)`
+      : botType;
     const { error } = await supabase
       .from('crawler_visits')
       .insert({
         page_url: pageUrl,
         user_agent: userAgent,
         is_googlebot: isGooglebot,
-        bot_type: botType,
+        bot_type: loggedBotType,
         ip_address: ipAddress,
         referrer: referrer || null,
       });
@@ -437,9 +459,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Logged visit: ${pageUrl} | Bot: ${botType || 'None'} | Googlebot: ${isGooglebot}`);
+    console.log(
+      `Logged visit: ${pageUrl} | Bot: ${loggedBotType || 'None'} | VerifiedGooglebot: ${isGooglebot}`,
+    );
 
-    // Send email notification if Googlebot visits an appeal page
+    // Send email notification only for verified Googlebot visits to appeal pages.
     if (isGooglebot && isAppealPage(pageUrl)) {
       console.log(`Googlebot visited appeal page: ${pageUrl} - sending notification`);
       const notificationEmail = await getNotificationEmail(supabase);
@@ -451,6 +475,8 @@ serve(async (req) => {
         success: true, 
         isGooglebot,
         botType,
+        verified: verifiedGoogleIp,
+        spoofed: spoofedGooglebot,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
