@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Copy, Check, ScrollText } from 'lucide-react';
+import { Loader2, Copy, Check, ScrollText, RefreshCw, Pause, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -130,11 +130,44 @@ export function ReleaseStepEvidenceDialog({
   const [jobData, setJobData] = useState<JobStatusResponse | null>(null);
   const [jobLoading, setJobLoading] = useState(false);
   const [jobError, setJobError] = useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  // Tick once a second so the "x seconds ago" label stays live without
+  // re-fetching the network on every render.
+  const [, setNowTick] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const fetchJobStatus = useCallback(
+    async (mode: 'initial' | 'refresh' = 'refresh') => {
+      if (!runId) return;
+      if (mode === 'initial') setJobLoading(true);
+      const { data, error } = await supabase.functions.invoke('job-status', {
+        body: { runId },
+      });
+      if (error) {
+        setJobError(error.message ?? 'Failed to load job status');
+        if (mode === 'initial') setJobData(null);
+      } else {
+        const resp = (data ?? {}) as JobStatusResponse;
+        if (!resp.ok) {
+          setJobError(resp.reason ?? 'job-status returned ok:false');
+        } else {
+          setJobError(null);
+        }
+        setJobData(resp);
+      }
+      setLastFetchedAt(Date.now());
+      if (mode === 'initial') setJobLoading(false);
+    },
+    [runId],
+  );
+
+  // Initial fetch + reset on open/close.
   useEffect(() => {
     if (!open || !runId) {
       setJobData(null);
       setJobError(null);
+      setLastFetchedAt(null);
       return;
     }
     let cancelled = false;
@@ -150,17 +183,44 @@ export function ReleaseStepEvidenceDialog({
         setJobData(null);
       } else {
         const resp = (data ?? {}) as JobStatusResponse;
-        if (!resp.ok) {
-          setJobError(resp.reason ?? 'job-status returned ok:false');
-        }
+        if (!resp.ok) setJobError(resp.reason ?? 'job-status returned ok:false');
         setJobData(resp);
       }
+      setLastFetchedAt(Date.now());
       setJobLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [open, runId]);
+
+  // Auto-refresh every 10s while the dialog is open and toggle is on.
+  // We also pause polling when the tab is hidden to avoid wasted invokes.
+  useEffect(() => {
+    if (!open || !runId || !autoRefresh) return;
+    const tick = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchJobStatus('refresh');
+    };
+    intervalRef.current = setInterval(tick, 10_000);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [open, runId, autoRefresh, fetchJobStatus]);
+
+  // Drive the "updated Ns ago" label.
+  useEffect(() => {
+    if (!open || !lastFetchedAt) return;
+    const id = setInterval(() => setNowTick((n) => n + 1), 1_000);
+    return () => clearInterval(id);
+  }, [open, lastFetchedAt]);
+
+  const secondsAgo = lastFetchedAt
+    ? Math.max(0, Math.round((Date.now() - lastFetchedAt) / 1000))
+    : null;
 
   const fullEvidence = {
     release: { id: releaseId, title: releaseTitle },
@@ -221,11 +281,43 @@ export function ReleaseStepEvidenceDialog({
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold">Job run, steps &amp; logs</h4>
-                {jobLoading && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Loading…
-                  </span>
-                )}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {jobLoading ? (
+                    <span className="flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                    </span>
+                  ) : (
+                    lastFetchedAt && (
+                      <span aria-live="polite">
+                        {autoRefresh ? 'Auto' : 'Paused'} · updated{' '}
+                        {secondsAgo !== null && secondsAgo < 5
+                          ? 'just now'
+                          : `${secondsAgo}s ago`}
+                      </span>
+                    )
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2"
+                    onClick={() => fetchJobStatus('refresh')}
+                    disabled={jobLoading}
+                    title="Refresh now"
+                  >
+                    <RefreshCw className={cn('h-3 w-3', jobLoading && 'animate-spin')} />
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2"
+                    onClick={() => setAutoRefresh((v) => !v)}
+                    title={autoRefresh ? 'Pause auto-refresh' : 'Resume auto-refresh (10s)'}
+                  >
+                    {autoRefresh ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                    {autoRefresh ? 'Pause' : 'Auto 10s'}
+                  </Button>
+                </div>
               </div>
               {jobError && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
