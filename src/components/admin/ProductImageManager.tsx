@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2, FolderUp, Check, Trash2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  GripVertical,
+  Image as ImageIcon,
+  Upload,
+  Loader2,
+  FolderUp,
+  Check,
+  Trash2,
+  AlertCircle,
+  FileWarning,
+  WifiOff,
+  ServerCrash,
+  RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -36,12 +51,37 @@ const ACCEPT_ATTR = PRODUCT_IMAGE_ALLOWED_MIME.join(",");
 // A file selected by the user but NOT yet uploaded. We hold an object URL
 // so we can render a real thumbnail in the preview tray; revoking it on
 // removal/unmount prevents the browser from leaking blob memory.
+//
+// Errors are categorized so the tile can render the right icon + an
+// actionable message that always names the FILE and the LIMIT it broke.
+// "rejected" = failed pre-upload validation (size / mime).
+// "failed"   = upload itself errored (network / storage / duplicate).
+type PendingErrorKind =
+  | "size"        // > 20 MB
+  | "mime"        // not in PRODUCT_IMAGE_ALLOWED_MIME
+  | "network"     // fetch failed / offline
+  | "server"      // 5xx / unknown storage error
+  | "duplicate"   // already exists in storage (upsert: false)
+  | "size-server" // bucket-level 413 (defense-in-depth)
+  | "unknown";
+
+interface PendingError {
+  kind: PendingErrorKind;
+  /** Headline shown next to the icon (e.g. "Too large"). */
+  title: string;
+  /** One-sentence explanation including the filename and expected limit. */
+  detail: string;
+  /** Raw underlying error message, for the tooltip / "show details". */
+  raw?: string;
+}
+
 interface PendingFile {
   id: string;
   file: File;
   previewUrl: string;
-  status: "ok" | "rejected";
-  reason?: string;
+  /** "ok" = uploadable, "rejected" = blocked pre-upload, "failed" = upload attempt errored. */
+  status: "ok" | "rejected" | "failed";
+  error?: PendingError;
 }
 
 interface ProductImageManagerProps {
@@ -227,20 +267,31 @@ export const ProductImageManager = ({
     for (const file of rawFiles) {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       let status: PendingFile["status"] = "ok";
-      let reason: string | undefined;
+      let error: PendingError | undefined;
 
       if (!PRODUCT_IMAGE_ALLOWED_MIME.includes(file.type as typeof PRODUCT_IMAGE_ALLOWED_MIME[number])) {
         status = "rejected";
-        reason = `unsupported format (${file.type || "unknown"})`;
+        error = {
+          kind: "mime",
+          title: "Unsupported file type",
+          // Always name the file + the allowed list so the user knows
+          // exactly what to do (re-export, convert, etc.).
+          detail: `"${file.name}" is ${file.type || "an unknown format"}. Allowed: JPEG, PNG, WebP, GIF, AVIF.`,
+        };
       } else if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
         status = "rejected";
-        reason = `${formatBytes(file.size)} > ${PRODUCT_IMAGE_MAX_LABEL} per-file limit`;
+        error = {
+          kind: "size",
+          title: "File too large",
+          // Always name the file + show actual vs allowed size.
+          detail: `"${file.name}" is ${formatBytes(file.size)} — the limit is ${PRODUCT_IMAGE_MAX_LABEL} per file.`,
+        };
       }
 
       // Object URL is safe to create even for rejected files — it just lets
-      // the user see what they tried to upload. We revoke on remove/upload.
+      // the user see what they tried to upload. We revoke on remove/unmount.
       const previewUrl = URL.createObjectURL(file);
-      next.push({ id, file, previewUrl, status, reason });
+      next.push({ id, file, previewUrl, status, error });
       if (status === "ok") okCount++;
       else rejectedCount++;
     }
@@ -278,45 +329,102 @@ export const ProductImageManager = ({
   // validation in the preview tray; rejected files are dropped silently
   // (the user already saw their reason in the tray).
   const confirmUpload = async () => {
-    const accepted = pendingFiles.filter((p) => p.status === "ok");
+    // Re-uploadable items are anything currently OK *or* previously failed
+    // (so the user can hit "Upload" again after a network blip without
+    // re-picking the files). Pre-flight `rejected` items stay grey.
+    const accepted = pendingFiles.filter((p) => p.status === "ok" || p.status === "failed");
     if (accepted.length === 0) {
       toast.error("No valid files to upload");
       return;
     }
 
+    // Reset previous failures to "ok" so the spinner shows on every
+    // attempted tile, not just the new ones.
+    setPendingFiles((prev) =>
+      prev.map((p) => (p.status === "failed" ? { ...p, status: "ok", error: undefined } : p)),
+    );
+
     setIsUploading(true);
     setUploadProgress({ done: 0, total: accepted.length });
     try {
       const uploadedUrls: string[] = [];
-      const failed: { name: string; reason: string }[] = [];
+      const succeededIds: string[] = [];
+      const failedItems: { id: string; error: PendingError }[] = [];
       for (let i = 0; i < accepted.length; i++) {
-        const { file } = accepted[i];
+        const { id, file } = accepted[i];
         // Build a collision-resistant path: timestamp + random suffix + ext.
         const ext = file.name.includes(".")
           ? file.name.split(".").pop()!.toLowerCase()
           : "bin";
         const key = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("product-images")
-          .upload(key, file, {
-            contentType: file.type,
-            cacheControl: "3600",
-            upsert: false,
-          });
+        let uploadError: { message: string } | null = null;
+        try {
+          const res = await supabase.storage
+            .from("product-images")
+            .upload(key, file, {
+              contentType: file.type,
+              cacheControl: "3600",
+              upsert: false,
+            });
+          uploadError = res.error;
+        } catch (networkErr) {
+          // `supabase-js` throws (instead of returning `error`) when the
+          // browser fetch itself fails — DNS, offline, CORS, etc.
+          uploadError = {
+            message: networkErr instanceof Error ? networkErr.message : "Network request failed",
+          };
+        }
 
         if (uploadError) {
-          // Storage returns "Payload too large" (413) when bucket-level
-          // file_size_limit kicks in — surface a friendlier message.
-          const msg = /payload too large|exceeded the maximum/i.test(uploadError.message)
-            ? `exceeds the ${PRODUCT_IMAGE_MAX_LABEL} server limit`
-            : uploadError.message;
-          failed.push({ name: file.name, reason: msg });
+          // Categorize the error so the inline tile can show the RIGHT
+          // icon + message that always names the file and the limit.
+          const raw = uploadError.message;
+          const lower = raw.toLowerCase();
+          let pe: PendingError;
+          if (/payload too large|exceeded the maximum|413/.test(lower)) {
+            pe = {
+              kind: "size-server",
+              title: "Rejected by storage",
+              detail: `"${file.name}" exceeded the ${PRODUCT_IMAGE_MAX_LABEL} server limit.`,
+              raw,
+            };
+          } else if (/already exists|duplicate/.test(lower)) {
+            pe = {
+              kind: "duplicate",
+              title: "Already exists",
+              detail: `"${file.name}" is already uploaded under the same key. Try renaming the file.`,
+              raw,
+            };
+          } else if (/failed to fetch|network|offline|networkerror/.test(lower)) {
+            pe = {
+              kind: "network",
+              title: "Network error",
+              detail: `Couldn't reach storage while uploading "${file.name}". Check your connection and retry.`,
+              raw,
+            };
+          } else if (/5\d\d|server|internal/.test(lower)) {
+            pe = {
+              kind: "server",
+              title: "Storage error",
+              detail: `Storage rejected "${file.name}": ${raw}`,
+              raw,
+            };
+          } else {
+            pe = {
+              kind: "unknown",
+              title: "Upload failed",
+              detail: `"${file.name}" could not be uploaded: ${raw}`,
+              raw,
+            };
+          }
+          failedItems.push({ id, error: pe });
         } else {
           const { data: pub } = supabase.storage
             .from("product-images")
             .getPublicUrl(key);
           uploadedUrls.push(pub.publicUrl);
+          succeededIds.push(id);
         }
 
         setUploadProgress({ done: i + 1, total: accepted.length });
@@ -332,21 +440,37 @@ export const ProductImageManager = ({
         onChange(merged);
         toast.success(
           `Uploaded ${uploadedUrls.length} image${uploadedUrls.length === 1 ? "" : "s"}` +
-            (failed.length > 0 ? ` (${failed.length} failed)` : ""),
+            (failedItems.length > 0 ? ` · ${failedItems.length} failed — see details below` : ""),
         );
       }
 
-      if (failed.length > 0) {
-        const preview = failed.slice(0, 3)
-          .map((f) => `"${f.name}" — ${f.reason}`)
-          .join("; ");
-        const overflow = failed.length > 3 ? ` and ${failed.length - 3} more` : "";
-        toast.error(`Failed to upload ${failed.length}: ${preview}${overflow}`);
+      if (failedItems.length > 0) {
+        toast.error(
+          `${failedItems.length} upload${failedItems.length === 1 ? "" : "s"} failed — inline details shown below`,
+        );
       }
 
-      // Clear the tray after a successful (or partially-successful) upload.
-      // Rejected files leave the tray too — they were never going to upload.
-      clearPending();
+      // Update the tray: drop succeeded items (revoke their object URLs)
+      // and mark failed items with their structured error so the user
+      // sees inline, per-tile messages instead of just a transient toast.
+      setPendingFiles((prev) => {
+        const succeededSet = new Set(succeededIds);
+        const failedMap = new Map(failedItems.map((f) => [f.id, f.error]));
+        const kept: PendingFile[] = [];
+        for (const p of prev) {
+          if (succeededSet.has(p.id)) {
+            URL.revokeObjectURL(p.previewUrl);
+            continue;
+          }
+          const fe = failedMap.get(p.id);
+          if (fe) {
+            kept.push({ ...p, status: "failed", error: fe });
+          } else {
+            kept.push(p);
+          }
+        }
+        return kept;
+      });
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
@@ -511,11 +635,18 @@ export const ProductImageManager = ({
               <span className="font-medium">
                 {pendingFiles.length} file{pendingFiles.length === 1 ? "" : "s"} selected
               </span>
-              {pendingFiles.some((p) => p.status === "rejected") && (
-                <span className="ml-2 text-xs text-destructive">
-                  · {pendingFiles.filter((p) => p.status === "rejected").length} will be skipped
-                </span>
-              )}
+              {(() => {
+                const rejected = pendingFiles.filter((p) => p.status === "rejected").length;
+                const failed = pendingFiles.filter((p) => p.status === "failed").length;
+                if (!rejected && !failed) return null;
+                return (
+                  <span className="ml-2 text-xs text-destructive">
+                    {rejected > 0 && `· ${rejected} blocked pre-upload`}
+                    {rejected > 0 && failed > 0 && " "}
+                    {failed > 0 && `· ${failed} failed to upload`}
+                  </span>
+                );
+              })()}
             </div>
             <div className="flex gap-2">
               <Button
@@ -532,38 +663,106 @@ export const ProductImageManager = ({
                 type="button"
                 size="sm"
                 onClick={confirmUpload}
-                disabled={isUploading || pendingFiles.every((p) => p.status === "rejected")}
+                disabled={
+                  isUploading ||
+                  pendingFiles.every((p) => p.status === "rejected") ||
+                  pendingFiles.filter((p) => p.status === "ok" || p.status === "failed").length === 0
+                }
               >
                 {isUploading ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : pendingFiles.some((p) => p.status === "failed") ? (
+                  <RotateCcw className="w-4 h-4 mr-1" />
                 ) : (
                   <Check className="w-4 h-4 mr-1" />
                 )}
-                {isUploading && uploadProgress
-                  ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
-                  : `Upload ${pendingFiles.filter((p) => p.status === "ok").length} image${
-                      pendingFiles.filter((p) => p.status === "ok").length === 1 ? "" : "s"
-                    }`}
+                {(() => {
+                  if (isUploading && uploadProgress) {
+                    return `Uploading ${uploadProgress.done}/${uploadProgress.total}…`;
+                  }
+                  const retryable = pendingFiles.filter((p) => p.status === "failed").length;
+                  if (retryable > 0) {
+                    const fresh = pendingFiles.filter((p) => p.status === "ok").length;
+                    const total = retryable + fresh;
+                    return `Retry ${total} upload${total === 1 ? "" : "s"}`;
+                  }
+                  const ok = pendingFiles.filter((p) => p.status === "ok").length;
+                  return `Upload ${ok} image${ok === 1 ? "" : "s"}`;
+                })()}
               </Button>
             </div>
           </div>
 
+          {/* Inline error banner: aggregates every problem currently in the
+              tray so the user sees a scannable summary above the grid.
+              The per-tile cards below still carry full per-file detail. */}
+          {pendingFiles.some((p) => p.error) && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1 min-w-0">
+                  <p className="font-medium text-destructive">
+                    {pendingFiles.filter((p) => p.error).length} file
+                    {pendingFiles.filter((p) => p.error).length === 1 ? "" : "s"} need attention
+                  </p>
+                  <ul className="space-y-0.5 text-xs text-destructive/90">
+                    {pendingFiles
+                      .filter((p) => p.error)
+                      .slice(0, 5)
+                      .map((p) => (
+                        <li key={`err-${p.id}`} className="truncate">
+                          <span className="font-medium">{p.error!.title}:</span> {p.error!.detail}
+                        </li>
+                      ))}
+                    {pendingFiles.filter((p) => p.error).length > 5 && (
+                      <li className="italic opacity-75">
+                        …and {pendingFiles.filter((p) => p.error).length - 5} more — see tiles below
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {pendingFiles.map((p) => {
-              const isRejected = p.status === "rejected";
+              const hasError = p.status === "rejected" || p.status === "failed";
+              const ErrorIcon = !p.error
+                ? null
+                : p.error.kind === "size" || p.error.kind === "size-server"
+                  ? FileWarning
+                  : p.error.kind === "network"
+                    ? WifiOff
+                    : p.error.kind === "server"
+                      ? ServerCrash
+                      : AlertCircle;
               return (
                 <div
                   key={p.id}
                   className={`relative group rounded-md border overflow-hidden bg-background ${
-                    isRejected ? "border-destructive/60" : "border-border"
+                    hasError ? "border-destructive/60 ring-1 ring-destructive/30" : "border-border"
                   }`}
-                  title={isRejected ? `${p.file.name} — ${p.reason}` : p.file.name}
+                  title={p.error ? `${p.error.title} — ${p.error.detail}` : p.file.name}
+                  role={p.error ? "alert" : undefined}
+                  aria-label={
+                    p.error
+                      ? `${p.file.name}: ${p.error.title}. ${p.error.detail}`
+                      : `${p.file.name} ready to upload`
+                  }
                 >
                   <img
                     src={p.previewUrl}
                     alt={`Preview of ${p.file.name}`}
-                    className={`w-full aspect-square object-cover ${isRejected ? "opacity-40 grayscale" : ""}`}
+                    className={`w-full aspect-square object-cover ${hasError ? "opacity-40 grayscale" : ""}`}
                   />
+                  {/* Corner error chip — visible at-a-glance without hover */}
+                  {p.error && ErrorIcon && (
+                    <div className="absolute top-1 left-1 flex items-center gap-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-medium px-1.5 py-0.5 shadow">
+                      <ErrorIcon className="w-3 h-3" />
+                      <span>{p.error.title}</span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => removePending(p.id)}
@@ -579,10 +778,11 @@ export const ProductImageManager = ({
                     </p>
                     <p
                       className={`text-[10px] truncate ${
-                        isRejected ? "text-destructive" : "text-muted-foreground"
+                        hasError ? "text-destructive" : "text-muted-foreground"
                       }`}
+                      title={p.error?.detail}
                     >
-                      {isRejected ? p.reason : formatBytes(p.file.size)}
+                      {p.error ? p.error.detail : formatBytes(p.file.size)}
                     </p>
                   </div>
                 </div>
