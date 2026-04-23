@@ -63,6 +63,7 @@ import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
 import { StockNotificationForm } from "@/components/products/StockNotificationForm";
 import { RecentlyViewedCarousel } from "@/components/products/RecentlyViewedCarousel";
+import { usePdpBotRenderTrace } from "@/hooks/usePdpBotRenderTrace";
 import { RelatedProductsCarousel } from "@/components/products/RelatedProductsCarousel";
 import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
 import { useRelatedProducts } from "@/hooks/useRelatedProducts";
