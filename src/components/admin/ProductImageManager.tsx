@@ -4,6 +4,16 @@ import { Input } from "@/components/ui/input";
 import { X, Plus, GripVertical, Image as ImageIcon, Upload, Loader2, FolderUp, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // -----------------------------------------------------------------------------
 // File upload limits — kept in sync with the `product-images` storage bucket.
@@ -62,6 +72,10 @@ export const ProductImageManager = ({
   // Files picked/dropped by the user that are waiting in the preview tray.
   // They are NOT uploaded until the user clicks "Upload N image(s)".
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  // Index of the image the user clicked "remove" on. The actual deletion
+  // only runs after they confirm in the AlertDialog — so a single misclick
+  // on a 12-image gallery can't silently destroy the wrong tile.
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
 
   // Revoke object URLs on unmount so blob: URLs don't leak.
   useEffect(() => {
@@ -95,7 +109,15 @@ export const ProductImageManager = ({
     toast.success("Image added");
   };
 
-  const handleRemoveImage = (index: number) => {
+  // Two-step delete: clicking the X opens the confirmation dialog. The
+  // actual mutation happens in `confirmRemoveImage` once the user accepts.
+  const requestRemoveImage = (index: number) => {
+    setPendingDeleteIndex(index);
+  };
+
+  const confirmRemoveImage = () => {
+    if (pendingDeleteIndex === null) return;
+    const index = pendingDeleteIndex;
     const imageToRemove = images[index];
     const newImages = images.filter((_, i) => i !== index);
     onChange(newImages);
@@ -105,6 +127,7 @@ export const ProductImageManager = ({
       onMainImageChange(newImages[0]);
     }
 
+    setPendingDeleteIndex(null);
     toast.success("Image removed");
   };
 
@@ -567,7 +590,8 @@ export const ProductImageManager = ({
                     type="button"
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleRemoveImage(index)}
+                    onClick={() => requestRemoveImage(index)}
+                    aria-label={`Remove image ${index + 1}`}
                     className="h-8 w-8 p-0"
                   >
                     <X className="w-4 h-4" />
@@ -609,6 +633,60 @@ export const ProductImageManager = ({
         image. Uploaded files must be {PRODUCT_IMAGE_MAX_LABEL} or smaller —
         oversized files are blocked before the upload starts.
       </p>
+
+      {/* Confirmation dialog for image removal. We render a thumbnail of
+          the exact image being deleted (and call out when it's the main
+          image) so the user can sanity-check what they're about to lose. */}
+      <AlertDialog
+        open={pendingDeleteIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteIndex(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this image?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the image from the product. The file itself stays in
+              storage, but the product will no longer reference it.
+              {pendingDeleteIndex !== null &&
+                images[pendingDeleteIndex] === mainImage && (
+                  <span className="mt-2 block font-medium text-destructive">
+                    This is the current main image — the next image in the
+                    gallery will become the new main.
+                  </span>
+                )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {pendingDeleteIndex !== null && images[pendingDeleteIndex] && (
+            <div className="flex items-center gap-3 rounded-md border bg-muted/30 p-3">
+              <img
+                src={images[pendingDeleteIndex]}
+                alt={`Image ${pendingDeleteIndex + 1} preview`}
+                className="w-16 h-16 object-cover rounded"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder.svg";
+                }}
+              />
+              <div className="min-w-0 text-sm">
+                <p className="font-medium">Image {pendingDeleteIndex + 1} of {images.length}</p>
+                <p className="text-xs text-muted-foreground truncate" title={images[pendingDeleteIndex]}>
+                  {images[pendingDeleteIndex]}
+                </p>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveImage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove image
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
