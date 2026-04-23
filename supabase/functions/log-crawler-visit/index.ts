@@ -696,7 +696,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-    const { pageUrl, userAgent, referrer } = parsed.data;
+    const { pageUrl, userAgent, referrer, idempotencyKey } = parsed.data;
 
     // If this looks like a pdp-render-trace ping, enforce that both a slug
     // (extractable from pageUrl) and a recognised state tag are present.
