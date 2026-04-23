@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +8,44 @@ const corsHeaders = {
   'X-Robots-Tag': 'all',
   'X-Content-Served-Identically': 'true',
 };
+
+// -----------------------------------------------------------------------------
+// Runtime payload validation
+// -----------------------------------------------------------------------------
+// The crawler-visit endpoint is also reused by `usePdpBotRenderTrace` to ship
+// PDP render-state telemetry. We enforce a strict schema so malformed payloads
+// are rejected early with a clear, structured error log instead of polluting
+// `crawler_visits` with bad rows.
+const PayloadSchema = z.object({
+  pageUrl: z
+    .string({ required_error: 'pageUrl is required' })
+    .trim()
+    .min(1, 'pageUrl must be a non-empty string')
+    .max(2048, 'pageUrl exceeds 2048 chars'),
+  userAgent: z
+    .string({ required_error: 'userAgent is required' })
+    .trim()
+    .min(1, 'userAgent must be a non-empty string')
+    .max(2048, 'userAgent exceeds 2048 chars'),
+  referrer: z.string().trim().max(2048).optional().nullable(),
+});
+
+// Render-state tags emitted by the PDP bot-trace hook. We don't *require* a
+// state tag (regular crawler visits won't have one), but if the UA *looks*
+// like a pdp-render-trace ping, we validate that the state is one we expect.
+const RENDER_STATE_TAG_RE = /pdp-render-trace\/([a-z0-9_-]+)/i;
+const VALID_RENDER_STATES = new Set(['shell', 'rendered', 'timeout']);
+
+function extractSlug(pageUrl: string): string | null {
+  try {
+    const u = new URL(pageUrl, 'https://getpawsy.pet');
+    const parts = u.pathname.split('/').filter(Boolean);
+    // /products/:slug or /p/:slug etc — last non-empty segment is the slug.
+    return parts.length > 0 ? parts[parts.length - 1] : null;
+  } catch {
+    return null;
+  }
+}
 
 // Appeal pages that should trigger email notifications
 const APPEAL_PAGES = [
@@ -395,13 +434,57 @@ serve(async (req) => {
   }
 
   try {
-    const { pageUrl, userAgent, referrer } = await req.json();
-    
-    if (!pageUrl || !userAgent) {
+    let rawBody: unknown;
+    try {
+      rawBody = await req.json();
+    } catch (parseErr) {
+      console.error('[log-crawler-visit] Malformed JSON body:', parseErr);
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
+    }
+
+    const parsed = PayloadSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      console.error(
+        '[log-crawler-visit] Rejecting malformed payload:',
+        JSON.stringify({ fieldErrors, received: rawBody }),
+      );
+      return new Response(
+        JSON.stringify({ error: 'Invalid payload', fieldErrors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const { pageUrl, userAgent, referrer } = parsed.data;
+
+    // If this looks like a pdp-render-trace ping, enforce that both a slug
+    // (extractable from pageUrl) and a recognised state tag are present.
+    const renderTagMatch = userAgent.match(RENDER_STATE_TAG_RE);
+    const looksLikeTrace = userAgent.toLowerCase().includes('pdp-render-trace');
+    if (looksLikeTrace) {
+      const slug = extractSlug(pageUrl);
+      const stateTag = renderTagMatch?.[1]?.toLowerCase() ?? null;
+      const missing: string[] = [];
+      if (!slug) missing.push('slug (from pageUrl)');
+      if (!stateTag) missing.push('pdp-render-trace state tag (from userAgent)');
+      else if (!VALID_RENDER_STATES.has(stateTag)) {
+        missing.push(`valid pdp-render-trace state (got "${stateTag}")`);
+      }
+      if (missing.length > 0) {
+        console.error(
+          '[log-crawler-visit] pdp-render-trace payload missing required fields:',
+          JSON.stringify({ missing, pageUrl, userAgent }),
+        );
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid pdp-render-trace payload',
+            missing,
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
     }
 
     // Get IP from headers (Cloudflare/proxy headers)
