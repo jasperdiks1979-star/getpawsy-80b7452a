@@ -11,8 +11,11 @@ import {
   XCircle,
   RefreshCw,
   ShieldCheck,
+  FileDown,
 } from 'lucide-react';
 import { useReleaseReport } from '@/hooks/useReleaseReport';
+import { downloadReleaseReportPdf } from '@/utils/releaseReportPdf';
+import { toast } from 'sonner';
 
 /**
  * Report a new release. On submit, this:
@@ -31,6 +34,21 @@ export function ReportReleaseCard() {
   const handleSubmit = async () => {
     if (!title.trim()) return;
     await reportRelease({ title: title.trim(), notes: notes.trim() || undefined });
+  };
+
+  const handleDownloadPdf = () => {
+    if (!result) return;
+    try {
+      downloadReleaseReportPdf({
+        title: title.trim() || 'Release Report',
+        notes: notes.trim() || undefined,
+        result,
+      });
+      toast.success('Release report PDF downloaded');
+    } catch (e) {
+      console.error('Release PDF export failed:', e);
+      toast.error('Could not generate PDF');
+    }
   };
 
   return (
@@ -149,6 +167,15 @@ export function ReportReleaseCard() {
                   .join(', ')}
               </div>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={handleDownloadPdf}
+            >
+              <FileDown className="h-4 w-4" />
+              Download Release Report (PDF)
+            </Button>
           </div>
         )}
       </CardContent>
