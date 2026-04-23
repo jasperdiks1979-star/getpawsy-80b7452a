@@ -593,3 +593,333 @@ Deno.test({
     }
   },
 });
+
+// =============================================================================
+// Validation-path integration tests (no service role required)
+// =============================================================================
+// These tests hit the deployed function over HTTP and assert the full error
+// envelope — status, structured `code`, optional `fieldErrors`, optional
+// `missing` array, and the `validationCounters` snapshot — so dashboards and
+// client-side error branches can rely on the contract end-to-end.
+// =============================================================================
+
+/** Minimal helper: POST a *raw* string body (bypasses JSON.stringify) so we
+ *  can simulate truly malformed JSON the way a misbehaving client would. */
+async function callFunctionRaw(rawBody: string): Promise<Response> {
+  return await fetch(FUNCTIONS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: rawBody,
+  });
+}
+
+Deno.test({
+  name:
+    "log-crawler-visit rejects malformed JSON bodies with HTTP 400 + INVALID_JSON",
+  async fn() {
+    // Each case is a body that's *not* valid JSON. The function must catch the
+    // parse error before any schema validation runs and return INVALID_JSON.
+    const cases: Array<{ label: string; raw: string }> = [
+      { label: "trailing comma", raw: '{"pageUrl":"x","userAgent":"y",}' },
+      { label: "unquoted key", raw: '{pageUrl: "x"}' },
+      { label: "single quotes", raw: "{'pageUrl':'x','userAgent':'y'}" },
+      { label: "truncated object", raw: '{"pageUrl":"x"' },
+      { label: "bare word", raw: "not-json-at-all" },
+      { label: "empty body", raw: "" },
+    ];
+
+    for (const { label, raw } of cases) {
+      const res = await callFunctionRaw(raw);
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `expected 400 for malformed JSON (${label}), got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(
+        json.code,
+        "INVALID_JSON",
+        `expected code=INVALID_JSON for ${label}, got ${json.code}`,
+      );
+      assertEquals(
+        json.error,
+        "Invalid JSON body",
+        `expected human-readable error string for ${label}`,
+      );
+      // The counters snapshot must be present and `invalid_json` must be > 0
+      // (the function increments per request, so by the time this case runs
+      // the counter is at least 1 within this cold-start invocation).
+      assertExists(
+        json.validationCounters,
+        `validationCounters snapshot missing for ${label}`,
+      );
+      assertEquals(
+        typeof json.validationCounters.invalid_json,
+        "number",
+        "invalid_json counter must be a number",
+      );
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "log-crawler-visit returns INVALID_PAYLOAD with field-level errors for missing/empty pageUrl + userAgent",
+  async fn() {
+    // Cases the earlier "rejects payloads missing pageUrl or userAgent" test
+    // only checked at the status-code level. Here we also assert the
+    // structured contract (code + fieldErrors + counters) so callers can
+    // surface field-specific UI errors without parsing English strings.
+    const cases: Array<{
+      label: string;
+      body: Record<string, unknown>;
+      expectFields: ("pageUrl" | "userAgent")[];
+    }> = [
+      {
+        label: "missing pageUrl",
+        body: { userAgent: GOOGLEBOT_UA },
+        expectFields: ["pageUrl"],
+      },
+      {
+        label: "missing userAgent",
+        body: { pageUrl: `${ORIGIN}/product/x` },
+        expectFields: ["userAgent"],
+      },
+      {
+        label: "both missing (empty body)",
+        body: {},
+        expectFields: ["pageUrl", "userAgent"],
+      },
+      {
+        label: "empty-string pageUrl",
+        body: { pageUrl: "", userAgent: GOOGLEBOT_UA },
+        expectFields: ["pageUrl"],
+      },
+      {
+        label: "whitespace-only userAgent (trims to empty)",
+        body: { pageUrl: `${ORIGIN}/product/x`, userAgent: "   " },
+        expectFields: ["userAgent"],
+      },
+      {
+        label: "wrong type — pageUrl is a number",
+        body: { pageUrl: 42, userAgent: GOOGLEBOT_UA },
+        expectFields: ["pageUrl"],
+      },
+      {
+        label: "wrong type — userAgent is null",
+        body: { pageUrl: `${ORIGIN}/product/x`, userAgent: null },
+        expectFields: ["userAgent"],
+      },
+    ];
+
+    for (const { label, body, expectFields } of cases) {
+      const res = await callFunction(body);
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `expected 400 for ${label}, got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(
+        json.code,
+        "INVALID_PAYLOAD",
+        `expected code=INVALID_PAYLOAD for ${label}, got ${json.code}`,
+      );
+      assertExists(
+        json.fieldErrors,
+        `fieldErrors object missing for ${label}`,
+      );
+      for (const field of expectFields) {
+        assertExists(
+          json.fieldErrors[field],
+          `fieldErrors.${field} should be present for ${label}`,
+        );
+        // Each field error is an array of human-readable messages.
+        const msgs = json.fieldErrors[field] as unknown;
+        if (!Array.isArray(msgs) || msgs.length === 0) {
+          throw new Error(
+            `fieldErrors.${field} should be a non-empty array for ${label}, got: ${
+              JSON.stringify(msgs)
+            }`,
+          );
+        }
+      }
+      // Fields NOT in `expectFields` must NOT be flagged — keeps error
+      // surfaces tight and prevents false positives in client UIs.
+      const allFields: ("pageUrl" | "userAgent")[] = ["pageUrl", "userAgent"];
+      for (const f of allFields) {
+        if (!expectFields.includes(f)) {
+          assertEquals(
+            json.fieldErrors[f],
+            undefined,
+            `fieldErrors.${f} must NOT be set for ${label}`,
+          );
+        }
+      }
+      assertExists(json.validationCounters, "counters snapshot missing");
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "log-crawler-visit rejects pdp-render-trace pings missing the state tag with HTTP 400 + MISSING_FIELDS",
+  async fn() {
+    // The UA contains the literal `pdp-render-trace` substring (so the
+    // function classifies it as a trace ping) but NO recognisable state
+    // segment. The function must:
+    //   - return 400
+    //   - use code MISSING_FIELDS (not INVALID_PDP_RENDER_STATE — that code
+    //     is reserved for a tag that's *present* but unknown)
+    //   - list the missing pieces in `missing[]`
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const cases: Array<{
+      label: string;
+      body: { pageUrl: string; userAgent: string };
+      expectMissingPattern: RegExp;
+    }> = [
+      {
+        label: "trace UA with no state segment at all",
+        body: {
+          pageUrl: `${ORIGIN}/product/missing-state-a-${runId}`,
+          // No `/`, no `:`, just the bare keyword — regex extracts nothing.
+          userAgent: `${GOOGLEBOT_UA} pdp-render-trace`,
+        },
+        expectMissingPattern: /state tag/i,
+      },
+      {
+        label: "trace UA with empty bracket suffix",
+        body: {
+          pageUrl: `${ORIGIN}/product/missing-state-b-${runId}`,
+          userAgent: `${GOOGLEBOT_UA} [pdp-render-trace]`,
+        },
+        expectMissingPattern: /state tag/i,
+      },
+      {
+        label: "trace UA where the slug is also unextractable",
+        body: {
+          // No path segment after the host → extractSlug returns null too.
+          pageUrl: `${ORIGIN}/`,
+          userAgent: `${GOOGLEBOT_UA} pdp-render-trace`,
+        },
+        expectMissingPattern: /slug/i,
+      },
+    ];
+
+    for (const { label, body, expectMissingPattern } of cases) {
+      const res = await callFunction(body);
+      const text = await res.text();
+      assertEquals(
+        res.status,
+        400,
+        `expected 400 for ${label}, got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(
+        json.code,
+        "MISSING_FIELDS",
+        `expected code=MISSING_FIELDS for ${label}, got ${json.code}`,
+      );
+      assertEquals(
+        json.error,
+        "Invalid pdp-render-trace payload",
+        `expected human-readable error for ${label}`,
+      );
+      // `missing` must be a non-empty array describing what was absent.
+      const missing = json.missing as unknown;
+      if (!Array.isArray(missing) || missing.length === 0) {
+        throw new Error(
+          `missing[] should be a non-empty array for ${label}, got: ${
+            JSON.stringify(missing)
+          }`,
+        );
+      }
+      assertMatch(
+        missing.join(" | "),
+        expectMissingPattern,
+        `missing[] for ${label} should mention the right field`,
+      );
+      assertExists(json.validationCounters);
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "log-crawler-visit rejects pdp-render-trace pings with an INVALID state value (400 + INVALID_PDP_RENDER_STATE)",
+  async fn() {
+    // A trace UA with a *recognised-shape* state segment whose value is not
+    // in {shell, rendered, timeout}. The function must distinguish this from
+    // the "missing state" path and return INVALID_PDP_RENDER_STATE so logs
+    // and dashboards can quantify "unknown new state values" separately.
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const cases: Array<{ label: string; bogusState: string }> = [
+      { label: "obviously bogus", bogusState: "halfrendered" },
+      { label: "future state (forward-compat probe)", bogusState: "hydrated" },
+      { label: "near-miss typo", bogusState: "shel" },
+      { label: "uppercase variant", bogusState: "SHELL" },
+      // ↑ `SHELL` is interesting: the regex matches case-insensitively, the
+      //   function lowercases the captured tag, so "SHELL" → "shell" which is
+      //   actually VALID. We exclude it from the assertion below.
+    ];
+
+    for (const { label, bogusState } of cases) {
+      const slug = `it-bogus-state-${bogusState}-${runId}`;
+      // Use the slash form so the regex extracts the tag value cleanly.
+      const body = {
+        pageUrl: `${ORIGIN}/product/${slug}?_render=${bogusState}`,
+        userAgent:
+          `${GOOGLEBOT_UA} [pdp-render-trace/${bogusState} +5ms]`,
+      };
+      const res = await callFunction(body);
+      const text = await res.text();
+
+      // "SHELL" lowercases to "shell" and is therefore valid — function
+      // returns 200. Skip the rejection assertions for that case.
+      if (bogusState.toLowerCase() === "shell" ||
+          bogusState.toLowerCase() === "rendered" ||
+          bogusState.toLowerCase() === "timeout") {
+        assertEquals(
+          res.status,
+          200,
+          `case "${label}" lowercases to a valid state, expected 200, got ${res.status}: ${text}`,
+        );
+        continue;
+      }
+
+      assertEquals(
+        res.status,
+        400,
+        `expected 400 for ${label} (state=${bogusState}), got ${res.status}: ${text}`,
+      );
+      const json = JSON.parse(text);
+      assertEquals(
+        json.code,
+        "INVALID_PDP_RENDER_STATE",
+        `expected code=INVALID_PDP_RENDER_STATE for ${label}, got ${json.code}`,
+      );
+      // The `missing[]` entry should quote the bad value back so admins can
+      // see exactly what shipped without grepping logs.
+      const missing = (json.missing as string[]) ?? [];
+      assertMatch(
+        missing.join(" | "),
+        new RegExp(`valid pdp-render-trace state.*${bogusState}`, "i"),
+        `missing[] should quote the offending state for ${label}`,
+      );
+      assertExists(json.validationCounters);
+      // The trace_invalid_state counter must have ticked.
+      const counter = json.validationCounters.trace_invalid_state;
+      if (typeof counter !== "number" || counter < 1) {
+        throw new Error(
+          `trace_invalid_state counter should be >= 1 for ${label}, got: ${counter}`,
+        );
+      }
+    }
+  },
+});
