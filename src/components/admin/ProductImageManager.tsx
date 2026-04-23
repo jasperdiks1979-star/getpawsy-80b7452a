@@ -600,12 +600,17 @@ export const ProductImageManager = ({
             return (
               <div
                 key={`${imageUrl}-${index}`}
-                className={`relative group rounded-lg border-2 overflow-hidden ${
+                className={`relative group rounded-lg border-2 overflow-hidden transition-all ${
                   isMain ? "border-primary" : "border-border"
-                } ${draggedIndex === index ? "opacity-50" : ""}`}
+                } ${draggedIndex === index ? "opacity-40 scale-95" : ""} ${
+                  dragOverIndex === index && draggedIndex !== null && draggedIndex !== index
+                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                    : ""
+                }`}
                 draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleTileDragOver(e, index)}
+                onDrop={(e) => handleTileDrop(e, index)}
                 onDragEnd={handleDragEnd}
               >
                 <img
