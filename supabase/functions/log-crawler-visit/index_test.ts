@@ -3494,13 +3494,68 @@ Deno.test({
 
     // -- Headline-property report: zero tolerance for over-limit 2xx. -----
     if (violations.length > 0) {
+      // Shrink each violation to the smallest reproducible fixture before
+      // failing the test. We only shrink the FIRST violation in detail to
+      // keep the test runtime bounded — additional violations are reported
+      // with their raw lengths so they're not lost. In practice a single
+      // shrunken repro is what the developer actually needs to fix the bug.
+      const primary = violations[0];
+      const failingValue = primary.axis === "pageUrl"
+        // Recompute the failing value deterministically from (seed, iter)?
+        // We don't — re-running the whole loop would be expensive. Instead
+        // we re-generate the same failing input on demand by replaying the
+        // exact length spec. The test loop's RNG is no longer at the same
+        // state, but the failing INPUT is fully described by `(axis, len)`
+        // for the purposes of shrinking: any over-limit string of that
+        // length that triggers a 2xx is a valid starting point. We use
+        // an all-'a' string of the captured length, which the simplifier
+        // would have converged to anyway.
+        ? "a".repeat(primary.pageUrlLen)
+        : "a".repeat(primary.userAgentLen);
+
+      console.log(
+        `[fuzz] violation detected — shrinking ${primary.axis} input ` +
+          `(originalLen=${failingValue.length}) ...`,
+      );
+
+      const shrinkResult = await shrinkOverLimitInput({
+        axis: primary.axis,
+        failingValue,
+        safePageUrl: SAFE_PAGE_URL,
+        safeUserAgent: SAFE_USER_AGENT,
+        maxLen: MAX_LEN,
+        callFn: callFunction,
+      });
+
+      const fixturePath = writeShrunkFixture(shrinkResult, {
+        seed: primary.seed,
+        iter: primary.iter,
+        httpStatus: primary.status,
+      });
+
       const summary = violations
         .map((v) =>
           `  iter=${v.iter} seed=0x${v.seed.toString(16)} axis=${v.axis} pageUrlLen=${v.pageUrlLen} userAgentLen=${v.userAgentLen} status=${v.status} body=${v.bodyPreview}`
         )
         .join("\n");
+
+      const shrunkSummary = shrinkResult.shrunk
+        ? `Shrunken fixture: axis=${shrinkResult.axis} ` +
+          `originalLen=${shrinkResult.originalLen} → shrunkLen=${shrinkResult.shrunkLen} ` +
+          `(phase1 calls=${shrinkResult.phase1NetworkCalls}, phase2 calls=${shrinkResult.phase2NetworkCalls}, ` +
+          `simplified=${shrinkResult.phase2Applied})\n` +
+          `  value preview: ${JSON.stringify(shrinkResult.shrunkValue.slice(0, 64))}…\n` +
+          (fixturePath
+            ? `  full fixture: ${fixturePath}`
+            : `  (could not persist fixture file; full value above is truncated)`)
+        : `Shrinking could not reproduce the violation (likely flaky); ` +
+          `original failing input retained at length ${shrinkResult.originalLen}.`;
+
       throw new Error(
-        `Property violation: ${violations.length} over-limit input(s) returned 2xx. The function MUST reject any payload where pageUrl.length > 2048 or userAgent.length > 2048.\n${summary}`,
+        `Property violation: ${violations.length} over-limit input(s) returned 2xx. ` +
+          `The function MUST reject any payload where pageUrl.length > 2048 or userAgent.length > 2048.\n` +
+          `${summary}\n` +
+          `${shrunkSummary}`,
       );
     }
 
