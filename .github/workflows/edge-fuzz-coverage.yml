@@ -41,6 +41,10 @@ on:
         description: 'Override the minimum line-coverage % for this run.'
         required: false
         default: ''
+      fuzz_concurrency:
+        description: 'Concurrent fuzz workers (1 = serial, useful for race-condition triage).'
+        required: false
+        default: ''
 
 concurrency:
   group: edge-fuzz-coverage-${{ github.ref }}
@@ -106,6 +110,16 @@ jobs:
           else
             echo "min=$MIN_LINE_COVERAGE_PCT" >> "$GITHUB_OUTPUT"
             echo "Using repo default: min=$MIN_LINE_COVERAGE_PCT%"
+          fi
+
+      - name: Resolve fuzz concurrency
+        run: |
+          override="${{ github.event.inputs.fuzz_concurrency }}"
+          if [[ -n "$override" ]]; then
+            echo "FUZZ_CONCURRENCY=$override" >> "$GITHUB_ENV"
+            echo "Using workflow_dispatch override: FUZZ_CONCURRENCY=$override"
+          else
+            echo "Using repo default: FUZZ_CONCURRENCY=$FUZZ_CONCURRENCY"
           fi
 
       - name: Run fuzz tests with coverage
