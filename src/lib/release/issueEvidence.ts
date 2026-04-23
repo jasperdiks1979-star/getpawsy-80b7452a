@@ -42,7 +42,6 @@ export interface IssueEvidence {
 }
 
 const FEED_URL = 'https://getpawsy.pet/merchant-feed.xml';
-const ITEM_DISPLAY_CAP = 5;
 
 /**
  * Per-reason metadata. Keys match the strings emitted by
@@ -138,7 +137,7 @@ export function buildIssueEvidence(
     .map((item) => ({ item, raw: itemMatchesReason(item, reason) }))
     .filter((x): x is { item: SampleResult; raw: string } => x.raw !== null);
 
-  const items = matched.slice(0, ITEM_DISPLAY_CAP).map(({ item, raw }) => {
+  const items = matched.map(({ item, raw }) => {
     // Snippet shows: feed tag + observed value/state (e.g. status code,
     // content-type, weight). For weight reasons we surface the raw value
     // to make "why is this out of range" obvious without a second click.
