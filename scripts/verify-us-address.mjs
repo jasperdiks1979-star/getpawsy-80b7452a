@@ -47,8 +47,14 @@ const FORBIDDEN_PATTERNS = [
   { re: /\bKvK[\s:#-]*\d/i, label: 'KvK number' },
   { re: /\bBTW[\s:#-]*NL/i, label: 'BTW NL VAT' },
   { re: /\bVAT[\s:#-]*NL\d/i, label: 'VAT NL number' },
-  // Dutch postal code pattern: 4 digits + 2 letters
-  { re: /\b[1-9]\d{3}\s?[A-Z]{2}\b(?!\s*(?:cells|tokens|hex))/i, label: 'NL postal code (NNNN AA)' },
+  // Dutch postal code pattern: 4 digits + space + 2 UPPERCASE letters.
+  // Use a strict non-CSS context: must not be preceded by digits-of-pixel (e.g. 1280px),
+  // and must not be followed by typical CSS unit/word characters. Require a real word break
+  // and an uppercase 2-letter region code (NL postcodes are always uppercase).
+  {
+    re: /(?<![0-9a-zA-Z])[1-9]\d{3}\s[A-Z]{2}(?![a-zA-Z0-9])/,
+    label: 'NL postal code (NNNN AA)',
+  },
   // EU country codes inside postal addresses (we look for these only in JSON-LD context below)
 ];
 
