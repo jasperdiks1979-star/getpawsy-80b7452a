@@ -230,6 +230,8 @@ export default function CrawlerSamplingDecisionsPage() {
           />
         </div>
 
+        <LastHourPanel query={lastHour} />
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Counts by reason × outcome</CardTitle>
