@@ -3723,11 +3723,46 @@ Deno.test({
     // Override via FUZZ_ITERATIONS for nightly deep-fuzz runs.
     const ITERATIONS = parsePositiveIntEnv("FUZZ_ITERATIONS", 3);
 
+    // ---------------------------------------------------------------
+    // Parallel worker pool — surface race conditions in the deployed
+    // edge function's request handling.
+    //
+    // FUZZ_CONCURRENCY controls how many fuzz requests are in flight
+    // at the same time:
+    //   - 1 (default, local + most CI runs): purely sequential — every
+    //     per-call invariant remains attributable to a specific call,
+    //     including the cross-axis non-offending-bucket growth check.
+    //   - >1 (CI parallel job): runs N concurrent workers pulling from
+    //     a shared deterministic job queue. Catches races inside the
+    //     edge function (shared module-scoped state, double-counted
+    //     increments, partial response writes) that a sequential
+    //     driver can never observe. Under concurrency we DOWNGRADE the
+    //     two attribution checks that depend on cross-call ordering
+    //     (the per-call non-offending-bucket growth detector and the
+    //     per-request "only the offending bucket grew" check) to
+    //     warnings, because growth that looks anomalous from one
+    //     worker's perspective may simply be a sibling worker driving
+    //     the OTHER axis on a shared isolate. The end-of-run
+    //     "unrelated buckets must be flat" assertion (invalid_json +
+    //     trace_*) is still strict — those code paths are never driven
+    //     by this fuzz suite regardless of concurrency, so any growth
+    //     there is unambiguously a bug.
+    //
+    // Inputs are pre-generated SEQUENTIALLY from the seeded RNG, so
+    // changing FUZZ_CONCURRENCY does NOT change which payloads get
+    // sent — only the order in which the responses come back. This
+    // preserves reproducibility: a failing seed at concurrency=8 can
+    // be replayed at concurrency=1 with the same FUZZ_SEED and will
+    // hit the same set of inputs (just sequentially).
+    // ---------------------------------------------------------------
+    const CONCURRENCY = parsePositiveIntEnv("FUZZ_CONCURRENCY", 1);
+
     // Surface the effective config in CI logs so a failure can be
     // reproduced locally with the same env vars.
     console.log(
       `[fuzz] config: seed=0x${SEED.toString(16)} iterations=${ITERATIONS} ` +
-        `(override via FUZZ_SEED / FUZZ_ITERATIONS)`,
+        `concurrency=${CONCURRENCY} ` +
+        `(override via FUZZ_SEED / FUZZ_ITERATIONS / FUZZ_CONCURRENCY)`,
     );
 
     const SAFE_PAGE_URL = `${ORIGIN}/product/fuzz-safe-pageurl`;
@@ -3898,35 +3933,82 @@ Deno.test({
     };
     const violations: Outcome[] = [];
 
-    let iterCounter = 0;
-    for (const spec of specs) {
-      for (const axis of axes) {
-        for (let i = 0; i < ITERATIONS; i++) {
-          iterCounter++;
-
-          const pageUrl = axis === "pageUrl"
-            ? fuzzPageUrl(rng, spec.len)
-            : SAFE_PAGE_URL;
-          const userAgent = axis === "userAgent"
-            ? fuzzUserAgent(rng, spec.len)
-            : SAFE_USER_AGENT;
-
-          // Defensive: confirm we built the lengths we intended. If this
-          // ever fires, the property assertions below would be measuring
-          // the wrong thing, so fail LOUDLY here instead.
-          if (axis === "pageUrl" && pageUrl.length !== spec.len) {
-            throw new Error(
-              `fuzz iter ${iterCounter}: pageUrl.length = ${pageUrl.length}, expected ${spec.len}`,
-            );
+    // ---------------------------------------------------------------
+    // Pre-generate ALL fuzz inputs sequentially from the seeded RNG.
+    //
+    // We generate first, dispatch second. Two reasons:
+    //   1. Reproducibility under concurrency. The PRNG is a single
+    //      shared stream; if we let N workers race to consume it, the
+    //      same FUZZ_SEED would produce different payloads depending
+    //      on the worker scheduler. Pre-generating means the input
+    //      set is identical at concurrency=1 and concurrency=8.
+    //   2. Cheaper. String generation is tiny compared to the
+    //      network round trip; doing it upfront keeps the hot loop
+    //      focused on dispatching requests.
+    // ---------------------------------------------------------------
+    type Job = {
+      iter: number;          // 1-based iteration index, stable across reruns
+      kind: Kind;
+      axis: Axis;
+      spec: LenSpec;
+      pageUrl: string;
+      userAgent: string;
+    };
+    const jobs: Job[] = [];
+    {
+      let iterCounter = 0;
+      for (const spec of specs) {
+        for (const axis of axes) {
+          for (let i = 0; i < ITERATIONS; i++) {
+            iterCounter++;
+            const pageUrl = axis === "pageUrl"
+              ? fuzzPageUrl(rng, spec.len)
+              : SAFE_PAGE_URL;
+            const userAgent = axis === "userAgent"
+              ? fuzzUserAgent(rng, spec.len)
+              : SAFE_USER_AGENT;
+            // Defensive: confirm we built the lengths we intended.
+            if (axis === "pageUrl" && pageUrl.length !== spec.len) {
+              throw new Error(
+                `fuzz iter ${iterCounter}: pageUrl.length = ${pageUrl.length}, expected ${spec.len}`,
+              );
+            }
+            if (axis === "userAgent" && userAgent.length !== spec.len) {
+              throw new Error(
+                `fuzz iter ${iterCounter}: userAgent.length = ${userAgent.length}, expected ${spec.len}`,
+              );
+            }
+            jobs.push({
+              iter: iterCounter,
+              kind: spec.kind,
+              axis,
+              spec,
+              pageUrl,
+              userAgent,
+            });
           }
-          if (axis === "userAgent" && userAgent.length !== spec.len) {
-            throw new Error(
-              `fuzz iter ${iterCounter}: userAgent.length = ${userAgent.length}, expected ${spec.len}`,
-            );
-          }
+        }
+      }
+    }
+    const totalJobs = jobs.length;
 
-          const res = await callFunction({ pageUrl, userAgent });
-          const text = await res.text();
+    // ---------------------------------------------------------------
+    // Per-call processor. Mutates shared state (violations,
+    // bucketHits, perBucketObservedMax, counterRunTotals,
+    // perBucketObservedMinNonZero). Safe under cooperative async
+    // concurrency because:
+    //   - JS is single-threaded; reads + writes between awaits are
+    //     atomic from the worker's perspective.
+    //   - The only awaits in this function are the network call
+    //     (`callFunction`) and `res.text()`; everything after is
+    //     synchronous, so two workers can't interleave a single
+    //     job's bookkeeping.
+    // ---------------------------------------------------------------
+    async function processJob(job: Job): Promise<void> {
+      const { iter: iterCounter, axis, spec, pageUrl, userAgent } = job;
+
+      const res = await callFunction({ pageUrl, userAgent });
+      const text = await res.text();
 
           const outcome: Outcome = {
             seed: SEED,
@@ -3947,7 +4029,7 @@ Deno.test({
             const is2xx = res.status >= 200 && res.status < 300;
             if (is2xx) {
               violations.push(outcome);
-              continue;
+              return;
             }
 
             // Stronger sub-invariant: it should reject specifically with the
@@ -4081,9 +4163,26 @@ Deno.test({
                 // attribute the delta to the correct fuzz iteration
                 // (this one), then fail.
                 observedMax[k] = seen;
-                throw new Error(
-                  `${label} non-offending bucket "${k}" grew from ${prevMax} → ${seen} during a pure ${axis} length failure. Expected only "${expectedBucket}" to increment. The non-fuzzed axis "${otherAxis}" carried a safe value, so "${otherBucket}" and unrelated buckets must stay flat. Full counters=${JSON.stringify(envelope.validationCounters)}`,
-                );
+                if (CONCURRENCY === 1) {
+                  throw new Error(
+                    `${label} non-offending bucket "${k}" grew from ${prevMax} → ${seen} during a pure ${axis} length failure. Expected only "${expectedBucket}" to increment. The non-fuzzed axis "${otherAxis}" carried a safe value, so "${otherBucket}" and unrelated buckets must stay flat. Full counters=${JSON.stringify(envelope.validationCounters)}`,
+                  );
+                } else {
+                  // Under concurrency this is ambiguous: the growth
+                  // may belong to a sibling worker driving the OTHER
+                  // axis on the same isolate. We log it for triage
+                  // (so a real attribution bug still leaves a trail
+                  // and a re-run with FUZZ_CONCURRENCY=1 can confirm)
+                  // and fall back to the strict end-of-run aggregate
+                  // check on `invalid_json` + `trace_*`, which is
+                  // unaffected by axis interleaving.
+                  console.warn(
+                    `[fuzz] ${label} non-offending bucket "${k}" grew ${prevMax} → ${seen} ` +
+                      `under concurrency=${CONCURRENCY}; could be a sibling worker ` +
+                      `(axis=${otherAxis}) on the same isolate. Re-run with ` +
+                      `FUZZ_CONCURRENCY=1 FUZZ_SEED=0x${SEED.toString(16)} to disambiguate.`,
+                  );
+                }
               }
             }
 
@@ -4156,14 +4255,22 @@ Deno.test({
               if (k !== expectedBucket) {
                 const prevMax = perBucketObservedMax[k] ?? 0;
                 if (v > prevMax) {
-                  throw new Error(
-                    `${label} per-request invariant violated: only the ` +
-                      `expected bucket ("${expectedBucket}") may be ` +
-                      `incremented by an ${axis}-length failure, but ` +
-                      `bucket "${k}" went from ${prevMax} → ${v} on this ` +
-                      `single request. Full counters=` +
-                      `${JSON.stringify(envelope.validationCounters)}`,
-                  );
+                  if (CONCURRENCY === 1) {
+                    throw new Error(
+                      `${label} per-request invariant violated: only the ` +
+                        `expected bucket ("${expectedBucket}") may be ` +
+                        `incremented by an ${axis}-length failure, but ` +
+                        `bucket "${k}" went from ${prevMax} → ${v} on this ` +
+                        `single request. Full counters=` +
+                        `${JSON.stringify(envelope.validationCounters)}`,
+                    );
+                  }
+                  // Under concurrency, "new high on a non-offending
+                  // bucket" is potentially attributable to a sibling
+                  // worker on the same isolate driving the other axis;
+                  // the warning is already emitted by the (d) block
+                  // above. We deliberately do NOT re-warn here to
+                  // avoid duplicating the same line in CI logs.
                 }
               }
             }
@@ -4211,9 +4318,76 @@ Deno.test({
               );
             }
           }
-        }
-      }
     }
+
+    // ---------------------------------------------------------------
+    // Worker pool dispatcher.
+    //
+    // Spins up `effectiveConcurrency` async workers that race to pull
+    // the next job index off `cursor`. Each worker runs `processJob`
+    // sequentially within itself; concurrency between workers is what
+    // exercises the deployed edge function under simultaneous in-
+    // flight load. We use a shared cursor (single integer increment
+    // between awaits) instead of pre-sharding the job list so a fast
+    // worker doesn't sit idle while a slow worker crunches its
+    // backlog — the slowest worker finishes within ~1 job of the
+    // others, regardless of per-call latency variance.
+    //
+    // We also catch and rethrow the FIRST worker exception so the
+    // others can finish in flight (avoids dangling fetches in Deno),
+    // but we surface the original error verbatim so the test report
+    // points at the failing iteration.
+    // ---------------------------------------------------------------
+    const effectiveConcurrency = Math.min(
+      Math.max(1, CONCURRENCY),
+      Math.max(1, totalJobs),
+    );
+    if (effectiveConcurrency > 1) {
+      console.log(
+        `[fuzz] dispatching ${totalJobs} job(s) across ` +
+          `${effectiveConcurrency} concurrent worker(s) ` +
+          `(set FUZZ_CONCURRENCY=1 to serialise for race-condition triage)`,
+      );
+    }
+
+    let cursor = 0;
+    let firstError: unknown = null;
+    const workers: Promise<void>[] = [];
+    for (let w = 0; w < effectiveConcurrency; w++) {
+      const workerId = w;
+      workers.push((async () => {
+        // Pull-the-next-index loop. The increment-and-read is
+        // atomic within JS's single-threaded async model, so no
+        // mutex is needed; two workers cannot get the same index.
+        while (true) {
+          if (firstError !== null) return; // fail-fast
+          const idx = cursor++;
+          if (idx >= totalJobs) return;
+          const job = jobs[idx];
+          try {
+            await processJob(job);
+          } catch (err) {
+            // Capture only the first exception; let other workers
+            // drain their in-flight fetches (the cursor check above
+            // short-circuits any not-yet-started jobs).
+            if (firstError === null) {
+              firstError = err;
+              console.error(
+                `[fuzz] worker #${workerId} failed on iter ${job.iter} ` +
+                  `(axis=${job.axis}, kind=${job.kind}, len=${job.spec.len}): ` +
+                  `${(err as Error).message ?? err}`,
+              );
+            }
+            return;
+          }
+        }
+      })());
+    }
+    await Promise.all(workers);
+    if (firstError !== null) {
+      throw firstError;
+    }
+    const iterCounter = totalJobs; // for downstream summary lines
 
     // -- Headline-property report: zero tolerance for over-limit 2xx. -----
     if (violations.length > 0) {
