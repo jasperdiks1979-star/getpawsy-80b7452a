@@ -635,11 +635,18 @@ export const ProductImageManager = ({
               <span className="font-medium">
                 {pendingFiles.length} file{pendingFiles.length === 1 ? "" : "s"} selected
               </span>
-              {pendingFiles.some((p) => p.status === "rejected") && (
-                <span className="ml-2 text-xs text-destructive">
-                  · {pendingFiles.filter((p) => p.status === "rejected").length} will be skipped
-                </span>
-              )}
+              {(() => {
+                const rejected = pendingFiles.filter((p) => p.status === "rejected").length;
+                const failed = pendingFiles.filter((p) => p.status === "failed").length;
+                if (!rejected && !failed) return null;
+                return (
+                  <span className="ml-2 text-xs text-destructive">
+                    {rejected > 0 && `· ${rejected} blocked pre-upload`}
+                    {rejected > 0 && failed > 0 && " "}
+                    {failed > 0 && `· ${failed} failed to upload`}
+                  </span>
+                );
+              })()}
             </div>
             <div className="flex gap-2">
               <Button
@@ -656,38 +663,106 @@ export const ProductImageManager = ({
                 type="button"
                 size="sm"
                 onClick={confirmUpload}
-                disabled={isUploading || pendingFiles.every((p) => p.status === "rejected")}
+                disabled={
+                  isUploading ||
+                  pendingFiles.every((p) => p.status === "rejected") ||
+                  pendingFiles.filter((p) => p.status === "ok" || p.status === "failed").length === 0
+                }
               >
                 {isUploading ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : pendingFiles.some((p) => p.status === "failed") ? (
+                  <RotateCcw className="w-4 h-4 mr-1" />
                 ) : (
                   <Check className="w-4 h-4 mr-1" />
                 )}
-                {isUploading && uploadProgress
-                  ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
-                  : `Upload ${pendingFiles.filter((p) => p.status === "ok").length} image${
-                      pendingFiles.filter((p) => p.status === "ok").length === 1 ? "" : "s"
-                    }`}
+                {(() => {
+                  if (isUploading && uploadProgress) {
+                    return `Uploading ${uploadProgress.done}/${uploadProgress.total}…`;
+                  }
+                  const retryable = pendingFiles.filter((p) => p.status === "failed").length;
+                  if (retryable > 0) {
+                    const fresh = pendingFiles.filter((p) => p.status === "ok").length;
+                    const total = retryable + fresh;
+                    return `Retry ${total} upload${total === 1 ? "" : "s"}`;
+                  }
+                  const ok = pendingFiles.filter((p) => p.status === "ok").length;
+                  return `Upload ${ok} image${ok === 1 ? "" : "s"}`;
+                })()}
               </Button>
             </div>
           </div>
 
+          {/* Inline error banner: aggregates every problem currently in the
+              tray so the user sees a scannable summary above the grid.
+              The per-tile cards below still carry full per-file detail. */}
+          {pendingFiles.some((p) => p.error) && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1 min-w-0">
+                  <p className="font-medium text-destructive">
+                    {pendingFiles.filter((p) => p.error).length} file
+                    {pendingFiles.filter((p) => p.error).length === 1 ? "" : "s"} need attention
+                  </p>
+                  <ul className="space-y-0.5 text-xs text-destructive/90">
+                    {pendingFiles
+                      .filter((p) => p.error)
+                      .slice(0, 5)
+                      .map((p) => (
+                        <li key={`err-${p.id}`} className="truncate">
+                          <span className="font-medium">{p.error!.title}:</span> {p.error!.detail}
+                        </li>
+                      ))}
+                    {pendingFiles.filter((p) => p.error).length > 5 && (
+                      <li className="italic opacity-75">
+                        …and {pendingFiles.filter((p) => p.error).length - 5} more — see tiles below
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {pendingFiles.map((p) => {
-              const isRejected = p.status === "rejected";
+              const hasError = p.status === "rejected" || p.status === "failed";
+              const ErrorIcon = !p.error
+                ? null
+                : p.error.kind === "size" || p.error.kind === "size-server"
+                  ? FileWarning
+                  : p.error.kind === "network"
+                    ? WifiOff
+                    : p.error.kind === "server"
+                      ? ServerCrash
+                      : AlertCircle;
               return (
                 <div
                   key={p.id}
                   className={`relative group rounded-md border overflow-hidden bg-background ${
-                    isRejected ? "border-destructive/60" : "border-border"
+                    hasError ? "border-destructive/60 ring-1 ring-destructive/30" : "border-border"
                   }`}
-                  title={isRejected ? `${p.file.name} — ${p.reason}` : p.file.name}
+                  title={p.error ? `${p.error.title} — ${p.error.detail}` : p.file.name}
+                  role={p.error ? "alert" : undefined}
+                  aria-label={
+                    p.error
+                      ? `${p.file.name}: ${p.error.title}. ${p.error.detail}`
+                      : `${p.file.name} ready to upload`
+                  }
                 >
                   <img
                     src={p.previewUrl}
                     alt={`Preview of ${p.file.name}`}
-                    className={`w-full aspect-square object-cover ${isRejected ? "opacity-40 grayscale" : ""}`}
+                    className={`w-full aspect-square object-cover ${hasError ? "opacity-40 grayscale" : ""}`}
                   />
+                  {/* Corner error chip — visible at-a-glance without hover */}
+                  {p.error && ErrorIcon && (
+                    <div className="absolute top-1 left-1 flex items-center gap-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-medium px-1.5 py-0.5 shadow">
+                      <ErrorIcon className="w-3 h-3" />
+                      <span>{p.error.title}</span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => removePending(p.id)}
@@ -703,10 +778,11 @@ export const ProductImageManager = ({
                     </p>
                     <p
                       className={`text-[10px] truncate ${
-                        isRejected ? "text-destructive" : "text-muted-foreground"
+                        hasError ? "text-destructive" : "text-muted-foreground"
                       }`}
+                      title={p.error?.detail}
                     >
-                      {isRejected ? p.reason : formatBytes(p.file.size)}
+                      {p.error ? p.error.detail : formatBytes(p.file.size)}
                     </p>
                   </div>
                 </div>
