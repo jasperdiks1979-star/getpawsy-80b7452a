@@ -194,6 +194,51 @@ export function TikTokConnectCard() {
     setRetryInfo(null);
     const MAX_RETRIES = 3;
     try {
+      // Pre-flight: ask the inspector to validate TIKTOK_CLIENT_KEY for
+      // whitespace/BOM/zero-width contamination *before* we redirect to
+      // TikTok. The OAuth functions auto-sanitize at runtime, but if the
+      // stored secret is contaminated we still want to alert the operator
+      // and let them abort so they can re-save a clean value (silent
+      // sanitization can mask a buggy paste flow).
+      try {
+        const { data: preflight } = await supabase.functions.invoke(
+          "tiktok-oauth-config-inspect",
+          { body: { origin: window.location.origin } },
+        );
+        const validation = (preflight as ConfigInspectResult | null)
+          ?.client_key_validation;
+        if (validation?.has_contamination) {
+          // Surface the issues into the inspector panel so the admin can
+          // see exact char codes after they cancel.
+          setConfig(preflight as ConfigInspectResult);
+          const issueList = validation.issues
+            .map((i) => `• ${i.message}`)
+            .join("\n");
+          const proceed = confirm(
+            `⚠ TIKTOK_CLIENT_KEY contains ${validation.issues.length} ` +
+            `contamination issue${validation.issues.length === 1 ? "" : "s"}:\n\n` +
+            `${issueList}\n\n` +
+            `The OAuth functions will auto-sanitize at runtime, but TikTok ` +
+            `may still reject the request. We recommend re-saving the secret ` +
+            `cleanly first.\n\n` +
+            `Click OK to continue with auto-sanitization anyway, or Cancel ` +
+            `to fix the secret first.`,
+          );
+          if (!proceed) {
+            toast.warning(
+              "OAuth aborted — fix TIKTOK_CLIENT_KEY whitespace and try again.",
+            );
+            setConnecting(false);
+            return;
+          }
+          toast.warning(
+            "Continuing with auto-sanitized client_key — re-save the secret to fix permanently.",
+          );
+        }
+      } catch {
+        // Pre-flight is best-effort; don't block OAuth on inspector errors.
+      }
+
       // Drift detection: compare current TikTok config (client_key + redirect
       // URI) against the snapshot we stored on the previous attempt. Surfaces
       // a toast + appends to the drift log on the status page so silent
