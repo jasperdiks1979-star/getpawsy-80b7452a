@@ -35,6 +35,7 @@ import { TodayPostingChecklist } from '@/components/admin/TodayPostingChecklist'
 import { TikTokAdsManagerWorkflow } from '@/components/admin/TikTokAdsManagerWorkflow';
 import { DailyCaptionGenerator } from '@/components/admin/DailyCaptionGenerator';
 import { TikTokConnectCard } from '@/components/admin/TikTokConnectCard';
+import { TikTokOAuthStatusDashboard } from '@/components/admin/TikTokOAuthStatusDashboard';
 
 type TikTokPost = {
   id: string;
@@ -353,6 +354,9 @@ export default function TikTokAutomationPage() {
 
         {/* TikTok OAuth Connection — required for direct posting via Content Posting API */}
         <TikTokConnectCard />
+
+        {/* OAuth Status Dashboard — masked client key, mode, scopes, errors */}
+        <TikTokOAuthStatusDashboard />
 
         {/* Daily Caption Generator — manual posting helper while API is pending */}
         <DailyCaptionGenerator />
