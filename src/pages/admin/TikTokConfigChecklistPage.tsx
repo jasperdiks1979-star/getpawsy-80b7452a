@@ -1036,7 +1036,7 @@ export default function TikTokConfigChecklistPage() {
                 {lastWasSimulated && (
                   <Badge variant="secondary" className="gap-1 text-[10px]">
                     <Bug className="h-3 w-3" />
-                    Simulated
+                    Simulated{lastSimScenario ? `: ${lastSimScenario.replace("_", " ")}` : ""}
                   </Badge>
                 )}
                 <Button
@@ -1047,6 +1047,7 @@ export default function TikTokConfigChecklistPage() {
                     // re-run so the badge/callout don't linger from a prior
                     // "Simulate misconfig" click.
                     setLastWasSimulated(false);
+                    setLastSimScenario(null);
                     setSimulating(false);
                     void runRedirectProbe();
                   }}
@@ -1059,12 +1060,35 @@ export default function TikTokConfigChecklistPage() {
                   )}
                   Re-run probe
                 </Button>
+                <Select
+                  value={simScenario}
+                  onValueChange={(v) => setSimScenario(v as SimScenario)}
+                  disabled={probing}
+                >
+                  <SelectTrigger
+                    className="h-8 text-xs w-[170px]"
+                    title="Pick which kind of TikTok redirect URI misconfiguration to simulate."
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="wrong_path" className="text-xs">
+                      Wrong path
+                    </SelectItem>
+                    <SelectItem value="wrong_origin" className="text-xs">
+                      Wrong origin
+                    </SelectItem>
+                    <SelectItem value="missing_allowlist" className="text-xs">
+                      Missing allow-list
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={runSimulatedMisconfig}
                   disabled={probing}
-                  title="Re-run the probe but compare against an intentionally wrong allow-list, so you can see what a misconfigured redirect URI looks like."
+                  title="Re-run the probe in the selected simulated misconfig scenario so you can preview the exact error UI without touching the real TikTok app."
                 >
                   {simulating ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
