@@ -27,6 +27,7 @@ import {
   ClipboardCopy,
   GitCompare,
   Trash2,
+  Scissors,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
