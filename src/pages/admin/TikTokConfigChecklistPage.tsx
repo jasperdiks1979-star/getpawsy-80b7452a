@@ -54,6 +54,31 @@ const EXPECTED_REDIRECT_URIS = [
   "https://getpawsy.lovable.app/auth/tiktok/callback",
 ] as const;
 
+/**
+ * Required scopes the start function must request.
+ * Keep in sync with `supabase/functions/tiktok-oauth-start/index.ts`.
+ */
+const REQUIRED_SCOPES = ["user.info.basic", "video.publish", "video.upload"] as const;
+
+type RedirectProbeCheck = {
+  label: string;
+  status: DiagnoseStatus;
+  detail: string;
+};
+
+type RedirectProbeResult = {
+  ok: boolean;
+  authUrl: string;
+  parsedRedirect: string | null;
+  expectedRedirect: string;
+  clientKey: string | null;
+  scope: string | null;
+  state: string | null;
+  responseType: string | null;
+  checks: RedirectProbeCheck[];
+  startReturnedRedirect: string | null;
+};
+
 type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri";
 
 const CATEGORY_META: Record<
