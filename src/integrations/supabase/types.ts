@@ -7891,6 +7891,42 @@ export type Database = {
           },
         ]
       }
+      tiktok_test_users: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_recording_user: boolean
+          label: string | null
+          notes: string | null
+          open_id: string
+          registered_in_dev_portal_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_recording_user?: boolean
+          label?: string | null
+          notes?: string | null
+          open_id: string
+          registered_in_dev_portal_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_recording_user?: boolean
+          label?: string | null
+          notes?: string | null
+          open_id?: string
+          registered_in_dev_portal_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
