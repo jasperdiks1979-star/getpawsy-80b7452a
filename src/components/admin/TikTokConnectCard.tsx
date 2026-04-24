@@ -67,6 +67,8 @@ type ConfigInspectResult = {
   hints?: string[];
   client_key_validation?: SecretValidationReport;
   client_secret_validation?: SecretValidationReport;
+  client_key_drift?: SecretDriftReport;
+  client_secret_drift?: SecretDriftReport;
   sandbox_test_user_help?: {
     tiktok_username_to_add: string;
     portal_apps_url: string;
@@ -111,6 +113,31 @@ type SecretValidationReport = {
   clean_length: number;
   has_contamination: boolean;
   issues: SecretValidationIssue[];
+  summary: string;
+};
+
+/**
+ * Per-character record of what `sanitizeSecret()` removed on the server.
+ * Mirrors `DriftRemovedChar` from the inspect edge function. Only contains
+ * codepoints + positions of REMOVED characters — never the kept content,
+ * so the secret value can never be reconstructed from this report.
+ */
+type DriftRemovedChar = {
+  position: number;
+  char_code: number;
+  char_label: string;
+  region: "leading" | "trailing" | "internal";
+};
+
+type SecretDriftReport = {
+  secret_name: string;
+  is_set: boolean;
+  raw_length: number;
+  clean_length: number;
+  diff_length: number;
+  drifted: boolean;
+  removed_chars: DriftRemovedChar[];
+  removed_summary: Record<string, number>;
   summary: string;
 };
 
@@ -1349,6 +1376,22 @@ export function TikTokConnectCard() {
                 </div>
               )}
 
+              {/* Raw vs Sanitized Drift Report — shows the per-character
+                  diff between the stored secret and the value the OAuth
+                  functions actually use after `sanitizeSecret()`. Only
+                  REMOVED characters are listed (codepoint + position +
+                  region); the kept characters never leave the server, so
+                  the secret itself can never be reconstructed from this
+                  report. Hidden when both secrets are clean. */}
+              {(config.client_key_drift?.drifted ||
+                config.client_secret_drift?.drifted) && (
+                <DriftReportPanel
+                  reports={[config.client_key_drift, config.client_secret_drift].filter(
+                    (r): r is SecretDriftReport => !!r,
+                  )}
+                />
+              )}
+
               <ul className="space-y-1.5">
                 <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
                   <div className="font-medium text-foreground">TIKTOK_CLIENT_KEY (masked)</div>
@@ -1989,6 +2032,142 @@ function ConfigDiffPanel({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Render the raw-vs-sanitized drift report for one or both TikTok secrets.
+ *
+ * The server only ever emits the codepoints + positions + region of the
+ * REMOVED characters — never the surviving content — so even a screenshot
+ * of this panel cannot be used to reconstruct the secret. We just visualize
+ * what the server already sent.
+ */
+function DriftReportPanel({ reports }: { reports: SecretDriftReport[] }) {
+  const drifted = reports.filter((r) => r.drifted);
+  if (drifted.length === 0) return null;
+
+  return (
+    <div
+      role="status"
+      className="rounded-md border-2 border-amber-500/60 bg-amber-500/10 p-3 space-y-3 text-xs"
+    >
+      <div className="flex items-start gap-2">
+        <GitCompare className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-foreground text-sm">
+            Raw vs sanitized drift detected
+          </div>
+          <p className="text-muted-foreground leading-relaxed mt-0.5">
+            The stored secret value differs from what the OAuth functions send
+            to TikTok. Only <strong>removed</strong> characters are listed
+            below — the secret itself is never exposed. Re-save each secret
+            cleanly to eliminate the drift.
+          </p>
+        </div>
+      </div>
+
+      {drifted.map((r) => (
+        <div
+          key={r.secret_name}
+          className="rounded border border-amber-500/30 bg-background/60 p-2.5 space-y-2"
+        >
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="font-mono font-medium text-foreground">
+              {r.secret_name}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              raw <span className="font-mono text-foreground">{r.raw_length}</span>
+              {" → "}
+              sanitized{" "}
+              <span className="font-mono text-foreground">{r.clean_length}</span>
+              {" "}
+              <span className="text-destructive font-medium">
+                (−{r.diff_length} char{r.diff_length === 1 ? "" : "s"})
+              </span>
+            </div>
+          </div>
+
+          {/* Compact legend: how many of each character class were stripped.
+              Lets the operator answer "what kind of garbage is in there?"
+              in one glance, before scanning the per-position list. */}
+          {Object.keys(r.removed_summary).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(r.removed_summary).map(([label, count]) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1 rounded bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 font-mono text-[10px] text-foreground"
+                >
+                  {label}
+                  <span className="text-amber-700 dark:text-amber-300 font-semibold">
+                    × {count}
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Per-position list. We render at most 20 rows to keep the panel
+              compact even for pathological pastes; if there are more, a
+              footer shows the overflow count. */}
+          {r.removed_chars.length > 0 && (
+            <div className="rounded border border-border/60 bg-muted/30 max-h-48 overflow-auto">
+              <table className="w-full text-[11px]">
+                <thead className="sticky top-0 bg-muted/80 backdrop-blur">
+                  <tr className="text-left text-muted-foreground">
+                    <th className="px-2 py-1 font-medium">#</th>
+                    <th className="px-2 py-1 font-medium">Position</th>
+                    <th className="px-2 py-1 font-medium">Region</th>
+                    <th className="px-2 py-1 font-medium">Codepoint</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {r.removed_chars.slice(0, 20).map((c, i) => (
+                    <tr
+                      key={i}
+                      className="border-t border-border/40 hover:bg-muted/40"
+                    >
+                      <td className="px-2 py-1 font-mono text-muted-foreground">
+                        {i + 1}
+                      </td>
+                      <td className="px-2 py-1 font-mono text-foreground">
+                        {c.position}
+                      </td>
+                      <td className="px-2 py-1">
+                        <span
+                          className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                            c.region === "leading"
+                              ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
+                              : c.region === "trailing"
+                                ? "bg-purple-500/15 text-purple-700 dark:text-purple-300"
+                                : "bg-orange-500/15 text-orange-700 dark:text-orange-300"
+                          }`}
+                        >
+                          {c.region}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1 font-mono text-foreground">
+                        {c.char_label}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {r.removed_chars.length > 20 && (
+                <div className="px-2 py-1 text-[10px] text-muted-foreground border-t border-border/40 bg-muted/40">
+                  + {r.removed_chars.length - 20} more removed character
+                  {r.removed_chars.length - 20 === 1 ? "" : "s"} not shown
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="text-[11px] text-muted-foreground italic">
+            {r.summary}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
