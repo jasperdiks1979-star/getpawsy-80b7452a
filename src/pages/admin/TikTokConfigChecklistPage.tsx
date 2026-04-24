@@ -79,6 +79,30 @@ type RedirectProbeResult = {
   startReturnedRedirect: string | null;
 };
 
+type CallbackProbeCheck = {
+  label: string;
+  status: DiagnoseStatus;
+  detail: string;
+};
+
+type CallbackProbeResult = {
+  ok: boolean;
+  state: string;
+  clientTicket: string;
+  matchResponse: {
+    ok: boolean;
+    stateValid: boolean;
+    clientTicketStatus: string;
+    redirectUri?: string;
+  } | null;
+  mismatchResponse: {
+    ok: boolean;
+    stateValid: boolean;
+    clientTicketStatus: string;
+  } | null;
+  checks: CallbackProbeCheck[];
+};
+
 type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri";
 
 const CATEGORY_META: Record<
@@ -217,6 +241,9 @@ export default function TikTokConfigChecklistPage() {
   const [probing, setProbing] = useState(false);
   const [probe, setProbe] = useState<RedirectProbeResult | null>(null);
   const [probeError, setProbeError] = useState<string | null>(null);
+  const [callbackProbing, setCallbackProbing] = useState(false);
+  const [callbackProbe, setCallbackProbe] = useState<CallbackProbeResult | null>(null);
+  const [callbackProbeError, setCallbackProbeError] = useState<string | null>(null);
 
   const runDiagnose = async () => {
     setRunning(true);
@@ -403,9 +430,163 @@ export default function TikTokConfigChecklistPage() {
   useEffect(() => {
     void runDiagnose();
     void runRedirectProbe();
+    void runCallbackProbe();
     // Run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Callback validation probe: runs `tiktok-oauth-start` to mint a fresh
+   * state + client_ticket, then calls `tiktok-oauth-callback` twice in
+   * `validate_only` mode:
+   *  1. With the correct ticket → must return clientTicketStatus=match
+   *  2. With a tampered ticket  → must return clientTicketStatus=mismatch
+   *
+   * Confirms end-to-end that the callback validates state + ticket as we
+   * expect, without burning a real TikTok authorization code.
+   */
+  const runCallbackProbe = async () => {
+    setCallbackProbing(true);
+    setCallbackProbeError(null);
+    setCallbackProbe(null);
+    try {
+      const origin = window.location.origin.replace(/\/$/, "");
+
+      const startRes = await supabase.functions.invoke<{
+        ok: boolean;
+        authUrl?: string;
+        clientTicket?: string;
+        state?: string;
+        error?: string;
+      }>("tiktok-oauth-start", { body: { origin } });
+      if (startRes.error) throw new Error(startRes.error.message || "start failed");
+      const startData = startRes.data;
+      if (!startData?.ok || !startData.state || !startData.clientTicket) {
+        throw new Error(startData?.error || "start did not return state/clientTicket");
+      }
+
+      const state = startData.state;
+      const clientTicket = startData.clientTicket;
+
+      // 1. Match call
+      const matchRes = await supabase.functions.invoke<{
+        ok: boolean;
+        stateValid?: boolean;
+        clientTicketStatus?: string;
+        redirectUri?: string;
+        error?: string;
+      }>("tiktok-oauth-callback", {
+        body: {
+          state,
+          client_ticket: clientTicket,
+          origin,
+          validate_only: true,
+          debug: true,
+        },
+      });
+      if (matchRes.error) throw new Error(matchRes.error.message || "callback (match) failed");
+      const matchData = matchRes.data ?? null;
+
+      // 2. Mismatch call (tampered ticket)
+      const tamperedTicket = clientTicket.split("").reverse().join("") + "X";
+      const mismatchRes = await supabase.functions.invoke<{
+        ok: boolean;
+        stateValid?: boolean;
+        clientTicketStatus?: string;
+        error?: string;
+      }>("tiktok-oauth-callback", {
+        body: {
+          state,
+          client_ticket: tamperedTicket,
+          origin,
+          validate_only: true,
+          debug: true,
+        },
+      });
+      if (mismatchRes.error) {
+        throw new Error(mismatchRes.error.message || "callback (mismatch) failed");
+      }
+      const mismatchData = mismatchRes.data ?? null;
+
+      const checks: CallbackProbeCheck[] = [];
+
+      // State pass
+      checks.push({
+        label: "State persisted by start and accepted by callback",
+        status: matchData?.stateValid ? "pass" : "fail",
+        detail: matchData?.stateValid
+          ? `State accepted (length=${state.length}).`
+          : `Callback rejected the freshly minted state. Status=${matchData?.clientTicketStatus ?? "unknown"}.`,
+      });
+
+      // Ticket match
+      checks.push({
+        label: "client_ticket matches stored value",
+        status: matchData?.clientTicketStatus === "match" ? "pass" : "fail",
+        detail:
+          matchData?.clientTicketStatus === "match"
+            ? "Ticket round-tripped exactly."
+            : `Expected status=match, got status=${matchData?.clientTicketStatus ?? "unknown"}.`,
+      });
+
+      // Ticket mismatch detection
+      const detectedMismatch = mismatchData?.clientTicketStatus === "mismatch";
+      checks.push({
+        label: "Tampered client_ticket is detected as mismatch",
+        status: detectedMismatch ? "pass" : "fail",
+        detail: detectedMismatch
+          ? "Callback correctly flagged the tampered ticket as a mismatch."
+          : `Expected status=mismatch on a tampered ticket, got status=${mismatchData?.clientTicketStatus ?? "unknown"}. Tampering may go undetected.`,
+      });
+
+      // Redirect URI sanity
+      const expectedRedirect = `${origin}/auth/tiktok/callback`;
+      checks.push({
+        label: "Callback resolved redirect URI for current origin",
+        status: matchData?.redirectUri === expectedRedirect ? "pass" : "warn",
+        detail:
+          matchData?.redirectUri === expectedRedirect
+            ? `Resolved: ${matchData.redirectUri}`
+            : `Expected ${expectedRedirect}, got ${matchData?.redirectUri ?? "(none)"}.`,
+      });
+
+      const ok = checks.every((c) => c.status === "pass");
+
+      setCallbackProbe({
+        ok,
+        state,
+        clientTicket,
+        matchResponse: matchData
+          ? {
+              ok: Boolean(matchData.ok),
+              stateValid: Boolean(matchData.stateValid),
+              clientTicketStatus: matchData.clientTicketStatus ?? "unknown",
+              redirectUri: matchData.redirectUri,
+            }
+          : null,
+        mismatchResponse: mismatchData
+          ? {
+              ok: Boolean(mismatchData.ok),
+              stateValid: Boolean(mismatchData.stateValid),
+              clientTicketStatus: mismatchData.clientTicketStatus ?? "unknown",
+            }
+          : null,
+        checks,
+      });
+
+      if (ok) {
+        toast.success("Callback validation probe passed");
+      } else {
+        toast.error("Callback validation probe found issues");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Callback probe failed";
+      setCallbackProbeError(msg);
+      toast.error(msg);
+    } finally {
+      setCallbackProbing(false);
+    }
+  };
 
   const copy = async (text: string) => {
     try {
@@ -631,6 +812,123 @@ export default function TikTokConfigChecklistPage() {
                     </Button>
                   </div>
                   <code className="text-[10px] break-all block">{probe.authUrl}</code>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="text-base">
+                6. Callback validation debug panel (state + client_ticket)
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {callbackProbe && (
+                  <StatusBadge status={callbackProbe.ok ? "pass" : "fail"} />
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={runCallbackProbe}
+                  disabled={callbackProbing}
+                >
+                  {callbackProbing ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                  )}
+                  Re-run callback probe
+                </Button>
+              </div>
+            </div>
+            <CardDescription className="text-xs">
+              Mints a fresh state + <code>client_ticket</code> via{" "}
+              <code>tiktok-oauth-start</code>, then calls{" "}
+              <code>tiktok-oauth-callback</code> in <code>validate_only</code> mode twice — once
+              with the correct ticket (must report <strong>match</strong>) and once with a
+              tampered ticket (must report <strong>mismatch</strong>). No real TikTok
+              authorization code is consumed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {callbackProbeError && (
+              <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
+                <strong>Callback probe failed:</strong> {callbackProbeError}
+              </div>
+            )}
+            {callbackProbing && !callbackProbe && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Calling tiktok-oauth-start + tiktok-oauth-callback (validate_only)…
+              </div>
+            )}
+            {callbackProbe && (
+              <>
+                <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      Match call (correct ticket)
+                    </div>
+                    <div>
+                      stateValid:{" "}
+                      <code>{String(callbackProbe.matchResponse?.stateValid ?? "—")}</code>
+                    </div>
+                    <div>
+                      clientTicketStatus:{" "}
+                      <code>{callbackProbe.matchResponse?.clientTicketStatus ?? "—"}</code>
+                    </div>
+                  </div>
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      Mismatch call (tampered ticket)
+                    </div>
+                    <div>
+                      stateValid:{" "}
+                      <code>{String(callbackProbe.mismatchResponse?.stateValid ?? "—")}</code>
+                    </div>
+                    <div>
+                      clientTicketStatus:{" "}
+                      <code>{callbackProbe.mismatchResponse?.clientTicketStatus ?? "—"}</code>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {callbackProbe.checks.map((c, i) => (
+                    <div
+                      key={`${c.label}-${i}`}
+                      className="rounded-md border border-border/60 bg-card p-2.5 space-y-1"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-sm font-medium text-foreground">{c.label}</div>
+                        <StatusBadge status={c.status} />
+                      </div>
+                      <div className="text-xs text-muted-foreground break-words">
+                        {c.detail}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded border border-border/60 bg-muted/20 p-2 space-y-1">
+                  <div className="text-[11px] font-semibold text-foreground">
+                    Probe values (truncated)
+                  </div>
+                  <div className="text-[10px] font-mono break-all">
+                    state ={" "}
+                    <code>
+                      {callbackProbe.state.slice(0, 12)}…{callbackProbe.state.slice(-6)}
+                    </code>
+                  </div>
+                  <div className="text-[10px] font-mono break-all">
+                    clientTicket ={" "}
+                    <code>
+                      {callbackProbe.clientTicket.slice(0, 8)}…
+                      {callbackProbe.clientTicket.slice(-4)}
+                    </code>
+                  </div>
                 </div>
               </>
             )}
