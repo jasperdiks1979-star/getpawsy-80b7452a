@@ -2016,6 +2016,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-config-checklist"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokConfigChecklistPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="test"
                               element={<div style={{padding:40,fontSize:24,fontWeight:'bold'}}>ADMIN ROUTE WORKS</div>}
                             />
