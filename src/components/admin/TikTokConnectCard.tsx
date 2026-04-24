@@ -216,7 +216,6 @@ export function TikTokConnectCard() {
   };
 
   const handleInspectConfig = async () => {
-  const handleInspectConfig = async () => {
     setInspecting(true);
     setConfig(null);
     try {
