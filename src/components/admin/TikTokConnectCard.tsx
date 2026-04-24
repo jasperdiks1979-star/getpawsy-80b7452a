@@ -991,6 +991,68 @@ export function TikTokConnectCard() {
 
           {config?.ok && (
             <div className="space-y-2">
+              {/* Prominent contamination alert — shows when the inspector
+                  found whitespace/BOM/zero-width chars in either secret.
+                  Rendered above the masked values so it's the first thing
+                  the operator sees. Lists exact char codes + positions so
+                  they can root-cause the paste flow instead of relying on
+                  runtime auto-sanitization forever. */}
+              {(config.client_key_validation?.has_contamination ||
+                config.client_secret_validation?.has_contamination) && (
+                <div
+                  role="alert"
+                  className="rounded-md border-2 border-destructive bg-destructive/10 p-3 space-y-2 text-xs"
+                >
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="font-semibold text-foreground text-sm">
+                        Whitespace contamination detected in TikTok secrets
+                      </div>
+                      <p className="text-muted-foreground leading-relaxed">
+                        The OAuth functions auto-sanitize these at runtime, but TikTok may
+                        still reject contaminated values. <strong>Re-save the secret(s)
+                        below cleanly</strong> in Lovable Cloud to fix this permanently.
+                      </p>
+                      {[
+                        config.client_key_validation,
+                        config.client_secret_validation,
+                      ]
+                        .filter(
+                          (v): v is SecretValidationReport =>
+                            !!v && v.has_contamination,
+                        )
+                        .map((v) => (
+                          <div
+                            key={v.secret_name}
+                            className="rounded border border-destructive/40 bg-background/60 p-2 space-y-1"
+                          >
+                            <div className="font-mono font-medium text-foreground">
+                              {v.secret_name}{" "}
+                              <span className="text-muted-foreground font-sans font-normal">
+                                (raw len={v.raw_length}, clean len={v.clean_length})
+                              </span>
+                            </div>
+                            <ul className="space-y-0.5 pl-1">
+                              {v.issues.map((iss, idx) => (
+                                <li
+                                  key={idx}
+                                  className="text-muted-foreground break-words"
+                                >
+                                  <span className="font-mono text-destructive">
+                                    [{iss.char_label}]
+                                  </span>{" "}
+                                  {iss.message}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <ul className="space-y-1.5">
                 <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
                   <div className="font-medium text-foreground">TIKTOK_CLIENT_KEY (masked)</div>
