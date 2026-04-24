@@ -619,6 +619,56 @@ export function TikTokConnectCard() {
             TikTok actually receives.
           </p>
 
+          {/* Auth/permission error block. Renders when the inspector returned
+              a typed error code (missing token, expired session, non-admin
+              account, or backend failure). We never silently fail — admins
+              must always see *why* the inspector rejected them. */}
+          {config && !config.ok && (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs space-y-2"
+            >
+              <div className="flex items-start gap-2">
+                {config.code === "not_admin" ? (
+                  <ShieldCheck className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                )}
+                <div className="space-y-1">
+                  <div className="font-medium text-foreground">
+                    {config.code === "not_admin"
+                      ? "Admin access required"
+                      : config.code === "missing_authorization_header" ||
+                          config.code === "invalid_auth_token" ||
+                          config.code === "user_not_found"
+                        ? "Sign-in required"
+                        : "Inspector failed"}
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {config.error}
+                  </p>
+                  {(config.code === "missing_authorization_header" ||
+                    config.code === "invalid_auth_token" ||
+                    config.code === "user_not_found") && (
+                    <div className="pt-1">
+                      <Button asChild size="sm" variant="outline">
+                        <RouterLink
+                          to={`/auth?next=${encodeURIComponent(
+                            typeof window !== "undefined"
+                              ? window.location.pathname + window.location.search
+                              : "/admin/tiktok-status",
+                          )}`}
+                        >
+                          Sign in as admin
+                        </RouterLink>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {config?.ok && (
             <div className="space-y-2">
               <ul className="space-y-1.5">
