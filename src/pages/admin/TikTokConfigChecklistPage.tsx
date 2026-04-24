@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -297,6 +299,10 @@ export default function TikTokConfigChecklistPage() {
   type SimScenario = "wrong_path" | "wrong_origin" | "missing_allowlist";
   const [simScenario, setSimScenario] = useState<SimScenario>("wrong_path");
   const [lastSimScenario, setLastSimScenario] = useState<SimScenario | null>(null);
+  // Opt-in: when enabled, clicking any "Copy fix" button immediately
+  // re-runs the live (non-simulated) redirect probe so admins can confirm
+  // the change after pasting the URI into the TikTok Developer Portal.
+  const [autoRerunOnCopy, setAutoRerunOnCopy] = useState(false);
 
   const runDiagnose = async () => {
     setRunning(true);
@@ -1443,21 +1449,43 @@ export default function TikTokConfigChecklistPage() {
                             </span>
                           )}
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7"
-                          onClick={() => {
-                            copy(fixUri);
-                            toast.success(
-                              `Copied — paste this under TikTok → Login Kit → Redirect URI: ${fixUri}`,
-                            );
-                          }}
-                          title="Copy the exact redirect URI you need to register in the TikTok Developer Portal to make these failed checks pass."
-                        >
-                          <Copy className="h-3 w-3 mr-1" />
-                          Copy fix (all)
-                        </Button>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <Switch
+                              id="auto-rerun-on-copy"
+                              checked={autoRerunOnCopy}
+                              onCheckedChange={setAutoRerunOnCopy}
+                            />
+                            <Label
+                              htmlFor="auto-rerun-on-copy"
+                              className="text-[11px] text-muted-foreground cursor-pointer"
+                              title="When on, clicking any Copy fix button immediately re-runs the live (non-simulated) probe so you can confirm the change in the TikTok Developer Portal."
+                            >
+                              Auto re-run probe after Copy fix
+                            </Label>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7"
+                            onClick={() => {
+                              copy(fixUri);
+                              toast.success(
+                                `Copied — paste this under TikTok → Login Kit → Redirect URI: ${fixUri}`,
+                              );
+                              if (autoRerunOnCopy) {
+                                setLastWasSimulated(false);
+                                setLastSimScenario(null);
+                                setSimulating(false);
+                                void runRedirectProbe();
+                              }
+                            }}
+                            title="Copy the exact redirect URI you need to register in the TikTok Developer Portal to make these failed checks pass."
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copy fix (all)
+                          </Button>
+                        </div>
                       </div>
                       <ul className="space-y-1.5 text-[11px]">
                         {failed.map((c, i) => {
@@ -1482,6 +1510,12 @@ export default function TikTokConfigChecklistPage() {
                                       toast.success(
                                         `Copied fix for "${c.label}": ${checkFix}`,
                                       );
+                                      if (autoRerunOnCopy) {
+                                        setLastWasSimulated(false);
+                                        setLastSimScenario(null);
+                                        setSimulating(false);
+                                        void runRedirectProbe();
+                                      }
                                     }}
                                     title={`Copy the redirect URI variation that makes this specific check pass: ${checkFix}`}
                                   >
