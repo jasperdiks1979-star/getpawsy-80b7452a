@@ -386,10 +386,42 @@ export default function TikTokStatusPage() {
       {status?.config && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Key className="h-5 w-5" />
-              Configuration
-            </CardTitle>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Key className="h-5 w-5" />
+                Configuration
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const cfg = status.config!;
+                  const fullKey = cfg.client_key_full || cfg.client_key_masked;
+                  const template = [
+                    "TikTok Developer Portal — App configuration",
+                    "",
+                    `Client key:    ${fullKey}`,
+                    `Redirect URI:  ${cfg.redirect_uri}`,
+                    `Scopes:        ${cfg.scopes_list.join(", ")}`,
+                    `Mode:          ${status.mode ?? "unknown"}`,
+                    "",
+                    "Paste the Redirect URI under:",
+                    "  Login Kit → Redirect domain (and exact URI under Redirect URI)",
+                    "Verify the Client key matches the value shown in:",
+                    "  Manage apps → <your app> → App credentials → Client key",
+                  ].join("\n");
+                  try {
+                    await navigator.clipboard.writeText(template);
+                    toast.success("Template copied to clipboard");
+                  } catch {
+                    toast.error("Could not access clipboard — copy manually");
+                  }
+                }}
+              >
+                <ClipboardCopy className="h-4 w-4 mr-2" />
+                Copy paste-ready template
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
