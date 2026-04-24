@@ -392,10 +392,41 @@ export default function TikTokTestUsersPage() {
               Beheer welke TikTok accounts mogen inloggen op je sandbox app en kies de actieve opname-account.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchAll} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={exporting || loading}
+              title="Download a JSON snapshot of all test users + the active recording user"
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-1" />
+              )}
+              Export
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setImportOpen(true);
+                setImportText("");
+                setImportPreview(null);
+                setImportError(null);
+                setImportMode("merge");
+              }}
+              title="Restore test users + recording user from a JSON snapshot"
+            >
+              <Upload className="h-4 w-4 mr-1" />
+              Import
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchAll} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Active recording user banner */}
