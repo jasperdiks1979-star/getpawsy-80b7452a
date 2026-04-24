@@ -1784,6 +1784,58 @@ export default function TikTokConfigChecklistPage() {
                                   <code className="break-all">{checkFix}</code>
                                 </div>
                               )}
+                              {(() => {
+                                const rows = diffForCheck(c.label);
+                                if (rows.length === 0) return null;
+                                return (
+                                  <details className="group rounded border border-border/60 bg-muted/30 px-2 py-1.5">
+                                    <summary className="cursor-pointer text-[10px] font-semibold text-foreground select-none list-none flex items-center gap-1">
+                                      <span className="transition-transform group-open:rotate-90">
+                                        ▸
+                                      </span>
+                                      What changed (expected vs actual)
+                                    </summary>
+                                    <div className="mt-1.5 space-y-1.5">
+                                      {rows.map((r, ri) => (
+                                        <div
+                                          key={`${r.field}-${ri}`}
+                                          className="rounded border border-border/40 bg-background p-1.5 space-y-0.5"
+                                        >
+                                          <div className="text-[10px] font-semibold text-foreground flex items-center justify-between gap-2">
+                                            <span>{r.field}</span>
+                                            <Badge
+                                              variant={r.matches ? "secondary" : "destructive"}
+                                              className="text-[9px] h-4 px-1.5"
+                                            >
+                                              {r.matches ? "matches" : "differs"}
+                                            </Badge>
+                                          </div>
+                                          <div className="grid grid-cols-[60px_1fr] gap-x-2 text-[10px]">
+                                            <span className="text-muted-foreground">
+                                              Expected
+                                            </span>
+                                            <code className="break-all whitespace-pre-wrap">
+                                              {r.expected}
+                                            </code>
+                                            <span className="text-muted-foreground">
+                                              Actual
+                                            </span>
+                                            <code
+                                              className={`break-all whitespace-pre-wrap ${
+                                                r.matches
+                                                  ? ""
+                                                  : "text-destructive"
+                                              }`}
+                                            >
+                                              {r.actual}
+                                            </code>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </details>
+                                );
+                              })()}
                             </li>
                           );
                         })}
