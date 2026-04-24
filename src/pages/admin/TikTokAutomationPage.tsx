@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -28,6 +29,7 @@ import {
   ImageIcon,
   Upload,
   Loader2,
+  Users,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
@@ -347,6 +349,16 @@ export default function TikTokAutomationPage() {
           <Button variant="outline" size="sm" onClick={fetchPosts} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+        </div>
+
+        {/* Quick link to test user management */}
+        <div className="flex justify-end">
+          <Button asChild variant="outline" size="sm">
+            <RouterLink to="/admin/tiktok-test-users">
+              <Users className="h-4 w-4 mr-1" />
+              Manage TikTok test users
+            </RouterLink>
           </Button>
         </div>
 
