@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
+import { recordConnectAttemptAndDetectDrift } from "@/lib/tiktok/connect-drift";
 
 type DiagnoseCheck = {
   name: string;
@@ -111,6 +112,13 @@ export function TikTokConnectCard() {
     setRetryInfo(null);
     const MAX_RETRIES = 3;
     try {
+      // Drift detection: compare current TikTok config (client_key + redirect
+      // URI) against the snapshot we stored on the previous attempt. Surfaces
+      // a toast + appends to the drift log on the status page so silent
+      // rotations of the secret or portal redirect URI become visible
+      // immediately. Fully non-blocking — always continues to OAuth.
+      await recordConnectAttemptAndDetectDrift(window.location.origin);
+
       // Wrap the edge-function call in exponential-backoff retry. We only
       // retry on transient failures (network blips, 5xx, rate limits) — auth
       // and validation errors short-circuit immediately.
