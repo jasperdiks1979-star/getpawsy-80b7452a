@@ -202,6 +202,7 @@ Deno.serve(async (req: Request) => {
         mode_detail: mode.detail,
         config: {
           client_key_masked: maskSecret(clientKey),
+          client_key_full: rawKey || null,
           client_key_length: rawKey.length,
           client_secret_set: Boolean(clientSecret),
           client_secret_length: clientSecret ? clientSecret.length : 0,
