@@ -64,6 +64,16 @@ type ConfigInspectResult = {
     why_sandbox_only: string;
   };
   error?: string;
+  /**
+   * Stable error code from the inspect edge function. Used by the UI to
+   * render a precise message instead of a raw 401/403/500.
+   */
+  code?:
+    | "missing_authorization_header"
+    | "invalid_auth_token"
+    | "user_not_found"
+    | "not_admin"
+    | "internal_error";
 };
 
 /**
@@ -209,18 +219,59 @@ export function TikTokConnectCard() {
     setInspecting(true);
     setConfig(null);
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-oauth-config-inspect", {
-        body: { origin: window.location.origin },
-      });
-      if (error) throw error;
-      setConfig(data as ConfigInspectResult);
-      if (data?.ok) {
+      // Client-side guard so unauthenticated users get an instant, friendly
+      // message instead of a confusing 401 from the edge function. The server
+      // still re-validates everything — this is purely UX.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        const msg =
+          "You need to be signed in as an admin to use the config inspector. Please sign in first.";
+        setConfig({ ok: false, code: "missing_authorization_header", error: msg });
+        toast.error(msg);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "tiktok-oauth-config-inspect",
+        { body: { origin: window.location.origin } },
+      );
+
+      // supabase.functions.invoke surfaces non-2xx responses as `error`, but
+      // the body (with our typed `code`) lives on error.context.response.
+      // Try to recover it so the UI can show the precise reason.
+      if (error) {
+        let recovered: ConfigInspectResult | null = null;
+        const ctxResp = (error as { context?: { response?: Response } })?.context?.response;
+        if (ctxResp && typeof ctxResp.json === "function") {
+          try {
+            recovered = await ctxResp.clone().json();
+          } catch {
+            recovered = null;
+          }
+        }
+        const friendly = friendlyInspectError(recovered?.code, recovered?.error ?? error.message);
+        const result: ConfigInspectResult = {
+          ok: false,
+          code: recovered?.code ?? "internal_error",
+          error: friendly,
+        };
+        setConfig(result);
+        toast.error(friendly);
+        return;
+      }
+
+      const result = data as ConfigInspectResult;
+      setConfig(result);
+      if (result?.ok) {
         toast.success("Loaded TikTok OAuth config");
       } else {
-        toast.error(data?.error || "Failed to load config");
+        const friendly = friendlyInspectError(result?.code, result?.error);
+        toast.error(friendly);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Inspect failed");
+      const msg = e instanceof Error ? e.message : "Inspect failed";
+      setConfig({ ok: false, code: "internal_error", error: msg });
+      toast.error(msg);
     } finally {
       setInspecting(false);
     }
@@ -568,6 +619,56 @@ export function TikTokConnectCard() {
             TikTok actually receives.
           </p>
 
+          {/* Auth/permission error block. Renders when the inspector returned
+              a typed error code (missing token, expired session, non-admin
+              account, or backend failure). We never silently fail — admins
+              must always see *why* the inspector rejected them. */}
+          {config && !config.ok && (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs space-y-2"
+            >
+              <div className="flex items-start gap-2">
+                {config.code === "not_admin" ? (
+                  <ShieldCheck className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                )}
+                <div className="space-y-1">
+                  <div className="font-medium text-foreground">
+                    {config.code === "not_admin"
+                      ? "Admin access required"
+                      : config.code === "missing_authorization_header" ||
+                          config.code === "invalid_auth_token" ||
+                          config.code === "user_not_found"
+                        ? "Sign-in required"
+                        : "Inspector failed"}
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {config.error}
+                  </p>
+                  {(config.code === "missing_authorization_header" ||
+                    config.code === "invalid_auth_token" ||
+                    config.code === "user_not_found") && (
+                    <div className="pt-1">
+                      <Button asChild size="sm" variant="outline">
+                        <RouterLink
+                          to={`/auth?next=${encodeURIComponent(
+                            typeof window !== "undefined"
+                              ? window.location.pathname + window.location.search
+                              : "/admin/tiktok-status",
+                          )}`}
+                        >
+                          Sign in as admin
+                        </RouterLink>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {config?.ok && (
             <div className="space-y-2">
               <ul className="space-y-1.5">
@@ -708,4 +809,29 @@ function renderHintWithLinks(text: string) {
     }
     return <span key={i}>{part}</span>;
   });
+}
+
+/**
+ * Map the typed `code` from the inspect edge function to a user-facing
+ * sentence. Falls back to the raw error for unknown codes so we never
+ * accidentally hide a real failure.
+ */
+function friendlyInspectError(
+  code: ConfigInspectResult["code"] | undefined,
+  fallback: string | undefined,
+): string {
+  switch (code) {
+    case "missing_authorization_header":
+      return "You're not signed in. Please sign in as an admin to use the TikTok config inspector.";
+    case "invalid_auth_token":
+      return "Your session expired. Please sign out and sign back in as an admin, then retry.";
+    case "user_not_found":
+      return "We couldn't find your account. Please sign in again as an admin.";
+    case "not_admin":
+      return "Admin access required. The TikTok config inspector is restricted to admin accounts.";
+    case "internal_error":
+      return fallback || "An unexpected error occurred while loading the TikTok config.";
+    default:
+      return fallback || "Failed to load TikTok config.";
+  }
 }

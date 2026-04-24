@@ -7,6 +7,29 @@ const corsHeaders = {
 };
 
 /**
+ * Stable error codes returned to the UI so it can show targeted messages
+ * instead of leaking raw auth errors. Keep these names in sync with the
+ * switch statement in TikTokConnectCard.handleInspectConfig().
+ */
+type InspectErrorCode =
+  | "missing_authorization_header"
+  | "invalid_auth_token"
+  | "user_not_found"
+  | "not_admin"
+  | "internal_error";
+
+function errorResponse(
+  code: InspectErrorCode,
+  message: string,
+  status: number,
+) {
+  return new Response(
+    JSON.stringify({ ok: false, code, error: message }),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
+/**
  * Mask a secret so we can safely show it in the UI.
  *   "aw1234abcd5678efgh"  ->  "aw12…efgh  (len=18)"
  * Empty / missing values become "(not set)".
@@ -42,37 +65,72 @@ Deno.serve(async (req: Request) => {
     const clientKey = Deno.env.get("TIKTOK_CLIENT_KEY");
     const clientSecret = Deno.env.get("TIKTOK_CLIENT_SECRET");
 
-    // Auth: only admins
+    // Auth: only admins. We deliberately split each failure mode into its own
+    // error code so the UI can show a specific, actionable message
+    // ("you're signed out" vs "your account is not an admin").
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+      console.warn("[tiktok-oauth-config-inspect] Missing/invalid Authorization header");
+      return errorResponse(
+        "missing_authorization_header",
+        "You must be signed in as an admin to use the TikTok OAuth config inspector.",
+        401,
+      );
+    }
+
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      return errorResponse(
+        "missing_authorization_header",
+        "You must be signed in as an admin to use the TikTok OAuth config inspector.",
+        401,
       );
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const anonClient = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(
-      authHeader.replace("Bearer ", ""),
-    );
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Invalid auth token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      console.warn(
+        "[tiktok-oauth-config-inspect] Auth token rejected:",
+        authError?.message ?? "no user",
+      );
+      return errorResponse(
+        "invalid_auth_token",
+        "Your session is invalid or expired. Please sign in again as an admin.",
+        401,
       );
     }
 
-    const { data: roleData } = await supabase
+    const { data: roleData, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin")
       .maybeSingle();
+
+    if (roleError) {
+      console.error(
+        "[tiktok-oauth-config-inspect] Role lookup failed:",
+        roleError.message,
+      );
+      return errorResponse(
+        "internal_error",
+        "Could not verify your admin role. Please try again or contact support.",
+        500,
+      );
+    }
+
     if (!roleData) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Admin access required" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      console.warn(
+        "[tiktok-oauth-config-inspect] Non-admin attempted access. user_id:",
+        user.id,
+      );
+      return errorResponse(
+        "not_admin",
+        "Admin access required. The TikTok OAuth config inspector is only available to admin accounts.",
+        403,
       );
     }
 
@@ -174,9 +232,10 @@ Deno.serve(async (req: Request) => {
     );
   } catch (err) {
     console.error("[tiktok-oauth-config-inspect] Error:", err);
-    return new Response(
-      JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    return errorResponse(
+      "internal_error",
+      err instanceof Error ? err.message : "Internal error",
+      500,
     );
   }
 });
