@@ -213,6 +213,128 @@ type SmokeCheck = {
   evidence?: Record<string, unknown>;
 };
 
+/**
+ * Client-side mirror of the server `validateSecret` helper used by
+ * `tiktok-oauth-config-inspect`. Runs entirely in the browser so an admin
+ * can paste a candidate `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` value
+ * BEFORE saving it through the secrets form and immediately see whether the
+ * paste introduced trailing/leading whitespace, NBSP, BOM, zero-width chars
+ * or control characters. The raw value never leaves the browser.
+ */
+function validateSecretClient(
+  name: string,
+  raw: string,
+): SecretValidationReport {
+  const issues: SecretValidationIssue[] = [];
+  const len = raw.length;
+
+  if (len > 0) {
+    // Leading whitespace
+    const leadMatch = raw.match(/^[\s\u00A0]+/);
+    if (leadMatch) {
+      issues.push({
+        kind: "leading_whitespace",
+        position: 0,
+        char_code: raw.codePointAt(0) ?? 0,
+        char_label: describeChar(raw.codePointAt(0) ?? 0),
+        message: `${leadMatch[0].length} leading whitespace character(s) at position 0`,
+      });
+    }
+    // Trailing whitespace
+    const trailMatch = raw.match(/[\s\u00A0]+$/);
+    if (trailMatch) {
+      const pos = len - trailMatch[0].length;
+      issues.push({
+        kind: "trailing_whitespace",
+        position: pos,
+        char_code: raw.codePointAt(pos) ?? 0,
+        char_label: describeChar(raw.codePointAt(pos) ?? 0),
+        message: `${trailMatch[0].length} trailing whitespace character(s) at position ${pos}`,
+      });
+    }
+    // Internal whitespace (any space-like char NOT at the edges)
+    const trimmed = raw.replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, "");
+    if (/[\s\u00A0]/.test(trimmed)) {
+      const idx = raw.search(/[\s\u00A0]/);
+      issues.push({
+        kind: "internal_whitespace",
+        position: idx,
+        char_code: raw.codePointAt(idx) ?? 0,
+        char_label: describeChar(raw.codePointAt(idx) ?? 0),
+        message: `Internal whitespace at position ${idx} (TikTok client_key/secret should not contain spaces)`,
+      });
+    }
+    // BOM
+    if (raw.charCodeAt(0) === 0xfeff) {
+      issues.push({
+        kind: "bom",
+        position: 0,
+        char_code: 0xfeff,
+        char_label: "U+FEFF (BOM)",
+        message: "Byte Order Mark (U+FEFF) at start — usually from copy/paste in some editors",
+      });
+    }
+    // Zero-width
+    const zwIdx = raw.search(/[\u200B-\u200D\uFEFF]/);
+    if (zwIdx >= 0) {
+      const code = raw.codePointAt(zwIdx) ?? 0;
+      issues.push({
+        kind: "zero_width",
+        position: zwIdx,
+        char_code: code,
+        char_label: describeChar(code),
+        message: `Zero-width character ${describeChar(code)} at position ${zwIdx}`,
+      });
+    }
+    // NBSP
+    const nbspIdx = raw.indexOf("\u00A0");
+    if (nbspIdx >= 0) {
+      issues.push({
+        kind: "nbsp",
+        position: nbspIdx,
+        char_code: 0x00a0,
+        char_label: "U+00A0 (NBSP)",
+        message: `Non-breaking space (U+00A0) at position ${nbspIdx} — looks like a regular space but isn't`,
+      });
+    }
+    // Control chars (excluding common whitespace already handled)
+    for (let i = 0; i < len; i++) {
+      const code = raw.charCodeAt(i);
+      if (code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d) {
+        issues.push({
+          kind: "control_char",
+          position: i,
+          char_code: code,
+          char_label: describeChar(code),
+          message: `Control character ${describeChar(code)} at position ${i}`,
+        });
+        break;
+      }
+    }
+  }
+
+  const cleaned = raw.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "").trim();
+  return {
+    secret_name: name,
+    is_set: len > 0,
+    raw_length: len,
+    clean_length: cleaned.length,
+    has_contamination: issues.length > 0,
+    issues,
+    summary:
+      len === 0
+        ? "(empty)"
+        : issues.length === 0
+          ? "Clean — no contamination detected"
+          : `${issues.length} issue${issues.length === 1 ? "" : "s"} detected`,
+  };
+}
+
+function describeChar(code: number): string {
+  const hex = code.toString(16).toUpperCase().padStart(4, "0");
+  return `U+${hex}`;
+}
+
 type SmokeTestResult = {
   ok: boolean;
   summary: string;
