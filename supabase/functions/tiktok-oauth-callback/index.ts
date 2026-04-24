@@ -36,6 +36,10 @@ Deno.serve(async (req: Request) => {
     const origin = (body.origin as string) || "https://getpawsy.lovable.app";
     const debug = body.debug === true || body.debug === "1";
     const clientTicket = (body.client_ticket as string | undefined) || null;
+    // validate_only: skip the TikTok token exchange and return after state +
+    // client_ticket validation. Used by the admin debug panel to dry-run the
+    // callback without burning a real authorization code.
+    const validateOnly = body.validate_only === true || body.validate_only === "1";
 
     // Debug envelope — populated as we go, returned only when debug=true
     const dbg: Record<string, unknown> = {
@@ -44,9 +48,11 @@ Deno.serve(async (req: Request) => {
       hasState: Boolean(state),
       origin,
       clientTicketProvided: Boolean(clientTicket),
+      validateOnly,
     };
 
-    if (!code || !state) {
+    // In validate_only mode we don't need a code — only state is required.
+    if (!state || (!validateOnly && !code)) {
       return new Response(
         JSON.stringify({ ok: false, error: "Missing code or state", ...(debug ? { debug: dbg } : {}) }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -115,6 +121,30 @@ Deno.serve(async (req: Request) => {
 
     const redirectUri = `${origin.replace(/\/$/, "")}/auth/tiktok/callback`;
     dbg.redirectUri = redirectUri;
+
+    // Validation-only short circuit: don't consume the state, don't call TikTok.
+    // Return everything the debug panel needs to render pass/fail.
+    if (validateOnly) {
+      const stateOk = true;
+      const ticketOk =
+        clientTicketStatus === "match" ||
+        clientTicketStatus === "absent" ||
+        clientTicketStatus === "missing_provided" ||
+        clientTicketStatus === "missing_stored";
+      return new Response(
+        JSON.stringify({
+          ok: stateOk && ticketOk,
+          mode: "validate_only",
+          stateValid: stateOk,
+          clientTicketStatus,
+          redirectUri,
+          storedRedirectTo: stateRow.redirect_to || null,
+          storedExpiresAt: stateRow.expires_at,
+          ...(debug ? { debug: { ...dbg, validation: "validate_only" } } : {}),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Exchange code for tokens
     const tokenResp = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
