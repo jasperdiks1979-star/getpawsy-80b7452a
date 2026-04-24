@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { HeroSection } from "@/components/home/HeroSection";
 
@@ -26,15 +25,14 @@ describe("HeroSection click tracking", () => {
     cleanup();
   });
 
-  it("logs hero_cta_click for the primary 'Shop Smart Litter Boxes' CTA", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it("logs hero_cta_click for the primary 'Shop Smart Litter Boxes' CTA", () => {
     render(
       <MemoryRouter>
         <HeroSection />
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("link", { name: /shop smart litter boxes/i }));
+    fireEvent.click(screen.getByRole("link", { name: /shop smart litter boxes/i }));
 
     expect(trackEvent).toHaveBeenCalledWith("hero_cta_click", {
       cta_id: "shop_litter_boxes",
@@ -43,15 +41,14 @@ describe("HeroSection click tracking", () => {
     });
   });
 
-  it("logs hero_anchor_result with target_missing when #how-it-works is not on the page", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it("logs hero_anchor_result with target_missing when #how-it-works is not on the page", () => {
     render(
       <MemoryRouter>
         <HeroSection />
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("link", { name: /see how it works/i }));
+    fireEvent.click(screen.getByRole("link", { name: /see how it works/i }));
 
     // First call = the click event itself.
     expect(trackEvent).toHaveBeenCalledWith("hero_cta_click", {
@@ -71,9 +68,7 @@ describe("HeroSection click tracking", () => {
     });
   });
 
-  it("reports anchor_reached=true when #how-it-works is in the viewport", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-
+  it("reports anchor_reached=true when #how-it-works is in the viewport", () => {
     // Inject the anchor target so the verifier can find it.
     const target = document.createElement("section");
     target.id = "how-it-works";
@@ -88,7 +83,7 @@ describe("HeroSection click tracking", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("link", { name: /see how it works/i }));
+    fireEvent.click(screen.getByRole("link", { name: /see how it works/i }));
     vi.advanceTimersByTime(900);
 
     expect(trackEvent).toHaveBeenCalledWith(
