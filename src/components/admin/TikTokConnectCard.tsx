@@ -115,6 +115,31 @@ type SecretValidationReport = {
 };
 
 /**
+ * Per-character record of what `sanitizeSecret()` removed on the server.
+ * Mirrors `DriftRemovedChar` from the inspect edge function. Only contains
+ * codepoints + positions of REMOVED characters — never the kept content,
+ * so the secret value can never be reconstructed from this report.
+ */
+type DriftRemovedChar = {
+  position: number;
+  char_code: number;
+  char_label: string;
+  region: "leading" | "trailing" | "internal";
+};
+
+type SecretDriftReport = {
+  secret_name: string;
+  is_set: boolean;
+  raw_length: number;
+  clean_length: number;
+  diff_length: number;
+  drifted: boolean;
+  removed_chars: DriftRemovedChar[];
+  removed_summary: Record<string, number>;
+  summary: string;
+};
+
+/**
  * Snapshot of the masked OAuth config captured each time the operator runs
  * "Inspect Config". We persist a small ring buffer in localStorage so we can
  * render a before/after diff after each secret update — the user wants to
