@@ -8,6 +8,7 @@ import {
   Bug,
   UserCheck,
   ArrowRight,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -62,6 +63,13 @@ export default function TikTokOAuthCallback() {
   } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmedChoice, setConfirmedChoice] = useState<RecordingChoice | null>(null);
+  // When the upsert fails we keep the failed choice + message around so the
+  // admin can retry the *exact same* action without re-running OAuth.
+  const [confirmError, setConfirmError] = useState<{
+    choice: RecordingChoice;
+    message: string;
+    attempt: number;
+  } | null>(null);
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -151,18 +159,21 @@ export default function TikTokOAuthCallback() {
    *   recording flag.
    * - "skip": don't touch tiktok_test_users at all.
    */
-  const handleConfirm = async (choice: RecordingChoice) => {
+  const handleConfirm = async (choice: RecordingChoice, isRetry = false) => {
     if (!account.openId) return;
     setConfirming(true);
+    // Reset any previous error banner the moment we kick off a new attempt.
+    setConfirmError(null);
     try {
       if (choice !== "skip") {
         if (choice === "set_recording") {
           // Clear any existing recording flag first to avoid the partial
           // unique index conflict (tiktok_test_users_one_recording).
-          await supabase
+          const { error: clearErr } = await supabase
             .from("tiktok_test_users")
             .update({ is_recording_user: false })
             .eq("is_recording_user", true);
+          if (clearErr) throw clearErr;
         }
 
         const { error: upsertErr } = await supabase
@@ -177,9 +188,7 @@ export default function TikTokOAuthCallback() {
           );
 
         if (upsertErr) {
-          toast.error(`Failed to update test user: ${upsertErr.message}`);
-          setConfirming(false);
-          return;
+          throw upsertErr;
         }
       }
 
@@ -197,11 +206,26 @@ export default function TikTokOAuthCallback() {
         navigate(`${account.redirectTo || "/admin/tiktok-automation"}?connected=1`);
       }, 600);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Unexpected error applying recording choice",
-      );
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Unexpected error applying recording choice";
+      // Preserve the failed choice so the inline retry button knows what to
+      // re-run. Bump `attempt` so the UI can surface "Attempt N" feedback.
+      setConfirmError((prev) => ({
+        choice,
+        message,
+        attempt: (isRetry && prev ? prev.attempt : 0) + 1,
+      }));
+      toast.error(`Failed to apply choice: ${message}`);
+    } finally {
       setConfirming(false);
     }
+  };
+
+  const handleRetry = () => {
+    if (!confirmError) return;
+    void handleConfirm(confirmError.choice, true);
   };
 
   return (
@@ -288,6 +312,72 @@ export default function TikTokOAuthCallback() {
                   <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
+
+              {confirmError && !confirmedChoice && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-2 text-left">
+                  <div className="flex items-start gap-2 text-sm text-destructive">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold">
+                        Couldn't save your choice
+                        {confirmError.attempt > 1 && (
+                          <span className="font-normal opacity-80">
+                            {" "}
+                            (attempt {confirmError.attempt})
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs break-words text-foreground/80">
+                        {confirmError.message}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Your TikTok connection is already saved — only the
+                        Recording-User update failed. You can retry without
+                        redoing OAuth.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleRetry}
+                      disabled={confirming}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {confirming ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      Retry “
+                      {confirmError.choice === "set_recording"
+                        ? "Set as Recording User"
+                        : confirmError.choice === "keep_current"
+                          ? "Just connect"
+                          : "Skip"}
+                      ”
+                    </button>
+                    <button
+                      onClick={() => setConfirmError(null)}
+                      disabled={confirming}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border border-border bg-background hover:bg-muted disabled:opacity-50"
+                    >
+                      Pick a different option
+                    </button>
+                    <button
+                      onClick={() =>
+                        navigate(
+                          `${account.redirectTo || "/admin/tiktok-automation"}?connected=1`,
+                        )
+                      }
+                      disabled={confirming}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                    >
+                      Continue without saving
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {confirmedChoice && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
