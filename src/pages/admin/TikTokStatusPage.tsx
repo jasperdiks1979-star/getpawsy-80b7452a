@@ -22,10 +22,17 @@ import {
   Zap,
   ClipboardCopy,
   Link as LinkIcon,
+  History,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  clearDriftLog,
+  getDriftLog,
+  type DriftLogEntry,
+} from "@/lib/tiktok/connect-drift";
 
 const LAST_TEST_KEY = "tiktok_status_last_test";
 const PORTAL_URI_KEY = "tiktok_status_portal_uri";
@@ -148,6 +155,11 @@ export default function TikTokStatusPage() {
   const [loading, setLoading] = useState(false);
   const [lastTest, setLastTest] = useState<LastTestRecord | null>(null);
   const [portalUri, setPortalUri] = useState<string>("");
+  const [driftLog, setDriftLog] = useState<DriftLogEntry[]>([]);
+
+  const refreshDriftLog = useCallback(() => {
+    setDriftLog(getDriftLog());
+  }, []);
 
   // Hydrate last test record from localStorage
   useEffect(() => {
@@ -163,7 +175,14 @@ export default function TikTokStatusPage() {
     } catch {
       // ignore
     }
-  }, []);
+    refreshDriftLog();
+    // Listen for drift entries written by the connect flow in this same tab.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "tiktok_connect_drift_log") refreshDriftLog();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [refreshDriftLog]);
 
   const runStatusCheck = useCallback(async () => {
     setLoading(true);
