@@ -34,10 +34,21 @@ Deno.serve(async (req: Request) => {
     const code = body.code as string | undefined;
     const state = body.state as string | undefined;
     const origin = (body.origin as string) || "https://getpawsy.lovable.app";
+    const debug = body.debug === true || body.debug === "1";
+    const clientTicket = (body.client_ticket as string | undefined) || null;
+
+    // Debug envelope — populated as we go, returned only when debug=true
+    const dbg: Record<string, unknown> = {
+      receivedAt: new Date().toISOString(),
+      hasCode: Boolean(code),
+      hasState: Boolean(state),
+      origin,
+      clientTicketProvided: Boolean(clientTicket),
+    };
 
     if (!code || !state) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Missing code or state" }),
+        JSON.stringify({ ok: false, error: "Missing code or state", ...(debug ? { debug: dbg } : {}) }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -51,9 +62,21 @@ Deno.serve(async (req: Request) => {
       .eq("state", state)
       .maybeSingle();
 
+    dbg.stateLookup = {
+      stateValueLength: state.length,
+      foundInDb: Boolean(stateRow),
+      storedClientTicket: stateRow?.client_ticket ?? null,
+      storedExpiresAt: stateRow?.expires_at ?? null,
+      storedUserId: stateRow?.user_id ?? null,
+    };
+
     if (!stateRow) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Invalid or expired state" }),
+        JSON.stringify({
+          ok: false,
+          error: "Invalid or expired state",
+          ...(debug ? { debug: { ...dbg, validation: "state_not_found" } } : {}),
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -61,12 +84,37 @@ Deno.serve(async (req: Request) => {
     if (new Date(stateRow.expires_at).getTime() < Date.now()) {
       await supabase.from("tiktok_oauth_states").delete().eq("state", state);
       return new Response(
-        JSON.stringify({ ok: false, error: "State expired — please retry" }),
+        JSON.stringify({
+          ok: false,
+          error: "State expired — please retry",
+          ...(debug ? { debug: { ...dbg, validation: "state_expired" } } : {}),
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    // Validate client_ticket when both sides have one. Mismatch is a soft warning
+    // (we still proceed — TikTok's own state check is the security boundary), but
+    // it's surfaced loudly in debug so we can spot tampering or a stale tab.
+    let clientTicketStatus: "match" | "mismatch" | "missing_stored" | "missing_provided" | "absent" = "absent";
+    const storedTicket = (stateRow as Record<string, unknown>).client_ticket as string | null | undefined;
+    if (clientTicket && storedTicket) {
+      clientTicketStatus = clientTicket === storedTicket ? "match" : "mismatch";
+    } else if (clientTicket && !storedTicket) {
+      clientTicketStatus = "missing_stored";
+    } else if (!clientTicket && storedTicket) {
+      clientTicketStatus = "missing_provided";
+    }
+    dbg.clientTicketStatus = clientTicketStatus;
+    if (clientTicketStatus === "mismatch") {
+      console.warn(
+        "[tiktok-oauth-callback] client_ticket MISMATCH — possible tab swap or tampering",
+        { provided: clientTicket?.slice(0, 6) + "…", stored: (storedTicket || "").slice(0, 6) + "…" },
+      );
+    }
+
     const redirectUri = `${origin.replace(/\/$/, "")}/auth/tiktok/callback`;
+    dbg.redirectUri = redirectUri;
 
     // Exchange code for tokens
     const tokenResp = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
@@ -156,6 +204,16 @@ Deno.serve(async (req: Request) => {
         displayName,
         avatarUrl,
         redirectTo: stateRow.redirect_to || "/admin/tiktok-automation",
+        ...(debug
+          ? {
+              debug: {
+                ...dbg,
+                validation: "passed",
+                tokenExchange: "ok",
+                scopeGranted: scope,
+              },
+            }
+          : {}),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
