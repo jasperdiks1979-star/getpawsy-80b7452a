@@ -1376,6 +1376,22 @@ export function TikTokConnectCard() {
                 </div>
               )}
 
+              {/* Raw vs Sanitized Drift Report — shows the per-character
+                  diff between the stored secret and the value the OAuth
+                  functions actually use after `sanitizeSecret()`. Only
+                  REMOVED characters are listed (codepoint + position +
+                  region); the kept characters never leave the server, so
+                  the secret itself can never be reconstructed from this
+                  report. Hidden when both secrets are clean. */}
+              {(config.client_key_drift?.drifted ||
+                config.client_secret_drift?.drifted) && (
+                <DriftReportPanel
+                  reports={[config.client_key_drift, config.client_secret_drift].filter(
+                    (r): r is SecretDriftReport => !!r,
+                  )}
+                />
+              )}
+
               <ul className="space-y-1.5">
                 <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
                   <div className="font-medium text-foreground">TIKTOK_CLIENT_KEY (masked)</div>
