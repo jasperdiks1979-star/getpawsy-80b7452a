@@ -1018,8 +1018,8 @@ export default function TikTokTestUsersPage() {
                   re-connects via OAuth.
                 </p>
                 {disconnectTarget?.testUser?.is_recording_user && (
-                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-foreground">
-                    <AlertTriangle className="h-3.5 w-3.5 inline mr-1 text-amber-600" />
+                  <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs text-foreground">
+                    <AlertTriangle className="h-3.5 w-3.5 inline mr-1 text-destructive" />
                     This is the active <strong>Recording User</strong>. That
                     flag will be cleared automatically — set another account
                     afterwards.
