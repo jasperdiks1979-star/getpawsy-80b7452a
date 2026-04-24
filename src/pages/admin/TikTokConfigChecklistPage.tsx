@@ -1430,6 +1430,59 @@ export default function TikTokConfigChecklistPage() {
           extra={redirectExtra}
         />
 
+        <CategorySection
+          category="verified_prefix"
+          checks={grouped.verified_prefix}
+          extra={
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="text-xs font-semibold text-foreground">
+                  Required URL prefix (must be domain-verified in TikTok):
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7"
+                    onClick={() => copy(VERIFIED_URL_PREFIX)}
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy prefix
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7"
+                    onClick={runPrefixProbe}
+                    disabled={prefixProbing}
+                  >
+                    {prefixProbing ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                    )}
+                    Re-run prefix checks
+                  </Button>
+                </div>
+              </div>
+              <code className="block text-[11px] break-all rounded border border-border/60 bg-background px-2 py-1.5">
+                {VERIFIED_URL_PREFIX}
+              </code>
+              {prefixError && (
+                <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
+                  <strong>Prefix probe failed:</strong> {prefixError}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                In the TikTok Developer Portal, open <strong>Content Posting API → URL Prefix
+                Properties</strong>, paste the value above (with the trailing slash) and click
+                <strong> Verify</strong>. Only verified prefixes are allowed as the source of
+                <code className="mx-1">PULL_FROM_URL</code>uploads.
+              </p>
+            </div>
+          }
+        />
+
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
