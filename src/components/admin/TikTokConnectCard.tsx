@@ -64,6 +64,16 @@ type ConfigInspectResult = {
     why_sandbox_only: string;
   };
   error?: string;
+  /**
+   * Stable error code from the inspect edge function. Used by the UI to
+   * render a precise message instead of a raw 401/403/500.
+   */
+  code?:
+    | "missing_authorization_header"
+    | "invalid_auth_token"
+    | "user_not_found"
+    | "not_admin"
+    | "internal_error";
 };
 
 /**
