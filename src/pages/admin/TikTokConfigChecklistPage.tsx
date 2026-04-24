@@ -740,6 +740,7 @@ export default function TikTokConfigChecklistPage() {
     void runDiagnose();
     void runRedirectProbe(initialOrigin);
     void runCallbackProbe(initialOrigin);
+    void runPrefixProbe();
     // Run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
