@@ -1557,6 +1557,165 @@ export function TikTokConnectCard() {
             </div>
           )}
         </div>
+
+        {/* Trim & Validate — local-only paste checker. Lets the operator
+            verify a candidate secret value (before submitting it via the
+            Lovable secrets form) for trailing/leading whitespace, NBSP,
+            BOM, zero-width characters and control chars. The value never
+            leaves the browser and is wiped from React state when the
+            input is cleared. */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Scissors className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              Trim &amp; Validate (paste before saving)
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Paste a candidate <code className="text-[10px]">TIKTOK_CLIENT_KEY</code> or{" "}
+            <code className="text-[10px]">TIKTOK_CLIENT_SECRET</code> here{" "}
+            <span className="font-medium">before</span> submitting it through the secrets form.
+            We check for trailing spaces, NBSP, BOM and zero-width characters{" "}
+            <span className="font-medium">locally in your browser</span> — the value is never
+            sent over the network.
+          </p>
+
+          <div className="flex gap-1 flex-wrap">
+            {(["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"] as const).map((name) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setPasteSecretName(name)}
+                className={`text-[11px] font-mono px-2 py-1 rounded border transition-colors ${
+                  pasteSecretName === name
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 border-border hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            value={pasteValue}
+            onChange={(e) => setPasteValue(e.target.value)}
+            placeholder={`Paste candidate ${pasteSecretName} value here…`}
+            spellCheck={false}
+            autoComplete="off"
+            className="w-full min-h-[72px] rounded-md border border-border bg-background px-3 py-2 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+
+          {pasteValue.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const cleaned = pasteValue
+                    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+                    .trim();
+                  setPasteValue(cleaned);
+                  toast.success(
+                    `Trimmed: ${pasteValue.length} → ${cleaned.length} chars`,
+                  );
+                }}
+              >
+                <Scissors className="h-3.5 w-3.5 mr-1" />
+                Auto-trim
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={async () => {
+                  const cleaned = pasteValue
+                    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+                    .trim();
+                  try {
+                    await navigator.clipboard.writeText(cleaned);
+                    toast.success("Copied cleaned value to clipboard");
+                  } catch {
+                    toast.error("Clipboard copy failed");
+                  }
+                }}
+              >
+                <ClipboardCopy className="h-3.5 w-3.5 mr-1" />
+                Copy cleaned
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setPasteValue("")}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            </div>
+          )}
+
+          {pasteReport && (
+            <div
+              role="status"
+              className={`rounded-md border-2 p-3 text-xs space-y-2 ${
+                pasteReport.has_contamination
+                  ? "border-destructive bg-destructive/10"
+                  : "border-primary/40 bg-primary/5"
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                {pasteReport.has_contamination ? (
+                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-foreground">
+                    {pasteReport.summary}
+                  </div>
+                  <div className="text-muted-foreground mt-0.5 text-[11px]">
+                    raw length:{" "}
+                    <span className="font-mono text-foreground">
+                      {pasteReport.raw_length}
+                    </span>{" "}
+                    · cleaned length:{" "}
+                    <span className="font-mono text-foreground">
+                      {pasteReport.clean_length}
+                    </span>
+                    {pasteReport.raw_length !== pasteReport.clean_length && (
+                      <span className="ml-1 text-destructive font-medium">
+                        ({pasteReport.raw_length - pasteReport.clean_length} char
+                        {pasteReport.raw_length - pasteReport.clean_length === 1 ? "" : "s"}{" "}
+                        will be removed)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {pasteReport.issues.length > 0 && (
+                <ul className="space-y-1 pl-6 list-disc text-muted-foreground">
+                  {pasteReport.issues.map((issue, i) => (
+                    <li key={i} className="break-words">
+                      <span className="text-foreground font-medium">
+                        {issue.kind.replace(/_/g, " ")}:
+                      </span>{" "}
+                      {issue.message}{" "}
+                      <code className="text-[10px] bg-muted/60 px-1 rounded">
+                        {issue.char_label}
+                      </code>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {pasteReport.has_contamination && (
+                <div className="text-[11px] text-foreground/80 italic pt-1 border-t border-destructive/30">
+                  ⚠ Do <strong>not</strong> save this value as-is. Click{" "}
+                  <strong>Auto-trim</strong> or <strong>Copy cleaned</strong> first, then paste
+                  the cleaned value into the secrets form.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
