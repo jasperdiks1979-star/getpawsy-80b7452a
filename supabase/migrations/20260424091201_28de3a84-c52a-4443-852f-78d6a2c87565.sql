@@ -1,0 +1,1 @@
+ALTER TABLE public.tiktok_oauth_states ADD COLUMN IF NOT EXISTS client_ticket text;
