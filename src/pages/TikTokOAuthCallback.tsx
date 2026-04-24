@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle, Bug } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Bug,
+  UserCheck,
+  ArrowRight,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type Status = "processing" | "success" | "error";
+type RecordingChoice = "set_recording" | "keep_current" | "skip";
 
 interface DebugInfo {
   receivedAt?: string;
@@ -34,9 +45,23 @@ export default function TikTokOAuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("processing");
   const [errorMsg, setErrorMsg] = useState("");
-  const [account, setAccount] = useState<{ name?: string | null; avatar?: string | null }>({});
+  const [account, setAccount] = useState<{
+    openId?: string | null;
+    name?: string | null;
+    avatar?: string | null;
+    redirectTo?: string | null;
+  }>({});
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const debugMode = searchParams.get("debug") === "1";
+  // Recording-user confirmation state. We deliberately DO NOT auto-redirect
+  // on success anymore — the admin must explicitly decide whether the
+  // freshly connected account becomes the publishing "Recording User".
+  const [currentRecording, setCurrentRecording] = useState<{
+    open_id: string;
+    label: string | null;
+  } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmedChoice, setConfirmedChoice] = useState<RecordingChoice | null>(null);
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -80,10 +105,26 @@ export default function TikTokOAuthCallback() {
 
         if (data.ok) {
           setStatus("success");
-          setAccount({ name: data.displayName, avatar: data.avatarUrl });
-          // In debug mode, don't auto-redirect — let the user inspect the report.
-          if (!debugMode) {
-            setTimeout(() => navigate(`${data.redirectTo || "/admin/tiktok-automation"}?connected=1`), 2000);
+          setAccount({
+            openId: data.openId,
+            name: data.displayName,
+            avatar: data.avatarUrl,
+            redirectTo: data.redirectTo,
+          });
+          // Look up the current recording user (if any) so the admin can see
+          // exactly which account would be replaced before they confirm.
+          try {
+            const { data: recRow } = await supabase
+              .from("tiktok_test_users")
+              .select("open_id, label")
+              .eq("is_recording_user", true)
+              .maybeSingle();
+            if (recRow) {
+              setCurrentRecording({ open_id: recRow.open_id, label: recRow.label });
+            }
+          } catch {
+            // Non-fatal; the confirmation UI still renders, just without the
+            // "this would replace X" hint.
           }
         } else {
           setStatus("error");
@@ -98,6 +139,70 @@ export default function TikTokOAuthCallback() {
     exchange();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Apply the admin's recording-user choice, then continue to the admin page.
+   *
+   * - "set_recording": ensure exactly one row in tiktok_test_users has
+   *   is_recording_user = true, and it's this account. We clear the previous
+   *   recording row first to satisfy the partial unique index.
+   * - "keep_current": ensure a tiktok_test_users row exists for the new
+   *   account (so it shows up in the test-users page) but DON'T toggle the
+   *   recording flag.
+   * - "skip": don't touch tiktok_test_users at all.
+   */
+  const handleConfirm = async (choice: RecordingChoice) => {
+    if (!account.openId) return;
+    setConfirming(true);
+    try {
+      if (choice !== "skip") {
+        if (choice === "set_recording") {
+          // Clear any existing recording flag first to avoid the partial
+          // unique index conflict (tiktok_test_users_one_recording).
+          await supabase
+            .from("tiktok_test_users")
+            .update({ is_recording_user: false })
+            .eq("is_recording_user", true);
+        }
+
+        const { error: upsertErr } = await supabase
+          .from("tiktok_test_users")
+          .upsert(
+            {
+              open_id: account.openId,
+              label: account.name ?? null,
+              is_recording_user: choice === "set_recording",
+            },
+            { onConflict: "open_id" },
+          );
+
+        if (upsertErr) {
+          toast.error(`Failed to update test user: ${upsertErr.message}`);
+          setConfirming(false);
+          return;
+        }
+      }
+
+      setConfirmedChoice(choice);
+      toast.success(
+        choice === "set_recording"
+          ? `@${account.name || account.openId} is now the Recording User`
+          : choice === "keep_current"
+            ? "Account connected — recording user unchanged"
+            : "Account connected — no test-user row created",
+      );
+
+      // Brief pause so the toast is visible, then redirect.
+      setTimeout(() => {
+        navigate(`${account.redirectTo || "/admin/tiktok-automation"}?connected=1`);
+      }, 600);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Unexpected error applying recording choice",
+      );
+      setConfirming(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -119,8 +224,78 @@ export default function TikTokOAuthCallback() {
               Connected{account.name ? ` as @${account.name}` : ""}!
             </div>
             <p className="text-muted-foreground text-sm">
-              {debugMode ? "Debug mode — auto-redirect disabled." : "Redirecting to TikTok admin…"}
+              Choose how this account should be used before continuing.
             </p>
+
+            {/* Recording-user confirmation step. */}
+            <div className="mt-4 text-left bg-card border rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <UserCheck className="h-4 w-4 text-primary" />
+                Set as Recording User?
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                The Recording User is the TikTok account the publisher uploads to.
+                Only one account can hold this role at a time.
+                {currentRecording && currentRecording.open_id !== account.openId && (
+                  <>
+                    {" "}Currently:{" "}
+                    <span className="font-mono">
+                      {currentRecording.label
+                        ? `@${currentRecording.label}`
+                        : currentRecording.open_id.slice(0, 10) + "…"}
+                    </span>
+                    . Choosing "Set as Recording User" will replace it.
+                  </>
+                )}
+                {currentRecording && currentRecording.open_id === account.openId && (
+                  <> This account is already the current Recording User.</>
+                )}
+                {!currentRecording && (
+                  <> No Recording User is set yet — this is the recommended choice.</>
+                )}
+              </p>
+
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  onClick={() => handleConfirm("set_recording")}
+                  disabled={confirming || confirmedChoice !== null}
+                  className="inline-flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <span className="flex items-center gap-2">
+                    {confirming && confirmedChoice === null ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserCheck className="h-4 w-4" />
+                    )}
+                    Set as Recording User
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleConfirm("keep_current")}
+                  disabled={confirming || confirmedChoice !== null}
+                  className="inline-flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm border border-border bg-background hover:bg-muted disabled:opacity-50"
+                >
+                  <span>Just connect — keep current Recording User</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleConfirm("skip")}
+                  disabled={confirming || confirmedChoice !== null}
+                  className="inline-flex items-center justify-between gap-2 px-3 py-2 rounded-md text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  <span>Skip — don't add to test users at all</span>
+                  <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+
+              {confirmedChoice && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Redirecting to TikTok admin…
+                </p>
+              )}
+            </div>
           </>
         )}
         {status === "error" && (
