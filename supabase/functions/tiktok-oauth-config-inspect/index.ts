@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1?target=deno";
+import { sanitizeSecret } from "../_shared/tiktok-secrets.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,8 +63,12 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const clientKey = Deno.env.get("TIKTOK_CLIENT_KEY");
-    const clientSecret = Deno.env.get("TIKTOK_CLIENT_SECRET");
+    // Read raw values so we can detect drift (whitespace, BOM, etc.) AND
+    // expose the sanitized version that the OAuth functions actually use.
+    const rawClientKey = Deno.env.get("TIKTOK_CLIENT_KEY") ?? "";
+    const rawClientSecret = Deno.env.get("TIKTOK_CLIENT_SECRET") ?? "";
+    const clientKey = sanitizeSecret(rawClientKey);
+    const clientSecret = sanitizeSecret(rawClientSecret);
 
     // Auth: only admins. We deliberately split each failure mode into its own
     // error code so the UI can show a specific, actionable message
@@ -143,7 +148,9 @@ Deno.serve(async (req: Request) => {
 
     // Quick sanity hints — most "client_key" errors come from one of these.
     const hints: string[] = [];
-    const rawKey = (clientKey || "").trim();
+    // `clientKey` is already sanitized; `rawKey` here keeps the previous
+    // variable name for the rest of the validations below.
+    const rawKey = clientKey;
     // Stable links we point admins to. Keeping them here (not just in the UI)
     // means the same guidance shows up in logs/curl output too.
     const PORTAL_APPS_URL = "https://developers.tiktok.com/apps";
@@ -161,8 +168,14 @@ Deno.serve(async (req: Request) => {
     if (!rawKey) {
       hints.push("TIKTOK_CLIENT_KEY is not set in Lovable Cloud secrets.");
     } else {
-      if (rawKey !== clientKey) {
-        hints.push("TIKTOK_CLIENT_KEY contains leading/trailing whitespace — strip it.");
+      if (rawClientKey !== clientKey) {
+        // Auto-sanitization handles this at runtime, but we still surface a
+        // warning so the admin re-saves a clean value (defense in depth).
+        hints.push(
+          `TIKTOK_CLIENT_KEY contains leading/trailing whitespace or invisible ` +
+          `characters (raw length ${rawClientKey.length}, clean length ${clientKey.length}). ` +
+          `Auto-sanitized at read time, but please re-save the secret without whitespace.`,
+        );
       }
       if (rawKey.length < 12) {
         hints.push("TIKTOK_CLIENT_KEY looks unusually short — verify you copied the Client Key, not just a prefix.");
@@ -180,6 +193,13 @@ Deno.serve(async (req: Request) => {
           "Sandbox key detected (sbaw…). " + TEST_USERS_HELP,
         );
       }
+    }
+    if (rawClientSecret && rawClientSecret !== clientSecret) {
+      hints.push(
+        `TIKTOK_CLIENT_SECRET contains leading/trailing whitespace or invisible ` +
+        `characters (raw length ${rawClientSecret.length}, clean length ${clientSecret.length}). ` +
+        `Auto-sanitized at read time, but please re-save the secret without whitespace.`,
+      );
     }
     if (!clientSecret) {
       hints.push("TIKTOK_CLIENT_SECRET is not set — token exchange will fail in the callback step.");

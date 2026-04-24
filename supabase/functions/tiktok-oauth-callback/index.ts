@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1?target=deno";
+import { getTikTokClientKey, getTikTokClientSecret } from "../_shared/tiktok-secrets.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,8 +21,10 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const clientKey = Deno.env.get("TIKTOK_CLIENT_KEY");
-    const clientSecret = Deno.env.get("TIKTOK_CLIENT_SECRET");
+    // Sanitize at read time — pasted secrets often carry trailing spaces or
+    // newlines from the Developer Portal, which break the token exchange POST.
+    const clientKey = getTikTokClientKey();
+    const clientSecret = getTikTokClientSecret();
 
     if (!clientKey || !clientSecret) {
       return new Response(
