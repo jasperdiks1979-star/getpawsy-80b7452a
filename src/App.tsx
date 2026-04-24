@@ -2034,6 +2034,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-status"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokStatusPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="test"
                               element={<div style={{padding:40,fontSize:24,fontWeight:'bold'}}>ADMIN ROUTE WORKS</div>}
                             />
