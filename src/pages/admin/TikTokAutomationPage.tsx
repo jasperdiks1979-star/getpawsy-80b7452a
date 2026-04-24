@@ -30,6 +30,7 @@ import {
   Upload,
   Loader2,
   Users,
+  Activity,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
@@ -353,7 +354,13 @@ export default function TikTokAutomationPage() {
         </div>
 
         {/* Quick link to test user management */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2 flex-wrap">
+          <Button asChild variant="outline" size="sm">
+            <RouterLink to="/admin/tiktok-status">
+              <Activity className="h-4 w-4 mr-1" />
+              Connection status
+            </RouterLink>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <RouterLink to="/admin/tiktok-test-users">
               <Users className="h-4 w-4 mr-1" />

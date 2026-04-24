@@ -376,6 +376,7 @@ const PinterestAutomationPage = lazyWithRetry(() => import("./pages/admin/Pinter
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
+const TikTokStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokStatusPage"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
 const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
@@ -2029,6 +2030,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokTestUsersPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tiktok-status"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokStatusPage />
                                 </Suspense>
                               }
                             />
