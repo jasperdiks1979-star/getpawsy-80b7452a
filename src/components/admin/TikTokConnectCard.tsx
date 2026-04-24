@@ -219,6 +219,29 @@ export function TikTokConnectCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Retry progress banner — visible while tiktok-oauth-start is being
+            re-attempted with exponential backoff after a transient failure. */}
+        {retryInfo && connecting && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mb-4 flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs"
+          >
+            <RefreshCw className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground animate-spin" />
+            <div className="min-w-0">
+              <div className="font-medium text-foreground">
+                Retrying TikTok OAuth start (attempt {retryInfo.attempt} of {retryInfo.maxRetries})
+              </div>
+              <div className="text-muted-foreground break-words">
+                Last error: <code className="text-[10px]">{retryInfo.lastError}</code>
+              </div>
+              <div className="text-muted-foreground/80 mt-0.5">
+                Next attempt in ~{(retryInfo.nextDelayMs / 1000).toFixed(1)}s with exponential backoff.
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
