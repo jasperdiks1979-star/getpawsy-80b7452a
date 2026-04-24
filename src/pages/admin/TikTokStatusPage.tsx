@@ -28,6 +28,58 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const LAST_TEST_KEY = "tiktok_status_last_test";
+const PORTAL_URI_KEY = "tiktok_status_portal_uri";
+
+/**
+ * Canonical set of origins that GetPawsy serves the OAuth callback from.
+ * Each one needs its own entry in the TikTok Developer Portal whitelist.
+ * The current browser origin is added at runtime so preview URLs are covered.
+ */
+const KNOWN_ORIGINS = [
+  { label: "Custom domain (apex)", origin: "https://getpawsy.pet" },
+  { label: "Custom domain (www)", origin: "https://www.getpawsy.pet" },
+  { label: "Lovable published", origin: "https://getpawsy.lovable.app" },
+] as const;
+
+function buildCallback(origin: string): string {
+  return `${origin.replace(/\/+$/, "")}/auth/tiktok/callback`;
+}
+
+/**
+ * Strict comparison helpers — TikTok requires exact match on scheme, host,
+ * port, path, including trailing slash and case. Mismatches are silent
+ * "redirect_uri mismatch" failures, so we surface every difference.
+ */
+type DiffKind = "scheme" | "host" | "path" | "case" | "trailing_slash" | "whitespace";
+
+function diffUris(a: string, b: string): DiffKind[] {
+  const diffs: DiffKind[] = [];
+  if (a !== a.trim() || b !== b.trim()) diffs.push("whitespace");
+  const ta = a.trim();
+  const tb = b.trim();
+  if (ta === tb) return diffs;
+
+  // Trailing slash difference (one has it, the other doesn't)
+  if (ta.replace(/\/+$/, "") === tb.replace(/\/+$/, "") && ta !== tb) {
+    diffs.push("trailing_slash");
+    return diffs;
+  }
+  // Case-only difference
+  if (ta.toLowerCase() === tb.toLowerCase()) {
+    diffs.push("case");
+    return diffs;
+  }
+  try {
+    const ua = new URL(ta);
+    const ub = new URL(tb);
+    if (ua.protocol !== ub.protocol) diffs.push("scheme");
+    if (ua.host !== ub.host) diffs.push("host");
+    if (ua.pathname !== ub.pathname) diffs.push("path");
+  } catch {
+    diffs.push("path");
+  }
+  return diffs;
+}
 
 type StatusResponse = {
   ok: boolean;
