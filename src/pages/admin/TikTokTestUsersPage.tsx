@@ -39,7 +39,25 @@ import {
   Loader2,
   Link as LinkIcon,
   Info,
+  Download,
+  Upload,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  buildTestUsersExport,
+  downloadTestUsersExport,
+  parseTestUsersExport,
+  applyTestUsersImport,
+  type TestUsersExportEnvelope,
+  type ImportMode,
+} from "@/lib/tiktok/test-users-export";
 
 /**
  * TikTok Test User Management
