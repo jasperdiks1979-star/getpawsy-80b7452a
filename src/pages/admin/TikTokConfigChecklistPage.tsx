@@ -817,6 +817,123 @@ export default function TikTokConfigChecklistPage() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="text-base">
+                6. Callback validation debug panel (state + client_ticket)
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {callbackProbe && (
+                  <StatusBadge status={callbackProbe.ok ? "pass" : "fail"} />
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={runCallbackProbe}
+                  disabled={callbackProbing}
+                >
+                  {callbackProbing ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                  )}
+                  Re-run callback probe
+                </Button>
+              </div>
+            </div>
+            <CardDescription className="text-xs">
+              Mints a fresh state + <code>client_ticket</code> via{" "}
+              <code>tiktok-oauth-start</code>, then calls{" "}
+              <code>tiktok-oauth-callback</code> in <code>validate_only</code> mode twice — once
+              with the correct ticket (must report <strong>match</strong>) and once with a
+              tampered ticket (must report <strong>mismatch</strong>). No real TikTok
+              authorization code is consumed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {callbackProbeError && (
+              <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
+                <strong>Callback probe failed:</strong> {callbackProbeError}
+              </div>
+            )}
+            {callbackProbing && !callbackProbe && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Calling tiktok-oauth-start + tiktok-oauth-callback (validate_only)…
+              </div>
+            )}
+            {callbackProbe && (
+              <>
+                <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      Match call (correct ticket)
+                    </div>
+                    <div>
+                      stateValid:{" "}
+                      <code>{String(callbackProbe.matchResponse?.stateValid ?? "—")}</code>
+                    </div>
+                    <div>
+                      clientTicketStatus:{" "}
+                      <code>{callbackProbe.matchResponse?.clientTicketStatus ?? "—"}</code>
+                    </div>
+                  </div>
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      Mismatch call (tampered ticket)
+                    </div>
+                    <div>
+                      stateValid:{" "}
+                      <code>{String(callbackProbe.mismatchResponse?.stateValid ?? "—")}</code>
+                    </div>
+                    <div>
+                      clientTicketStatus:{" "}
+                      <code>{callbackProbe.mismatchResponse?.clientTicketStatus ?? "—"}</code>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {callbackProbe.checks.map((c, i) => (
+                    <div
+                      key={`${c.label}-${i}`}
+                      className="rounded-md border border-border/60 bg-card p-2.5 space-y-1"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-sm font-medium text-foreground">{c.label}</div>
+                        <StatusBadge status={c.status} />
+                      </div>
+                      <div className="text-xs text-muted-foreground break-words">
+                        {c.detail}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded border border-border/60 bg-muted/20 p-2 space-y-1">
+                  <div className="text-[11px] font-semibold text-foreground">
+                    Probe values (truncated)
+                  </div>
+                  <div className="text-[10px] font-mono break-all">
+                    state ={" "}
+                    <code>
+                      {callbackProbe.state.slice(0, 12)}…{callbackProbe.state.slice(-6)}
+                    </code>
+                  </div>
+                  <div className="text-[10px] font-mono break-all">
+                    clientTicket ={" "}
+                    <code>
+                      {callbackProbe.clientTicket.slice(0, 8)}…
+                      {callbackProbe.clientTicket.slice(-4)}
+                    </code>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
