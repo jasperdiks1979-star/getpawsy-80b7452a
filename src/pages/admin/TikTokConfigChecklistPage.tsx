@@ -241,6 +241,9 @@ export default function TikTokConfigChecklistPage() {
   const [probing, setProbing] = useState(false);
   const [probe, setProbe] = useState<RedirectProbeResult | null>(null);
   const [probeError, setProbeError] = useState<string | null>(null);
+  const [callbackProbing, setCallbackProbing] = useState(false);
+  const [callbackProbe, setCallbackProbe] = useState<CallbackProbeResult | null>(null);
+  const [callbackProbeError, setCallbackProbeError] = useState<string | null>(null);
 
   const runDiagnose = async () => {
     setRunning(true);
@@ -427,6 +430,7 @@ export default function TikTokConfigChecklistPage() {
   useEffect(() => {
     void runDiagnose();
     void runRedirectProbe();
+    void runCallbackProbe();
     // Run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
