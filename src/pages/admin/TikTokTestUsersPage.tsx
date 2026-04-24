@@ -313,6 +313,65 @@ export default function TikTokTestUsersPage() {
     toast.success(`${what} copied`);
   };
 
+  // ----- Export -----------------------------------------------------------
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const envelope = await buildTestUsersExport();
+      downloadTestUsersExport(envelope);
+      toast.success(
+        `Exported ${envelope.rows.length} test user${envelope.rows.length === 1 ? "" : "s"}`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // ----- Import: parse pasted/uploaded JSON into a preview --------------
+  const tryParseImport = (text: string) => {
+    setImportError(null);
+    setImportPreview(null);
+    if (!text.trim()) return;
+    try {
+      const parsed = parseTestUsersExport(JSON.parse(text));
+      setImportPreview(parsed);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Invalid JSON");
+    }
+  };
+
+  const handleImportFile = async (file: File) => {
+    const text = await file.text();
+    setImportText(text);
+    tryParseImport(text);
+  };
+
+  const handleApplyImport = async () => {
+    if (!importPreview) return;
+    setImporting(true);
+    try {
+      const summary = await applyTestUsersImport(importPreview, importMode);
+      toast.success(
+        `Imported: ${summary.inserted} new, ${summary.updated} updated` +
+          (summary.deleted ? `, ${summary.deleted} deleted` : "") +
+          (summary.recording_user_set
+            ? ` — recording user: ${summary.recording_user_set.slice(0, 10)}…`
+            : ""),
+      );
+      setImportOpen(false);
+      setImportText("");
+      setImportPreview(null);
+      setImportError(null);
+      await fetchAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const recordingRow = rows.find((r) => r.testUser?.is_recording_user);
 
   return (
