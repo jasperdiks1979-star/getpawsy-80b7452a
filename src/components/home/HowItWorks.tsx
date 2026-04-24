@@ -6,7 +6,11 @@ export function HowItWorks() {
   ];
 
   return (
-    <section className="py-10 md:py-14 bg-background border-t border-border/30" aria-label="How it works">
+    <section
+      id="how-it-works"
+      className="py-10 md:py-14 bg-background border-t border-border/30 scroll-mt-20"
+      aria-label="How it works"
+    >
       <div className="container px-4 md:px-6 max-w-4xl mx-auto text-center">
         <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-8">
           Simple, Fast, Reliable
