@@ -113,6 +113,16 @@ export default function TikTokTestUsersPage() {
   const [newLabel, setNewLabel] = useState("");
   const [newNotes, setNewNotes] = useState("");
 
+  // Export / import: lets admins move the test-user config (active
+  // recording user + per-account label/notes) between environments.
+  const [exporting, setExporting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importMode, setImportMode] = useState<ImportMode>("merge");
+  const [importPreview, setImportPreview] = useState<TestUsersExportEnvelope | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+
   const fetchAll = async () => {
     setLoading(true);
     const [accountsRes, testUsersRes] = await Promise.all([
