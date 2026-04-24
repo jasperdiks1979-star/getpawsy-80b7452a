@@ -79,6 +79,30 @@ type RedirectProbeResult = {
   startReturnedRedirect: string | null;
 };
 
+type CallbackProbeCheck = {
+  label: string;
+  status: DiagnoseStatus;
+  detail: string;
+};
+
+type CallbackProbeResult = {
+  ok: boolean;
+  state: string;
+  clientTicket: string;
+  matchResponse: {
+    ok: boolean;
+    stateValid: boolean;
+    clientTicketStatus: string;
+    redirectUri?: string;
+  } | null;
+  mismatchResponse: {
+    ok: boolean;
+    stateValid: boolean;
+    clientTicketStatus: string;
+  } | null;
+  checks: CallbackProbeCheck[];
+};
+
 type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri";
 
 const CATEGORY_META: Record<
