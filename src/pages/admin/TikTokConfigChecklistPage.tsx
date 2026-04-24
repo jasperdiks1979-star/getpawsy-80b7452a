@@ -17,6 +17,13 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /**
  * TikTok Configuration Checklist
@@ -53,6 +60,17 @@ const EXPECTED_REDIRECT_URIS = [
   "https://getpawsy.pet/auth/tiktok/callback",
   "https://getpawsy.lovable.app/auth/tiktok/callback",
 ] as const;
+
+/**
+ * Origins the live probes can target. The selector lets the admin verify
+ * each registered TikTok redirect URI without having to physically open the
+ * admin from that hostname.
+ */
+const PROBE_ORIGINS = [
+  { value: "https://getpawsy.pet", label: "getpawsy.pet (apex)" },
+  { value: "https://getpawsy.lovable.app", label: "getpawsy.lovable.app (preview)" },
+] as const;
+type ProbeOrigin = (typeof PROBE_ORIGINS)[number]["value"];
 
 /**
  * Required scopes the start function must request.
@@ -245,6 +263,15 @@ export default function TikTokConfigChecklistPage() {
   const [callbackProbe, setCallbackProbe] = useState<CallbackProbeResult | null>(null);
   const [callbackProbeError, setCallbackProbeError] = useState<string | null>(null);
 
+  // Default the selector to whichever production origin matches the current
+  // browser host; fall back to the apex when running from preview/localhost.
+  const initialOrigin: ProbeOrigin =
+    typeof window !== "undefined" &&
+    PROBE_ORIGINS.some((o) => o.value === window.location.origin.replace(/\/$/, ""))
+      ? (window.location.origin.replace(/\/$/, "") as ProbeOrigin)
+      : "https://getpawsy.pet";
+  const [probeOrigin, setProbeOrigin] = useState<ProbeOrigin>(initialOrigin);
+
   const runDiagnose = async () => {
     setRunning(true);
     setError(null);
@@ -277,12 +304,12 @@ export default function TikTokConfigChecklistPage() {
    * response_type, client_key presence and that the start function and the URL
    * agree on the redirect.
    */
-  const runRedirectProbe = async () => {
+  const runRedirectProbe = async (originOverride?: ProbeOrigin) => {
     setProbing(true);
     setProbeError(null);
     setProbe(null);
     try {
-      const origin = window.location.origin.replace(/\/$/, "");
+      const origin = (originOverride ?? probeOrigin).replace(/\/$/, "");
       const expectedRedirect = `${origin}/auth/tiktok/callback`;
 
       const { data, error } = await supabase.functions.invoke<{
@@ -429,11 +456,22 @@ export default function TikTokConfigChecklistPage() {
 
   useEffect(() => {
     void runDiagnose();
-    void runRedirectProbe();
-    void runCallbackProbe();
+    void runRedirectProbe(initialOrigin);
+    void runCallbackProbe(initialOrigin);
     // Run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Re-run both live probes against the selected target origin.
+   * Used by the "Re-run for {origin}" button and by the selector's
+   * onValueChange handler.
+   */
+  const rerunProbesForOrigin = (origin: ProbeOrigin) => {
+    setProbeOrigin(origin);
+    void runRedirectProbe(origin);
+    void runCallbackProbe(origin);
+  };
 
   /**
    * Callback validation probe: runs `tiktok-oauth-start` to mint a fresh
@@ -445,12 +483,12 @@ export default function TikTokConfigChecklistPage() {
    * Confirms end-to-end that the callback validates state + ticket as we
    * expect, without burning a real TikTok authorization code.
    */
-  const runCallbackProbe = async () => {
+  const runCallbackProbe = async (originOverride?: ProbeOrigin) => {
     setCallbackProbing(true);
     setCallbackProbeError(null);
     setCallbackProbe(null);
     try {
-      const origin = window.location.origin.replace(/\/$/, "");
+      const origin = (originOverride ?? probeOrigin).replace(/\/$/, "");
 
       const startRes = await supabase.functions.invoke<{
         ok: boolean;
@@ -733,7 +771,7 @@ export default function TikTokConfigChecklistPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={runRedirectProbe}
+                  onClick={() => runRedirectProbe()}
                   disabled={probing}
                 >
                   {probing ? (
@@ -752,6 +790,53 @@ export default function TikTokConfigChecklistPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* Target origin selector — drives both live probes (5 & 6).
+                Lets us prove that getpawsy.pet AND getpawsy.lovable.app
+                each generate a redirect_uri that's in the registered list. */}
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
+              <div className="text-xs font-semibold text-foreground">
+                Target origin for live probes
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Select
+                  value={probeOrigin}
+                  onValueChange={(v) => rerunProbesForOrigin(v as ProbeOrigin)}
+                  disabled={probing || callbackProbing}
+                >
+                  <SelectTrigger className="h-8 text-xs w-[280px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROBE_ORIGINS.map((o) => (
+                      <SelectItem key={o.value} value={o.value} className="text-xs">
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => rerunProbesForOrigin(probeOrigin)}
+                  disabled={probing || callbackProbing}
+                  className="h-8"
+                >
+                  {(probing || callbackProbing) ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                  )}
+                  Re-run both probes for this origin
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Sends <code>{`{ origin: "${probeOrigin}" }`}</code> to{" "}
+                <code>tiktok-oauth-start</code>, which derives{" "}
+                <code>{`${probeOrigin}/auth/tiktok/callback`}</code> as the redirect URI.
+                Switch between origins to verify each registered TikTok callback in turn.
+              </p>
+            </div>
+
             {probeError && (
               <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
                 <strong>Probe failed:</strong> {probeError}
@@ -831,7 +916,7 @@ export default function TikTokConfigChecklistPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={runCallbackProbe}
+                  onClick={() => runCallbackProbe()}
                   disabled={callbackProbing}
                 >
                   {callbackProbing ? (
