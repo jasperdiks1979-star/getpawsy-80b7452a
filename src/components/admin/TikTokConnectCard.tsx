@@ -216,21 +216,63 @@ export function TikTokConnectCard() {
   };
 
   const handleInspectConfig = async () => {
+  const handleInspectConfig = async () => {
     setInspecting(true);
     setConfig(null);
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-oauth-config-inspect", {
-        body: { origin: window.location.origin },
-      });
-      if (error) throw error;
-      setConfig(data as ConfigInspectResult);
-      if (data?.ok) {
+      // Client-side guard so unauthenticated users get an instant, friendly
+      // message instead of a confusing 401 from the edge function. The server
+      // still re-validates everything — this is purely UX.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        const msg =
+          "You need to be signed in as an admin to use the config inspector. Please sign in first.";
+        setConfig({ ok: false, code: "missing_authorization_header", error: msg });
+        toast.error(msg);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "tiktok-oauth-config-inspect",
+        { body: { origin: window.location.origin } },
+      );
+
+      // supabase.functions.invoke surfaces non-2xx responses as `error`, but
+      // the body (with our typed `code`) lives on error.context.response.
+      // Try to recover it so the UI can show the precise reason.
+      if (error) {
+        let recovered: ConfigInspectResult | null = null;
+        const ctxResp = (error as { context?: { response?: Response } })?.context?.response;
+        if (ctxResp && typeof ctxResp.json === "function") {
+          try {
+            recovered = await ctxResp.clone().json();
+          } catch {
+            recovered = null;
+          }
+        }
+        const friendly = friendlyInspectError(recovered?.code, recovered?.error ?? error.message);
+        const result: ConfigInspectResult = {
+          ok: false,
+          code: recovered?.code ?? "internal_error",
+          error: friendly,
+        };
+        setConfig(result);
+        toast.error(friendly);
+        return;
+      }
+
+      const result = data as ConfigInspectResult;
+      setConfig(result);
+      if (result?.ok) {
         toast.success("Loaded TikTok OAuth config");
       } else {
-        toast.error(data?.error || "Failed to load config");
+        const friendly = friendlyInspectError(result?.code, result?.error);
+        toast.error(friendly);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Inspect failed");
+      const msg = e instanceof Error ? e.message : "Inspect failed";
+      setConfig({ ok: false, code: "internal_error", error: msg });
+      toast.error(msg);
     } finally {
       setInspecting(false);
     }
