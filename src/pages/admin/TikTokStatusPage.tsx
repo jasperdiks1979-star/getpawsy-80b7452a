@@ -21,8 +21,11 @@ import {
   XCircle,
   Zap,
   ClipboardCopy,
+  Link as LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const LAST_TEST_KEY = "tiktok_status_last_test";
 
