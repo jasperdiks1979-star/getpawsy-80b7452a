@@ -636,9 +636,9 @@ export function TikTokConnectCard() {
               )}
 
               {config.sandbox_test_user_help && (
-                <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 space-y-2 text-xs">
+                <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2 text-xs">
                   <div className="flex items-center gap-2 font-medium text-foreground">
-                    <UserPlus className="h-4 w-4 text-amber-600" />
+                    <UserPlus className="h-4 w-4 text-primary" />
                     Add{" "}
                     <code className="font-mono rounded bg-muted px-1 py-0.5">
                       {config.sandbox_test_user_help.tiktok_username_to_add}
