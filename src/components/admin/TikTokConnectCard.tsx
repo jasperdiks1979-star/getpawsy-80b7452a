@@ -627,9 +627,55 @@ export function TikTokConnectCard() {
                       className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs"
                     >
                       <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                      <span className="text-foreground">{h}</span>
+                      <span className="text-foreground break-words">
+                        {renderHintWithLinks(h)}
+                      </span>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {config.sandbox_test_user_help && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 font-medium text-foreground">
+                    <UserPlus className="h-4 w-4 text-amber-600" />
+                    Add{" "}
+                    <code className="font-mono rounded bg-muted px-1 py-0.5">
+                      {config.sandbox_test_user_help.tiktok_username_to_add}
+                    </code>{" "}
+                    as a sandbox test user
+                  </div>
+                  <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
+                    {config.sandbox_test_user_help.steps.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ol>
+                  <p className="text-muted-foreground leading-relaxed">
+                    <span className="font-medium text-foreground">
+                      Why this is required:{" "}
+                    </span>
+                    {config.sandbox_test_user_help.why_sandbox_only}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <a
+                      href={config.sandbox_test_user_help.portal_apps_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 hover:bg-muted"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Open Developer Portal → Apps
+                    </a>
+                    <a
+                      href={config.sandbox_test_user_help.sandbox_docs_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 hover:bg-muted"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Sandbox docs
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
@@ -638,4 +684,28 @@ export function TikTokConnectCard() {
       </CardContent>
     </Card>
   );
+}
+
+/**
+ * Linkify any http(s) URLs found inside an inspector hint string so admins
+ * can jump straight to the TikTok Developer Portal / docs.
+ */
+function renderHintWithLinks(text: string) {
+  const parts = text.split(/(https?:\/\/[^\s)]+)/g);
+  return parts.map((part, i) => {
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-primary break-all"
+        >
+          {part}
+        </a>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
