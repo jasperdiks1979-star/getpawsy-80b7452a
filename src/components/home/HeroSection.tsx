@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Star, Truck, ShieldCheck } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
 
 // Use public directory images so index.html preload tags work (no Vite hash).
 // Switched to the cat-litter-box hero because litter boxes are the
@@ -23,6 +24,55 @@ const heroMobile = '/hero/cat-litter-box-hero-mobile.webp';
  * - Stock/urgency signal removes "is this even available?" friction.
  */
 export function HeroSection() {
+  /**
+   * Fire a GA4 event for each hero CTA click.
+   *
+   * For the secondary anchor CTA we *also* poll for `#how-it-works` after
+   * the click to verify the in-page jump actually landed in the viewport
+   * (handles cases where the section is lazy/conditionally rendered or
+   * the id was renamed). This lets us spot broken anchors in analytics
+   * instead of waiting for a user complaint.
+   */
+  const handleCtaClick = (
+    cta: 'shop_litter_boxes' | 'how_it_works',
+    destination: string,
+  ) => {
+    trackEvent('hero_cta_click', {
+      cta_id: cta,
+      destination,
+      location: 'homepage_hero',
+    });
+
+    if (cta !== 'how_it_works') return;
+
+    // Verify the anchor actually scrolls into view. We check on the next
+    // animation frame, then again after the typical scroll duration, so a
+    // missing/late-mounted target shows up as `anchor_reached: false`.
+    const verify = () => {
+      const target = document.getElementById('how-it-works');
+      if (!target) {
+        trackEvent('hero_anchor_result', {
+          cta_id: cta,
+          anchor: 'how-it-works',
+          anchor_reached: false,
+          reason: 'target_missing',
+        });
+        return;
+      }
+      const rect = target.getBoundingClientRect();
+      const inView =
+        rect.top < window.innerHeight * 0.6 && rect.bottom > 0;
+      trackEvent('hero_anchor_result', {
+        cta_id: cta,
+        anchor: 'how-it-works',
+        anchor_reached: inView,
+        offset_top: Math.round(rect.top),
+      });
+    };
+    // Native anchor scrolling resolves within ~600ms even with smooth scroll.
+    window.setTimeout(verify, 800);
+  };
+
   return (
     <section className="relative w-full overflow-hidden">
       <picture>
@@ -85,7 +135,13 @@ export function HeroSection() {
             size="lg"
             className="w-full sm:w-auto min-h-[54px] rounded-xl px-8 text-base font-bold bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:brightness-110 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
           >
-            <Link to="/collections/cat-litter-boxes" className="inline-flex items-center gap-2">
+            <Link
+              to="/collections/cat-litter-boxes"
+              className="inline-flex items-center gap-2"
+              onClick={() =>
+                handleCtaClick('shop_litter_boxes', '/collections/cat-litter-boxes')
+              }
+            >
               Shop Smart Litter Boxes
               <ArrowRight className="h-5 w-5" />
             </Link>
@@ -97,7 +153,12 @@ export function HeroSection() {
             className="w-full sm:w-auto min-h-[54px] rounded-xl px-6 text-base font-semibold bg-transparent text-white border-white/40 hover:bg-white/10 hover:text-white"
           >
             {/* Plain anchor — robust across routes if hero is ever reused. */}
-            <a href="#how-it-works">See How It Works</a>
+            <a
+              href="#how-it-works"
+              onClick={() => handleCtaClick('how_it_works', '#how-it-works')}
+            >
+              See How It Works
+            </a>
           </Button>
         </div>
 
