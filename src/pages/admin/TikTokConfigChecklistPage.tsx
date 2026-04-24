@@ -15,6 +15,8 @@ import {
   RefreshCw,
   ExternalLink,
   ShieldCheck,
+  Download,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -272,6 +274,12 @@ export default function TikTokConfigChecklistPage() {
       : "https://getpawsy.pet";
   const [probeOrigin, setProbeOrigin] = useState<ProbeOrigin>(initialOrigin);
 
+  // Timestamps for the most recent successful (or attempted) probe runs.
+  // Surfaced in the export so the report carries provenance.
+  const [diagnoseRanAt, setDiagnoseRanAt] = useState<string | null>(null);
+  const [probeRanAt, setProbeRanAt] = useState<string | null>(null);
+  const [callbackProbeRanAt, setCallbackProbeRanAt] = useState<string | null>(null);
+
   const runDiagnose = async () => {
     setRunning(true);
     setError(null);
@@ -281,6 +289,7 @@ export default function TikTokConfigChecklistPage() {
       });
       if (error) throw error;
       setResult(data as DiagnoseResult);
+      setDiagnoseRanAt(new Date().toISOString());
       if ((data as DiagnoseResult)?.ok) {
         toast.success("All TikTok configuration checks passed");
       } else {
@@ -291,6 +300,7 @@ export default function TikTokConfigChecklistPage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Diagnostic failed";
       setError(msg);
+      setDiagnoseRanAt(new Date().toISOString());
       toast.error(msg);
     } finally {
       setRunning(false);
@@ -439,6 +449,7 @@ export default function TikTokConfigChecklistPage() {
         checks,
         startReturnedRedirect,
       });
+      setProbeRanAt(new Date().toISOString());
 
       if (ok) {
         toast.success("Redirect URI probe passed");
@@ -448,6 +459,7 @@ export default function TikTokConfigChecklistPage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Probe failed";
       setProbeError(msg);
+      setProbeRanAt(new Date().toISOString());
       toast.error(msg);
     } finally {
       setProbing(false);
@@ -611,6 +623,7 @@ export default function TikTokConfigChecklistPage() {
           : null,
         checks,
       });
+      setCallbackProbeRanAt(new Date().toISOString());
 
       if (ok) {
         toast.success("Callback validation probe passed");
@@ -620,6 +633,7 @@ export default function TikTokConfigChecklistPage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Callback probe failed";
       setCallbackProbeError(msg);
+      setCallbackProbeRanAt(new Date().toISOString());
       toast.error(msg);
     } finally {
       setCallbackProbing(false);
@@ -632,6 +646,161 @@ export default function TikTokConfigChecklistPage() {
       toast.success("Copied to clipboard");
     } catch {
       toast.error("Copy failed");
+    }
+  };
+
+  /**
+   * Build a single envelope describing every probe outcome on this page.
+   * Sensitive values (full client_key, full client_ticket, full state) are
+   * truncated so the report can be safely shared in a support ticket.
+   */
+  const buildReport = () => {
+    const truncMid = (s: string | null | undefined, head = 6, tail = 4) =>
+      !s ? null : s.length <= head + tail + 1 ? s : `${s.slice(0, head)}…${s.slice(-tail)}`;
+
+    return {
+      generated_at: new Date().toISOString(),
+      origin_under_test: probeOrigin,
+      browser_origin: typeof window !== "undefined" ? window.location.origin : null,
+      expected_redirect_uris: [...EXPECTED_REDIRECT_URIS],
+      required_scopes: [...REQUIRED_SCOPES],
+      diagnose: {
+        ran_at: diagnoseRanAt,
+        error: error,
+        ok: result?.ok ?? null,
+        summary: result?.summary ?? null,
+        elapsed_ms: result?.elapsed_ms ?? null,
+        redirect_uri: result?.redirectUri ?? null,
+        checks: result?.checks ?? [],
+      },
+      redirect_probe: {
+        ran_at: probeRanAt,
+        error: probeError,
+        ok: probe?.ok ?? null,
+        expected_redirect: probe?.expectedRedirect ?? null,
+        parsed_redirect: probe?.parsedRedirect ?? null,
+        start_returned_redirect: probe?.startReturnedRedirect ?? null,
+        client_key_truncated: truncMid(probe?.clientKey),
+        client_key_length: probe?.clientKey?.length ?? null,
+        scope: probe?.scope ?? null,
+        response_type: probe?.responseType ?? null,
+        state_length: probe?.state?.length ?? null,
+        authorize_url: probe?.authUrl ?? null,
+        checks: probe?.checks ?? [],
+      },
+      callback_probe: {
+        ran_at: callbackProbeRanAt,
+        error: callbackProbeError,
+        ok: callbackProbe?.ok ?? null,
+        state_truncated: truncMid(callbackProbe?.state),
+        client_ticket_truncated: truncMid(callbackProbe?.clientTicket),
+        match_response: callbackProbe?.matchResponse ?? null,
+        mismatch_response: callbackProbe?.mismatchResponse ?? null,
+        checks: callbackProbe?.checks ?? [],
+      },
+    };
+  };
+
+  /**
+   * Render the report envelope as a human-readable plain-text summary so
+   * non-technical recipients (e.g. TikTok support) can read it inline.
+   */
+  const renderReportText = (report: ReturnType<typeof buildReport>) => {
+    const lines: string[] = [];
+    const push = (s = "") => lines.push(s);
+    const statusFor = (ok: boolean | null) =>
+      ok === null ? "NOT RUN" : ok ? "PASS" : "FAIL";
+
+    push("TikTok OAuth — Probe Report");
+    push("=".repeat(40));
+    push(`Generated at        : ${report.generated_at}`);
+    push(`Origin under test   : ${report.origin_under_test}`);
+    push(`Browser origin      : ${report.browser_origin ?? "(unknown)"}`);
+    push(`Expected redirects  : ${report.expected_redirect_uris.join(", ")}`);
+    push(`Required scopes     : ${report.required_scopes.join(", ")}`);
+    push("");
+
+    // Diagnose
+    push(`[1] tiktok-oauth-diagnose ........ ${statusFor(report.diagnose.ok)}`);
+    if (report.diagnose.ran_at) push(`    ran_at: ${report.diagnose.ran_at}`);
+    if (report.diagnose.summary) push(`    summary: ${report.diagnose.summary}`);
+    if (report.diagnose.elapsed_ms != null)
+      push(`    elapsed_ms: ${report.diagnose.elapsed_ms}`);
+    if (report.diagnose.error) push(`    error: ${report.diagnose.error}`);
+    for (const c of report.diagnose.checks) {
+      push(`      - [${c.status.toUpperCase()}] ${c.name}: ${c.detail}`);
+      if (c.hint) push(`            hint: ${c.hint}`);
+    }
+    push("");
+
+    // Redirect probe
+    push(`[2] Redirect URI probe ............ ${statusFor(report.redirect_probe.ok)}`);
+    if (report.redirect_probe.ran_at) push(`    ran_at: ${report.redirect_probe.ran_at}`);
+    if (report.redirect_probe.error) push(`    error: ${report.redirect_probe.error}`);
+    push(`    expected_redirect: ${report.redirect_probe.expected_redirect ?? "(n/a)"}`);
+    push(`    parsed_redirect  : ${report.redirect_probe.parsed_redirect ?? "(n/a)"}`);
+    push(`    client_key       : ${report.redirect_probe.client_key_truncated ?? "(n/a)"} (len=${report.redirect_probe.client_key_length ?? "?"})`);
+    push(`    scope            : ${report.redirect_probe.scope ?? "(n/a)"}`);
+    push(`    response_type    : ${report.redirect_probe.response_type ?? "(n/a)"}`);
+    for (const c of report.redirect_probe.checks) {
+      push(`      - [${c.status.toUpperCase()}] ${c.label}: ${c.detail}`);
+    }
+    push("");
+
+    // Callback probe
+    push(`[3] Callback validation probe ..... ${statusFor(report.callback_probe.ok)}`);
+    if (report.callback_probe.ran_at) push(`    ran_at: ${report.callback_probe.ran_at}`);
+    if (report.callback_probe.error) push(`    error: ${report.callback_probe.error}`);
+    push(`    state          : ${report.callback_probe.state_truncated ?? "(n/a)"}`);
+    push(`    client_ticket  : ${report.callback_probe.client_ticket_truncated ?? "(n/a)"}`);
+    if (report.callback_probe.match_response) {
+      push(
+        `    match call     : stateValid=${report.callback_probe.match_response.stateValid} clientTicketStatus=${report.callback_probe.match_response.clientTicketStatus}`,
+      );
+    }
+    if (report.callback_probe.mismatch_response) {
+      push(
+        `    mismatch call  : stateValid=${report.callback_probe.mismatch_response.stateValid} clientTicketStatus=${report.callback_probe.mismatch_response.clientTicketStatus}`,
+      );
+    }
+    for (const c of report.callback_probe.checks) {
+      push(`      - [${c.status.toUpperCase()}] ${c.label}: ${c.detail}`);
+    }
+    push("");
+
+    return lines.join("\n");
+  };
+
+  const downloadBlob = (filename: string, mime: string, body: string) => {
+    const blob = new Blob([body], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoke after the click handler returns to give Safari time to start the download.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const exportReport = (format: "json" | "txt") => {
+    const report = buildReport();
+    const stamp = report.generated_at.replace(/[:.]/g, "-");
+    if (format === "json") {
+      downloadBlob(
+        `tiktok-probe-report-${stamp}.json`,
+        "application/json",
+        JSON.stringify(report, null, 2),
+      );
+      toast.success("Probe report exported as JSON");
+    } else {
+      downloadBlob(
+        `tiktok-probe-report-${stamp}.txt`,
+        "text/plain;charset=utf-8",
+        renderReportText(report),
+      );
+      toast.success("Probe report exported as text");
     }
   };
 
@@ -700,6 +869,24 @@ export default function TikTokConfigChecklistPage() {
               <ExternalLink className="h-3 w-3" />
               Open Developer Portal
             </a>
+          </Button>
+          <Button
+            onClick={() => exportReport("json")}
+            variant="outline"
+            size="sm"
+            disabled={running || probing || callbackProbing}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Export probe report (JSON)
+          </Button>
+          <Button
+            onClick={() => exportReport("txt")}
+            variant="ghost"
+            size="sm"
+            disabled={running || probing || callbackProbing}
+          >
+            <FileText className="h-4 w-4 mr-1" />
+            Export as text
           </Button>
           <Button onClick={runDiagnose} disabled={running} size="sm">
             {running ? (
