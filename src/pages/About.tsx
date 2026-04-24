@@ -112,6 +112,9 @@ const About = () => {
                 <p className="text-foreground text-lg mb-4">
                   <strong>GetPawsy LLC</strong> is a US-based online pet supply company serving customers across the United States.
                 </p>
+                <p className="text-muted-foreground text-sm mb-4">
+                  We are a curation-first online retailer. Our team selects products from vetted manufacturers and warehouse partners, then handles all sales, payments, customer service, and returns directly under the GetPawsy brand. Orders are shipped to you by our fulfillment partners on behalf of GetPawsy LLC — you only ever transact with us.
+                </p>
                 
                 <div className="bg-muted/50 rounded-xl p-5 mb-6">
                   <h3 className="font-semibold text-foreground mb-3">Business Registration</h3>
@@ -283,6 +286,9 @@ const About = () => {
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
                   We work with trusted logistics and carrier partners to ensure your orders are delivered reliably to the United States.
+                </p>
+                <p className="text-muted-foreground mb-4">
+                  GetPawsy operates a curated dropship-fulfillment model: products are stocked, packed, and shipped directly to you by our vetted supplier and warehouse partners on behalf of GetPawsy LLC. We handle product selection, customer service, payments, and returns end-to-end — you only ever transact with GetPawsy.
                 </p>
                 
                 <div className="space-y-4 mb-6">

@@ -333,6 +333,9 @@ const Contact = () => {
                     <p className="text-xs text-muted-foreground mt-2 italic">
                       GetPawsy is an independent online store focused on quality pet products for dogs and cats.
                     </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <span className="text-foreground font-medium">Fulfillment model:</span> Curated dropship — products are shipped to you directly by our vetted supplier and warehouse partners on behalf of GetPawsy LLC. All orders, payments, customer service, and returns are handled by GetPawsy.
+                    </p>
                   </div>
                 </div>
               </div>
