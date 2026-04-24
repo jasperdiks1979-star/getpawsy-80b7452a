@@ -312,6 +312,7 @@ const ClusterWarDashboard = lazyWithRetry(() => import("./pages/admin/ClusterWar
 const DogBedsClusterDashboard = lazyWithRetry(() => import("./pages/admin/DogBedsClusterDashboard"));
 const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatLitterClusterDashboard"));
 const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
+const HeroCtaAnalyticsPage = lazyWithRetry(() => import("./pages/admin/HeroCtaAnalyticsPage"));
 const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
 const GuideGeneratorPage = lazyWithRetry(() => import("./pages/admin/GuideGeneratorPage"));
 const ComparisonGeneratorPage = lazyWithRetry(() => import("./pages/admin/ComparisonGeneratorPage"));
@@ -1462,6 +1463,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <AnalyticsHub />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="hero-cta-analytics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <HeroCtaAnalyticsPage />
                                 </Suspense>
                               }
                             />
