@@ -988,6 +988,89 @@ export default function TikTokTestUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Disconnect confirmation */}
+      <AlertDialog
+        open={!!disconnectTarget}
+        onOpenChange={(open) => {
+          if (!open && !disconnecting) {
+            setDisconnectTarget(null);
+            setDisconnectAlsoRemoveTestUser(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Unlink className="h-5 w-5 text-destructive" />
+              Disconnect TikTok account?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  This will remove the local OAuth token for{" "}
+                  <span className="font-mono text-foreground">
+                    {disconnectTarget?.account?.display_name ||
+                      disconnectTarget?.testUser?.label ||
+                      "this account"}
+                  </span>
+                  . The account will no longer be able to publish until it
+                  re-connects via OAuth.
+                </p>
+                {disconnectTarget?.testUser?.is_recording_user && (
+                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-foreground">
+                    <AlertTriangle className="h-3.5 w-3.5 inline mr-1 text-amber-600" />
+                    This is the active <strong>Recording User</strong>. That
+                    flag will be cleared automatically — set another account
+                    afterwards.
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground font-mono break-all">
+                  open_id: {disconnectTarget?.open_id}
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {disconnectTarget?.testUser && (
+            <label className="flex items-start gap-2 text-xs cursor-pointer rounded-md border bg-muted/30 p-2">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={disconnectAlsoRemoveTestUser}
+                onChange={(e) =>
+                  setDisconnectAlsoRemoveTestUser(e.target.checked)
+                }
+              />
+              <span>
+                Also remove from the test-user registry (forgets label & notes).
+                Leave unchecked to keep the metadata so you can re-connect later.
+              </span>
+            </label>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={disconnecting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmDisconnect();
+              }}
+              disabled={disconnecting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {disconnecting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Unlink className="h-4 w-4 mr-1" />
+              )}
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
