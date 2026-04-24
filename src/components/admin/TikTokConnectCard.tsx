@@ -507,6 +507,64 @@ export function TikTokConnectCard() {
           )}
         </div>
 
+        {/* Developer Portal Quick Links */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center gap-2">
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              Developer Portal Quick Links
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Jump straight to the exact TikTok Developer Portal page you need to fix
+            common OAuth errors — missing scopes, redirect URI mismatches, or an
+            unverified URL prefix.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <PortalLinkButton
+              href="https://developers.tiktok.com/apps"
+              icon={LayoutDashboard}
+              title="Apps dashboard"
+              hint="Pick your app to edit any setting below"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/apps"
+              icon={Link2}
+              title="Login Kit → Redirect URIs"
+              hint="Fix invalid_redirect / mismatch errors"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/apps"
+              icon={KeyRound}
+              title="Scopes (user.info.basic, video.upload, video.publish)"
+              hint="Fix scope_not_authorized on publish"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/doc/content-posting-api-get-started/"
+              icon={Globe}
+              title="Verified URL prefix (Content Posting API)"
+              hint="Required for PULL_FROM_URL uploads"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/doc/login-kit-web"
+              icon={Info}
+              title="Login Kit docs"
+              hint="Reference for OAuth params & errors"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/doc/sandbox-accounts-management"
+              icon={FlaskConical}
+              title="Sandbox test users"
+              hint="Add @getpawsy before testing in sandbox"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            TikTok doesn't expose stable deep links to specific app sub-tabs, so
+            most buttons land on the Apps dashboard — open your app, then go to the
+            named tab. Docs links open the canonical reference page.
+          </p>
+        </div>
+
         {/* Pre-flight Diagnose */}
         <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
