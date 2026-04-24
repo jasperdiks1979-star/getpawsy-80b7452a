@@ -82,10 +82,15 @@ Deno.serve(async (req: Request) => {
 
     // Generate CSRF state and persist it
     const state = base64url(crypto.getRandomValues(new Uint8Array(24)));
+    // Also generate a client_ticket — a second secret stored in the browser
+    // (sessionStorage) and posted back on callback. Lets us detect tab swaps
+    // or replay attempts beyond TikTok's own state check.
+    const clientTicket = base64url(crypto.getRandomValues(new Uint8Array(16)));
     await supabase.from("tiktok_oauth_states").insert({
       state,
       user_id: user.id,
       redirect_to: "/admin/tiktok-automation",
+      client_ticket: clientTicket,
     });
 
     // Cleanup stale states (>10 min)
@@ -107,7 +112,7 @@ Deno.serve(async (req: Request) => {
     console.log("[tiktok-oauth-start] Generated for user:", user.id, "redirect:", redirectUri);
 
     return new Response(
-      JSON.stringify({ ok: true, authUrl, redirectUri }),
+      JSON.stringify({ ok: true, authUrl, redirectUri, clientTicket, state }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {

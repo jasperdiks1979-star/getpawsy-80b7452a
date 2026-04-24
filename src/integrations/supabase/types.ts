@@ -7737,6 +7737,7 @@ export type Database = {
       }
       tiktok_oauth_states: {
         Row: {
+          client_ticket: string | null
           created_at: string
           expires_at: string
           redirect_to: string | null
@@ -7744,6 +7745,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          client_ticket?: string | null
           created_at?: string
           expires_at?: string
           redirect_to?: string | null
@@ -7751,6 +7753,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          client_ticket?: string | null
           created_at?: string
           expires_at?: string
           redirect_to?: string | null

@@ -91,6 +91,10 @@ export function TikTokConnectCard() {
       if (!data?.ok || !data?.authUrl) {
         throw new Error(data?.error || "Failed to start OAuth");
       }
+      // Stash the client_ticket so the callback page can post it back for validation.
+      if (data.clientTicket && data.state) {
+        sessionStorage.setItem(`tiktok_oauth_ticket:${data.state}`, data.clientTicket);
+      }
       window.location.href = data.authUrl;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to start TikTok OAuth");
