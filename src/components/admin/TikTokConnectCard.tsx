@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -338,6 +339,12 @@ export function TikTokConnectCard() {
               Run Diagnose
             </Button>
           </div>
+          <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-xs">
+            <RouterLink to="/admin/tiktok-config-checklist">
+              <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+              Open full configuration checklist
+            </RouterLink>
+          </Button>
           <p className="text-xs text-muted-foreground">
             Validates secrets, redirect URI, scopes, TikTok endpoints and DB writability before
             redirecting you to TikTok. Run this first if "Connect" keeps failing with{" "}
