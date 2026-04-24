@@ -769,6 +769,139 @@ export default function TikTokTestUsersPage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Import dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Import TikTok test user settings
+            </DialogTitle>
+            <DialogDescription>
+              Restore the active Recording User and per-account labels/notes
+              from a previously exported JSON file. OAuth tokens are not
+              included — accounts must still connect via OAuth in this
+              environment to actually publish.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-sm cursor-pointer hover:bg-muted">
+                <Upload className="h-4 w-4" />
+                Choose file
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImportFile(f);
+                  }}
+                />
+              </label>
+              <span className="text-xs text-muted-foreground">
+                …or paste the JSON below.
+              </span>
+            </div>
+
+            <Textarea
+              value={importText}
+              onChange={(e) => {
+                setImportText(e.target.value);
+                tryParseImport(e.target.value);
+              }}
+              placeholder='{ "version": 1, "rows": [ ... ] }'
+              rows={8}
+              className="font-mono text-xs"
+            />
+
+            {importError && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{importError}</span>
+              </div>
+            )}
+
+            {importPreview && (
+              <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+                <div className="font-medium text-foreground">
+                  Preview ({importPreview.rows.length} row
+                  {importPreview.rows.length === 1 ? "" : "s"})
+                </div>
+                <div className="text-muted-foreground">
+                  Exported{" "}
+                  {new Date(importPreview.exported_at).toLocaleString()}
+                  {importPreview.exported_from
+                    ? ` from ${importPreview.exported_from}`
+                    : ""}
+                </div>
+                <div className="text-muted-foreground">
+                  Recording user:{" "}
+                  <span className="font-mono">
+                    {importPreview.recording_open_id ?? "— none —"}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-foreground">
+                Import mode
+              </div>
+              <div className="flex flex-col gap-1.5 text-xs">
+                <label className="inline-flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    className="mt-0.5"
+                    checked={importMode === "merge"}
+                    onChange={() => setImportMode("merge")}
+                  />
+                  <span>
+                    <span className="font-medium text-foreground">Merge</span>{" "}
+                    — upsert imported rows; keep any local rows not in the file.
+                  </span>
+                </label>
+                <label className="inline-flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    className="mt-0.5"
+                    checked={importMode === "replace"}
+                    onChange={() => setImportMode("replace")}
+                  />
+                  <span>
+                    <span className="font-medium text-foreground">Replace</span>{" "}
+                    — also delete local rows whose open_id is not in the file
+                    (mirrors the export exactly).
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setImportOpen(false)}
+              disabled={importing}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApplyImport}
+              disabled={!importPreview || importing}
+            >
+              {importing ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-1" />
+              )}
+              Apply import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
