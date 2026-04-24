@@ -1,8 +1,28 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, Bug } from "lucide-react";
 
 type Status = "processing" | "success" | "error";
+
+interface DebugInfo {
+  receivedAt?: string;
+  hasCode?: boolean;
+  hasState?: boolean;
+  origin?: string;
+  clientTicketProvided?: boolean;
+  clientTicketStatus?: "match" | "mismatch" | "missing_stored" | "missing_provided" | "absent";
+  stateLookup?: {
+    stateValueLength?: number;
+    foundInDb?: boolean;
+    storedClientTicket?: string | null;
+    storedExpiresAt?: string | null;
+    storedUserId?: string | null;
+  };
+  redirectUri?: string;
+  validation?: string;
+  tokenExchange?: string;
+  scopeGranted?: string;
+}
 
 /**
  * TikTok OAuth callback page.
@@ -15,6 +35,8 @@ export default function TikTokOAuthCallback() {
   const [status, setStatus] = useState<Status>("processing");
   const [errorMsg, setErrorMsg] = useState("");
   const [account, setAccount] = useState<{ name?: string | null; avatar?: string | null }>({});
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+  const debugMode = searchParams.get("debug") === "1";
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -38,17 +60,31 @@ export default function TikTokOAuthCallback() {
       try {
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const url = `https://${projectId}.supabase.co/functions/v1/tiktok-oauth-callback`;
+        // Pull the client_ticket we stashed before redirect (if any).
+        const clientTicket = state ? sessionStorage.getItem(`tiktok_oauth_ticket:${state}`) : null;
         const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, state, origin: window.location.origin }),
+          body: JSON.stringify({
+            code,
+            state,
+            origin: window.location.origin,
+            client_ticket: clientTicket,
+            debug: debugMode,
+          }),
         });
         const data = await res.json();
+        if (data.debug) setDebugInfo(data.debug as DebugInfo);
+        // Cleanup the ticket either way — single use.
+        if (state) sessionStorage.removeItem(`tiktok_oauth_ticket:${state}`);
 
         if (data.ok) {
           setStatus("success");
           setAccount({ name: data.displayName, avatar: data.avatarUrl });
-          setTimeout(() => navigate(`${data.redirectTo || "/admin/tiktok-automation"}?connected=1`), 2000);
+          // In debug mode, don't auto-redirect — let the user inspect the report.
+          if (!debugMode) {
+            setTimeout(() => navigate(`${data.redirectTo || "/admin/tiktok-automation"}?connected=1`), 2000);
+          }
         } else {
           setStatus("error");
           setErrorMsg(data.error || "Token exchange failed.");
