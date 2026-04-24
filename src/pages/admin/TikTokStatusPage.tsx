@@ -147,12 +147,19 @@ export default function TikTokStatusPage() {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastTest, setLastTest] = useState<LastTestRecord | null>(null);
+  const [portalUri, setPortalUri] = useState<string>("");
 
   // Hydrate last test record from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LAST_TEST_KEY);
       if (raw) setLastTest(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+    try {
+      const saved = localStorage.getItem(PORTAL_URI_KEY);
+      if (saved) setPortalUri(saved);
     } catch {
       // ignore
     }
