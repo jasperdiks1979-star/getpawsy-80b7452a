@@ -884,6 +884,127 @@ export default function TikTokConfigChecklistPage() {
     }
   };
 
+  /**
+   * Build a focused, troubleshooting-oriented log of the most recent
+   * redirect probe. Unlike the full report, this captures the per-check
+   * *inputs* (what the check compared) and *outputs* (status + detail)
+   * alongside the parsed authorize URL parameters, so a support engineer
+   * can replay exactly why the simulator (or a real misconfig) failed.
+   *
+   * Sensitive values (full client_key, full state) are truncated.
+   */
+  const buildSimulatedProbeLog = () => {
+    const truncMid = (s: string | null | undefined, head = 6, tail = 4) =>
+      !s ? null : s.length <= head + tail + 1 ? s : `${s.slice(0, head)}…${s.slice(-tail)}`;
+
+    const checksWithIO = (probe?.checks ?? []).map((c, idx) => {
+      // Best-effort reconstruction of the inputs each check compared.
+      // Kept declarative so the JSON tells the whole story without code.
+      const inputs: Record<string, unknown> = {};
+      switch (c.label) {
+        case "Authorize host is tiktok.com":
+          inputs.expected_host = "www.tiktok.com";
+          inputs.actual_host = probe?.authUrl ? new URL(probe.authUrl).hostname : null;
+          break;
+        case "redirect_uri present in authorize URL":
+          inputs.parsed_redirect = probe?.parsedRedirect ?? null;
+          break;
+        case "redirect_uri matches expected for current origin":
+          inputs.expected_redirect = probe?.expectedRedirect ?? null;
+          inputs.parsed_redirect = probe?.parsedRedirect ?? null;
+          break;
+        case "redirect_uri is in the registered allow-list":
+          inputs.parsed_redirect = probe?.parsedRedirect ?? null;
+          inputs.allow_list = lastWasSimulated
+            ? "(simulated — see sim_scenario)"
+            : [...EXPECTED_REDIRECT_URIS];
+          break;
+        case "Start function `redirectUri` matches authorize URL":
+          inputs.start_returned_redirect = probe?.startReturnedRedirect ?? null;
+          inputs.parsed_redirect = probe?.parsedRedirect ?? null;
+          break;
+        case "client_key present":
+          inputs.client_key_truncated = truncMid(probe?.clientKey);
+          inputs.client_key_length = probe?.clientKey?.length ?? null;
+          break;
+        case "response_type is 'code'":
+          inputs.expected_response_type = "code";
+          inputs.actual_response_type = probe?.responseType ?? null;
+          break;
+        case "All required scopes requested":
+          inputs.required_scopes = [...REQUIRED_SCOPES];
+          inputs.requested_scopes = (probe?.scope ?? "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          break;
+        case "CSRF state generated":
+          inputs.state_length = probe?.state?.length ?? null;
+          break;
+        default:
+          break;
+      }
+      return {
+        index: idx + 1,
+        label: c.label,
+        inputs,
+        outputs: {
+          status: c.status,
+          detail: c.detail,
+        },
+      };
+    });
+
+    return {
+      kind: "simulated_probe_log" as const,
+      generated_at: new Date().toISOString(),
+      ran_at: probeRanAt,
+      origin_under_test: probeOrigin,
+      simulated: lastWasSimulated,
+      sim_scenario: lastSimScenario,
+      probe_error: probeError,
+      probe_ok: probe?.ok ?? null,
+      authorize_url: probe?.authUrl ?? null,
+      parsed: probe
+        ? {
+            redirect_uri: probe.parsedRedirect,
+            expected_redirect_uri: probe.expectedRedirect,
+            start_returned_redirect_uri: probe.startReturnedRedirect,
+            client_key_truncated: truncMid(probe.clientKey),
+            client_key_length: probe.clientKey?.length ?? null,
+            scope: probe.scope,
+            response_type: probe.responseType,
+            state_length: probe.state?.length ?? null,
+          }
+        : null,
+      checks: checksWithIO,
+      reference: {
+        expected_redirect_uris: [...EXPECTED_REDIRECT_URIS],
+        required_scopes: [...REQUIRED_SCOPES],
+      },
+    };
+  };
+
+  const exportSimulatedProbeLog = () => {
+    if (!probe && !probeError) {
+      toast.error("Run the redirect probe at least once before exporting the log.");
+      return;
+    }
+    const log = buildSimulatedProbeLog();
+    const stamp = log.generated_at.replace(/[:.]/g, "-");
+    const tag = log.simulated ? `sim-${log.sim_scenario ?? "misconfig"}` : "live";
+    downloadBlob(
+      `tiktok-probe-log-${tag}-${stamp}.json`,
+      "application/json",
+      JSON.stringify(log, null, 2),
+    );
+    toast.success(
+      log.simulated
+        ? `Simulated probe log (${log.sim_scenario ?? "misconfig"}) exported`
+        : "Live probe log exported",
+    );
+  };
+
   const grouped: Record<CategoryKey, DiagnoseCheck[]> = {
     client_key: [],
     app_status: [],
@@ -1098,6 +1219,16 @@ export default function TikTokConfigChecklistPage() {
                     <Bug className="h-4 w-4 mr-1" />
                   )}
                   Simulate misconfig
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={exportSimulatedProbeLog}
+                  disabled={probing || (!probe && !probeError)}
+                  title="Download a JSON of the most recent redirect probe (simulated or live), including parsed redirect_uri and per-check inputs/outputs."
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Export probe log
                 </Button>
               </div>
             </div>
