@@ -5,6 +5,8 @@ import { HeroSection } from "@/components/home/HeroSection";
 import { useCanonical } from "@/components/seo/CanonicalTag";
 import { BenefitsSection } from "@/components/home/BenefitsSection";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { SocialProofSection } from "@/components/home/SocialProofSection";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { ProblemSolutionSection } from "@/components/home/ProblemSolutionSection";
@@ -19,17 +21,31 @@ import {
 
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
 
-const FEATURED_IDS = [
-  '128e0207-8a94-4d71-b428-5b7f5002528f',
-  '6b8973ab-a651-4e1d-955f-a3984d1b0229',
-  '4cfa9189-9686-4649-b1bf-53fb7ecaa88f',
-  '57279fcc-09cb-43a0-84fb-979b32ea6a49',
-  '08a62345-c1bc-438b-8169-8a49687c1289',
-  'd3f8b8c6-5846-4d38-a39e-b89efe3dca7f',
-];
+/**
+ * Maximum bestsellers to surface on the homepage grid.
+ * 12 fills three rows of 4 on desktop / six rows of 2 on mobile —
+ * enough product breadth without pushing social proof too far down.
+ */
+const HOMEPAGE_BESTSELLER_LIMIT = 12;
 
 const HomePage = () => {
   useCanonical('/');
+
+  // Pull active bestsellers (ranked) so the homepage stays in sync
+  // with whatever the merchandiser promotes — no hard-coded IDs.
+  const { data: featuredIds = [] } = useQuery({
+    queryKey: ['homepage-featured-bestseller-ids', HOMEPAGE_BESTSELLER_LIMIT],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('bestsellers')
+        .select('product_id, rank')
+        .eq('is_active', true)
+        .order('rank', { ascending: true })
+        .limit(HOMEPAGE_BESTSELLER_LIMIT);
+      return (data ?? []).map((b) => b.product_id);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   return (
     <Layout>
@@ -47,12 +63,14 @@ const HomePage = () => {
       {/* 2. Benefits */}
       <BenefitsSection />
 
-      {/* 3. Featured Products */}
-      <CuratedProductSection
-        title="Popular Picks for Pet Owners"
-        subtitle="Our most-loved products, chosen for comfort and everyday use"
-        productIds={FEATURED_IDS}
-      />
+      {/* 3. Featured Products — pulled live from the bestsellers table */}
+      {featuredIds.length > 0 && (
+        <CuratedProductSection
+          title="Popular Picks for Pet Owners"
+          subtitle="Our most-loved products, chosen for comfort and everyday use"
+          productIds={featuredIds}
+        />
+      )}
 
       {/* 4. Social Proof */}
       <SocialProofSection />
