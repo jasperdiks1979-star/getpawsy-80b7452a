@@ -27,6 +27,7 @@ import {
   ClipboardCopy,
   GitCompare,
   Trash2,
+  Scissors,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
@@ -212,6 +213,128 @@ type SmokeCheck = {
   evidence?: Record<string, unknown>;
 };
 
+/**
+ * Client-side mirror of the server `validateSecret` helper used by
+ * `tiktok-oauth-config-inspect`. Runs entirely in the browser so an admin
+ * can paste a candidate `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` value
+ * BEFORE saving it through the secrets form and immediately see whether the
+ * paste introduced trailing/leading whitespace, NBSP, BOM, zero-width chars
+ * or control characters. The raw value never leaves the browser.
+ */
+function validateSecretClient(
+  name: string,
+  raw: string,
+): SecretValidationReport {
+  const issues: SecretValidationIssue[] = [];
+  const len = raw.length;
+
+  if (len > 0) {
+    // Leading whitespace
+    const leadMatch = raw.match(/^[\s\u00A0]+/);
+    if (leadMatch) {
+      issues.push({
+        kind: "leading_whitespace",
+        position: 0,
+        char_code: raw.codePointAt(0) ?? 0,
+        char_label: describeChar(raw.codePointAt(0) ?? 0),
+        message: `${leadMatch[0].length} leading whitespace character(s) at position 0`,
+      });
+    }
+    // Trailing whitespace
+    const trailMatch = raw.match(/[\s\u00A0]+$/);
+    if (trailMatch) {
+      const pos = len - trailMatch[0].length;
+      issues.push({
+        kind: "trailing_whitespace",
+        position: pos,
+        char_code: raw.codePointAt(pos) ?? 0,
+        char_label: describeChar(raw.codePointAt(pos) ?? 0),
+        message: `${trailMatch[0].length} trailing whitespace character(s) at position ${pos}`,
+      });
+    }
+    // Internal whitespace (any space-like char NOT at the edges)
+    const trimmed = raw.replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, "");
+    if (/[\s\u00A0]/.test(trimmed)) {
+      const idx = raw.search(/[\s\u00A0]/);
+      issues.push({
+        kind: "internal_whitespace",
+        position: idx,
+        char_code: raw.codePointAt(idx) ?? 0,
+        char_label: describeChar(raw.codePointAt(idx) ?? 0),
+        message: `Internal whitespace at position ${idx} (TikTok client_key/secret should not contain spaces)`,
+      });
+    }
+    // BOM
+    if (raw.charCodeAt(0) === 0xfeff) {
+      issues.push({
+        kind: "bom",
+        position: 0,
+        char_code: 0xfeff,
+        char_label: "U+FEFF (BOM)",
+        message: "Byte Order Mark (U+FEFF) at start — usually from copy/paste in some editors",
+      });
+    }
+    // Zero-width
+    const zwIdx = raw.search(/[\u200B-\u200D\uFEFF]/);
+    if (zwIdx >= 0) {
+      const code = raw.codePointAt(zwIdx) ?? 0;
+      issues.push({
+        kind: "zero_width",
+        position: zwIdx,
+        char_code: code,
+        char_label: describeChar(code),
+        message: `Zero-width character ${describeChar(code)} at position ${zwIdx}`,
+      });
+    }
+    // NBSP
+    const nbspIdx = raw.indexOf("\u00A0");
+    if (nbspIdx >= 0) {
+      issues.push({
+        kind: "nbsp",
+        position: nbspIdx,
+        char_code: 0x00a0,
+        char_label: "U+00A0 (NBSP)",
+        message: `Non-breaking space (U+00A0) at position ${nbspIdx} — looks like a regular space but isn't`,
+      });
+    }
+    // Control chars (excluding common whitespace already handled)
+    for (let i = 0; i < len; i++) {
+      const code = raw.charCodeAt(i);
+      if (code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d) {
+        issues.push({
+          kind: "control_char",
+          position: i,
+          char_code: code,
+          char_label: describeChar(code),
+          message: `Control character ${describeChar(code)} at position ${i}`,
+        });
+        break;
+      }
+    }
+  }
+
+  const cleaned = raw.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "").trim();
+  return {
+    secret_name: name,
+    is_set: len > 0,
+    raw_length: len,
+    clean_length: cleaned.length,
+    has_contamination: issues.length > 0,
+    issues,
+    summary:
+      len === 0
+        ? "(empty)"
+        : issues.length === 0
+          ? "Clean — no contamination detected"
+          : `${issues.length} issue${issues.length === 1 ? "" : "s"} detected`,
+  };
+}
+
+function describeChar(code: number): string {
+  const hex = code.toString(16).toUpperCase().padStart(4, "0");
+  return `U+${hex}`;
+}
+
 type SmokeTestResult = {
   ok: boolean;
   summary: string;
@@ -258,6 +381,18 @@ export function TikTokConnectCard() {
   // diff after each secret update. Loaded once on mount; updated on every
   // successful Inspect.
   const [snapshots, setSnapshots] = useState<ConfigSnapshot[]>([]);
+  // Local-only "Trim & Validate" paste-checker state. Lets the operator
+  // paste a candidate TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET BEFORE
+  // submitting it via the Lovable secrets form so they catch trailing
+  // spaces / NBSP / zero-width chars at the source. Never sent over the
+  // network — purely a string analysis in the browser.
+  const [pasteValue, setPasteValue] = useState<string>("");
+  const [pasteSecretName, setPasteSecretName] = useState<
+    "TIKTOK_CLIENT_KEY" | "TIKTOK_CLIENT_SECRET"
+  >("TIKTOK_CLIENT_KEY");
+  const pasteReport = pasteValue.length > 0
+    ? validateSecretClient(pasteSecretName, pasteValue)
+    : null;
   // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
   const [retryInfo, setRetryInfo] = useState<{
     attempt: number;
@@ -1418,6 +1553,165 @@ export function TikTokConnectCard() {
                     );
                   })}
                 </ul>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Trim & Validate — local-only paste checker. Lets the operator
+            verify a candidate secret value (before submitting it via the
+            Lovable secrets form) for trailing/leading whitespace, NBSP,
+            BOM, zero-width characters and control chars. The value never
+            leaves the browser and is wiped from React state when the
+            input is cleared. */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Scissors className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              Trim &amp; Validate (paste before saving)
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Paste a candidate <code className="text-[10px]">TIKTOK_CLIENT_KEY</code> or{" "}
+            <code className="text-[10px]">TIKTOK_CLIENT_SECRET</code> here{" "}
+            <span className="font-medium">before</span> submitting it through the secrets form.
+            We check for trailing spaces, NBSP, BOM and zero-width characters{" "}
+            <span className="font-medium">locally in your browser</span> — the value is never
+            sent over the network.
+          </p>
+
+          <div className="flex gap-1 flex-wrap">
+            {(["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"] as const).map((name) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setPasteSecretName(name)}
+                className={`text-[11px] font-mono px-2 py-1 rounded border transition-colors ${
+                  pasteSecretName === name
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 border-border hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            value={pasteValue}
+            onChange={(e) => setPasteValue(e.target.value)}
+            placeholder={`Paste candidate ${pasteSecretName} value here…`}
+            spellCheck={false}
+            autoComplete="off"
+            className="w-full min-h-[72px] rounded-md border border-border bg-background px-3 py-2 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+
+          {pasteValue.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const cleaned = pasteValue
+                    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+                    .trim();
+                  setPasteValue(cleaned);
+                  toast.success(
+                    `Trimmed: ${pasteValue.length} → ${cleaned.length} chars`,
+                  );
+                }}
+              >
+                <Scissors className="h-3.5 w-3.5 mr-1" />
+                Auto-trim
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={async () => {
+                  const cleaned = pasteValue
+                    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+                    .trim();
+                  try {
+                    await navigator.clipboard.writeText(cleaned);
+                    toast.success("Copied cleaned value to clipboard");
+                  } catch {
+                    toast.error("Clipboard copy failed");
+                  }
+                }}
+              >
+                <ClipboardCopy className="h-3.5 w-3.5 mr-1" />
+                Copy cleaned
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setPasteValue("")}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            </div>
+          )}
+
+          {pasteReport && (
+            <div
+              role="status"
+              className={`rounded-md border-2 p-3 text-xs space-y-2 ${
+                pasteReport.has_contamination
+                  ? "border-destructive bg-destructive/10"
+                  : "border-primary/40 bg-primary/5"
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                {pasteReport.has_contamination ? (
+                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-foreground">
+                    {pasteReport.summary}
+                  </div>
+                  <div className="text-muted-foreground mt-0.5 text-[11px]">
+                    raw length:{" "}
+                    <span className="font-mono text-foreground">
+                      {pasteReport.raw_length}
+                    </span>{" "}
+                    · cleaned length:{" "}
+                    <span className="font-mono text-foreground">
+                      {pasteReport.clean_length}
+                    </span>
+                    {pasteReport.raw_length !== pasteReport.clean_length && (
+                      <span className="ml-1 text-destructive font-medium">
+                        ({pasteReport.raw_length - pasteReport.clean_length} char
+                        {pasteReport.raw_length - pasteReport.clean_length === 1 ? "" : "s"}{" "}
+                        will be removed)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {pasteReport.issues.length > 0 && (
+                <ul className="space-y-1 pl-6 list-disc text-muted-foreground">
+                  {pasteReport.issues.map((issue, i) => (
+                    <li key={i} className="break-words">
+                      <span className="text-foreground font-medium">
+                        {issue.kind.replace(/_/g, " ")}:
+                      </span>{" "}
+                      {issue.message}{" "}
+                      <code className="text-[10px] bg-muted/60 px-1 rounded">
+                        {issue.char_label}
+                      </code>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {pasteReport.has_contamination && (
+                <div className="text-[11px] text-foreground/80 italic pt-1 border-t border-destructive/30">
+                  ⚠ Do <strong>not</strong> save this value as-is. Click{" "}
+                  <strong>Auto-trim</strong> or <strong>Copy cleaned</strong> first, then paste
+                  the cleaned value into the secrets form.
+                </div>
               )}
             </div>
           )}
