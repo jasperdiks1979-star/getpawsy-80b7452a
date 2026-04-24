@@ -312,6 +312,7 @@ export function TikTokConnectCard() {
   };
 
   const handleDisconnect = async () => {
+    // Disconnect handler unchanged below.
     if (!account) return;
     if (!confirm(`Disconnect TikTok account @${account.display_name || account.open_id}?`)) return;
     const { error } = await supabase
