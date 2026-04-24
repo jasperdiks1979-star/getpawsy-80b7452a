@@ -47,7 +47,7 @@ export function HeroSection() {
         {/* Social-proof pill — above H1 to set trust before the pitch.
             Tight padding so it stays one-line on 360-440px viewports. */}
         <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1 text-xs md:text-sm font-medium text-white border border-white/25">
-          <span className="inline-flex items-center text-amber-300" aria-hidden="true">
+          <span className="inline-flex items-center text-warning" aria-hidden="true">
             <Star className="h-3.5 w-3.5 fill-current" />
             <Star className="h-3.5 w-3.5 fill-current" />
             <Star className="h-3.5 w-3.5 fill-current" />
@@ -69,10 +69,10 @@ export function HeroSection() {
         </p>
 
         {/* Stock / urgency signal — removes "is this in stock?" friction. */}
-        <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+        <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-success-foreground bg-success/90 px-2.5 py-1 rounded-full">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success-foreground opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-success-foreground" />
           </span>
           In stock — ships within 24 hours
         </div>
