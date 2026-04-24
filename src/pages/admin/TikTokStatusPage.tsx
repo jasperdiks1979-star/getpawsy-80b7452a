@@ -723,6 +723,138 @@ export default function TikTokStatusPage() {
         </>
       )}
 
+      {/* Connect-flow drift log — populated by the Connect TikTok button
+          whenever the live client_key or redirect URI differs from the
+          previous attempt. Helps catch silent secret rotations and Developer
+          Portal edits. */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Connect-flow drift log
+              </CardTitle>
+              <CardDescription>
+                Each TikTok connect attempt is compared against the previous
+                one. Drift on <code>client_key</code>, <code>redirect_uri</code>,
+                or origin is recorded here.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={refreshDriftLog}
+                aria-label="Refresh drift log"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+              {driftLog.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    clearDriftLog();
+                    refreshDriftLog();
+                    toast.success("Drift log cleared");
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {driftLog.length === 0 ? (
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              No drift recorded. The connect flow will append an entry here
+              the next time the client key or redirect URI changes.
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {driftLog.map((entry, idx) => (
+                <li
+                  key={`${entry.observed_at}-${idx}`}
+                  className="rounded-md border border-border/60 bg-muted/30 p-3 text-xs space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <span className="font-medium text-foreground">
+                        {entry.changed
+                          .map((c) =>
+                            c === "client_key"
+                              ? "client_key"
+                              : c === "redirect_uri"
+                                ? "redirect URI"
+                                : "origin",
+                          )
+                          .join(", ")}{" "}
+                        changed
+                      </span>
+                      {entry.changed.map((c) => (
+                        <Badge key={c} variant="outline" className="text-[10px]">
+                          {c}
+                        </Badge>
+                      ))}
+                    </div>
+                    <span className="text-muted-foreground">
+                      {formatRelative(entry.observed_at)} ·{" "}
+                      {new Date(entry.observed_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground uppercase tracking-wide text-[10px]">
+                        Previous attempt
+                      </div>
+                      <dl className="space-y-0.5 font-mono break-all">
+                        <div>
+                          <span className="text-muted-foreground">key: </span>
+                          {entry.previous.client_key_masked ?? "—"}
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">uri: </span>
+                          {entry.previous.redirect_uri ?? "—"}
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">origin: </span>
+                          {entry.previous.origin ?? "—"}
+                        </div>
+                      </dl>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground uppercase tracking-wide text-[10px]">
+                        Current attempt
+                      </div>
+                      <dl className="space-y-0.5 font-mono break-all">
+                        <div>
+                          <span className="text-muted-foreground">key: </span>
+                          {entry.current.client_key_masked ?? "—"}
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">uri: </span>
+                          {entry.current.redirect_uri ?? "—"}
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">origin: </span>
+                          {entry.current.origin}
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
         <div>
           {status?.checked_at && <>Server check: {new Date(status.checked_at).toLocaleString()}</>}
