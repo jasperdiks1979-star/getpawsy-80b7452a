@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   XCircle,
   Zap,
+  ClipboardCopy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +34,7 @@ type StatusResponse = {
   mode_detail?: string;
   config?: {
     client_key_masked: string;
+    client_key_full?: string | null;
     client_key_length: number;
     client_secret_set: boolean;
     redirect_uri: string;
