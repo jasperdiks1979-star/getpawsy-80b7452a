@@ -312,7 +312,6 @@ export function TikTokConnectCard() {
   };
 
   const handleDisconnect = async () => {
-    // Disconnect handler unchanged below.
     if (!account) return;
     if (!confirm(`Disconnect TikTok account @${account.display_name || account.open_id}?`)) return;
     const { error } = await supabase
@@ -324,6 +323,90 @@ export function TikTokConnectCard() {
     } else {
       toast.success("TikTok disconnected");
       setAccount(null);
+    }
+  };
+
+  /**
+   * Run the live OAuth smoke test against TikTok's authorize + token endpoints
+   * using the sanitized server-side secrets. Surfaces a per-check pass/fail
+   * grid so the operator can tell at a glance whether the credentials are
+   * recognized by TikTok or whether something (whitespace, wrong key, missing
+   * sandbox user) is still tripping the OAuth flow.
+   */
+  const handleSmokeTest = async () => {
+    setSmokeTesting(true);
+    setSmoke(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        const msg = "Sign in as admin to run the TikTok smoke test.";
+        setSmoke({
+          ok: false,
+          code: "missing_authorization_header",
+          error: msg,
+          summary: msg,
+          elapsed_ms: 0,
+          redirect_uri: "",
+          client_key_masked: "",
+          client_secret_set: false,
+          checks: [],
+        });
+        toast.error(msg);
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke(
+        "tiktok-oauth-smoke-test",
+        { body: { origin: window.location.origin } },
+      );
+      if (error) {
+        // Try to recover the typed error body from the non-2xx response.
+        let recovered: SmokeTestResult | null = null;
+        const ctxResp = (error as { context?: { response?: Response } })?.context?.response;
+        if (ctxResp && typeof ctxResp.json === "function") {
+          try {
+            recovered = await ctxResp.clone().json();
+          } catch {
+            recovered = null;
+          }
+        }
+        const msg = recovered?.error || error.message || "Smoke test failed";
+        setSmoke({
+          ok: false,
+          code: recovered?.code ?? "internal_error",
+          error: msg,
+          summary: msg,
+          elapsed_ms: recovered?.elapsed_ms ?? 0,
+          redirect_uri: recovered?.redirect_uri ?? "",
+          client_key_masked: recovered?.client_key_masked ?? "",
+          client_secret_set: recovered?.client_secret_set ?? false,
+          checks: recovered?.checks ?? [],
+        });
+        toast.error(msg);
+        return;
+      }
+      const result = data as SmokeTestResult;
+      setSmoke(result);
+      if (result.ok) {
+        toast.success(result.summary);
+      } else {
+        toast.error(result.summary);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Smoke test failed";
+      setSmoke({
+        ok: false,
+        code: "internal_error",
+        error: msg,
+        summary: msg,
+        elapsed_ms: 0,
+        redirect_uri: "",
+        client_key_masked: "",
+        client_secret_set: false,
+        checks: [],
+      });
+      toast.error(msg);
+    } finally {
+      setSmokeTesting(false);
     }
   };
 
