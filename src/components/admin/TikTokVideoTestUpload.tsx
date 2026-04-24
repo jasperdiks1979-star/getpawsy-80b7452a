@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   RotateCcw,
 } from "lucide-react";
+import { TikTokVideoComplianceCheck } from "./TikTokVideoComplianceCheck";
+import type { ComplianceReport } from "@/lib/tiktok/video-compliance";
 
 /**
  * Stap-voor-stap testflow voor TikTok video upload.
@@ -52,6 +54,9 @@ export function TikTokVideoTestUpload() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState("GetPawsy test upload 🐾 #pawsytest");
   const [privacy, setPrivacy] = useState<string>("SELF_ONLY");
+  // Result of TikTok-spec validation. `null` until the file is probed.
+  // Errors block the Upload button; warnings are informational only.
+  const [compliance, setCompliance] = useState<ComplianceReport | null>(null);
 
   const [stepStates, setStepStates] = useState<Record<Step, StepState>>({
     1: "active",
@@ -93,6 +98,7 @@ export function TikTokVideoTestUpload() {
     if (pollTimerRef.current) window.clearTimeout(pollTimerRef.current);
     setFile(null);
     setPreviewUrl(null);
+    setCompliance(null);
     setStepStates({ 1: "active", 2: "pending", 3: "pending", 4: "pending" });
     setCurrentStep(1);
     setUploadProgress(0);
