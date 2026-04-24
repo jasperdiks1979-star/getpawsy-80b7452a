@@ -544,6 +544,22 @@ export function TikTokConnectCard() {
         lines.push("**Hints:**");
         for (const h of config.hints) lines.push(`- ${h}`);
       }
+      const validations: SecretValidationReport[] = [];
+      if (config.client_key_validation) validations.push(config.client_key_validation);
+      if (config.client_secret_validation) validations.push(config.client_secret_validation);
+      const dirty = validations.filter((v) => v.has_contamination);
+      if (dirty.length > 0) {
+        lines.push("");
+        lines.push("**⚠ Contamination detected:**");
+        for (const v of dirty) {
+          lines.push(
+            `- \`${v.secret_name}\` raw_len=${v.raw_length}, clean_len=${v.clean_length}`,
+          );
+          for (const iss of v.issues) {
+            lines.push(`  - \`${iss.char_label}\` @ pos ${iss.position} — ${iss.message}`);
+          }
+        }
+      }
     }
 
     lines.push("");
