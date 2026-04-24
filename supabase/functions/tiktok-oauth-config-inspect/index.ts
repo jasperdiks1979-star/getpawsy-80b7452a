@@ -86,6 +86,20 @@ Deno.serve(async (req: Request) => {
     // Quick sanity hints — most "client_key" errors come from one of these.
     const hints: string[] = [];
     const rawKey = (clientKey || "").trim();
+    // Stable links we point admins to. Keeping them here (not just in the UI)
+    // means the same guidance shows up in logs/curl output too.
+    const PORTAL_APPS_URL = "https://developers.tiktok.com/apps";
+    const SANDBOX_DOCS_URL =
+      "https://developers.tiktok.com/doc/login-kit-sandbox/";
+    const TEST_USERS_HELP =
+      `Open your app in the TikTok Developer Portal (${PORTAL_APPS_URL}) → ` +
+      `Sandbox → Test users → "Add test user" → enter the TikTok username ` +
+      `"@getpawsy" (without the @). The user must accept the invite from the ` +
+      `notification in their TikTok app before "Connect TikTok" will work. ` +
+      `Sandbox keys (sbaw…) only authorize accounts that appear in this list — ` +
+      `any other account will fail with an invalid_client / unauthorized error. ` +
+      `Docs: ${SANDBOX_DOCS_URL}`;
+
     if (!rawKey) {
       hints.push("TIKTOK_CLIENT_KEY is not set in Lovable Cloud secrets.");
     } else {
@@ -105,7 +119,7 @@ Deno.serve(async (req: Request) => {
       }
       if (rawKey.toLowerCase().startsWith("sbaw")) {
         hints.push(
-          "Sandbox key detected (sbaw…). It only works with users you've added under Sandbox → Test users in the TikTok Developer Portal.",
+          "Sandbox key detected (sbaw…). " + TEST_USERS_HELP,
         );
       }
     }
@@ -132,6 +146,29 @@ Deno.serve(async (req: Request) => {
         scopes,
         authorize_url_preview: authorizeUrlPreview,
         hints,
+        // Always returned so the UI can show "where do I add @getpawsy?" even
+        // when there are no warning hints — admins keep asking for the link.
+        sandbox_test_user_help: {
+          tiktok_username_to_add: "@getpawsy",
+          portal_apps_url: PORTAL_APPS_URL,
+          sandbox_docs_url: SANDBOX_DOCS_URL,
+          steps: [
+            `Open your TikTok app at ${PORTAL_APPS_URL}`,
+            "Switch to the Sandbox tab (top of the app page)",
+            "Open the Test users section",
+            'Click "Add test user" and enter the username "getpawsy"',
+            "Open the TikTok mobile app on the @getpawsy account and accept the invite notification",
+            'Return here and try "Connect TikTok" again',
+          ],
+          why_sandbox_only:
+            "Sandbox client keys (prefix sbaw…) are isolated from production. " +
+            "TikTok will reject the OAuth request for any account that is not " +
+            "explicitly listed under Sandbox → Test users, returning errors " +
+            "like invalid_client, unauthorized_client, or 'application not " +
+            "approved'. To authorize @getpawsy you either (a) add it as a " +
+            "test user above, or (b) submit the app for production review " +
+            "and switch to the production client key.",
+        },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
