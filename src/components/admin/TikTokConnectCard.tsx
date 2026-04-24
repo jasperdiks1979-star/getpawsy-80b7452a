@@ -19,6 +19,11 @@ import {
   Eye,
   ExternalLink,
   UserPlus,
+  Link2,
+  KeyRound,
+  Globe,
+  FlaskConical,
+  LayoutDashboard,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
@@ -502,6 +507,64 @@ export function TikTokConnectCard() {
           )}
         </div>
 
+        {/* Developer Portal Quick Links */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center gap-2">
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              Developer Portal Quick Links
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Jump straight to the exact TikTok Developer Portal page you need to fix
+            common OAuth errors — missing scopes, redirect URI mismatches, or an
+            unverified URL prefix.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <PortalLinkButton
+              href="https://developers.tiktok.com/apps"
+              icon={LayoutDashboard}
+              title="Apps dashboard"
+              hint="Pick your app to edit any setting below"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/apps"
+              icon={Link2}
+              title="Login Kit → Redirect URIs"
+              hint="Fix invalid_redirect / mismatch errors"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/apps"
+              icon={KeyRound}
+              title="Scopes (user.info.basic, video.upload, video.publish)"
+              hint="Fix scope_not_authorized on publish"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/doc/content-posting-api-get-started/"
+              icon={Globe}
+              title="Verified URL prefix (Content Posting API)"
+              hint="Required for PULL_FROM_URL uploads"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/doc/login-kit-web"
+              icon={Info}
+              title="Login Kit docs"
+              hint="Reference for OAuth params & errors"
+            />
+            <PortalLinkButton
+              href="https://developers.tiktok.com/doc/sandbox-accounts-management"
+              icon={FlaskConical}
+              title="Sandbox test users"
+              hint="Add @getpawsy before testing in sandbox"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            TikTok doesn't expose stable deep links to specific app sub-tabs, so
+            most buttons land on the Apps dashboard — open your app, then go to the
+            named tab. Docs links open the canonical reference page.
+          </p>
+        </div>
+
         {/* Pre-flight Diagnose */}
         <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -834,4 +897,39 @@ function friendlyInspectError(
     default:
       return fallback || "Failed to load TikTok config.";
   }
+}
+
+/**
+ * Quick-link card to a TikTok Developer Portal page or doc.
+ * Opens in a new tab and shows a short hint explaining why an admin
+ * would click it (which OAuth error it helps resolve).
+ */
+function PortalLinkButton({
+  href,
+  icon: Icon,
+  title,
+  hint,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-start gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs hover:bg-muted transition-colors"
+    >
+      <Icon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1 font-medium text-foreground">
+          <span className="truncate">{title}</span>
+          <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0 group-hover:text-foreground" />
+        </div>
+        <div className="text-[11px] text-muted-foreground leading-snug">{hint}</div>
+      </div>
+    </a>
+  );
 }
