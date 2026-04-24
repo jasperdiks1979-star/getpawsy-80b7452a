@@ -62,6 +62,8 @@ type ConfigInspectResult = {
   scopes?: string;
   authorize_url_preview?: string;
   hints?: string[];
+  client_key_validation?: SecretValidationReport;
+  client_secret_validation?: SecretValidationReport;
   sandbox_test_user_help?: {
     tiktok_username_to_add: string;
     portal_apps_url: string;
@@ -80,6 +82,33 @@ type ConfigInspectResult = {
     | "user_not_found"
     | "not_admin"
     | "internal_error";
+};
+
+type ContaminationKind =
+  | "trailing_whitespace"
+  | "leading_whitespace"
+  | "internal_whitespace"
+  | "bom"
+  | "zero_width"
+  | "nbsp"
+  | "control_char";
+
+type SecretValidationIssue = {
+  kind: ContaminationKind;
+  position: number;
+  char_code: number;
+  char_label: string;
+  message: string;
+};
+
+type SecretValidationReport = {
+  secret_name: string;
+  is_set: boolean;
+  raw_length: number;
+  clean_length: number;
+  has_contamination: boolean;
+  issues: SecretValidationIssue[];
+  summary: string;
 };
 
 type SmokeCheck = {
@@ -165,6 +194,51 @@ export function TikTokConnectCard() {
     setRetryInfo(null);
     const MAX_RETRIES = 3;
     try {
+      // Pre-flight: ask the inspector to validate TIKTOK_CLIENT_KEY for
+      // whitespace/BOM/zero-width contamination *before* we redirect to
+      // TikTok. The OAuth functions auto-sanitize at runtime, but if the
+      // stored secret is contaminated we still want to alert the operator
+      // and let them abort so they can re-save a clean value (silent
+      // sanitization can mask a buggy paste flow).
+      try {
+        const { data: preflight } = await supabase.functions.invoke(
+          "tiktok-oauth-config-inspect",
+          { body: { origin: window.location.origin } },
+        );
+        const validation = (preflight as ConfigInspectResult | null)
+          ?.client_key_validation;
+        if (validation?.has_contamination) {
+          // Surface the issues into the inspector panel so the admin can
+          // see exact char codes after they cancel.
+          setConfig(preflight as ConfigInspectResult);
+          const issueList = validation.issues
+            .map((i) => `• ${i.message}`)
+            .join("\n");
+          const proceed = confirm(
+            `⚠ TIKTOK_CLIENT_KEY contains ${validation.issues.length} ` +
+            `contamination issue${validation.issues.length === 1 ? "" : "s"}:\n\n` +
+            `${issueList}\n\n` +
+            `The OAuth functions will auto-sanitize at runtime, but TikTok ` +
+            `may still reject the request. We recommend re-saving the secret ` +
+            `cleanly first.\n\n` +
+            `Click OK to continue with auto-sanitization anyway, or Cancel ` +
+            `to fix the secret first.`,
+          );
+          if (!proceed) {
+            toast.warning(
+              "OAuth aborted — fix TIKTOK_CLIENT_KEY whitespace and try again.",
+            );
+            setConnecting(false);
+            return;
+          }
+          toast.warning(
+            "Continuing with auto-sanitized client_key — re-save the secret to fix permanently.",
+          );
+        }
+      } catch {
+        // Pre-flight is best-effort; don't block OAuth on inspector errors.
+      }
+
       // Drift detection: compare current TikTok config (client_key + redirect
       // URI) against the snapshot we stored on the previous attempt. Surfaces
       // a toast + appends to the drift log on the status page so silent
@@ -469,6 +543,22 @@ export function TikTokConnectCard() {
         lines.push("");
         lines.push("**Hints:**");
         for (const h of config.hints) lines.push(`- ${h}`);
+      }
+      const validations: SecretValidationReport[] = [];
+      if (config.client_key_validation) validations.push(config.client_key_validation);
+      if (config.client_secret_validation) validations.push(config.client_secret_validation);
+      const dirty = validations.filter((v) => v.has_contamination);
+      if (dirty.length > 0) {
+        lines.push("");
+        lines.push("**⚠ Contamination detected:**");
+        for (const v of dirty) {
+          lines.push(
+            `- \`${v.secret_name}\` raw_len=${v.raw_length}, clean_len=${v.clean_length}`,
+          );
+          for (const iss of v.issues) {
+            lines.push(`  - \`${iss.char_label}\` @ pos ${iss.position} — ${iss.message}`);
+          }
+        }
       }
     }
 
@@ -917,6 +1007,68 @@ export function TikTokConnectCard() {
 
           {config?.ok && (
             <div className="space-y-2">
+              {/* Prominent contamination alert — shows when the inspector
+                  found whitespace/BOM/zero-width chars in either secret.
+                  Rendered above the masked values so it's the first thing
+                  the operator sees. Lists exact char codes + positions so
+                  they can root-cause the paste flow instead of relying on
+                  runtime auto-sanitization forever. */}
+              {(config.client_key_validation?.has_contamination ||
+                config.client_secret_validation?.has_contamination) && (
+                <div
+                  role="alert"
+                  className="rounded-md border-2 border-destructive bg-destructive/10 p-3 space-y-2 text-xs"
+                >
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="font-semibold text-foreground text-sm">
+                        Whitespace contamination detected in TikTok secrets
+                      </div>
+                      <p className="text-muted-foreground leading-relaxed">
+                        The OAuth functions auto-sanitize these at runtime, but TikTok may
+                        still reject contaminated values. <strong>Re-save the secret(s)
+                        below cleanly</strong> in Lovable Cloud to fix this permanently.
+                      </p>
+                      {[
+                        config.client_key_validation,
+                        config.client_secret_validation,
+                      ]
+                        .filter(
+                          (v): v is SecretValidationReport =>
+                            !!v && v.has_contamination,
+                        )
+                        .map((v) => (
+                          <div
+                            key={v.secret_name}
+                            className="rounded border border-destructive/40 bg-background/60 p-2 space-y-1"
+                          >
+                            <div className="font-mono font-medium text-foreground">
+                              {v.secret_name}{" "}
+                              <span className="text-muted-foreground font-sans font-normal">
+                                (raw len={v.raw_length}, clean len={v.clean_length})
+                              </span>
+                            </div>
+                            <ul className="space-y-0.5 pl-1">
+                              {v.issues.map((iss, idx) => (
+                                <li
+                                  key={idx}
+                                  className="text-muted-foreground break-words"
+                                >
+                                  <span className="font-mono text-destructive">
+                                    [{iss.char_label}]
+                                  </span>{" "}
+                                  {iss.message}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <ul className="space-y-1.5">
                 <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
                   <div className="font-medium text-foreground">TIKTOK_CLIENT_KEY (masked)</div>

@@ -43,6 +43,181 @@ function maskSecret(value: string | undefined): string {
 }
 
 /**
+ * Deep validation of a stored secret. Returns a structured report so the
+ * admin UI can render a precise alert (e.g. "trailing space U+0020 detected
+ * at position 16") instead of a vague "looks weird" warning.
+ *
+ * The OAuth functions auto-sanitize at read time, but we still want a loud
+ * pre-flight signal so the operator re-saves the secret cleanly — silent
+ * sanitization can mask the underlying problem (e.g. a buggy paste flow
+ * that keeps re-introducing whitespace).
+ */
+type ContaminationKind =
+  | "trailing_whitespace"
+  | "leading_whitespace"
+  | "internal_whitespace"
+  | "bom"
+  | "zero_width"
+  | "nbsp"
+  | "control_char";
+
+interface SecretValidationIssue {
+  kind: ContaminationKind;
+  position: number; // 0-based index in raw string; -1 if N/A
+  char_code: number; // U+ codepoint of the offending char
+  char_label: string; // Human label e.g. "U+0020 SPACE", "U+00A0 NBSP"
+  message: string;
+}
+
+interface SecretValidationReport {
+  secret_name: string;
+  is_set: boolean;
+  raw_length: number;
+  clean_length: number;
+  has_contamination: boolean;
+  issues: SecretValidationIssue[];
+  summary: string;
+}
+
+function labelChar(code: number): string {
+  const hex = `U+${code.toString(16).toUpperCase().padStart(4, "0")}`;
+  const named: Record<number, string> = {
+    0x09: "TAB",
+    0x0a: "LINE FEED",
+    0x0d: "CARRIAGE RETURN",
+    0x20: "SPACE",
+    0xa0: "NO-BREAK SPACE (NBSP)",
+    0xfeff: "BYTE ORDER MARK (BOM)",
+    0x200b: "ZERO WIDTH SPACE",
+    0x200c: "ZERO WIDTH NON-JOINER",
+    0x200d: "ZERO WIDTH JOINER",
+  };
+  return named[code] ? `${hex} ${named[code]}` : hex;
+}
+
+function validateSecret(
+  name: string,
+  raw: string,
+): SecretValidationReport {
+  const clean = sanitizeSecret(raw);
+  const issues: SecretValidationIssue[] = [];
+
+  if (!raw) {
+    return {
+      secret_name: name,
+      is_set: false,
+      raw_length: 0,
+      clean_length: 0,
+      has_contamination: false,
+      issues: [],
+      summary: `${name} is not set.`,
+    };
+  }
+
+  // Check leading whitespace (any chars trimmed from the start).
+  const leadingMatch = raw.match(/^(\s+)/);
+  if (leadingMatch) {
+    const ch = raw.codePointAt(0)!;
+    issues.push({
+      kind: "leading_whitespace",
+      position: 0,
+      char_code: ch,
+      char_label: labelChar(ch),
+      message:
+        `Leading whitespace at position 0 (${labelChar(ch)}). ` +
+        `TikTok will URL-encode this and reject the request as invalid_client_key.`,
+    });
+  }
+
+  // Check trailing whitespace.
+  const trailingMatch = raw.match(/(\s+)$/);
+  if (trailingMatch) {
+    const pos = raw.length - trailingMatch[1].length;
+    const ch = raw.codePointAt(pos)!;
+    issues.push({
+      kind: "trailing_whitespace",
+      position: pos,
+      char_code: ch,
+      char_label: labelChar(ch),
+      message:
+        `Trailing whitespace at position ${pos} (${labelChar(ch)}, ` +
+        `${trailingMatch[1].length} char${trailingMatch[1].length === 1 ? "" : "s"}). ` +
+        `TikTok will URL-encode this and reject the request as invalid_client_key.`,
+    });
+  }
+
+  // Scan for invisible / dangerous chars anywhere in the string.
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw.codePointAt(i)!;
+    if (ch === 0xfeff) {
+      issues.push({
+        kind: "bom",
+        position: i,
+        char_code: ch,
+        char_label: labelChar(ch),
+        message: `BOM character found at position ${i} — strip it from the secret.`,
+      });
+    } else if (ch >= 0x200b && ch <= 0x200d) {
+      issues.push({
+        kind: "zero_width",
+        position: i,
+        char_code: ch,
+        char_label: labelChar(ch),
+        message: `Invisible zero-width character at position ${i} (${labelChar(ch)}).`,
+      });
+    } else if (ch === 0xa0) {
+      issues.push({
+        kind: "nbsp",
+        position: i,
+        char_code: ch,
+        char_label: labelChar(ch),
+        message: `Non-breaking space at position ${i} — copy/paste from a styled doc?`,
+      });
+    } else if (ch < 0x20 && ch !== 0x09) {
+      // Control chars like \r \n \0 anywhere are always wrong.
+      issues.push({
+        kind: "control_char",
+        position: i,
+        char_code: ch,
+        char_label: labelChar(ch),
+        message: `Control character at position ${i} (${labelChar(ch)}).`,
+      });
+    } else if (
+      // Internal whitespace (not at edges) = paste error
+      i > 0 &&
+      i < raw.length - 1 &&
+      /\s/.test(raw[i]) &&
+      ch !== 0xa0 // already handled
+    ) {
+      issues.push({
+        kind: "internal_whitespace",
+        position: i,
+        char_code: ch,
+        char_label: labelChar(ch),
+        message:
+          `Internal whitespace at position ${i} (${labelChar(ch)}) — ` +
+          `the client_key should never contain spaces.`,
+      });
+    }
+  }
+
+  const has = issues.length > 0;
+  return {
+    secret_name: name,
+    is_set: true,
+    raw_length: raw.length,
+    clean_length: clean.length,
+    has_contamination: has,
+    issues,
+    summary: has
+      ? `${name} contains ${issues.length} contamination issue${issues.length === 1 ? "" : "s"} ` +
+        `(raw length ${raw.length}, clean length ${clean.length}). ` +
+        `Auto-sanitized at runtime, but please re-save the secret without whitespace.`
+      : `${name} is clean (length ${raw.length}).`,
+  };
+}
+
+/**
  * TikTok OAuth Config Inspect
  *
  * Admin-only diagnostic endpoint. Returns:
@@ -69,6 +244,14 @@ Deno.serve(async (req: Request) => {
     const rawClientSecret = Deno.env.get("TIKTOK_CLIENT_SECRET") ?? "";
     const clientKey = sanitizeSecret(rawClientKey);
     const clientSecret = sanitizeSecret(rawClientSecret);
+
+    // Pre-compute structured validation reports. The UI uses these to render
+    // a prominent "whitespace contamination detected" alert above the masked
+    // values, with exact char codes + positions so the admin can fix the
+    // root cause (often a paste flow that re-introduces whitespace) instead
+    // of relying on runtime auto-sanitization forever.
+    const clientKeyValidation = validateSecret("TIKTOK_CLIENT_KEY", rawClientKey);
+    const clientSecretValidation = validateSecret("TIKTOK_CLIENT_SECRET", rawClientSecret);
 
     // Auth: only admins. We deliberately split each failure mode into its own
     // error code so the UI can show a specific, actionable message
@@ -224,6 +407,8 @@ Deno.serve(async (req: Request) => {
         scopes,
         authorize_url_preview: authorizeUrlPreview,
         hints,
+        client_key_validation: clientKeyValidation,
+        client_secret_validation: clientSecretValidation,
         // Always returned so the UI can show "where do I add @getpawsy?" even
         // when there are no warning hints — admins keep asking for the link.
         sandbox_test_user_help: {
