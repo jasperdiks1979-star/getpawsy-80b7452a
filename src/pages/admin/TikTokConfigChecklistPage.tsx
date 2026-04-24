@@ -304,6 +304,36 @@ export default function TikTokConfigChecklistPage() {
   // the change after pasting the URI into the TikTok Developer Portal.
   const [autoRerunOnCopy, setAutoRerunOnCopy] = useState(false);
 
+  /**
+   * Closest practical destination for "Open TikTok app settings" — the
+   * Developer Portal apps list. TikTok does not expose a deep link directly
+   * to "Login Kit → Redirect URI" without an app id, so we land on /apps
+   * and tell the admin where to click next via the toast.
+   */
+  const TIKTOK_APP_SETTINGS_URL = "https://developers.tiktok.com/apps";
+
+  /**
+   * Copy the given URI, then open the TikTok Developer Portal in a new tab
+   * so the admin can paste it under Login Kit → Redirect URI immediately.
+   * Honors the "auto re-run probe after Copy fix" toggle.
+   */
+  const copyAndOpenTikTokSettings = (uri: string, contextLabel?: string) => {
+    copy(uri);
+    toast.success(
+      contextLabel
+        ? `Copied fix for "${contextLabel}". Opening TikTok Developer Portal — paste under Login Kit → Redirect URI.`
+        : `Copied ${uri}. Opening TikTok Developer Portal — paste under Login Kit → Redirect URI.`,
+    );
+    // Use noopener+noreferrer so the new tab can't access window.opener.
+    window.open(TIKTOK_APP_SETTINGS_URL, "_blank", "noopener,noreferrer");
+    if (autoRerunOnCopy) {
+      setLastWasSimulated(false);
+      setLastSimScenario(null);
+      setSimulating(false);
+      void runRedirectProbe();
+    }
+  };
+
   const runDiagnose = async () => {
     setRunning(true);
     setError(null);
