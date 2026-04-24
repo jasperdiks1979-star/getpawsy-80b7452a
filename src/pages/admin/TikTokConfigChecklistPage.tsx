@@ -1220,6 +1220,16 @@ export default function TikTokConfigChecklistPage() {
                   )}
                   Simulate misconfig
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={exportSimulatedProbeLog}
+                  disabled={probing || (!probe && !probeError)}
+                  title="Download a JSON of the most recent redirect probe (simulated or live), including parsed redirect_uri and per-check inputs/outputs."
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Export probe log
+                </Button>
               </div>
             </div>
             <CardDescription className="text-xs">
