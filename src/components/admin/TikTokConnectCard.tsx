@@ -3,8 +3,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Link as LinkIcon, Loader2, LogOut, AlertTriangle, ShieldCheck, XCircle, Copy } from "lucide-react";
+import {
+  CheckCircle2,
+  Link as LinkIcon,
+  Loader2,
+  LogOut,
+  AlertTriangle,
+  ShieldCheck,
+  XCircle,
+  Copy,
+  Stethoscope,
+  Info,
+} from "lucide-react";
 import { toast } from "sonner";
+
+type DiagnoseCheck = {
+  name: string;
+  status: "pass" | "fail" | "warn" | "info";
+  detail: string;
+  hint?: string;
+};
+type DiagnoseResult = {
+  ok: boolean;
+  summary: string;
+  redirectUri?: string;
+  elapsed_ms?: number;
+  checks: DiagnoseCheck[];
+};
 
 type ConnectedAccount = {
   open_id: string;
@@ -32,6 +57,8 @@ export function TikTokConnectCard() {
   const [account, setAccount] = useState<ConnectedAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [diagnosing, setDiagnosing] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<DiagnoseResult | null>(null);
 
   const loadAccount = async () => {
     setLoading(true);
@@ -67,6 +94,27 @@ export function TikTokConnectCard() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to start TikTok OAuth");
       setConnecting(false);
+    }
+  };
+
+  const handleDiagnose = async () => {
+    setDiagnosing(true);
+    setDiagnostic(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-oauth-diagnose", {
+        body: { origin: window.location.origin },
+      });
+      if (error) throw error;
+      setDiagnostic(data as DiagnoseResult);
+      if (data?.ok) {
+        toast.success("All TikTok OAuth checks passed");
+      } else {
+        toast.error(data?.summary || "TikTok OAuth diagnostic found issues");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Diagnose failed");
+    } finally {
+      setDiagnosing(false);
     }
   };
 
@@ -268,6 +316,89 @@ export function TikTokConnectCard() {
               <span className="text-muted-foreground">
                 Tip: also add this preview origin to TikTok's Redirect URIs if you plan to test from here.
               </span>
+            </div>
+          )}
+        </div>
+
+        {/* Pre-flight Diagnose */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">
+                OAuth Pre-flight Diagnose
+              </h3>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleDiagnose} disabled={diagnosing}>
+              {diagnosing ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Stethoscope className="h-4 w-4 mr-1" />
+              )}
+              Run Diagnose
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Validates secrets, redirect URI, scopes, TikTok endpoints and DB writability before
+            redirecting you to TikTok. Run this first if "Connect" keeps failing with{" "}
+            <code className="text-[10px]">invalid_client_key</code>.
+          </p>
+
+          {diagnostic && (
+            <div className="space-y-2">
+              <div
+                className={`flex items-start gap-2 rounded-md px-3 py-2 text-xs ${
+                  diagnostic.ok
+                    ? "bg-primary/10 text-foreground"
+                    : "bg-destructive/10 text-foreground"
+                }`}
+              >
+                {diagnostic.ok ? (
+                  <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                )}
+                <span>{diagnostic.summary}</span>
+              </div>
+              <ul className="space-y-1.5">
+                {diagnostic.checks.map((c, i) => {
+                  const Icon =
+                    c.status === "pass"
+                      ? CheckCircle2
+                      : c.status === "fail"
+                      ? XCircle
+                      : c.status === "warn"
+                      ? AlertTriangle
+                      : Info;
+                  const color =
+                    c.status === "pass"
+                      ? "text-primary"
+                      : c.status === "fail"
+                      ? "text-destructive"
+                      : c.status === "warn"
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground";
+                  return (
+                    <li
+                      key={i}
+                      className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${color}`} />
+                        <div className="min-w-0">
+                          <div className="font-medium text-foreground">{c.name}</div>
+                          <div className="text-muted-foreground break-words">{c.detail}</div>
+                          {c.hint && (
+                            <div className="text-muted-foreground/80 mt-1 italic">
+                              {c.hint}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </div>
