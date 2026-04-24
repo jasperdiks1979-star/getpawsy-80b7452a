@@ -19,6 +19,11 @@ import {
   Eye,
   ExternalLink,
   UserPlus,
+  Link2,
+  KeyRound,
+  Globe,
+  FlaskConical,
+  LayoutDashboard,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
