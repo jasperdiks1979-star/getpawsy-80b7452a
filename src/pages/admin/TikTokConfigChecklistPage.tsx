@@ -1400,6 +1400,36 @@ export default function TikTokConfigChecklistPage() {
                   if (failed.length === 0) return null;
                   const fixUri =
                     probe.parsedRedirect ?? `${probeOrigin}/auth/tiktok/callback`;
+                  // Resolve a per-check "what you'd register to make this
+                  // exact check pass" URI. Most checks share the same fix
+                  // (the parsed redirect_uri), but the wrong_origin scenario
+                  // produces a fix that swaps the host so admins can see why
+                  // the host part matters separately from the path.
+                  const fixForCheck = (label: string): string | null => {
+                    switch (label) {
+                      case "redirect_uri matches expected for current origin":
+                        // The expected URL is what the validator wants to
+                        // see — registering it makes the comparison pass.
+                        return probe.expectedRedirect ?? fixUri;
+                      case "redirect_uri is in the registered allow-list":
+                        // Registering the URI the backend actually generated
+                        // is what TikTok needs in its Login Kit allow-list.
+                        return probe.parsedRedirect ?? fixUri;
+                      case "redirect_uri present in authorize URL":
+                        // No URL was parsed at all — best we can do is the
+                        // canonical URI for the currently selected origin.
+                        return `${probeOrigin}/auth/tiktok/callback`;
+                      case "Start function `redirectUri` matches authorize URL":
+                        // Both backend metadata and URL must agree — the URL
+                        // is the source of truth for what TikTok will see.
+                        return probe.parsedRedirect ?? fixUri;
+                      default:
+                        // Non-redirect checks (scopes, response_type, host,
+                        // client_key, state) are not fixed by registering a
+                        // URI, so we don't offer a copy button for them.
+                        return null;
+                    }
+                  };
                   return (
                     <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1426,24 +1456,52 @@ export default function TikTokConfigChecklistPage() {
                           title="Copy the exact redirect URI you need to register in the TikTok Developer Portal to make these failed checks pass."
                         >
                           <Copy className="h-3 w-3 mr-1" />
-                          Copy fix
+                          Copy fix (all)
                         </Button>
                       </div>
                       <ul className="space-y-1.5 text-[11px]">
-                        {failed.map((c, i) => (
-                          <li
-                            key={`${c.label}-${i}`}
-                            className="rounded border border-destructive/30 bg-background p-2 space-y-0.5"
-                          >
-                            <div className="font-semibold text-foreground flex items-center gap-1.5">
-                              <StatusBadge status={c.status} />
-                              {c.label}
-                            </div>
-                            <div className="text-muted-foreground break-words">
-                              {c.detail}
-                            </div>
-                          </li>
-                        ))}
+                        {failed.map((c, i) => {
+                          const checkFix = fixForCheck(c.label);
+                          return (
+                            <li
+                              key={`${c.label}-${i}`}
+                              className="rounded border border-destructive/30 bg-background p-2 space-y-1"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="font-semibold text-foreground flex items-center gap-1.5">
+                                  <StatusBadge status={c.status} />
+                                  {c.label}
+                                </div>
+                                {checkFix && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-[10px]"
+                                    onClick={() => {
+                                      copy(checkFix);
+                                      toast.success(
+                                        `Copied fix for "${c.label}": ${checkFix}`,
+                                      );
+                                    }}
+                                    title={`Copy the redirect URI variation that makes this specific check pass: ${checkFix}`}
+                                  >
+                                    <Copy className="h-3 w-3 mr-1" />
+                                    Copy fix
+                                  </Button>
+                                )}
+                              </div>
+                              <div className="text-muted-foreground break-words">
+                                {c.detail}
+                              </div>
+                              {checkFix && (
+                                <div className="text-[10px] text-muted-foreground">
+                                  Fix URI:{" "}
+                                  <code className="break-all">{checkFix}</code>
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                       <p className="text-[11px] text-muted-foreground">
                         Fix: register{" "}
