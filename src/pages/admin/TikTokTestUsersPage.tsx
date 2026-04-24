@@ -341,14 +341,14 @@ export default function TikTokTestUsersPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+          <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="py-3 flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
               <div className="flex-1 text-sm">
-                <p className="font-medium text-amber-800 dark:text-amber-200">
+                <p className="font-medium text-foreground">
                   Nog geen opname-account ingesteld
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Markeer hieronder een verbonden account als "Recording User" om snel te zien welke account je gebruikt voor testvideo's.
                 </p>
               </div>
