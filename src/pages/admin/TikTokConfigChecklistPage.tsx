@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Download,
   FileText,
+  Bug,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -280,6 +281,13 @@ export default function TikTokConfigChecklistPage() {
   const [probeRanAt, setProbeRanAt] = useState<string | null>(null);
   const [callbackProbeRanAt, setCallbackProbeRanAt] = useState<string | null>(null);
 
+  // When true, the live redirect probe is run against an intentionally
+  // misconfigured expected URL + allow-list so admins can see what the
+  // failure modes look like end-to-end. Pure UI/validation simulation —
+  // it never mutates secrets, the backend, or the TikTok app config.
+  const [simulating, setSimulating] = useState(false);
+  const [lastWasSimulated, setLastWasSimulated] = useState(false);
+
   const runDiagnose = async () => {
     setRunning(true);
     setError(null);
@@ -314,13 +322,27 @@ export default function TikTokConfigChecklistPage() {
    * response_type, client_key presence and that the start function and the URL
    * agree on the redirect.
    */
-  const runRedirectProbe = async (originOverride?: ProbeOrigin) => {
+  const runRedirectProbe = async (
+    originOverride?: ProbeOrigin,
+    opts?: { simulateMisconfig?: boolean },
+  ) => {
     setProbing(true);
     setProbeError(null);
     setProbe(null);
+    const simulate = !!opts?.simulateMisconfig;
+    setLastWasSimulated(simulate);
     try {
       const origin = (originOverride ?? probeOrigin).replace(/\/$/, "");
-      const expectedRedirect = `${origin}/auth/tiktok/callback`;
+      // In simulation mode, pretend we expected a path that nobody has
+      // registered. The real backend response is unchanged — we just compare
+      // it against a deliberately wrong target so every "matches expected"
+      // and "is in allow-list" check fails with a realistic-looking error.
+      const expectedRedirect = simulate
+        ? `${origin}/auth/tiktok/callback-MISCONFIGURED`
+        : `${origin}/auth/tiktok/callback`;
+      const allowList: readonly string[] = simulate
+        ? ["https://example.invalid/auth/tiktok/callback"]
+        : EXPECTED_REDIRECT_URIS;
 
       const { data, error } = await supabase.functions.invoke<{
         ok: boolean;
@@ -378,12 +400,16 @@ export default function TikTokConfigChecklistPage() {
         });
 
         // 4. Must be in registered list
-        const inRegistered = (EXPECTED_REDIRECT_URIS as readonly string[]).includes(parsedRedirect);
+        const inRegistered = allowList.includes(parsedRedirect);
         checks.push({
           label: "redirect_uri is in the registered allow-list",
           status: inRegistered ? "pass" : "fail",
           detail: inRegistered
             ? "This URL is one of the URIs that must be registered in TikTok."
+            : simulate
+            ? `SIMULATION: pretending the only registered URI is ${allowList.join(
+                ", ",
+              )}. In real life you'd see TikTok return error=invalid_redirect — fix by adding ${parsedRedirect} to Login Kit → Redirect URI in the TikTok Developer Portal.`
             : `Not in [${EXPECTED_REDIRECT_URIS.join(", ")}]. Add it in the TikTok Developer Portal.`,
         });
 
@@ -452,7 +478,15 @@ export default function TikTokConfigChecklistPage() {
       setProbeRanAt(new Date().toISOString());
 
       if (ok) {
-        toast.success("Redirect URI probe passed");
+        toast.success(
+          simulate
+            ? "Simulation produced no failures — unexpected, the simulator is broken."
+            : "Redirect URI probe passed",
+        );
+      } else if (simulate) {
+        toast.warning(
+          "Simulated misconfig — failures below show what a real broken redirect URI looks like.",
+        );
       } else {
         toast.error("Redirect URI probe found issues");
       }
@@ -463,6 +497,7 @@ export default function TikTokConfigChecklistPage() {
       toast.error(msg);
     } finally {
       setProbing(false);
+      setSimulating(false);
     }
   };
 
@@ -483,6 +518,16 @@ export default function TikTokConfigChecklistPage() {
     setProbeOrigin(origin);
     void runRedirectProbe(origin);
     void runCallbackProbe(origin);
+  };
+
+  /**
+   * Run the redirect probe in "simulated misconfig" mode against the
+   * currently selected target origin. Used by the demo button so admins
+   * can preview the exact error UI before they hit it for real.
+   */
+  const runSimulatedMisconfig = () => {
+    setSimulating(true);
+    void runRedirectProbe(probeOrigin, { simulateMisconfig: true });
   };
 
   /**
@@ -955,6 +1000,12 @@ export default function TikTokConfigChecklistPage() {
                 {probe && (
                   <StatusBadge status={probe.ok ? "pass" : "fail"} />
                 )}
+                {lastWasSimulated && (
+                  <Badge variant="secondary" className="gap-1 text-[10px]">
+                    <Bug className="h-3 w-3" />
+                    Simulated
+                  </Badge>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -967,6 +1018,20 @@ export default function TikTokConfigChecklistPage() {
                     <RefreshCw className="h-4 w-4 mr-1" />
                   )}
                   Re-run probe
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={runSimulatedMisconfig}
+                  disabled={probing}
+                  title="Re-run the probe but compare against an intentionally wrong allow-list, so you can see what a misconfigured redirect URI looks like."
+                >
+                  {simulating ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Bug className="h-4 w-4 mr-1" />
+                  )}
+                  Simulate misconfig
                 </Button>
               </div>
             </div>
@@ -1037,6 +1102,21 @@ export default function TikTokConfigChecklistPage() {
             )}
             {probe && (
               <>
+                {lastWasSimulated && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs space-y-1">
+                    <div className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Bug className="h-3.5 w-3.5" />
+                      Simulated misconfiguration
+                    </div>
+                    <p className="text-muted-foreground">
+                      This run was compared against an intentionally wrong expected redirect
+                      (<code>…/callback-MISCONFIGURED</code>) and a fake allow-list
+                      (<code>https://example.invalid/...</code>). Backend secrets and TikTok
+                      app settings were not touched. Click <strong>Re-run probe</strong> to
+                      return to the real configuration.
+                    </p>
+                  </div>
+                )}
                 <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
                   <div className="rounded border border-border/60 bg-muted/30 p-2">
                     <div className="font-semibold text-foreground mb-0.5">
