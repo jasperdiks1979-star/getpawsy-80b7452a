@@ -898,3 +898,38 @@ function friendlyInspectError(
       return fallback || "Failed to load TikTok config.";
   }
 }
+
+/**
+ * Quick-link card to a TikTok Developer Portal page or doc.
+ * Opens in a new tab and shows a short hint explaining why an admin
+ * would click it (which OAuth error it helps resolve).
+ */
+function PortalLinkButton({
+  href,
+  icon: Icon,
+  title,
+  hint,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-start gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs hover:bg-muted transition-colors"
+    >
+      <Icon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1 font-medium text-foreground">
+          <span className="truncate">{title}</span>
+          <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0 group-hover:text-foreground" />
+        </div>
+        <div className="text-[11px] text-muted-foreground leading-snug">{hint}</div>
+      </div>
+    </a>
+  );
+}
