@@ -30,6 +30,7 @@ import {
   Upload,
   Loader2,
   Users,
+  Activity,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ManualPostingHelper } from '@/components/admin/ManualPostingHelper';
