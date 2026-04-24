@@ -731,6 +731,20 @@ export function TikTokConnectCard() {
               )}
               Inspect Config
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={copyInspectionOutput}
+              disabled={!config}
+              title={
+                config
+                  ? "Copy a markdown summary of the inspection output for pasting into chat/support"
+                  : "Run \"Inspect Config\" first to capture the output"
+              }
+            >
+              <ClipboardCopy className="h-4 w-4 mr-1" />
+              Copy inspection output
+            </Button>
           </div>
           <p className="text-xs text-muted-foreground">
             Shows the masked <code className="text-[10px]">TIKTOK_CLIENT_KEY</code> and the exact
