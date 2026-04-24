@@ -472,6 +472,19 @@ export function TikTokConnectCard() {
       const result = data as ConfigInspectResult;
       setConfig(result);
       if (result?.ok) {
+        // Record a masked snapshot so the next Inspect can render a
+        // before/after diff. Skip if nothing changed since the last run
+        // (avoids polluting the ring buffer with duplicates).
+        const snap = snapshotFromConfig(result);
+        if (snap) {
+          setSnapshots((prev) => {
+            const last = prev[prev.length - 1];
+            if (last && snapshotsEqual(last, snap)) return prev;
+            const next = [...prev, snap].slice(-SNAPSHOT_RING_SIZE);
+            saveSnapshots(next);
+            return next;
+          });
+        }
         toast.success("Loaded TikTok OAuth config");
       } else {
         const friendly = friendlyInspectError(result?.code, result?.error);
