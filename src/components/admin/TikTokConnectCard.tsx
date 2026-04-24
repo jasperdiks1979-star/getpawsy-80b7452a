@@ -62,6 +62,8 @@ type ConfigInspectResult = {
   scopes?: string;
   authorize_url_preview?: string;
   hints?: string[];
+  client_key_validation?: SecretValidationReport;
+  client_secret_validation?: SecretValidationReport;
   sandbox_test_user_help?: {
     tiktok_username_to_add: string;
     portal_apps_url: string;
@@ -80,6 +82,33 @@ type ConfigInspectResult = {
     | "user_not_found"
     | "not_admin"
     | "internal_error";
+};
+
+type ContaminationKind =
+  | "trailing_whitespace"
+  | "leading_whitespace"
+  | "internal_whitespace"
+  | "bom"
+  | "zero_width"
+  | "nbsp"
+  | "control_char";
+
+type SecretValidationIssue = {
+  kind: ContaminationKind;
+  position: number;
+  char_code: number;
+  char_label: string;
+  message: string;
+};
+
+type SecretValidationReport = {
+  secret_name: string;
+  is_set: boolean;
+  raw_length: number;
+  clean_length: number;
+  has_contamination: boolean;
+  issues: SecretValidationIssue[];
+  summary: string;
 };
 
 type SmokeCheck = {
