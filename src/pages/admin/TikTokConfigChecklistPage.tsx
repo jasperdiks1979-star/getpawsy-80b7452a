@@ -755,6 +755,8 @@ export default function TikTokConfigChecklistPage() {
         ran_at: probeRanAt,
         error: probeError,
         ok: probe?.ok ?? null,
+        simulated: lastWasSimulated,
+        sim_scenario: lastSimScenario,
         expected_redirect: probe?.expectedRedirect ?? null,
         parsed_redirect: probe?.parsedRedirect ?? null,
         start_returned_redirect: probe?.startReturnedRedirect ?? null,
