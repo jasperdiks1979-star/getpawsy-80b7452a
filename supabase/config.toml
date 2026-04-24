@@ -263,3 +263,6 @@ verify_jwt = false
 
 [functions.pinterest-cron-worker]
 verify_jwt = false
+
+[functions.tiktok-oauth-smoke-test]
+verify_jwt = false

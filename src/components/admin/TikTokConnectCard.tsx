@@ -82,6 +82,32 @@ type ConfigInspectResult = {
     | "internal_error";
 };
 
+type SmokeCheck = {
+  name: string;
+  status: "pass" | "fail" | "warn";
+  detail: string;
+  hint?: string;
+  evidence?: Record<string, unknown>;
+};
+
+type SmokeTestResult = {
+  ok: boolean;
+  summary: string;
+  elapsed_ms: number;
+  redirect_uri: string;
+  client_key_masked: string;
+  client_secret_set: boolean;
+  checks: SmokeCheck[];
+  // Auth-failure shape (no checks array) — keep optional so we can render
+  // a friendly error without a separate type.
+  code?:
+    | "missing_authorization_header"
+    | "invalid_auth_token"
+    | "not_admin"
+    | "internal_error";
+  error?: string;
+};
+
 /**
  * Redirect URIs that MUST be registered in the TikTok Developer Portal
  * (Login Kit → Redirect URI section). Both apex and lovable.app are supported
@@ -104,6 +130,8 @@ export function TikTokConnectCard() {
   const [diagnostic, setDiagnostic] = useState<DiagnoseResult | null>(null);
   const [inspecting, setInspecting] = useState(false);
   const [config, setConfig] = useState<ConfigInspectResult | null>(null);
+  const [smokeTesting, setSmokeTesting] = useState(false);
+  const [smoke, setSmoke] = useState<SmokeTestResult | null>(null);
   // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
   const [retryInfo, setRetryInfo] = useState<{
     attempt: number;
@@ -295,6 +323,90 @@ export function TikTokConnectCard() {
     } else {
       toast.success("TikTok disconnected");
       setAccount(null);
+    }
+  };
+
+  /**
+   * Run the live OAuth smoke test against TikTok's authorize + token endpoints
+   * using the sanitized server-side secrets. Surfaces a per-check pass/fail
+   * grid so the operator can tell at a glance whether the credentials are
+   * recognized by TikTok or whether something (whitespace, wrong key, missing
+   * sandbox user) is still tripping the OAuth flow.
+   */
+  const handleSmokeTest = async () => {
+    setSmokeTesting(true);
+    setSmoke(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        const msg = "Sign in as admin to run the TikTok smoke test.";
+        setSmoke({
+          ok: false,
+          code: "missing_authorization_header",
+          error: msg,
+          summary: msg,
+          elapsed_ms: 0,
+          redirect_uri: "",
+          client_key_masked: "",
+          client_secret_set: false,
+          checks: [],
+        });
+        toast.error(msg);
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke(
+        "tiktok-oauth-smoke-test",
+        { body: { origin: window.location.origin } },
+      );
+      if (error) {
+        // Try to recover the typed error body from the non-2xx response.
+        let recovered: SmokeTestResult | null = null;
+        const ctxResp = (error as { context?: { response?: Response } })?.context?.response;
+        if (ctxResp && typeof ctxResp.json === "function") {
+          try {
+            recovered = await ctxResp.clone().json();
+          } catch {
+            recovered = null;
+          }
+        }
+        const msg = recovered?.error || error.message || "Smoke test failed";
+        setSmoke({
+          ok: false,
+          code: recovered?.code ?? "internal_error",
+          error: msg,
+          summary: msg,
+          elapsed_ms: recovered?.elapsed_ms ?? 0,
+          redirect_uri: recovered?.redirect_uri ?? "",
+          client_key_masked: recovered?.client_key_masked ?? "",
+          client_secret_set: recovered?.client_secret_set ?? false,
+          checks: recovered?.checks ?? [],
+        });
+        toast.error(msg);
+        return;
+      }
+      const result = data as SmokeTestResult;
+      setSmoke(result);
+      if (result.ok) {
+        toast.success(result.summary);
+      } else {
+        toast.error(result.summary);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Smoke test failed";
+      setSmoke({
+        ok: false,
+        code: "internal_error",
+        error: msg,
+        summary: msg,
+        elapsed_ms: 0,
+        redirect_uri: "",
+        client_key_masked: "",
+        client_secret_set: false,
+        checks: [],
+      });
+      toast.error(msg);
+    } finally {
+      setSmokeTesting(false);
     }
   };
 
@@ -912,6 +1024,103 @@ export function TikTokConnectCard() {
                     </a>
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Live OAuth Smoke Test — actually pings TikTok with the sanitized
+            secrets and reports whether the credential pair is recognized. */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <FlaskConical className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">
+                OAuth Smoke Test (live TikTok call)
+              </h3>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleSmokeTest} disabled={smokeTesting}>
+              {smokeTesting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <FlaskConical className="h-4 w-4 mr-1" />
+              )}
+              Run Smoke Test
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sends the sanitized <code className="text-[10px]">TIKTOK_CLIENT_KEY</code> and{" "}
+            <code className="text-[10px]">TIKTOK_CLIENT_SECRET</code> to TikTok's authorize and
+            token endpoints (with a fake code) to confirm both credentials are recognized — without
+            requiring a browser login.
+          </p>
+
+          {smoke && (
+            <div className="space-y-2">
+              <div
+                className={`flex items-start gap-2 rounded-md px-3 py-2 text-xs ${
+                  smoke.ok ? "bg-primary/10 text-foreground" : "bg-destructive/10 text-foreground"
+                }`}
+              >
+                {smoke.ok ? (
+                  <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <div className="font-medium">{smoke.summary}</div>
+                  {smoke.elapsed_ms > 0 && (
+                    <div className="text-muted-foreground text-[11px] mt-0.5">
+                      Completed in {smoke.elapsed_ms}ms
+                      {smoke.client_key_masked && ` · key=${smoke.client_key_masked}`}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {smoke.checks.length > 0 && (
+                <ul className="space-y-1.5">
+                  {smoke.checks.map((c, i) => {
+                    const Icon =
+                      c.status === "pass"
+                        ? CheckCircle2
+                        : c.status === "fail"
+                          ? XCircle
+                          : AlertTriangle;
+                    const color =
+                      c.status === "pass"
+                        ? "text-primary"
+                        : c.status === "fail"
+                          ? "text-destructive"
+                          : "text-muted-foreground";
+                    return (
+                      <li
+                        key={i}
+                        className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs"
+                      >
+                        <div className="flex items-start gap-2">
+                          <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${color}`} />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-foreground">{c.name}</div>
+                            <div className="text-muted-foreground break-words">{c.detail}</div>
+                            {c.hint && (
+                              <div className="text-muted-foreground/80 mt-1 italic">{c.hint}</div>
+                            )}
+                            {c.evidence && (
+                              <details className="mt-1.5">
+                                <summary className="cursor-pointer text-[11px] text-muted-foreground/80 hover:text-foreground">
+                                  Show TikTok response
+                                </summary>
+                                <pre className="mt-1 max-h-48 overflow-auto rounded bg-muted px-2 py-1.5 text-[10px] font-mono whitespace-pre-wrap break-all">
+                                  {JSON.stringify(c.evidence, null, 2)}
+                                </pre>
+                              </details>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
           )}
