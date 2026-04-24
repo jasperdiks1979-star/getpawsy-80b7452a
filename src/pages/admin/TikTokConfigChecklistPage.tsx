@@ -1286,6 +1286,57 @@ export default function TikTokConfigChecklistPage() {
               </p>
             </div>
 
+            {/* Open TikTok app settings helper — shows the exact URI to paste
+                under Login Kit → Redirect URI for the currently selected
+                origin, with a one-click copy and a deep link to the TikTok
+                Developer Portal. Helps admins fix simulated/real failures
+                without having to remember the exact path. */}
+            {(() => {
+              const requiredUri = `${probeOrigin}/auth/tiktok/callback`;
+              return (
+                <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Paste this in TikTok → Login Kit → Redirect URI
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={() => copy(requiredUri)}
+                        title="Copy the exact redirect URI for the currently selected origin."
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy URI
+                      </Button>
+                      <Button asChild size="sm" className="h-7">
+                        <a
+                          href="https://developers.tiktok.com/apps"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="gap-1"
+                          title="Opens the TikTok Developer Portal — go to your app → Login Kit → Redirect URI and paste the value above."
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Open TikTok app settings
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                  <code className="block text-[11px] break-all rounded border border-border/60 bg-background px-2 py-1.5">
+                    {requiredUri}
+                  </code>
+                  <p className="text-[11px] text-muted-foreground">
+                    Must match character-for-character (no trailing slash, no extra path
+                    segments). Repeat for each origin in the selector above so both{" "}
+                    <code>getpawsy.pet</code> and <code>getpawsy.lovable.app</code> work.
+                  </p>
+                </div>
+              );
+            })()}
+
             {probeError && (
               <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
                 <strong>Probe failed:</strong> {probeError}
