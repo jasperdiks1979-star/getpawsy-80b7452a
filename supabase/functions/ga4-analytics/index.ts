@@ -751,6 +751,149 @@ serve(async (req) => {
         categorySuggestions: [], // Would need custom event parameters to track
         dailyTrends
       };
+    } else if (reportType === 'hero_ctas') {
+      // Hero CTA tracking summary — counts the two events the homepage hero
+      // emits (`hero_cta_click`, `hero_anchor_result`) and computes the share
+      // of anchor_result events where `anchor_reached=true`. The two pieces
+      // together tell us (a) is the hero engaging at all, and (b) when it
+      // does, does the in-page jump actually land on #how-it-works.
+      // deno-lint-ignore no-explicit-any
+      type AnyRow = any;
+
+      const HERO_EVENTS = ['hero_cta_click', 'hero_anchor_result'];
+      const eventFilter = {
+        filter: {
+          fieldName: 'eventName',
+          inListFilter: { values: HERO_EVENTS },
+        },
+      };
+
+      const [eventTotals, perDay, ctaIdBreakdown, anchorReachedBreakdown] =
+        await Promise.all([
+          // (1) Headline counts per event over the window.
+          runReport(accessToken, propertyId, {
+            dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+            dimensions: [{ name: 'eventName' }],
+            metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }],
+            dimensionFilter: eventFilter,
+          } as Parameters<typeof runReport>[2]).catch(() => ({ rows: [] })),
+
+          // (2) Daily series so the dashboard can sparkline the trend.
+          runReport(accessToken, propertyId, {
+            dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+            dimensions: [{ name: 'date' }, { name: 'eventName' }],
+            metrics: [{ name: 'eventCount' }],
+            dimensionFilter: eventFilter,
+            orderBys: [{ dimension: { dimensionName: 'date' } }],
+          } as Parameters<typeof runReport>[2]).catch(() => ({ rows: [] })),
+
+          // (3) Click split by primary vs. secondary CTA (custom param `cta_id`).
+          runReport(accessToken, propertyId, {
+            dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+            dimensions: [
+              { name: 'eventName' },
+              { name: 'customEvent:cta_id' },
+            ],
+            metrics: [{ name: 'eventCount' }],
+            dimensionFilter: {
+              filter: {
+                fieldName: 'eventName',
+                stringFilter: { value: 'hero_cta_click' },
+              },
+            },
+          } as Parameters<typeof runReport>[2]).catch(() => ({ rows: [] })),
+
+          // (4) Did the anchor land? — split anchor_result by `anchor_reached`.
+          runReport(accessToken, propertyId, {
+            dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+            dimensions: [{ name: 'customEvent:anchor_reached' }],
+            metrics: [{ name: 'eventCount' }],
+            dimensionFilter: {
+              filter: {
+                fieldName: 'eventName',
+                stringFilter: { value: 'hero_anchor_result' },
+              },
+            },
+          } as Parameters<typeof runReport>[2]).catch(() => ({ rows: [] })),
+        ]);
+
+      const totals: Record<string, { count: number; users: number }> = {};
+      for (const ev of HERO_EVENTS) totals[ev] = { count: 0, users: 0 };
+      eventTotals?.rows?.forEach((row: AnyRow) => {
+        const name = row.dimensionValues?.[0]?.value || '';
+        if (!HERO_EVENTS.includes(name)) return;
+        totals[name] = {
+          count: parseInt(row.metricValues?.[0]?.value || '0'),
+          users: parseInt(row.metricValues?.[1]?.value || '0'),
+        };
+      });
+
+      // Build a date-keyed map first, then emit a sorted array. GA4 returns
+      // dates as YYYYMMDD strings; we normalize to YYYY-MM-DD for the UI.
+      const dailyMap: Record<
+        string,
+        { date: string; clicks: number; anchorResults: number }
+      > = {};
+      perDay?.rows?.forEach((row: AnyRow) => {
+        const raw = row.dimensionValues?.[0]?.value || '';
+        const evName = row.dimensionValues?.[1]?.value || '';
+        const count = parseInt(row.metricValues?.[0]?.value || '0');
+        if (raw.length !== 8) return;
+        const date = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+        if (!dailyMap[date]) dailyMap[date] = { date, clicks: 0, anchorResults: 0 };
+        if (evName === 'hero_cta_click') dailyMap[date].clicks += count;
+        if (evName === 'hero_anchor_result') dailyMap[date].anchorResults += count;
+      });
+      const dailyTrends = Object.values(dailyMap).sort((a, b) =>
+        a.date.localeCompare(b.date),
+      );
+
+      const ctaSplit: Record<string, number> = {};
+      ctaIdBreakdown?.rows?.forEach((row: AnyRow) => {
+        const id = row.dimensionValues?.[1]?.value || '(not set)';
+        ctaSplit[id] = (ctaSplit[id] || 0) + parseInt(row.metricValues?.[0]?.value || '0');
+      });
+
+      let anchorReachedTrue = 0;
+      let anchorReachedFalse = 0;
+      let anchorReachedUnknown = 0;
+      anchorReachedBreakdown?.rows?.forEach((row: AnyRow) => {
+        const v = (row.dimensionValues?.[0]?.value || '').toLowerCase();
+        const c = parseInt(row.metricValues?.[0]?.value || '0');
+        if (v === 'true') anchorReachedTrue += c;
+        else if (v === 'false') anchorReachedFalse += c;
+        else anchorReachedUnknown += c;
+      });
+
+      const totalClicks = totals['hero_cta_click'].count;
+      const totalAnchorResults = totals['hero_anchor_result'].count;
+      const knownAnchorResults = anchorReachedTrue + anchorReachedFalse;
+      const anchorReachedRate =
+        knownAnchorResults > 0 ? (anchorReachedTrue / knownAnchorResults) * 100 : 0;
+
+      result = {
+        window: { startDate: dateStart, endDate: dateEnd },
+        totals: {
+          heroCtaClick: totals['hero_cta_click'],
+          heroAnchorResult: totals['hero_anchor_result'],
+        },
+        ctaSplit,
+        anchorReached: {
+          true: anchorReachedTrue,
+          false: anchorReachedFalse,
+          unknown: anchorReachedUnknown,
+          ratePct: Number(anchorReachedRate.toFixed(2)),
+        },
+        dailyTrends,
+        derived: {
+          totalClicks,
+          totalAnchorResults,
+          anchorResultCoveragePct:
+            totalAnchorResults > 0
+              ? Number(((knownAnchorResults / totalAnchorResults) * 100).toFixed(2))
+              : 0,
+        },
+      };
     }
 
     console.log('Successfully fetched GA4 data');
