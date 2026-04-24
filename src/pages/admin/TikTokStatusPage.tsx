@@ -446,6 +446,181 @@ export default function TikTokStatusPage() {
 
       {/* Config snapshot */}
       {status?.config && (
+        <>
+        {/* Redirect URI exact-match check */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <LinkIcon className="h-5 w-5" />
+              Redirect URI match check
+            </CardTitle>
+            <CardDescription>
+              TikTok requires an <strong>exact</strong> match (scheme, host, path,
+              case, trailing slash). Whitelist every origin you serve from.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Configured callback (server-side) */}
+            <div>
+              <div className="text-muted-foreground text-xs uppercase tracking-wide mb-1">
+                Currently configured (server)
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className="font-mono text-xs break-all bg-muted px-2 py-1 rounded">
+                  {status.config.redirect_uri}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(status.config!.redirect_uri);
+                      toast.success("Copied configured URI");
+                    } catch {
+                      toast.error("Clipboard blocked");
+                    }
+                  }}
+                >
+                  <ClipboardCopy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Expected URIs derived from known origins + current browser */}
+            <div>
+              <div className="text-muted-foreground text-xs uppercase tracking-wide mb-2">
+                Expected URIs to whitelist in TikTok Developer Portal
+              </div>
+              <ul className="space-y-2">
+                {(() => {
+                  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+                  const all = [
+                    ...KNOWN_ORIGINS.map((k) => ({ ...k, current: false })),
+                    ...(currentOrigin && !KNOWN_ORIGINS.some((k) => k.origin === currentOrigin)
+                      ? [{ label: "Current browser origin", origin: currentOrigin, current: true }]
+                      : []),
+                  ];
+                  const configured = status.config!.redirect_uri;
+                  return all.map((row) => {
+                    const uri = buildCallback(row.origin);
+                    const matchesConfigured = uri === configured;
+                    return (
+                      <li
+                        key={row.origin}
+                        className="flex items-start gap-2 text-sm border rounded p-2"
+                      >
+                        {matchesConfigured ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        ) : (
+                          <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-xs">{row.label}</span>
+                            {row.current && (
+                              <Badge variant="outline" className="text-xs">
+                                Active
+                              </Badge>
+                            )}
+                            {matchesConfigured && (
+                              <Badge variant="secondary" className="text-xs">
+                                Server uses this
+                              </Badge>
+                            )}
+                          </div>
+                          <code className="font-mono text-xs break-all block mt-1">{uri}</code>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(uri);
+                              toast.success(`Copied ${row.label}`);
+                            } catch {
+                              toast.error("Clipboard blocked");
+                            }
+                          }}
+                        >
+                          <ClipboardCopy className="h-3 w-3" />
+                        </Button>
+                      </li>
+                    );
+                  });
+                })()}
+              </ul>
+            </div>
+
+            {/* Verifier: paste what's in the portal */}
+            <div className="border-t pt-4 space-y-2">
+              <Label htmlFor="portal-uri" className="text-xs uppercase tracking-wide">
+                Paste the URI from your TikTok Developer Portal
+              </Label>
+              <Input
+                id="portal-uri"
+                placeholder="https://example.com/auth/tiktok/callback"
+                value={portalUri}
+                onChange={(e) => {
+                  setPortalUri(e.target.value);
+                  try {
+                    localStorage.setItem(PORTAL_URI_KEY, e.target.value);
+                  } catch {
+                    // ignore
+                  }
+                }}
+                className="font-mono text-xs"
+              />
+              {portalUri.trim() && (() => {
+                const configured = status.config!.redirect_uri;
+                const diffs = diffUris(portalUri, configured);
+                if (diffs.length === 0) {
+                  return (
+                    <Alert className="border-green-500/40 bg-green-500/5">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertTitle>Exact match</AlertTitle>
+                      <AlertDescription>
+                        Your portal value matches the configured redirect URI. OAuth
+                        from this origin should succeed.
+                      </AlertDescription>
+                    </Alert>
+                  );
+                }
+                const reasons: Record<DiffKind, string> = {
+                  scheme: "Scheme differs (http vs https). TikTok requires HTTPS.",
+                  host: "Hostname differs. Add this exact host as a separate redirect URI in the portal.",
+                  path: "Path differs. The path must be exactly /auth/tiktok/callback.",
+                  case: "Case differs. URIs are case-sensitive in TikTok's matcher.",
+                  trailing_slash: "Trailing slash differs. Remove or add it on both sides.",
+                  whitespace: "Leading or trailing whitespace detected — trim it.",
+                };
+                return (
+                  <Alert variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertTitle>Mismatch detected</AlertTitle>
+                    <AlertDescription>
+                      <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
+                        {diffs.map((d) => (
+                          <li key={d}>{reasons[d]}</li>
+                        ))}
+                      </ul>
+                      <div className="mt-3 text-xs space-y-1">
+                        <div>
+                          <span className="text-muted-foreground">Portal:</span>{" "}
+                          <code className="font-mono break-all">{portalUri.trim()}</code>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Server:</span>{" "}
+                          <code className="font-mono break-all">{configured}</code>
+                        </div>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                );
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -526,6 +701,7 @@ export default function TikTokStatusPage() {
             </dl>
           </CardContent>
         </Card>
+        </>
       )}
 
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
