@@ -297,6 +297,10 @@ export default function TikTokConfigChecklistPage() {
   type SimScenario = "wrong_path" | "wrong_origin" | "missing_allowlist";
   const [simScenario, setSimScenario] = useState<SimScenario>("wrong_path");
   const [lastSimScenario, setLastSimScenario] = useState<SimScenario | null>(null);
+  // Opt-in: when enabled, clicking any "Copy fix" button immediately
+  // re-runs the live (non-simulated) redirect probe so admins can confirm
+  // the change after pasting the URI into the TikTok Developer Portal.
+  const [autoRerunOnCopy, setAutoRerunOnCopy] = useState(false);
 
   const runDiagnose = async () => {
     setRunning(true);
