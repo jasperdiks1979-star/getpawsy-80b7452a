@@ -16,6 +16,7 @@ import {
   Stethoscope,
   Info,
   RefreshCw,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
@@ -42,6 +43,19 @@ type ConnectedAccount = {
   scope: string | null;
 };
 
+type ConfigInspectResult = {
+  ok: boolean;
+  client_key_masked?: string;
+  client_secret_set?: boolean;
+  client_secret_length?: number;
+  redirect_uri?: string;
+  origin_used?: string;
+  scopes?: string;
+  authorize_url_preview?: string;
+  hints?: string[];
+  error?: string;
+};
+
 /**
  * Redirect URIs that MUST be registered in the TikTok Developer Portal
  * (Login Kit → Redirect URI section). Both apex and lovable.app are supported
@@ -62,6 +76,8 @@ export function TikTokConnectCard() {
   const [connecting, setConnecting] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<DiagnoseResult | null>(null);
+  const [inspecting, setInspecting] = useState(false);
+  const [config, setConfig] = useState<ConfigInspectResult | null>(null);
   // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
   const [retryInfo, setRetryInfo] = useState<{
     attempt: number;
@@ -169,6 +185,27 @@ export function TikTokConnectCard() {
       toast.error(e instanceof Error ? e.message : "Diagnose failed");
     } finally {
       setDiagnosing(false);
+    }
+  };
+
+  const handleInspectConfig = async () => {
+    setInspecting(true);
+    setConfig(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-oauth-config-inspect", {
+        body: { origin: window.location.origin },
+      });
+      if (error) throw error;
+      setConfig(data as ConfigInspectResult);
+      if (data?.ok) {
+        toast.success("Loaded TikTok OAuth config");
+      } else {
+        toast.error(data?.error || "Failed to load config");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Inspect failed");
+    } finally {
+      setInspecting(false);
     }
   };
 
