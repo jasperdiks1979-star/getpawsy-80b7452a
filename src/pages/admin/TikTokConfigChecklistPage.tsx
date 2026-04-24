@@ -538,6 +538,104 @@ export default function TikTokConfigChecklistPage() {
           checks={grouped.redirect_uri}
           extra={redirectExtra}
         />
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="text-base">
+                5. Live redirect URI probe (calls tiktok-oauth-start)
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {probe && (
+                  <StatusBadge status={probe.ok ? "pass" : "fail"} />
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={runRedirectProbe}
+                  disabled={probing}
+                >
+                  {probing ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                  )}
+                  Re-run probe
+                </Button>
+              </div>
+            </div>
+            <CardDescription className="text-xs">
+              Invokes the real <code>tiktok-oauth-start</code> edge function with the current
+              origin, parses the returned authorize URL, and verifies the{" "}
+              <code>redirect_uri</code>, scopes and client_key match what TikTok expects.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {probeError && (
+              <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
+                <strong>Probe failed:</strong> {probeError}
+              </div>
+            )}
+            {probing && !probe && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Calling tiktok-oauth-start…
+              </div>
+            )}
+            {probe && (
+              <>
+                <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      Expected redirect_uri
+                    </div>
+                    <code className="break-all">{probe.expectedRedirect}</code>
+                  </div>
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      redirect_uri in authorize URL
+                    </div>
+                    <code className="break-all">{probe.parsedRedirect ?? "(missing)"}</code>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {probe.checks.map((c, i) => (
+                    <div
+                      key={`${c.label}-${i}`}
+                      className="rounded-md border border-border/60 bg-card p-2.5 space-y-1"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-sm font-medium text-foreground">{c.label}</div>
+                        <StatusBadge status={c.status} />
+                      </div>
+                      <div className="text-xs text-muted-foreground break-words">
+                        {c.detail}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded border border-border/60 bg-muted/20 p-2 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[11px] font-semibold text-foreground">
+                      Generated authorize URL
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copy(probe.authUrl)}
+                      className="h-7 px-2"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <code className="text-[10px] break-all block">{probe.authUrl}</code>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
