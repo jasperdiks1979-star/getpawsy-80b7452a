@@ -1515,6 +1515,15 @@ export default function TikTokConfigChecklistPage() {
                             <Copy className="h-3 w-3 mr-1" />
                             Copy fix (all)
                           </Button>
+                          <Button
+                            size="sm"
+                            className="h-7"
+                            onClick={() => copyAndOpenTikTokSettings(fixUri)}
+                            title="Copy the redirect URI to your clipboard, then open the TikTok Developer Portal so you can paste it under Login Kit → Redirect URI."
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Open & paste
+                          </Button>
                         </div>
                       </div>
                       <ul className="space-y-1.5 text-[11px]">
@@ -1551,6 +1560,20 @@ export default function TikTokConfigChecklistPage() {
                                   >
                                     <Copy className="h-3 w-3 mr-1" />
                                     Copy fix
+                                  </Button>
+                                )}
+                                {checkFix && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-[10px]"
+                                    onClick={() =>
+                                      copyAndOpenTikTokSettings(checkFix, c.label)
+                                    }
+                                    title={`Copy ${checkFix} and open the TikTok Developer Portal so you can paste it under Login Kit → Redirect URI.`}
+                                  >
+                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                    Open & paste
                                   </Button>
                                 )}
                               </div>
