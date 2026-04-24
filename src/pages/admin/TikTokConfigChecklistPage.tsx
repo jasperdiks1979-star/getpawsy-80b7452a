@@ -1591,6 +1591,16 @@ export default function TikTokConfigChecklistPage() {
                             <ExternalLink className="h-3 w-3 mr-1" />
                             Open & paste
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7"
+                            onClick={exportFailedSimulatedChecks}
+                            title="Download a JSON containing only the failed simulated checks plus the exact redirect URI to register for each."
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Export failures
+                          </Button>
                         </div>
                       </div>
                       <ul className="space-y-1.5 text-[11px]">
