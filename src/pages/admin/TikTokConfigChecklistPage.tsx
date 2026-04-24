@@ -126,7 +126,7 @@ type CallbackProbeResult = {
   checks: CallbackProbeCheck[];
 };
 
-type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri";
+type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri" | "verified_prefix";
 
 const CATEGORY_META: Record<
   CategoryKey,
@@ -159,6 +159,13 @@ const CATEGORY_META: Record<
       "Every URL we might OAuth from must be registered in the Login Kit redirect URI list. TikTok matches them character-for-character.",
     portalHint:
       "TikTok Developer Portal → your app → Login Kit → Redirect URI",
+  },
+  verified_prefix: {
+    title: "5. Verified URL prefix (Content Posting API)",
+    description:
+      "TikTok requires that the URL prefix where videos are hosted is registered AND domain-verified in the Developer Portal before PULL_FROM_URL uploads will succeed. We auto-probe that the storage bucket is reachable and serves videos.",
+    portalHint:
+      "TikTok Developer Portal → your app → Content Posting API → URL Prefix Properties",
   },
 };
 
