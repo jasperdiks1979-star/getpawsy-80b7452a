@@ -79,6 +79,152 @@ interface SecretValidationReport {
   summary: string;
 }
 
+/**
+ * Per-character record of what `sanitizeSecret()` removed. Used by the
+ * drift report so the UI can show "we stripped 2 chars at positions 16-17:
+ * U+0020 SPACE, U+0020 SPACE" without ever exposing the secret value
+ * itself. We only emit the *removed* codepoints — never the kept ones.
+ */
+interface DriftRemovedChar {
+  position: number;       // 0-based index in the raw string
+  char_code: number;      // U+ codepoint
+  char_label: string;     // e.g. "U+0020 SPACE"
+  region: "leading" | "trailing" | "internal";
+}
+
+interface SecretDriftReport {
+  secret_name: string;
+  is_set: boolean;
+  raw_length: number;
+  clean_length: number;
+  diff_length: number;          // raw_length - clean_length
+  drifted: boolean;             // true iff raw !== clean
+  removed_chars: DriftRemovedChar[];
+  removed_summary: Record<string, number>; // e.g. { "U+0020 SPACE": 2, "U+00A0 NO-BREAK SPACE (NBSP)": 1 }
+  summary: string;
+}
+
+/**
+ * Compute a diff between the raw secret value and its sanitized form,
+ * emitting only the removed characters (never the kept ones). The OAuth
+ * sanitizer drops zero-width chars + NBSP everywhere and trims leading/
+ * trailing whitespace; we mirror that exact rule here so positions and
+ * regions line up with what `sanitizeSecret()` actually does.
+ *
+ * Safety: this function MUST NOT include the kept characters in the
+ * response — that's what protects the secret from leaking through the
+ * inspector. Only codepoints + positions of removed chars are returned.
+ */
+const ZERO_WIDTH_OR_NBSP = /[\u200B-\u200D\uFEFF\u00A0]/;
+
+function buildDriftReport(name: string, raw: string): SecretDriftReport {
+  if (!raw) {
+    return {
+      secret_name: name,
+      is_set: false,
+      raw_length: 0,
+      clean_length: 0,
+      diff_length: 0,
+      drifted: false,
+      removed_chars: [],
+      removed_summary: {},
+      summary: `${name} is not set — no drift to report.`,
+    };
+  }
+
+  // Step 1: strip zero-width + NBSP anywhere (matches sanitizeSecret).
+  // We track which raw positions get dropped here so the UI can show
+  // "internal" removals separately from edge trims.
+  const internalDropped: DriftRemovedChar[] = [];
+  let stripped = "";
+  for (let i = 0; i < raw.length; i++) {
+    const code = raw.codePointAt(i)!;
+    if (ZERO_WIDTH_OR_NBSP.test(raw[i])) {
+      internalDropped.push({
+        position: i,
+        char_code: code,
+        char_label: labelChar(code),
+        region: "internal",
+      });
+      continue;
+    }
+    stripped += raw[i];
+  }
+
+  // Step 2: detect leading whitespace removed by `.trim()`. Walk the
+  // *stripped* string and check which prefix would be trimmed; the
+  // positions we report are still indices into the original `raw` so the
+  // UI can describe them consistently.
+  const leadingDropped: DriftRemovedChar[] = [];
+  const trailingDropped: DriftRemovedChar[] = [];
+
+  // Map each stripped-string index back to a raw-string index so the
+  // positions we surface still refer to the original raw input.
+  const strippedToRawIndex: number[] = [];
+  let cursor = 0;
+  for (let i = 0; i < raw.length; i++) {
+    if (ZERO_WIDTH_OR_NBSP.test(raw[i])) continue;
+    strippedToRawIndex[cursor++] = i;
+  }
+
+  // Leading trim
+  let s = 0;
+  while (s < stripped.length && /\s/.test(stripped[s])) {
+    const rawIdx = strippedToRawIndex[s];
+    const code = raw.codePointAt(rawIdx)!;
+    leadingDropped.push({
+      position: rawIdx,
+      char_code: code,
+      char_label: labelChar(code),
+      region: "leading",
+    });
+    s++;
+  }
+  // Trailing trim
+  let e = stripped.length - 1;
+  while (e >= s && /\s/.test(stripped[e])) {
+    const rawIdx = strippedToRawIndex[e];
+    const code = raw.codePointAt(rawIdx)!;
+    trailingDropped.push({
+      position: rawIdx,
+      char_code: code,
+      char_label: labelChar(code),
+      region: "trailing",
+    });
+    e--;
+  }
+
+  // Combine in raw-position order so the UI list reads naturally.
+  const removed_chars = [...leadingDropped, ...internalDropped, ...trailingDropped]
+    .sort((a, b) => a.position - b.position);
+
+  // Tally by char_label so the UI can show a compact "what was removed"
+  // legend ("U+0020 SPACE × 2, U+00A0 NBSP × 1") in addition to the
+  // per-position list.
+  const removed_summary: Record<string, number> = {};
+  for (const r of removed_chars) {
+    removed_summary[r.char_label] = (removed_summary[r.char_label] ?? 0) + 1;
+  }
+
+  const clean = sanitizeSecret(raw);
+  const drifted = raw !== clean;
+
+  return {
+    secret_name: name,
+    is_set: true,
+    raw_length: raw.length,
+    clean_length: clean.length,
+    diff_length: raw.length - clean.length,
+    drifted,
+    removed_chars,
+    removed_summary,
+    summary: drifted
+      ? `${name}: stripped ${removed_chars.length} character${removed_chars.length === 1 ? "" : "s"} ` +
+        `(raw ${raw.length} → clean ${clean.length}). Re-save the secret without these characters.`
+      : `${name}: raw and sanitized values are identical (length ${raw.length}). No drift.`,
+  };
+}
+
 function labelChar(code: number): string {
   const hex = `U+${code.toString(16).toUpperCase().padStart(4, "0")}`;
   const named: Record<number, string> = {
@@ -253,6 +399,14 @@ Deno.serve(async (req: Request) => {
     const clientKeyValidation = validateSecret("TIKTOK_CLIENT_KEY", rawClientKey);
     const clientSecretValidation = validateSecret("TIKTOK_CLIENT_SECRET", rawClientSecret);
 
+    // Drift reports describe exactly which characters `sanitizeSecret()`
+    // would remove. Unlike the validation report (which warns on patterns),
+    // this one is a *diff* — codepoints + positions only, never the secret
+    // content. Lets the operator confirm at a glance whether silent
+    // sanitization is actually changing the value the OAuth functions see.
+    const clientKeyDrift = buildDriftReport("TIKTOK_CLIENT_KEY", rawClientKey);
+    const clientSecretDrift = buildDriftReport("TIKTOK_CLIENT_SECRET", rawClientSecret);
+
     // Auth: only admins. We deliberately split each failure mode into its own
     // error code so the UI can show a specific, actionable message
     // ("you're signed out" vs "your account is not an admin").
@@ -409,6 +563,8 @@ Deno.serve(async (req: Request) => {
         hints,
         client_key_validation: clientKeyValidation,
         client_secret_validation: clientSecretValidation,
+        client_key_drift: clientKeyDrift,
+        client_secret_drift: clientSecretDrift,
         // Always returned so the UI can show "where do I add @getpawsy?" even
         // when there are no warning hints — admins keep asking for the link.
         sandbox_test_user_help: {
