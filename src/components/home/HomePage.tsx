@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
 import { useCanonical } from "@/components/seo/CanonicalTag";
 import { BenefitsSection } from "@/components/home/BenefitsSection";
+import { HeroTrustStrip } from "@/components/home/HeroTrustStrip";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,9 @@ const HomePage = () => {
 
       {/* 1. Hero */}
       <HeroSection />
+
+      {/* 1b. Trust strip — recent reviews + ship-time badges directly under hero */}
+      <HeroTrustStrip />
 
       {/* 2. Benefits */}
       <BenefitsSection />
