@@ -15,8 +15,10 @@ import {
   Copy,
   Stethoscope,
   Info,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
 
 type DiagnoseCheck = {
   name: string;
@@ -60,6 +62,13 @@ export function TikTokConnectCard() {
   const [connecting, setConnecting] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<DiagnoseResult | null>(null);
+  // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
+  const [retryInfo, setRetryInfo] = useState<{
+    attempt: number;
+    maxRetries: number;
+    nextDelayMs: number;
+    lastError: string;
+  } | null>(null);
 
   const loadAccount = async () => {
     setLoading(true);
@@ -83,21 +92,61 @@ export function TikTokConnectCard() {
 
   const handleConnect = async () => {
     setConnecting(true);
+    setRetryInfo(null);
+    const MAX_RETRIES = 3;
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-oauth-start", {
-        body: { origin: window.location.origin },
-      });
-      if (error) throw error;
-      if (!data?.ok || !data?.authUrl) {
-        throw new Error(data?.error || "Failed to start OAuth");
-      }
+      // Wrap the edge-function call in exponential-backoff retry. We only
+      // retry on transient failures (network blips, 5xx, rate limits) — auth
+      // and validation errors short-circuit immediately.
+      const data = await retryWithBackoff(
+        async () => {
+          const { data, error } = await supabase.functions.invoke("tiktok-oauth-start", {
+            body: { origin: window.location.origin },
+          });
+          if (error) throw error;
+          if (!data?.ok || !data?.authUrl) {
+            throw new Error(data?.error || "Failed to start OAuth");
+          }
+          return data as { ok: boolean; authUrl: string; clientTicket?: string; state?: string };
+        },
+        {
+          maxRetries: MAX_RETRIES,
+          baseDelayMs: 800,
+          maxDelayMs: 8000,
+          backoffMultiplier: 2,
+          shouldRetry: (err) => {
+            const msg = (err.message || "").toLowerCase();
+            // Don't retry on permanent failures.
+            if (msg.includes("unauthorized") || msg.includes("401")) return false;
+            if (msg.includes("admin access required") || msg.includes("403")) return false;
+            if (msg.includes("tiktok_client_key not configured")) return false;
+            // Retry network errors, 5xx, timeouts, generic "failed to fetch".
+            return true;
+          },
+          onRetry: (attempt, error, delayMs) => {
+            setRetryInfo({
+              attempt,
+              maxRetries: MAX_RETRIES,
+              nextDelayMs: Math.round(delayMs),
+              lastError: error.message,
+            });
+          },
+        },
+      );
+      // Success — clear retry banner.
+      setRetryInfo(null);
       // Stash the client_ticket so the callback page can post it back for validation.
       if (data.clientTicket && data.state) {
         sessionStorage.setItem(`tiktok_oauth_ticket:${data.state}`, data.clientTicket);
       }
       window.location.href = data.authUrl;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to start TikTok OAuth");
+      const msg = e instanceof Error ? e.message : "Failed to start TikTok OAuth";
+      toast.error(
+        retryInfo
+          ? `TikTok OAuth failed after ${retryInfo.attempt} retries: ${msg}`
+          : msg,
+      );
       setConnecting(false);
     }
   };
