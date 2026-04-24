@@ -82,6 +82,32 @@ type ConfigInspectResult = {
     | "internal_error";
 };
 
+type SmokeCheck = {
+  name: string;
+  status: "pass" | "fail" | "warn";
+  detail: string;
+  hint?: string;
+  evidence?: Record<string, unknown>;
+};
+
+type SmokeTestResult = {
+  ok: boolean;
+  summary: string;
+  elapsed_ms: number;
+  redirect_uri: string;
+  client_key_masked: string;
+  client_secret_set: boolean;
+  checks: SmokeCheck[];
+  // Auth-failure shape (no checks array) — keep optional so we can render
+  // a friendly error without a separate type.
+  code?:
+    | "missing_authorization_header"
+    | "invalid_auth_token"
+    | "not_admin"
+    | "internal_error";
+  error?: string;
+};
+
 /**
  * Redirect URIs that MUST be registered in the TikTok Developer Portal
  * (Login Kit → Redirect URI section). Both apex and lovable.app are supported
@@ -104,6 +130,8 @@ export function TikTokConnectCard() {
   const [diagnostic, setDiagnostic] = useState<DiagnoseResult | null>(null);
   const [inspecting, setInspecting] = useState(false);
   const [config, setConfig] = useState<ConfigInspectResult | null>(null);
+  const [smokeTesting, setSmokeTesting] = useState(false);
+  const [smoke, setSmoke] = useState<SmokeTestResult | null>(null);
   // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
   const [retryInfo, setRetryInfo] = useState<{
     attempt: number;
