@@ -17,6 +17,8 @@ import {
   Info,
   RefreshCw,
   Eye,
+  ExternalLink,
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
