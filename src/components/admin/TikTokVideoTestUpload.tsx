@@ -366,6 +366,10 @@ export function TikTokVideoTestUpload() {
                   className="mt-2 max-h-48 w-full rounded bg-muted"
                 />
               )}
+              {/* TikTok Content Posting API spec validator. Renders only
+                  when a file is selected. We pass setCompliance directly so
+                  the parent's Upload button can react to errors. */}
+              <TikTokVideoComplianceCheck file={file} onResult={setCompliance} />
             </div>
           </li>
 
@@ -400,7 +404,15 @@ export function TikTokVideoTestUpload() {
                 <Button
                   size="sm"
                   onClick={handleUpload}
-                  disabled={!file || stepStates[2] === "done" || (stepStates[2] === "active" && uploadProgress > 0)}
+                  disabled={
+                    !file ||
+                    stepStates[2] === "done" ||
+                    (stepStates[2] === "active" && uploadProgress > 0) ||
+                    // Block uploads that fail TikTok's hard requirements.
+                    // Warnings (e.g. "16:9 landscape") are allowed through —
+                    // only `error`-severity issues set passes=false.
+                    (compliance !== null && !compliance.passes)
+                  }
                 >
                   {stepStates[2] === "active" && uploadProgress > 0 ? (
                     <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -410,6 +422,13 @@ export function TikTokVideoTestUpload() {
                   Upload
                 </Button>
               </div>
+              {compliance !== null && !compliance.passes && (
+                <p className="text-[11px] text-destructive">
+                  Fix the {compliance.summary.errorCount} error
+                  {compliance.summary.errorCount === 1 ? "" : "s"} above
+                  before uploading — TikTok will reject this file.
+                </p>
+              )}
               {uploadedPath && (
                 <p className="font-mono text-[10px] text-muted-foreground">
                   bucket: tiktok-media · path: {uploadedPath}
