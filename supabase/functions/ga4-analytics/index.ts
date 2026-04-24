@@ -89,6 +89,10 @@ async function runReport(accessToken: string, propertyId: string, request: {
   metrics?: { name: string }[];
   orderBys?: { metric?: { metricName: string }; dimension?: { dimensionName: string }; desc?: boolean }[];
   limit?: number;
+  // Optional GA4 dimension filter — used by the hero_ctas report to narrow
+  // results to specific custom event names without breaking other callers.
+  // deno-lint-ignore no-explicit-any
+  dimensionFilter?: any;
 }) {
   const response = await fetch(
     `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
