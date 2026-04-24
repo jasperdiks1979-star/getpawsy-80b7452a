@@ -330,7 +330,12 @@ export default function TikTokConfigChecklistPage() {
     setProbeError(null);
     setProbe(null);
     const simulate = !!opts?.simulateMisconfig;
+    // Clear the "Simulated" badge + destructive callout immediately so a
+    // live re-run never visually overlaps with stale simulated results.
     setLastWasSimulated(simulate);
+    if (!simulate) {
+      setSimulating(false);
+    }
     try {
       const origin = (originOverride ?? probeOrigin).replace(/\/$/, "");
       // In simulation mode, pretend we expected a path that nobody has
