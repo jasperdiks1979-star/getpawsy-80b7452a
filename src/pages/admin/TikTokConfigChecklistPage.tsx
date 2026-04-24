@@ -1533,6 +1533,127 @@ export default function TikTokConfigChecklistPage() {
                         return null;
                     }
                   };
+                  // Build the expected-vs-actual rows for the expandable
+                  // "What changed" section on each failed check. We reuse
+                  // the URL parser to break URIs into host + path so admins
+                  // can see exactly which segment differs.
+                  const splitUri = (uri: string | null | undefined) => {
+                    if (!uri) return { host: null, path: null };
+                    try {
+                      const u = new URL(uri);
+                      return { host: u.host, path: `${u.pathname}${u.search}` };
+                    } catch {
+                      return { host: null, path: uri };
+                    }
+                  };
+                  type DiffRow = {
+                    field: string;
+                    expected: string;
+                    actual: string;
+                    matches: boolean;
+                  };
+                  const diffForCheck = (label: string): DiffRow[] => {
+                    const expected = probe.expectedRedirect ?? "";
+                    const actual = probe.parsedRedirect ?? "";
+                    const expectedParts = splitUri(expected);
+                    const actualParts = splitUri(actual);
+                    switch (label) {
+                      case "redirect_uri matches expected for current origin":
+                        return [
+                          {
+                            field: "Host",
+                            expected: expectedParts.host ?? "(none)",
+                            actual: actualParts.host ?? "(none)",
+                            matches: expectedParts.host === actualParts.host,
+                          },
+                          {
+                            field: "Path",
+                            expected: expectedParts.path ?? "(none)",
+                            actual: actualParts.path ?? "(none)",
+                            matches: expectedParts.path === actualParts.path,
+                          },
+                          {
+                            field: "Full URI",
+                            expected: expected || "(none)",
+                            actual: actual || "(none)",
+                            matches: expected === actual,
+                          },
+                        ];
+                      case "redirect_uri is in the registered allow-list": {
+                        const allowList = lastWasSimulated
+                          ? lastSimScenario === "missing_allowlist"
+                            ? []
+                            : lastSimScenario === "wrong_origin"
+                            ? ["https://old-preview.example.invalid/auth/tiktok/callback"]
+                            : [`${probeOrigin}/auth/tiktok/callback-MISCONFIGURED`]
+                          : [...EXPECTED_REDIRECT_URIS];
+                        return [
+                          {
+                            field: "Allow-list (registered URIs)",
+                            expected: allowList.length
+                              ? allowList.join("\n")
+                              : "(empty — no URIs registered)",
+                            actual: actual || "(none)",
+                            matches: allowList.includes(actual),
+                          },
+                        ];
+                      }
+                      case "Start function `redirectUri` matches authorize URL":
+                        return [
+                          {
+                            field: "Start function returned",
+                            expected: probe.startReturnedRedirect ?? "(none)",
+                            actual: actual || "(none)",
+                            matches: probe.startReturnedRedirect === actual,
+                          },
+                        ];
+                      case "Authorize host is tiktok.com": {
+                        let actualHost = "(unknown)";
+                        if (probe.authUrl) {
+                          try {
+                            actualHost = new URL(probe.authUrl).hostname;
+                          } catch {
+                            actualHost = "(invalid URL)";
+                          }
+                        }
+                        return [
+                          {
+                            field: "Authorize host",
+                            expected: "www.tiktok.com",
+                            actual: actualHost,
+                            matches: actualHost === "www.tiktok.com",
+                          },
+                        ];
+                      }
+                      case "response_type is 'code'":
+                        return [
+                          {
+                            field: "response_type",
+                            expected: "code",
+                            actual: probe.responseType ?? "(missing)",
+                            matches: probe.responseType === "code",
+                          },
+                        ];
+                      case "All required scopes requested": {
+                        const requested = (probe.scope ?? "")
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        return [
+                          {
+                            field: "Required scopes",
+                            expected: REQUIRED_SCOPES.join(", "),
+                            actual: requested.length ? requested.join(", ") : "(none)",
+                            matches:
+                              REQUIRED_SCOPES.every((s) => requested.includes(s)) &&
+                              requested.length >= REQUIRED_SCOPES.length,
+                          },
+                        ];
+                      }
+                      default:
+                        return [];
+                    }
+                  };
                   return (
                     <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1663,6 +1784,58 @@ export default function TikTokConfigChecklistPage() {
                                   <code className="break-all">{checkFix}</code>
                                 </div>
                               )}
+                              {(() => {
+                                const rows = diffForCheck(c.label);
+                                if (rows.length === 0) return null;
+                                return (
+                                  <details className="group rounded border border-border/60 bg-muted/30 px-2 py-1.5">
+                                    <summary className="cursor-pointer text-[10px] font-semibold text-foreground select-none list-none flex items-center gap-1">
+                                      <span className="transition-transform group-open:rotate-90">
+                                        ▸
+                                      </span>
+                                      What changed (expected vs actual)
+                                    </summary>
+                                    <div className="mt-1.5 space-y-1.5">
+                                      {rows.map((r, ri) => (
+                                        <div
+                                          key={`${r.field}-${ri}`}
+                                          className="rounded border border-border/40 bg-background p-1.5 space-y-0.5"
+                                        >
+                                          <div className="text-[10px] font-semibold text-foreground flex items-center justify-between gap-2">
+                                            <span>{r.field}</span>
+                                            <Badge
+                                              variant={r.matches ? "secondary" : "destructive"}
+                                              className="text-[9px] h-4 px-1.5"
+                                            >
+                                              {r.matches ? "matches" : "differs"}
+                                            </Badge>
+                                          </div>
+                                          <div className="grid grid-cols-[60px_1fr] gap-x-2 text-[10px]">
+                                            <span className="text-muted-foreground">
+                                              Expected
+                                            </span>
+                                            <code className="break-all whitespace-pre-wrap">
+                                              {r.expected}
+                                            </code>
+                                            <span className="text-muted-foreground">
+                                              Actual
+                                            </span>
+                                            <code
+                                              className={`break-all whitespace-pre-wrap ${
+                                                r.matches
+                                                  ? ""
+                                                  : "text-destructive"
+                                              }`}
+                                            >
+                                              {r.actual}
+                                            </code>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </details>
+                                );
+                              })()}
                             </li>
                           );
                         })}
