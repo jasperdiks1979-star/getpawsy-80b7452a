@@ -214,6 +214,9 @@ export default function TikTokConfigChecklistPage() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<DiagnoseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [probing, setProbing] = useState(false);
+  const [probe, setProbe] = useState<RedirectProbeResult | null>(null);
+  const [probeError, setProbeError] = useState<string | null>(null);
 
   const runDiagnose = async () => {
     setRunning(true);
@@ -240,8 +243,166 @@ export default function TikTokConfigChecklistPage() {
     }
   };
 
+  /**
+   * Live probe: invoke `tiktok-oauth-start`, parse the returned authorize URL,
+   * and validate the `redirect_uri` query parameter character-for-character
+   * against the expected URL for the current origin. Also verifies scope,
+   * response_type, client_key presence and that the start function and the URL
+   * agree on the redirect.
+   */
+  const runRedirectProbe = async () => {
+    setProbing(true);
+    setProbeError(null);
+    setProbe(null);
+    try {
+      const origin = window.location.origin.replace(/\/$/, "");
+      const expectedRedirect = `${origin}/auth/tiktok/callback`;
+
+      const { data, error } = await supabase.functions.invoke<{
+        ok: boolean;
+        authUrl?: string;
+        redirectUri?: string;
+        error?: string;
+      }>("tiktok-oauth-start", {
+        body: { origin },
+      });
+
+      if (error) throw new Error(error.message || "Failed to invoke tiktok-oauth-start");
+      if (!data?.ok || !data.authUrl) {
+        throw new Error(data?.error || "tiktok-oauth-start returned no authorize URL");
+      }
+
+      const url = new URL(data.authUrl);
+      const parsedRedirect = url.searchParams.get("redirect_uri");
+      const clientKey = url.searchParams.get("client_key");
+      const scope = url.searchParams.get("scope");
+      const responseType = url.searchParams.get("response_type");
+      const state = url.searchParams.get("state");
+      const startReturnedRedirect = data.redirectUri ?? null;
+
+      const checks: RedirectProbeCheck[] = [];
+
+      // 1. Authorize host
+      checks.push({
+        label: "Authorize host is tiktok.com",
+        status: url.hostname === "www.tiktok.com" ? "pass" : "fail",
+        detail: `Got https://${url.hostname}${url.pathname}`,
+      });
+
+      // 2. redirect_uri present
+      if (!parsedRedirect) {
+        checks.push({
+          label: "redirect_uri present in authorize URL",
+          status: "fail",
+          detail: "The generated authorize URL has no redirect_uri parameter.",
+        });
+      } else {
+        checks.push({
+          label: "redirect_uri present in authorize URL",
+          status: "pass",
+          detail: parsedRedirect,
+        });
+
+        // 3. Exact match vs expected
+        checks.push({
+          label: "redirect_uri matches expected for current origin",
+          status: parsedRedirect === expectedRedirect ? "pass" : "fail",
+          detail:
+            parsedRedirect === expectedRedirect
+              ? `Exact match: ${expectedRedirect}`
+              : `Expected ${expectedRedirect}, got ${parsedRedirect}`,
+        });
+
+        // 4. Must be in registered list
+        const inRegistered = (EXPECTED_REDIRECT_URIS as readonly string[]).includes(parsedRedirect);
+        checks.push({
+          label: "redirect_uri is in the registered allow-list",
+          status: inRegistered ? "pass" : "fail",
+          detail: inRegistered
+            ? "This URL is one of the URIs that must be registered in TikTok."
+            : `Not in [${EXPECTED_REDIRECT_URIS.join(", ")}]. Add it in the TikTok Developer Portal.`,
+        });
+
+        // 5. Start function and URL must agree
+        if (startReturnedRedirect) {
+          checks.push({
+            label: "Start function `redirectUri` matches authorize URL",
+            status: startReturnedRedirect === parsedRedirect ? "pass" : "fail",
+            detail:
+              startReturnedRedirect === parsedRedirect
+                ? "Backend metadata agrees with the URL it generated."
+                : `Backend reported ${startReturnedRedirect} but URL contains ${parsedRedirect}`,
+          });
+        }
+      }
+
+      // 6. client_key present
+      checks.push({
+        label: "client_key present",
+        status: clientKey ? "pass" : "fail",
+        detail: clientKey
+          ? `${clientKey.slice(0, 4)}…${clientKey.slice(-4)} (${clientKey.length} chars)`
+          : "Missing client_key in the authorize URL.",
+      });
+
+      // 7. response_type=code
+      checks.push({
+        label: "response_type is 'code'",
+        status: responseType === "code" ? "pass" : "fail",
+        detail: `Got '${responseType ?? ""}'`,
+      });
+
+      // 8. Scopes
+      const scopes = (scope ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+      const missing = REQUIRED_SCOPES.filter((s) => !scopes.includes(s));
+      checks.push({
+        label: "All required scopes requested",
+        status: missing.length === 0 ? "pass" : "fail",
+        detail:
+          missing.length === 0
+            ? `OK: ${scopes.join(", ")}`
+            : `Missing: ${missing.join(", ")} (got: ${scopes.join(", ") || "none"})`,
+      });
+
+      // 9. CSRF state
+      checks.push({
+        label: "CSRF state generated",
+        status: state && state.length >= 16 ? "pass" : "warn",
+        detail: state ? `length=${state.length}` : "No state parameter in URL.",
+      });
+
+      const ok = checks.every((c) => c.status === "pass" || c.status === "info");
+
+      setProbe({
+        ok,
+        authUrl: data.authUrl,
+        parsedRedirect,
+        expectedRedirect,
+        clientKey,
+        scope,
+        state,
+        responseType,
+        checks,
+        startReturnedRedirect,
+      });
+
+      if (ok) {
+        toast.success("Redirect URI probe passed");
+      } else {
+        toast.error("Redirect URI probe found issues");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Probe failed";
+      setProbeError(msg);
+      toast.error(msg);
+    } finally {
+      setProbing(false);
+    }
+  };
+
   useEffect(() => {
     void runDiagnose();
+    void runRedirectProbe();
     // Run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
