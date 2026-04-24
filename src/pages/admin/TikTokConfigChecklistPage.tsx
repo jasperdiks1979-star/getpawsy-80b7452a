@@ -1391,6 +1391,69 @@ export default function TikTokConfigChecklistPage() {
                     </p>
                   </div>
                 )}
+                {/* Simulated-only failure summary: pulls just the failed
+                    checks out of the probe so an admin can see the exact
+                    things that would break in real life, plus a one-click
+                    "copy fix" that yields the redirect URI to register. */}
+                {lastWasSimulated && (() => {
+                  const failed = probe.checks.filter((c) => c.status === "fail");
+                  if (failed.length === 0) return null;
+                  const fixUri =
+                    probe.parsedRedirect ?? `${probeOrigin}/auth/tiktok/callback`;
+                  return (
+                    <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          <Bug className="h-3.5 w-3.5 text-destructive" />
+                          {failed.length} simulated check
+                          {failed.length === 1 ? "" : "s"} failed
+                          {lastSimScenario && (
+                            <span className="text-muted-foreground font-normal">
+                              — {lastSimScenario.replace("_", " ")}
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7"
+                          onClick={() => {
+                            copy(fixUri);
+                            toast.success(
+                              `Copied — paste this under TikTok → Login Kit → Redirect URI: ${fixUri}`,
+                            );
+                          }}
+                          title="Copy the exact redirect URI you need to register in the TikTok Developer Portal to make these failed checks pass."
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy fix
+                        </Button>
+                      </div>
+                      <ul className="space-y-1.5 text-[11px]">
+                        {failed.map((c, i) => (
+                          <li
+                            key={`${c.label}-${i}`}
+                            className="rounded border border-destructive/30 bg-background p-2 space-y-0.5"
+                          >
+                            <div className="font-semibold text-foreground flex items-center gap-1.5">
+                              <StatusBadge status={c.status} />
+                              {c.label}
+                            </div>
+                            <div className="text-muted-foreground break-words">
+                              {c.detail}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-[11px] text-muted-foreground">
+                        Fix: register{" "}
+                        <code className="break-all">{fixUri}</code> in the TikTok
+                        Developer Portal under <strong>Login Kit → Redirect URI</strong>,
+                        then click <strong>Re-run probe</strong>.
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
                   <div className="rounded border border-border/60 bg-muted/30 p-2">
                     <div className="font-semibold text-foreground mb-0.5">
