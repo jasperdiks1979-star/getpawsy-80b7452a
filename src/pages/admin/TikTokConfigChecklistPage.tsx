@@ -83,6 +83,16 @@ type ProbeOrigin = (typeof PROBE_ORIGINS)[number]["value"];
  */
 const REQUIRED_SCOPES = ["user.info.basic", "video.publish", "video.upload"] as const;
 
+/**
+ * URL prefix that TikTok must have registered + domain-verified under
+ * Content Posting API → URL Prefix Properties for PULL_FROM_URL uploads.
+ * Mirrors the bucket used by `TikTokVideoTestUpload` and the
+ * `tiktok-video-test-upload` edge function.
+ */
+const SUPABASE_PROJECT_REF =
+  (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID || "nojvgfbcjgipjxpfatmm";
+const VERIFIED_URL_PREFIX = `https://${SUPABASE_PROJECT_REF}.supabase.co/storage/v1/object/public/tiktok-media/`;
+
 type RedirectProbeCheck = {
   label: string;
   status: DiagnoseStatus;
@@ -126,7 +136,7 @@ type CallbackProbeResult = {
   checks: CallbackProbeCheck[];
 };
 
-type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri";
+type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri" | "verified_prefix";
 
 const CATEGORY_META: Record<
   CategoryKey,
@@ -159,6 +169,13 @@ const CATEGORY_META: Record<
       "Every URL we might OAuth from must be registered in the Login Kit redirect URI list. TikTok matches them character-for-character.",
     portalHint:
       "TikTok Developer Portal → your app → Login Kit → Redirect URI",
+  },
+  verified_prefix: {
+    title: "5. Verified URL prefix (Content Posting API)",
+    description:
+      "TikTok requires that the URL prefix where videos are hosted is registered AND domain-verified in the Developer Portal before PULL_FROM_URL uploads will succeed. We auto-probe that the storage bucket is reachable and serves videos.",
+    portalHint:
+      "TikTok Developer Portal → your app → Content Posting API → URL Prefix Properties",
   },
 };
 
@@ -267,6 +284,158 @@ export default function TikTokConfigChecklistPage() {
   const [callbackProbing, setCallbackProbing] = useState(false);
   const [callbackProbe, setCallbackProbe] = useState<CallbackProbeResult | null>(null);
   const [callbackProbeError, setCallbackProbeError] = useState<string | null>(null);
+
+  // --- Verified URL prefix probe state -------------------------------------
+  // Auto-checks that the public storage prefix used for PULL_FROM_URL video
+  // uploads is reachable AND that the bucket actually serves a known object.
+  // The "is it registered + domain-verified in TikTok" half of this check
+  // can only be confirmed inside the TikTok Developer Portal — we surface a
+  // direct link + copyable URL so the admin can finish that step in one click.
+  type PrefixCheck = {
+    label: string;
+    status: DiagnoseStatus;
+    detail: string;
+    hint?: string;
+  };
+  const [prefixProbing, setPrefixProbing] = useState(false);
+  const [prefixChecks, setPrefixChecks] = useState<PrefixCheck[] | null>(null);
+  const [prefixError, setPrefixError] = useState<string | null>(null);
+
+  const runPrefixProbe = async () => {
+    setPrefixProbing(true);
+    setPrefixError(null);
+    setPrefixChecks(null);
+    const checks: PrefixCheck[] = [];
+    try {
+      // 1. URL prefix is HTTPS + ends with '/'
+      let prefixUrl: URL | null = null;
+      try {
+        prefixUrl = new URL(VERIFIED_URL_PREFIX);
+      } catch {
+        // fall through
+      }
+      checks.push({
+        label: "URL prefix is a valid HTTPS URL ending with /",
+        status:
+          prefixUrl &&
+          prefixUrl.protocol === "https:" &&
+          VERIFIED_URL_PREFIX.endsWith("/")
+            ? "pass"
+            : "fail",
+        detail: VERIFIED_URL_PREFIX,
+        hint:
+          "TikTok rejects prefixes that are not https:// or that don't end with a trailing slash.",
+      });
+
+      // 2. Bucket root reachable (404 from Supabase storage is fine — it
+      //    proves the host resolves and the bucket name is correct).
+      try {
+        const r = await fetch(VERIFIED_URL_PREFIX, { method: "HEAD" });
+        const reachable = r.status < 500;
+        checks.push({
+          label: "Storage host is reachable",
+          status: reachable ? "pass" : "fail",
+          detail: `HTTP ${r.status} from ${prefixUrl?.host ?? "(unknown host)"}`,
+          hint: reachable
+            ? undefined
+            : "Lovable Cloud storage is unreachable from this browser. Retry; if it persists, check Cloud status.",
+        });
+      } catch (e) {
+        checks.push({
+          label: "Storage host is reachable",
+          status: "fail",
+          detail: e instanceof Error ? e.message : "Network error",
+          hint: "Retry from a non-corporate network — some firewalls block Supabase storage.",
+        });
+      }
+
+      // 3. Bucket lists at least one recent object — confirms the bucket
+      //    exists and PULL_FROM_URL has something to fetch in the first place.
+      try {
+        const { data: listed, error: listErr } = await supabase.storage
+          .from("tiktok-media")
+          .list("", { limit: 1, sortBy: { column: "created_at", order: "desc" } });
+        if (listErr) {
+          checks.push({
+            label: "Bucket `tiktok-media` is accessible",
+            status: "warn",
+            detail: listErr.message,
+            hint:
+              "If you've never uploaded a test video, this is expected. Run the test upload flow first.",
+          });
+        } else if (!listed || listed.length === 0) {
+          checks.push({
+            label: "Bucket `tiktok-media` has at least one object",
+            status: "warn",
+            detail: "Bucket is empty — TikTok cannot PULL_FROM_URL until a video exists.",
+            hint:
+              "Use the Step-by-step test upload flow on /admin/tiktok-automation to push one.",
+          });
+        } else {
+          const sample = listed[0];
+          checks.push({
+            label: "Bucket `tiktok-media` has objects",
+            status: "pass",
+            detail: `Latest object: ${sample.name}`,
+          });
+
+          // 4. Latest object is publicly fetchable — proves the prefix
+          //    actually serves bytes, which is what TikTok will try.
+          const objectUrl = `${VERIFIED_URL_PREFIX}${sample.name}`;
+          try {
+            const r = await fetch(objectUrl, { method: "HEAD" });
+            checks.push({
+              label: "Most recent object is publicly fetchable",
+              status: r.ok ? "pass" : "fail",
+              detail: `HTTP ${r.status} for ${sample.name}`,
+              hint: r.ok
+                ? undefined
+                : "TikTok will receive the same status. Make the bucket public or fix the object's ACL.",
+            });
+          } catch (e) {
+            checks.push({
+              label: "Most recent object is publicly fetchable",
+              status: "fail",
+              detail: e instanceof Error ? e.message : "Network error",
+            });
+          }
+        }
+      } catch (e) {
+        checks.push({
+          label: "Bucket `tiktok-media` is accessible",
+          status: "fail",
+          detail: e instanceof Error ? e.message : "Unknown error",
+        });
+      }
+
+      // 5. Cannot be auto-confirmed — surface as `info` so the admin
+      //    finishes the loop in the TikTok Developer Portal.
+      checks.push({
+        label: "URL prefix is registered + domain-verified in TikTok Portal",
+        status: "info",
+        detail:
+          "TikTok does not expose a public API to confirm verification. Open Developer Portal → Content Posting API → URL Prefix Properties and confirm this prefix has a green ✓ next to it.",
+        hint: `Paste this exact value (with trailing slash) and click Verify: ${VERIFIED_URL_PREFIX}`,
+      });
+
+      setPrefixChecks(checks);
+      const failed = checks.filter((c) => c.status === "fail").length;
+      const warned = checks.filter((c) => c.status === "warn").length;
+      if (failed > 0) {
+        toast.error(`Verified URL prefix: ${failed} check${failed === 1 ? "" : "s"} failed`);
+      } else if (warned > 0) {
+        toast.warning(`Verified URL prefix: ${warned} warning${warned === 1 ? "" : "s"}`);
+      } else {
+        toast.success("Verified URL prefix: auto-checks passed");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Prefix probe failed";
+      setPrefixError(msg);
+      toast.error(msg);
+    } finally {
+      setPrefixProbing(false);
+    }
+  };
 
   // Default the selector to whichever production origin matches the current
   // browser host; fall back to the apex when running from preview/localhost.
@@ -571,6 +740,7 @@ export default function TikTokConfigChecklistPage() {
     void runDiagnose();
     void runRedirectProbe(initialOrigin);
     void runCallbackProbe(initialOrigin);
+    void runPrefixProbe();
     // Run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1113,12 +1283,24 @@ export default function TikTokConfigChecklistPage() {
     app_status: [],
     login_kit: [],
     redirect_uri: [],
+    verified_prefix: [],
   };
   if (result?.checks) {
     for (const c of result.checks) {
       const cat = categorize(c);
       if (cat) grouped[cat].push(c);
     }
+  }
+
+  // Feed the verified-prefix probe results into its category so the
+  // CategorySection renders rolled-up pass/warn/fail just like the others.
+  if (prefixChecks) {
+    grouped.verified_prefix = prefixChecks.map((c) => ({
+      name: c.label,
+      status: c.status,
+      detail: c.detail,
+      hint: c.hint,
+    }));
   }
 
   // Synthetic redirect URI rows so the user always sees the expected list,
@@ -1247,6 +1429,59 @@ export default function TikTokConfigChecklistPage() {
           category="redirect_uri"
           checks={grouped.redirect_uri}
           extra={redirectExtra}
+        />
+
+        <CategorySection
+          category="verified_prefix"
+          checks={grouped.verified_prefix}
+          extra={
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="text-xs font-semibold text-foreground">
+                  Required URL prefix (must be domain-verified in TikTok):
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7"
+                    onClick={() => copy(VERIFIED_URL_PREFIX)}
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy prefix
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7"
+                    onClick={runPrefixProbe}
+                    disabled={prefixProbing}
+                  >
+                    {prefixProbing ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                    )}
+                    Re-run prefix checks
+                  </Button>
+                </div>
+              </div>
+              <code className="block text-[11px] break-all rounded border border-border/60 bg-background px-2 py-1.5">
+                {VERIFIED_URL_PREFIX}
+              </code>
+              {prefixError && (
+                <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
+                  <strong>Prefix probe failed:</strong> {prefixError}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                In the TikTok Developer Portal, open <strong>Content Posting API → URL Prefix
+                Properties</strong>, paste the value above (with the trailing slash) and click
+                <strong> Verify</strong>. Only verified prefixes are allowed as the source of
+                <code className="mx-1">PULL_FROM_URL</code>uploads.
+              </p>
+            </div>
+          }
         />
 
         <Card>
