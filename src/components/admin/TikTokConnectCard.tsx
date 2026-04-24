@@ -1510,3 +1510,191 @@ function PortalLinkButton({
     </a>
   );
 }
+
+/**
+ * Render a before/after diff of the masked OAuth config fields between the
+ * two most recent Inspect runs. The "before" column is the previous snapshot
+ * (the run before the most recent secret update) and the "after" column is
+ * the most recent snapshot. Fields that changed are highlighted; unchanged
+ * fields are dimmed so the operator can immediately see *exactly* what the
+ * secret update affected.
+ */
+function ConfigDiffPanel({
+  snapshots,
+  onClear,
+}: {
+  snapshots: ConfigSnapshot[];
+  onClear: () => void;
+}) {
+  const after = snapshots[snapshots.length - 1];
+  const before = snapshots.length >= 2 ? snapshots[snapshots.length - 2] : null;
+
+  if (!after) return null;
+
+  // Define every comparable field once so the table stays in sync with the
+  // snapshot shape — adding a new persisted field here automatically picks
+  // up a row in the diff.
+  const rows: Array<{
+    label: string;
+    beforeValue: string;
+    afterValue: string;
+    isSensitiveLength?: boolean;
+  }> = [
+    {
+      label: "TIKTOK_CLIENT_KEY (masked)",
+      beforeValue: before?.client_key_masked ?? "—",
+      afterValue: after.client_key_masked,
+    },
+    {
+      label: "TIKTOK_CLIENT_KEY raw length",
+      beforeValue: before ? String(before.client_key_raw_length) : "—",
+      afterValue: String(after.client_key_raw_length),
+    },
+    {
+      label: "TIKTOK_CLIENT_KEY clean length",
+      beforeValue: before ? String(before.client_key_clean_length) : "—",
+      afterValue: String(after.client_key_clean_length),
+    },
+    {
+      label: "TIKTOK_CLIENT_KEY contamination",
+      beforeValue: before ? (before.client_key_contaminated ? "yes" : "no") : "—",
+      afterValue: after.client_key_contaminated ? "yes" : "no",
+    },
+    {
+      label: "TIKTOK_CLIENT_SECRET set",
+      beforeValue: before ? (before.client_secret_set ? "yes" : "no") : "—",
+      afterValue: after.client_secret_set ? "yes" : "no",
+    },
+    {
+      label: "TIKTOK_CLIENT_SECRET length",
+      beforeValue: before ? String(before.client_secret_length) : "—",
+      afterValue: String(after.client_secret_length),
+    },
+    {
+      label: "TIKTOK_CLIENT_SECRET contamination",
+      beforeValue: before ? (before.client_secret_contaminated ? "yes" : "no") : "—",
+      afterValue: after.client_secret_contaminated ? "yes" : "no",
+    },
+    {
+      label: "Redirect URI",
+      beforeValue: before?.redirect_uri ?? "—",
+      afterValue: after.redirect_uri,
+    },
+    {
+      label: "Scopes",
+      beforeValue: before?.scopes ?? "—",
+      afterValue: after.scopes,
+    },
+  ];
+
+  const changedCount = before
+    ? rows.filter((r) => r.beforeValue !== r.afterValue).length
+    : 0;
+
+  return (
+    <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <GitCompare className="h-4 w-4 text-muted-foreground" />
+          <h4 className="text-xs font-semibold text-foreground">
+            Config diff vs previous Inspect
+          </h4>
+          {before && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded ${
+                changedCount > 0
+                  ? "bg-primary/15 text-foreground"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {changedCount === 0
+                ? "no changes"
+                : `${changedCount} field${changedCount === 1 ? "" : "s"} changed`}
+            </span>
+          )}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-[11px]"
+          onClick={onClear}
+          disabled={snapshots.length === 0}
+          title="Clear stored snapshot history. The next Inspect becomes the new baseline."
+        >
+          <Trash2 className="h-3 w-3 mr-1" />
+          Clear history
+        </Button>
+      </div>
+
+      {!before ? (
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Baseline captured at{" "}
+          <span className="font-mono">{new Date(after.captured_at).toLocaleString()}</span>.
+          Re-run "Inspect Config" after updating a secret to see a before/after diff here.
+          {snapshots.length > 1 && ` ${snapshots.length} snapshots stored.`}
+        </p>
+      ) : (
+        <>
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.4fr)] gap-x-2 text-[11px]">
+            <div className="font-semibold text-muted-foreground pb-1 border-b border-border/60">
+              Field
+            </div>
+            <div className="font-semibold text-muted-foreground pb-1 border-b border-border/60">
+              Before
+              <div className="font-normal text-[10px] text-muted-foreground/80">
+                {new Date(before.captured_at).toLocaleString()}
+              </div>
+            </div>
+            <div className="font-semibold text-muted-foreground pb-1 border-b border-border/60">
+              After
+              <div className="font-normal text-[10px] text-muted-foreground/80">
+                {new Date(after.captured_at).toLocaleString()}
+              </div>
+            </div>
+
+            {rows.map((r) => {
+              const changed = r.beforeValue !== r.afterValue;
+              return (
+                <Fragment key={r.label}>
+                  <div
+                    className={`py-1.5 ${
+                      changed ? "text-foreground font-medium" : "text-muted-foreground"
+                    }`}
+                  >
+                    {r.label}
+                  </div>
+                  <div
+                    className={`py-1.5 font-mono break-all ${
+                      changed
+                        ? "bg-destructive/10 text-foreground rounded px-1.5"
+                        : "text-muted-foreground/70"
+                    }`}
+                  >
+                    {r.beforeValue}
+                  </div>
+                  <div
+                    className={`py-1.5 font-mono break-all ${
+                      changed
+                        ? "bg-primary/15 text-foreground rounded px-1.5"
+                        : "text-muted-foreground/70"
+                    }`}
+                  >
+                    {r.afterValue}
+                  </div>
+                </Fragment>
+              );
+            })}
+          </div>
+          {changedCount === 0 && (
+            <p className="text-[11px] text-muted-foreground italic">
+              The masked config is identical to the previous Inspect — your last
+              secret update did not change any inspectable field. (If you just
+              re-pasted the same value, this is expected.)
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
