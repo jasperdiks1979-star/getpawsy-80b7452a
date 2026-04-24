@@ -381,6 +381,18 @@ export function TikTokConnectCard() {
   // diff after each secret update. Loaded once on mount; updated on every
   // successful Inspect.
   const [snapshots, setSnapshots] = useState<ConfigSnapshot[]>([]);
+  // Local-only "Trim & Validate" paste-checker state. Lets the operator
+  // paste a candidate TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET BEFORE
+  // submitting it via the Lovable secrets form so they catch trailing
+  // spaces / NBSP / zero-width chars at the source. Never sent over the
+  // network — purely a string analysis in the browser.
+  const [pasteValue, setPasteValue] = useState<string>("");
+  const [pasteSecretName, setPasteSecretName] = useState<
+    "TIKTOK_CLIENT_KEY" | "TIKTOK_CLIENT_SECRET"
+  >("TIKTOK_CLIENT_KEY");
+  const pasteReport = pasteValue.length > 0
+    ? validateSecretClient(pasteSecretName, pasteValue)
+    : null;
   // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
   const [retryInfo, setRetryInfo] = useState<{
     attempt: number;
