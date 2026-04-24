@@ -83,6 +83,16 @@ type ProbeOrigin = (typeof PROBE_ORIGINS)[number]["value"];
  */
 const REQUIRED_SCOPES = ["user.info.basic", "video.publish", "video.upload"] as const;
 
+/**
+ * URL prefix that TikTok must have registered + domain-verified under
+ * Content Posting API → URL Prefix Properties for PULL_FROM_URL uploads.
+ * Mirrors the bucket used by `TikTokVideoTestUpload` and the
+ * `tiktok-video-test-upload` edge function.
+ */
+const SUPABASE_PROJECT_REF =
+  (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID || "nojvgfbcjgipjxpfatmm";
+const VERIFIED_URL_PREFIX = `https://${SUPABASE_PROJECT_REF}.supabase.co/storage/v1/object/public/tiktok-media/`;
+
 type RedirectProbeCheck = {
   label: string;
   status: DiagnoseStatus;
