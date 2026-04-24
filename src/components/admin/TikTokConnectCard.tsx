@@ -690,6 +690,26 @@ export function TikTokConnectCard() {
     }
   };
 
+  /**
+   * Wipe the persisted snapshot ring buffer. Useful when the operator wants
+   * a clean baseline before doing a secret rotation drill — no diff noise
+   * from older inspections will appear in the next run's "before" column.
+   */
+  const clearSnapshotHistory = () => {
+    if (snapshots.length === 0) return;
+    if (
+      !confirm(
+        `Clear ${snapshots.length} stored config snapshot${snapshots.length === 1 ? "" : "s"}? ` +
+          "The next Inspect run will become the new baseline.",
+      )
+    ) {
+      return;
+    }
+    setSnapshots([]);
+    saveSnapshots([]);
+    toast.success("Snapshot history cleared");
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
