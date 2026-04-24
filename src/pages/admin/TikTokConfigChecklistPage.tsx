@@ -1282,12 +1282,24 @@ export default function TikTokConfigChecklistPage() {
     app_status: [],
     login_kit: [],
     redirect_uri: [],
+    verified_prefix: [],
   };
   if (result?.checks) {
     for (const c of result.checks) {
       const cat = categorize(c);
       if (cat) grouped[cat].push(c);
     }
+  }
+
+  // Feed the verified-prefix probe results into its category so the
+  // CategorySection renders rolled-up pass/warn/fail just like the others.
+  if (prefixChecks) {
+    grouped.verified_prefix = prefixChecks.map((c) => ({
+      name: c.label,
+      status: c.status,
+      detail: c.detail,
+      hint: c.hint,
+    }));
   }
 
   // Synthetic redirect URI rows so the user always sees the expected list,
