@@ -1041,6 +1041,73 @@ export default function TikTokConfigChecklistPage() {
     );
   };
 
+  /**
+   * Resolve the redirect URI variation that would make the given check pass.
+   * Shared between the in-card "Copy fix" buttons and the failures-only
+   * JSON export so the two never disagree on what to register.
+   */
+  const fixUriForCheckLabel = (label: string): string | null => {
+    if (!probe) return null;
+    const fallback = probe.parsedRedirect ?? `${probeOrigin}/auth/tiktok/callback`;
+    switch (label) {
+      case "redirect_uri matches expected for current origin":
+        return probe.expectedRedirect ?? fallback;
+      case "redirect_uri is in the registered allow-list":
+        return probe.parsedRedirect ?? fallback;
+      case "redirect_uri present in authorize URL":
+        return `${probeOrigin}/auth/tiktok/callback`;
+      case "Start function `redirectUri` matches authorize URL":
+        return probe.parsedRedirect ?? fallback;
+      default:
+        return null;
+    }
+  };
+
+  /**
+   * Failures-only export: only the failed checks from the most recent
+   * (simulated) probe, each annotated with the exact redirect URI to
+   * register so support engineers can act without rerunning the probe.
+   */
+  const exportFailedSimulatedChecks = () => {
+    if (!probe) {
+      toast.error("Run the simulated probe at least once before exporting.");
+      return;
+    }
+    const failed = probe.checks.filter((c) => c.status === "fail");
+    if (failed.length === 0) {
+      toast.info("No failed checks to export — the simulated probe passed.");
+      return;
+    }
+    const summaryFix = probe.parsedRedirect ?? `${probeOrigin}/auth/tiktok/callback`;
+    const payload = {
+      kind: "simulated_probe_failures" as const,
+      generated_at: new Date().toISOString(),
+      ran_at: probeRanAt,
+      origin_under_test: probeOrigin,
+      simulated: lastWasSimulated,
+      sim_scenario: lastSimScenario,
+      summary_fix_uri: summaryFix,
+      failed_count: failed.length,
+      failed_checks: failed.map((c, idx) => ({
+        index: idx + 1,
+        label: c.label,
+        status: c.status,
+        detail: c.detail,
+        copy_fix_uri: fixUriForCheckLabel(c.label),
+      })),
+    };
+    const stamp = payload.generated_at.replace(/[:.]/g, "-");
+    const tag = payload.simulated
+      ? `sim-${payload.sim_scenario ?? "misconfig"}`
+      : "live";
+    downloadBlob(
+      `tiktok-probe-failures-${tag}-${stamp}.json`,
+      "application/json",
+      JSON.stringify(payload, null, 2),
+    );
+    toast.success(`Exported ${failed.length} failed check${failed.length === 1 ? "" : "s"}`);
+  };
+
   const grouped: Record<CategoryKey, DiagnoseCheck[]> = {
     client_key: [],
     app_status: [],
@@ -1523,6 +1590,16 @@ export default function TikTokConfigChecklistPage() {
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
                             Open & paste
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7"
+                            onClick={exportFailedSimulatedChecks}
+                            title="Download a JSON containing only the failed simulated checks plus the exact redirect URI to register for each."
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Export failures
                           </Button>
                         </div>
                       </div>
