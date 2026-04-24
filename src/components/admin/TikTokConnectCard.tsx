@@ -25,6 +25,8 @@ import {
   FlaskConical,
   LayoutDashboard,
   ClipboardCopy,
+  GitCompare,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
@@ -110,6 +112,97 @@ type SecretValidationReport = {
   issues: SecretValidationIssue[];
   summary: string;
 };
+
+/**
+ * Snapshot of the masked OAuth config captured each time the operator runs
+ * "Inspect Config". We persist a small ring buffer in localStorage so we can
+ * render a before/after diff after each secret update — the user wants to
+ * confirm exactly which masked field changed when they re-paste a secret.
+ *
+ * Only masked / non-sensitive fields are stored. Never persist raw or even
+ * full-length secret values to localStorage.
+ */
+type ConfigSnapshot = {
+  captured_at: string;
+  client_key_masked: string;
+  client_secret_set: boolean;
+  client_secret_length: number;
+  redirect_uri: string;
+  scopes: string;
+  client_key_contaminated: boolean;
+  client_key_raw_length: number;
+  client_key_clean_length: number;
+  client_secret_contaminated: boolean;
+  client_secret_raw_length: number;
+  client_secret_clean_length: number;
+};
+
+const SNAPSHOT_STORAGE_KEY = "tiktok_oauth_config_snapshots";
+const SNAPSHOT_RING_SIZE = 10;
+
+function loadSnapshots(): ConfigSnapshot[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.slice(-SNAPSHOT_RING_SIZE) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSnapshots(snaps: ConfigSnapshot[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      SNAPSHOT_STORAGE_KEY,
+      JSON.stringify(snaps.slice(-SNAPSHOT_RING_SIZE)),
+    );
+  } catch {
+    // Ignore quota / security errors — diff is a nice-to-have.
+  }
+}
+
+function snapshotFromConfig(config: ConfigInspectResult): ConfigSnapshot | null {
+  if (!config.ok) return null;
+  return {
+    captured_at: new Date().toISOString(),
+    client_key_masked: config.client_key_masked ?? "(unknown)",
+    client_secret_set: Boolean(config.client_secret_set),
+    client_secret_length: config.client_secret_length ?? 0,
+    redirect_uri: config.redirect_uri ?? "",
+    scopes: config.scopes ?? "",
+    client_key_contaminated: Boolean(config.client_key_validation?.has_contamination),
+    client_key_raw_length: config.client_key_validation?.raw_length ?? 0,
+    client_key_clean_length: config.client_key_validation?.clean_length ?? 0,
+    client_secret_contaminated: Boolean(config.client_secret_validation?.has_contamination),
+    client_secret_raw_length: config.client_secret_validation?.raw_length ?? 0,
+    client_secret_clean_length: config.client_secret_validation?.clean_length ?? 0,
+  };
+}
+
+/**
+ * Decide whether two snapshots are identical for diffing purposes. We
+ * compare every persisted field except `captured_at` so that re-running
+ * the inspector without changing anything does NOT pollute the ring buffer
+ * with duplicate entries.
+ */
+function snapshotsEqual(a: ConfigSnapshot, b: ConfigSnapshot): boolean {
+  return (
+    a.client_key_masked === b.client_key_masked &&
+    a.client_secret_set === b.client_secret_set &&
+    a.client_secret_length === b.client_secret_length &&
+    a.redirect_uri === b.redirect_uri &&
+    a.scopes === b.scopes &&
+    a.client_key_contaminated === b.client_key_contaminated &&
+    a.client_key_raw_length === b.client_key_raw_length &&
+    a.client_key_clean_length === b.client_key_clean_length &&
+    a.client_secret_contaminated === b.client_secret_contaminated &&
+    a.client_secret_raw_length === b.client_secret_raw_length &&
+    a.client_secret_clean_length === b.client_secret_clean_length
+  );
+}
 
 type SmokeCheck = {
   name: string;
