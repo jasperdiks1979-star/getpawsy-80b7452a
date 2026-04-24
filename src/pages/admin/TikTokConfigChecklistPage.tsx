@@ -435,6 +435,159 @@ export default function TikTokConfigChecklistPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Callback validation probe: runs `tiktok-oauth-start` to mint a fresh
+   * state + client_ticket, then calls `tiktok-oauth-callback` twice in
+   * `validate_only` mode:
+   *  1. With the correct ticket → must return clientTicketStatus=match
+   *  2. With a tampered ticket  → must return clientTicketStatus=mismatch
+   *
+   * Confirms end-to-end that the callback validates state + ticket as we
+   * expect, without burning a real TikTok authorization code.
+   */
+  const runCallbackProbe = async () => {
+    setCallbackProbing(true);
+    setCallbackProbeError(null);
+    setCallbackProbe(null);
+    try {
+      const origin = window.location.origin.replace(/\/$/, "");
+
+      const startRes = await supabase.functions.invoke<{
+        ok: boolean;
+        authUrl?: string;
+        clientTicket?: string;
+        state?: string;
+        error?: string;
+      }>("tiktok-oauth-start", { body: { origin } });
+      if (startRes.error) throw new Error(startRes.error.message || "start failed");
+      const startData = startRes.data;
+      if (!startData?.ok || !startData.state || !startData.clientTicket) {
+        throw new Error(startData?.error || "start did not return state/clientTicket");
+      }
+
+      const state = startData.state;
+      const clientTicket = startData.clientTicket;
+
+      // 1. Match call
+      const matchRes = await supabase.functions.invoke<{
+        ok: boolean;
+        stateValid?: boolean;
+        clientTicketStatus?: string;
+        redirectUri?: string;
+        error?: string;
+      }>("tiktok-oauth-callback", {
+        body: {
+          state,
+          client_ticket: clientTicket,
+          origin,
+          validate_only: true,
+          debug: true,
+        },
+      });
+      if (matchRes.error) throw new Error(matchRes.error.message || "callback (match) failed");
+      const matchData = matchRes.data ?? null;
+
+      // 2. Mismatch call (tampered ticket)
+      const tamperedTicket = clientTicket.split("").reverse().join("") + "X";
+      const mismatchRes = await supabase.functions.invoke<{
+        ok: boolean;
+        stateValid?: boolean;
+        clientTicketStatus?: string;
+        error?: string;
+      }>("tiktok-oauth-callback", {
+        body: {
+          state,
+          client_ticket: tamperedTicket,
+          origin,
+          validate_only: true,
+          debug: true,
+        },
+      });
+      if (mismatchRes.error) {
+        throw new Error(mismatchRes.error.message || "callback (mismatch) failed");
+      }
+      const mismatchData = mismatchRes.data ?? null;
+
+      const checks: CallbackProbeCheck[] = [];
+
+      // State pass
+      checks.push({
+        label: "State persisted by start and accepted by callback",
+        status: matchData?.stateValid ? "pass" : "fail",
+        detail: matchData?.stateValid
+          ? `State accepted (length=${state.length}).`
+          : `Callback rejected the freshly minted state. Status=${matchData?.clientTicketStatus ?? "unknown"}.`,
+      });
+
+      // Ticket match
+      checks.push({
+        label: "client_ticket matches stored value",
+        status: matchData?.clientTicketStatus === "match" ? "pass" : "fail",
+        detail:
+          matchData?.clientTicketStatus === "match"
+            ? "Ticket round-tripped exactly."
+            : `Expected status=match, got status=${matchData?.clientTicketStatus ?? "unknown"}.`,
+      });
+
+      // Ticket mismatch detection
+      const detectedMismatch = mismatchData?.clientTicketStatus === "mismatch";
+      checks.push({
+        label: "Tampered client_ticket is detected as mismatch",
+        status: detectedMismatch ? "pass" : "fail",
+        detail: detectedMismatch
+          ? "Callback correctly flagged the tampered ticket as a mismatch."
+          : `Expected status=mismatch on a tampered ticket, got status=${mismatchData?.clientTicketStatus ?? "unknown"}. Tampering may go undetected.`,
+      });
+
+      // Redirect URI sanity
+      const expectedRedirect = `${origin}/auth/tiktok/callback`;
+      checks.push({
+        label: "Callback resolved redirect URI for current origin",
+        status: matchData?.redirectUri === expectedRedirect ? "pass" : "warn",
+        detail:
+          matchData?.redirectUri === expectedRedirect
+            ? `Resolved: ${matchData.redirectUri}`
+            : `Expected ${expectedRedirect}, got ${matchData?.redirectUri ?? "(none)"}.`,
+      });
+
+      const ok = checks.every((c) => c.status === "pass");
+
+      setCallbackProbe({
+        ok,
+        state,
+        clientTicket,
+        matchResponse: matchData
+          ? {
+              ok: Boolean(matchData.ok),
+              stateValid: Boolean(matchData.stateValid),
+              clientTicketStatus: matchData.clientTicketStatus ?? "unknown",
+              redirectUri: matchData.redirectUri,
+            }
+          : null,
+        mismatchResponse: mismatchData
+          ? {
+              ok: Boolean(mismatchData.ok),
+              stateValid: Boolean(mismatchData.stateValid),
+              clientTicketStatus: mismatchData.clientTicketStatus ?? "unknown",
+            }
+          : null,
+        checks,
+      });
+
+      if (ok) {
+        toast.success("Callback validation probe passed");
+      } else {
+        toast.error("Callback validation probe found issues");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Callback probe failed";
+      setCallbackProbeError(msg);
+      toast.error(msg);
+    } finally {
+      setCallbackProbing(false);
+    }
+  };
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
