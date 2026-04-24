@@ -1103,7 +1103,7 @@ export default function TikTokConfigChecklistPage() {
             {probe && (
               <>
                 {lastWasSimulated && (
-                  <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs space-y-1">
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs space-y-1">
                     <div className="font-semibold text-foreground flex items-center gap-1.5">
                       <Bug className="h-3.5 w-3.5" />
                       Simulated misconfiguration
