@@ -36,6 +36,7 @@ import { TikTokAdsManagerWorkflow } from '@/components/admin/TikTokAdsManagerWor
 import { DailyCaptionGenerator } from '@/components/admin/DailyCaptionGenerator';
 import { TikTokConnectCard } from '@/components/admin/TikTokConnectCard';
 import { TikTokOAuthStatusDashboard } from '@/components/admin/TikTokOAuthStatusDashboard';
+import { TikTokVideoTestUpload } from '@/components/admin/TikTokVideoTestUpload';
 
 type TikTokPost = {
   id: string;
@@ -357,6 +358,9 @@ export default function TikTokAutomationPage() {
 
         {/* OAuth Status Dashboard — masked client key, mode, scopes, errors */}
         <TikTokOAuthStatusDashboard />
+
+        {/* Step-by-step test upload — verifies end-to-end TikTok connection */}
+        <TikTokVideoTestUpload />
 
         {/* Daily Caption Generator — manual posting helper while API is pending */}
         <DailyCaptionGenerator />
