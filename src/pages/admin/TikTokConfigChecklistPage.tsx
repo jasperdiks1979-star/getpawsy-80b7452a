@@ -54,6 +54,31 @@ const EXPECTED_REDIRECT_URIS = [
   "https://getpawsy.lovable.app/auth/tiktok/callback",
 ] as const;
 
+/**
+ * Required scopes the start function must request.
+ * Keep in sync with `supabase/functions/tiktok-oauth-start/index.ts`.
+ */
+const REQUIRED_SCOPES = ["user.info.basic", "video.publish", "video.upload"] as const;
+
+type RedirectProbeCheck = {
+  label: string;
+  status: DiagnoseStatus;
+  detail: string;
+};
+
+type RedirectProbeResult = {
+  ok: boolean;
+  authUrl: string;
+  parsedRedirect: string | null;
+  expectedRedirect: string;
+  clientKey: string | null;
+  scope: string | null;
+  state: string | null;
+  responseType: string | null;
+  checks: RedirectProbeCheck[];
+  startReturnedRedirect: string | null;
+};
+
 type CategoryKey = "client_key" | "app_status" | "login_kit" | "redirect_uri";
 
 const CATEGORY_META: Record<
@@ -189,6 +214,9 @@ export default function TikTokConfigChecklistPage() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<DiagnoseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [probing, setProbing] = useState(false);
+  const [probe, setProbe] = useState<RedirectProbeResult | null>(null);
+  const [probeError, setProbeError] = useState<string | null>(null);
 
   const runDiagnose = async () => {
     setRunning(true);
@@ -215,8 +243,166 @@ export default function TikTokConfigChecklistPage() {
     }
   };
 
+  /**
+   * Live probe: invoke `tiktok-oauth-start`, parse the returned authorize URL,
+   * and validate the `redirect_uri` query parameter character-for-character
+   * against the expected URL for the current origin. Also verifies scope,
+   * response_type, client_key presence and that the start function and the URL
+   * agree on the redirect.
+   */
+  const runRedirectProbe = async () => {
+    setProbing(true);
+    setProbeError(null);
+    setProbe(null);
+    try {
+      const origin = window.location.origin.replace(/\/$/, "");
+      const expectedRedirect = `${origin}/auth/tiktok/callback`;
+
+      const { data, error } = await supabase.functions.invoke<{
+        ok: boolean;
+        authUrl?: string;
+        redirectUri?: string;
+        error?: string;
+      }>("tiktok-oauth-start", {
+        body: { origin },
+      });
+
+      if (error) throw new Error(error.message || "Failed to invoke tiktok-oauth-start");
+      if (!data?.ok || !data.authUrl) {
+        throw new Error(data?.error || "tiktok-oauth-start returned no authorize URL");
+      }
+
+      const url = new URL(data.authUrl);
+      const parsedRedirect = url.searchParams.get("redirect_uri");
+      const clientKey = url.searchParams.get("client_key");
+      const scope = url.searchParams.get("scope");
+      const responseType = url.searchParams.get("response_type");
+      const state = url.searchParams.get("state");
+      const startReturnedRedirect = data.redirectUri ?? null;
+
+      const checks: RedirectProbeCheck[] = [];
+
+      // 1. Authorize host
+      checks.push({
+        label: "Authorize host is tiktok.com",
+        status: url.hostname === "www.tiktok.com" ? "pass" : "fail",
+        detail: `Got https://${url.hostname}${url.pathname}`,
+      });
+
+      // 2. redirect_uri present
+      if (!parsedRedirect) {
+        checks.push({
+          label: "redirect_uri present in authorize URL",
+          status: "fail",
+          detail: "The generated authorize URL has no redirect_uri parameter.",
+        });
+      } else {
+        checks.push({
+          label: "redirect_uri present in authorize URL",
+          status: "pass",
+          detail: parsedRedirect,
+        });
+
+        // 3. Exact match vs expected
+        checks.push({
+          label: "redirect_uri matches expected for current origin",
+          status: parsedRedirect === expectedRedirect ? "pass" : "fail",
+          detail:
+            parsedRedirect === expectedRedirect
+              ? `Exact match: ${expectedRedirect}`
+              : `Expected ${expectedRedirect}, got ${parsedRedirect}`,
+        });
+
+        // 4. Must be in registered list
+        const inRegistered = (EXPECTED_REDIRECT_URIS as readonly string[]).includes(parsedRedirect);
+        checks.push({
+          label: "redirect_uri is in the registered allow-list",
+          status: inRegistered ? "pass" : "fail",
+          detail: inRegistered
+            ? "This URL is one of the URIs that must be registered in TikTok."
+            : `Not in [${EXPECTED_REDIRECT_URIS.join(", ")}]. Add it in the TikTok Developer Portal.`,
+        });
+
+        // 5. Start function and URL must agree
+        if (startReturnedRedirect) {
+          checks.push({
+            label: "Start function `redirectUri` matches authorize URL",
+            status: startReturnedRedirect === parsedRedirect ? "pass" : "fail",
+            detail:
+              startReturnedRedirect === parsedRedirect
+                ? "Backend metadata agrees with the URL it generated."
+                : `Backend reported ${startReturnedRedirect} but URL contains ${parsedRedirect}`,
+          });
+        }
+      }
+
+      // 6. client_key present
+      checks.push({
+        label: "client_key present",
+        status: clientKey ? "pass" : "fail",
+        detail: clientKey
+          ? `${clientKey.slice(0, 4)}…${clientKey.slice(-4)} (${clientKey.length} chars)`
+          : "Missing client_key in the authorize URL.",
+      });
+
+      // 7. response_type=code
+      checks.push({
+        label: "response_type is 'code'",
+        status: responseType === "code" ? "pass" : "fail",
+        detail: `Got '${responseType ?? ""}'`,
+      });
+
+      // 8. Scopes
+      const scopes = (scope ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+      const missing = REQUIRED_SCOPES.filter((s) => !scopes.includes(s));
+      checks.push({
+        label: "All required scopes requested",
+        status: missing.length === 0 ? "pass" : "fail",
+        detail:
+          missing.length === 0
+            ? `OK: ${scopes.join(", ")}`
+            : `Missing: ${missing.join(", ")} (got: ${scopes.join(", ") || "none"})`,
+      });
+
+      // 9. CSRF state
+      checks.push({
+        label: "CSRF state generated",
+        status: state && state.length >= 16 ? "pass" : "warn",
+        detail: state ? `length=${state.length}` : "No state parameter in URL.",
+      });
+
+      const ok = checks.every((c) => c.status === "pass" || c.status === "info");
+
+      setProbe({
+        ok,
+        authUrl: data.authUrl,
+        parsedRedirect,
+        expectedRedirect,
+        clientKey,
+        scope,
+        state,
+        responseType,
+        checks,
+        startReturnedRedirect,
+      });
+
+      if (ok) {
+        toast.success("Redirect URI probe passed");
+      } else {
+        toast.error("Redirect URI probe found issues");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Probe failed";
+      setProbeError(msg);
+      toast.error(msg);
+    } finally {
+      setProbing(false);
+    }
+  };
+
   useEffect(() => {
     void runDiagnose();
+    void runRedirectProbe();
     // Run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -352,6 +538,104 @@ export default function TikTokConfigChecklistPage() {
           checks={grouped.redirect_uri}
           extra={redirectExtra}
         />
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="text-base">
+                5. Live redirect URI probe (calls tiktok-oauth-start)
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {probe && (
+                  <StatusBadge status={probe.ok ? "pass" : "fail"} />
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={runRedirectProbe}
+                  disabled={probing}
+                >
+                  {probing ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                  )}
+                  Re-run probe
+                </Button>
+              </div>
+            </div>
+            <CardDescription className="text-xs">
+              Invokes the real <code>tiktok-oauth-start</code> edge function with the current
+              origin, parses the returned authorize URL, and verifies the{" "}
+              <code>redirect_uri</code>, scopes and client_key match what TikTok expects.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {probeError && (
+              <div className="text-xs text-destructive bg-destructive/5 border border-destructive/30 rounded p-2">
+                <strong>Probe failed:</strong> {probeError}
+              </div>
+            )}
+            {probing && !probe && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Calling tiktok-oauth-start…
+              </div>
+            )}
+            {probe && (
+              <>
+                <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      Expected redirect_uri
+                    </div>
+                    <code className="break-all">{probe.expectedRedirect}</code>
+                  </div>
+                  <div className="rounded border border-border/60 bg-muted/30 p-2">
+                    <div className="font-semibold text-foreground mb-0.5">
+                      redirect_uri in authorize URL
+                    </div>
+                    <code className="break-all">{probe.parsedRedirect ?? "(missing)"}</code>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {probe.checks.map((c, i) => (
+                    <div
+                      key={`${c.label}-${i}`}
+                      className="rounded-md border border-border/60 bg-card p-2.5 space-y-1"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-sm font-medium text-foreground">{c.label}</div>
+                        <StatusBadge status={c.status} />
+                      </div>
+                      <div className="text-xs text-muted-foreground break-words">
+                        {c.detail}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded border border-border/60 bg-muted/20 p-2 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[11px] font-semibold text-foreground">
+                      Generated authorize URL
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copy(probe.authUrl)}
+                      className="h-7 px-2"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <code className="text-[10px] break-all block">{probe.authUrl}</code>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
