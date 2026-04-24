@@ -54,6 +54,13 @@ type ConfigInspectResult = {
   scopes?: string;
   authorize_url_preview?: string;
   hints?: string[];
+  sandbox_test_user_help?: {
+    tiktok_username_to_add: string;
+    portal_apps_url: string;
+    sandbox_docs_url: string;
+    steps: string[];
+    why_sandbox_only: string;
+  };
   error?: string;
 };
 
