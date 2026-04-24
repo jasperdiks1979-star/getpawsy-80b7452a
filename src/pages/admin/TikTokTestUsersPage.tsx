@@ -41,6 +41,7 @@ import {
   Info,
   Download,
   Upload,
+  Unlink,
 } from "lucide-react";
 import {
   Dialog,
@@ -50,6 +51,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   buildTestUsersExport,
   downloadTestUsersExport,
@@ -122,6 +133,14 @@ export default function TikTokTestUsersPage() {
   const [importPreview, setImportPreview] = useState<TestUsersExportEnvelope | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+
+  // Disconnect dialog state — controls a confirmation modal that lets
+  // admins remove a connected TikTok account's OAuth token (and optionally
+  // the test-user registry row + the recording-user flag).
+  const [disconnectTarget, setDisconnectTarget] = useState<Row | null>(null);
+  const [disconnectAlsoRemoveTestUser, setDisconnectAlsoRemoveTestUser] =
+    useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -294,6 +313,62 @@ export default function TikTokTestUsersPage() {
     } else {
       toast.success("Removed");
       fetchAll();
+    }
+  };
+
+  // Disconnect = revoke our local OAuth token for that account so it can no
+  // longer publish. If it was the recording user, clear that flag too.
+  // Optionally also remove the test_users row (label/notes) on request.
+  const openDisconnectDialog = (row: Row) => {
+    setDisconnectTarget(row);
+    setDisconnectAlsoRemoveTestUser(false);
+  };
+
+  const handleConfirmDisconnect = async () => {
+    if (!disconnectTarget) return;
+    const openId = disconnectTarget.open_id;
+    setDisconnecting(true);
+    try {
+      // 1. Drop the OAuth token row — this is what actually "disconnects"
+      //    the account from our publisher.
+      if (disconnectTarget.account) {
+        const { error: tokenErr } = await supabase
+          .from("tiktok_oauth_tokens")
+          .delete()
+          .eq("open_id", openId);
+        if (tokenErr) throw tokenErr;
+      }
+
+      // 2. Always clear the recording-user flag (a disconnected account
+      //    must never remain the active recorder).
+      if (disconnectTarget.testUser?.is_recording_user) {
+        const { error: clearErr } = await supabase
+          .from("tiktok_test_users")
+          .update({ is_recording_user: false })
+          .eq("open_id", openId);
+        if (clearErr) throw clearErr;
+      }
+
+      // 3. Optionally remove the test-users row entirely (forgets label/notes).
+      if (disconnectAlsoRemoveTestUser && disconnectTarget.testUser) {
+        const { error: tuErr } = await supabase
+          .from("tiktok_test_users")
+          .delete()
+          .eq("open_id", openId);
+        if (tuErr) throw tuErr;
+      }
+
+      toast.success("Account disconnected");
+      setDisconnectTarget(null);
+      setDisconnectAlsoRemoveTestUser(false);
+      await fetchAll();
+    } catch (err) {
+      console.error("[TikTokTestUsersPage] disconnect error:", err);
+      toast.error(
+        err instanceof Error ? `Disconnect failed: ${err.message}` : "Disconnect failed",
+      );
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -729,6 +804,17 @@ export default function TikTokTestUsersPage() {
                                   Register
                                 </Button>
                               )}
+                              {isConnected && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => openDisconnectDialog(row)}
+                                  title="Disconnect this TikTok account"
+                                >
+                                  <Unlink className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
                               {row.testUser && (
                                 <Button
                                   variant="ghost"
@@ -902,6 +988,89 @@ export default function TikTokTestUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Disconnect confirmation */}
+      <AlertDialog
+        open={!!disconnectTarget}
+        onOpenChange={(open) => {
+          if (!open && !disconnecting) {
+            setDisconnectTarget(null);
+            setDisconnectAlsoRemoveTestUser(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Unlink className="h-5 w-5 text-destructive" />
+              Disconnect TikTok account?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  This will remove the local OAuth token for{" "}
+                  <span className="font-mono text-foreground">
+                    {disconnectTarget?.account?.display_name ||
+                      disconnectTarget?.testUser?.label ||
+                      "this account"}
+                  </span>
+                  . The account will no longer be able to publish until it
+                  re-connects via OAuth.
+                </p>
+                {disconnectTarget?.testUser?.is_recording_user && (
+                  <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs text-foreground">
+                    <AlertTriangle className="h-3.5 w-3.5 inline mr-1 text-destructive" />
+                    This is the active <strong>Recording User</strong>. That
+                    flag will be cleared automatically — set another account
+                    afterwards.
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground font-mono break-all">
+                  open_id: {disconnectTarget?.open_id}
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {disconnectTarget?.testUser && (
+            <label className="flex items-start gap-2 text-xs cursor-pointer rounded-md border bg-muted/30 p-2">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={disconnectAlsoRemoveTestUser}
+                onChange={(e) =>
+                  setDisconnectAlsoRemoveTestUser(e.target.checked)
+                }
+              />
+              <span>
+                Also remove from the test-user registry (forgets label & notes).
+                Leave unchecked to keep the metadata so you can re-connect later.
+              </span>
+            </label>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={disconnecting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmDisconnect();
+              }}
+              disabled={disconnecting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {disconnecting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Unlink className="h-4 w-4 mr-1" />
+              )}
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
