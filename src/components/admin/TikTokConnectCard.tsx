@@ -16,6 +16,7 @@ import {
   Stethoscope,
   Info,
   RefreshCw,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/hooks/useRetryWithBackoff";
@@ -42,6 +43,19 @@ type ConnectedAccount = {
   scope: string | null;
 };
 
+type ConfigInspectResult = {
+  ok: boolean;
+  client_key_masked?: string;
+  client_secret_set?: boolean;
+  client_secret_length?: number;
+  redirect_uri?: string;
+  origin_used?: string;
+  scopes?: string;
+  authorize_url_preview?: string;
+  hints?: string[];
+  error?: string;
+};
+
 /**
  * Redirect URIs that MUST be registered in the TikTok Developer Portal
  * (Login Kit → Redirect URI section). Both apex and lovable.app are supported
@@ -62,6 +76,8 @@ export function TikTokConnectCard() {
   const [connecting, setConnecting] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<DiagnoseResult | null>(null);
+  const [inspecting, setInspecting] = useState(false);
+  const [config, setConfig] = useState<ConfigInspectResult | null>(null);
   // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
   const [retryInfo, setRetryInfo] = useState<{
     attempt: number;
@@ -169,6 +185,27 @@ export function TikTokConnectCard() {
       toast.error(e instanceof Error ? e.message : "Diagnose failed");
     } finally {
       setDiagnosing(false);
+    }
+  };
+
+  const handleInspectConfig = async () => {
+    setInspecting(true);
+    setConfig(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-oauth-config-inspect", {
+        body: { origin: window.location.origin },
+      });
+      if (error) throw error;
+      setConfig(data as ConfigInspectResult);
+      if (data?.ok) {
+        toast.success("Loaded TikTok OAuth config");
+      } else {
+        toast.error(data?.error || "Failed to load config");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Inspect failed");
+    } finally {
+      setInspecting(false);
     }
   };
 
@@ -482,6 +519,102 @@ export function TikTokConnectCard() {
                   );
                 })}
               </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Live config inspector — shows the masked TIKTOK_CLIENT_KEY and
+            redirect URI that tiktok-oauth-start will actually send to TikTok.
+            Useful when "Connect" keeps failing with `client_key` errors and
+            you need to confirm which value is in the secret right now. */}
+        <div className="mt-6 pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">
+                Live OAuth Config Inspector
+              </h3>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleInspectConfig} disabled={inspecting}>
+              {inspecting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Eye className="h-4 w-4 mr-1" />
+              )}
+              Inspect Config
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Shows the masked <code className="text-[10px]">TIKTOK_CLIENT_KEY</code> and the exact
+            redirect URI that the edge function would send to TikTok right now. Use this if you keep
+            seeing <code className="text-[10px]">client_key</code> errors — the value here is what
+            TikTok actually receives.
+          </p>
+
+          {config?.ok && (
+            <div className="space-y-2">
+              <ul className="space-y-1.5">
+                <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+                  <div className="font-medium text-foreground">TIKTOK_CLIENT_KEY (masked)</div>
+                  <code className="text-[11px] font-mono break-all text-muted-foreground">
+                    {config.client_key_masked}
+                  </code>
+                </li>
+                <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+                  <div className="font-medium text-foreground">TIKTOK_CLIENT_SECRET</div>
+                  <code className="text-[11px] font-mono text-muted-foreground">
+                    {config.client_secret_set
+                      ? `set (length=${config.client_secret_length})`
+                      : "(not set)"}
+                  </code>
+                </li>
+                <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium text-foreground">Redirect URI sent to TikTok</div>
+                      <code className="text-[11px] font-mono break-all text-muted-foreground">
+                        {config.redirect_uri}
+                      </code>
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => config.redirect_uri && copyUri(config.redirect_uri)}
+                      aria-label="Copy redirect URI"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </li>
+                <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+                  <div className="font-medium text-foreground">Scopes</div>
+                  <code className="text-[11px] font-mono break-all text-muted-foreground">
+                    {config.scopes}
+                  </code>
+                </li>
+                <li className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+                  <div className="font-medium text-foreground">Authorize URL preview (masked)</div>
+                  <code className="text-[11px] font-mono break-all text-muted-foreground">
+                    {config.authorize_url_preview}
+                  </code>
+                </li>
+              </ul>
+
+              {config.hints && config.hints.length > 0 && (
+                <div className="space-y-1">
+                  {config.hints.map((h, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs"
+                    >
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <span className="text-foreground">{h}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
