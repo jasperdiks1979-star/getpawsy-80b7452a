@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1?target=deno";
+import { getTikTokClientKey } from "../_shared/tiktok-secrets.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,7 +30,10 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const clientKey = Deno.env.get("TIKTOK_CLIENT_KEY");
+    // Read via the shared sanitizer so trailing/leading whitespace, BOM,
+    // NBSP or zero-width chars in the stored secret never leak into the
+    // OAuth URL (TikTok would silently reject with `invalid_client_key`).
+    const clientKey = getTikTokClientKey();
 
     if (!clientKey) {
       return new Response(
