@@ -67,6 +67,8 @@ type ConfigInspectResult = {
   hints?: string[];
   client_key_validation?: SecretValidationReport;
   client_secret_validation?: SecretValidationReport;
+  client_key_drift?: SecretDriftReport;
+  client_secret_drift?: SecretDriftReport;
   sandbox_test_user_help?: {
     tiktok_username_to_add: string;
     portal_apps_url: string;
