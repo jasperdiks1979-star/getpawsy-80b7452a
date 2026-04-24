@@ -318,6 +318,62 @@ export function TikTokConnectCard() {
     }
   };
 
+  /**
+   * Build a chat-friendly markdown summary of the inspector output and copy
+   * it to the clipboard. Designed so the operator can paste a single block
+   * into chat/support and get a complete picture of the live OAuth config
+   * (masked secrets, exact redirect URI, hints) without copying each row by
+   * hand. Falls back gracefully if there is nothing to copy yet.
+   */
+  const copyInspectionOutput = async () => {
+    if (!config) {
+      toast.error("Run \"Inspect Config\" first");
+      return;
+    }
+
+    const lines: string[] = [];
+    lines.push("**TikTok OAuth — Live Config Inspection**");
+    lines.push(`_captured: ${new Date().toISOString()}_`);
+    lines.push("");
+
+    if (!config.ok) {
+      lines.push(`- Status: ❌ ${config.code ?? "error"}`);
+      if (config.error) lines.push(`- Error: ${config.error}`);
+    } else {
+      lines.push(`- TIKTOK_CLIENT_KEY (masked): \`${config.client_key_masked ?? "(unknown)"}\``);
+      lines.push(
+        `- TIKTOK_CLIENT_SECRET: ${
+          config.client_secret_set
+            ? `set (length=${config.client_secret_length ?? "?"})`
+            : "(not set)"
+        }`,
+      );
+      lines.push(`- Redirect URI: \`${config.redirect_uri ?? "(unknown)"}\``);
+      lines.push(`- Scopes: \`${config.scopes ?? "(unknown)"}\``);
+      if (config.authorize_url_preview) {
+        lines.push(`- Authorize URL preview: \`${config.authorize_url_preview}\``);
+      }
+      if (config.hints && config.hints.length > 0) {
+        lines.push("");
+        lines.push("**Hints:**");
+        for (const h of config.hints) lines.push(`- ${h}`);
+      }
+    }
+
+    lines.push("");
+    lines.push("```json");
+    lines.push(JSON.stringify(config, null, 2));
+    lines.push("```");
+
+    const payload = lines.join("\n");
+    try {
+      await navigator.clipboard.writeText(payload);
+      toast.success("Inspection output copied — paste into chat");
+    } catch {
+      toast.error("Copy failed — your browser blocked clipboard access");
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
