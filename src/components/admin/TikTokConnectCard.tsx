@@ -254,6 +254,10 @@ export function TikTokConnectCard() {
   const [config, setConfig] = useState<ConfigInspectResult | null>(null);
   const [smokeTesting, setSmokeTesting] = useState(false);
   const [smoke, setSmoke] = useState<SmokeTestResult | null>(null);
+  // Persisted ring buffer of past Inspect runs so we can render a before/after
+  // diff after each secret update. Loaded once on mount; updated on every
+  // successful Inspect.
+  const [snapshots, setSnapshots] = useState<ConfigSnapshot[]>([]);
   // Retry telemetry surfaced in UI while we re-attempt tiktok-oauth-start.
   const [retryInfo, setRetryInfo] = useState<{
     attempt: number;
@@ -276,6 +280,10 @@ export function TikTokConnectCard() {
 
   useEffect(() => {
     loadAccount();
+    // Hydrate snapshot history once. Stored in localStorage so the diff
+    // survives page reloads — admins typically re-paste the secret in
+    // another tab and come back to verify the change here.
+    setSnapshots(loadSnapshots());
     // Refresh after OAuth roundtrip
     if (new URLSearchParams(window.location.search).get("connected") === "1") {
       toast.success("TikTok connected successfully!");
