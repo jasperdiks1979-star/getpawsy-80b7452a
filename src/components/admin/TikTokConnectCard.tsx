@@ -3,8 +3,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Link as LinkIcon, Loader2, LogOut, AlertTriangle, ShieldCheck, XCircle, Copy } from "lucide-react";
+import {
+  CheckCircle2,
+  Link as LinkIcon,
+  Loader2,
+  LogOut,
+  AlertTriangle,
+  ShieldCheck,
+  XCircle,
+  Copy,
+  Stethoscope,
+  Info,
+} from "lucide-react";
 import { toast } from "sonner";
+
+type DiagnoseCheck = {
+  name: string;
+  status: "pass" | "fail" | "warn" | "info";
+  detail: string;
+  hint?: string;
+};
+type DiagnoseResult = {
+  ok: boolean;
+  summary: string;
+  redirectUri?: string;
+  elapsed_ms?: number;
+  checks: DiagnoseCheck[];
+};
 
 type ConnectedAccount = {
   open_id: string;
@@ -32,6 +57,8 @@ export function TikTokConnectCard() {
   const [account, setAccount] = useState<ConnectedAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [diagnosing, setDiagnosing] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<DiagnoseResult | null>(null);
 
   const loadAccount = async () => {
     setLoading(true);
@@ -67,6 +94,27 @@ export function TikTokConnectCard() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to start TikTok OAuth");
       setConnecting(false);
+    }
+  };
+
+  const handleDiagnose = async () => {
+    setDiagnosing(true);
+    setDiagnostic(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-oauth-diagnose", {
+        body: { origin: window.location.origin },
+      });
+      if (error) throw error;
+      setDiagnostic(data as DiagnoseResult);
+      if (data?.ok) {
+        toast.success("All TikTok OAuth checks passed");
+      } else {
+        toast.error(data?.summary || "TikTok OAuth diagnostic found issues");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Diagnose failed");
+    } finally {
+      setDiagnosing(false);
     }
   };
 
