@@ -1171,13 +1171,39 @@ export default function TikTokConfigChecklistPage() {
                     <div className="font-semibold text-foreground flex items-center gap-1.5">
                       <Bug className="h-3.5 w-3.5" />
                       Simulated misconfiguration
+                      {lastSimScenario && (
+                        <span className="text-muted-foreground font-normal">
+                          — {lastSimScenario.replace("_", " ")}
+                        </span>
+                      )}
                     </div>
                     <p className="text-muted-foreground">
-                      This run was compared against an intentionally wrong expected redirect
-                      (<code>…/callback-MISCONFIGURED</code>) and a fake allow-list
-                      (<code>https://example.invalid/...</code>). Backend secrets and TikTok
-                      app settings were not touched. Click <strong>Re-run probe</strong> to
-                      return to the real configuration.
+                      {lastSimScenario === "missing_allowlist" ? (
+                        <>
+                          This run pretended the TikTok Developer Portal has{" "}
+                          <strong>zero registered redirect URIs</strong>. The backend still
+                          generated the correct URL — only the validator was lied to. In real
+                          life TikTok would reject the OAuth attempt with{" "}
+                          <code>error=invalid_redirect</code> on the very first try.
+                        </>
+                      ) : lastSimScenario === "wrong_origin" ? (
+                        <>
+                          This run pretended the only registered URI lives on a{" "}
+                          <strong>different host</strong> (
+                          <code>old-preview.example.invalid</code>). Use this to preview what
+                          you'd see if you forgot to register a new domain after switching
+                          environments.
+                        </>
+                      ) : (
+                        <>
+                          This run pretended the only registered URI uses the{" "}
+                          <strong>wrong path</strong> (<code>…/callback-MISCONFIGURED</code>
+                          ). Use this to preview what a typo in the TikTok Developer Portal
+                          would look like end-to-end.
+                        </>
+                      )}{" "}
+                      Backend secrets and TikTok app settings were not touched. Click{" "}
+                      <strong>Re-run probe</strong> to return to the real configuration.
                     </p>
                   </div>
                 )}
