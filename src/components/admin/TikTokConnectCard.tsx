@@ -760,3 +760,28 @@ function renderHintWithLinks(text: string) {
     return <span key={i}>{part}</span>;
   });
 }
+
+/**
+ * Map the typed `code` from the inspect edge function to a user-facing
+ * sentence. Falls back to the raw error for unknown codes so we never
+ * accidentally hide a real failure.
+ */
+function friendlyInspectError(
+  code: ConfigInspectResult["code"] | undefined,
+  fallback: string | undefined,
+): string {
+  switch (code) {
+    case "missing_authorization_header":
+      return "You're not signed in. Please sign in as an admin to use the TikTok config inspector.";
+    case "invalid_auth_token":
+      return "Your session expired. Please sign out and sign back in as an admin, then retry.";
+    case "user_not_found":
+      return "We couldn't find your account. Please sign in again as an admin.";
+    case "not_admin":
+      return "Admin access required. The TikTok config inspector is restricted to admin accounts.";
+    case "internal_error":
+      return fallback || "An unexpected error occurred while loading the TikTok config.";
+    default:
+      return fallback || "Failed to load TikTok config.";
+  }
+}
