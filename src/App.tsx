@@ -1467,6 +1467,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="hero-cta-analytics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <HeroCtaAnalyticsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="guides"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
