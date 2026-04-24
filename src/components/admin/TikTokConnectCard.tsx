@@ -1141,6 +1141,17 @@ export function TikTokConnectCard() {
 
           {config?.ok && (
             <div className="space-y-2">
+              {/* Before/after diff vs the previous Inspect run. Surfaces
+                  exactly which masked field changed after each secret update
+                  so the operator can confirm the rotation took effect. We
+                  compare the latest two entries in the persisted ring buffer;
+                  the very first Inspect on a fresh ring buffer has no "before"
+                  to compare against and shows a baseline notice instead. */}
+              <ConfigDiffPanel
+                snapshots={snapshots}
+                onClear={clearSnapshotHistory}
+              />
+
               {/* Prominent contamination alert — shows when the inspector
                   found whitespace/BOM/zero-width chars in either secret.
                   Rendered above the masked values so it's the first thing
