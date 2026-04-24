@@ -96,7 +96,8 @@ export function HeroSection() {
             size="lg"
             className="w-full sm:w-auto min-h-[54px] rounded-xl px-6 text-base font-semibold bg-transparent text-white border-white/40 hover:bg-white/10 hover:text-white"
           >
-            <Link to="#how-it-works">See How It Works</Link>
+            {/* Plain anchor — robust across routes if hero is ever reused. */}
+            <a href="#how-it-works">See How It Works</a>
           </Button>
         </div>
 
