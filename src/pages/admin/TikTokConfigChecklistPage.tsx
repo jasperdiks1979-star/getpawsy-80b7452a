@@ -1014,7 +1014,14 @@ export default function TikTokConfigChecklistPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => runRedirectProbe()}
+                  onClick={() => {
+                    // Defensive: explicitly clear simulated state on a live
+                    // re-run so the badge/callout don't linger from a prior
+                    // "Simulate misconfig" click.
+                    setLastWasSimulated(false);
+                    setSimulating(false);
+                    void runRedirectProbe();
+                  }}
                   disabled={probing}
                 >
                   {probing ? (
