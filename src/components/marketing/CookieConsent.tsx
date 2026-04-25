@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getConsent, setConsent, type ConsentValue } from '@/lib/cookieConsent';
+import { canAutoGrantConsent } from '@/lib/geoConsent';
 
 // ⚡ Heavy deps deferred — not needed until banner interaction
 const showToast = (msg: string) => import('sonner').then(m => m.toast.success(msg));
@@ -38,29 +39,35 @@ export const CookieConsent = () => {
     if (mountedRef.current) return;
     mountedRef.current = true;
     const existing = getConsent();
-    if (!existing) {
-      const mount = () => {
-        requestAnimationFrame(() => {
-          markCookieBannerMounted();
-          setShowBanner(true);
-          requestAnimationFrame(() => setIsVisible(true));
-        });
-      };
+    if (existing) return;
 
-      let handle: ReturnType<typeof setTimeout>;
-      handle = setTimeout(mount, 1500);
-
-      const interactionHandler = () => { mount(); cleanup(); };
-      const events = ['scroll', 'click', 'touchstart'] as const;
-      events.forEach(e => window.addEventListener(e, interactionHandler, { once: true, passive: true }));
-
-      function cleanup() {
-        clearTimeout(handle);
-        events.forEach(e => window.removeEventListener(e, interactionHandler));
-      }
-
-      return cleanup;
+    // Geo-aware auto-consent: non-EU visitors (US/CCPA regime) get full
+    // consent automatically — no banner needed. EU/GDPR visitors must
+    // explicitly opt-in via the banner below.
+    if (canAutoGrantConsent()) {
+      setConsent('all');
+      return;
     }
+
+    const mount = () => {
+      requestAnimationFrame(() => {
+        markCookieBannerMounted();
+        setShowBanner(true);
+        requestAnimationFrame(() => setIsVisible(true));
+      });
+    };
+
+    const handle = setTimeout(mount, 1500);
+    const interactionHandler = () => { mount(); cleanup(); };
+    const events = ['scroll', 'click', 'touchstart'] as const;
+    events.forEach(e => window.addEventListener(e, interactionHandler, { once: true, passive: true }));
+
+    function cleanup() {
+      clearTimeout(handle);
+      events.forEach(e => window.removeEventListener(e, interactionHandler));
+    }
+
+    return cleanup;
   }, []);
 
   // Mark interactive once banner is visible

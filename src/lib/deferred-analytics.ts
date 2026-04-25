@@ -8,6 +8,8 @@
  * with ES module evaluation order.
  */
 
+import { canAutoGrantConsent } from './geoConsent';
+
 // Ensure dataLayer exists safely before any gtag call
 if (typeof window !== 'undefined') {
   (window as any).dataLayer = (window as any).dataLayer || [];
@@ -75,13 +77,25 @@ function initTikTokPixel(): void {
       first.parentNode?.insertBefore(script, first);
     };
 
-    // GDPR: hold consent until user accepts. Storefront cookie banner can call ttq.grantConsent().
-    ttq.holdConsent && ttq.holdConsent();
+    // Geo-aware consent:
+    //   • EU/GDPR visitors → hold until cookie banner grants
+    //   • Non-EU (US/etc.) → auto-grant immediately so the pixel fires on
+    //     first page view (CCPA opt-out regime, not GDPR opt-in)
+    const autoGrant = canAutoGrantConsent();
+    if (!autoGrant) {
+      ttq.holdConsent && ttq.holdConsent();
+    }
 
     ttq.load('D7KDRMBC77U9EB7RJROG');
+
+    if (autoGrant) {
+      // Grant must be called AFTER load (per TikTok docs)
+      ttq.grantConsent && ttq.grantConsent();
+    }
+
     ttq.page();
     ttq._loaded = true;
-    console.log('[Analytics] TikTok Pixel loaded');
+    console.log('[Analytics] TikTok Pixel loaded — autoGrant:', autoGrant);
   } catch (e) {
     console.warn('[Analytics] TikTok Pixel init error (non-fatal):', e);
   }
