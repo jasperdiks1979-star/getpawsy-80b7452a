@@ -87,6 +87,95 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, traceId, reason: 'Admin access required' });
   }
 
+  // === DRY-RUN TEST ENDPOINT ===
+  // Trigger via:
+  //   GET  /run-all?mode=test
+  //   POST /run-all  { "mode": "test" }
+  // Returns the planned execution (steps, gating, governor decision) WITHOUT
+  // creating job_runs / job_run_steps / logs. No database writes occur.
+  const url = new URL(req.url);
+  const queryMode = url.searchParams.get('mode');
+  const bodyForMode = req.method === 'POST'
+    ? await req.clone().json().catch(() => ({}))
+    : {};
+  const requestedMode = queryMode || bodyForMode.mode;
+
+  if (requestedMode === 'test') {
+    // Inspect current lock state without mutating it.
+    const { data: activeRun } = await supabase
+      .from('job_runs')
+      .select('id, started_at, updated_at, status')
+      .in('status', ['queued', 'running'])
+      .limit(1)
+      .maybeSingle();
+
+    const lastHeartbeat = activeRun?.updated_at || activeRun?.started_at || null;
+    const staleSinceMs = lastHeartbeat ? Date.now() - new Date(lastHeartbeat).getTime() : 0;
+    const lockIsStale = activeRun ? staleSinceMs > STALE_HEARTBEAT_MS : false;
+    const lockBlocks = !!activeRun && !lockIsStale;
+
+    // Ask governor for its read, but don't act on it.
+    let governorDecision: Record<string, unknown> | null = null;
+    try {
+      const govRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/execution-governor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ mode: 'fullstack', forceOverride: false }),
+      });
+      governorDecision = await govRes.json();
+    } catch (govErr) {
+      governorDecision = { ok: false, error: govErr instanceof Error ? govErr.message : String(govErr) };
+    }
+
+    // Build the planned step sequence with the same gating logic the real
+    // run uses, but mark each step as a simulation (no execution).
+    const plannedSteps = STEPS.map((s, i) => {
+      const willSkip = s.key === 'indexing_submit'
+        ? { skip: false, reason: 'would run in fullstack; skipped automatically in dryrun mode' }
+        : { skip: false, reason: null };
+      return {
+        order: i + 1,
+        key: s.key,
+        label: s.label,
+        critical: s.critical,
+        plannedStatus: 'simulated',
+        notes: willSkip.reason,
+      };
+    });
+
+    return jsonResponse({
+      ok: true,
+      traceId,
+      mode: 'test',
+      dryRun: true,
+      writesPerformed: false,
+      summary: `Dry-run: ${STEPS.length} steps would execute. No database writes performed.`,
+      lock: {
+        active: !!activeRun,
+        runId: activeRun?.id ?? null,
+        status: activeRun?.status ?? null,
+        lastHeartbeat,
+        staleSinceMs,
+        isStale: lockIsStale,
+        wouldBlockNewRun: lockBlocks,
+      },
+      governor: {
+        consulted: !!governorDecision,
+        decision: governorDecision,
+        wouldBlock: !!(governorDecision && (governorDecision as any).ok && (governorDecision as any).allowed === false),
+      },
+      config: {
+        globalTimeoutMs: GLOBAL_RUN_TIMEOUT_MS,
+        staleHeartbeatMs: STALE_HEARTBEAT_MS,
+        maxStepDurationMs: MAX_STEP_DURATION_MS,
+        canonicalHost: CANONICAL_HOST,
+        maxIndexingUrls: MAX_INDEXING_URLS,
+        indexingDedupeDays: INDEXING_DEDUPE_DAYS,
+      },
+      plannedSteps,
+    });
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const source = body.source || 'manual';
