@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getConsent, setConsent, type ConsentValue } from '@/lib/cookieConsent';
+import { canAutoGrantConsent } from '@/lib/geoConsent';
 
 // ⚡ Heavy deps deferred — not needed until banner interaction
 const showToast = (msg: string) => import('sonner').then(m => m.toast.success(msg));
@@ -38,7 +39,17 @@ export const CookieConsent = () => {
     if (mountedRef.current) return;
     mountedRef.current = true;
     const existing = getConsent();
-    if (!existing) {
+    if (existing) return;
+
+    // Geo-aware auto-consent: non-EU visitors (US/CCPA regime) get full
+    // consent automatically — no banner needed. EU/GDPR visitors must
+    // explicitly opt-in via the banner below.
+    if (canAutoGrantConsent()) {
+      setConsent('all');
+      return;
+    }
+
+    {
       const mount = () => {
         requestAnimationFrame(() => {
           markCookieBannerMounted();
