@@ -1852,6 +1852,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="jobs"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <JobsQueuePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="seo-engine"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
