@@ -8,6 +8,7 @@ import {
   type DevGeoOverride,
 } from '@/lib/geoConsent';
 import { setConsent } from '@/lib/cookieConsent';
+import { summarizeConsentLog, clearConsentLog } from '@/lib/consentLog';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -51,6 +52,7 @@ export const DevConsentToggle = () => {
   const [debug, setDebug] = useState<ReturnType<typeof getGeoConsentDebug> | null>(null);
   const [ttqState, setTtqState] = useState<TtqState>('unknown');
   const [storedConsent, setStoredConsent] = useState<string>('none');
+  const [logSummary, setLogSummary] = useState<ReturnType<typeof summarizeConsentLog> | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export const DevConsentToggle = () => {
     setDebug(getGeoConsentDebug());
     setTtqState(readTtqState());
     setStoredConsent(readStoredConsent());
+    setLogSummary(summarizeConsentLog());
     try {
       // Default: open so the debug panel is visible without extra clicks
       const v = localStorage.getItem(STORAGE_OPEN_KEY);
