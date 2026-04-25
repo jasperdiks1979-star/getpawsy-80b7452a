@@ -250,19 +250,21 @@ Deno.serve(async (req) => {
       !r.validations.hasCanonical || !r.validations.noNoindex || !r.validations.hasContent || r.validations.httpStatus !== 200
     ).length;
 
-    await supabase.from("cron_job_logs").insert({
-      job_name: "indexation-accelerator",
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      success: issueCount === 0,
-      items_processed: urls.length,
-      items_failed: issueCount,
-      details: {
-        urls: urls.slice(0, 20),
-        indexnow: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
-        issues: results.filter(r => r.validations.httpStatus !== 200).map(r => r.url),
-      },
-    }).catch(() => {});
+    try {
+      await supabase.from("cron_job_logs").insert({
+        job_name: "indexation-accelerator",
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        success: issueCount === 0,
+        items_processed: urls.length,
+        items_failed: issueCount,
+        details: {
+          urls: urls.slice(0, 20),
+          indexnow: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
+          issues: results.filter(r => r.validations.httpStatus !== 200).map(r => r.url),
+        },
+      });
+    } catch { /* non-blocking */ }
 
     return new Response(JSON.stringify({
       ok: true,

@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       });
       feedBody = await feedRes.text();
     } catch (e) {
-      throw new Error(`Failed to fetch merchant feed: ${e.message}`);
+      throw new Error(`Failed to fetch merchant feed: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     // Extract product IDs from feed (look for <g:id> tags)
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[feed-gap-report] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
