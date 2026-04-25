@@ -95,8 +95,14 @@ export function setConsent(value: ConsentValue): void {
   try {
     const w = window as any;
     if (value === 'all') {
-      w.ttq?.grantConsent?.();
-      w.__ttqConsent = 'granted';
+      // Retry until the real SDK is hydrated so the grant actually sticks
+      import('./deferred-analytics')
+        .then(({ grantTikTokConsentWhenReady }) => grantTikTokConsentWhenReady())
+        .catch(() => {
+          // Fallback to direct call if dynamic import fails
+          w.ttq?.grantConsent?.();
+          w.__ttqConsent = 'granted';
+        });
     } else {
       w.ttq?.revokeConsent?.();
       w.__ttqConsent = 'revoked';
