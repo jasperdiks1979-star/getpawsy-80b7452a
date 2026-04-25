@@ -21,8 +21,8 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
   };
 
   const enc = new TextEncoder();
-  const headerB64 = base64url(enc.encode(JSON.stringify(header)));
-  const payloadB64 = base64url(enc.encode(JSON.stringify(payload)));
+  const headerB64 = base64url(enc.encode(JSON.stringify(header)).buffer as ArrayBuffer);
+  const payloadB64 = base64url(enc.encode(JSON.stringify(payload)).buffer as ArrayBuffer);
   const signingInput = `${headerB64}.${payloadB64}`;
 
   // Import the private key
@@ -45,7 +45,7 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
     cryptoKey,
     enc.encode(signingInput),
   );
-  const sigB64 = base64url(new Uint8Array(signature));
+  const sigB64 = base64url(signature);
   const jwt = `${signingInput}.${sigB64}`;
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
