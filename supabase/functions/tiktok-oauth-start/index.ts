@@ -7,6 +7,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const CANONICAL_TIKTOK_OAUTH_ORIGIN = "https://getpawsy.pet";
+const ALLOWED_TIKTOK_OAUTH_ORIGINS = new Set([
+  CANONICAL_TIKTOK_OAUTH_ORIGIN,
+  "https://www.getpawsy.pet",
+  "https://getpawsy.lovable.app",
+]);
+
+function resolveTikTokOAuthOrigin(origin: unknown): string {
+  if (typeof origin !== "string") return CANONICAL_TIKTOK_OAUTH_ORIGIN;
+  const clean = origin.replace(/\/+$/, "");
+  return ALLOWED_TIKTOK_OAUTH_ORIGINS.has(clean) ? clean : CANONICAL_TIKTOK_OAUTH_ORIGIN;
+}
+
 function base64url(bytes: Uint8Array): string {
   let str = "";
   for (const b of bytes) str += String.fromCharCode(b);
@@ -81,7 +94,7 @@ Deno.serve(async (req: Request) => {
     // Determine the redirect URI — must match exactly what's registered in TikTok Developer Portal
     // We use a frontend route that POSTs the code to the callback edge function.
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
-    const origin = (body.origin as string) || "https://getpawsy.lovable.app";
+    const origin = resolveTikTokOAuthOrigin(body.origin);
     const redirectUri = `${origin.replace(/\/$/, "")}/auth/tiktok/callback`;
 
     // Generate CSRF state and persist it
