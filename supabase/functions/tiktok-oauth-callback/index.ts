@@ -172,7 +172,7 @@ Deno.serve(async (req: Request) => {
       body: new URLSearchParams({
         client_key: clientKey,
         client_secret: clientSecret,
-        code,
+        code: code ?? "",
         grant_type: "authorization_code",
         redirect_uri: redirectUri,
       }).toString(),
