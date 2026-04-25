@@ -298,18 +298,20 @@ Deno.serve(async (req) => {
     } as PingResult;
 
     // Log the ping (non-blocking)
-    await supabase.from("cron_job_logs").insert({
-      job_name: "indexnow-ping",
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      success: indexNowResults.every(r => r.success) && googleResult.success,
-      details: {
-        type: pingType,
-        urlCount: urls.length,
-        urls: urls.slice(0, 10),
-        results: { indexNow: indexNowResults, google: googleResult },
-      },
-    }).catch(() => {}); // non-blocking
+    try {
+      await supabase.from("cron_job_logs").insert({
+        job_name: "indexnow-ping",
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        success: indexNowResults.every(r => r.success) && googleResult.success,
+        details: {
+          type: pingType,
+          urlCount: urls.length,
+          urls: urls.slice(0, 10),
+          results: { indexNow: indexNowResults, google: googleResult },
+        },
+      });
+    } catch { /* non-blocking */ }
 
     const response = {
       success: true,
