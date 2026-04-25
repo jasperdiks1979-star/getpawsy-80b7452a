@@ -212,8 +212,45 @@ export const DevConsentToggle = () => {
           <div>tz: {debug.timezone || 'unknown'}</div>
           <div>gdpr: {String(debug.isGdpr)}</div>
           <div>auto-grant: {String(debug.autoGrant)}</div>
+          <div>
+            ttq:{' '}
+            <span
+              style={{
+                color:
+                  ttqState === 'granted'
+                    ? 'hsl(142 70% 32%)'
+                    : ttqState === 'held' || ttqState === 'revoked'
+                    ? 'hsl(0 70% 42%)'
+                    : 'hsl(25 18% 42%)',
+                fontWeight: 700,
+              }}
+            >
+              {ttqState}
+            </span>
+          </div>
+          <div>cookie: {storedConsent}</div>
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={() => setTick((n) => n + 1)}
+        style={{
+          marginTop: 8,
+          width: '100%',
+          padding: '4px 8px',
+          fontSize: 10,
+          fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
+          background: 'transparent',
+          color: 'hsl(25 30% 12%)',
+          border: '1px solid hsl(38 30% 88%)',
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        ↻ Refresh state
+      </button>
 
       <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
         Dev hosts only — never visible in production.
