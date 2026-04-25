@@ -91,6 +91,17 @@ export function setConsent(value: ConsentValue): void {
   safeSetItem(CONSENT_KEY, versioned);
   setCookieValue(CONSENT_KEY, versioned);
   applyGtagConsent(value);
+  // Mirror to TikTok pixel + expose state for the dev debug panel
+  try {
+    const w = window as any;
+    if (value === 'all') {
+      w.ttq?.grantConsent?.();
+      w.__ttqConsent = 'granted';
+    } else {
+      w.ttq?.revokeConsent?.();
+      w.__ttqConsent = 'revoked';
+    }
+  } catch { /* ignore */ }
 }
 
 /** Push a gtag consent update based on current value */
