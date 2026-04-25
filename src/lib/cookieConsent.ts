@@ -86,7 +86,10 @@ export function getConsent(): ConsentValue | null {
 }
 
 /** Persist consent choice to both localStorage AND cookie, then update gtag. */
-export function setConsent(value: ConsentValue): void {
+export function setConsent(
+  value: ConsentValue,
+  source: import('./consentLog').ConsentSource = 'unknown',
+): void {
   const versioned = `${CONSENT_VERSION}:${value}`;
   safeSetItem(CONSENT_KEY, versioned);
   setCookieValue(CONSENT_KEY, versioned);
@@ -108,6 +111,15 @@ export function setConsent(value: ConsentValue): void {
       w.__ttqConsent = 'revoked';
     }
   } catch { /* ignore */ }
+
+  // Record the change for diagnostic logging
+  void import('./consentLog')
+    .then(({ logConsentChange }) => {
+      void import('./geoConsent').then(({ isGdprRegion }) => {
+        logConsentChange(source, value, isGdprRegion());
+      });
+    })
+    .catch(() => { /* logging must never break the app */ });
 }
 
 /** Push a gtag consent update based on current value */
