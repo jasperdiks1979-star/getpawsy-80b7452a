@@ -1861,6 +1861,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="edge-functions-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <EdgeFunctionsHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="seo-engine"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
