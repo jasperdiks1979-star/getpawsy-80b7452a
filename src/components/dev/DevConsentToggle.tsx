@@ -8,6 +8,7 @@ import {
   type DevGeoOverride,
 } from '@/lib/geoConsent';
 import { setConsent } from '@/lib/cookieConsent';
+import { summarizeConsentLog, clearConsentLog } from '@/lib/consentLog';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -51,6 +52,7 @@ export const DevConsentToggle = () => {
   const [debug, setDebug] = useState<ReturnType<typeof getGeoConsentDebug> | null>(null);
   const [ttqState, setTtqState] = useState<TtqState>('unknown');
   const [storedConsent, setStoredConsent] = useState<string>('none');
+  const [logSummary, setLogSummary] = useState<ReturnType<typeof summarizeConsentLog> | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export const DevConsentToggle = () => {
     setDebug(getGeoConsentDebug());
     setTtqState(readTtqState());
     setStoredConsent(readStoredConsent());
+    setLogSummary(summarizeConsentLog());
     try {
       // Default: open so the debug panel is visible without extra clicks
       const v = localStorage.getItem(STORAGE_OPEN_KEY);
@@ -91,7 +94,7 @@ export const DevConsentToggle = () => {
     } catch { /* ignore */ }
     // Force a fresh consent decision based on the new override
     if (next === 'us') {
-      setConsent('all'); // mirror the auto-grant path
+      setConsent('all', 'dev-toggle'); // mirror the auto-grant path
     }
     // Reload so deferred-analytics re-runs the grant/hold decision
     window.location.reload();
@@ -233,6 +236,54 @@ export const DevConsentToggle = () => {
             </span>
           </div>
           <div>cookie: {storedConsent}</div>
+        </div>
+      )}
+
+      {logSummary && (
+        <div
+          style={{
+            marginTop: 8,
+            padding: 8,
+            background: 'hsl(38 30% 96%)',
+            borderRadius: 6,
+            fontSize: 10,
+            fontFamily: 'ui-monospace, monospace',
+            color: 'hsl(25 30% 12%)',
+            lineHeight: 1.5,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <strong style={{ fontSize: 10 }}>Event log</strong>
+            <button
+              type="button"
+              onClick={() => { clearConsentLog(); setTick((n) => n + 1); }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'hsl(0 70% 42%)',
+                cursor: 'pointer',
+                fontSize: 10,
+                padding: 0,
+              }}
+            >
+              clear
+            </button>
+          </div>
+          <div>changes: {logSummary.consentChanges} · events: {logSummary.tikTokEvents}</div>
+          <div>granted-fires: {logSummary.firedWhileGranted}</div>
+          <div style={{ color: logSummary.firedWhileHeld > 0 ? 'hsl(0 70% 42%)' : undefined }}>
+            held/revoked-fires: {logSummary.firedWhileHeld}
+          </div>
+          {Object.keys(logSummary.byEvent).length > 0 && (
+            <div style={{ marginTop: 4, fontSize: 9, opacity: 0.85 }}>
+              {Object.entries(logSummary.byEvent)
+                .map(([k, v]) => `${k}:${v}`)
+                .join(' · ')}
+            </div>
+          )}
+          <div style={{ marginTop: 4, fontSize: 9, opacity: 0.7 }}>
+            console: __consentLog() · __consentLogSummary()
+          </div>
         </div>
       )}
 
