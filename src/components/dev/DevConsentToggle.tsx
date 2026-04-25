@@ -91,7 +91,7 @@ export const DevConsentToggle = () => {
     } catch { /* ignore */ }
     // Force a fresh consent decision based on the new override
     if (next === 'us') {
-      setConsent('all'); // mirror the auto-grant path
+      setConsent('all', 'dev-toggle'); // mirror the auto-grant path
     }
     // Reload so deferred-analytics re-runs the grant/hold decision
     window.location.reload();
