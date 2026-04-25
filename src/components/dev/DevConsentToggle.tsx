@@ -4,6 +4,7 @@ import {
   setDevGeoOverride,
   isDevConsentToggleAvailable,
   getGeoConsentDebug,
+  clearGeoConsentDecision,
   type DevGeoOverride,
 } from '@/lib/geoConsent';
 import { setConsent } from '@/lib/cookieConsent';
@@ -80,6 +81,9 @@ export const DevConsentToggle = () => {
 
   const apply = useCallback((next: DevGeoOverride) => {
     setDevGeoOverride(next);
+    // The persisted geo decision is keyed by override → wipe so the new
+    // flow re-evaluates from scratch on next page load.
+    clearGeoConsentDecision();
     // Wipe stored consent so the new flow restarts cleanly
     try {
       localStorage.removeItem(CONSENT_KEY);
