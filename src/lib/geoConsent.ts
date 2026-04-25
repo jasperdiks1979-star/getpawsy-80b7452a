@@ -39,6 +39,56 @@ function getTimezone(): string | null {
 }
 
 /**
+ * Dev-only override: set via the dev consent toggle (or manually in DevTools).
+ * Stored in localStorage so it survives reloads. Values:
+ *   'eu'     → force GDPR flow (banner shown, pixel held)
+ *   'us'     → force non-GDPR flow (banner suppressed, pixel granted)
+ *   null/''  → use real timezone detection
+ *
+ * Override is only honored on non-production hostnames (lovable.app/.dev,
+ * localhost) so production users can never be tricked into the wrong flow.
+ */
+const DEV_OVERRIDE_KEY = 'gp_dev_geo_override';
+
+export type DevGeoOverride = 'eu' | 'us' | null;
+
+function isDevHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return (
+    h === 'localhost' ||
+    h === '127.0.0.1' ||
+    h.endsWith('.lovable.app') ||
+    h.endsWith('.lovable.dev') ||
+    h.endsWith('.lovableproject.com')
+  );
+}
+
+export function getDevGeoOverride(): DevGeoOverride {
+  if (!isDevHost()) return null;
+  try {
+    const v = localStorage.getItem(DEV_OVERRIDE_KEY);
+    return v === 'eu' || v === 'us' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setDevGeoOverride(value: DevGeoOverride): void {
+  if (!isDevHost()) return;
+  try {
+    if (value === null) localStorage.removeItem(DEV_OVERRIDE_KEY);
+    else localStorage.setItem(DEV_OVERRIDE_KEY, value);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isDevConsentToggleAvailable(): boolean {
+  return isDevHost();
+}
+
+/**
  * True when the visitor is (likely) in a GDPR jurisdiction and must give
  * explicit consent before marketing pixels fire.
  *
@@ -47,6 +97,12 @@ function getTimezone(): string | null {
  */
 export function isGdprRegion(): boolean {
   if (typeof window === 'undefined') return true;
+
+  // Dev override (only on dev hosts)
+  const override = getDevGeoOverride();
+  if (override === 'eu') return true;
+  if (override === 'us') return false;
+
   const tz = getTimezone();
   if (!tz) return true; // unknown → assume EU
 
@@ -73,6 +129,7 @@ export function canAutoGrantConsent(): boolean {
 export function getGeoConsentDebug() {
   return {
     timezone: getTimezone(),
+    devOverride: getDevGeoOverride(),
     isGdpr: isGdprRegion(),
     autoGrant: canAutoGrantConsent(),
   };
