@@ -390,6 +390,17 @@ const EXPECTED_REDIRECT_URIS = [
   "https://getpawsy.lovable.app/auth/tiktok/callback",
 ] as const;
 
+const CANONICAL_TIKTOK_OAUTH_ORIGIN = "https://getpawsy.pet";
+
+function getTikTokOAuthOrigin(): string {
+  if (typeof window === "undefined") return CANONICAL_TIKTOK_OAUTH_ORIGIN;
+  const currentOrigin = window.location.origin.replace(/\/$/, "");
+  const currentCallback = `${currentOrigin}/auth/tiktok/callback`;
+  return EXPECTED_REDIRECT_URIS.includes(currentCallback as (typeof EXPECTED_REDIRECT_URIS)[number])
+    ? currentOrigin
+    : CANONICAL_TIKTOK_OAUTH_ORIGIN;
+}
+
 /**
  * Connect TikTok button for the admin panel.
  * Initiates OAuth via tiktok-oauth-start and shows the connected account.
@@ -466,7 +477,7 @@ export function TikTokConnectCard() {
       try {
         const { data: preflight } = await supabase.functions.invoke(
           "tiktok-oauth-config-inspect",
-          { body: { origin: window.location.origin } },
+          { body: { origin: getTikTokOAuthOrigin() } },
         );
         const validation = (preflight as ConfigInspectResult | null)
           ?.client_key_validation;
@@ -507,7 +518,7 @@ export function TikTokConnectCard() {
       // a toast + appends to the drift log on the status page so silent
       // rotations of the secret or portal redirect URI become visible
       // immediately. Fully non-blocking — always continues to OAuth.
-      await recordConnectAttemptAndDetectDrift(window.location.origin);
+      await recordConnectAttemptAndDetectDrift(getTikTokOAuthOrigin());
 
       // Wrap the edge-function call in exponential-backoff retry. We only
       // retry on transient failures (network blips, 5xx, rate limits) — auth
@@ -515,7 +526,7 @@ export function TikTokConnectCard() {
       const data = await retryWithBackoff(
         async () => {
           const { data, error } = await supabase.functions.invoke("tiktok-oauth-start", {
-            body: { origin: window.location.origin },
+            body: { origin: getTikTokOAuthOrigin() },
           });
           if (error) throw error;
           if (!data?.ok || !data?.authUrl) {

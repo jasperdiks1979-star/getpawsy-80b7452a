@@ -7,6 +7,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const CANONICAL_TIKTOK_OAUTH_ORIGIN = "https://getpawsy.pet";
+const ALLOWED_TIKTOK_OAUTH_ORIGINS = new Set([
+  CANONICAL_TIKTOK_OAUTH_ORIGIN,
+  "https://www.getpawsy.pet",
+  "https://getpawsy.lovable.app",
+]);
+
+function resolveTikTokOAuthOrigin(origin: unknown): string {
+  if (typeof origin !== "string") return CANONICAL_TIKTOK_OAUTH_ORIGIN;
+  const clean = origin.replace(/\/+$/, "");
+  return ALLOWED_TIKTOK_OAUTH_ORIGINS.has(clean) ? clean : CANONICAL_TIKTOK_OAUTH_ORIGIN;
+}
+
 /**
  * TikTok OAuth Smoke Test
  *
@@ -106,7 +119,7 @@ Deno.serve(async (req: Request) => {
     const clientSecret = getTikTokClientSecret();
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
-    const origin = (body.origin as string) || "https://getpawsy.lovable.app";
+    const origin = resolveTikTokOAuthOrigin(body.origin);
     const redirectUri = `${origin.replace(/\/$/, "")}/auth/tiktok/callback`;
     const scopes = "user.info.basic,video.publish,video.upload";
 
