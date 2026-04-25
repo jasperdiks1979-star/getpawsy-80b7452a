@@ -149,9 +149,9 @@ function initTikTokPixel(): void {
     ttq.load('D7KDRMBC77U9EB7RJROG');
 
     if (autoGrant) {
-      // Grant must be called AFTER load (per TikTok docs)
-      ttq.grantConsent && ttq.grantConsent();
-      (window as any).__ttqConsent = 'granted';
+      // Grant must be called AFTER load AND AFTER the SDK has hydrated.
+      // Polling helper retries until the real grantConsent is available.
+      grantTikTokConsentWhenReady();
     }
 
     ttq.page();
