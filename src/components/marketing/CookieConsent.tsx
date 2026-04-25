@@ -45,7 +45,7 @@ export const CookieConsent = () => {
     // consent automatically — no banner needed. EU/GDPR visitors must
     // explicitly opt-in via the banner below.
     if (canAutoGrantConsent()) {
-      setConsent('all');
+      setConsent('all', 'auto-grant-geo');
       return;
     }
 
@@ -101,7 +101,7 @@ export const CookieConsent = () => {
   }, []);
 
   const save = useCallback((value: ConsentValue, msg?: string) => {
-    setConsent(value);
+    setConsent(value, value === 'all' ? 'banner-accept' : 'banner-reject');
     hideBanner();
     setShowSettings(false);
     if (msg) showToast(msg);
