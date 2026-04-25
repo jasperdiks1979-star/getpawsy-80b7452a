@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       const r = await fetch(`${siteUrl}/robots.txt`, { signal: AbortSignal.timeout(5000) });
       robotsTxt = await r.text();
     } catch (e) {
-      robotsTxt = `# FETCH FAILED: ${e.message}`;
+      robotsTxt = `# FETCH FAILED: ${e instanceof Error ? e.message : String(e)}`;
     }
     zip.file("diagnostics/seo/robots.txt", robotsTxt);
 
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
           endpoint: ep.path,
           name: ep.name,
           status: null,
-          error: e.message,
+          error: e instanceof Error ? e.message : String(e),
           ttfb_ms: Date.now() - start,
           ok: false,
         });
@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
       });
       wwwRedirectStatus = wwwRes.status;
     } catch (e) {
-      wwwRedirectStatus = `error: ${e.message}`;
+      wwwRedirectStatus = `error: ${e instanceof Error ? e.message : String(e)}`;
     }
 
     zip.file("diagnostics/redirect-status.json", JSON.stringify({
@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
           ok: r.status === 200,
         });
       } catch (e) {
-        cacheReport.push({ path: ep.path, error: e.message, ok: false });
+        cacheReport.push({ path: ep.path, error: e instanceof Error ? e.message : String(e), ok: false });
       }
     }
     zip.file("diagnostics/cache-header-report.json", JSON.stringify(cacheReport, null, 2));
@@ -337,7 +337,8 @@ Deno.serve(async (req) => {
     const dateStr = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
     const filename = `getpawsy-diagnostics-${dateStr}.zip`;
 
-    return new Response(zipBlob, {
+    const zipBuffer = (zipBlob as Uint8Array).slice().buffer;
+    return new Response(zipBuffer, {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/zip",
@@ -346,7 +347,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[export-diagnostics] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
