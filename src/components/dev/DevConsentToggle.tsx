@@ -21,21 +21,57 @@ import { setConsent } from '@/lib/cookieConsent';
 const STORAGE_OPEN_KEY = 'gp_dev_geo_panel_open';
 const CONSENT_KEY = 'gp_cookie_consent';
 
+type TtqState = 'granted' | 'held' | 'revoked' | 'unknown';
+
+function readTtqState(): TtqState {
+  if (typeof window === 'undefined') return 'unknown';
+  const w = window as any;
+  if (w.__ttqConsent === 'granted' || w.__ttqConsent === 'held' || w.__ttqConsent === 'revoked') {
+    return w.__ttqConsent;
+  }
+  // Fallback: pixel hasn't initialised yet
+  return w.ttq?._loaded ? 'unknown' : 'unknown';
+}
+
+function readStoredConsent(): string {
+  try {
+    const raw = localStorage.getItem(CONSENT_KEY);
+    if (!raw) return 'none';
+    return raw.includes(':') ? raw.split(':')[1] : raw;
+  } catch {
+    return 'n/a';
+  }
+}
+
 export const DevConsentToggle = () => {
   const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
   const [override, setOverride] = useState<DevGeoOverride>(null);
   const [debug, setDebug] = useState<ReturnType<typeof getGeoConsentDebug> | null>(null);
+  const [ttqState, setTtqState] = useState<TtqState>('unknown');
+  const [storedConsent, setStoredConsent] = useState<string>('none');
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!isDevConsentToggleAvailable()) return;
     setAvailable(true);
     setOverride(getDevGeoOverride());
     setDebug(getGeoConsentDebug());
+    setTtqState(readTtqState());
+    setStoredConsent(readStoredConsent());
     try {
-      setOpen(localStorage.getItem(STORAGE_OPEN_KEY) === '1');
+      // Default: open so the debug panel is visible without extra clicks
+      const v = localStorage.getItem(STORAGE_OPEN_KEY);
+      setOpen(v === null ? true : v === '1');
     } catch { /* ignore */ }
-  }, []);
+  }, [tick]);
+
+  // Auto-refresh the live state every 2s while panel is open
+  useEffect(() => {
+    if (!open) return;
+    const t = setInterval(() => setTick((n) => n + 1), 2000);
+    return () => clearInterval(t);
+  }, [open]);
 
   const persistOpen = useCallback((v: boolean) => {
     setOpen(v);
@@ -176,8 +212,45 @@ export const DevConsentToggle = () => {
           <div>tz: {debug.timezone || 'unknown'}</div>
           <div>gdpr: {String(debug.isGdpr)}</div>
           <div>auto-grant: {String(debug.autoGrant)}</div>
+          <div>
+            ttq:{' '}
+            <span
+              style={{
+                color:
+                  ttqState === 'granted'
+                    ? 'hsl(142 70% 32%)'
+                    : ttqState === 'held' || ttqState === 'revoked'
+                    ? 'hsl(0 70% 42%)'
+                    : 'hsl(25 18% 42%)',
+                fontWeight: 700,
+              }}
+            >
+              {ttqState}
+            </span>
+          </div>
+          <div>cookie: {storedConsent}</div>
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={() => setTick((n) => n + 1)}
+        style={{
+          marginTop: 8,
+          width: '100%',
+          padding: '4px 8px',
+          fontSize: 10,
+          fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
+          background: 'transparent',
+          color: 'hsl(25 30% 12%)',
+          border: '1px solid hsl(38 30% 88%)',
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        ↻ Refresh state
+      </button>
 
       <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
         Dev hosts only — never visible in production.

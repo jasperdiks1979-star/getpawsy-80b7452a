@@ -84,6 +84,7 @@ function initTikTokPixel(): void {
     const autoGrant = canAutoGrantConsent();
     if (!autoGrant) {
       ttq.holdConsent && ttq.holdConsent();
+      (window as any).__ttqConsent = 'held';
     }
 
     ttq.load('D7KDRMBC77U9EB7RJROG');
@@ -91,6 +92,7 @@ function initTikTokPixel(): void {
     if (autoGrant) {
       // Grant must be called AFTER load (per TikTok docs)
       ttq.grantConsent && ttq.grantConsent();
+      (window as any).__ttqConsent = 'granted';
     }
 
     ttq.page();
