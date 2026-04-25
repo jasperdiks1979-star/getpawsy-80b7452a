@@ -157,6 +157,11 @@ function initTikTokPixel(): void {
     ttq.page();
     ttq._loaded = true;
     console.log('[Analytics] TikTok Pixel loaded — autoGrant:', autoGrant);
+    // Diagnostic log — pairs with consentLog so we can verify the very
+    // first page event fires under the expected consent state.
+    void import('./consentLog')
+      .then(({ logTikTokEvent }) => logTikTokEvent('page', { trigger: 'pixel-init' }))
+      .catch(() => { /* logging must never break analytics */ });
   } catch (e) {
     console.warn('[Analytics] TikTok Pixel init error (non-fatal):', e);
   }
