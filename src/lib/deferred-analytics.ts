@@ -50,7 +50,7 @@ let initialized = false;
  * the queued stub call if the SDK never arrives, which is still better
  * than dropping the consent entirely.
  */
-function grantTikTokConsentWhenReady(maxAttempts = 30, intervalMs = 100): void {
+export function grantTikTokConsentWhenReady(maxAttempts = 30, intervalMs = 100): void {
   const w = window as any;
   let attempts = 0;
 
