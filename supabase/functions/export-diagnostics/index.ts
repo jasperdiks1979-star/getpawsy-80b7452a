@@ -337,7 +337,8 @@ Deno.serve(async (req) => {
     const dateStr = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
     const filename = `getpawsy-diagnostics-${dateStr}.zip`;
 
-    return new Response(new Blob([zipBlob as Uint8Array]), {
+    const zipBuffer = (zipBlob as Uint8Array).slice().buffer;
+    return new Response(zipBuffer, {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/zip",
