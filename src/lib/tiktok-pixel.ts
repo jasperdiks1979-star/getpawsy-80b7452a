@@ -9,6 +9,7 @@
  */
 
 import { fireMarketingAsync } from './marketingClient';
+import { logTikTokEvent } from './consentLog';
 
 type TTQ = {
   track: (event: string, params?: Record<string, unknown>) => void;
@@ -41,6 +42,7 @@ export function ttTrackPageView(): void {
   fireMarketingAsync('tiktok:page', () => {
     const ttq = getTTQ();
     ttq?.page();
+    logTikTokEvent('page');
   });
 }
 
@@ -59,6 +61,10 @@ export function ttTrackViewContent(params: {
       content_name: params.contentName,
       value: params.value,
       currency: params.currency || 'USD',
+    });
+    logTikTokEvent('ViewContent', {
+      contentId: params.contentId,
+      value: params.value,
     });
   });
 }
@@ -81,6 +87,11 @@ export function ttTrackAddToCart(params: {
       quantity: params.quantity || 1,
       currency: params.currency || 'USD',
     });
+    logTikTokEvent('AddToCart', {
+      contentId: params.contentId,
+      value: params.value,
+      quantity: params.quantity || 1,
+    });
   });
 }
 
@@ -96,6 +107,10 @@ export function ttTrackInitiateCheckout(params: {
       value: params.value,
       currency: params.currency || 'USD',
       contents: params.contents,
+    });
+    logTikTokEvent('InitiateCheckout', {
+      value: params.value,
+      itemCount: params.contents?.length ?? 0,
     });
   });
 }
@@ -115,6 +130,11 @@ export function ttTrackPurchase(params: {
       currency: params.currency || 'USD',
       contents: params.contents,
       description: params.orderId,
+    });
+    logTikTokEvent('CompletePayment', {
+      orderId: params.orderId,
+      value: params.value,
+      itemCount: params.contents?.length ?? 0,
     });
   });
 }
