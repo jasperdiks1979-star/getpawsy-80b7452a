@@ -145,7 +145,7 @@ serve(async (req) => {
     );
   } catch (err) {
     return Response.json(
-      { ok: false, error: err.message },
+      { ok: false, error: err instanceof Error ? err.message : String(err) },
       { status: 500, headers: corsHeaders }
     );
   }

@@ -29,7 +29,7 @@ serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (e) {
     console.error("revenue-accelerator error:", e);
-    return json({ error: e.message }, 500);
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
@@ -67,8 +67,8 @@ async function handleOpportunities(supabase: any) {
   const topProducts = scored.slice(0, 20);
 
   // SEO keyword suggestions based on top categories
-  const categories = [...new Set(topProducts.map((p: any) => p.category).filter(Boolean))];
-  const seoKeywords = categories.flatMap((cat: string) => {
+  const categories = [...new Set(topProducts.map((p: any) => p.category).filter(Boolean))] as string[];
+  const seoKeywords = categories.flatMap((cat) => {
     const c = cat.toLowerCase();
     if (c.includes("cat")) return [`best ${c} 2026`, `${c} for indoor cats`, `top rated ${c}`];
     if (c.includes("dog")) return [`best ${c} 2026`, `${c} for large dogs`, `top ${c} for puppies`];
@@ -85,7 +85,7 @@ async function handleOpportunities(supabase: any) {
   });
 
   // Guide ideas
-  const guideIdeas = categories.slice(0, 5).map((cat: string) => ({
+  const guideIdeas = categories.slice(0, 5).map((cat) => ({
     topic: `Best ${cat} in 2026 – Complete Buying Guide`,
     targetKeyword: `best ${cat.toLowerCase()} 2026`,
     estimatedWords: 1200,
