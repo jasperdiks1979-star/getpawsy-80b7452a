@@ -89,31 +89,105 @@ export function isDevConsentToggleAvailable(): boolean {
 }
 
 /**
- * True when the visitor is (likely) in a GDPR jurisdiction and must give
- * explicit consent before marketing pixels fire.
+ * Persisted geo decision — cached to localStorage so the consent flow stays
+ * stable across reloads even if the user briefly travels, toggles a VPN,
+ * or the browser changes its reported timezone. The cache is keyed by
+ * timezone + dev override; if either changes we re-evaluate.
  *
- * Defaults to TRUE on any uncertainty (missing tz, parsing error) — fail-closed
- * is the only safe stance for GDPR compliance.
+ * TTL: 30 days. After expiry we re-detect from scratch so legitimate
+ * relocation (e.g. an EU user moving to the US) eventually flips correctly.
  */
-export function isGdprRegion(): boolean {
+const DECISION_KEY = 'gp_geo_consent_decision';
+const DECISION_VERSION = 1;
+const DECISION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+export interface GeoConsentDecision {
+  v: number;          // schema version
+  tz: string | null;  // timezone at time of decision
+  override: DevGeoOverride; // dev override at time of decision
+  isGdpr: boolean;
+  autoGrant: boolean;
+  decidedAt: number;  // epoch ms
+}
+
+function readDecision(): GeoConsentDecision | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(DECISION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GeoConsentDecision;
+    if (!parsed || parsed.v !== DECISION_VERSION) return null;
+    if (typeof parsed.decidedAt !== 'number') return null;
+    if (Date.now() - parsed.decidedAt > DECISION_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeDecision(decision: GeoConsentDecision): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(DECISION_KEY, JSON.stringify(decision));
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+/** Force a re-evaluation on the next call (e.g. after the dev toggle flips). */
+export function clearGeoConsentDecision(): void {
+  if (typeof window === 'undefined') return;
+  try { localStorage.removeItem(DECISION_KEY); } catch { /* ignore */ }
+}
+
+/** Compute the GDPR decision from scratch — no cache lookup. */
+function computeIsGdpr(): boolean {
   if (typeof window === 'undefined') return true;
 
-  // Dev override (only on dev hosts)
   const override = getDevGeoOverride();
   if (override === 'eu') return true;
   if (override === 'us') return false;
 
   const tz = getTimezone();
-  if (!tz) return true; // unknown → assume EU
+  if (!tz) return true;
 
-  // Explicit non-GDPR European zones
   if (NON_GDPR_EUROPE_TZ.has(tz)) return false;
-
-  // Any Europe/* (minus the exclusions above) → GDPR
   if (GDPR_TZ_PREFIXES.some(prefix => tz.startsWith(prefix))) return true;
-
-  // Everything else (America/*, Asia/*, Australia/*, Africa/*, Pacific/*) → non-GDPR
   return false;
+}
+
+/**
+ * True when the visitor is (likely) in a GDPR jurisdiction and must give
+ * explicit consent before marketing pixels fire.
+ *
+ * Defaults to TRUE on any uncertainty (missing tz, parsing error) — fail-closed
+ * is the only safe stance for GDPR compliance.
+ *
+ * Result is persisted to localStorage with a 30-day TTL. The cache is
+ * invalidated automatically if the browser timezone or dev override changes.
+ */
+export function isGdprRegion(): boolean {
+  if (typeof window === 'undefined') return true;
+
+  const override = getDevGeoOverride();
+  const tz = getTimezone();
+
+  // Cache hit only when the inputs that drove the decision haven't changed
+  const cached = readDecision();
+  if (cached && cached.tz === tz && cached.override === override) {
+    return cached.isGdpr;
+  }
+
+  const isGdpr = computeIsGdpr();
+  writeDecision({
+    v: DECISION_VERSION,
+    tz,
+    override,
+    isGdpr,
+    autoGrant: !isGdpr,
+    decidedAt: Date.now(),
+  });
+  return isGdpr;
 }
 
 /**
@@ -127,11 +201,14 @@ export function canAutoGrantConsent(): boolean {
 
 /** Diagnostic helper — exposed for debugging from console. */
 export function getGeoConsentDebug() {
+  const cached = readDecision();
   return {
     timezone: getTimezone(),
     devOverride: getDevGeoOverride(),
     isGdpr: isGdprRegion(),
     autoGrant: canAutoGrantConsent(),
+    cachedDecision: cached,
+    cachedAgeMs: cached ? Date.now() - cached.decidedAt : null,
   };
 }
 
