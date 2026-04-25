@@ -40,6 +40,65 @@ function loadScript(src: string): Promise<void> {
 let initialized = false;
 
 /**
+ * TikTok's pixel.js replaces the queued stubs on `ttq` with the real SDK
+ * methods AFTER the script finishes loading. Calling `grantConsent` on the
+ * stub just queues a no-op array push — the consent state isn't applied
+ * until the SDK has hydrated.
+ *
+ * This helper polls until the real implementation is in place (or the
+ * pixel is otherwise ready) and then calls grantConsent. Falls back to
+ * the queued stub call if the SDK never arrives, which is still better
+ * than dropping the consent entirely.
+ */
+function grantTikTokConsentWhenReady(maxAttempts = 30, intervalMs = 100): void {
+  const w = window as any;
+  let attempts = 0;
+
+  const tryGrant = () => {
+    attempts++;
+    const ttq = w.ttq;
+    if (!ttq) {
+      if (attempts < maxAttempts) setTimeout(tryGrant, intervalMs);
+      return;
+    }
+
+    // The real SDK exposes `grantConsent` as a function on the loaded
+    // instance (ttq._i[<pixelId>]) and replaces the array-stub method
+    // on `ttq` itself. We treat "instance has methods" OR "stub queue is
+    // gone" as the ready signal.
+    const sdkReady =
+      typeof ttq.grantConsent === 'function' &&
+      // Stub pushes to an array; the real impl does not
+      (!Array.isArray(ttq) || attempts >= maxAttempts);
+
+    if (sdkReady) {
+      try {
+        ttq.grantConsent();
+        w.__ttqConsent = 'granted';
+        console.log(`[Analytics] TikTok grantConsent applied (attempt ${attempts})`);
+      } catch (e) {
+        console.warn('[Analytics] TikTok grantConsent threw:', e);
+      }
+      return;
+    }
+
+    if (attempts < maxAttempts) {
+      setTimeout(tryGrant, intervalMs);
+    } else {
+      // Last-ditch: call whatever is there. The queued call will be
+      // replayed by the SDK when it eventually loads.
+      try {
+        ttq.grantConsent && ttq.grantConsent();
+        w.__ttqConsent = 'granted';
+        console.log('[Analytics] TikTok grantConsent queued (SDK not ready after retries)');
+      } catch { /* ignore */ }
+    }
+  };
+
+  tryGrant();
+}
+
+/**
  * Initialize TikTok Pixel — loaded deferred to avoid blocking render.
  * Pixel ID: D7KDRMBC77U9EB7RJROG (GetPawsy Pixel)
  */
