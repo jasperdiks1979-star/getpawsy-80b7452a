@@ -259,7 +259,8 @@ function matchPageFull(pageUrl: string, knownSlugs: Set<string>): PageMatch | nu
 
 // ============= CONCURRENCY LOCK =============
 
-async function acquireSyncLock(db: ReturnType<typeof createClient>, reason: string): Promise<{ lockId: string | null; error: string | null }> {
+// deno-lint-ignore no-explicit-any
+async function acquireSyncLock(db: any, reason: string): Promise<{ lockId: string | null; error: string | null }> {
   // Check for running syncs (with 10-minute timeout safeguard)
   const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const { data: running } = await db
@@ -295,7 +296,8 @@ async function acquireSyncLock(db: ReturnType<typeof createClient>, reason: stri
 }
 
 async function releaseSyncLock(
-  db: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  db: any,
   lockId: string,
   result: {
     status: string;
@@ -332,7 +334,8 @@ async function releaseSyncLock(
 // ============= CORE SYNC SERVICE =============
 
 async function runGSCSync(
-  adminSupabase: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  adminSupabase: any,
   serviceAccountJson: string,
   reason: string,
 ): Promise<Response> {
