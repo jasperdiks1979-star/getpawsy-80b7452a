@@ -304,6 +304,7 @@ const AuthorityEnginePage = lazyWithRetry(() => import("./pages/admin/AuthorityE
 const InternalLinkLog = lazyWithRetry(() => import("./pages/admin/InternalLinkLog"));
 const SeoAccelerationPage = lazyWithRetry(() => import("./pages/admin/SeoAccelerationPage"));
 const ProgressDashboard = lazyWithRetry(() => import("./pages/admin/ProgressDashboard"));
+const JobsQueuePage = lazyWithRetry(() => import("./pages/admin/JobsQueuePage"));
 const AdminSeoDashboard = lazyWithRetry(() => import("./pages/admin/AdminSeoDashboard"));
 const CrawlDiagnosticsDashboard = lazyWithRetry(() => import("./pages/admin/CrawlDiagnosticsDashboard"));
 const CrawlHealthDashboard = lazyWithRetry(() => import("./pages/admin/CrawlHealthDashboard"));
