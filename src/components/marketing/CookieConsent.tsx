@@ -49,29 +49,25 @@ export const CookieConsent = () => {
       return;
     }
 
-    {
-      const mount = () => {
-        requestAnimationFrame(() => {
-          markCookieBannerMounted();
-          setShowBanner(true);
-          requestAnimationFrame(() => setIsVisible(true));
-        });
-      };
+    const mount = () => {
+      requestAnimationFrame(() => {
+        markCookieBannerMounted();
+        setShowBanner(true);
+        requestAnimationFrame(() => setIsVisible(true));
+      });
+    };
 
-      let handle: ReturnType<typeof setTimeout>;
-      handle = setTimeout(mount, 1500);
+    const handle = setTimeout(mount, 1500);
+    const interactionHandler = () => { mount(); cleanup(); };
+    const events = ['scroll', 'click', 'touchstart'] as const;
+    events.forEach(e => window.addEventListener(e, interactionHandler, { once: true, passive: true }));
 
-      const interactionHandler = () => { mount(); cleanup(); };
-      const events = ['scroll', 'click', 'touchstart'] as const;
-      events.forEach(e => window.addEventListener(e, interactionHandler, { once: true, passive: true }));
-
-      function cleanup() {
-        clearTimeout(handle);
-        events.forEach(e => window.removeEventListener(e, interactionHandler));
-      }
-
-      return cleanup;
+    function cleanup() {
+      clearTimeout(handle);
+      events.forEach(e => window.removeEventListener(e, interactionHandler));
     }
+
+    return cleanup;
   }, []);
 
   // Mark interactive once banner is visible
