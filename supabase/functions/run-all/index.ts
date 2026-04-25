@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const source = body.source || 'manual';
-    const mode = body.mode || 'fullstack'; // 'dryrun' | 'fullstack'
+    let mode = body.mode || 'fullstack'; // 'dryrun' | 'fullstack'
 
     // Distributed lock — check for active run
     const { data: activeRun } = await supabase
@@ -410,7 +410,8 @@ Deno.serve(async (req) => {
 
 // Helper to insert log
 async function log(
-  supabase: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
   runId: string, stepKey: string | null, level: string, message: string,
 ) {
   await supabase.from('job_run_logs').insert({ run_id: runId, step_key: stepKey, level, message });
@@ -418,7 +419,8 @@ async function log(
 
 // Step executor
 async function executeStep(
-  supabase: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
   stepKey: string,
   runId: string,
 ): Promise<Record<string, unknown>> {
