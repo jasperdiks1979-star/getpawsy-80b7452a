@@ -350,7 +350,7 @@ serve(async (req) => {
       // Cluster by theme (simple word overlap)
       const themes: Record<string, { queries: string[]; totalImpressions: number }> = {};
       for (const kw of needleMovers) {
-        const words = kw.query.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+        const words = kw.query.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
         const themeKey = words.slice(0, 3).sort().join(" ") || kw.query;
         if (!themes[themeKey]) themes[themeKey] = { queries: [], totalImpressions: 0 };
         themes[themeKey].queries.push(kw.query);

@@ -152,7 +152,7 @@ Deno.serve(async (req: Request) => {
         display_name: tokenRow.display_name,
         avatar_url: tokenRow.avatar_url,
         scope: tokenRow.scope,
-        scopes_granted: tokenRow.scope ? tokenRow.scope.split(",").map((s) => s.trim()) : [],
+        scopes_granted: tokenRow.scope ? tokenRow.scope.split(",").map((s: string) => s.trim()) : [],
         expires_at: tokenRow.expires_at,
         refresh_expires_at: tokenRow.refresh_expires_at,
         token_expired: tokenExpired,
@@ -163,8 +163,8 @@ Deno.serve(async (req: Request) => {
       };
 
       // Verify granted scopes match what we request.
-      const granted = (tokenRow.scope || "").split(",").map((s) => s.trim()).filter(Boolean);
-      const required = scopes.split(",").map((s) => s.trim());
+      const granted = (tokenRow.scope || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+      const required = scopes.split(",").map((s: string) => s.trim());
       const missingScopes = required.filter((s) => !granted.includes(s));
       if (missingScopes.length > 0) {
         warnings.push(

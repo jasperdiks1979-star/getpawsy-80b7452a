@@ -43,7 +43,7 @@ async function checkEndpoint(path: string): Promise<EndpointResult> {
       ttfb_ms: Date.now() - start,
       sizeBytes: 0,
       ok: false,
-      error: e.message,
+      error: e instanceof Error ? e.message : String(e),
     };
   }
 }
@@ -77,7 +77,7 @@ async function checkRobotsIntegrity(): Promise<RobotsIntegrityResult> {
     return {
       ok: false,
       missingDirectives: requiredDirectives,
-      bodySnippet: `Error fetching: ${e.message}`,
+      bodySnippet: `Error fetching: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
 }
@@ -102,7 +102,7 @@ async function checkWwwRedirect(): Promise<{ status: number | null; location: st
       location: res.headers.get("location"),
     };
   } catch (e) {
-    return { status: null, location: null, error: e.message };
+    return { status: null, location: null, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -130,7 +130,7 @@ async function checkRedirectChain(): Promise<RedirectChainResult> {
     }
     return { hops, finalStatus: null, finalUrl: currentUrl, hopCount: hops.length, error: "Too many redirects" };
   } catch (e) {
-    return { hops, finalStatus: null, finalUrl: currentUrl, hopCount: hops.length, error: e.message };
+    return { hops, finalStatus: null, finalUrl: currentUrl, hopCount: hops.length, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[site-monitor] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

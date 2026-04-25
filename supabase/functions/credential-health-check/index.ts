@@ -209,7 +209,7 @@ serve(async (req) => {
 
     for (const key of (keys || [])) {
       const keyAgeDays = Math.floor((Date.now() - new Date(key.key_created_at).getTime()) / (1000 * 60 * 60 * 24));
-      let checkResult = { success: false, responseTimeMs: 0, error: 'No credentials available' };
+      let checkResult: { success: boolean; responseTimeMs: number; error?: string } = { success: false, responseTimeMs: 0, error: 'No credentials available' };
 
       // Run connectivity test based on service type
       if (credentials) {
