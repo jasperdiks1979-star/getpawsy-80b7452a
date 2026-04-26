@@ -100,6 +100,66 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
     setTick((n) => n + 1);
   };
 
+  // Export the guided test result as a downloadable JSON file.
+  // Captures: ttq state, the matched CompletePayment payload (consentState,
+  // source, meta), per-step status + timestamps, the path verification flag,
+  // and the full session log filtered to this test run. No PII — purely
+  // diagnostic data already present in the in-page consent log.
+  const exportJson = () => {
+    if (typeof window === 'undefined') return;
+    const cp = state.completePayment;
+    const result = {
+      schema: 'gp.guided-consent-test/v1',
+      exportedAt: new Date().toISOString(),
+      url: window.location.href,
+      path: state.path,
+      onThankYou: state.onThankYou,
+      startedAt: new Date(startTs).toISOString(),
+      durationMs: Date.now() - startTs,
+      ttqState: state.ttq,
+      consentChange: state.consentChange
+        ? {
+            ts: new Date(state.consentChange.ts).toISOString(),
+            source: state.consentChange.source,
+            value: state.consentChange.value,
+            isGdprRegion: state.consentChange.isGdprRegion,
+          }
+        : null,
+      completePayment: cp
+        ? {
+            ts: new Date(cp.ts).toISOString(),
+            event: cp.event,
+            consentState: cp.consentState,
+            source: cp.source,
+            fired: cp.fired,
+            meta: cp.meta ?? null,
+          }
+        : null,
+      steps: {
+        '1': { status: step1.status, doneAt: step1.doneAt ? new Date(step1.doneAt).toISOString() : null },
+        '2': { status: step2.status, doneAt: step2.doneAt ? new Date(step2.doneAt).toISOString() : null },
+        '3': { status: step3.status, doneAt: step3.doneAt ? new Date(step3.doneAt).toISOString() : null },
+        '4': { status: step4.status, doneAt: step4.doneAt ? new Date(step4.doneAt).toISOString() : null },
+      },
+      verdict: allDone
+        ? 'pass'
+        : step4.status === 'fail'
+        ? 'fail'
+        : 'incomplete',
+      eventLog: state.log.map((e) => ({ ...e, tsIso: new Date(e.ts).toISOString() })),
+    };
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = url;
+    a.download = `guided-consent-test-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
   return (
     <div
       role="dialog"
@@ -343,6 +403,24 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
           }}
         >
           ↻ Restart test
+        </button>
+        <button
+          type="button"
+          onClick={exportJson}
+          title="Download ttq state, CompletePayment payload, step status & event log as JSON"
+          style={{
+            flex: 1,
+            padding: '6px 8px',
+            fontSize: 11,
+            fontWeight: 600,
+            background: 'hsl(38 30% 96%)',
+            color: 'hsl(25 30% 12%)',
+            border: '1px solid hsl(38 30% 88%)',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
+        >
+          ⤓ Export JSON
         </button>
         <button
           type="button"
