@@ -71,6 +71,7 @@ function explainConsent(entry: Extract<ConsentLogEntry, { kind: 'consent' }>): s
 export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => {
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState<'all' | 'leaks'>('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1500);
@@ -91,8 +92,9 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
   }, [entries]);
 
   const filtered = useMemo(() => {
+    let out = entries;
     if (filter === 'leaks') {
-      return entries.filter(
+      out = out.filter(
         (e) =>
           e.kind === 'tiktok-event' &&
           (e.consentState === 'held' ||
@@ -100,8 +102,22 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
             e.consentState === 'unknown'),
       );
     }
-    return entries;
-  }, [entries, filter]);
+    const q = search.trim().toLowerCase();
+    if (q) {
+      out = out.filter((e) => {
+        // Searchable surface: event name (tiktok-event), source (both kinds),
+        // consentState (tiktok-event), and consent value/source pair.
+        const haystack: string[] = [];
+        if (e.kind === 'tiktok-event') {
+          haystack.push(e.event, e.consentState, e.source);
+        } else {
+          haystack.push('consent', e.value, e.source);
+        }
+        return haystack.some((s) => s.toLowerCase().includes(q));
+      });
+    }
+    return out;
+  }, [entries, filter, search]);
 
   const leakCount = entries.filter(
     (e) =>
@@ -267,7 +283,48 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
           >
             ⚠ Leaks ({leakCount})
           </button>
-          <div style={{ flex: 1 }} />
+          <div style={{ flex: 1, position: 'relative', minWidth: 140 }}>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search event or source… (e.g. CompletePayment, banner-accept)"
+              aria-label="Search timeline events"
+              style={{
+                width: '100%',
+                padding: '4px 24px 4px 8px',
+                fontSize: 11,
+                background: '#fff',
+                color: 'hsl(25 30% 12%)',
+                border: '1px solid hsl(38 30% 80%)',
+                borderRadius: 6,
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+                style={{
+                  position: 'absolute',
+                  right: 4,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'hsl(25 18% 42%)',
+                  fontSize: 12,
+                  padding: '0 4px',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => { clearConsentLog(); setTick((n) => n + 1); }}
@@ -298,6 +355,8 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
           >
             {filter === 'leaks'
               ? '✅ No events fired under non-granted consent — consent flow is clean.'
+              : search
+              ? `No events match “${search}”. Try a different keyword or clear the search.`
               : 'No events recorded yet. Browse the site to populate the timeline.'}
           </div>
         )}
