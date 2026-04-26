@@ -14,6 +14,7 @@ import { ConsentRuleSimulator } from './ConsentRuleSimulator';
 import { ConsentEventTimeline } from './ConsentEventTimeline';
 import { ConsentReportExporter } from './ConsentReportExporter';
 import { USModeChecklist } from './USModeChecklist';
+import { TikTokEventMatrix } from './TikTokEventMatrix';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -308,6 +309,8 @@ export const DevConsentToggle = () => {
           </div>
         </div>
       )}
+
+      <TikTokEventMatrix key={tick} />
 
       <button
         type="button"
