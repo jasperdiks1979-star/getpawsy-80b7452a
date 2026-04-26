@@ -98,19 +98,44 @@ export const TikTokEventTimeline = () => {
           marginBottom: 6,
         }}
       >
-        <strong style={{ fontSize: 10 }}>Event timeline</strong>
-        <span style={{ fontSize: 9, opacity: 0.75 }}>
+        <strong
+          style={{ fontSize: 10 }}
+          title="Tijdlijn van álle TikTok pixel-pogingen in deze sessie. Elke stip is één poging; positie = tijdstip, kleur = uitkomst."
+        >
+          Event timeline
+        </strong>
+        <span
+          style={{ fontSize: 9, opacity: 0.75 }}
+          title="delivered = écht naar TikTok gestuurd (consent granted + SDK ready) · blocked = poging tijdens held/revoked, terecht tegengehouden · not ready = SDK was nog niet geladen toen het event vuurde"
+        >
           ✓ {delivered} delivered · ✕ {blocked} blocked · ! {notReady} not ready
         </span>
+      </div>
+
+      <div
+        style={{
+          fontSize: 9,
+          opacity: 0.75,
+          marginBottom: 6,
+          lineHeight: 1.4,
+        }}
+      >
+        Elke rij is één eventtype, elke stip één poging. Links = ouder, rechts = nu.
+        Hover een stip voor exacte tijd en uitkomst. Veel rode stippen tijdens een
+        test = correct geblokkeerd, geen bug.
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {EVENTS.map((spec) => {
           const matches = events.filter((e) => e.event === spec.internal);
+          const rowSummary = matches.length
+            ? `${matches.length} poging(en) totaal in deze sessie`
+            : 'Nog geen pogingen voor dit event';
           return (
             <div
               key={spec.internal}
               style={{ display: 'grid', gridTemplateColumns: '88px 1fr', alignItems: 'center', gap: 6 }}
+              title={`${spec.label} — ${rowSummary}`}
             >
               <span style={{ fontSize: 9, fontWeight: 600, color: 'hsl(220 15% 30%)' }}>
                 {spec.label}
