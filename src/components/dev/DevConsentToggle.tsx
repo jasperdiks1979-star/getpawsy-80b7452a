@@ -12,6 +12,7 @@ import { summarizeConsentLog, clearConsentLog } from '@/lib/consentLog';
 import { GuidedConsentTest } from './GuidedConsentTest';
 import { ConsentRuleSimulator } from './ConsentRuleSimulator';
 import { ConsentEventTimeline } from './ConsentEventTimeline';
+import { ConsentReportExporter } from './ConsentReportExporter';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -372,6 +373,8 @@ export const DevConsentToggle = () => {
       >
         📜 Event timeline
       </button>
+
+      <ConsentReportExporter />
 
       <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
         Dev hosts only — never visible in production.
