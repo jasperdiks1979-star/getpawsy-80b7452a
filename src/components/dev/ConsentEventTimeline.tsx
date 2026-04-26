@@ -128,6 +128,51 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
   ).length;
 
   /**
+   * Export the *currently filtered* timeline as a downloadable JSON file.
+   * Includes the full meta payload of every TikTok event so the operator
+   * can reproduce or audit any specific firing context offline.
+   *
+   * The file is purely diagnostic data already present in the in-page
+   * consent log (no PII transformation, no network round-trip).
+   */
+  const exportTimeline = () => {
+    if (typeof window === 'undefined') return;
+    const payload = {
+      schema: 'gp.consent-event-timeline/v1',
+      exportedAt: new Date().toISOString(),
+      url: window.location.href,
+      filter,
+      search: search || null,
+      anchorTs: new Date(anchorTs).toISOString(),
+      firstGrantTs: firstGrantTs ? new Date(firstGrantTs).toISOString() : null,
+      counts: {
+        totalEntries: entries.length,
+        filteredEntries: filtered.length,
+        leaks: leakCount,
+        preGrantTikTokEvents: preGrantSummary.total,
+      },
+      preGrantBreakdown: preGrantSummary.events,
+      entries: filtered.map((e) => ({
+        ...e,
+        tsIso: new Date(e.ts).toISOString(),
+        deltaFromAnchorMs: e.ts - anchorTs,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = url;
+    a.download = `consent-timeline-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  /**
    * Pre-grant summary — every TikTok event that fired BEFORE the first
    * "Accept all". This is the most actionable signal for GDPR audits:
    * if anything appears here, it means the pixel was tracking visitors
