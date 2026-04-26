@@ -14,7 +14,7 @@
  * The original consent state is restored when the modal closes so this
  * never leaves the pixel in a weird state.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { logTikTokEvent } from '@/lib/consentLog';
 
 type ConsentState = 'granted' | 'held' | 'revoked';
@@ -100,6 +100,22 @@ export const USTargetingTest = ({ onClose }: { onClose: () => void }) => {
   const [progress, setProgress] = useState<string>('');
   const [done, setDone] = useState(false);
   const [originalState, setOriginalState] = useState<ConsentState | 'unknown'>('unknown');
+  const [highlightState, setHighlightState] = useState<ConsentState | null>(null);
+  const rowRefs = useRef<Record<ConsentState, HTMLDivElement | null>>({
+    granted: null, held: null, revoked: null,
+  });
+
+  const focusState = useCallback((s: ConsentState) => {
+    setHighlightState(s);
+    const el = rowRefs.current[s];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // Auto-clear highlight after a few seconds
+    window.setTimeout(() => {
+      setHighlightState((cur) => (cur === s ? null : cur));
+    }, 2400);
+  }, []);
 
   useEffect(() => {
     const w = window as any;
@@ -318,16 +334,22 @@ export const USTargetingTest = ({ onClose }: { onClose: () => void }) => {
                     ? { bg: 'hsl(0 60% 96%)',   fg: 'hsl(0 70% 38%)',   border: 'hsl(0 60% 78%)',   icon: '✗' }
                     : { bg: 'hsl(38 70% 96%)',  fg: 'hsl(28 80% 35%)',  border: 'hsl(38 70% 78%)',  icon: '⚠' };
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={v.state}
+                    onClick={() => focusState(v.state)}
                     style={{
                       background: colors.bg, color: colors.fg,
                       border: `1px solid ${colors.border}`,
                       borderRadius: 6, padding: '6px 8px',
                       fontSize: 11, lineHeight: 1.4,
                       display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                      font: 'inherit',
                     }}
-                    title={`Expected: ${v.expectation} · Result: ${v.passCount}/${EVENTS.length} pass`}
+                    title={`Click to jump to ${v.state} row · Expected: ${v.expectation} · Result: ${v.passCount}/${EVENTS.length} pass`}
                   >
                     <span>
                       <strong style={{ textTransform: 'uppercase', letterSpacing: 0.3 }}>
@@ -336,9 +358,9 @@ export const USTargetingTest = ({ onClose }: { onClose: () => void }) => {
                       <span style={{ opacity: 0.85 }}> — {v.summary}</span>
                     </span>
                     <span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                      {v.passCount}/{EVENTS.length}
+                      {v.passCount}/{EVENTS.length} →
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -361,7 +383,13 @@ export const USTargetingTest = ({ onClose }: { onClose: () => void }) => {
           ))}
 
           {STATES.map((s) => (
-            <FragmentRow key={s} state={s} matrix={matrix} />
+            <FragmentRow
+              key={s}
+              state={s}
+              matrix={matrix}
+              highlighted={highlightState === s}
+              registerRef={(el) => { rowRefs.current[s] = el; }}
+            />
           ))}
         </div>
 
@@ -373,17 +401,33 @@ export const USTargetingTest = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-const FragmentRow = ({ state, matrix }: { state: ConsentState; matrix: Matrix }) => {
+const FragmentRow = ({
+  state,
+  matrix,
+  highlighted,
+  registerRef,
+}: {
+  state: ConsentState;
+  matrix: Matrix;
+  highlighted: boolean;
+  registerRef: (el: HTMLDivElement | null) => void;
+}) => {
   const stateColor =
     state === 'granted' ? 'hsl(142 70% 28%)' :
     state === 'held'    ? 'hsl(38 90% 38%)' :
                           'hsl(0 70% 42%)';
   return (
     <>
-      <div style={{
-        fontWeight: 700, color: stateColor, padding: '4px 6px',
-        display: 'flex', alignItems: 'center',
-      }}>
+      <div
+        ref={registerRef}
+        style={{
+          fontWeight: 700, color: stateColor, padding: '4px 6px',
+          display: 'flex', alignItems: 'center',
+          background: highlighted ? 'hsl(210 80% 92%)' : 'transparent',
+          borderRadius: 4,
+          transition: 'background 240ms ease',
+        }}
+      >
         {state}
       </div>
       {EVENTS.map((e) => {
@@ -403,15 +447,20 @@ const FragmentRow = ({ state, matrix }: { state: ConsentState; matrix: Matrix })
         const icon =
           !cell.attempted ? '○' :
           cell.pass       ? '✓' : '✗';
+        // Pulse failed cells when their row is highlighted
+        const isFailHighlighted = highlighted && cell.attempted && !cell.pass;
         return (
           <div
             key={`${state}-${e.internal}`}
             title={`${state} · ${e.label} → ${cell.detail}`}
             style={{
               background: bg, color: fg,
-              border: `1px solid ${border}`,
+              border: `${isFailHighlighted ? 2 : 1}px solid ${isFailHighlighted ? 'hsl(0 80% 45%)' : border}`,
               borderRadius: 4, padding: '4px 2px',
               textAlign: 'center', fontWeight: 700,
+              boxShadow: isFailHighlighted ? '0 0 0 3px hsl(0 80% 45% / 0.25)' : 'none',
+              transform: isFailHighlighted ? 'scale(1.06)' : 'scale(1)',
+              transition: 'transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease',
             }}
           >
             {icon}
