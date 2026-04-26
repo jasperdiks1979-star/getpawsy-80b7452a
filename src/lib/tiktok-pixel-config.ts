@@ -12,6 +12,93 @@
 const FALLBACK_PIXEL_ID = 'D7KDRMBC77U9EB7RJROG'; // GetPawsy Pixel
 const PIXEL_ID_REGEX = /^[A-Z0-9]{20}$/;
 
+const OVERRIDE_KEY = 'gp_tiktok_pixel_config';
+
+export interface PixelConfigOverride {
+  pixelId?: string;
+  eventManagerUrl?: string;
+  conversionEvent?: string;
+}
+
+/** Read local override (set via the admin form). Browser-only. */
+export function getPixelConfigOverride(): PixelConfigOverride {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(OVERRIDE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Persist local override. Pass an empty object to clear. */
+export function setPixelConfigOverride(value: PixelConfigOverride): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!value || Object.keys(value).length === 0) {
+      localStorage.removeItem(OVERRIDE_KEY);
+    } else {
+      localStorage.setItem(OVERRIDE_KEY, JSON.stringify(value));
+    }
+    cached = null; // force re-validate next call
+  } catch { /* ignore quota */ }
+}
+
+const EVENT_MGR_REGEX = /^https:\/\/ads\.tiktok\.com\/i18n\/events_manager(\/|$|\?)/i;
+const ALLOWED_CONVERSION_EVENTS = [
+  'CompletePayment',
+  'Purchase',
+  'PlaceAnOrder',
+  'Subscribe',
+] as const;
+
+export function validateEventManagerUrl(url: string): { ok: boolean; message: string } {
+  const trimmed = url.trim();
+  if (!trimmed) return { ok: false, message: 'URL is required.' };
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== 'https:') return { ok: false, message: 'Must be HTTPS.' };
+    if (!EVENT_MGR_REGEX.test(trimmed)) {
+      return {
+        ok: false,
+        message: 'Expected URL under https://ads.tiktok.com/i18n/events_manager/...',
+      };
+    }
+    return { ok: true, message: 'Valid Events Manager URL.' };
+  } catch {
+    return { ok: false, message: 'Not a valid URL.' };
+  }
+}
+
+export function validateConversionEvent(name: string): { ok: boolean; message: string } {
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, message: 'Event name is required.' };
+  if (!(ALLOWED_CONVERSION_EVENTS as readonly string[]).includes(trimmed)) {
+    return {
+      ok: false,
+      message: `Must be one of: ${ALLOWED_CONVERSION_EVENTS.join(', ')}.`,
+    };
+  }
+  return { ok: true, message: `"${trimmed}" is a valid TikTok standard event.` };
+}
+
+export function validatePixelIdString(id: string): { ok: boolean; message: string } {
+  const trimmed = id.trim();
+  if (!trimmed) return { ok: false, message: 'Pixel ID is required.' };
+  if (!PIXEL_ID_REGEX.test(trimmed)) {
+    return {
+      ok: false,
+      message: 'Expected 20 uppercase alphanumeric characters (e.g. D7KDRMBC77U9EB7RJROG).',
+    };
+  }
+  return { ok: true, message: 'Valid TikTok Pixel ID format.' };
+}
+
+export const ALLOWED_CONVERSION_EVENT_OPTIONS = ALLOWED_CONVERSION_EVENTS;
+export { FALLBACK_PIXEL_ID };
+
 export type PixelValidationStatus = 'ok' | 'missing' | 'invalid';
 
 export interface PixelValidationResult {
@@ -27,7 +114,11 @@ let cached: PixelValidationResult | null = null;
 export function validateTikTokPixelId(): PixelValidationResult {
   if (cached) return cached;
 
-  const raw = (import.meta.env?.VITE_TIKTOK_PIXEL_ID as string | undefined)?.trim();
+  // Local override (admin form) takes precedence over env var so you can
+  // test alternative pixels in the browser without redeploying.
+  const override = getPixelConfigOverride().pixelId?.trim();
+  const envRaw = (import.meta.env?.VITE_TIKTOK_PIXEL_ID as string | undefined)?.trim();
+  const raw = override || envRaw;
 
   if (!raw) {
     cached = {
