@@ -9,6 +9,7 @@
  */
 
 import { canAutoGrantConsent } from './geoConsent';
+import { reportTikTokPixelValidation } from './tiktok-pixel-config';
 
 // Ensure dataLayer exists safely before any gtag call
 if (typeof window !== 'undefined') {
@@ -136,6 +137,11 @@ function initTikTokPixel(): void {
       first.parentNode?.insertBefore(script, first);
     };
 
+    // Validate the configured pixel ID (env var or fallback). Logs a warning
+    // and shows a dev-only banner if VITE_TIKTOK_PIXEL_ID is missing/invalid.
+    const pixelConfig = reportTikTokPixelValidation();
+    const pixelId = pixelConfig.pixelId;
+
     // Geo-aware consent:
     //   • EU/GDPR visitors → hold until cookie banner grants
     //   • Non-EU (US/etc.) → auto-grant immediately so the pixel fires on
@@ -146,7 +152,7 @@ function initTikTokPixel(): void {
       (window as any).__ttqConsent = 'held';
     }
 
-    ttq.load('D7KDRMBC77U9EB7RJROG');
+    ttq.load(pixelId);
 
     if (autoGrant) {
       // Grant must be called AFTER load AND AFTER the SDK has hydrated.
@@ -156,7 +162,9 @@ function initTikTokPixel(): void {
 
     ttq.page();
     ttq._loaded = true;
-    console.log('[Analytics] TikTok Pixel loaded — autoGrant:', autoGrant);
+    console.log(
+      `[Analytics] TikTok Pixel loaded — id=${pixelId} (${pixelConfig.source}) — autoGrant: ${autoGrant}`,
+    );
     // Diagnostic log — pairs with consentLog so we can verify the very
     // first page event fires under the expected consent state.
     void import('./consentLog')
