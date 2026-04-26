@@ -103,19 +103,45 @@ export const TikTokEventMatrix = () => {
           marginBottom: 6,
         }}
       >
-        <strong style={{ fontSize: 10 }}>TikTok event matrix</strong>
-        <span style={{ fontSize: 9, opacity: 0.7 }}>
+        <strong
+          style={{ fontSize: 10 }}
+          title="Sessie-overzicht per TikTok event. Toont of het event minstens 1× verstuurd is in deze browsersessie."
+        >
+          TikTok event matrix
+        </strong>
+        <span
+          style={{ fontSize: 9, opacity: 0.7 }}
+          title="sent = events die minstens 1× met granted consent zijn verstuurd · held = events die alleen tijdens held/revoked geprobeerd zijn (dus niet afgeleverd)"
+        >
           {sentCount} sent · {heldCount} held
         </span>
+      </div>
+
+      <div
+        style={{
+          fontSize: 9,
+          opacity: 0.75,
+          marginBottom: 6,
+          lineHeight: 1.4,
+        }}
+      >
+        Per event: <strong>✓ sent</strong> = afgeleverd aan TikTok ·{' '}
+        <strong>⚠ held</strong> = geblokkeerd door consent ·{' '}
+        <strong>○ not yet</strong> = nog niet getriggerd in deze sessie. Hover een rij voor trigger + laatste poging.
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {rows.map((r) => {
           const c = COLORS[r.status];
+          const tooltip =
+            `${r.label} (intern: ${r.internal})\n` +
+            `Trigger: ${r.trigger}\n` +
+            `Pogingen totaal: ${r.totalAttempts} · afgeleverd: ${r.grantedAttempts} · geblokkeerd: ${r.heldAttempts}\n` +
+            `Laatste poging: ${fmtAgo(r.lastTs)}`;
           return (
             <div
               key={r.internal}
-              title={`${r.trigger} · ${r.totalAttempts} attempt(s) · last: ${fmtAgo(r.lastTs)}`}
+              title={tooltip}
               style={{
                 background: c.bg,
                 border: `1px solid ${c.border}`,
