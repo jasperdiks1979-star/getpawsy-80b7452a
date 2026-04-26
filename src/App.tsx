@@ -1342,6 +1342,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-config"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokConfigPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="seo-command-center"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
