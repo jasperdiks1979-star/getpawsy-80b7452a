@@ -8,10 +8,15 @@
  *
  * Pure dev tooling — only mounted via DevConsentToggle on dev hosts.
  */
-import { useEffect, useMemo, useState } from 'react';
-import { getConsentLog, clearConsentLog } from '@/lib/consentLog';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { getConsentLog, clearConsentLog, type ConsentLogEntry } from '@/lib/consentLog';
 
 type StepStatus = 'pending' | 'active' | 'done' | 'fail';
+
+interface StepMeta {
+  status: StepStatus;
+  doneAt: number | null;
+}
 
 interface GuidedConsentTestProps {
   onClose: () => void;
@@ -26,6 +31,8 @@ function readTtq(): 'granted' | 'held' | 'revoked' | 'unknown' {
 export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
   const [startTs, setStartTs] = useState<number>(() => Date.now());
   const [tick, setTick] = useState(0);
+  // Per-step completion timestamps — captured the first poll a step turns done/fail
+  const stepDoneAtRef = useRef<Record<number, number | null>>({ 1: null, 2: null, 3: null, 4: null });
 
   // Poll every 600ms while open
   useEffect(() => {
@@ -43,28 +50,45 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
     return { log, ttq, consentChange, completePayment };
   }, [tick, startTs]);
 
-  // Step status calculation
-  const step1: StepStatus = 'done'; // user opened the guide → step 1 implicitly done
-  const step2: StepStatus = state.consentChange ? 'done' : 'active';
-  const step3: StepStatus =
+  // Step status calculation (raw)
+  const step1Status: StepStatus = 'done';
+  const step2Status: StepStatus = state.consentChange ? 'done' : 'active';
+  const step3Status: StepStatus =
     state.ttq === 'granted'
       ? 'done'
-      : step2 === 'done'
+      : step2Status === 'done'
       ? 'active'
       : 'pending';
-  const step4: StepStatus = state.completePayment
+  const step4Status: StepStatus = state.completePayment
     ? state.completePayment.consentState === 'granted'
       ? 'done'
       : 'fail'
-    : step3 === 'done'
+    : step3Status === 'done'
     ? 'active'
     : 'pending';
 
-  const allDone = step4 === 'done';
+  // Capture completion timestamps the first time each step terminates
+  const captureDoneAt = (n: number, status: StepStatus, sourceTs?: number) => {
+    if ((status === 'done' || status === 'fail') && stepDoneAtRef.current[n] === null) {
+      stepDoneAtRef.current[n] = sourceTs ?? Date.now();
+    }
+  };
+  captureDoneAt(1, step1Status, startTs);
+  captureDoneAt(2, step2Status, state.consentChange?.ts);
+  captureDoneAt(3, step3Status);
+  captureDoneAt(4, step4Status, state.completePayment?.ts);
+
+  const step1: StepMeta = { status: step1Status, doneAt: stepDoneAtRef.current[1] };
+  const step2: StepMeta = { status: step2Status, doneAt: stepDoneAtRef.current[2] };
+  const step3: StepMeta = { status: step3Status, doneAt: stepDoneAtRef.current[3] };
+  const step4: StepMeta = { status: step4Status, doneAt: stepDoneAtRef.current[4] };
+
+  const allDone = step4.status === 'done';
 
   const reset = () => {
     clearConsentLog();
     setStartTs(Date.now());
+    stepDoneAtRef.current = { 1: null, 2: null, 3: null, 4: null };
     setTick((n) => n + 1);
   };
 
@@ -118,7 +142,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
       <ol style={{ marginTop: 10, paddingLeft: 0, listStyle: 'none' }}>
         <Step
           n={1}
-          status={step1}
+          meta={step1}
+          startTs={startTs}
           title="Open this URL in an incognito window"
           body={
             <>
@@ -130,7 +155,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
         <Step
           n={2}
-          status={step2}
+          meta={step2}
+          startTs={startTs}
           title="Accept the cookie banner"
           body={
             <>
@@ -145,7 +171,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
         <Step
           n={3}
-          status={step3}
+          meta={step3}
+          startTs={startTs}
           title="Confirm pixel state = granted"
           body={
             <>
@@ -167,7 +194,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
         <Step
           n={4}
-          status={step4}
+          meta={step4}
+          startTs={startTs}
           title="Complete a test purchase → /thank-you"
           body={
             <>
@@ -195,6 +223,66 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
           }
         />
       </ol>
+
+      {/* Live event inspector — appends every consent log entry as it happens */}
+      <div
+        style={{
+          marginTop: 10,
+          border: '1px solid hsl(38 30% 88%)',
+          borderRadius: 6,
+          background: 'hsl(38 30% 98%)',
+          fontSize: 10,
+          fontFamily: 'ui-monospace, monospace',
+        }}
+      >
+        <div
+          style={{
+            padding: '6px 8px',
+            borderBottom: '1px solid hsl(38 30% 92%)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <strong style={{ fontSize: 10, color: 'hsl(25 30% 12%)' }}>
+            Live event inspector
+          </strong>
+          <span style={{ fontSize: 9, color: 'hsl(25 18% 42%)' }}>
+            {state.log.length} entr{state.log.length === 1 ? 'y' : 'ies'} · polls every 600 ms
+          </span>
+        </div>
+        <div style={{ maxHeight: 140, overflowY: 'auto', padding: '4px 8px' }}>
+          {state.log.length === 0 ? (
+            <div style={{ color: 'hsl(25 18% 42%)', padding: '6px 0', fontStyle: 'italic' }}>
+              Waiting for the first event…
+            </div>
+          ) : (
+            state.log.map((e, i) => {
+              const f = fmtEntry(e);
+              return (
+                <div
+                  key={`${e.ts}-${i}`}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '64px 1fr auto',
+                    gap: 6,
+                    padding: '2px 0',
+                    borderBottom: i < state.log.length - 1 ? '1px dashed hsl(38 30% 92%)' : 'none',
+                  }}
+                >
+                  <span style={{ color: 'hsl(25 18% 42%)' }}>
+                    +{fmtDelta(e.ts - startTs)}
+                  </span>
+                  <span style={{ color: 'hsl(25 30% 12%)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.label}
+                  </span>
+                  <span style={{ color: f.color, fontWeight: 700 }}>{f.state}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
       {allDone && (
         <div
@@ -260,15 +348,18 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
 
 const Step = ({
   n,
-  status,
+  meta,
+  startTs,
   title,
   body,
 }: {
   n: number;
-  status: StepStatus;
+  meta: StepMeta;
+  startTs: number;
   title: string;
   body: React.ReactNode;
 }) => {
+  const status = meta.status;
   const color =
     status === 'done'
       ? 'hsl(142 70% 32%)'
@@ -278,6 +369,11 @@ const Step = ({
       ? 'hsl(22 70% 48%)'
       : 'hsl(25 18% 60%)';
   const icon = status === 'done' ? '✓' : status === 'fail' ? '✕' : status === 'active' ? '●' : '○';
+  const ts = meta.doneAt;
+  const stamp =
+    ts !== null
+      ? `${fmtClock(ts)} (+${fmtDelta(ts - startTs)})`
+      : null;
   return (
     <li style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'flex-start' }}>
       <div
@@ -301,14 +397,51 @@ const Step = ({
         {icon}
       </div>
       <div style={{ flex: 1, fontSize: 11, lineHeight: 1.45 }}>
-        <div style={{ fontWeight: 600, color: 'hsl(25 30% 12%)' }}>
-          Step {n}: {title}
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'baseline' }}>
+          <div style={{ fontWeight: 600, color: 'hsl(25 30% 12%)' }}>
+            Step {n}: {title}
+          </div>
+          {stamp && (
+            <code style={{ fontSize: 9, color: color, whiteSpace: 'nowrap' }}>{stamp}</code>
+          )}
         </div>
         <div style={{ marginTop: 2, color: 'hsl(25 18% 30%)' }}>{body}</div>
       </div>
     </li>
   );
 };
+
+function fmtClock(ts: number): string {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+}
+
+function fmtDelta(ms: number): string {
+  if (ms < 0) ms = 0;
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.round(ms / 60_000)}m`;
+}
+
+function fmtEntry(e: ConsentLogEntry): { label: string; state: string; color: string } {
+  if (e.kind === 'consent') {
+    return {
+      label: `consent → ${e.value}`,
+      state: e.source,
+      color: e.value === 'all' ? 'hsl(142 70% 32%)' : 'hsl(0 70% 42%)',
+    };
+  }
+  return {
+    label: e.event,
+    state: e.consentState,
+    color:
+      e.consentState === 'granted'
+        ? 'hsl(142 70% 32%)'
+        : e.consentState === 'held' || e.consentState === 'revoked'
+        ? 'hsl(0 70% 42%)'
+        : 'hsl(25 18% 42%)',
+  };
+}
 
 const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
