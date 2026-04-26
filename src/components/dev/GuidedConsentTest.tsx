@@ -10,6 +10,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getConsentLog, clearConsentLog, type ConsentLogEntry } from '@/lib/consentLog';
+import { setConsent } from '@/lib/cookieConsent';
+import { ttTrackPurchase } from '@/lib/tiktok-pixel';
 
 type StepStatus = 'pending' | 'active' | 'done' | 'fail';
 
@@ -98,6 +100,57 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
     setStartTs(Date.now());
     stepDoneAtRef.current = { 1: null, 2: null, 3: null, 4: null };
     setTick((n) => n + 1);
+  };
+
+  /**
+   * Manual override — forces a specific consent state and immediately
+   * re-fires a synthetic CompletePayment so Step 4 re-evaluates instantly.
+   *
+   * - granted: mirrors banner-accept (also flips ttq via setConsent)
+   * - held:    sets __ttqConsent = 'held' directly without calling
+   *           ttq.revokeConsent (simulates pre-grant init state)
+   * - revoked: calls setConsent('necessary') so the SDK actually rejects
+   *
+   * The CompletePayment payload is synthetic (orderId = `dev-override-…`,
+   * value 0.01) so it never pollutes real attribution, but the consent
+   * log entry it produces is identical in shape to a real purchase event.
+   */
+  const runOverride = (target: 'granted' | 'held' | 'revoked') => {
+    if (typeof window === 'undefined') return;
+    const w = window as any;
+    // 1. Reset the test clock so Step 4 only inspects the fresh fire.
+    clearConsentLog();
+    stepDoneAtRef.current = { 1: null, 2: null, 3: null, 4: null };
+    const fresh = Date.now();
+    setStartTs(fresh);
+
+    // 2. Force the consent state.
+    if (target === 'granted') {
+      setConsent('all', 'dev-toggle');
+      w.__ttqConsent = 'granted';
+    } else if (target === 'revoked') {
+      setConsent('necessary', 'dev-toggle');
+      w.__ttqConsent = 'revoked';
+    } else {
+      // 'held' = pre-grant limbo. Don't call setConsent so we keep the
+      // pixel in its initial held state without persisting a choice.
+      w.__ttqConsent = 'held';
+    }
+
+    // 3. Re-fire CompletePayment after a short tick so the consent
+    //    state is observed by the logger.
+    setTimeout(() => {
+      ttTrackPurchase({
+        orderId: `dev-override-${target}-${fresh}`,
+        value: 0.01,
+        currency: 'USD',
+        contents: [
+          { content_id: 'dev-override', quantity: 1, price: 0.01, content_name: 'Dev override test' },
+        ],
+      });
+      // Force a re-poll immediately
+      setTick((n) => n + 1);
+    }, 50);
   };
 
   // Export the guided test result as a downloadable JSON file.
@@ -311,6 +364,49 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
       </ol>
 
+      {/* Manual override — force a consent state and instantly re-fire CompletePayment */}
+      <div
+        style={{
+          marginTop: 4,
+          marginBottom: 6,
+          padding: 8,
+          border: '1px dashed hsl(38 30% 80%)',
+          borderRadius: 6,
+          background: 'hsl(38 30% 98%)',
+        }}
+      >
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'hsl(25 30% 12%)' }}>
+          Manual override — instant CompletePayment re-test
+        </div>
+        <div style={{ fontSize: 9, color: 'hsl(25 18% 42%)', marginTop: 2, marginBottom: 6 }}>
+          Forces consentState, fires a synthetic <code>CompletePayment</code>,
+          and resets the timer so Step 4 re-evaluates immediately.
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            type="button"
+            onClick={() => runOverride('granted')}
+            style={overrideBtnStyle('hsl(142 70% 32%)')}
+          >
+            ✓ granted
+          </button>
+          <button
+            type="button"
+            onClick={() => runOverride('held')}
+            style={overrideBtnStyle('hsl(22 70% 48%)')}
+          >
+            ⏸ held
+          </button>
+          <button
+            type="button"
+            onClick={() => runOverride('revoked')}
+            style={overrideBtnStyle('hsl(0 70% 42%)')}
+          >
+            ✕ revoked
+          </button>
+        </div>
+      </div>
+
       {/* Live event inspector — appends every consent log entry as it happens */}
       <div
         style={{
@@ -519,6 +615,20 @@ const Step = ({
 function fmtClock(ts: number): string {
   const d = new Date(ts);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+}
+
+function overrideBtnStyle(color: string): React.CSSProperties {
+  return {
+    flex: 1,
+    padding: '4px 6px',
+    fontSize: 10,
+    fontWeight: 700,
+    background: '#fff',
+    color,
+    border: `1px solid ${color}`,
+    borderRadius: 4,
+    cursor: 'pointer',
+  };
 }
 
 function fmtDelta(ms: number): string {
