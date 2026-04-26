@@ -302,19 +302,142 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
           </div>
         )}
 
-        {filtered.map((entry, i) => {
-          const delta = entry.ts - anchorTs;
-          const beforeGrant =
-            firstGrantTs !== null && entry.ts < firstGrantTs && entry.kind === 'tiktok-event';
-          return (
-            <TimelineRow
-              key={`${entry.ts}-${i}`}
-              entry={entry}
-              delta={delta}
-              beforeGrant={beforeGrant}
-            />
-          );
-        })}
+        {/*
+          Section grouping — every time the consent state changes (consent
+          entry or the first event under a new state) we open a new
+          "section" with a sticky-style header. This makes the grant /
+          revoke / re-grant cadence visible at a glance instead of forcing
+          the operator to scan timestamps line by line.
+
+          State source:
+            • consent entries → `value === 'all' ? 'granted' : 'revoked'`
+            • tiktok-event entries → use their recorded `consentState`
+              (only as a fallback before the first explicit consent entry,
+              so we don't double-flip on every event)
+        */}
+        {(() => {
+          type ResolvedState = 'granted' | 'held' | 'revoked' | 'unknown';
+          const sections: Array<{
+            state: ResolvedState;
+            startTs: number;
+            triggerSource: string;
+            entries: Array<{ entry: ConsentLogEntry; index: number }>;
+          }> = [];
+          let current: ResolvedState | null = null;
+          let lastConsentSource = 'initial';
+          filtered.forEach((entry, i) => {
+            let next: ResolvedState = current ?? 'unknown';
+            let triggerSource = lastConsentSource;
+            if (entry.kind === 'consent') {
+              next = entry.value === 'all' ? 'granted' : 'revoked';
+              triggerSource = entry.source;
+              lastConsentSource = entry.source;
+            } else if (current === null) {
+              // No explicit consent entry yet — adopt the event's recorded state
+              next = entry.consentState as ResolvedState;
+              triggerSource = 'pre-consent';
+            }
+            if (next !== current) {
+              sections.push({
+                state: next,
+                startTs: entry.ts,
+                triggerSource,
+                entries: [],
+              });
+              current = next;
+            }
+            sections[sections.length - 1].entries.push({ entry, index: i });
+          });
+
+          return sections.map((sec, sIdx) => {
+            const c = STATE_COLORS[sec.state];
+            const stateLabel =
+              sec.state === 'granted'
+                ? '✓ GRANTED'
+                : sec.state === 'revoked'
+                ? '✕ REVOKED'
+                : sec.state === 'held'
+                ? '⏸ HELD'
+                : '○ UNKNOWN';
+            const tiktokInSection = sec.entries.filter(
+              ({ entry }) => entry.kind === 'tiktok-event',
+            ).length;
+            return (
+              <section key={`sec-${sIdx}-${sec.startTs}`} style={{ marginBottom: 8 }}>
+                <header
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    alignItems: 'center',
+                    padding: '6px 10px',
+                    marginTop: sIdx === 0 ? 0 : 8,
+                    background: c.bg,
+                    border: `1px solid ${c.border}`,
+                    borderRadius: 6,
+                    fontSize: 11,
+                    color: c.fg,
+                    fontWeight: 700,
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
+                  }}
+                >
+                  <span>{stateLabel}</span>
+                  <span style={{ fontWeight: 500, opacity: 0.8 }}>
+                    via <code>{sec.triggerSource}</code>
+                  </span>
+                  <span style={{ flex: 1 }} />
+                  <span
+                    style={{
+                      fontFamily: 'ui-monospace, monospace',
+                      fontSize: 10,
+                      opacity: 0.85,
+                    }}
+                  >
+                    {fmtTime(sec.startTs)} · {fmtDelta(sec.startTs - anchorTs)}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 10,
+                      padding: '1px 6px',
+                      borderRadius: 10,
+                      background: '#fff',
+                      border: `1px solid ${c.border}`,
+                    }}
+                    title="TikTok pixel events fired in this consent window"
+                  >
+                    {tiktokInSection} pixel evt
+                  </span>
+                </header>
+                <div
+                  style={{
+                    borderLeft: `2px solid ${c.border}`,
+                    marginLeft: 8,
+                    paddingLeft: 4,
+                    marginTop: 4,
+                  }}
+                >
+                  {sec.entries.map(({ entry, index }) => {
+                    const delta = entry.ts - anchorTs;
+                    const beforeGrant =
+                      firstGrantTs !== null &&
+                      entry.ts < firstGrantTs &&
+                      entry.kind === 'tiktok-event';
+                    return (
+                      <TimelineRow
+                        key={`${entry.ts}-${index}`}
+                        entry={entry}
+                        delta={delta}
+                        beforeGrant={beforeGrant}
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          });
+        })()}
       </div>
     </div>
   );
