@@ -500,6 +500,21 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
           fontFamily: 'ui-monospace, monospace',
         }}
       >
+        {(() => {
+          // First grant within this test window — anything BEFORE this ts
+          // (or any tiktok-event with non-granted consentState if no grant
+          // happened yet) counts as a leak.
+          const firstGrantInWindow = state.log.find(
+            (e) => e.kind === 'consent' && e.value === 'all',
+          )?.ts ?? null;
+          const isLeak = (e: ConsentLogEntry): boolean => {
+            if (e.kind !== 'tiktok-event') return false;
+            if (firstGrantInWindow !== null) return e.ts < firstGrantInWindow;
+            return e.consentState !== 'granted';
+          };
+          const leakCount = state.log.filter(isLeak).length;
+          return (
+        <>
         <div
           style={{
             padding: '6px 8px',
@@ -507,13 +522,32 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: 6,
           }}
         >
           <strong style={{ fontSize: 10, color: 'hsl(25 30% 12%)' }}>
             Live event inspector
           </strong>
-          <span style={{ fontSize: 9, color: 'hsl(25 18% 42%)' }}>
-            {state.log.length} entr{state.log.length === 1 ? 'y' : 'ies'} · polls every 600 ms
+          <span style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {leakCount > 0 && (
+              <span
+                title="TikTok events that fired before consent was granted"
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  padding: '1px 5px',
+                  borderRadius: 8,
+                  background: 'hsl(0 70% 94%)',
+                  color: 'hsl(0 70% 32%)',
+                  border: '1px solid hsl(0 60% 78%)',
+                }}
+              >
+                ⚠ {leakCount} leak{leakCount === 1 ? '' : 's'}
+              </span>
+            )}
+            <span style={{ fontSize: 9, color: 'hsl(25 18% 42%)' }}>
+              {state.log.length} entr{state.log.length === 1 ? 'y' : 'ies'} · 600 ms
+            </span>
           </span>
         </div>
         <div style={{ maxHeight: 140, overflowY: 'auto', padding: '4px 8px' }}>
@@ -524,17 +558,29 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
           ) : (
             state.log.map((e, i) => {
               const f = fmtEntry(e);
+              const leak = isLeak(e);
               return (
                 <div
                   key={`${e.ts}-${i}`}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '64px 1fr auto',
+                    gridTemplateColumns: leak ? '14px 60px 1fr auto' : '60px 1fr auto',
                     gap: 6,
                     padding: '2px 0',
                     borderBottom: i < state.log.length - 1 ? '1px dashed hsl(38 30% 92%)' : 'none',
+                    background: leak ? 'hsl(0 70% 97%)' : 'transparent',
+                    borderLeft: leak ? '2px solid hsl(0 70% 60%)' : '2px solid transparent',
+                    paddingLeft: leak ? 4 : 0,
                   }}
                 >
+                  {leak && (
+                    <span
+                      title="Fired before consent was granted"
+                      style={{ color: 'hsl(0 70% 42%)', fontWeight: 700 }}
+                    >
+                      ⚠
+                    </span>
+                  )}
                   <span style={{ color: 'hsl(25 18% 42%)' }}>
                     +{fmtDelta(e.ts - startTs)}
                   </span>
@@ -547,6 +593,9 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
             })
           )}
         </div>
+        </>
+        );
+        })()}
       </div>
 
       {allDone && (
