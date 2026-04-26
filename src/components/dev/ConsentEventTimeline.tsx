@@ -385,6 +385,25 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
           >
             Clear log
           </button>
+          <button
+            type="button"
+            onClick={exportTimeline}
+            title="Download the currently filtered timeline (with event meta payloads) as JSON"
+            disabled={filtered.length === 0}
+            style={{
+              fontSize: 11,
+              padding: '4px 8px',
+              background: filtered.length === 0 ? 'hsl(38 30% 96%)' : '#fff',
+              color:
+                filtered.length === 0 ? 'hsl(25 18% 60%)' : 'hsl(25 30% 12%)',
+              border: '1px solid hsl(38 30% 80%)',
+              borderRadius: 6,
+              cursor: filtered.length === 0 ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            ⤓ Export timeline
+          </button>
         </div>
       </div>
 
