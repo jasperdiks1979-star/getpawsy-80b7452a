@@ -18,6 +18,7 @@ const CookieConsent = lazy(() => import('../marketing/CookieConsent').then(m => 
 const ChatWidgetWrapper = lazy(() => import('../chat/ChatWidgetWrapper').then(m => ({ default: m.ChatWidgetWrapper })).catch(() => ({ default: (() => null) as any })));
 // Dev-only: floating consent simulator (renders nothing on production hosts)
 const DevConsentToggle = lazy(() => import('../dev/DevConsentToggle').then(m => ({ default: m.DevConsentToggle })).catch(() => ({ default: () => null })));
+const ConsentLeakWarning = lazy(() => import('../dev/ConsentLeakWarning').then(m => ({ default: m.ConsentLeakWarning })).catch(() => ({ default: () => null })));
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -113,6 +114,7 @@ export const Layout = ({ children }: LayoutProps) => {
           <ScrollToTop />
           <CookieConsent />
           <DevConsentToggle />
+          <ConsentLeakWarning />
         </Suspense>
       </MarketingErrorBoundary>
       {/* Chat widget deferred until after grid paint / interaction / 5s */}
