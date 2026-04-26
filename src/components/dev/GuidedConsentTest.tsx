@@ -1,0 +1,343 @@
+/**
+ * GuidedConsentTest — step-by-step incognito CompletePayment verifier.
+ *
+ * Walks the operator through the exact sequence required to prove the
+ * TikTok pixel fires `CompletePayment` under granted consent in a clean
+ * (incognito) session. Each step auto-advances when its condition is met
+ * by polling the consent log + ttq state every 600ms.
+ *
+ * Pure dev tooling — only mounted via DevConsentToggle on dev hosts.
+ */
+import { useEffect, useMemo, useState } from 'react';
+import { getConsentLog, clearConsentLog } from '@/lib/consentLog';
+
+type StepStatus = 'pending' | 'active' | 'done' | 'fail';
+
+interface GuidedConsentTestProps {
+  onClose: () => void;
+}
+
+function readTtq(): 'granted' | 'held' | 'revoked' | 'unknown' {
+  if (typeof window === 'undefined') return 'unknown';
+  const v = (window as any).__ttqConsent;
+  return v === 'granted' || v === 'held' || v === 'revoked' ? v : 'unknown';
+}
+
+export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
+  const [startTs, setStartTs] = useState<number>(() => Date.now());
+  const [tick, setTick] = useState(0);
+
+  // Poll every 600ms while open
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 600);
+    return () => clearInterval(t);
+  }, []);
+
+  const state = useMemo(() => {
+    const log = getConsentLog().filter((e) => e.ts >= startTs);
+    const ttq = readTtq();
+    const consentChange = log.find((e) => e.kind === 'consent');
+    const completePayment = log.find(
+      (e) => e.kind === 'tiktok-event' && e.event === 'CompletePayment',
+    ) as Extract<ReturnType<typeof getConsentLog>[number], { kind: 'tiktok-event' }> | undefined;
+    return { log, ttq, consentChange, completePayment };
+  }, [tick, startTs]);
+
+  // Step status calculation
+  const step1: StepStatus = 'done'; // user opened the guide → step 1 implicitly done
+  const step2: StepStatus = state.consentChange ? 'done' : 'active';
+  const step3: StepStatus =
+    state.ttq === 'granted'
+      ? 'done'
+      : step2 === 'done'
+      ? 'active'
+      : 'pending';
+  const step4: StepStatus = state.completePayment
+    ? state.completePayment.consentState === 'granted'
+      ? 'done'
+      : 'fail'
+    : step3 === 'done'
+    ? 'active'
+    : 'pending';
+
+  const allDone = step4 === 'done';
+
+  const reset = () => {
+    clearConsentLog();
+    setStartTs(Date.now());
+    setTick((n) => n + 1);
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-label="Guided consent test"
+      style={{
+        position: 'fixed',
+        bottom: 12,
+        right: 12,
+        zIndex: 2147483647,
+        width: 280,
+        padding: 12,
+        background: '#fff',
+        color: 'hsl(25 30% 12%)',
+        border: '1px solid hsl(38 30% 88%)',
+        borderRadius: 10,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: 12,
+        maxHeight: '85vh',
+        overflowY: 'auto',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <strong style={{ fontSize: 12 }}>🧪 Guided CompletePayment Test</strong>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close guided test"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 14,
+            color: 'hsl(25 18% 42%)',
+            padding: 0,
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      <div style={{ marginTop: 6, fontSize: 11, color: 'hsl(25 18% 42%)' }}>
+        Verify the TikTok pixel fires <code>CompletePayment</code> under granted consent.
+        Steps auto-check every 600 ms.
+      </div>
+
+      <ol style={{ marginTop: 10, paddingLeft: 0, listStyle: 'none' }}>
+        <Step
+          n={1}
+          status={step1}
+          title="Open this URL in an incognito window"
+          body={
+            <>
+              Copy the current URL and open it in a fresh private window so no
+              prior consent state leaks in.
+              <CopyButton text={typeof window !== 'undefined' ? window.location.href : ''} />
+            </>
+          }
+        />
+        <Step
+          n={2}
+          status={step2}
+          title="Accept the cookie banner"
+          body={
+            <>
+              In the incognito tab, click <strong>Accept all</strong> on the
+              cookie banner. Auto-detected: {state.consentChange?.kind === 'consent' ? (
+                <code>{state.consentChange.value} ({state.consentChange.source})</code>
+              ) : (
+                <span style={{ color: 'hsl(25 18% 42%)' }}>waiting…</span>
+              )}
+            </>
+          }
+        />
+        <Step
+          n={3}
+          status={step3}
+          title="Confirm pixel state = granted"
+          body={
+            <>
+              ttq is currently:{' '}
+              <code
+                style={{
+                  color:
+                    state.ttq === 'granted'
+                      ? 'hsl(142 70% 32%)'
+                      : state.ttq === 'held' || state.ttq === 'revoked'
+                      ? 'hsl(0 70% 42%)'
+                      : 'hsl(25 18% 42%)',
+                }}
+              >
+                {state.ttq}
+              </code>
+            </>
+          }
+        />
+        <Step
+          n={4}
+          status={step4}
+          title="Complete a test purchase → /thank-you"
+          body={
+            <>
+              Add an item to cart, check out with a Stripe test card
+              (<code>4242 4242 4242 4242</code>), and land on{' '}
+              <code>/thank-you</code>.
+              {state.completePayment ? (
+                state.completePayment.consentState === 'granted' ? (
+                  <div style={{ color: 'hsl(142 70% 32%)', marginTop: 4 }}>
+                    ✅ CompletePayment fired with consentState = granted
+                  </div>
+                ) : (
+                  <div style={{ color: 'hsl(0 70% 42%)', marginTop: 4 }}>
+                    ⚠️ CompletePayment fired but consentState ={' '}
+                    <code>{state.completePayment.consentState}</code> — pixel
+                    will reject this event.
+                  </div>
+                )
+              ) : (
+                <div style={{ color: 'hsl(25 18% 42%)', marginTop: 4 }}>
+                  Waiting for purchase event…
+                </div>
+              )}
+            </>
+          }
+        />
+      </ol>
+
+      {allDone && (
+        <div
+          style={{
+            marginTop: 10,
+            padding: 8,
+            background: 'hsl(142 50% 94%)',
+            border: '1px solid hsl(142 50% 70%)',
+            borderRadius: 6,
+            fontSize: 11,
+            color: 'hsl(142 70% 22%)',
+          }}
+        >
+          🎉 All checks passed. The TikTok pixel is correctly tracking
+          purchases under granted consent. Safe to launch the US Spark Ad.
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+        <button
+          type="button"
+          onClick={reset}
+          style={{
+            flex: 1,
+            padding: '6px 8px',
+            fontSize: 11,
+            fontWeight: 600,
+            background: 'transparent',
+            color: 'hsl(25 30% 12%)',
+            border: '1px solid hsl(38 30% 88%)',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
+        >
+          ↻ Restart test
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            flex: 1,
+            padding: '6px 8px',
+            fontSize: 11,
+            fontWeight: 600,
+            background: 'hsl(22 70% 48%)',
+            color: '#fff',
+            border: '1px solid hsl(22 70% 48%)',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
+        >
+          Done
+        </button>
+      </div>
+
+      <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
+        Tip: events are detected from the in-page consent log, so the
+        purchase must happen in <em>this</em> browser tab/window.
+      </div>
+    </div>
+  );
+};
+
+const Step = ({
+  n,
+  status,
+  title,
+  body,
+}: {
+  n: number;
+  status: StepStatus;
+  title: string;
+  body: React.ReactNode;
+}) => {
+  const color =
+    status === 'done'
+      ? 'hsl(142 70% 32%)'
+      : status === 'fail'
+      ? 'hsl(0 70% 42%)'
+      : status === 'active'
+      ? 'hsl(22 70% 48%)'
+      : 'hsl(25 18% 60%)';
+  const icon = status === 'done' ? '✓' : status === 'fail' ? '✕' : status === 'active' ? '●' : '○';
+  return (
+    <li style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'flex-start' }}>
+      <div
+        aria-hidden="true"
+        style={{
+          flexShrink: 0,
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          background: status === 'done' ? color : 'transparent',
+          color: status === 'done' ? '#fff' : color,
+          border: `1.5px solid ${color}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 11,
+          fontWeight: 700,
+          lineHeight: 1,
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ flex: 1, fontSize: 11, lineHeight: 1.45 }}>
+        <div style={{ fontWeight: 600, color: 'hsl(25 30% 12%)' }}>
+          Step {n}: {title}
+        </div>
+        <div style={{ marginTop: 2, color: 'hsl(25 18% 30%)' }}>{body}</div>
+      </div>
+    </li>
+  );
+};
+
+const CopyButton = ({ text }: { text: string }) => {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        try {
+          navigator.clipboard.writeText(text);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          /* ignore */
+        }
+      }}
+      style={{
+        marginLeft: 6,
+        padding: '2px 6px',
+        fontSize: 10,
+        background: 'hsl(38 30% 96%)',
+        color: 'hsl(25 30% 12%)',
+        border: '1px solid hsl(38 30% 88%)',
+        borderRadius: 4,
+        cursor: 'pointer',
+      }}
+    >
+      {copied ? '✓ copied' : 'copy URL'}
+    </button>
+  );
+};
+
+export default GuidedConsentTest;
