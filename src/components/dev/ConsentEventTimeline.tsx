@@ -71,6 +71,7 @@ function explainConsent(entry: Extract<ConsentLogEntry, { kind: 'consent' }>): s
 export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => {
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState<'all' | 'leaks'>('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1500);
@@ -91,8 +92,9 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
   }, [entries]);
 
   const filtered = useMemo(() => {
+    let out = entries;
     if (filter === 'leaks') {
-      return entries.filter(
+      out = out.filter(
         (e) =>
           e.kind === 'tiktok-event' &&
           (e.consentState === 'held' ||
@@ -100,8 +102,22 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
             e.consentState === 'unknown'),
       );
     }
-    return entries;
-  }, [entries, filter]);
+    const q = search.trim().toLowerCase();
+    if (q) {
+      out = out.filter((e) => {
+        // Searchable surface: event name (tiktok-event), source (both kinds),
+        // consentState (tiktok-event), and consent value/source pair.
+        const haystack: string[] = [];
+        if (e.kind === 'tiktok-event') {
+          haystack.push(e.event, e.consentState, e.source);
+        } else {
+          haystack.push('consent', e.value, e.source);
+        }
+        return haystack.some((s) => s.toLowerCase().includes(q));
+      });
+    }
+    return out;
+  }, [entries, filter, search]);
 
   const leakCount = entries.filter(
     (e) =>
