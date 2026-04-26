@@ -16,6 +16,7 @@ import { ConsentReportExporter } from './ConsentReportExporter';
 import { USModeChecklist } from './USModeChecklist';
 import { TikTokEventMatrix } from './TikTokEventMatrix';
 import { TikTokEventTimeline } from './TikTokEventTimeline';
+import { USTargetingTest } from './USTargetingTest';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -66,6 +67,7 @@ export const DevConsentToggle = () => {
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [usTestOpen, setUsTestOpen] = useState(false);
 
   useEffect(() => {
     if (!isDevConsentToggleAvailable()) return;
@@ -437,6 +439,27 @@ export const DevConsentToggle = () => {
         </button>
       )}
 
+      <button
+        type="button"
+        onClick={() => setUsTestOpen(true)}
+        title="Loops through granted/held/revoked and verifies each canonical TikTok event"
+        style={{
+          marginTop: 6,
+          width: '100%',
+          padding: '6px 8px',
+          fontSize: 11,
+          fontWeight: 700,
+          fontFamily: 'system-ui, sans-serif',
+          background: 'hsl(142 70% 32%)',
+          color: '#fff',
+          border: '1px solid hsl(142 70% 32%)',
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        🧪 Run US targeting test
+      </button>
+
       <ConsentReportExporter />
 
       <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
@@ -447,6 +470,7 @@ export const DevConsentToggle = () => {
       {simulatorOpen && <ConsentRuleSimulator onClose={() => setSimulatorOpen(false)} />}
       {timelineOpen && <ConsentEventTimeline onClose={() => setTimelineOpen(false)} />}
       {checklistOpen && <USModeChecklist onClose={() => setChecklistOpen(false)} />}
+      {usTestOpen && <USTargetingTest onClose={() => setUsTestOpen(false)} />}
     </div>
   );
 };
