@@ -142,7 +142,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
       <ol style={{ marginTop: 10, paddingLeft: 0, listStyle: 'none' }}>
         <Step
           n={1}
-          status={step1}
+          meta={step1}
+          startTs={startTs}
           title="Open this URL in an incognito window"
           body={
             <>
@@ -154,7 +155,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
         <Step
           n={2}
-          status={step2}
+          meta={step2}
+          startTs={startTs}
           title="Accept the cookie banner"
           body={
             <>
@@ -169,7 +171,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
         <Step
           n={3}
-          status={step3}
+          meta={step3}
+          startTs={startTs}
           title="Confirm pixel state = granted"
           body={
             <>
@@ -191,7 +194,8 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
         <Step
           n={4}
-          status={step4}
+          meta={step4}
+          startTs={startTs}
           title="Complete a test purchase → /thank-you"
           body={
             <>
@@ -219,6 +223,66 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
           }
         />
       </ol>
+
+      {/* Live event inspector — appends every consent log entry as it happens */}
+      <div
+        style={{
+          marginTop: 10,
+          border: '1px solid hsl(38 30% 88%)',
+          borderRadius: 6,
+          background: 'hsl(38 30% 98%)',
+          fontSize: 10,
+          fontFamily: 'ui-monospace, monospace',
+        }}
+      >
+        <div
+          style={{
+            padding: '6px 8px',
+            borderBottom: '1px solid hsl(38 30% 92%)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <strong style={{ fontSize: 10, color: 'hsl(25 30% 12%)' }}>
+            Live event inspector
+          </strong>
+          <span style={{ fontSize: 9, color: 'hsl(25 18% 42%)' }}>
+            {state.log.length} entr{state.log.length === 1 ? 'y' : 'ies'} · polls every 600 ms
+          </span>
+        </div>
+        <div style={{ maxHeight: 140, overflowY: 'auto', padding: '4px 8px' }}>
+          {state.log.length === 0 ? (
+            <div style={{ color: 'hsl(25 18% 42%)', padding: '6px 0', fontStyle: 'italic' }}>
+              Waiting for the first event…
+            </div>
+          ) : (
+            state.log.map((e, i) => {
+              const f = fmtEntry(e);
+              return (
+                <div
+                  key={`${e.ts}-${i}`}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '64px 1fr auto',
+                    gap: 6,
+                    padding: '2px 0',
+                    borderBottom: i < state.log.length - 1 ? '1px dashed hsl(38 30% 92%)' : 'none',
+                  }}
+                >
+                  <span style={{ color: 'hsl(25 18% 42%)' }}>
+                    +{fmtDelta(e.ts - startTs)}
+                  </span>
+                  <span style={{ color: 'hsl(25 30% 12%)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.label}
+                  </span>
+                  <span style={{ color: f.color, fontWeight: 700 }}>{f.state}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
       {allDone && (
         <div
