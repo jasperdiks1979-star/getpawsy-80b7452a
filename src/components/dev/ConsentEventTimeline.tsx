@@ -111,6 +111,37 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
         e.consentState === 'unknown'),
   ).length;
 
+  /**
+   * Pre-grant summary — every TikTok event that fired BEFORE the first
+   * "Accept all". This is the most actionable signal for GDPR audits:
+   * if anything appears here, it means the pixel was tracking visitors
+   * who had not yet consented.
+   *
+   * - `firstGrantTs === null` → user never granted → all TikTok events qualify
+   * - otherwise → only events with ts < firstGrantTs
+   */
+  const preGrantSummary = useMemo(() => {
+    const tiktokEvents = entries.filter(
+      (e): e is Extract<typeof entries[number], { kind: 'tiktok-event' }> =>
+        e.kind === 'tiktok-event',
+    );
+    const preGrant =
+      firstGrantTs === null
+        ? tiktokEvents
+        : tiktokEvents.filter((e) => e.ts < firstGrantTs);
+    const byEvent = new Map<string, number>();
+    for (const e of preGrant) {
+      byEvent.set(e.event, (byEvent.get(e.event) || 0) + 1);
+    }
+    return {
+      total: preGrant.length,
+      neverGranted: firstGrantTs === null && tiktokEvents.length > 0,
+      events: Array.from(byEvent.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([event, count]) => ({ event, count })),
+    };
+  }, [entries, firstGrantTs]);
+
   return (
     <div
       role="dialog"
@@ -158,6 +189,69 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
           consent state at firing time. Events before the first grant are
           flagged as potential leaks.
         </p>
+
+        {/* Pre-grant summary banner */}
+        <div
+          style={{
+            marginTop: 10,
+            padding: '8px 10px',
+            borderRadius: 8,
+            background:
+              preGrantSummary.total === 0
+                ? 'hsl(142 50% 96%)'
+                : 'hsl(0 70% 96%)',
+            border:
+              preGrantSummary.total === 0
+                ? '1px solid hsl(142 50% 80%)'
+                : '1px solid hsl(0 70% 80%)',
+            color:
+              preGrantSummary.total === 0
+                ? 'hsl(142 70% 22%)'
+                : 'hsl(0 70% 30%)',
+            fontSize: 11,
+            lineHeight: 1.5,
+          }}
+        >
+          {preGrantSummary.total === 0 ? (
+            <>
+              ✅ <strong>0 TikTok events</strong> fired before the first{' '}
+              <code>Accept all</code>. Consent gating is working correctly.
+            </>
+          ) : (
+            <>
+              ⚠️{' '}
+              <strong>
+                {preGrantSummary.total} TikTok event
+                {preGrantSummary.total === 1 ? '' : 's'}
+              </strong>{' '}
+              fired{' '}
+              {preGrantSummary.neverGranted
+                ? 'in this session — no Accept all yet'
+                : 'before the first '}
+              {!preGrantSummary.neverGranted && <code>Accept all</code>}.{' '}
+              <span style={{ display: 'block', marginTop: 4 }}>
+                Which:&nbsp;
+                {preGrantSummary.events.map((e, i) => (
+                  <span key={e.event}>
+                    <code
+                      style={{
+                        padding: '1px 5px',
+                        background: '#fff',
+                        border: '1px solid hsl(0 50% 85%)',
+                        borderRadius: 4,
+                        marginRight: 4,
+                      }}
+                    >
+                      {e.event} × {e.count}
+                    </code>
+                    {i < preGrantSummary.events.length - 1 ? ' ' : ''}
+                  </span>
+                ))}
+              </span>
+            </>
+          )}
+        </div>
+
         <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center' }}>
           <button
             type="button"
