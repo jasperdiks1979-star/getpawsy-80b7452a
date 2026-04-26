@@ -8,10 +8,15 @@
  *
  * Pure dev tooling — only mounted via DevConsentToggle on dev hosts.
  */
-import { useEffect, useMemo, useState } from 'react';
-import { getConsentLog, clearConsentLog } from '@/lib/consentLog';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { getConsentLog, clearConsentLog, type ConsentLogEntry } from '@/lib/consentLog';
 
 type StepStatus = 'pending' | 'active' | 'done' | 'fail';
+
+interface StepMeta {
+  status: StepStatus;
+  doneAt: number | null;
+}
 
 interface GuidedConsentTestProps {
   onClose: () => void;
@@ -26,6 +31,8 @@ function readTtq(): 'granted' | 'held' | 'revoked' | 'unknown' {
 export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
   const [startTs, setStartTs] = useState<number>(() => Date.now());
   const [tick, setTick] = useState(0);
+  // Per-step completion timestamps — captured the first poll a step turns done/fail
+  const stepDoneAtRef = useRef<Record<number, number | null>>({ 1: null, 2: null, 3: null, 4: null });
 
   // Poll every 600ms while open
   useEffect(() => {
@@ -43,28 +50,45 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
     return { log, ttq, consentChange, completePayment };
   }, [tick, startTs]);
 
-  // Step status calculation
-  const step1: StepStatus = 'done'; // user opened the guide → step 1 implicitly done
-  const step2: StepStatus = state.consentChange ? 'done' : 'active';
-  const step3: StepStatus =
+  // Step status calculation (raw)
+  const step1Status: StepStatus = 'done';
+  const step2Status: StepStatus = state.consentChange ? 'done' : 'active';
+  const step3Status: StepStatus =
     state.ttq === 'granted'
       ? 'done'
-      : step2 === 'done'
+      : step2Status === 'done'
       ? 'active'
       : 'pending';
-  const step4: StepStatus = state.completePayment
+  const step4Status: StepStatus = state.completePayment
     ? state.completePayment.consentState === 'granted'
       ? 'done'
       : 'fail'
-    : step3 === 'done'
+    : step3Status === 'done'
     ? 'active'
     : 'pending';
 
-  const allDone = step4 === 'done';
+  // Capture completion timestamps the first time each step terminates
+  const captureDoneAt = (n: number, status: StepStatus, sourceTs?: number) => {
+    if ((status === 'done' || status === 'fail') && stepDoneAtRef.current[n] === null) {
+      stepDoneAtRef.current[n] = sourceTs ?? Date.now();
+    }
+  };
+  captureDoneAt(1, step1Status, startTs);
+  captureDoneAt(2, step2Status, state.consentChange?.ts);
+  captureDoneAt(3, step3Status);
+  captureDoneAt(4, step4Status, state.completePayment?.ts);
+
+  const step1: StepMeta = { status: step1Status, doneAt: stepDoneAtRef.current[1] };
+  const step2: StepMeta = { status: step2Status, doneAt: stepDoneAtRef.current[2] };
+  const step3: StepMeta = { status: step3Status, doneAt: stepDoneAtRef.current[3] };
+  const step4: StepMeta = { status: step4Status, doneAt: stepDoneAtRef.current[4] };
+
+  const allDone = step4.status === 'done';
 
   const reset = () => {
     clearConsentLog();
     setStartTs(Date.now());
+    stepDoneAtRef.current = { 1: null, 2: null, 3: null, 4: null };
     setTick((n) => n + 1);
   };
 
