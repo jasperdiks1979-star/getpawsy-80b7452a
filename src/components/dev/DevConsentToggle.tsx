@@ -11,6 +11,7 @@ import { setConsent } from '@/lib/cookieConsent';
 import { summarizeConsentLog, clearConsentLog } from '@/lib/consentLog';
 import { GuidedConsentTest } from './GuidedConsentTest';
 import { ConsentRuleSimulator } from './ConsentRuleSimulator';
+import { ConsentEventTimeline } from './ConsentEventTimeline';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -58,6 +59,7 @@ export const DevConsentToggle = () => {
   const [tick, setTick] = useState(0);
   const [guidedOpen, setGuidedOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
 
   useEffect(() => {
     if (!isDevConsentToggleAvailable()) return;
@@ -351,12 +353,33 @@ export const DevConsentToggle = () => {
         ⚖️ EU vs US simulator
       </button>
 
+      <button
+        type="button"
+        onClick={() => setTimelineOpen(true)}
+        style={{
+          marginTop: 6,
+          width: '100%',
+          padding: '6px 8px',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
+          background: 'transparent',
+          color: 'hsl(25 30% 12%)',
+          border: '1px solid hsl(22 70% 48%)',
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        📜 Event timeline
+      </button>
+
       <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
         Dev hosts only — never visible in production.
       </div>
 
       {guidedOpen && <GuidedConsentTest onClose={() => setGuidedOpen(false)} />}
       {simulatorOpen && <ConsentRuleSimulator onClose={() => setSimulatorOpen(false)} />}
+      {timelineOpen && <ConsentEventTimeline onClose={() => setTimelineOpen(false)} />}
     </div>
   );
 };
