@@ -617,6 +617,20 @@ function fmtClock(ts: number): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 }
 
+function overrideBtnStyle(color: string): React.CSSProperties {
+  return {
+    flex: 1,
+    padding: '4px 6px',
+    fontSize: 10,
+    fontWeight: 700,
+    background: '#fff',
+    color,
+    border: `1px solid ${color}`,
+    borderRadius: 4,
+    cursor: 'pointer',
+  };
+}
+
 function fmtDelta(ms: number): string {
   if (ms < 0) ms = 0;
   if (ms < 1000) return `${ms}ms`;
