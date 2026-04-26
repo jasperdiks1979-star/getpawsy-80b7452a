@@ -180,6 +180,31 @@ export const USTargetingTest = ({ onClose }: { onClose: () => void }) => {
   );
   const allGreen = done && passed === total;
 
+  // Per-state verdict — used for the conclusion banner
+  const stateVerdicts = STATES.map((s) => {
+    const cells = EVENTS.map((e) => matrix[s][e.internal]);
+    const passCount = cells.filter((c) => c.pass).length;
+    const failCount = cells.filter((c) => c.attempted && !c.pass).length;
+    const allPass = passCount === EVENTS.length;
+    let verdict: 'pass' | 'fail' | 'partial';
+    if (allPass) verdict = 'pass';
+    else if (failCount === EVENTS.length) verdict = 'fail';
+    else verdict = 'partial';
+    const expectation =
+      s === 'granted'
+        ? 'all 5 events should fire'
+        : 'all 5 events should be blocked';
+    const summary =
+      verdict === 'pass'
+        ? s === 'granted'
+          ? 'all events delivered to TikTok ✓'
+          : 'all events correctly blocked ✓'
+        : s === 'granted'
+        ? `${EVENTS.length - passCount} event(s) failed to fire`
+        : `${EVENTS.length - passCount} event(s) leaked through!`;
+    return { state: s, verdict, expectation, summary, passCount, failCount };
+  });
+
   return (
     <div
       role="dialog"
@@ -270,15 +295,53 @@ export const USTargetingTest = ({ onClose }: { onClose: () => void }) => {
         )}
 
         {done && (
-          <div style={{
-            padding: 8, borderRadius: 6, marginBottom: 10, fontSize: 12, fontWeight: 700,
-            background: allGreen ? 'hsl(142 50% 94%)' : 'hsl(0 60% 95%)',
-            color:      allGreen ? 'hsl(142 70% 28%)' : 'hsl(0 70% 38%)',
-            border: `1px solid ${allGreen ? 'hsl(142 50% 70%)' : 'hsl(0 60% 75%)'}`,
-          }}>
-            {allGreen
-              ? '✅ All checks passed — US targeting is wired up correctly.'
-              : `⚠ ${total - passed} check(s) failed — review the red cells below.`}
+          <div style={{ marginBottom: 10 }}>
+            {/* Overall verdict */}
+            <div style={{
+              padding: 10, borderRadius: 6, marginBottom: 8, fontSize: 12, fontWeight: 700,
+              background: allGreen ? 'hsl(142 50% 94%)' : 'hsl(0 60% 95%)',
+              color:      allGreen ? 'hsl(142 70% 28%)' : 'hsl(0 70% 38%)',
+              border: `1px solid ${allGreen ? 'hsl(142 50% 70%)' : 'hsl(0 60% 75%)'}`,
+            }}>
+              {allGreen
+                ? '✅ Conclusion: US targeting is wired up correctly across all consent states.'
+                : `⚠ Conclusion: ${total - passed} of ${total} checks failed — see per-state breakdown below.`}
+            </div>
+
+            {/* Per-state verdicts */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {stateVerdicts.map((v) => {
+                const colors =
+                  v.verdict === 'pass'
+                    ? { bg: 'hsl(142 50% 96%)', fg: 'hsl(142 70% 28%)', border: 'hsl(142 50% 75%)', icon: '✓' }
+                    : v.verdict === 'fail'
+                    ? { bg: 'hsl(0 60% 96%)',   fg: 'hsl(0 70% 38%)',   border: 'hsl(0 60% 78%)',   icon: '✗' }
+                    : { bg: 'hsl(38 70% 96%)',  fg: 'hsl(28 80% 35%)',  border: 'hsl(38 70% 78%)',  icon: '⚠' };
+                return (
+                  <div
+                    key={v.state}
+                    style={{
+                      background: colors.bg, color: colors.fg,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: 6, padding: '6px 8px',
+                      fontSize: 11, lineHeight: 1.4,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8,
+                    }}
+                    title={`Expected: ${v.expectation} · Result: ${v.passCount}/${EVENTS.length} pass`}
+                  >
+                    <span>
+                      <strong style={{ textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        {colors.icon} {v.state}
+                      </strong>
+                      <span style={{ opacity: 0.85 }}> — {v.summary}</span>
+                    </span>
+                    <span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      {v.passCount}/{EVENTS.length}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
