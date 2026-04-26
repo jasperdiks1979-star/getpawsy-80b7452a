@@ -9,6 +9,7 @@ import {
 } from '@/lib/geoConsent';
 import { setConsent } from '@/lib/cookieConsent';
 import { summarizeConsentLog, clearConsentLog } from '@/lib/consentLog';
+import { GuidedConsentTest } from './GuidedConsentTest';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -54,6 +55,7 @@ export const DevConsentToggle = () => {
   const [storedConsent, setStoredConsent] = useState<string>('none');
   const [logSummary, setLogSummary] = useState<ReturnType<typeof summarizeConsentLog> | null>(null);
   const [tick, setTick] = useState(0);
+  const [guidedOpen, setGuidedOpen] = useState(false);
 
   useEffect(() => {
     if (!isDevConsentToggleAvailable()) return;
@@ -307,9 +309,31 @@ export const DevConsentToggle = () => {
         ↻ Refresh state
       </button>
 
+      <button
+        type="button"
+        onClick={() => setGuidedOpen(true)}
+        style={{
+          marginTop: 6,
+          width: '100%',
+          padding: '6px 8px',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
+          background: 'hsl(22 70% 48%)',
+          color: '#fff',
+          border: '1px solid hsl(22 70% 48%)',
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        🧪 Run guided test
+      </button>
+
       <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
         Dev hosts only — never visible in production.
       </div>
+
+      {guidedOpen && <GuidedConsentTest onClose={() => setGuidedOpen(false)} />}
     </div>
   );
 };
