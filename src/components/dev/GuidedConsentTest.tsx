@@ -217,7 +217,9 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
             <>
               Copy the current URL and open it in a fresh private window so no
               prior consent state leaks in.
-              <CopyButton text={typeof window !== 'undefined' ? window.location.href : ''} />
+              <CopyAndIncognitoHelper
+                text={typeof window !== 'undefined' ? window.location.href : ''}
+              />
             </>
           }
         />
@@ -573,6 +575,244 @@ const CopyButton = ({ text }: { text: string }) => {
     >
       {copied ? '✓ copied' : 'copy URL'}
     </button>
+  );
+};
+
+/**
+ * Detects the current device + browser so we can show the exact incognito
+ * shortcut for THIS user. Falls back to a generic instruction list when the
+ * UA is ambiguous.
+ */
+function detectPlatform(): {
+  os: 'macos' | 'windows' | 'linux' | 'ios' | 'android' | 'unknown';
+  browser: 'chrome' | 'safari' | 'firefox' | 'edge' | 'other';
+} {
+  if (typeof navigator === 'undefined') return { os: 'unknown', browser: 'other' };
+  const ua = navigator.userAgent;
+  const platform = (navigator as any).platform || '';
+
+  let os: 'macos' | 'windows' | 'linux' | 'ios' | 'android' | 'unknown' = 'unknown';
+  if (/iPhone|iPad|iPod/i.test(ua)) os = 'ios';
+  else if (/Android/i.test(ua)) os = 'android';
+  else if (/Mac/i.test(platform) || /Mac OS X/i.test(ua)) os = 'macos';
+  else if (/Win/i.test(platform) || /Windows/i.test(ua)) os = 'windows';
+  else if (/Linux/i.test(platform) || /Linux/i.test(ua)) os = 'linux';
+
+  // Order matters: Edge contains "Chrome", Chrome contains "Safari".
+  let browser: 'chrome' | 'safari' | 'firefox' | 'edge' | 'other' = 'other';
+  if (/Edg\//i.test(ua)) browser = 'edge';
+  else if (/Firefox\//i.test(ua)) browser = 'firefox';
+  else if (/Chrome\//i.test(ua)) browser = 'chrome';
+  else if (/Safari\//i.test(ua)) browser = 'safari';
+
+  return { os, browser };
+}
+
+function getIncognitoSteps(p: ReturnType<typeof detectPlatform>): {
+  shortcut: string | null;
+  steps: string[];
+} {
+  const { os, browser } = p;
+
+  // Mobile — no keyboard shortcuts
+  if (os === 'ios') {
+    if (browser === 'safari') {
+      return {
+        shortcut: null,
+        steps: [
+          'Open Safari',
+          'Tap the Tabs icon (bottom-right)',
+          'Tap "[N] Tabs" at the bottom-center to open the tab group menu',
+          'Choose "Private" → tap "+" to open a new private tab',
+          'Paste the URL and go',
+        ],
+      };
+    }
+    if (browser === 'chrome') {
+      return {
+        shortcut: null,
+        steps: [
+          'Open Chrome',
+          'Tap ⋯ (bottom-right)',
+          'Choose "New Incognito Tab"',
+          'Paste the URL and go',
+        ],
+      };
+    }
+  }
+  if (os === 'android') {
+    if (browser === 'chrome') {
+      return {
+        shortcut: null,
+        steps: [
+          'Open Chrome',
+          'Tap ⋮ (top-right)',
+          'Choose "New Incognito tab"',
+          'Paste the URL and go',
+        ],
+      };
+    }
+  }
+
+  // Desktop
+  if (browser === 'chrome' || browser === 'edge') {
+    const isMac = os === 'macos';
+    const label = browser === 'edge' ? 'InPrivate window' : 'Incognito window';
+    return {
+      shortcut: isMac ? '⌘ + Shift + N' : 'Ctrl + Shift + N',
+      steps: [
+        `Press ${isMac ? '⌘ + Shift + N' : 'Ctrl + Shift + N'} to open a new ${label}`,
+        'Paste the URL into the address bar and press Enter',
+      ],
+    };
+  }
+  if (browser === 'safari') {
+    return {
+      shortcut: '⌘ + Shift + N',
+      steps: [
+        'Press ⌘ + Shift + N to open a new Private window',
+        'Paste the URL into the address bar and press Enter',
+      ],
+    };
+  }
+  if (browser === 'firefox') {
+    const isMac = os === 'macos';
+    return {
+      shortcut: isMac ? '⌘ + Shift + P' : 'Ctrl + Shift + P',
+      steps: [
+        `Press ${isMac ? '⌘ + Shift + P' : 'Ctrl + Shift + P'} to open a new Private window`,
+        'Paste the URL into the address bar and press Enter',
+      ],
+    };
+  }
+
+  return {
+    shortcut: null,
+    steps: [
+      'Open your browser menu and choose "New Private/Incognito Window"',
+      'Paste the URL into the address bar and press Enter',
+    ],
+  };
+}
+
+const CopyAndIncognitoHelper = ({ text }: { text: string }) => {
+  const [copied, setCopied] = useState(false);
+  const [show, setShow] = useState(false);
+  const platform = useMemo(() => detectPlatform(), []);
+  const { shortcut, steps } = useMemo(() => getIncognitoSteps(platform), [platform]);
+
+  const browserLabel =
+    platform.browser === 'chrome'
+      ? 'Chrome'
+      : platform.browser === 'safari'
+      ? 'Safari'
+      : platform.browser === 'edge'
+      ? 'Edge'
+      : platform.browser === 'firefox'
+      ? 'Firefox'
+      : 'your browser';
+  const osLabel =
+    platform.os === 'macos'
+      ? 'macOS'
+      : platform.os === 'windows'
+      ? 'Windows'
+      : platform.os === 'linux'
+      ? 'Linux'
+      : platform.os === 'ios'
+      ? 'iOS'
+      : platform.os === 'android'
+      ? 'Android'
+      : 'this device';
+
+  const handleCopy = () => {
+    try {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setShow(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setShow(true);
+    }
+  };
+
+  return (
+    <span style={{ display: 'inline-block', marginLeft: 6 }}>
+      <button
+        type="button"
+        onClick={handleCopy}
+        style={{
+          padding: '2px 6px',
+          fontSize: 10,
+          background: 'hsl(38 30% 96%)',
+          color: 'hsl(25 30% 12%)',
+          border: '1px solid hsl(38 30% 88%)',
+          borderRadius: 4,
+          cursor: 'pointer',
+        }}
+      >
+        {copied ? '✓ copied — see steps below' : 'copy URL + show incognito steps'}
+      </button>
+      {show && (
+        <div
+          style={{
+            marginTop: 6,
+            padding: 8,
+            background: 'hsl(38 30% 98%)',
+            border: '1px solid hsl(38 30% 88%)',
+            borderRadius: 6,
+            fontSize: 10,
+            lineHeight: 1.5,
+            color: 'hsl(25 30% 12%)',
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            Open in incognito — {browserLabel} on {osLabel}
+          </div>
+          {shortcut && (
+            <div style={{ marginBottom: 4 }}>
+              Shortcut:{' '}
+              <code
+                style={{
+                  padding: '1px 4px',
+                  background: 'hsl(38 30% 92%)',
+                  borderRadius: 3,
+                  fontWeight: 700,
+                }}
+              >
+                {shortcut}
+              </code>
+            </div>
+          )}
+          <ol style={{ margin: 0, paddingLeft: 16 }}>
+            {steps.map((s, i) => (
+              <li key={i} style={{ marginBottom: 2 }}>
+                {s}
+              </li>
+            ))}
+          </ol>
+          <div style={{ marginTop: 6, color: 'hsl(25 18% 42%)', fontSize: 9 }}>
+            URL is already on your clipboard — just paste with{' '}
+            <code>{platform.os === 'macos' || platform.os === 'ios' ? '⌘ + V' : 'Ctrl + V'}</code>.
+          </div>
+          <button
+            type="button"
+            onClick={() => setShow(false)}
+            style={{
+              marginTop: 6,
+              padding: '2px 6px',
+              fontSize: 9,
+              background: 'transparent',
+              color: 'hsl(25 18% 42%)',
+              border: '1px solid hsl(38 30% 88%)',
+              borderRadius: 4,
+              cursor: 'pointer',
+            }}
+          >
+            hide
+          </button>
+        </div>
+      )}
+    </span>
   );
 };
 
