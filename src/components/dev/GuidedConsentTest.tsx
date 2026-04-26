@@ -24,6 +24,67 @@ interface GuidedConsentTestProps {
   onClose: () => void;
 }
 
+/**
+ * sessionStorage keys — the consent log itself is already persisted in
+ * localStorage by `consentLog.ts`, but the *guided test session metadata*
+ * (when the run started + which steps already completed) lives only in
+ * component state. Persisting it to sessionStorage means a refresh during
+ * an incognito test (e.g. after returning from Stripe checkout) keeps the
+ * timeline intact instead of resetting the start clock.
+ *
+ * sessionStorage scope = same tab/window only, which matches our intent:
+ * each guided run lives inside one incognito tab.
+ */
+const SESSION_START_KEY = 'gp_guided_test_start_ts';
+const SESSION_STEPS_KEY = 'gp_guided_test_step_done_at';
+
+function readPersistedStart(): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_START_KEY);
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePersistedStart(ts: number): void {
+  if (typeof window === 'undefined') return;
+  try { sessionStorage.setItem(SESSION_START_KEY, String(ts)); } catch { /* ignore */ }
+}
+
+function readPersistedSteps(): Record<number, number | null> {
+  const empty = { 1: null, 2: null, 3: null, 4: null } as Record<number, number | null>;
+  if (typeof window === 'undefined') return empty;
+  try {
+    const raw = sessionStorage.getItem(SESSION_STEPS_KEY);
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw);
+    return {
+      1: typeof parsed?.['1'] === 'number' ? parsed['1'] : null,
+      2: typeof parsed?.['2'] === 'number' ? parsed['2'] : null,
+      3: typeof parsed?.['3'] === 'number' ? parsed['3'] : null,
+      4: typeof parsed?.['4'] === 'number' ? parsed['4'] : null,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+function writePersistedSteps(steps: Record<number, number | null>): void {
+  if (typeof window === 'undefined') return;
+  try { sessionStorage.setItem(SESSION_STEPS_KEY, JSON.stringify(steps)); } catch { /* ignore */ }
+}
+
+function clearPersistedSession(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(SESSION_START_KEY);
+    sessionStorage.removeItem(SESSION_STEPS_KEY);
+  } catch { /* ignore */ }
+}
+
 function readTtq(): 'granted' | 'held' | 'revoked' | 'unknown' {
   if (typeof window === 'undefined') return 'unknown';
   const v = (window as any).__ttqConsent;
@@ -31,10 +92,19 @@ function readTtq(): 'granted' | 'held' | 'revoked' | 'unknown' {
 }
 
 export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
-  const [startTs, setStartTs] = useState<number>(() => Date.now());
+  // Restore the guided session across refreshes so the timeline survives
+  // the round-trip through Stripe checkout / OAuth / etc. First-mount only:
+  // either rehydrate the previous start timestamp, or write a fresh one.
+  const [startTs, setStartTs] = useState<number>(() => {
+    const existing = readPersistedStart();
+    if (existing !== null) return existing;
+    const fresh = Date.now();
+    writePersistedStart(fresh);
+    return fresh;
+  });
   const [tick, setTick] = useState(0);
   // Per-step completion timestamps — captured the first poll a step turns done/fail
-  const stepDoneAtRef = useRef<Record<number, number | null>>({ 1: null, 2: null, 3: null, 4: null });
+  const stepDoneAtRef = useRef<Record<number, number | null>>(readPersistedSteps());
 
   // Poll every 600ms while open
   useEffect(() => {
@@ -88,6 +158,11 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
   captureDoneAt(3, step3Status);
   captureDoneAt(4, step4Status, state.completePayment?.ts);
 
+  // Persist the latest step completion map so a refresh keeps the timeline.
+  useEffect(() => {
+    writePersistedSteps(stepDoneAtRef.current);
+  }, [step1Status, step2Status, step3Status, step4Status]);
+
   const step1: StepMeta = { status: step1Status, doneAt: stepDoneAtRef.current[1] };
   const step2: StepMeta = { status: step2Status, doneAt: stepDoneAtRef.current[2] };
   const step3: StepMeta = { status: step3Status, doneAt: stepDoneAtRef.current[3] };
@@ -97,8 +172,12 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
 
   const reset = () => {
     clearConsentLog();
-    setStartTs(Date.now());
+    clearPersistedSession();
+    const fresh = Date.now();
+    writePersistedStart(fresh);
+    setStartTs(fresh);
     stepDoneAtRef.current = { 1: null, 2: null, 3: null, 4: null };
+    writePersistedSteps(stepDoneAtRef.current);
     setTick((n) => n + 1);
   };
 
@@ -120,8 +199,11 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
     const w = window as any;
     // 1. Reset the test clock so Step 4 only inspects the fresh fire.
     clearConsentLog();
+    clearPersistedSession();
     stepDoneAtRef.current = { 1: null, 2: null, 3: null, 4: null };
+    writePersistedSteps(stepDoneAtRef.current);
     const fresh = Date.now();
+    writePersistedStart(fresh);
     setStartTs(fresh);
 
     // 2. Force the consent state.
