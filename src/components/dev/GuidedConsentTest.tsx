@@ -364,6 +364,49 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
         />
       </ol>
 
+      {/* Manual override — force a consent state and instantly re-fire CompletePayment */}
+      <div
+        style={{
+          marginTop: 4,
+          marginBottom: 6,
+          padding: 8,
+          border: '1px dashed hsl(38 30% 80%)',
+          borderRadius: 6,
+          background: 'hsl(38 30% 98%)',
+        }}
+      >
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'hsl(25 30% 12%)' }}>
+          Manual override — instant CompletePayment re-test
+        </div>
+        <div style={{ fontSize: 9, color: 'hsl(25 18% 42%)', marginTop: 2, marginBottom: 6 }}>
+          Forces consentState, fires a synthetic <code>CompletePayment</code>,
+          and resets the timer so Step 4 re-evaluates immediately.
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            type="button"
+            onClick={() => runOverride('granted')}
+            style={overrideBtnStyle('hsl(142 70% 32%)')}
+          >
+            ✓ granted
+          </button>
+          <button
+            type="button"
+            onClick={() => runOverride('held')}
+            style={overrideBtnStyle('hsl(22 70% 48%)')}
+          >
+            ⏸ held
+          </button>
+          <button
+            type="button"
+            onClick={() => runOverride('revoked')}
+            style={overrideBtnStyle('hsl(0 70% 42%)')}
+          >
+            ✕ revoked
+          </button>
+        </div>
+      </div>
+
       {/* Live event inspector — appends every consent log entry as it happens */}
       <div
         style={{
