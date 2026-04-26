@@ -13,6 +13,7 @@ import { GuidedConsentTest } from './GuidedConsentTest';
 import { ConsentRuleSimulator } from './ConsentRuleSimulator';
 import { ConsentEventTimeline } from './ConsentEventTimeline';
 import { ConsentReportExporter } from './ConsentReportExporter';
+import { USModeChecklist } from './USModeChecklist';
 
 /**
  * DevConsentToggle — floating control to simulate EU vs non-EU consent.
@@ -26,6 +27,7 @@ import { ConsentReportExporter } from './ConsentReportExporter';
  */
 const STORAGE_OPEN_KEY = 'gp_dev_geo_panel_open';
 const CONSENT_KEY = 'gp_cookie_consent';
+const US_CHECKLIST_AUTOOPEN_KEY = 'gp_dev_us_checklist_autoopen';
 
 type TtqState = 'granted' | 'held' | 'revoked' | 'unknown';
 
@@ -61,6 +63,7 @@ export const DevConsentToggle = () => {
   const [guidedOpen, setGuidedOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   useEffect(() => {
     if (!isDevConsentToggleAvailable()) return;
@@ -74,6 +77,13 @@ export const DevConsentToggle = () => {
       // Default: open so the debug panel is visible without extra clicks
       const v = localStorage.getItem(STORAGE_OPEN_KEY);
       setOpen(v === null ? true : v === '1');
+    } catch { /* ignore */ }
+    // Auto-open the US checklist if we just reloaded after switching to US
+    try {
+      if (localStorage.getItem(US_CHECKLIST_AUTOOPEN_KEY) === '1') {
+        localStorage.removeItem(US_CHECKLIST_AUTOOPEN_KEY);
+        setChecklistOpen(true);
+      }
     } catch { /* ignore */ }
   }, [tick]);
 
@@ -106,6 +116,11 @@ export const DevConsentToggle = () => {
     // Reload so deferred-analytics re-runs the grant/hold decision
     window.location.reload();
   }, []);
+
+  const switchToUSAndVerify = useCallback(() => {
+    try { localStorage.setItem(US_CHECKLIST_AUTOOPEN_KEY, '1'); } catch { /* ignore */ }
+    apply('us');
+  }, [apply]);
 
   if (!available) return null;
 
@@ -374,6 +389,49 @@ export const DevConsentToggle = () => {
         📜 Event timeline
       </button>
 
+      <button
+        type="button"
+        onClick={switchToUSAndVerify}
+        title="Sets dev override to US, reloads, then opens the expected-state checklist"
+        style={{
+          marginTop: 6,
+          width: '100%',
+          padding: '6px 8px',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
+          background: 'hsl(210 80% 45%)',
+          color: '#fff',
+          border: '1px solid hsl(210 80% 45%)',
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        🇺🇸 Switch to US + verify
+      </button>
+
+      {override === 'us' && (
+        <button
+          type="button"
+          onClick={() => setChecklistOpen(true)}
+          style={{
+            marginTop: 6,
+            width: '100%',
+            padding: '6px 8px',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'system-ui, sans-serif',
+            background: 'transparent',
+            color: 'hsl(25 30% 12%)',
+            border: '1px solid hsl(210 80% 45%)',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
+        >
+          ✅ Show expected US states
+        </button>
+      )}
+
       <ConsentReportExporter />
 
       <div style={{ marginTop: 8, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
@@ -383,6 +441,7 @@ export const DevConsentToggle = () => {
       {guidedOpen && <GuidedConsentTest onClose={() => setGuidedOpen(false)} />}
       {simulatorOpen && <ConsentRuleSimulator onClose={() => setSimulatorOpen(false)} />}
       {timelineOpen && <ConsentEventTimeline onClose={() => setTimelineOpen(false)} />}
+      {checklistOpen && <USModeChecklist onClose={() => setChecklistOpen(false)} />}
     </div>
   );
 };
