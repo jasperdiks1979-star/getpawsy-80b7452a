@@ -217,7 +217,9 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
             <>
               Copy the current URL and open it in a fresh private window so no
               prior consent state leaks in.
-              <CopyButton text={typeof window !== 'undefined' ? window.location.href : ''} />
+              <CopyAndIncognitoHelper
+                text={typeof window !== 'undefined' ? window.location.href : ''}
+              />
             </>
           }
         />
