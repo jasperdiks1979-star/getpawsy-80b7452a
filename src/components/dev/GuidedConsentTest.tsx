@@ -284,15 +284,18 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
 
 const Step = ({
   n,
-  status,
+  meta,
+  startTs,
   title,
   body,
 }: {
   n: number;
-  status: StepStatus;
+  meta: StepMeta;
+  startTs: number;
   title: string;
   body: React.ReactNode;
 }) => {
+  const status = meta.status;
   const color =
     status === 'done'
       ? 'hsl(142 70% 32%)'
@@ -302,6 +305,11 @@ const Step = ({
       ? 'hsl(22 70% 48%)'
       : 'hsl(25 18% 60%)';
   const icon = status === 'done' ? '✓' : status === 'fail' ? '✕' : status === 'active' ? '●' : '○';
+  const ts = meta.doneAt;
+  const stamp =
+    ts !== null
+      ? `${fmtClock(ts)} (+${fmtDelta(ts - startTs)})`
+      : null;
   return (
     <li style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'flex-start' }}>
       <div
@@ -325,14 +333,51 @@ const Step = ({
         {icon}
       </div>
       <div style={{ flex: 1, fontSize: 11, lineHeight: 1.45 }}>
-        <div style={{ fontWeight: 600, color: 'hsl(25 30% 12%)' }}>
-          Step {n}: {title}
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'baseline' }}>
+          <div style={{ fontWeight: 600, color: 'hsl(25 30% 12%)' }}>
+            Step {n}: {title}
+          </div>
+          {stamp && (
+            <code style={{ fontSize: 9, color: color, whiteSpace: 'nowrap' }}>{stamp}</code>
+          )}
         </div>
         <div style={{ marginTop: 2, color: 'hsl(25 18% 30%)' }}>{body}</div>
       </div>
     </li>
   );
 };
+
+function fmtClock(ts: number): string {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+}
+
+function fmtDelta(ms: number): string {
+  if (ms < 0) ms = 0;
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.round(ms / 60_000)}m`;
+}
+
+function fmtEntry(e: ConsentLogEntry): { label: string; state: string; color: string } {
+  if (e.kind === 'consent') {
+    return {
+      label: `consent → ${e.value}`,
+      state: e.source,
+      color: e.value === 'all' ? 'hsl(142 70% 32%)' : 'hsl(0 70% 42%)',
+    };
+  }
+  return {
+    label: e.event,
+    state: e.consentState,
+    color:
+      e.consentState === 'granted'
+        ? 'hsl(142 70% 32%)'
+        : e.consentState === 'held' || e.consentState === 'revoked'
+        ? 'hsl(0 70% 42%)'
+        : 'hsl(25 18% 42%)',
+  };
+}
 
 const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
