@@ -283,7 +283,48 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
           >
             ⚠ Leaks ({leakCount})
           </button>
-          <div style={{ flex: 1 }} />
+          <div style={{ flex: 1, position: 'relative', minWidth: 140 }}>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search event or source… (e.g. CompletePayment, banner-accept)"
+              aria-label="Search timeline events"
+              style={{
+                width: '100%',
+                padding: '4px 24px 4px 8px',
+                fontSize: 11,
+                background: '#fff',
+                color: 'hsl(25 30% 12%)',
+                border: '1px solid hsl(38 30% 80%)',
+                borderRadius: 6,
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+                style={{
+                  position: 'absolute',
+                  right: 4,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'hsl(25 18% 42%)',
+                  fontSize: 12,
+                  padding: '0 4px',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => { clearConsentLog(); setTick((n) => n + 1); }}
