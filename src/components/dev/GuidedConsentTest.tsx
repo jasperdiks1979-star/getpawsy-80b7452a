@@ -47,7 +47,9 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
     const completePayment = log.find(
       (e) => e.kind === 'tiktok-event' && e.event === 'CompletePayment',
     ) as Extract<ReturnType<typeof getConsentLog>[number], { kind: 'tiktok-event' }> | undefined;
-    return { log, ttq, consentChange, completePayment };
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const onThankYou = /^\/thank-you(\/|$)/i.test(path) || /^\/payment-success(\/|$)/i.test(path);
+    return { log, ttq, consentChange, completePayment, path, onThankYou };
   }, [tick, startTs]);
 
   // Step status calculation (raw)
@@ -59,10 +61,16 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
       : step2Status === 'done'
       ? 'active'
       : 'pending';
+  // Step 4 only resolves to done/fail when the operator is on the /thank-you page.
+  // This prevents false positives from CompletePayment events fired elsewhere
+  // (e.g. accidental re-fire on a stale tab) and forces verification of the
+  // real post-purchase landing surface.
   const step4Status: StepStatus = state.completePayment
-    ? state.completePayment.consentState === 'granted'
-      ? 'done'
-      : 'fail'
+    ? state.onThankYou
+      ? state.completePayment.consentState === 'granted'
+        ? 'done'
+        : 'fail'
+      : 'active'
     : step3Status === 'done'
     ? 'active'
     : 'pending';
@@ -202,14 +210,31 @@ export const GuidedConsentTest = ({ onClose }: GuidedConsentTestProps) => {
               Add an item to cart, check out with a Stripe test card
               (<code>4242 4242 4242 4242</code>), and land on{' '}
               <code>/thank-you</code>.
+              <div style={{ marginTop: 4, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
+                Current path: <code>{state.path || '—'}</code>{' '}
+                {state.onThankYou ? (
+                  <span style={{ color: 'hsl(142 70% 32%)', fontWeight: 600 }}>
+                    ✓ on /thank-you
+                  </span>
+                ) : (
+                  <span style={{ color: 'hsl(22 70% 48%)', fontWeight: 600 }}>
+                    (not on /thank-you yet)
+                  </span>
+                )}
+              </div>
               {state.completePayment ? (
-                state.completePayment.consentState === 'granted' ? (
+                !state.onThankYou ? (
+                  <div style={{ color: 'hsl(22 70% 48%)', marginTop: 4 }}>
+                    ⏳ CompletePayment detected, but waiting for the browser to
+                    reach <code>/thank-you</code> before marking this step.
+                  </div>
+                ) : state.completePayment.consentState === 'granted' ? (
                   <div style={{ color: 'hsl(142 70% 32%)', marginTop: 4 }}>
-                    ✅ CompletePayment fired with consentState = granted
+                    ✅ CompletePayment fired on /thank-you with consentState = granted
                   </div>
                 ) : (
                   <div style={{ color: 'hsl(0 70% 42%)', marginTop: 4 }}>
-                    ⚠️ CompletePayment fired but consentState ={' '}
+                    ⚠️ CompletePayment fired on /thank-you but consentState ={' '}
                     <code>{state.completePayment.consentState}</code> — pixel
                     will reject this event.
                   </div>
