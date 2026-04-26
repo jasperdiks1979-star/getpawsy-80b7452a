@@ -355,6 +355,8 @@ export const ConsentEventTimeline = ({ onClose }: ConsentEventTimelineProps) => 
           >
             {filter === 'leaks'
               ? '✅ No events fired under non-granted consent — consent flow is clean.'
+              : search
+              ? `No events match “${search}”. Try a different keyword or clear the search.`
               : 'No events recorded yet. Browse the site to populate the timeline.'}
           </div>
         )}
