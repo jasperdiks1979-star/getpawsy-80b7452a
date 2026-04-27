@@ -889,6 +889,49 @@ function buildStaticCatalogFallbackFeed(): string {
   );
 }
 
+function renderSitemapUrlset(paths: string[], lastmod: string): string {
+  const urls = paths.map(path => `  <url>
+    <loc>${esc(`${BASE_URL}${path}`)}</loc>
+    <lastmod>${lastmod}</lastmod>
+  </url>`).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>
+`;
+}
+
+function renderSitemapIndex(files: string[], lastmod: string): string {
+  const entries = files.map(file => `  <sitemap>
+    <loc>${esc(`${BASE_URL}/${file}`)}</loc>
+    <lastmod>${lastmod}</lastmod>
+  </sitemap>`).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries}
+</sitemapindex>
+`;
+}
+
+function writeStaticCatalogFallbackSitemaps(baseDir: string): void {
+  mkdirSync(baseDir, { recursive: true });
+  const today = new Date().toISOString().slice(0, 10);
+  const productPaths = staticProducts
+    .filter(p => p.inStock && p.slug)
+    .map(p => `/products/${p.slug}`);
+  const pagePaths = ['/', '/products', '/bestsellers', '/guides', '/about', '/contact', '/shipping', '/returns', '/faq'];
+  const collectionPaths = ['/collections/cat-trees-and-condos', '/collections/cat-litter-boxes', '/collections/dog-beds'];
+  const files = ['sitemap-pages.xml', 'sitemap-products-1.xml', 'sitemap-collections.xml'];
+
+  overwriteFile(join(baseDir, 'sitemap-pages.xml'), renderSitemapUrlset(pagePaths, today));
+  overwriteFile(join(baseDir, 'sitemap-products-1.xml'), renderSitemapUrlset(productPaths, today));
+  overwriteFile(join(baseDir, 'sitemap-collections.xml'), renderSitemapUrlset(collectionPaths, today));
+  overwriteFile(join(baseDir, 'sitemap.xml'), renderSitemapIndex(files, today));
+  console.warn(
+    `[sitemaps] ⚠ Static catalog fallback sitemaps written to ${baseDir} (${productPaths.length} product URLs).`
+  );
+}
+
 export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
   const publicDir = join(process.cwd(), 'public');
