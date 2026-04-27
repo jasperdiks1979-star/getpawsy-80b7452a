@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { Plugin } from 'vite';
+import { products as staticProducts } from './src/data/products';
 
 const SITE = 'https://getpawsy.pet';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
@@ -228,6 +229,28 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
 
   if (!all.length) {
     await fetchPaged('products');
+  }
+
+  if (!all.length) {
+    const fallbackProducts: ProductRecord[] = staticProducts
+      .filter((product) => product.inStock && product.slug && product.price > 0 && product.image)
+      .map((product) => ({
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        image_url: product.image,
+        images: product.images,
+        category: product.category,
+        stock: product.inStock ? 25 : 0,
+        is_active: product.inStock,
+        updated_at: new Date().toISOString(),
+      }));
+    console.warn(
+      `[prerender-products] ⚠ No DB products fetched — using static catalog fallback (${fallbackProducts.length} real products).`
+    );
+    all.push(...fallbackProducts);
   }
 
   const seen = new Set<string>();
