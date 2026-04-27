@@ -938,13 +938,43 @@ export default function merchantFeedPlugin(): Plugin {
       mkdirSync(outDir, { recursive: true });
       clearFeedArtifacts(outDir);
 
-      const merchantFeed = await Promise.race([
-        buildMerchantFeed(),
-        new Promise<string>((_, reject) =>
-          setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
-        ),
-      ]);
-      assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml');
+      // Try to regenerate the feed for /dist. If that fails OR produces an
+      // invalid (item-less) feed — typically because the DB is briefly
+      // unreachable during the build — fall back to the already-validated
+      // feed that PHASE 1 wrote into /public. This prevents a transient DB
+      // hiccup from killing the entire production build.
+      const publicFeedPath = join(publicDir, 'google-feed.xml');
+      let merchantFeed: string | null = null;
+      try {
+        const generated = await Promise.race([
+          buildMerchantFeed(),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+          ),
+        ]);
+        // Validate; if it throws we'll fall through to the fallback below.
+        assertGoogleFeedValid(generated, 'dist/google-feed.xml (regen)');
+        merchantFeed = generated;
+      } catch (err) {
+        console.warn(
+          '[xml-plugin] ⚠️ closeBundle feed regen failed — falling back to public/google-feed.xml:',
+          (err as Error)?.message ?? err
+        );
+      }
+
+      if (!merchantFeed) {
+        if (!existsSync(publicFeedPath)) {
+          throw new Error(
+            '[xml-plugin] dist feed regen failed AND public/google-feed.xml is missing — cannot recover.'
+          );
+        }
+        merchantFeed = readFileSync(publicFeedPath, 'utf8');
+        // The public feed was already validated in PHASE 1, but re-check
+        // defensively so we never ship a broken feed to /dist.
+        assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml (fallback from public)');
+        console.log('[xml-plugin] ✓ Reused public/google-feed.xml as dist feed source.');
+      }
+
       writeFeedArtifacts(outDir, merchantFeed, 'dist/google-feed.xml');
       console.log(`[xml-plugin] ✓ /dist/merchant-feed.xml (${merchantFeed.length} bytes)`);
       console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
