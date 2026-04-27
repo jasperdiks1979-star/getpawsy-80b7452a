@@ -10,6 +10,7 @@ import type { Plugin } from 'vite';
 import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync } from 'child_process';
+import { products as staticProducts } from './src/data/products';
 
 const BASE_URL = 'https://getpawsy.pet';
 const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
@@ -859,26 +860,34 @@ function assertSitemapFileValid(filePath: string, requiredToken: string, label: 
 
 // ── Vite Plugin ───────────────────────────────────────────────────────
 
-const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>GetPawsy Product Feed</title>
-    <link>https://getpawsy.pet</link>
-    <description>Google Merchant product feed</description>
-    <item>
-      <g:id>fallback-feed-item</g:id>
-      <g:title><![CDATA[GetPawsy Feed Placeholder Product]]></g:title>
-      <g:description><![CDATA[Temporary fallback product feed item.]]></g:description>
-      <g:link>https://getpawsy.pet/products</g:link>
-      <g:price>1.00 USD</g:price>
-      <g:availability>in stock</g:availability>
-      <g:image_link>https://getpawsy.pet/images/merchant-placeholder.jpg</g:image_link>
-      <g:brand>GetPawsy</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies</g:google_product_category>
-    </item>
-  </channel>
-</rss>`;
+function buildStaticCatalogFallbackFeed(): string {
+  const fallbackProducts: MerchantProduct[] = staticProducts
+    .filter(p => p.inStock && p.price > 0 && p.image && p.slug && p.description)
+    .slice(0, 12)
+    .map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      compare_at_price: p.comparePrice ?? null,
+      image_url: p.image,
+      images: p.images,
+      stock: p.inStock ? 25 : 0,
+      category: p.category,
+      sku: p.id,
+      slug: p.slug,
+      weight: null,
+      is_active: p.inStock,
+    }));
+
+  console.warn(
+    `[xml-plugin][feed] ⚠ Using static catalog emergency feed: ${fallbackProducts.length} real products from src/data/products.ts`
+  );
+  return renderGoogleFeedXml(
+    fallbackProducts.map(p => productItemXml(p, new Set<string>())),
+    new Date().toISOString()
+  );
+}
 
 export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
