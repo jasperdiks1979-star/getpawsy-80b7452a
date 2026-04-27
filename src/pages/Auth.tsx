@@ -99,19 +99,24 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
-    setIsLoading(false);
-
-    if (error) {
-      if (error.message.includes('User already registered')) {
-        toast.error('An account with this email already exists');
-      } else {
-        toast.error(error.message);
+    try {
+      const { error } = await signUp(signupEmail, signupPassword, signupName);
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          toast.error('An account with this email already exists');
+        } else {
+          toast.error(error.message);
+        }
+        return;
       }
-    } else {
       trackSignUp('email');
       toast.success('Account created successfully!');
-      navigate(nextPath);
+      navigate(nextPath, { replace: true });
+    } catch (err) {
+      console.error('[Auth] signUp threw:', err);
+      toast.error('Sign up failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
