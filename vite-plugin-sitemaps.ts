@@ -959,13 +959,24 @@ export default function merchantFeedPlugin(): Plugin {
       console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries, ${allRefs.length} child files verified)`);
 
       // ── Feed source of truth: generate static XML feeds in /public ──
-      const merchantFeed = await Promise.race([
-        buildMerchantFeed(),
-        new Promise<string>((_, reject) =>
-          setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
-        ),
-      ]);
-      assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml');
+      let merchantFeed: string;
+      try {
+        const generated = await Promise.race([
+          buildMerchantFeed(),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+          ),
+        ]);
+        assertGoogleFeedValid(generated, 'public/google-feed.xml (live DB)');
+        merchantFeed = generated;
+      } catch (err) {
+        console.warn(
+          '[xml-plugin] ⚠️ public feed live generation failed — using static catalog emergency feed:',
+          (err as Error)?.message ?? err
+        );
+        merchantFeed = buildStaticCatalogFallbackFeed();
+        assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml (static catalog fallback)');
+      }
       writeFeedArtifacts(publicDir, merchantFeed, 'dist/google-feed.xml');
       console.log(`[xml-plugin] ✓ /public/merchant-feed.xml (${merchantFeed.length} bytes)`);
       console.log(`[xml-plugin] ✓ /public/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
