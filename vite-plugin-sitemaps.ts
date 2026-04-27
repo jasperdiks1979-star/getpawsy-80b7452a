@@ -830,6 +830,7 @@ const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>
 
 export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
+  const publicDir = join(process.cwd(), 'public');
   return {
     name: 'generate-merchant-feed-and-sitemaps',
     apply: 'build',
@@ -841,7 +842,6 @@ export default function merchantFeedPlugin(): Plugin {
     // CRITICAL: No try/catch around generator — if it fails, the BUILD MUST FAIL.
     // There are NO fallback files in /public (all stale XMLs have been deleted).
     async buildStart() {
-      const publicDir = join(process.cwd(), 'public');
       clearFeedArtifacts(publicDir);
 
       console.log('[sitemaps] ═══════════════════════════════════════════');
