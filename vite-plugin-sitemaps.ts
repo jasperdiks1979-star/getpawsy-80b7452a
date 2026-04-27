@@ -642,7 +642,7 @@ function sanitizeImageUrl(url: string | null): string {
 }
 
 function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNode {
-  const url = `${BASE_URL}/product/${p.slug || p.id}`;
+  const url = `${BASE_URL}/products/${p.slug || p.id}`;
   const img = sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null);
   const title = buildOptimizedTitle(p);
   const descSource = cleanDescription(p.description);
