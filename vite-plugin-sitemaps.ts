@@ -20,7 +20,9 @@ const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
 
 async function supaRest<T>(table: string, params: string): Promise<T[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const TIMEOUT_MS = 15000;
+  const startedAt = Date.now();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
       headers: {
@@ -31,14 +33,32 @@ async function supaRest<T>(table: string, params: string): Promise<T[]> {
       signal: controller.signal,
     });
     clearTimeout(timeout);
+    const elapsedMs = Date.now() - startedAt;
+    const totalCount = res.headers.get('content-range')?.split('/')?.[1] ?? 'unknown';
     if (!res.ok) {
-      console.warn(`[xml-plugin] REST error ${table}: ${res.status}`);
+      const body = await res.text().catch(() => '<unreadable>');
+      console.warn(
+        `[xml-plugin][supaRest] ❌ HTTP ${res.status} ${res.statusText} on "${table}" after ${elapsedMs}ms — body: ${body.slice(0, 300)}`
+      );
       return [];
     }
-    return (await res.json()) as T[];
-  } catch (err) {
+    const data = (await res.json()) as T[];
+    console.log(
+      `[xml-plugin][supaRest] ✓ ${table} → ${data.length} rows (server total=${totalCount}) in ${elapsedMs}ms`
+    );
+    return data;
+  } catch (err: unknown) {
     clearTimeout(timeout);
-    console.warn(`[xml-plugin] REST fetch failed for ${table}:`, err);
+    const elapsedMs = Date.now() - startedAt;
+    const e = err as { name?: string; message?: string; cause?: unknown };
+    const isAbort = e?.name === 'AbortError';
+    const reason = isAbort
+      ? `TIMEOUT after ${elapsedMs}ms (limit=${TIMEOUT_MS}ms)`
+      : `${e?.name ?? 'Error'}: ${e?.message ?? String(err)}`;
+    console.warn(
+      `[xml-plugin][supaRest] ❌ fetch failed for "${table}" — ${reason}` +
+        (e?.cause ? ` | cause=${JSON.stringify(e.cause).slice(0, 200)}` : '')
+    );
     return [];
   }
 }
@@ -671,6 +691,8 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
 }
 
 async function buildMerchantFeed(maxItems?: number): Promise<string> {
+  const feedStartedAt = Date.now();
+  console.log('[xml-plugin][feed] ▶ buildMerchantFeed() starting…');
   const [rawProducts, bestsellers] = await Promise.all([
     supaRest<MerchantProduct>(
       'products_public',
@@ -680,19 +702,49 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
   ]);
 
   // Safety post-filter: exclude products missing required fields (stock is NOT a disqualifier for dropship)
-  const eligibleProducts = rawProducts.filter(p =>
-    p.price > 0 &&
-    p.is_active !== false &&
-    p.image_url && p.image_url.trim() !== '' &&
-    p.slug && p.slug.trim() !== '' &&
-    p.description && p.description.trim() !== ''
-  );
+  // Track WHY each product is excluded so the build log explains a 0-item feed.
+  const exclusionStats = {
+    bad_price: 0,
+    inactive: 0,
+    no_image: 0,
+    no_slug: 0,
+    no_description: 0,
+  };
+  const eligibleProducts = rawProducts.filter(p => {
+    let ok = true;
+    if (!(p.price > 0)) { exclusionStats.bad_price++; ok = false; }
+    if (p.is_active === false) { exclusionStats.inactive++; ok = false; }
+    if (!p.image_url || p.image_url.trim() === '') { exclusionStats.no_image++; ok = false; }
+    if (!p.slug || p.slug.trim() === '') { exclusionStats.no_slug++; ok = false; }
+    if (!p.description || p.description.trim() === '') { exclusionStats.no_description++; ok = false; }
+    return ok;
+  });
 
   const products = typeof maxItems === 'number' ? eligibleProducts.slice(0, maxItems) : eligibleProducts;
   const bestsellersSet = new Set(bestsellers.map(b => b.product_id));
+  const totalElapsed = Date.now() - feedStartedAt;
   console.log(
-    `[xml-plugin] Merchant feed: ${products.length} exported (${eligibleProducts.length} eligible, ${rawProducts.length} raw, ${rawProducts.length - eligibleProducts.length} excluded)`
+    `[xml-plugin][feed] Merchant feed: ${products.length} exported ` +
+      `(${eligibleProducts.length} eligible, ${rawProducts.length} raw, ` +
+      `${rawProducts.length - eligibleProducts.length} excluded) in ${totalElapsed}ms`
   );
+  console.log(
+    `[xml-plugin][feed] Exclusion breakdown: ` +
+      `bad_price=${exclusionStats.bad_price}, inactive=${exclusionStats.inactive}, ` +
+      `no_image=${exclusionStats.no_image}, no_slug=${exclusionStats.no_slug}, ` +
+      `no_description=${exclusionStats.no_description}`
+  );
+  if (rawProducts.length === 0) {
+    console.warn(
+      `[xml-plugin][feed] ⚠ products_public returned 0 rows. ` +
+        `Likely cause: DB unreachable, RLS blocking the anon key, or the table is genuinely empty. ` +
+        `Re-check the [supaRest] log line above for HTTP status / timeout.`
+    );
+  } else if (eligibleProducts.length === 0) {
+    console.warn(
+      `[xml-plugin][feed] ⚠ ${rawProducts.length} products fetched but ALL excluded by post-filter — see exclusion breakdown above.`
+    );
+  }
 
   const now = new Date().toISOString();
   const items = products.map(p => productItemXml(p, bestsellersSet));
