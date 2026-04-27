@@ -20,7 +20,9 @@ const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
 
 async function supaRest<T>(table: string, params: string): Promise<T[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const TIMEOUT_MS = 15000;
+  const startedAt = Date.now();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
       headers: {
@@ -31,14 +33,32 @@ async function supaRest<T>(table: string, params: string): Promise<T[]> {
       signal: controller.signal,
     });
     clearTimeout(timeout);
+    const elapsedMs = Date.now() - startedAt;
+    const totalCount = res.headers.get('content-range')?.split('/')?.[1] ?? 'unknown';
     if (!res.ok) {
-      console.warn(`[xml-plugin] REST error ${table}: ${res.status}`);
+      const body = await res.text().catch(() => '<unreadable>');
+      console.warn(
+        `[xml-plugin][supaRest] ❌ HTTP ${res.status} ${res.statusText} on "${table}" after ${elapsedMs}ms — body: ${body.slice(0, 300)}`
+      );
       return [];
     }
-    return (await res.json()) as T[];
-  } catch (err) {
+    const data = (await res.json()) as T[];
+    console.log(
+      `[xml-plugin][supaRest] ✓ ${table} → ${data.length} rows (server total=${totalCount}) in ${elapsedMs}ms`
+    );
+    return data;
+  } catch (err: unknown) {
     clearTimeout(timeout);
-    console.warn(`[xml-plugin] REST fetch failed for ${table}:`, err);
+    const elapsedMs = Date.now() - startedAt;
+    const e = err as { name?: string; message?: string; cause?: unknown };
+    const isAbort = e?.name === 'AbortError';
+    const reason = isAbort
+      ? `TIMEOUT after ${elapsedMs}ms (limit=${TIMEOUT_MS}ms)`
+      : `${e?.name ?? 'Error'}: ${e?.message ?? String(err)}`;
+    console.warn(
+      `[xml-plugin][supaRest] ❌ fetch failed for "${table}" — ${reason}` +
+        (e?.cause ? ` | cause=${JSON.stringify(e.cause).slice(0, 200)}` : '')
+    );
     return [];
   }
 }
