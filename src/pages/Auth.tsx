@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
@@ -41,11 +41,14 @@ const Auth = () => {
   const [signupName, setSignupName] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Redirect if already logged in
-  if (user) {
-    navigate(nextPath);
-    return null;
-  }
+  // Redirect if already logged in — MUST be in effect, not during render.
+  // Calling navigate() during render causes "Cannot update during render" warnings
+  // and on some routes can leave the UI stuck on a spinner.
+  useEffect(() => {
+    if (user) {
+      navigate(nextPath, { replace: true });
+    }
+  }, [user, nextPath, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,19 +64,24 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    const { error } = await signIn(loginEmail, loginPassword);
-    setIsLoading(false);
-
-    if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid email or password');
-      } else {
-        toast.error(error.message);
+    try {
+      const { error } = await signIn(loginEmail, loginPassword);
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password');
+        } else {
+          toast.error(error.message);
+        }
+        return;
       }
-    } else {
       trackLogin('email');
       toast.success('Welcome back!');
-      navigate(nextPath);
+      navigate(nextPath, { replace: true });
+    } catch (err) {
+      console.error('[Auth] signIn threw:', err);
+      toast.error('Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
