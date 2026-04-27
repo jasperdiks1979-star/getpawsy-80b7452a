@@ -1036,15 +1036,18 @@ export default function merchantFeedPlugin(): Plugin {
 
       if (!merchantFeed) {
         if (!existsSync(publicFeedPath)) {
-          throw new Error(
-            '[xml-plugin] dist feed regen failed AND public/google-feed.xml is missing — cannot recover.'
+          console.warn(
+            '[xml-plugin] ⚠️ dist feed regen failed AND public/google-feed.xml is missing — using static catalog emergency feed.'
           );
+          merchantFeed = buildStaticCatalogFallbackFeed();
+          assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml (static catalog fallback)');
+        } else {
+          merchantFeed = readFileSync(publicFeedPath, 'utf8');
+          // The public feed was already validated in PHASE 1, but re-check
+          // defensively so we never ship a broken feed to /dist.
+          assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml (fallback from public)');
+          console.log('[xml-plugin] ✓ Reused public/google-feed.xml as dist feed source.');
         }
-        merchantFeed = readFileSync(publicFeedPath, 'utf8');
-        // The public feed was already validated in PHASE 1, but re-check
-        // defensively so we never ship a broken feed to /dist.
-        assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml (fallback from public)');
-        console.log('[xml-plugin] ✓ Reused public/google-feed.xml as dist feed source.');
       }
 
       writeFeedArtifacts(outDir, merchantFeed, 'dist/google-feed.xml');
