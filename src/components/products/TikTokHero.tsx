@@ -21,10 +21,10 @@ export function TikTokHero({ onCtaClick, inStock }: TikTokHeroProps) {
         As seen on TikTok
       </p>
       <p className="text-2xl md:text-3xl font-display font-extrabold text-foreground leading-[1.15]">
-        Stop Litter Box Smell — Automatically.
+        Stop Scooping Your Cat&apos;s Litter.
       </p>
       <p className="text-sm md:text-base text-muted-foreground mt-2 leading-relaxed">
-        No more scooping. No more odor. Your home stays fresh 24/7.
+        This self-cleaning litter box removes waste automatically and helps keep your home odor-free 24/7.
       </p>
 
       <Button
@@ -39,7 +39,7 @@ export function TikTokHero({ onCtaClick, inStock }: TikTokHeroProps) {
       <ul className="mt-4 grid grid-cols-3 gap-2 text-[11px] md:text-xs">
         <li className="flex items-center gap-1.5 rounded-lg bg-card/70 border border-border/40 px-2.5 py-2">
           <Truck className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden="true" />
-          <span className="font-medium text-foreground">Free US Shipping</span>
+          <span className="font-medium text-foreground">Free US Shipping $35+</span>
         </li>
         <li className="flex items-center gap-1.5 rounded-lg bg-card/70 border border-border/40 px-2.5 py-2">
           <RotateCcw className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden="true" />
