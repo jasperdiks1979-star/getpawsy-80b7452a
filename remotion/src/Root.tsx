@@ -5,6 +5,9 @@ import { MainVideoTop5 } from "./MainVideoTop5";
 import { MainVideoTikTokAd } from "./MainVideoTikTokAd";
 import { MainVideoLitterBox } from "./MainVideoLitterBox";
 import { MainVideoLitterBoxV2 } from "./MainVideoLitterBoxV2";
+import { MainVideoLitterBoxV3 } from "./MainVideoLitterBoxV3";
+import { MainVideoLitterBoxV4 } from "./MainVideoLitterBoxV4";
+import { MainVideoLitterBoxV5 } from "./MainVideoLitterBoxV5";
 
 export const RemotionRoot = () => (
   <>
@@ -52,6 +55,30 @@ export const RemotionRoot = () => (
       id="litterbox-ad-v2"
       component={MainVideoLitterBoxV2}
       durationInFrames={660}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+    <Composition
+      id="litterbox-ad-v3"
+      component={MainVideoLitterBoxV3}
+      durationInFrames={570}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+    <Composition
+      id="litterbox-ad-v4"
+      component={MainVideoLitterBoxV4}
+      durationInFrames={560}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+    <Composition
+      id="litterbox-ad-v5"
+      component={MainVideoLitterBoxV5}
+      durationInFrames={510}
       fps={30}
       width={1080}
       height={1920}
