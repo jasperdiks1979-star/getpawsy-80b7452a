@@ -382,6 +382,7 @@ const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAut
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
 const TikTokStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokStatusPage"));
+const DeepLinkInspectorPage = lazyWithRetry(() => import("./pages/admin/DeepLinkInspectorPage"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
 const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
@@ -2075,6 +2076,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokTestUsersPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="deep-link-inspector"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <DeepLinkInspectorPage />
                                 </Suspense>
                               }
                             />
