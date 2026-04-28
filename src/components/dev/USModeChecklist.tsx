@@ -10,7 +10,7 @@
  * Pure presentation — reads state from geoConsent + window.__ttqConsent
  * + localStorage. Does not mutate anything.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getGeoConsentDebug } from '@/lib/geoConsent';
 import { summarizeConsentLog } from '@/lib/consentLog';
 
@@ -115,6 +115,26 @@ const COLORS: Record<CheckStatus, { bg: string; fg: string; border: string; icon
 export const USModeChecklist = ({ onClose }: USModeChecklistProps) => {
   const [checks, setChecks] = useState<CheckItem[]>(() => buildChecks());
   const [tick, setTick] = useState(0);
+  const [drag, setDrag] = useState<{ dx: number; dy: number } | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const startDrag = useCallback((x: number, y: number) => {
+    dragStartRef.current = { x, y };
+    setDrag({ dx: 0, dy: 0 });
+  }, []);
+
+  const moveDrag = useCallback((x: number, y: number) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+    setDrag({ dx: Math.max(0, x - start.x), dy: Math.max(0, y - start.y) });
+  }, []);
+
+  const endDrag = useCallback(() => {
+    const current = drag;
+    dragStartRef.current = null;
+    setDrag(null);
+    if (current && (current.dx > 70 || current.dy > 90)) onClose();
+  }, [drag, onClose]);
 
   // Live re-evaluate every 1s for the first ~10s while the pixel hydrates
   useEffect(() => {
