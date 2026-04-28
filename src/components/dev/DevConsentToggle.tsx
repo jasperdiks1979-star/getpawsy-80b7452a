@@ -160,14 +160,15 @@ export const DevConsentToggle = () => {
       <button
         type="button"
         onClick={() => persistOpen(true)}
-        aria-label="Open dev consent toggle"
+        aria-label="Open dev consent panel"
+        title="Tap to open the dev consent panel"
         style={{
           position: 'fixed',
           bottom: 12,
           right: 12,
           zIndex: 2147483646,
-          padding: '6px 10px',
-          fontSize: 11,
+          padding: '8px 14px',
+          fontSize: 12,
           fontWeight: 600,
           fontFamily: 'system-ui, sans-serif',
           background: 'hsl(25 30% 12%)',
@@ -175,13 +176,32 @@ export const DevConsentToggle = () => {
           border: '1px solid hsl(38 30% 88%)',
           borderRadius: 999,
           cursor: 'pointer',
-          opacity: 0.55,
+          opacity: 0.92,
           boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
         }}
         onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.55')}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.92')}
       >
-        🌍 {override ? `dev:${override}` : 'geo'}
+        <span aria-hidden="true">🌍</span>
+        <span>Open dev panel</span>
+        {override && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '1px 6px',
+              borderRadius: 999,
+              background: 'hsl(22 70% 48%)',
+              color: '#fff',
+            }}
+          >
+            {override.toUpperCase()}
+          </span>
+        )}
+        <span aria-hidden="true" style={{ opacity: 0.7, marginLeft: 2 }}>▴</span>
       </button>
     );
   }
