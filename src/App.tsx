@@ -2065,6 +2065,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-ads-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokAdsPerformancePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-config-checklist"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
