@@ -221,6 +221,7 @@ export const DevConsentToggle = () => {
   });
 
   return (
+    <>
     <div
       role="region"
       aria-label="Dev consent simulator"
@@ -570,12 +571,13 @@ export const DevConsentToggle = () => {
         Dev hosts only — never visible in production.
       </div>
 
+    </div>
       {guidedOpen && <GuidedConsentTest onClose={() => setGuidedOpen(false)} />}
       {simulatorOpen && <ConsentRuleSimulator onClose={() => setSimulatorOpen(false)} />}
       {timelineOpen && <ConsentEventTimeline onClose={() => setTimelineOpen(false)} />}
       {checklistOpen && <USModeChecklist onClose={() => setChecklistOpen(false)} />}
       {usTestOpen && <USTargetingTest onClose={() => setUsTestOpen(false)} />}
-    </div>
+    </>
   );
 };
 
