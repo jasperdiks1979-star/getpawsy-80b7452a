@@ -7,15 +7,31 @@
  *
  * SEO: noindex (paid/social traffic only).
  */
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButton';
+import { trackEvent } from '@/lib/analytics';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
 
 export default function LinkInBio() {
   const [showSticky, setShowSticky] = useState(false);
+  const [searchParams] = useSearchParams();
+  const primaryCtaRef = useRef<HTMLDivElement>(null);
+  const stickyCtaRef = useRef<HTMLDivElement>(null);
+
+  // Snapshot UTM/attribution context once — every funnel event is enriched
+  // with the same params so GA4 can segment drop-off by source/campaign/ad.
+  const attribution = useRef<Record<string, string | null>>({
+    utm_source: searchParams.get('utm_source'),
+    utm_medium: searchParams.get('utm_medium'),
+    utm_campaign: searchParams.get('utm_campaign'),
+    utm_content: searchParams.get('utm_content'),
+    utm_term: searchParams.get('utm_term'),
+    ad: searchParams.get('ad'),
+    referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+  }).current;
 
   useEffect(() => {
     document.title = 'GetPawsy — Shop the viral self-cleaning litter box';
@@ -28,12 +44,95 @@ export default function LinkInBio() {
     robots.setAttribute('content', 'noindex,nofollow');
   }, []);
 
+  // FUNNEL STEP 1 — Page view (entry into funnel)
+  useEffect(() => {
+    trackEvent('lp_view', {
+      page: '/go',
+      funnel: 'tiktok_bio',
+      funnel_step: 1,
+      ...attribution,
+    });
+  }, [attribution]);
+
+  // FUNNEL STEP 2 — Scroll-depth milestones to surface where users drop off
+  // before reaching the sticky CTA / benefits below the fold.
+  useEffect(() => {
+    const milestones = [25, 50, 75, 100];
+    const fired = new Set<number>();
+    const onScroll = () => {
+      const doc = document.documentElement;
+      const scrolled = window.scrollY + window.innerHeight;
+      const total = Math.max(doc.scrollHeight, 1);
+      const pct = Math.min(100, Math.round((scrolled / total) * 100));
+      for (const m of milestones) {
+        if (pct >= m && !fired.has(m)) {
+          fired.add(m);
+          trackEvent('lp_scroll_depth', {
+            page: '/go',
+            funnel: 'tiktok_bio',
+            depth_pct: m,
+            ...attribution,
+          });
+        }
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [attribution]);
+
   // Show sticky CTA after the user scrolls past the hero CTA
   useEffect(() => {
     const onScroll = () => setShowSticky(window.scrollY > 420);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // FUNNEL STEP 3 — CTA impressions (fires once per CTA when ≥50% visible)
+  useEffect(() => {
+    const targets: Array<{ el: HTMLElement | null; placement: string }> = [
+      { el: primaryCtaRef.current, placement: 'bio_primary' },
+      { el: stickyCtaRef.current, placement: 'bio_sticky' },
+    ];
+    const seen = new Set<string>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const placement = (entry.target as HTMLElement).dataset.ctaPlacement;
+          if (!placement || seen.has(placement)) continue;
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            seen.add(placement);
+            trackEvent('lp_cta_impression', {
+              page: '/go',
+              funnel: 'tiktok_bio',
+              funnel_step: 2,
+              placement,
+              ...attribution,
+            });
+          }
+        }
+      },
+      { threshold: [0.5] },
+    );
+    targets.forEach(({ el, placement }) => {
+      if (!el) return;
+      el.dataset.ctaPlacement = placement;
+      io.observe(el);
+    });
+    return () => io.disconnect();
+  }, [attribution]);
+
+  // FUNNEL STEP 4 — CTA click. Bubble-capture click on the CTA wrapper so we
+  // log even if the underlying <Link>'s own onClick changes. Outbound nav to
+  // PDP is still tracked separately by TikTokDeepLinkButton (tiktok_deep_link_click).
+  const handleCtaClick = (placement: string) => () => {
+    trackEvent('lp_cta_click', {
+      page: '/go',
+      funnel: 'tiktok_bio',
+      funnel_step: 3,
+      placement,
+      ...attribution,
+    });
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 px-5 pt-5 pb-32">
@@ -67,7 +166,7 @@ export default function LinkInBio() {
         </div>
 
         {/* PRIMARY CTA — above the fold */}
-        <div className="w-full">
+        <div className="w-full" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
           <TikTokDeepLinkButton
             label="Get Yours Now – Before It's Gone →"
             campaign="tt_bio_link"
@@ -107,7 +206,7 @@ export default function LinkInBio() {
         }`}
         aria-hidden={!showSticky}
       >
-        <div className="mx-auto max-w-md">
+        <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
             label="Get Yours Now – Before It's Gone →"
             campaign="tt_bio_link"
