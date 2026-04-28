@@ -683,6 +683,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/go"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <LinkInBio />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/privacy"
                             element={
                               <Suspense fallback={<RouteLoader />}>
