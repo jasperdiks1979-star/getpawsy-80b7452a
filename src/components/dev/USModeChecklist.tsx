@@ -254,6 +254,25 @@ export const USModeChecklist = ({ onClose }: USModeChecklistProps) => {
         TikTok pixel hydrates.
       </p>
 
+      <button
+        type="button"
+        onClick={onClose}
+        style={{
+          marginTop: 8,
+          width: '100%',
+          padding: '7px 8px',
+          fontSize: 11,
+          fontWeight: 700,
+          background: 'hsl(38 30% 94%)',
+          color: 'hsl(25 30% 12%)',
+          border: '1px solid hsl(38 30% 86%)',
+          borderRadius: 8,
+          cursor: 'pointer',
+        }}
+      >
+        Sluit checklist
+      </button>
+
       <div
         style={{
           marginTop: 10,
