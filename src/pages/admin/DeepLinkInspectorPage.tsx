@@ -9,7 +9,7 @@
  */
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, Link2, Copy, Activity } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Link2, Copy, Activity, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,102 @@ const INTENT_KEYS = new Set([
   'puppy', 'cat-tree', 'litter-box',
   'problem', 'solution', 'comparison', 'transformation',
 ]);
+
+/**
+ * GA4 event schemas — what each event MUST send to GA4 to be useful.
+ *
+ * `required` fields fail validation when missing/null/empty. `optional` fields
+ * only fail when the type is wrong (e.g. a number where a string is expected).
+ * GA4 itself accepts anything, but our reports / Looker Studio dashboards
+ * depend on these shapes.
+ */
+type GA4Type = 'string' | 'number' | 'boolean' | 'string|null';
+interface FieldSpec { name: string; type: GA4Type; required: boolean; note?: string }
+
+const EVENT_SCHEMAS: Record<string, FieldSpec[]> = {
+  tiktok_deep_link_click: [
+    { name: 'link_url', type: 'string', required: true },
+    { name: 'product_slug', type: 'string', required: true },
+    { name: 'utm_source', type: 'string', required: true, note: 'must be "tiktok"' },
+    { name: 'utm_medium', type: 'string', required: true },
+    { name: 'utm_campaign', type: 'string|null', required: true },
+    { name: 'utm_content', type: 'string|null', required: false },
+    { name: 'ad', type: 'string', required: true, note: 'must be "tt"' },
+    { name: 'label', type: 'string', required: true },
+    { name: 'placement', type: 'string|null', required: true },
+  ],
+  pdp_variant_activated: [
+    { name: 'variant', type: 'string', required: true },
+    { name: 'product_slug', type: 'string', required: true },
+    { name: 'is_tiktok', type: 'boolean', required: true },
+    { name: 'is_litter_box', type: 'boolean', required: true },
+    { name: 'intent_keyword', type: 'string|null', required: false },
+    { name: 'intent_source', type: 'string|null', required: false },
+    { name: 'utm_source', type: 'string|null', required: false },
+    { name: 'landing_url', type: 'string|null', required: true },
+  ],
+};
+
+interface ValidationIssue {
+  field: string;
+  severity: 'error' | 'warning';
+  message: string;
+}
+
+function actualType(v: unknown): string {
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return 'array';
+  return typeof v;
+}
+
+function typeMatches(spec: GA4Type, v: unknown): boolean {
+  if (spec === 'string|null') return v === null || typeof v === 'string';
+  if (spec === 'string') return typeof v === 'string';
+  if (spec === 'number') return typeof v === 'number' && Number.isFinite(v);
+  if (spec === 'boolean') return typeof v === 'boolean';
+  return false;
+}
+
+function validateEvent(eventName: string, params: Record<string, unknown>): ValidationIssue[] {
+  const schema = EVENT_SCHEMAS[eventName];
+  if (!schema) return [];
+  const issues: ValidationIssue[] = [];
+  const knownFields = new Set(schema.map((f) => f.name));
+
+  for (const f of schema) {
+    const present = Object.prototype.hasOwnProperty.call(params, f.name);
+    const v = params[f.name];
+    const isEmpty = !present || v === undefined || v === '' || (f.type !== 'string|null' && v === null);
+
+    if (f.required && isEmpty) {
+      issues.push({ field: f.name, severity: 'error', message: `Missing required field${f.note ? ` (${f.note})` : ''}.` });
+      continue;
+    }
+    if (!isEmpty && !typeMatches(f.type, v)) {
+      issues.push({
+        field: f.name,
+        severity: 'error',
+        message: `Expected ${f.type}, got ${actualType(v)} (${JSON.stringify(v)}).`,
+      });
+      continue;
+    }
+    // Note-driven value checks (cheap, schema-local rules)
+    if (f.note?.startsWith('must be "') && typeof v === 'string') {
+      const expected = f.note.slice('must be "'.length, -1);
+      if (v !== expected) {
+        issues.push({ field: f.name, severity: 'error', message: `Expected exact value "${expected}", got "${v}".` });
+      }
+    }
+  }
+
+  // Unknown extras → warn (GA4 accepts them but they break dashboards / hit the 25-param limit faster).
+  for (const key of Object.keys(params)) {
+    if (!knownFields.has(key) && key !== 'traffic_type') {
+      issues.push({ field: key, severity: 'warning', message: 'Unknown param — not in schema. Will be sent but unmapped in dashboards.' });
+    }
+  }
+  return issues;
+}
 
 interface InspectionResult {
   inputValid: boolean;
@@ -243,6 +339,16 @@ export default function DeepLinkInspectorPage() {
     return ga4Format ? toGa4(eventName, params) : params;
   };
 
+  /** Run schema validation against the RAW params (pre-GA4 envelope). */
+  const clickIssues = useMemo(
+    () => (payloads?.click ? validateEvent('tiktok_deep_link_click', payloads.click) : []),
+    [payloads],
+  );
+  const activationIssues = useMemo(
+    () => (payloads?.activation ? validateEvent('pdp_variant_activated', payloads.activation) : []),
+    [payloads],
+  );
+
   const copyJson = (obj: unknown, label: string) => {
     navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
     toast.success(`Copied ${label} payload`);
@@ -413,6 +519,9 @@ export default function DeepLinkInspectorPage() {
                   Not fired — URL is not shaped as a TikTok deep-link (needs <code>utm_source=tiktok</code>).
                 </div>
               )}
+              {payloads.click && (
+                <ValidationReport issues={clickIssues} />
+              )}
             </div>
 
             {/* pdp_variant_activated */}
@@ -434,6 +543,7 @@ export default function DeepLinkInspectorPage() {
               <pre className="text-[11px] font-mono bg-muted/60 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
 {JSON.stringify(formatPayload('pdp_variant_activated', payloads.activation), null, 2)}
               </pre>
+              <ValidationReport issues={activationIssues} />
               <p className="text-[11px] text-muted-foreground px-1">
                 <code>product_id</code> / <code>product_name</code> are resolved at runtime once the PDP loads the product.
               </p>
@@ -463,6 +573,55 @@ function Row({ label, ok, detail }: { label: string; ok: boolean; detail: string
         <div className="text-sm font-medium">{label}</div>
         <div className="text-xs text-muted-foreground font-mono break-all">{detail}</div>
       </div>
+    </div>
+  );
+}
+
+function ValidationReport({ issues }: { issues: ValidationIssue[] }) {
+  const errors = issues.filter((i) => i.severity === 'error');
+  const warnings = issues.filter((i) => i.severity === 'warning');
+
+  if (issues.length === 0) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] text-success font-medium px-1">
+        <ShieldCheck className="w-3.5 h-3.5" />
+        Schema OK — all required GA4 params present with expected types.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {errors.length > 0 && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-destructive">
+            <XCircle className="w-3.5 h-3.5" />
+            {errors.length} schema error{errors.length === 1 ? '' : 's'}
+          </div>
+          <ul className="text-[11px] text-destructive/90 space-y-0.5 pl-1">
+            {errors.map((i, idx) => (
+              <li key={`err-${idx}`}>
+                <code className="font-mono font-semibold">{i.field}</code> — {i.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <div className="rounded-md border border-amber-300/50 bg-amber-50 p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {warnings.length} warning{warnings.length === 1 ? '' : 's'}
+          </div>
+          <ul className="text-[11px] text-amber-800 space-y-0.5 pl-1">
+            {warnings.map((i, idx) => (
+              <li key={`warn-${idx}`}>
+                <code className="font-mono font-semibold">{i.field}</code> — {i.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
