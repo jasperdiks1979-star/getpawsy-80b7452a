@@ -258,6 +258,23 @@ export default function TikTokAdsPerformancePage() {
             <Button variant="outline" size="icon" onClick={() => load(windowDays)} aria-label="Refresh">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={loading || hookRows.length === 0}
+              onClick={() => {
+                const stamp = new Date().toISOString().slice(0, 10);
+                downloadCsv(
+                  `tiktok-ads-performance_${windowDays}d_${stamp}.csv`,
+                  buildHookCsv(hookRows, windowDays),
+                );
+              }}
+              aria-label="Export hook performance as CSV"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
           </div>
         </header>
 
