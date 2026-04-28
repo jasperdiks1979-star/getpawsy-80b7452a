@@ -193,25 +193,49 @@ export const DevConsentToggle = () => {
         fontSize: 12,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          position: 'sticky',
+          top: -12,
+          margin: -12,
+          marginBottom: 0,
+          padding: '10px 12px',
+          background: '#fff',
+          borderBottom: '1px solid hsl(38 30% 92%)',
+          borderTopLeftRadius: 10,
+          borderTopRightRadius: 10,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 2,
+        }}
+      >
         <strong style={{ fontSize: 12 }}>🌍 Dev Geo Consent</strong>
         <button
           type="button"
           onClick={() => persistOpen(false)}
-          aria-label="Close"
+          aria-label="Close dev panel"
           style={{
-            background: 'transparent',
-            border: 'none',
+            background: 'hsl(38 30% 94%)',
+            border: '1px solid hsl(38 30% 86%)',
             cursor: 'pointer',
-            fontSize: 14,
-            color: 'hsl(25 18% 42%)',
+            fontSize: 16,
+            fontWeight: 700,
+            color: 'hsl(25 30% 12%)',
             padding: 0,
             lineHeight: 1,
+            width: 32,
+            height: 32,
+            borderRadius: 999,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           ✕
         </button>
       </div>
+      <div style={{ height: 8 }} />
 
       <div style={{ marginTop: 6, fontSize: 11, color: 'hsl(25 18% 42%)' }}>
         Override timezone-based detection. Reloads on change.
