@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -70,6 +70,85 @@ function fmtMoney(n: number) {
 }
 function fmtPct(n: number) {
   return `${(n || 0).toFixed(2)}%`;
+}
+
+/**
+ * Build a CSV from the per-hook rows.
+ *
+ * Columns are split into two groups:
+ *   - "TikTok Ads Manager" columns (impressions, clicks, spend, CPC, CPM):
+ *     left blank — these only exist in the TikTok dashboard, not in our DB.
+ *     The user fills them in after export so a single sheet shows ad spend
+ *     side-by-side with on-site funnel + revenue.
+ *   - "Site funnel" columns: fully populated from visitor_activity.
+ * CSV values are quoted + double-quote-escaped to stay safe with commas/quotes.
+ */
+function escapeCsv(value: string | number): string {
+  const s = String(value ?? "");
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function buildHookCsv(rows: HookRow[], windowDays: number): string {
+  const headers = [
+    "hook",
+    // TikTok Ads Manager — fill manually after export
+    "impressions",
+    "clicks",
+    "ctr_percent",
+    "spend_eur",
+    "cpc_eur",
+    "cpm_eur",
+    // On-site funnel — auto-filled from our database
+    "sessions",
+    "pdp_visits",
+    "pdp_ctr_percent",
+    "add_to_cart",
+    "checkouts",
+    "purchases",
+    "cvr_percent",
+    "revenue_eur",
+    "aov_eur",
+  ];
+  const lines: string[] = [];
+  lines.push(`# TikTok Ads Performance export — last ${windowDays} day(s) — generated ${new Date().toISOString()}`);
+  lines.push(
+    `# impressions/clicks/spend/cpc/cpm: copy from TikTok Ads Manager. sessions onwards: site funnel from getpawsy.pet`,
+  );
+  lines.push(headers.join(","));
+  for (const r of rows) {
+    lines.push(
+      [
+        r.hook,
+        "", "", "", "", "", "", // ad-platform columns left empty
+        r.sessions,
+        r.pdp_sessions,
+        r.pdp_ctr,
+        r.cart_sessions,
+        r.checkout_sessions,
+        r.purchases,
+        r.cvr,
+        Number(r.revenue || 0).toFixed(2),
+        r.purchases > 0 ? Number(r.aov || 0).toFixed(2) : "",
+      ]
+        .map(escapeCsv)
+        .join(","),
+    );
+  }
+  return lines.join("\n");
+}
+
+function downloadCsv(filename: string, content: string) {
+  // Prepend BOM so Excel on Windows opens UTF-8 with €-symbols correctly.
+  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Defer revoke so the download has a chance to start (Safari/iOS quirk).
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export default function TikTokAdsPerformancePage() {
@@ -178,6 +257,23 @@ export default function TikTokAdsPerformancePage() {
             </Tabs>
             <Button variant="outline" size="icon" onClick={() => load(windowDays)} aria-label="Refresh">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={loading || hookRows.length === 0}
+              onClick={() => {
+                const stamp = new Date().toISOString().slice(0, 10);
+                downloadCsv(
+                  `tiktok-ads-performance_${windowDays}d_${stamp}.csv`,
+                  buildHookCsv(hookRows, windowDays),
+                );
+              }}
+              aria-label="Export hook performance as CSV"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export CSV</span>
             </Button>
           </div>
         </header>
