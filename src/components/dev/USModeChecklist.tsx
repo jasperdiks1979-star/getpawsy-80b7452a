@@ -157,36 +157,91 @@ export const USModeChecklist = ({ onClose }: USModeChecklistProps) => {
       aria-label="US mode pixel state checklist"
       style={{
         position: 'fixed',
-        inset: '50% auto auto 50%',
-        transform: 'translate(-50%, -50%)',
+        left: '50%',
+        right: 'auto',
+        bottom: 8,
+        transform: drag
+          ? `translate(calc(-50% + ${drag.dx}px), ${drag.dy}px)`
+          : 'translateX(-50%)',
         zIndex: 2147483647,
-        width: 'min(480px, 92vw)',
-        maxHeight: '88vh',
+        width: 'min(420px, calc(100vw - 24px))',
+        maxHeight: 'min(62vh, 520px)',
         overflowY: 'auto',
-        padding: 16,
+        WebkitOverflowScrolling: 'touch',
+        padding: 12,
         background: '#fff',
         color: 'hsl(25 30% 12%)',
         border: '1px solid hsl(38 30% 88%)',
-        borderRadius: 12,
+        borderRadius: '14px 14px 10px 10px',
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
         fontFamily: 'system-ui, sans-serif',
         fontSize: 12,
+        opacity: drag ? Math.max(0.45, 1 - Math.max(drag.dx, drag.dy) / 260) : 1,
+        transition: drag ? 'none' : 'transform 180ms ease, opacity 180ms ease',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <strong style={{ fontSize: 13 }}>🇺🇸 US Mode — Expected Pixel States</strong>
+      <div
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          startDrag(t.clientX, t.clientY);
+        }}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          moveDrag(t.clientX, t.clientY);
+        }}
+        onTouchEnd={endDrag}
+        onTouchCancel={endDrag}
+        style={{
+          position: 'sticky',
+          top: -12,
+          margin: -12,
+          marginBottom: 0,
+          padding: '8px 12px 10px',
+          background: '#fff',
+          borderBottom: '1px solid hsl(38 30% 92%)',
+          borderTopLeftRadius: 14,
+          borderTopRightRadius: 14,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 8,
+          zIndex: 2,
+          touchAction: 'none',
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div
+            aria-hidden="true"
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 999,
+              background: 'hsl(38 20% 78%)',
+              margin: '0 auto 8px',
+            }}
+          />
+          <strong style={{ display: 'block', fontSize: 12, lineHeight: 1.2 }}>🇺🇸 US Mode Checklist</strong>
+          <span style={{ display: 'block', marginTop: 2, fontSize: 10, color: 'hsl(25 18% 42%)' }}>
+            Swipe rechts/omlaag om te sluiten
+          </span>
+        </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close checklist"
           style={{
-            background: 'transparent',
-            border: 'none',
+            background: 'hsl(38 30% 94%)',
+            border: '1px solid hsl(38 30% 86%)',
             cursor: 'pointer',
             fontSize: 16,
+            fontWeight: 700,
             color: 'hsl(25 18% 42%)',
             padding: 0,
             lineHeight: 1,
+            width: 36,
+            height: 36,
+            borderRadius: 999,
+            flex: '0 0 auto',
           }}
         >
           ✕
