@@ -9,11 +9,12 @@
  */
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, Link2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Link2, Copy, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 /** Subset mirror of INTENT_MAP keys in src/hooks/useAdIntent.ts. Keep in sync. */
 const INTENT_KEYS = new Set([
@@ -150,6 +151,75 @@ export default function DeepLinkInspectorPage() {
   const [input, setInput] = useState('');
   const result = useMemo(() => inspect(input), [input]);
 
+  // Build the predicted analytics payloads using the same shape that
+  // TikTokDeepLinkButton (click) and ProductDetail (load) emit. Mirrors the
+  // live event-shaping logic so QA matches what GA4 will actually receive.
+  const payloads = useMemo(() => {
+    if (!result.inputValid) return null;
+    const sp = new URLSearchParams(
+      result.params.reduce<Record<string, string>>((acc, { key, value }) => {
+        acc[key] = value;
+        return acc;
+      }, {}),
+    );
+
+    // tiktok_deep_link_click — only synthesizable when the URL is shaped like
+    // a TikTok deep-link (i.e. utm_source=tiktok). Otherwise mark N/A.
+    const isTikTokShaped = (sp.get('utm_source') || '').toLowerCase().includes('tiktok');
+    const click = isTikTokShaped
+      ? {
+          link_url: input.includes('?') || input.startsWith('/')
+            ? (input.startsWith('http') ? new URL(input).pathname + new URL(input).search : input)
+            : `?${input}`,
+          product_slug: result.productSlug,
+          utm_source: 'tiktok',
+          utm_medium: sp.get('utm_medium') || 'social',
+          utm_campaign: sp.get('utm_campaign') || null,
+          utm_content: sp.get('utm_content') || null,
+          ad: sp.get('ad') || 'tt',
+          label: '<button label>',
+          placement: sp.get('utm_content') || sp.get('utm_campaign') || null,
+        }
+      : null;
+
+    // pdp_variant_activated — mirrors the variant-resolution ladder in PDP.
+    const variant = result.tiktok.active && result.productSlug?.includes('litter')
+      ? 'tiktok_litterbox'
+      : result.tiktok.active
+        ? 'tiktok_param_no_match'
+        : result.adIntent.keyword
+          ? `intent_${result.adIntent.keyword}`
+          : 'standard';
+
+    const landingUrl = result.pathname
+      ? `${result.pathname}${result.params.length ? '?' + new URLSearchParams(sp).toString() : ''}`
+      : null;
+
+    const activation = {
+      variant,
+      product_id: '<resolved at runtime>',
+      product_slug: result.productSlug,
+      product_name: '<resolved at runtime>',
+      is_tiktok: result.tiktok.active,
+      is_litter_box: !!result.productSlug?.includes('litter'),
+      intent_keyword: result.adIntent.keyword,
+      intent_source: result.adIntent.source,
+      utm_source: sp.get('utm_source'),
+      utm_medium: sp.get('utm_medium'),
+      utm_campaign: sp.get('utm_campaign'),
+      utm_content: sp.get('utm_content'),
+      ad: sp.get('ad'),
+      landing_url: landingUrl,
+    };
+
+    return { click, activation };
+  }, [input, result]);
+
+  const copyJson = (obj: unknown, label: string) => {
+    navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
+    toast.success(`Copied ${label} payload`);
+  };
+
   return (
     <div className="container max-w-3xl py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -264,6 +334,64 @@ export default function DeepLinkInspectorPage() {
             {!result.inputValid && (
               <div className="text-xs text-destructive">Invalid input — paste a URL or `key=value&...` query string.</div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {input && payloads && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="w-4 h-4" /> Predicted analytics payloads
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* tiktok_deep_link_click */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <code className="text-xs font-semibold">tiktok_deep_link_click</code>
+                {payloads.click && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => copyJson(payloads.click, 'tiktok_deep_link_click')}
+                  >
+                    <Copy className="w-3 h-3 mr-1" /> Copy
+                  </Button>
+                )}
+              </div>
+              {payloads.click ? (
+                <pre className="text-[11px] font-mono bg-muted/60 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
+{JSON.stringify(payloads.click, null, 2)}
+                </pre>
+              ) : (
+                <div className="text-xs text-muted-foreground italic px-1">
+                  Not fired — URL is not shaped as a TikTok deep-link (needs <code>utm_source=tiktok</code>).
+                </div>
+              )}
+            </div>
+
+            {/* pdp_variant_activated */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <code className="text-xs font-semibold">pdp_variant_activated</code>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => copyJson(payloads.activation, 'pdp_variant_activated')}
+                >
+                  <Copy className="w-3 h-3 mr-1" /> Copy
+                </Button>
+              </div>
+              <pre className="text-[11px] font-mono bg-muted/60 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
+{JSON.stringify(payloads.activation, null, 2)}
+              </pre>
+              <p className="text-[11px] text-muted-foreground px-1">
+                <code>product_id</code> / <code>product_name</code> are resolved at runtime once the PDP loads the product.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
