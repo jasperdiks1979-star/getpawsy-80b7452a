@@ -576,3 +576,52 @@ function Row({ label, ok, detail }: { label: string; ok: boolean; detail: string
     </div>
   );
 }
+
+function ValidationReport({ issues }: { issues: ValidationIssue[] }) {
+  const errors = issues.filter((i) => i.severity === 'error');
+  const warnings = issues.filter((i) => i.severity === 'warning');
+
+  if (issues.length === 0) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] text-success font-medium px-1">
+        <ShieldCheck className="w-3.5 h-3.5" />
+        Schema OK — all required GA4 params present with expected types.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {errors.length > 0 && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-destructive">
+            <XCircle className="w-3.5 h-3.5" />
+            {errors.length} schema error{errors.length === 1 ? '' : 's'}
+          </div>
+          <ul className="text-[11px] text-destructive/90 space-y-0.5 pl-1">
+            {errors.map((i, idx) => (
+              <li key={`err-${idx}`}>
+                <code className="font-mono font-semibold">{i.field}</code> — {i.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <div className="rounded-md border border-amber-300/50 bg-amber-50 p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {warnings.length} warning{warnings.length === 1 ? '' : 's'}
+          </div>
+          <ul className="text-[11px] text-amber-800 space-y-0.5 pl-1">
+            {warnings.map((i, idx) => (
+              <li key={`warn-${idx}`}>
+                <code className="font-mono font-semibold">{i.field}</code> — {i.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
