@@ -387,6 +387,10 @@ const ProductDetail = () => {
 
   // Ad intent detection — ?kw= param or category fallback
   const adIntent = useAdIntent(product?.category);
+  const { isTikTok, scrollToBuy } = useTikTokLanding();
+  const isLitterBoxProduct =
+    !!product && /litter\s*box/i.test(`${product.name} ${product.category || ''}`);
+  const showTikTokVariant = isTikTok && isLitterBoxProduct;
 
   // Fetch guides for Related Guides section — improved category matching
   const { data: allGuides } = useGuidesList();
