@@ -20,6 +20,7 @@ Disallow: /install
 Disallow: /merchant-fix-checklist
 Disallow: /compliance
 Disallow: /my-claims
+Disallow: /go
 Disallow: /unsubscribe
 Disallow: /payment-success
 Disallow: /thank-you
