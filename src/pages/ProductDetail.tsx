@@ -48,7 +48,7 @@ import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { trackViewItem } from "@/lib/analytics";
+import { trackViewItem, trackEvent } from "@/lib/analytics";
 import { calculateSellingPrice } from "@/lib/pricing";
 import { getProductDiscount } from "@/lib/discount";
 import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
