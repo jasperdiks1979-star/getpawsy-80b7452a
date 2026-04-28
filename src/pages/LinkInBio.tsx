@@ -152,6 +152,11 @@ export default function LinkInBio() {
           Here&apos;s exactly why <span className="text-[hsl(25,95%,53%)]">👇</span>
         </p>
 
+        {/* PAIN HOOK — emotional connection */}
+        <p className="text-[15px] font-medium text-foreground/75">
+          Still scooping every single day? 😩
+        </p>
+
         {/* PRODUCT VISUAL — single, large, centered */}
         <div className="w-full">
           <img
@@ -165,10 +170,30 @@ export default function LinkInBio() {
           />
         </div>
 
+        {/* VISUAL PROOF — before/after comparison */}
+        <div className="w-full grid grid-cols-2 gap-2 text-left">
+          <div className="rounded-xl border border-border/60 bg-card/60 p-3">
+            <p className="text-[13px] font-bold text-foreground/70 mb-1.5">Manual litter box</p>
+            <ul className="grid gap-0.5 text-[12px] text-muted-foreground">
+              <li>✗ Daily scooping</li>
+              <li>✗ Bad smell</li>
+              <li>✗ Mess everywhere</li>
+            </ul>
+          </div>
+          <div className="rounded-xl border-2 border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/5 p-3">
+            <p className="text-[13px] font-bold text-[hsl(25,95%,53%)] mb-1.5">This smart litter box</p>
+            <ul className="grid gap-0.5 text-[12px] text-foreground/85 font-medium">
+              <li>✓ Cleans itself</li>
+              <li>✓ No smell</li>
+              <li>✓ Always fresh</li>
+            </ul>
+          </div>
+        </div>
+
         {/* PRIMARY CTA — above the fold */}
         <div className="w-full" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
           <TikTokDeepLinkButton
-            label="Get Yours Now – Before It's Gone →"
+            label="Get Yours Now – Before It Sells Out →"
             campaign="tt_bio_link"
             content="bio_primary"
             className="h-14 text-base w-full"
@@ -176,6 +201,10 @@ export default function LinkInBio() {
           {/* URGENCY — compliant, no fake countdown */}
           <p className="mt-2 text-[13px] font-medium text-foreground/70">
             ⚠️ Limited stock – selling out fast
+          </p>
+          {/* MICRO TRUST — compliant, no fabricated counts */}
+          <p className="mt-1 text-[12px] font-medium text-muted-foreground">
+            Loved by cat owners across the US 🇺🇸
           </p>
         </div>
 
@@ -194,6 +223,23 @@ export default function LinkInBio() {
           <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> App-controlled convenience</li>
         </ul>
 
+        {/* FRICTION KILLER */}
+        <ul className="w-full text-left grid gap-1 text-[14px] font-medium text-foreground/85 pt-1">
+          <li className="flex items-center gap-2"><span className="text-[hsl(142,71%,45%)] font-bold">✓</span> Works in under 60 seconds</li>
+          <li className="flex items-center gap-2"><span className="text-[hsl(142,71%,45%)] font-bold">✓</span> No installation needed</li>
+          <li className="flex items-center gap-2"><span className="text-[hsl(142,71%,45%)] font-bold">✓</span> Plug &amp; play</li>
+        </ul>
+
+        {/* SECONDARY CTA — repeat after benefits */}
+        <div className="w-full pt-2" onClickCapture={handleCtaClick('bio_secondary')}>
+          <TikTokDeepLinkButton
+            label="Get Yours Now – Before It Sells Out →"
+            campaign="tt_bio_link"
+            content="bio_secondary"
+            className="h-14 text-base w-full"
+          />
+        </div>
+
         <p className="pt-6 text-[11px] text-muted-foreground">
           © {new Date().getFullYear()} GetPawsy
         </p>
@@ -208,7 +254,7 @@ export default function LinkInBio() {
       >
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="Get Yours Now – Before It's Gone →"
+            label="Get Yours Now – Before It Sells Out →"
             campaign="tt_bio_link"
             content="bio_sticky"
             className="h-13 text-base w-full"
