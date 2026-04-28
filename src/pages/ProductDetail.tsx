@@ -903,6 +903,10 @@ const ProductDetail = () => {
           >
             {/* Category & Title */}
             <div>
+              {/* TikTok ad landing — only on litter box PDP, only with ?utm_source=tiktok */}
+              {showTikTokVariant && (
+                <TikTokHero onCtaClick={scrollToBuy} inStock={inStock} />
+              )}
               {/* Pinterest continuity banner — only when arriving from a pin */}
               {adIntent.source === 'pinterest' && (
                 <div className="mb-3">
