@@ -27,13 +27,13 @@ export function TikTokSalesFunnel({ onCtaClick, inStock, price }: TikTokSalesFun
       {/* PROBLEM */}
       <div className="rounded-2xl bg-muted/40 border border-border/50 p-6 md:p-8">
         <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-          Tired of dealing with litter box smell every day?
+          Tired of the smell and daily scooping?
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">If you own a cat, you know the struggle.</p>
         <ul className="mt-4 space-y-2.5 text-[15px] text-muted-foreground">
-          <li className="flex gap-2"><span aria-hidden="true">•</span> The smell spreads through your whole home</li>
-          <li className="flex gap-2"><span aria-hidden="true">•</span> You have to scoop it daily</li>
-          <li className="flex gap-2"><span aria-hidden="true">•</span> It’s messy, frustrating, and time-consuming</li>
+          <li className="flex gap-2"><span aria-hidden="true">•</span> Lingering odors in your home</li>
+          <li className="flex gap-2"><span aria-hidden="true">•</span> Messy, time-consuming cleaning</li>
+          <li className="flex gap-2"><span aria-hidden="true">•</span> Unhygienic litter handling</li>
         </ul>
         <p className="mt-4 text-sm font-medium text-foreground/90">
           And no matter what you try… the odor keeps coming back.
@@ -73,11 +73,12 @@ export function TikTokSalesFunnel({ onCtaClick, inStock, price }: TikTokSalesFun
         <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
           How it works
         </h2>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { icon: Cat, title: '1. Your cat uses the box', body: 'Just like a normal litter box — no training needed.' },
-            { icon: Recycle, title: '2. It cleans automatically', body: 'The system separates waste after each visit.' },
-            { icon: ShieldCheck, title: '3. Odor is sealed away', body: 'A sealed compartment keeps the smell contained.' },
+            { icon: Cat, title: '1. Cat enters', body: 'Smart sensors detect your cat — no training needed.' },
+            { icon: Recycle, title: '2. Box rotates', body: 'After they leave, the box automatically rotates.' },
+            { icon: ShieldCheck, title: '3. Waste is sealed', body: 'Solids are separated and dropped into a sealed drawer.' },
+            { icon: Sparkles, title: '4. Clean litter remains', body: 'Fresh litter is ready for the next visit.' },
           ].map(({ icon: Icon, title, body }) => (
             <div key={title} className="relative bg-card rounded-2xl p-5 border border-border/40">
               <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
@@ -200,13 +201,26 @@ export function TikTokSalesFunnel({ onCtaClick, inStock, price }: TikTokSalesFun
         </p>
       </div>
 
+      {/* RISK REVERSAL */}
+      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 md:p-8 text-center">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/15 mb-3">
+          <ShieldCheck className="w-6 h-6 text-primary" aria-hidden="true" />
+        </div>
+        <h2 className="text-lg md:text-xl font-display font-bold text-foreground">
+          30-Day Money-Back Guarantee
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+          Try it risk-free. Not satisfied? Return it within 30 days for a full refund.
+        </p>
+      </div>
+
       {/* FINAL CTA */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 p-6 md:p-8 text-center">
         <p className="text-xl md:text-2xl font-display font-bold text-foreground">
-          Ready for a cleaner, odor-free home?
+          Make your life easier. Make your home cleaner.
         </p>
         <p className="text-sm text-muted-foreground mt-1.5">
-          Free US shipping on eligible orders. 30-day returns.
+          Free US shipping on orders $35+ • 30-Day Returns • Secure Checkout
         </p>
         <p className="mt-4 text-3xl font-display font-bold text-primary">${price.toFixed(2)}</p>
         <Button
