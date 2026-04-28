@@ -249,6 +249,7 @@ const Orders = lazyWithRetry(() => import("./pages/Orders"));
 const Install = lazyWithRetry(() => import("./pages/Install"));
 const About = lazyWithRetry(() => import("./pages/About"));
 const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
+const LinkInBio = lazyWithRetry(() => import("./pages/LinkInBio"));
 const TermsOfService = lazyWithRetry(() => import("./pages/TermsOfService"));
 const ReturnPolicy = lazyWithRetry(() => import("./pages/ReturnPolicy"));
 const CookiePolicy = lazyWithRetry(() => import("./pages/CookiePolicy"));
