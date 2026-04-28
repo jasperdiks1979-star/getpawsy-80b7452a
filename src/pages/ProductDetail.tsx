@@ -48,7 +48,7 @@ import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { trackViewItem } from "@/lib/analytics";
+import { trackViewItem, trackEvent } from "@/lib/analytics";
 import { calculateSellingPrice } from "@/lib/pricing";
 import { getProductDiscount } from "@/lib/discount";
 import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
@@ -392,6 +392,48 @@ const ProductDetail = () => {
   const isLitterBoxProduct =
     !!product && /litter\s*box/i.test(`${product.name} ${product.category || ''}`);
   const showTikTokVariant = isTikTok && isLitterBoxProduct;
+
+  // Fire a single PDP-load analytics event capturing which variant actually
+  // activated for this visitor. Pairs with `tiktok_deep_link_click` on the
+  // source page to measure end-to-end deep-link → variant activation.
+  // Guarded by a ref so React StrictMode double-invokes don't double-fire.
+  const pdpVariantTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!product) return;
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const sp = new URLSearchParams(search);
+    const variant = showTikTokVariant
+      ? 'tiktok_litterbox'
+      : isTikTok
+        ? 'tiktok_param_no_match'
+        : adIntent.keyword
+          ? `intent_${adIntent.keyword}`
+          : 'standard';
+
+    // Dedupe per (product, variant, search) so SPA re-renders don't spam GA4.
+    const trackingKey = `${product.id}:${variant}:${search}`;
+    if (pdpVariantTrackedRef.current === trackingKey) return;
+    pdpVariantTrackedRef.current = trackingKey;
+
+    trackEvent('pdp_variant_activated', {
+      variant,
+      product_id: product.id,
+      product_slug: product.slug || null,
+      product_name: product.name,
+      is_tiktok: isTikTok,
+      is_litter_box: isLitterBoxProduct,
+      intent_keyword: adIntent.keyword,
+      intent_source: adIntent.source,
+      utm_source: sp.get('utm_source'),
+      utm_medium: sp.get('utm_medium'),
+      utm_campaign: sp.get('utm_campaign'),
+      utm_content: sp.get('utm_content'),
+      ad: sp.get('ad'),
+      landing_url: typeof window !== 'undefined'
+        ? window.location.pathname + window.location.search
+        : null,
+    });
+  }, [product, showTikTokVariant, isTikTok, isLitterBoxProduct, adIntent.keyword, adIntent.source]);
 
   // Fetch guides for Related Guides section — improved category matching
   const { data: allGuides } = useGuidesList();

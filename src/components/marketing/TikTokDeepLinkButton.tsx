@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics';
 
 const PRODUCT_SLUG = 'automatic-cat-litter-box-self-cleaning-app-control';
 
@@ -45,6 +46,23 @@ export function TikTokDeepLinkButton({
 
   const href = `/products/${PRODUCT_SLUG}?${params.toString()}`;
 
+  // Capture every TikTok deep-link click with the EXACT URL the user follows.
+  // Lets GA4 segment hero vs bio vs ad placements without trusting only UTMs
+  // (GA4 strips/normalizes some params, so we send `link_url` raw).
+  const handleClick = () => {
+    trackEvent('tiktok_deep_link_click', {
+      link_url: href,
+      product_slug: PRODUCT_SLUG,
+      utm_source: 'tiktok',
+      utm_medium: 'social',
+      utm_campaign: campaign,
+      utm_content: content || null,
+      ad: 'tt',
+      label,
+      placement: content || campaign,
+    });
+  };
+
   return (
     <Button
       asChild
@@ -55,7 +73,7 @@ export function TikTokDeepLinkButton({
         className,
       )}
     >
-      <Link to={href} aria-label={`${label} — opens self-cleaning litter box product page`}>
+      <Link to={href} onClick={handleClick} aria-label={`${label} — opens self-cleaning litter box product page`}>
         <ShoppingCart className="w-5 h-5" aria-hidden="true" />
         {label}
       </Link>
