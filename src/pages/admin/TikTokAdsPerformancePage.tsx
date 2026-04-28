@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -197,6 +197,76 @@ export default function TikTokAdsPerformancePage() {
           <KpiTile icon={<DollarSign className="h-4 w-4" />} label="Purchases" value={fmtInt(totals.purchases)} />
           <KpiTile icon={<TrendingUp className="h-4 w-4" />} label="Revenue" value={fmtMoney(totals.revenue)} />
         </div>
+
+        {/* Tracking status per hook — verifies that the tiktok_deep_link_click
+            event is propagating utm_campaign correctly for each of the 5 ad
+            URLs. A hook is "verified" when we see both /go landings AND a
+            downstream PDP session under the same utm_campaign — that's only
+            possible if the deep-link button preserved the campaign param. */}
+        <Card className="overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground">UTM tracking status</h2>
+            <span className="text-xs text-muted-foreground">
+              Verifies <code className="px-1 py-0.5 rounded bg-muted text-[10px]">tiktok_deep_link_click</code> propagates utm_campaign
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 p-3">
+            {EXPECTED_HOOKS.map((h) => {
+              const row = hookRows.find((r) => r.hook.toLowerCase() === h);
+              const sessions = row?.sessions ?? 0;
+              const pdp = row?.pdp_sessions ?? 0;
+              // Three states:
+              //  - verified: landed AND propagated to PDP under same campaign
+              //  - partial:  landed but no PDP click yet (CTA not clicked, OR
+              //              attribution is dropping the campaign — investigate)
+              //  - waiting:  no traffic at all yet
+              const state: 'verified' | 'partial' | 'waiting' =
+                sessions > 0 && pdp > 0 ? 'verified' : sessions > 0 ? 'partial' : 'waiting';
+              return (
+                <div
+                  key={h}
+                  className={cn(
+                    'rounded-lg border p-3 flex items-start gap-2.5 transition-colors',
+                    state === 'verified' && 'border-green-500/40 bg-green-500/5',
+                    state === 'partial' && 'border-amber-500/40 bg-amber-500/5',
+                    state === 'waiting' && 'border-border bg-muted/30',
+                  )}
+                >
+                  <div className="mt-0.5 shrink-0">
+                    {state === 'verified' && <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                    {state === 'partial' && <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+                    {state === 'waiting' && <CircleDashed className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-mono font-semibold text-sm text-foreground">{h}</span>
+                      <span
+                        className={cn(
+                          'text-[10px] uppercase tracking-wide font-semibold',
+                          state === 'verified' && 'text-green-600 dark:text-green-400',
+                          state === 'partial' && 'text-amber-600 dark:text-amber-400',
+                          state === 'waiting' && 'text-muted-foreground',
+                        )}
+                      >
+                        {state === 'verified' ? 'Verified' : state === 'partial' ? 'Partial' : 'Waiting'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                      {fmtInt(sessions)} sessions · {fmtInt(pdp)} PDP
+                    </div>
+                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                      {state === 'verified' &&
+                        'utm_campaign propagated end-to-end.'}
+                      {state === 'partial' &&
+                        'Landings tracked, but no CTA click recorded yet under this campaign.'}
+                      {state === 'waiting' && 'No clicks received yet.'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
 
         {/* Per-hook table */}
         <Card className="overflow-hidden">
