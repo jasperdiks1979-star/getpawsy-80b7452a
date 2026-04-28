@@ -222,9 +222,23 @@ export const DevConsentToggle = () => {
         boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
         fontFamily: 'system-ui, sans-serif',
         fontSize: 12,
+        transform: drag ? `translate(${drag.dx}px, ${drag.dy}px)` : undefined,
+        transition: drag ? 'none' : 'transform 180ms ease',
+        opacity: drag ? Math.max(0.4, 1 - Math.max(drag.dx, drag.dy) / 240) : 1,
+        touchAction: 'pan-y',
       }}
     >
       <div
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          onDragStart(t.clientX, t.clientY);
+        }}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          onDragMove(t.clientX, t.clientY);
+        }}
+        onTouchEnd={onDragEnd}
+        onTouchCancel={onDragEnd}
         style={{
           position: 'sticky',
           top: -12,
@@ -239,9 +253,24 @@ export const DevConsentToggle = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           zIndex: 2,
+          touchAction: 'none',
+          cursor: 'grab',
         }}
       >
-        <strong style={{ fontSize: 12 }}>🌍 Dev Geo Consent</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            aria-hidden="true"
+            title="Swipe right or down to close"
+            style={{
+              display: 'inline-block',
+              width: 28,
+              height: 4,
+              borderRadius: 999,
+              background: 'hsl(38 20% 78%)',
+            }}
+          />
+          <strong style={{ fontSize: 12 }}>🌍 Dev Geo Consent</strong>
+        </div>
         <button
           type="button"
           onClick={() => persistOpen(false)}
