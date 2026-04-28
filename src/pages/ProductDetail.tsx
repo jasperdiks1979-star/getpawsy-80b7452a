@@ -1276,6 +1276,7 @@ const ProductDetail = () => {
             {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div
               ref={mainAddToCartRef}
+              id="pdp-buy-box"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -1633,6 +1634,15 @@ const ProductDetail = () => {
           productName={product.name}
           category={product.category || ""}
         />
+
+        {/* TikTok-optimized funnel — only shown when arriving from a TikTok ad */}
+        {showTikTokVariant && (
+          <TikTokSalesFunnel
+            onCtaClick={scrollToBuy}
+            inStock={inStock}
+            price={activePrice}
+          />
+        )}
 
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
