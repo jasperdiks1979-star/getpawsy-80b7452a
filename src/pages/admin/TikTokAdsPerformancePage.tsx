@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
