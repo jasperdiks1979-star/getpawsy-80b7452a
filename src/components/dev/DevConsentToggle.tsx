@@ -78,9 +78,13 @@ export const DevConsentToggle = () => {
     setStoredConsent(readStoredConsent());
     setLogSummary(summarizeConsentLog());
     try {
-      // Default: open so the debug panel is visible without extra clicks
+      // Default: open on desktop so the debug panel is visible without
+      // extra clicks; collapsed on mobile/iPhone so it never blocks the
+      // page (the floating pill remains tappable to expand it).
       const v = localStorage.getItem(STORAGE_OPEN_KEY);
-      setOpen(v === null ? true : v === '1');
+      const isNarrow =
+        typeof window !== 'undefined' && window.innerWidth < 640;
+      setOpen(v === null ? !isNarrow : v === '1');
     } catch { /* ignore */ }
     // Auto-open the US checklist if we just reloaded after switching to US
     try {
@@ -181,8 +185,12 @@ export const DevConsentToggle = () => {
         position: 'fixed',
         bottom: 12,
         right: 12,
+        left: 'auto',
         zIndex: 2147483646,
-        width: 240,
+        width: 'min(92vw, 280px)',
+        maxHeight: 'min(80vh, 640px)',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         padding: 12,
         background: '#fff',
         color: 'hsl(25 30% 12%)',
