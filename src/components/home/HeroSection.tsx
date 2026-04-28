@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Star, Truck, ShieldCheck } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
+import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButton';
 
 // Use public directory images so index.html preload tags work (no Vite hash).
 // Switched to the cat-litter-box hero because litter boxes are the
@@ -160,6 +161,18 @@ export function HeroSection() {
               See How It Works
             </a>
           </Button>
+        </div>
+
+        {/* TikTok deep-link CTA — desktop-only entry point for visitors who
+            saw the TikTok creative and landed on the homepage instead of /go.
+            Hidden on mobile to avoid CTA stacking; mobile traffic uses /go. */}
+        <div className="mt-4 hidden md:flex justify-center">
+          <TikTokDeepLinkButton
+            label="Saw us on TikTok? Shop the Litter Box →"
+            campaign="tt_home_hero"
+            content="home_hero_desktop"
+            fullWidth={false}
+          />
         </div>
 
         {/* Trust micro-row — concrete numbers beat vague claims. */}
