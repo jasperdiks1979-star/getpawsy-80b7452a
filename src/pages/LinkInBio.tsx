@@ -8,8 +8,10 @@
  * SEO: noindex (paid/social traffic only).
  */
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButton';
+import { trackEvent } from '@/lib/analytics';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
