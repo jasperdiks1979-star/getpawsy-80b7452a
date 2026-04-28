@@ -94,6 +94,9 @@ import { MicroFrictionBlock } from "@/components/products/MicroFrictionBlock";
 import { useAdIntent } from "@/hooks/useAdIntent";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { PinterestLandingBanner } from "@/components/products/PinterestLandingBanner";
+import { TikTokHero } from "@/components/products/TikTokHero";
+import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
+import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
   DELIVERY_TIME_STANDARD,
