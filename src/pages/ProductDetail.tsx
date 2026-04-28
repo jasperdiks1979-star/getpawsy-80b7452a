@@ -96,6 +96,7 @@ import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLin
 import { PinterestLandingBanner } from "@/components/products/PinterestLandingBanner";
 import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
+import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
 import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
@@ -1638,6 +1639,14 @@ const ProductDetail = () => {
         {/* TikTok-optimized funnel — only shown when arriving from a TikTok ad */}
         {showTikTokVariant && (
           <TikTokSalesFunnel
+            onCtaClick={scrollToBuy}
+            inStock={inStock}
+            price={activePrice}
+          />
+        )}
+
+        {showTikTokVariant && (
+          <TikTokStickyCTA
             onCtaClick={scrollToBuy}
             inStock={inStock}
             price={activePrice}
