@@ -379,6 +379,7 @@ const PinterestTrafficMachinePage = lazyWithRetry(() => import("./pages/admin/Pi
 const PinterestScaleModePage = lazyWithRetry(() => import("./pages/admin/PinterestScaleModePage"));
 const PinterestAutomationPage = lazyWithRetry(() => import("./pages/admin/PinterestAutomationPage"));
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
+const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
 const TikTokStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokStatusPage"));
@@ -2060,6 +2061,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokAutomationPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tiktok-ads-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokAdsPerformancePage />
                                 </Suspense>
                               }
                             />

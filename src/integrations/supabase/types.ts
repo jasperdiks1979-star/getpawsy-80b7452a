@@ -8380,6 +8380,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_tiktok_hook_performance: {
+        Args: { p_campaign_pattern?: string; p_window_days?: number }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
