@@ -7,7 +7,6 @@
  *
  * SEO: noindex (paid/social traffic only).
  */
-import { useEffect, useState } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButton';
