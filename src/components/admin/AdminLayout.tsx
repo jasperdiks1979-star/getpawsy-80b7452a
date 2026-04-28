@@ -52,6 +52,7 @@ const navItems = [
   { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
   { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
   { to: '/admin/tiktok-automation', label: 'TikTok Auto', icon: Activity },
+  { to: '/admin/tiktok-ads-performance', label: 'TikTok Ads Perf', icon: TrendingUp },
   { to: '/admin/job-retry-policies', label: 'Job Retry Policies', icon: Wrench },
   { to: '/admin/job-retry-metrics', label: 'Job Retry Metrics', icon: Activity },
 ];
