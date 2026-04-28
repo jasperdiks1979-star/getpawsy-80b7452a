@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 /** Subset mirror of INTENT_MAP keys in src/hooks/useAdIntent.ts. Keep in sync. */
@@ -149,6 +151,7 @@ const PRESETS: Array<{ label: string; url: string }> = [
 
 export default function DeepLinkInspectorPage() {
   const [input, setInput] = useState('');
+  const [ga4Format, setGa4Format] = useState(true);
   const result = useMemo(() => inspect(input), [input]);
 
   // Build the predicted analytics payloads using the same shape that
@@ -214,6 +217,31 @@ export default function DeepLinkInspectorPage() {
 
     return { click, activation };
   }, [input, result]);
+
+  /**
+   * Wrap a raw event payload in the canonical GA4 envelope our `trackEvent`
+   * helper produces at runtime: `gtag('event', name, { ...params, traffic_type })`.
+   * Splits out `user_properties` (only `traffic_type` today) so it matches
+   * what GA4 DebugView actually shows.
+   */
+  const toGa4 = (eventName: string, params: Record<string, unknown>) => ({
+    command: 'event',
+    event_name: eventName,
+    params: {
+      ...params,
+      // Auto-tagged by trackEvent() — see src/lib/analytics.ts
+      traffic_type: '<resolved at runtime: organic|paid|founder|...>',
+    },
+    user_properties: {
+      // Only set when Founder Mode is active (suppressed in many cases)
+      gp_client: '<set to "founder" when Founder Mode is active, else omitted>',
+    },
+  });
+
+  const formatPayload = (eventName: string, params: Record<string, unknown> | null) => {
+    if (!params) return null;
+    return ga4Format ? toGa4(eventName, params) : params;
+  };
 
   const copyJson = (obj: unknown, label: string) => {
     navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
@@ -341,9 +369,21 @@ export default function DeepLinkInspectorPage() {
       {input && payloads && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="w-4 h-4" /> Predicted analytics payloads
-            </CardTitle>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="w-4 h-4" /> Predicted analytics payloads
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="ga4-format" className="text-xs cursor-pointer">
+                  {ga4Format ? 'GA4-ready format' : 'Raw params'}
+                </Label>
+                <Switch
+                  id="ga4-format"
+                  checked={ga4Format}
+                  onCheckedChange={setGa4Format}
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* tiktok_deep_link_click */}
@@ -355,7 +395,10 @@ export default function DeepLinkInspectorPage() {
                     size="sm"
                     variant="ghost"
                     className="h-7 px-2 text-xs"
-                    onClick={() => copyJson(payloads.click, 'tiktok_deep_link_click')}
+                    onClick={() => copyJson(
+                      formatPayload('tiktok_deep_link_click', payloads.click),
+                      'tiktok_deep_link_click',
+                    )}
                   >
                     <Copy className="w-3 h-3 mr-1" /> Copy
                   </Button>
@@ -363,7 +406,7 @@ export default function DeepLinkInspectorPage() {
               </div>
               {payloads.click ? (
                 <pre className="text-[11px] font-mono bg-muted/60 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
-{JSON.stringify(payloads.click, null, 2)}
+{JSON.stringify(formatPayload('tiktok_deep_link_click', payloads.click), null, 2)}
                 </pre>
               ) : (
                 <div className="text-xs text-muted-foreground italic px-1">
@@ -380,18 +423,29 @@ export default function DeepLinkInspectorPage() {
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2 text-xs"
-                  onClick={() => copyJson(payloads.activation, 'pdp_variant_activated')}
+                  onClick={() => copyJson(
+                    formatPayload('pdp_variant_activated', payloads.activation),
+                    'pdp_variant_activated',
+                  )}
                 >
                   <Copy className="w-3 h-3 mr-1" /> Copy
                 </Button>
               </div>
               <pre className="text-[11px] font-mono bg-muted/60 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
-{JSON.stringify(payloads.activation, null, 2)}
+{JSON.stringify(formatPayload('pdp_variant_activated', payloads.activation), null, 2)}
               </pre>
               <p className="text-[11px] text-muted-foreground px-1">
                 <code>product_id</code> / <code>product_name</code> are resolved at runtime once the PDP loads the product.
               </p>
             </div>
+
+            {ga4Format && (
+              <p className="text-[11px] text-muted-foreground border-t pt-3">
+                GA4 format mirrors what <code>trackEvent()</code> sends via{' '}
+                <code>gtag('event', name, params)</code>. The auto-tagged{' '}
+                <code>traffic_type</code> param and Founder Mode <code>gp_client</code> user property are added at runtime.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
