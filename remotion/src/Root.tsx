@@ -3,6 +3,7 @@ import { MainVideo } from "./MainVideo";
 import { MainVideoBestsellers } from "./MainVideoBestsellers";
 import { MainVideoTop5 } from "./MainVideoTop5";
 import { MainVideoTikTokAd } from "./MainVideoTikTokAd";
+import { MainVideoLitterBox } from "./MainVideoLitterBox";
 
 export const RemotionRoot = () => (
   <>
@@ -34,6 +35,14 @@ export const RemotionRoot = () => (
       id="tiktok-ad"
       component={MainVideoTikTokAd}
       durationInFrames={810}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+    <Composition
+      id="litterbox-ad"
+      component={MainVideoLitterBox}
+      durationInFrames={450}
       fps={30}
       width={1080}
       height={1920}
