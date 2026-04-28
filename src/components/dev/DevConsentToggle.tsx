@@ -68,6 +68,29 @@ export const DevConsentToggle = () => {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [usTestOpen, setUsTestOpen] = useState(false);
+  const [drag, setDrag] = useState<{ dx: number; dy: number } | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const onDragStart = useCallback((x: number, y: number) => {
+    dragStartRef.current = { x, y };
+    setDrag({ dx: 0, dy: 0 });
+  }, []);
+  const onDragMove = useCallback((x: number, y: number) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+    // Only follow rightwards / downwards swipes (clamp negative values).
+    setDrag({ dx: Math.max(0, x - start.x), dy: Math.max(0, y - start.y) });
+  }, []);
+  const onDragEnd = useCallback(() => {
+    const d = drag;
+    dragStartRef.current = null;
+    setDrag(null);
+    if (!d) return;
+    if (d.dx > 60 || d.dy > 80) {
+      try { localStorage.setItem(STORAGE_OPEN_KEY, '0'); } catch { /* ignore */ }
+      setOpen(false);
+    }
+  }, [drag]);
 
   useEffect(() => {
     if (!isDevConsentToggleAvailable()) return;
