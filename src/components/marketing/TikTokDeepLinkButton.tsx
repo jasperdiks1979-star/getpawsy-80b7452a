@@ -8,7 +8,7 @@
  *   <TikTokDeepLinkButton />
  *   <TikTokDeepLinkButton label="Shop the viral litter box" campaign="tt_litterbox_v3" />
  */
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -19,9 +19,9 @@ const PRODUCT_SLUG = 'automatic-cat-litter-box-self-cleaning-app-control';
 interface TikTokDeepLinkButtonProps {
   /** Visible button text. */
   label?: string;
-  /** utm_campaign value — set per video/creative for granular reporting. */
+  /** Fallback utm_campaign — only used when the current URL has no utm_campaign. */
   campaign?: string;
-  /** utm_content value — e.g. ad variant id (v3, v4, v5). */
+  /** Fallback utm_content — only used when the current URL has no utm_content. */
   content?: string;
   /** Extra Tailwind classes for layout. */
   className?: string;
@@ -36,13 +36,27 @@ export function TikTokDeepLinkButton({
   className,
   fullWidth = true,
 }: TikTokDeepLinkButtonProps) {
+  // Read UTMs from the current landing-page URL so ad-level attribution
+  // (utm_campaign / utm_content set by the TikTok ad) is preserved through
+  // the CTA click. Hardcoded `campaign`/`content` props act ONLY as
+  // fallbacks for organic visits with no UTMs in the URL.
+  const [searchParams] = useSearchParams();
+
+  const utmSource = searchParams.get('utm_source') || 'tiktok';
+  const utmMedium = searchParams.get('utm_medium') || 'social';
+  const utmCampaign = searchParams.get('utm_campaign') || campaign;
+  const utmContent = searchParams.get('utm_content') || content || null;
+  const utmTerm = searchParams.get('utm_term');
+  const adParam = searchParams.get('ad') || 'tt';
+
   const params = new URLSearchParams({
-    utm_source: 'tiktok',
-    utm_medium: 'social',
-    utm_campaign: campaign,
-    ad: 'tt',
+    utm_source: utmSource,
+    utm_medium: utmMedium,
+    utm_campaign: utmCampaign,
+    ad: adParam,
   });
-  if (content) params.set('utm_content', content);
+  if (utmContent) params.set('utm_content', utmContent);
+  if (utmTerm) params.set('utm_term', utmTerm);
 
   const href = `/products/${PRODUCT_SLUG}?${params.toString()}`;
 
@@ -53,12 +67,15 @@ export function TikTokDeepLinkButton({
     trackEvent('tiktok_deep_link_click', {
       link_url: href,
       product_slug: PRODUCT_SLUG,
-      utm_source: 'tiktok',
-      utm_medium: 'social',
-      utm_campaign: campaign,
-      utm_content: content || null,
-      ad: 'tt',
+      utm_source: utmSource,
+      utm_medium: utmMedium,
+      utm_campaign: utmCampaign,
+      utm_content: utmContent,
+      utm_term: utmTerm,
+      ad: adParam,
       label,
+      // Placement reflects WHERE the CTA lives (hardcoded prop), independent
+      // of the ad-level utm_campaign that came from the URL.
       placement: content || campaign,
     });
   };
