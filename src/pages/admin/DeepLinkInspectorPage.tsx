@@ -339,6 +339,16 @@ export default function DeepLinkInspectorPage() {
     return ga4Format ? toGa4(eventName, params) : params;
   };
 
+  /** Run schema validation against the RAW params (pre-GA4 envelope). */
+  const clickIssues = useMemo(
+    () => (payloads?.click ? validateEvent('tiktok_deep_link_click', payloads.click) : []),
+    [payloads],
+  );
+  const activationIssues = useMemo(
+    () => (payloads?.activation ? validateEvent('pdp_variant_activated', payloads.activation) : []),
+    [payloads],
+  );
+
   const copyJson = (obj: unknown, label: string) => {
     navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
     toast.success(`Copied ${label} payload`);
@@ -509,6 +519,9 @@ export default function DeepLinkInspectorPage() {
                   Not fired — URL is not shaped as a TikTok deep-link (needs <code>utm_source=tiktok</code>).
                 </div>
               )}
+              {payloads.click && (
+                <ValidationReport issues={clickIssues} />
+              )}
             </div>
 
             {/* pdp_variant_activated */}
@@ -530,6 +543,7 @@ export default function DeepLinkInspectorPage() {
               <pre className="text-[11px] font-mono bg-muted/60 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all">
 {JSON.stringify(formatPayload('pdp_variant_activated', payloads.activation), null, 2)}
               </pre>
+              <ValidationReport issues={activationIssues} />
               <p className="text-[11px] text-muted-foreground px-1">
                 <code>product_id</code> / <code>product_name</code> are resolved at runtime once the PDP loads the product.
               </p>
