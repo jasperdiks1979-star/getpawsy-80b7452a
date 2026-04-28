@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getDevGeoOverride,
   setDevGeoOverride,
@@ -68,6 +68,29 @@ export const DevConsentToggle = () => {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [usTestOpen, setUsTestOpen] = useState(false);
+  const [drag, setDrag] = useState<{ dx: number; dy: number } | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const onDragStart = useCallback((x: number, y: number) => {
+    dragStartRef.current = { x, y };
+    setDrag({ dx: 0, dy: 0 });
+  }, []);
+  const onDragMove = useCallback((x: number, y: number) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+    // Only follow rightwards / downwards swipes (clamp negative values).
+    setDrag({ dx: Math.max(0, x - start.x), dy: Math.max(0, y - start.y) });
+  }, []);
+  const onDragEnd = useCallback(() => {
+    const d = drag;
+    dragStartRef.current = null;
+    setDrag(null);
+    if (!d) return;
+    if (d.dx > 60 || d.dy > 80) {
+      try { localStorage.setItem(STORAGE_OPEN_KEY, '0'); } catch { /* ignore */ }
+      setOpen(false);
+    }
+  }, [drag]);
 
   useEffect(() => {
     if (!isDevConsentToggleAvailable()) return;
@@ -199,9 +222,23 @@ export const DevConsentToggle = () => {
         boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
         fontFamily: 'system-ui, sans-serif',
         fontSize: 12,
+        transform: drag ? `translate(${drag.dx}px, ${drag.dy}px)` : undefined,
+        transition: drag ? 'none' : 'transform 180ms ease',
+        opacity: drag ? Math.max(0.4, 1 - Math.max(drag.dx, drag.dy) / 240) : 1,
+        touchAction: 'pan-y',
       }}
     >
       <div
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          onDragStart(t.clientX, t.clientY);
+        }}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          onDragMove(t.clientX, t.clientY);
+        }}
+        onTouchEnd={onDragEnd}
+        onTouchCancel={onDragEnd}
         style={{
           position: 'sticky',
           top: -12,
@@ -216,9 +253,24 @@ export const DevConsentToggle = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           zIndex: 2,
+          touchAction: 'none',
+          cursor: 'grab',
         }}
       >
-        <strong style={{ fontSize: 12 }}>🌍 Dev Geo Consent</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            aria-hidden="true"
+            title="Swipe right or down to close"
+            style={{
+              display: 'inline-block',
+              width: 28,
+              height: 4,
+              borderRadius: 999,
+              background: 'hsl(38 20% 78%)',
+            }}
+          />
+          <strong style={{ fontSize: 12 }}>🌍 Dev Geo Consent</strong>
+        </div>
         <button
           type="button"
           onClick={() => persistOpen(false)}
