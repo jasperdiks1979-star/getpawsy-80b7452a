@@ -94,6 +94,9 @@ import { MicroFrictionBlock } from "@/components/products/MicroFrictionBlock";
 import { useAdIntent } from "@/hooks/useAdIntent";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { PinterestLandingBanner } from "@/components/products/PinterestLandingBanner";
+import { TikTokHero } from "@/components/products/TikTokHero";
+import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
+import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
   DELIVERY_TIME_STANDARD,
@@ -384,6 +387,10 @@ const ProductDetail = () => {
 
   // Ad intent detection — ?kw= param or category fallback
   const adIntent = useAdIntent(product?.category);
+  const { isTikTok, scrollToBuy } = useTikTokLanding();
+  const isLitterBoxProduct =
+    !!product && /litter\s*box/i.test(`${product.name} ${product.category || ''}`);
+  const showTikTokVariant = isTikTok && isLitterBoxProduct;
 
   // Fetch guides for Related Guides section — improved category matching
   const { data: allGuides } = useGuidesList();
@@ -896,6 +903,10 @@ const ProductDetail = () => {
           >
             {/* Category & Title */}
             <div>
+              {/* TikTok ad landing — only on litter box PDP, only with ?utm_source=tiktok */}
+              {showTikTokVariant && (
+                <TikTokHero onCtaClick={scrollToBuy} inStock={inStock} />
+              )}
               {/* Pinterest continuity banner — only when arriving from a pin */}
               {adIntent.source === 'pinterest' && (
                 <div className="mb-3">
@@ -1265,6 +1276,7 @@ const ProductDetail = () => {
             {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div
               ref={mainAddToCartRef}
+              id="pdp-buy-box"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -1622,6 +1634,15 @@ const ProductDetail = () => {
           productName={product.name}
           category={product.category || ""}
         />
+
+        {/* TikTok-optimized funnel — only shown when arriving from a TikTok ad */}
+        {showTikTokVariant && (
+          <TikTokSalesFunnel
+            onCtaClick={scrollToBuy}
+            inStock={inStock}
+            price={activePrice}
+          />
+        )}
 
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
