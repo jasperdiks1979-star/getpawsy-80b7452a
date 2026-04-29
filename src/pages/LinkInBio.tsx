@@ -23,6 +23,7 @@ export default function LinkInBio() {
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
+  const secondaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
 
   // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
@@ -165,6 +166,7 @@ export default function LinkInBio() {
   useEffect(() => {
     const targets: Array<{ el: HTMLElement | null; placement: string }> = [
       { el: primaryCtaRef.current, placement: 'bio_primary' },
+      { el: secondaryCtaRef.current, placement: 'bio_secondary' },
       { el: stickyCtaRef.current, placement: 'bio_sticky' },
     ];
     const seen = new Set<string>();
