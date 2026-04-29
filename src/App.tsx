@@ -8,12 +8,17 @@ const TooltipProvider = lazy(() => import("@/components/ui/tooltip").then((m) =>
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 
+import { resolveUtm, appendUtmToPath } from "@/lib/utmNormalizer";
+
 // Redirect /lp/:slug → /products/:slug (preserves UTM params from Pinterest pins)
 const LpRedirect = () => {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
-  const search = searchParams.toString();
-  return <Navigate to={`/products/${slug}${search ? `?${search}` : ''}`} replace />;
+  // Resolve through the central normalizer so session-cached UTMs survive
+  // even if the inbound /lp link was stripped of its query string.
+  const utm = resolveUtm({ search: searchParams });
+  const to = appendUtmToPath(`/products/${slug}`, utm, `?${searchParams.toString()}`);
+  return <Navigate to={to} replace />;
 };
 import { CartProvider } from "@/contexts/CartContext";
 import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
@@ -290,9 +295,12 @@ function CollectionRedirect() {
 function ProductRouteRedirect() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
+  // Re-resolve UTMs through the central normalizer so attribution survives
+  // even if a deep-link client stripped query params on the way in.
+  const utm = resolveUtm({ search: location.search });
   return (
     <Navigate
-      to={`/product/${slug || ""}${location.search}${location.hash}`}
+      to={appendUtmToPath(`/product/${slug || ""}`, utm, location.search, location.hash)}
       replace
     />
   );
@@ -302,9 +310,10 @@ function ProductRouteRedirect() {
 function BestsellerSlugRedirect() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
+  const utm = resolveUtm({ search: location.search });
   return (
     <Navigate
-      to={`/product/${slug || ""}${location.search}${location.hash}`}
+      to={appendUtmToPath(`/product/${slug || ""}`, utm, location.search, location.hash)}
       replace
     />
   );

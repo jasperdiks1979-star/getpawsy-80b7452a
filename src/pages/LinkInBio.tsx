@@ -12,6 +12,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButton';
 import { trackEvent } from '@/lib/analytics';
 import { assignBioHook, BIO_HOOKS } from '@/lib/bioHookBucket';
+import { resolveUtm, syncUtmToUrl, persistUtmToSession } from '@/lib/utmNormalizer';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
@@ -56,44 +57,37 @@ export default function LinkInBio() {
     const isPaidHook = !!urlCampaign && (BIO_HOOKS as readonly string[]).includes(urlCampaign.toLowerCase());
     const resolvedCampaign = isPaidHook ? urlCampaign! : assignBioHook();
     const resolvedContent = searchParams.get('utm_content') || (isPaidHook ? null : 'tt_bio_link');
-    const resolved = {
-      utm_source: searchParams.get('utm_source') || 'tiktok',
-      utm_medium: searchParams.get('utm_medium') || 'social',
-      utm_campaign: resolvedCampaign,
-      utm_content: resolvedContent,
-      utm_term: searchParams.get('utm_term'),
+    // Use the central normalizer so that source/medium/campaign/content
+    // resolution + URL sync + sessionStorage persistence all share the
+    // same rules with every other surface (redirects, trackers, CTAs).
+    const utm = resolveUtm({
+      search: searchParams,
+      fallback: {
+        utm_source: 'tiktok',
+        utm_medium: 'social',
+        utm_campaign: resolvedCampaign,
+        utm_content: resolvedContent ?? undefined,
+      },
+      persist: false,
+    });
+    // Always force the bucketed hook to win, even if the URL carried a
+    // generic tt_bio_link campaign — the bucket assignment is the more
+    // specific signal and must drive dashboard rows.
+    utm.utm_campaign = resolvedCampaign;
+    if (resolvedContent) utm.utm_content = resolvedContent;
+
+    persistUtmToSession(utm);
+    syncUtmToUrl(utm);
+
+    const resolved: Record<string, string | null> = {
+      utm_source: utm.utm_source ?? null,
+      utm_medium: utm.utm_medium ?? null,
+      utm_campaign: utm.utm_campaign ?? null,
+      utm_content: utm.utm_content ?? null,
+      utm_term: utm.utm_term ?? null,
       ad: searchParams.get('ad') || 'tt',
       referrer: typeof document !== 'undefined' ? document.referrer || null : null,
     };
-
-    // Mirror into the URL synchronously via history.replaceState so the
-    // first read of window.location.search sees the bucketed UTMs.
-    if (typeof window !== 'undefined') {
-      const next = new URLSearchParams(window.location.search);
-      next.set('utm_source', resolved.utm_source!);
-      next.set('utm_medium', resolved.utm_medium!);
-      next.set('utm_campaign', resolved.utm_campaign!);
-      if (resolved.utm_content) next.set('utm_content', resolved.utm_content);
-      next.set('ad', resolved.ad!);
-      const newSearch = next.toString();
-      if (newSearch !== window.location.search.replace(/^\?/, '')) {
-        window.history.replaceState(
-          window.history.state,
-          '',
-          `${window.location.pathname}?${newSearch}${window.location.hash}`,
-        );
-      }
-      // Pre-warm the visitor-tracking UTM cache so the very first
-      // trackBrowsing() insert carries the bucketed campaign.
-      try {
-        sessionStorage.setItem('utm_source', resolved.utm_source!);
-        sessionStorage.setItem('utm_medium', resolved.utm_medium!);
-        sessionStorage.setItem('utm_campaign', resolved.utm_campaign!);
-        if (resolved.utm_content) sessionStorage.setItem('utm_content', resolved.utm_content);
-      } catch {
-        // ignore (private mode)
-      }
-    }
     return resolved;
   });
 
