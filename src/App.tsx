@@ -411,6 +411,7 @@ const PinterestScaleModePage = lazyWithRetry(() => import("./pages/admin/Pintere
 const PinterestAutomationPage = lazyWithRetry(() => import("./pages/admin/PinterestAutomationPage"));
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
 const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
+const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
 const TikTokStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokStatusPage"));
