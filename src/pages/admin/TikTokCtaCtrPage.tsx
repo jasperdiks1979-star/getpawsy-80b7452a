@@ -22,6 +22,7 @@ import type { DateRange } from 'react-day-picker';
 import { TikTokVariantKpis } from '@/components/admin/TikTokVariantKpis';
 import { UtmCampaignFunnelMatching } from '@/components/admin/UtmCampaignFunnelMatching';
 import { ConversionVariantHeatmapCompare } from '@/components/admin/ConversionVariantHeatmapCompare';
+import { CtaVariantCtrMatrix } from '@/components/admin/CtaVariantCtrMatrix';
 
 type RawRow = {
   placement: string | null;
@@ -706,6 +707,27 @@ export default function TikTokCtaCtrPage() {
               3 conv_* variants with deeplinks into Clarity heatmaps filtered
               on utm_campaign tag. */}
           <ConversionVariantHeatmapCompare
+            startIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? startOfDay(customRange.from).toISOString()
+                : startOfDay(subDays(new Date(), days - 1)).toISOString()
+            }
+            endIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? endOfDay(customRange.to).toISOString()
+                : endOfDay(new Date()).toISOString()
+            }
+            windowLabel={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? `${format(customRange.from, 'MMM d')} → ${format(customRange.to, 'MMM d')}`
+                : `Last ${days} days`
+            }
+          />
+
+          {/* CTA variant × placement CTR matrix — proves whether new CTA
+              experiments (high_conv_v2, etc.) actually beat the previous
+              version, and pinpoints which placement carried the lift. */}
+          <CtaVariantCtrMatrix
             startIso={
               rangeMode === 'custom' && customRange?.from && customRange?.to
                 ? startOfDay(customRange.from).toISOString()
