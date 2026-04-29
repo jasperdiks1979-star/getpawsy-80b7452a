@@ -458,6 +458,12 @@ export default function TikTokAdsPerformancePage() {
           </div>
         </Card>
 
+        {/* Bio-link share widget — for each hook bucket, shows what % of
+            sessions came from the TikTok profile bio link (utm_content=
+            tt_bio_link) vs other sources, with side-by-side CVR so you can
+            see whether bio traffic converts better/worse than the rest. */}
+        <BioSplitCard data={bioData} loading={loading} />
+
         {/* Per-hook table */}
         <Card className="overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
