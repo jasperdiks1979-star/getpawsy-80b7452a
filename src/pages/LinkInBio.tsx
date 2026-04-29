@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButton';
 import { trackEvent } from '@/lib/analytics';
-import { assignBioHook, BIO_HOOKS } from '@/lib/bioHookBucket';
+import { assignBioHook, BIO_HOOKS, EXPLICIT_PAID_CAMPAIGNS } from '@/lib/bioHookBucket';
 import { resolveUtm, syncUtmToUrl, persistUtmToSession } from '@/lib/utmNormalizer';
 import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
@@ -83,9 +83,15 @@ export default function LinkInBio() {
   //   any tracking call resolves them.
   const [attribution] = useState<Record<string, string | null>>(() => {
     const urlCampaign = searchParams.get('utm_campaign');
-    const isPaidHook = !!urlCampaign && (BIO_HOOKS as readonly string[]).includes(urlCampaign.toLowerCase());
-    const resolvedCampaign = isPaidHook ? urlCampaign! : assignBioHook();
-    const resolvedContent = searchParams.get('utm_content') || (isPaidHook ? null : 'tt_bio_link');
+    // Treat paid hook rotations AND the 3 conversion video variants
+    // (conv_timepain/conv_smell/conv_direct) as explicit campaigns —
+    // never rewrite them with the bio bucket. tt_bio_link stays the
+    // generic fallback for raw bio-link traffic.
+    const isExplicitPaid =
+      !!urlCampaign &&
+      (EXPLICIT_PAID_CAMPAIGNS as readonly string[]).includes(urlCampaign.toLowerCase());
+    const resolvedCampaign = isExplicitPaid ? urlCampaign! : assignBioHook();
+    const resolvedContent = searchParams.get('utm_content') || (isExplicitPaid ? null : 'tt_bio_link');
     // Use the central normalizer so that source/medium/campaign/content
     // resolution + URL sync + sessionStorage persistence all share the
     // same rules with every other surface (redirects, trackers, CTAs).
