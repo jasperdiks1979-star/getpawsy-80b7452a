@@ -2791,6 +2791,7 @@ export type Database = {
       lp_funnel_events: {
         Row: {
           created_at: string
+          cta_variant: string | null
           event_name: string
           funnel: string | null
           id: string
@@ -2810,6 +2811,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cta_variant?: string | null
           event_name: string
           funnel?: string | null
           id?: string
@@ -2829,6 +2831,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cta_variant?: string | null
           event_name?: string
           funnel?: string | null
           id?: string

@@ -1,0 +1,2 @@
+ALTER TABLE public.lp_funnel_events ADD COLUMN IF NOT EXISTS cta_variant text;
+CREATE INDEX IF NOT EXISTS lp_funnel_events_cta_variant_placement_idx ON public.lp_funnel_events (cta_variant, placement) WHERE cta_variant IS NOT NULL;
