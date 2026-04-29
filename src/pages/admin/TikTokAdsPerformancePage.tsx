@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 /**
@@ -190,12 +192,16 @@ function downloadCsv(filename: string, content: string) {
 
 export default function TikTokAdsPerformancePage() {
   const [windowDays, setWindowDays] = useState<number>(30);
+  // Admin override: when ON, the RPCs return the raw, unfiltered data set
+  // (internal/NL/admin/bot sessions are no longer dropped). Use only for
+  // manual validation; defaults OFF so the dashboard stays compliant.
+  const [includeExcluded, setIncludeExcluded] = useState<boolean>(false);
   const [data, setData] = useState<Payload | null>(null);
   const [bioData, setBioData] = useState<BioPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async (days: number) => {
+  const load = async (days: number, includeExcludedFlag: boolean) => {
     setLoading(true);
     setError(null);
     // Fetch the funnel and the bio-link split in parallel — both are admin-
@@ -205,8 +211,12 @@ export default function TikTokAdsPerformancePage() {
       supabase.rpc("get_tiktok_hook_performance" as any, {
         p_window_days: days,
         p_campaign_pattern: null,
+        p_include_excluded: includeExcludedFlag,
       }),
-      supabase.rpc("get_tiktok_bio_split" as any, { p_window_days: days }),
+      supabase.rpc("get_tiktok_bio_split" as any, {
+        p_window_days: days,
+        p_include_excluded: includeExcludedFlag,
+      }),
     ]);
     if (funnelRes.error) {
       setError(funnelRes.error.message);
@@ -226,8 +236,8 @@ export default function TikTokAdsPerformancePage() {
   };
 
   useEffect(() => {
-    load(windowDays);
-  }, [windowDays]);
+    load(windowDays, includeExcluded);
+  }, [windowDays, includeExcluded]);
 
   // Merge live rows with the 5 expected hooks so every hook is visible even
   // before its first click — gives the user a deterministic 5-row table that
