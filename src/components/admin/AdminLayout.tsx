@@ -56,6 +56,7 @@ const navItems = [
   { to: '/admin/tiktok-funnel-debug', label: 'TikTok Funnel Debug', icon: Activity },
   { to: '/admin/tiktok-excluded-sessions', label: 'TikTok Excluded Sessions', icon: ShieldAlert },
   { to: '/admin/tiktok-session-decision-log', label: 'TikTok Decision Log', icon: ShieldAlert },
+  { to: '/admin/tiktok-funnel-report', label: 'TikTok Funnel Report', icon: TrendingUp },
   { to: '/admin/job-retry-policies', label: 'Job Retry Policies', icon: Wrench },
   { to: '/admin/job-retry-metrics', label: 'Job Retry Metrics', icon: Activity },
 ];
