@@ -702,6 +702,27 @@ export default function TikTokCtaCtrPage() {
             }
           />
 
+          {/* Conversion variant heatmap compare — side-by-side cards for the
+              3 conv_* variants with deeplinks into Clarity heatmaps filtered
+              on utm_campaign tag. */}
+          <ConversionVariantHeatmapCompare
+            startIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? startOfDay(customRange.from).toISOString()
+                : startOfDay(subDays(new Date(), days - 1)).toISOString()
+            }
+            endIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? endOfDay(customRange.to).toISOString()
+                : endOfDay(new Date()).toISOString()
+            }
+            windowLabel={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? `${format(customRange.from, 'MMM d')} → ${format(customRange.to, 'MMM d')}`
+                : `Last ${days} days`
+            }
+          />
+
           {/* Side-by-side placement comparison */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {aggregated.map((a) => {
