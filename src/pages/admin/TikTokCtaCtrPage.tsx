@@ -290,10 +290,13 @@ export default function TikTokCtaCtrPage() {
     const wb = XLSX.utils.book_new();
 
     // ---------- Summary sheet ----------
+    const windowLabel = rangeMode === 'custom' && customRange?.from && customRange?.to
+      ? `${format(customRange.from, 'yyyy-MM-dd')} → ${format(customRange.to, 'yyyy-MM-dd')}`
+      : `Last ${days} days`;
     const summaryAoa: (string | number)[][] = [
       ['TikTok CTA CTR Export'],
       ['Generated', new Date().toISOString()],
-      ['Window (days)', days],
+      ['Window', windowLabel],
       ['View filter (campaign)', campaign],
       ['Export placements', Array.from(exportPlacements).join(', ') || '(none)'],
       ['Export campaigns', exportCampaigns === null ? 'All' : (Array.from(exportCampaigns).join(', ') || '(none)')],
