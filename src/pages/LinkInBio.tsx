@@ -11,16 +11,49 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButton';
 import { trackEvent } from '@/lib/analytics';
+import { assignBioHook, BIO_HOOKS } from '@/lib/bioHookBucket';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
 
 export default function LinkInBio() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
+
+  // Auto-assign a hook bucket (hook1..hook5) for visitors arriving WITHOUT
+  // an explicit paid-ad hook. This rewrites the in-URL utm_campaign so:
+  //   1. <TikTokDeepLinkButton/> (which reads utm_campaign from the URL)
+  //      forwards the bucket through the funnel.
+  //   2. Every analytics event below (lp_view, lp_scroll_depth, lp_cta_*)
+  //      is tagged with the bucket via `attribution`.
+  //   3. The TikTok Ads Performance dashboard splits bio-link traffic
+  //      across all 5 hook rows, so we can A/B which hook copy converts
+  //      the organic profile audience best.
+  // Paid ads (?utm_campaign=hook1..5) are NOT rewritten — the existing
+  // value already belongs to one of the 5 expected buckets.
+  useEffect(() => {
+    const current = (searchParams.get('utm_campaign') || '').toLowerCase();
+    const isPaidHook = (BIO_HOOKS as readonly string[]).includes(current);
+    if (isPaidHook) return;
+
+    const hook = assignBioHook();
+    const next = new URLSearchParams(searchParams);
+    next.set('utm_source', next.get('utm_source') || 'tiktok');
+    next.set('utm_medium', next.get('utm_medium') || 'social');
+    next.set('utm_campaign', hook);
+    // Preserve the bio-link origin so we can still segment "bio vs paid"
+    // downstream — the campaign column tells us WHICH hook, utm_content
+    // tells us it came from the profile bio rather than an ad placement.
+    if (!next.get('utm_content')) next.set('utm_content', 'tt_bio_link');
+    next.set('ad', next.get('ad') || 'tt');
+    setSearchParams(next, { replace: true });
+    // Intentionally run only once on mount — we don't want to keep
+    // overwriting the URL as the user interacts with the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Snapshot UTM/attribution context once — every funnel event is enriched
   // with the same params so GA4 can segment drop-off by source/campaign/ad.
