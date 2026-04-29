@@ -353,7 +353,7 @@ export default function LinkInBio() {
         {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
         <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
           {/* Proof line */}
-          <div className="text-center flex flex-col gap-0.5">
+          <div ref={proofBlockRef} className="text-center flex flex-col gap-0.5">
             <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
             <p className="text-[13px] font-semibold text-foreground/85">
               Over 12,000 cat owners switched
@@ -361,7 +361,7 @@ export default function LinkInBio() {
           </div>
 
           {/* Big nudge + bouncing arrow */}
-          <div className="text-center flex flex-col items-center gap-1">
+          <div ref={nudgeBlockRef} className="text-center flex flex-col items-center gap-1">
             <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
               👇 Tap below to see how it works
             </p>
