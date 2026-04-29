@@ -13,6 +13,7 @@ import { TikTokDeepLinkButton } from '@/components/marketing/TikTokDeepLinkButto
 import { trackEvent } from '@/lib/analytics';
 import { assignBioHook, BIO_HOOKS } from '@/lib/bioHookBucket';
 import { resolveUtm, syncUtmToUrl, persistUtmToSession } from '@/lib/utmNormalizer';
+import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
@@ -129,6 +130,9 @@ export default function LinkInBio() {
       funnel_step: 1,
       ...attribution,
     });
+    // Debug checkpoint #1 — captures UTM state right after /go mounts +
+    // bucketing/syncUtmToUrl have run. Safe no-op without ?debug_utm=1.
+    logUtmCheckpoint('go_mount', { attribution });
   }, [attribution]);
 
   // FUNNEL STEP 2 — Scroll-depth milestones to surface where users drop off
@@ -202,6 +206,9 @@ export default function LinkInBio() {
       placement,
       ...attribution,
     });
+    // Debug checkpoint #2 — captures UTM state at the moment of click,
+    // BEFORE the outbound navigation, so we can compare against pdp_load.
+    logUtmCheckpoint('cta_click', { placement, attribution });
   };
 
   return (
