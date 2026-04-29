@@ -9,6 +9,28 @@ import {
 import { enrichEventWithLpCta } from '@/lib/lpCtaCorrelation';
 import { validateUtmAttribution } from '@/lib/utmAttributionValidator';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
+import { getPersistedUtm } from '@/lib/utmNormalizer';
+
+/**
+ * Conversion-event UTM enricher. Pulls the persisted attribution
+ * (session → 30-day localStorage) and exposes it on the GA4 event so
+ * downstream funnel reports can group revenue by the original
+ * utm_source / utm_campaign / utm_content even when the user landed
+ * on /checkout or /payment-success without UTMs in the URL.
+ */
+function withPersistedUtm(
+  params: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const utm = getPersistedUtm();
+  return {
+    ...params,
+    utm_source: utm.utm_source ?? null,
+    utm_medium: utm.utm_medium ?? null,
+    utm_campaign: utm.utm_campaign ?? null,
+    utm_content: utm.utm_content ?? null,
+    utm_term: utm.utm_term ?? null,
+  };
+}
 
 declare global {
   interface Window {
