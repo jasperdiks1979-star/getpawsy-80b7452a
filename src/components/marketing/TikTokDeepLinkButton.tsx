@@ -13,6 +13,7 @@ import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
+import { resolveUtm, withUtm } from '@/lib/utmNormalizer';
 
 const PRODUCT_SLUG = 'automatic-cat-litter-box-self-cleaning-app-control';
 
@@ -42,23 +43,35 @@ export function TikTokDeepLinkButton({
   // fallbacks for organic visits with no UTMs in the URL.
   const [searchParams] = useSearchParams();
 
-  const utmSource = searchParams.get('utm_source') || 'tiktok';
-  const utmMedium = searchParams.get('utm_medium') || 'social';
-  const utmCampaign = searchParams.get('utm_campaign') || campaign;
-  const utmContent = searchParams.get('utm_content') || content || null;
-  const utmTerm = searchParams.get('utm_term');
+  // Resolve through the central normalizer so the deep-link inherits
+  // session-cached UTMs even when the host page lost them, and so all
+  // surfaces use the same priority rules.
+  const utm = resolveUtm({
+    search: searchParams,
+    fallback: {
+      utm_source: 'tiktok',
+      utm_medium: 'social',
+      utm_campaign: campaign,
+      utm_content: content ?? undefined,
+    },
+  });
+  const utmSource = utm.utm_source || 'tiktok';
+  const utmMedium = utm.utm_medium || 'social';
+  const utmCampaign = utm.utm_campaign || campaign;
+  const utmContent = utm.utm_content || content || null;
+  const utmTerm = utm.utm_term || null;
   const adParam = searchParams.get('ad') || 'tt';
 
-  const params = new URLSearchParams({
+  // Carry `ad` (non-UTM) ourselves; UTMs go through withUtm() so future
+  // changes to the canonical key list propagate everywhere.
+  const search = withUtm(`ad=${encodeURIComponent(adParam)}`, {
     utm_source: utmSource,
     utm_medium: utmMedium,
     utm_campaign: utmCampaign,
-    ad: adParam,
+    utm_content: utmContent,
+    utm_term: utmTerm,
   });
-  if (utmContent) params.set('utm_content', utmContent);
-  if (utmTerm) params.set('utm_term', utmTerm);
-
-  const href = `/products/${PRODUCT_SLUG}?${params.toString()}`;
+  const href = `/products/${PRODUCT_SLUG}${search}`;
 
   // Capture every TikTok deep-link click with the EXACT URL the user follows.
   // Lets GA4 segment hero vs bio vs ad placements without trusting only UTMs
