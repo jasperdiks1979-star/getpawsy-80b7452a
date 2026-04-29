@@ -27,6 +27,30 @@ const HOOKS = ['hook1', 'hook2', 'hook3', 'hook4', 'hook5'] as const;
 
 export type BioHook = (typeof HOOKS)[number];
 
+/**
+ * Conversion-video campaign IDs (from the 3 TikTok ad variants:
+ * Time Pain / Smell Problem / Direct Buyer). When the URL carries one
+ * of these, /go MUST treat it as an explicit paid hook and skip the
+ * round-robin bucketing — otherwise we'd overwrite the variant
+ * attribution on the dashboard.
+ */
+export const CONVERSION_CAMPAIGNS = [
+  'conv_timepain',
+  'conv_smell',
+  'conv_direct',
+] as const;
+
+export type ConversionCampaign = (typeof CONVERSION_CAMPAIGNS)[number];
+
+/**
+ * All campaign IDs that /go must NOT rewrite. Includes the 5 organic
+ * hook buckets (paid bio rotations) and the 3 conversion video variants.
+ */
+export const EXPLICIT_PAID_CAMPAIGNS = [
+  ...HOOKS,
+  ...CONVERSION_CAMPAIGNS,
+] as const;
+
 function safeStorage(): Storage | null {
   try {
     if (typeof window === 'undefined') return null;
