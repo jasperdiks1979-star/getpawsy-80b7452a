@@ -640,3 +640,182 @@ function KpiTile({ icon, label, value }: { icon: React.ReactNode; label: string;
     </Card>
   );
 }
+
+/**
+ * BioSplitCard — visualises how much of each hook's traffic comes from the
+ * TikTok bio link vs other sources, plus how each segment converts.
+ *
+ * Why this matters: organic bio-link traffic and paid-ad traffic both end
+ * up in hook1..hook5 buckets (bio is auto-bucketed deterministically), so
+ * without this widget you can't tell whether a hook's CVR is being lifted
+ * or dragged down by the bio audience. The horizontal bar shows the share
+ * at a glance; the CVR pair shows whether the bio audience converts better
+ * or worse than the rest for this specific hook.
+ */
+function BioSplitCard({ data, loading }: { data: BioPayload | null; loading: boolean }) {
+  // Always render all 5 expected hooks so the layout is stable even before
+  // any traffic arrives — empty states are explicit, not invisible rows.
+  const rowsByHook = new Map((data?.per_hook ?? []).map((r) => [r.hook.toLowerCase(), r]));
+  const totals = data?.totals;
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <UserRound className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">Bio-link share &amp; conversion</h2>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          <code className="px-1 py-0.5 rounded bg-muted text-[10px]">utm_content=tt_bio_link</code> vs other sources, per hook
+        </span>
+      </div>
+
+      {/* Roll-up summary across all 5 hooks */}
+      {totals && totals.total_sessions > 0 && (
+        <div className="px-4 py-3 border-b border-border bg-muted/20 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div>
+            <div className="text-muted-foreground">Bio share (all hooks)</div>
+            <div className="text-base font-bold text-foreground tabular-nums">{fmtPct(totals.bio_share)}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Bio sessions</div>
+            <div className="text-base font-bold text-foreground tabular-nums">{fmtInt(totals.bio_sessions)}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Bio purchases</div>
+            <div className="text-base font-bold text-foreground tabular-nums">{fmtInt(totals.bio_purchases)}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Bio revenue</div>
+            <div className="text-base font-bold text-foreground tabular-nums">{fmtMoney(totals.bio_revenue)}</div>
+          </div>
+        </div>
+      )}
+
+      <div className="divide-y divide-border/60">
+        {EXPECTED_HOOKS.map((h) => {
+          const row = rowsByHook.get(h);
+          const bioSessions = row?.bio_sessions ?? 0;
+          const otherSessions = row?.other_sessions ?? 0;
+          const total = bioSessions + otherSessions;
+          const bioShare = row?.bio_share ?? 0;
+          const bioCvr = row?.bio_cvr ?? 0;
+          const otherCvr = row?.other_cvr ?? 0;
+          // Highlight when bio meaningfully out- or under-performs the rest.
+          // 0.5 pp is small enough to surface signal early, big enough to
+          // ignore rounding noise when both buckets are tiny.
+          const cvrDelta = bioCvr - otherCvr;
+          const cvrSignal: 'better' | 'worse' | 'neutral' =
+            total === 0 || (bioSessions === 0 && otherSessions === 0)
+              ? 'neutral'
+              : cvrDelta >= 0.5
+              ? 'better'
+              : cvrDelta <= -0.5
+              ? 'worse'
+              : 'neutral';
+
+          return (
+            <div key={h} className="px-4 py-3">
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  <span className="font-mono font-semibold text-sm text-foreground">{h}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {fmtInt(total)} sessions
+                  </span>
+                </div>
+                <div className="text-xs tabular-nums text-muted-foreground">
+                  Bio share <span className="font-semibold text-foreground">{fmtPct(bioShare)}</span>
+                </div>
+              </div>
+
+              {/* Stacked bar: bio (primary) vs other (muted). Falls back to
+                  a flat grey track when the hook has no traffic yet. */}
+              <div className="h-2.5 w-full rounded-full overflow-hidden bg-muted/60 flex" aria-label={`${h} bio share ${fmtPct(bioShare)}`}>
+                {total > 0 ? (
+                  <>
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${(bioSessions / total) * 100}%` }}
+                    />
+                    <div
+                      className="h-full bg-muted-foreground/40 transition-all"
+                      style={{ width: `${(otherSessions / total) * 100}%` }}
+                    />
+                  </>
+                ) : null}
+              </div>
+
+              {/* Side-by-side comparison: sessions, CVR, revenue per bucket */}
+              <div className="mt-2.5 grid grid-cols-2 gap-3 text-[11px]">
+                <div className="rounded-md border border-primary/20 bg-primary/5 px-2.5 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold uppercase tracking-wide text-primary">Bio link</span>
+                    <span className="tabular-nums text-muted-foreground">{fmtInt(bioSessions)} sess</span>
+                  </div>
+                  <div className="mt-1 grid grid-cols-3 gap-1 tabular-nums">
+                    <div>
+                      <div className="text-muted-foreground">CVR</div>
+                      <div className={cn(
+                        'font-semibold',
+                        cvrSignal === 'better' && 'text-green-600 dark:text-green-400',
+                        cvrSignal === 'worse' && 'text-amber-600 dark:text-amber-400',
+                      )}>{fmtPct(bioCvr)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Buys</div>
+                      <div className="font-semibold text-foreground">{fmtInt(row?.bio_purchases ?? 0)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Revenue</div>
+                      <div className="font-semibold text-foreground">{fmtMoney(row?.bio_revenue ?? 0)}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-md border border-border bg-muted/20 px-2.5 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold uppercase tracking-wide text-muted-foreground">Other</span>
+                    <span className="tabular-nums text-muted-foreground">{fmtInt(otherSessions)} sess</span>
+                  </div>
+                  <div className="mt-1 grid grid-cols-3 gap-1 tabular-nums">
+                    <div>
+                      <div className="text-muted-foreground">CVR</div>
+                      <div className={cn(
+                        'font-semibold',
+                        cvrSignal === 'worse' && 'text-green-600 dark:text-green-400',
+                        cvrSignal === 'better' && 'text-amber-600 dark:text-amber-400',
+                      )}>{fmtPct(otherCvr)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Buys</div>
+                      <div className="font-semibold text-foreground">{fmtInt(row?.other_purchases ?? 0)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Revenue</div>
+                      <div className="font-semibold text-foreground">{fmtMoney(row?.other_revenue ?? 0)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {cvrSignal !== 'neutral' && total > 0 && (
+                <p className={cn(
+                  'mt-2 text-[11px]',
+                  cvrSignal === 'better' && 'text-green-700 dark:text-green-400',
+                  cvrSignal === 'worse' && 'text-amber-700 dark:text-amber-400',
+                )}>
+                  Bio audience converts {cvrSignal === 'better' ? 'better' : 'worse'} than other sources by {Math.abs(cvrDelta).toFixed(2)}pp.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {!loading && (!totals || totals.total_sessions === 0) && (
+        <div className="px-4 py-6 text-center text-xs text-muted-foreground border-t border-border">
+          No hook traffic in this window yet — bio-link split appears here once any hook1..5 session is recorded.
+        </div>
+      )}
+    </Card>
+  );
+}
