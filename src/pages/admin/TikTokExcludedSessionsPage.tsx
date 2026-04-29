@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 
 type RuleKey = 'is_internal' | 'country=NL' | 'admin_route' | 'bot_heuristic';
@@ -27,6 +29,7 @@ interface ExcludedRow {
   browser: string;
   screen_width: number;
   rules: RuleKey[];
+  is_excluded?: boolean;
 }
 
 interface Summary {
@@ -44,6 +47,7 @@ interface Payload {
   limit: number;
   offset: number;
   rule_filter: string | null;
+  include_excluded?: boolean;
   summary: Summary;
   rows: ExcludedRow[];
 }
@@ -80,6 +84,10 @@ export default function TikTokExcludedSessionsPage() {
   const [windowDays, setWindowDays] = useState<number>(30);
   const [rule, setRule] = useState<string>('all');
   const [offset, setOffset] = useState<number>(0);
+  // Admin override: when ON, the RPC returns ALL TikTok sessions (including
+  // ones that would normally be kept), so admins can validate exactly which
+  // sessions the dashboard counts vs. drops.
+  const [includeExcluded, setIncludeExcluded] = useState<boolean>(false);
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +102,7 @@ export default function TikTokExcludedSessionsPage() {
         p_limit: PAGE_SIZE,
         p_offset: offset,
         p_rule: rule === 'all' ? null : rule,
+        p_include_excluded: includeExcluded,
       });
       if (cancelled) return;
       if (error) { setError(error.message); setData(null); }
@@ -101,7 +110,7 @@ export default function TikTokExcludedSessionsPage() {
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [windowDays, rule, offset]);
+  }, [windowDays, rule, offset, includeExcluded]);
 
   const summary = data?.summary;
   const rows = data?.rows ?? [];
