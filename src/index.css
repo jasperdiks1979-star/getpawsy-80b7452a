@@ -845,3 +845,18 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
+
+/* /go CTA conversion boosters — subtle, mobile-safe motion */
+@keyframes gp-cta-pulse {
+  0%, 100% { box-shadow: 0 10px 25px -8px hsl(25 95% 53% / 0.45), 0 0 0 0 hsl(25 95% 53% / 0.55); }
+  50%      { box-shadow: 0 10px 25px -8px hsl(25 95% 53% / 0.55), 0 0 0 12px hsl(25 95% 53% / 0); }
+}
+@keyframes gp-arrow-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+.gp-cta-pulse { animation: gp-cta-pulse 1.8s ease-out infinite; }
+.gp-arrow-bounce { animation: gp-arrow-bounce 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .gp-cta-pulse, .gp-arrow-bounce { animation: none; }
+}

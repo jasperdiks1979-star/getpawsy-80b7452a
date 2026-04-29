@@ -311,16 +311,34 @@ export default function LinkInBio() {
           />
         </div>
 
-        {/* 2. PRIMARY CTA */}
-        <div className="w-full flex flex-col gap-2" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
+        {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
+        <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
+          {/* Proof line */}
+          <div className="text-center flex flex-col gap-0.5">
+            <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
+            <p className="text-[13px] font-semibold text-foreground/85">
+              Over 12,000 cat owners switched
+            </p>
+          </div>
+
+          {/* Big nudge + bouncing arrow */}
+          <div className="text-center flex flex-col items-center gap-1">
+            <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
+              👇 Tap below to see how it works
+            </p>
+            <span aria-hidden className="gp-arrow-bounce text-2xl text-[hsl(25,95%,53%)] leading-none">▼</span>
+          </div>
+
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label="See how it works →"
             campaign="tt_bio_link"
             content="bio_primary"
-            className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
-          <p className="text-center text-[12px] font-medium text-muted-foreground">
-            🇺🇸 Ships from US · 30-day returns · Secure checkout
+
+          {/* Micro-commitment */}
+          <p className="text-center text-[13px] font-semibold text-foreground/75">
+            ⏱️ Takes 10 seconds to see it
           </p>
         </div>
 
@@ -383,10 +401,10 @@ export default function LinkInBio() {
         {/* 6. FINAL CTA */}
         <div className="w-full flex flex-col gap-2" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label="See how it works →"
             campaign="tt_bio_link"
             content="bio_secondary"
-            className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
           <p className="text-center text-[13px] font-semibold text-foreground/80">
             Try it risk-free for 30 days
@@ -407,7 +425,7 @@ export default function LinkInBio() {
       >
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label="See how it works →"
             campaign="tt_bio_link"
             content="bio_sticky"
             className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
