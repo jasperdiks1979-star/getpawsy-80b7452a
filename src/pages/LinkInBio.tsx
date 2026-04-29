@@ -23,49 +23,60 @@ export default function LinkInBio() {
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
 
-  // Auto-assign a hook bucket (hook1..hook5) for visitors arriving WITHOUT
-  // an explicit paid-ad hook. This rewrites the in-URL utm_campaign so:
-  //   1. <TikTokDeepLinkButton/> (which reads utm_campaign from the URL)
-  //      forwards the bucket through the funnel.
-  //   2. Every analytics event below (lp_view, lp_scroll_depth, lp_cta_*)
-  //      is tagged with the bucket via `attribution`.
-  //   3. The TikTok Ads Performance dashboard splits bio-link traffic
-  //      across all 5 hook rows, so we can A/B which hook copy converts
-  //      the organic profile audience best.
-  // Paid ads (?utm_campaign=hook1..5) are NOT rewritten — the existing
-  // value already belongs to one of the 5 expected buckets.
-  useEffect(() => {
-    const current = (searchParams.get('utm_campaign') || '').toLowerCase();
-    const isPaidHook = (BIO_HOOKS as readonly string[]).includes(current);
-    if (isPaidHook) return;
+  // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
+  //
+  // Why bucket bio-link traffic: when a visitor lands on /go without an
+  // explicit paid-ad hook (i.e. they tapped the TikTok profile bio link),
+  // we used to tag everything as utm_campaign=tt_bio_link. That collapsed
+  // ALL organic profile traffic into one row on the TikTok Ads Performance
+  // dashboard, which made it impossible to A/B which hook copy converts
+  // the organic audience best.
+  //
+  // Now: each device deterministically gets assigned hook1..hook5
+  // (round-robin, sticky per device via localStorage), so bio-link traffic
+  // spreads across the 5 hook rows just like paid traffic. We preserve
+  // the bio-link origin in utm_content="tt_bio_link" so we can still
+  // segment "bio vs paid" downstream.
+  //
+  // Paid ads (?utm_campaign=hook1..5) are NEVER rewritten — the URL
+  // already carries the correct bucket.
+  const attribution = useRef<Record<string, string | null>>(
+    (() => {
+      const urlCampaign = searchParams.get('utm_campaign');
+      const isPaidHook = !!urlCampaign && (BIO_HOOKS as readonly string[]).includes(urlCampaign.toLowerCase());
+      const resolvedCampaign = isPaidHook ? urlCampaign! : assignBioHook();
+      const resolvedContent = searchParams.get('utm_content') || (isPaidHook ? null : 'tt_bio_link');
+      return {
+        utm_source: searchParams.get('utm_source') || 'tiktok',
+        utm_medium: searchParams.get('utm_medium') || 'social',
+        utm_campaign: resolvedCampaign,
+        utm_content: resolvedContent,
+        utm_term: searchParams.get('utm_term'),
+        ad: searchParams.get('ad') || 'tt',
+        referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+      };
+    })(),
+  ).current;
 
-    const hook = assignBioHook();
+  // Mirror the resolved attribution into the URL so child components that
+  // read UTMs from useSearchParams (e.g. <TikTokDeepLinkButton/>) forward
+  // the bucketed campaign through the deep-link click into the PDP. This
+  // runs once on mount; user navigation away from /go is unaffected.
+  useEffect(() => {
+    const current = searchParams.get('utm_campaign');
+    if (current === attribution.utm_campaign && searchParams.get('utm_content') === attribution.utm_content) {
+      return;
+    }
     const next = new URLSearchParams(searchParams);
-    next.set('utm_source', next.get('utm_source') || 'tiktok');
-    next.set('utm_medium', next.get('utm_medium') || 'social');
-    next.set('utm_campaign', hook);
-    // Preserve the bio-link origin so we can still segment "bio vs paid"
-    // downstream — the campaign column tells us WHICH hook, utm_content
-    // tells us it came from the profile bio rather than an ad placement.
-    if (!next.get('utm_content')) next.set('utm_content', 'tt_bio_link');
-    next.set('ad', next.get('ad') || 'tt');
+    next.set('utm_source', attribution.utm_source!);
+    next.set('utm_medium', attribution.utm_medium!);
+    next.set('utm_campaign', attribution.utm_campaign!);
+    if (attribution.utm_content) next.set('utm_content', attribution.utm_content);
+    next.set('ad', attribution.ad!);
     setSearchParams(next, { replace: true });
-    // Intentionally run only once on mount — we don't want to keep
-    // overwriting the URL as the user interacts with the page.
+    // Mount-only sync — do not chase searchParams updates.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Snapshot UTM/attribution context once — every funnel event is enriched
-  // with the same params so GA4 can segment drop-off by source/campaign/ad.
-  const attribution = useRef<Record<string, string | null>>({
-    utm_source: searchParams.get('utm_source'),
-    utm_medium: searchParams.get('utm_medium'),
-    utm_campaign: searchParams.get('utm_campaign'),
-    utm_content: searchParams.get('utm_content'),
-    utm_term: searchParams.get('utm_term'),
-    ad: searchParams.get('ad'),
-    referrer: typeof document !== 'undefined' ? document.referrer || null : null,
-  }).current;
 
   useEffect(() => {
     document.title = 'GetPawsy — Shop the viral self-cleaning litter box';
