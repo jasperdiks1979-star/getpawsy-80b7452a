@@ -724,6 +724,27 @@ export default function TikTokCtaCtrPage() {
             }
           />
 
+          {/* CTA variant × placement CTR matrix — proves whether new CTA
+              experiments (high_conv_v2, etc.) actually beat the previous
+              version, and pinpoints which placement carried the lift. */}
+          <CtaVariantCtrMatrix
+            startIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? startOfDay(customRange.from).toISOString()
+                : startOfDay(subDays(new Date(), days - 1)).toISOString()
+            }
+            endIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? endOfDay(customRange.to).toISOString()
+                : endOfDay(new Date()).toISOString()
+            }
+            windowLabel={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? `${format(customRange.from, 'MMM d')} → ${format(customRange.to, 'MMM d')}`
+                : `Last ${days} days`
+            }
+          />
+
           {/* Side-by-side placement comparison */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {aggregated.map((a) => {
