@@ -243,7 +243,6 @@ export const useVisitorTracking = () => {
   const locationRef = useRef<GeoLocation | null>(null);
   const lastActivityRef = useRef<string | null>(null);
   const sessionId = useRef<string>(getSessionId());
-  const utmParamsRef = useRef<UTMParams>(getUTMParams());
   const referrerRef = useRef<string | null>(getReferrer());
   const deviceInfoRef = useRef<DeviceInfo>(getDeviceInfo());
 
@@ -299,7 +298,11 @@ export const useVisitorTracking = () => {
 
     try {
       const location = await fetchLocation();
-      const utmParams = utmParamsRef.current;
+      // Re-resolve every call so URL UTMs added later in the funnel
+      // (e.g. /go rewriting utm_campaign=hookN on mount, or a deep-link
+      // click into /product/?utm_campaign=hookN) are tracked on the row
+      // they actually apply to — not frozen to the first page's URL.
+      const utmParams = getUTMParams();
       const referrer = referrerRef.current;
       const deviceInfo = deviceInfoRef.current;
       const referrerCategory = categorizeReferrer(referrer, utmParams);
@@ -338,6 +341,16 @@ export const useVisitorTracking = () => {
       if (error) {
         console.error("Error tracking activity:", error);
       } else {
+        // Remember this path so the NEXT navigation can infer attribution
+        // (e.g. PDP after /go) even if a redirect strips the query string.
+        try {
+          sessionStorage.setItem(
+            'gp_internal_prev_path',
+            window.location.pathname + window.location.search,
+          );
+        } catch {
+          // sessionStorage can throw in private mode — non-fatal.
+        }
         console.log(`[Visitor Tracking] ${activityType} tracked`, { 
           productId: options?.productId, 
           orderId: options?.orderId,
