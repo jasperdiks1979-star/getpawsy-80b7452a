@@ -8386,6 +8386,10 @@ export type Database = {
             Args: { p_include_excluded?: boolean; p_window_days?: number }
             Returns: Json
           }
+      get_tiktok_bot_detection_impact: {
+        Args: { p_window_days?: number }
+        Returns: Json
+      }
       get_tiktok_excluded_sessions:
         | {
             Args: {
