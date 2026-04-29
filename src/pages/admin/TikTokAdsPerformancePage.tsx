@@ -333,7 +333,7 @@ export default function TikTokAdsPerformancePage() {
       .map<PdpLagAlert>((r) => {
         const severity: 'critical' | 'warn' = r.pdp_ctr < PDP_CTR_CRITICAL ? 'critical' : 'warn';
         const likelyCause =
-          r.pdp === 0
+          r.pdp_sessions === 0
             ? 'No PDP visits at all — likely a redirect dropping UTMs or the CTA is broken on this hook.'
             : severity === 'critical'
               ? 'PDP CTR is far below the 30% benchmark — investigate creative fatigue or tracking attribution.'
