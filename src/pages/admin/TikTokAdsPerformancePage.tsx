@@ -392,7 +392,7 @@ export default function TikTokAdsPerformancePage() {
                 ))}
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="icon" onClick={() => load(windowDays)} aria-label="Refresh">
+            <Button variant="outline" size="icon" onClick={() => load(windowDays, includeExcluded)} aria-label="Refresh">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
             <Button
