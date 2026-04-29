@@ -43,6 +43,15 @@ function renderAt(initialUrl: string) {
 describe('TikTokDeepLinkButton — hook attribution (hook1..hook5)', () => {
   beforeEach(() => {
     trackEventSpy.mockReset();
+    // Reset session-cached UTMs — the central utmNormalizer reads
+    // sessionStorage as a higher priority than the fallback `campaign`
+    // prop, so leaked state from earlier tests would mask the organic
+    // fallback path.
+    try {
+      window.sessionStorage.clear();
+    } catch {
+      /* jsdom — non-fatal */
+    }
   });
 
   for (const n of [1, 2, 3, 4, 5]) {
