@@ -294,6 +294,66 @@ export default function TikTokAdsPerformancePage() {
     return [...withData].sort((a, b) => b.cvr - a.cvr || b.revenue - a.revenue)[0];
   }, [hookRows]);
 
+  // PDP-lag alerts — flags hooks where /go landings happened but PDP visits
+  // are running well below what a healthy CTA-click → PDP rate looks like.
+  //
+  // Why this matters: the only on-site CTA on /go is the TikTokDeepLinkButton.
+  // Every CTA click navigates to the PDP, so PDP visits are a direct proxy
+  // for confirmed CTA clicks (the lp_cta_click + tiktok_deep_link_click GA4
+  // events are not in the DB; visitor_activity only sees pageviews). If
+  // sessions ≫ pdp_sessions, one of three things is wrong:
+  //   1. The CTA itself isn't getting clicked (creative / copy issue).
+  //   2. Clicks are happening but UTMs are being stripped before the PDP row
+  //      lands (regression of the /products → /product redirect fix).
+  //   3. The PDP is throwing before the visitor tracker fires.
+  //
+  // Heuristic — only fires once we have a meaningful sample so single-visit
+  // sessions don't trigger noise:
+  //   - sessions ≥ 5
+  //   - pdp_ctr < 30%   → "low" (warn)
+  //   - pdp_ctr < 10%   → "critical" (likely a tracking regression)
+  // Hooks with no sessions are skipped (covered by the "Waiting" status).
+  const PDP_CTR_WARN = 30;
+  const PDP_CTR_CRITICAL = 10;
+  const MIN_SESSIONS_FOR_ALERT = 5;
+
+  type PdpLagAlert = {
+    hook: string;
+    sessions: number;
+    pdp: number;
+    pdp_ctr: number;
+    severity: 'critical' | 'warn';
+    likelyCause: string;
+  };
+
+  const pdpLagAlerts = useMemo<PdpLagAlert[]>(() => {
+    return hookRows
+      .filter((r) => EXPECTED_HOOKS.includes(r.hook.toLowerCase()))
+      .filter((r) => r.sessions >= MIN_SESSIONS_FOR_ALERT && r.pdp_ctr < PDP_CTR_WARN)
+      .map<PdpLagAlert>((r) => {
+        const severity: 'critical' | 'warn' = r.pdp_ctr < PDP_CTR_CRITICAL ? 'critical' : 'warn';
+        const likelyCause =
+          r.pdp === 0
+            ? 'No PDP visits at all — likely a redirect dropping UTMs or the CTA is broken on this hook.'
+            : severity === 'critical'
+              ? 'PDP CTR is far below the 30% benchmark — investigate creative fatigue or tracking attribution.'
+              : 'PDP CTR is below the 30% benchmark — try a stronger CTA or a sharper hook.';
+        return {
+          hook: r.hook,
+          sessions: r.sessions,
+          pdp: r.pdp_sessions,
+          pdp_ctr: r.pdp_ctr,
+          severity,
+          likelyCause,
+        };
+      })
+      .sort((a, b) => {
+        // Critical first, then by raw click→PDP gap so the biggest leaks bubble up.
+        if (a.severity !== b.severity) return a.severity === 'critical' ? -1 : 1;
+        return (b.sessions - b.pdp) - (a.sessions - a.pdp);
+      });
+  }, [hookRows]);
+
   return (
     <>
       <Helmet>
