@@ -21,6 +21,7 @@ import * as XLSX from 'xlsx';
 import type { DateRange } from 'react-day-picker';
 import { TikTokVariantKpis } from '@/components/admin/TikTokVariantKpis';
 import { UtmCampaignFunnelMatching } from '@/components/admin/UtmCampaignFunnelMatching';
+import { ConversionVariantHeatmapCompare } from '@/components/admin/ConversionVariantHeatmapCompare';
 
 type RawRow = {
   placement: string | null;
