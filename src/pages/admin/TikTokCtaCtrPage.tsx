@@ -602,6 +602,62 @@ export default function TikTokCtaCtrPage() {
         </Card>
       ) : (
         <>
+          {/* Returning visitors KPI — uses persistent localStorage visitor_id.
+              Only counts visitors seen since the visitor_id rollout, so early
+              data may show 0% returning until the cohort accumulates. */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <Users className="w-3.5 h-3.5" /> Unique visitors
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.total_visitors ?? 0).toLocaleString()}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <UserCheck className="w-3.5 h-3.5" /> Returning visitors
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.returning_visitors ?? 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {returningLoading || !returningStats || returningStats.total_visitors === 0
+                    ? '—'
+                    : `${Number(returningStats.returning_visitor_pct).toFixed(1)}% of unique`}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <UserPlus className="w-3.5 h-3.5" /> New visitors
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.new_visitors ?? 0).toLocaleString()}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <Eye className="w-3.5 h-3.5" /> Sessions
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.total_sessions ?? 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {returningLoading || !returningStats || returningStats.total_visitors === 0
+                    ? '—'
+                    : `${(returningStats.total_sessions / Math.max(returningStats.total_visitors, 1)).toFixed(2)} per visitor`}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Side-by-side placement comparison */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {aggregated.map((a) => {
