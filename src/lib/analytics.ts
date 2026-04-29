@@ -165,7 +165,7 @@ export const trackAddToCart = (
   productPrice: number,
   quantity: number = 1
 ): void => {
-  trackEvent('add_to_cart', {
+  trackEvent('add_to_cart', withPersistedUtm({
     currency: 'USD',
     value: productPrice * quantity,
     items: [{
@@ -174,7 +174,7 @@ export const trackAddToCart = (
       price: productPrice,
       quantity,
     }],
-  });
+  }));
 
   // TikTok Pixel — respect founder mode suppression
   if (!getFounderModeStatus()) {
@@ -247,16 +247,17 @@ export const trackBeginCheckout = (
   items: Array<{ id: string; name: string; price: number; quantity: number }>,
   totalValue: number
 ): void => {
-  trackEvent('begin_checkout', {
+  trackEvent('begin_checkout', withPersistedUtm({
     currency: 'USD',
     value: totalValue,
+    funnel_step: 5,
     items: items.map(item => ({
       item_id: item.id,
       item_name: item.name,
       price: item.price,
       quantity: item.quantity,
     })),
-  });
+  }));
 
   // TikTok Pixel — respect founder mode suppression
   if (!getFounderModeStatus()) {
@@ -293,17 +294,18 @@ export const trackPurchase = (
     }
   }
 
-  trackEvent('purchase', {
+  trackEvent('purchase', withPersistedUtm({
     transaction_id: transactionId,
     currency: 'USD',
     value: totalValue,
+    funnel_step: 6,
     items: items.map(item => ({
       item_id: item.id,
       item_name: item.name,
       price: item.price,
       quantity: item.quantity,
     })),
-  });
+  }));
 
   // TikTok Pixel — respect founder mode suppression
   if (!getFounderModeStatus()) {
