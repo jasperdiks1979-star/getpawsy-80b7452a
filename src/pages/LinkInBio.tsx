@@ -45,6 +45,24 @@ const COMPARISON_ROWS: Array<{ label: string; manual: string; smart: string }> =
   { label: 'Works with most litter', manual: 'Yes', smart: 'Yes' },
 ];
 
+/**
+ * /go CTA variant tag. Bumped whenever we change the high-conversion
+ * stack around the primary CTA (proof line, nudge text, bouncing arrow,
+ * pulse). Flows into every lp_cta_* event so dashboards can attribute
+ * PDP CTR lift to a specific variant of the page.
+ *
+ *   high_conv_v1 = baseline pre-uplift (Get Yours Now, no proof/nudge)
+ *   high_conv_v2 = current — proof + nudge + arrow + pulse + new CTA copy
+ */
+const CTA_VARIANT = 'high_conv_v2';
+const CTA_FEATURE_FLAGS = {
+  has_proof: true,
+  has_nudge: true,
+  has_arrow: true,
+  has_pulse: true,
+  cta_copy: 'see_how_it_works',
+} as const;
+
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
@@ -52,6 +70,10 @@ export default function LinkInBio() {
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   const secondaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
+  // Refs for the new proof + nudge blocks so we can measure WHO actually
+  // saw them before clicking — that's how we attribute the CTR lift.
+  const proofBlockRef = useRef<HTMLDivElement>(null);
+  const nudgeBlockRef = useRef<HTMLDivElement>(null);
 
   // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
   //
