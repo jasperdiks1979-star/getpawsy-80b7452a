@@ -140,21 +140,21 @@ export default function TikTokCtaCtrPage() {
       ? endOfDay(customRange!.to!).toISOString()
       : endOfDay(new Date()).toISOString();
     setReturningLoading(true);
-    (supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: ReturningStats[] | null; error: { message: string } | null }>)(
-      'get_returning_visitor_stats',
-      { p_start: start, p_end: end, p_include_internal: false },
-    ).then(({ data, error }) => {
-      if (cancelled) return;
-      if (error || !data || data.length === 0) {
-        setReturningStats(null);
-      } else {
-        setReturningStats(data[0]);
-      }
-      setReturningLoading(false);
-    });
+    supabase
+      .rpc('get_returning_visitor_stats', {
+        p_start: start,
+        p_end: end,
+        p_include_internal: false,
+      })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data || data.length === 0) {
+          setReturningStats(null);
+        } else {
+          setReturningStats(data[0] as ReturningStats);
+        }
+        setReturningLoading(false);
+      });
     return () => {
       cancelled = true;
     };
