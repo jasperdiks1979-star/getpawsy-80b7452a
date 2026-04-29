@@ -239,6 +239,7 @@ export function resolveUtm(opts?: {
 }): UtmRecord {
   const fromUrl = readUtmFromSearch(opts?.search);
   const fromSession = readUtmFromSession();
+  const fromLocal = readLocalUtm();
   const inferred = inferUtm();
   const fallback = opts?.fallback ?? {};
 
@@ -247,6 +248,7 @@ export function resolveUtm(opts?: {
     merged[key] =
       fromUrl[key] ||
       fromSession[key] ||
+      fromLocal[key] ||
       inferred[key] ||
       fallback[key] ||
       null;
