@@ -7,6 +7,7 @@ import {
   ttTrackPurchase,
 } from '@/lib/tiktok-pixel';
 import { enrichEventWithLpCta } from '@/lib/lpCtaCorrelation';
+import { validateUtmAttribution } from '@/lib/utmAttributionValidator';
 
 declare global {
   interface Window {
@@ -71,6 +72,31 @@ export const trackEvent = (
   logFounderEvent(eventName, false);
   window.gtag('event', eventName, enrichedParams);
   console.debug('[Analytics] Event tracked:', eventName, enrichedParams);
+
+  // Cross-event UTM consistency guard. Runs AFTER dispatch so the
+  // primary event still ships even if validation throws. Skip the
+  // mismatch event itself to avoid infinite recursion.
+  if (eventName !== 'lp_attribution_mismatch') {
+    try {
+      const violation = validateUtmAttribution(eventName, enrichedParams);
+      if (violation) {
+        window.gtag('event', 'lp_attribution_mismatch', {
+          violating_event: violation.event,
+          source_event: violation.source_event,
+          expected_utm_source: violation.expected.utm_source ?? null,
+          expected_utm_medium: violation.expected.utm_medium ?? null,
+          expected_utm_campaign: violation.expected.utm_campaign ?? null,
+          actual_utm_source: violation.actual.utm_source ?? null,
+          actual_utm_medium: violation.actual.utm_medium ?? null,
+          actual_utm_campaign: violation.actual.utm_campaign ?? null,
+          page: violation.page,
+          traffic_type: getTrafficType(),
+        });
+      }
+    } catch (err) {
+      console.debug('[Analytics] UTM validator failed:', err);
+    }
+  }
 };
 
 // Newsletter subscription
