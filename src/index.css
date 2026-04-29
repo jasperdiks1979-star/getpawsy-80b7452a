@@ -885,5 +885,30 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .gp-cta-pulse { animation: none; }
-  .gp-arrow-bounce { animation: none; opacity: 1; }
+  /*
+   * Reduced-motion fallback — when the user disables animations we lose
+   * the bounce + pulse cues, so the arrow needs a static styling that
+   * still grabs peripheral attention. We turn it into a solid orange
+   * "chip" with a soft glow + ring so it reads as a clickable beacon
+   * even without motion. Sizing stays in em-units so the existing
+   * responsive font-size rules above keep working.
+   */
+  .gp-arrow-bounce {
+    animation: none;
+    opacity: 1;
+    /* Static high-contrast pill */
+    width: 1.6em;
+    height: 1.6em;
+    line-height: 1.6em;
+    border-radius: 9999px;
+    color: #ffffff;
+    background-color: hsl(25 95% 53%);
+    box-shadow:
+      0 6px 16px -4px hsl(25 95% 53% / 0.55),
+      0 0 0 4px hsl(25 95% 53% / 0.18);
+    /* Slight downward nudge so it visually points toward the CTA the
+       way the animated version does at its lowest keyframe. */
+    transform: translateY(2px);
+  }
+}
 }
