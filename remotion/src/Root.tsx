@@ -8,6 +8,9 @@ import { MainVideoLitterBoxV2 } from "./MainVideoLitterBoxV2";
 import { MainVideoLitterBoxV3 } from "./MainVideoLitterBoxV3";
 import { MainVideoLitterBoxV4 } from "./MainVideoLitterBoxV4";
 import { MainVideoLitterBoxV5 } from "./MainVideoLitterBoxV5";
+import { MainVideoTimePain } from "./MainVideoTimePain";
+import { MainVideoSmellProblem } from "./MainVideoSmellProblem";
+import { MainVideoDirectBuyer } from "./MainVideoDirectBuyer";
 
 export const RemotionRoot = () => (
   <>
@@ -79,6 +82,30 @@ export const RemotionRoot = () => (
       id="litterbox-ad-v5"
       component={MainVideoLitterBoxV5}
       durationInFrames={510}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+    <Composition
+      id="conv-timepain"
+      component={MainVideoTimePain}
+      durationInFrames={540}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+    <Composition
+      id="conv-smell"
+      component={MainVideoSmellProblem}
+      durationInFrames={510}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
+    <Composition
+      id="conv-direct"
+      component={MainVideoDirectBuyer}
+      durationInFrames={420}
       fps={30}
       width={1080}
       height={1920}
