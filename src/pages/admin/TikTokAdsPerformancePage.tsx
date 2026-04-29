@@ -412,8 +412,37 @@ export default function TikTokAdsPerformancePage() {
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Export CSV</span>
             </Button>
+            <div
+              className={cn(
+                "flex items-center gap-2 pl-2 ml-1 border-l border-border/60",
+                includeExcluded && "text-amber-700",
+              )}
+              title="Admin override: temporarily disables internal/NL/admin/bot exclusions so you can validate the same data points the reports normally drop."
+            >
+              <Switch
+                id="tiktok-include-excluded"
+                checked={includeExcluded}
+                onCheckedChange={(v) => setIncludeExcluded(Boolean(v))}
+                aria-label="Include excluded sessions (admin override)"
+              />
+              <Label htmlFor="tiktok-include-excluded" className="text-xs whitespace-nowrap cursor-pointer">
+                Include excluded
+              </Label>
+            </div>
           </div>
         </header>
+
+        {includeExcluded && (
+          <Card className="p-3 border-amber-500/40 bg-amber-500/10 text-sm flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 text-amber-700 shrink-0" />
+            <div className="text-amber-900">
+              <strong>Admin override active.</strong> Filters for internal traffic, NL country,
+              admin route visits and bot heuristic are temporarily disabled. These numbers
+              include sessions that are normally excluded from compliance reports — use for
+              manual validation only.
+            </div>
+          </Card>
+        )}
 
         {error && (
           <Card className="p-4 border-destructive/50 bg-destructive/5 text-sm text-destructive">
