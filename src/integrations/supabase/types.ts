@@ -8419,6 +8419,15 @@ export type Database = {
             }
             Returns: Json
           }
+      get_tiktok_session_decision_log: {
+        Args: {
+          p_limit?: number
+          p_only_excluded?: boolean
+          p_session_id?: string
+          p_window_days?: number
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
