@@ -15,6 +15,7 @@ import { assignBioHook, BIO_HOOKS, EXPLICIT_PAID_CAMPAIGNS } from '@/lib/bioHook
 import { resolveUtm, syncUtmToUrl, persistUtmToSession } from '@/lib/utmNormalizer';
 import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
+import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
