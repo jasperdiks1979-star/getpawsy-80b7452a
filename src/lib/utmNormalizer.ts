@@ -160,6 +160,27 @@ export function persistUtmToSession(utm: UtmRecord): void {
       }
     }
   }
+  // Also mirror to localStorage so attribution survives tab close.
+  // 30-day TTL applied on read; renewed every persist call.
+  writeLocalUtm(utm);
+}
+
+/**
+ * Read the canonical UTM record from any persisted layer (session
+ * first, then localStorage 30-day window). Returns only truthy keys.
+ * Use this from analytics events that need to re-attach attribution
+ * to a downstream event (e.g. begin_checkout, purchase) without
+ * relying on the URL still carrying the original UTMs.
+ */
+export function getPersistedUtm(): UtmRecord {
+  const session = readUtmFromSession();
+  const local = readLocalUtm();
+  const out: UtmRecord = {};
+  for (const key of UTM_KEYS) {
+    const value = session[key] || local[key];
+    if (value) out[key] = value;
+  }
+  return out;
 }
 
 function isPinterestInApp(): boolean {
