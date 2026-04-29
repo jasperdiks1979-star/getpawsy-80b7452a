@@ -269,24 +269,31 @@ export default function LinkInBio() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 px-5 pt-5 pb-32">
-      <div className="mx-auto max-w-md flex flex-col items-center text-center gap-4">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-[hsl(25,95%,53%)]/5 px-5 pt-5 pb-32">
+      <div className="mx-auto max-w-md flex flex-col gap-5">
         {/* Brand mark — minimal, no nav */}
-        <Link to="/" className="inline-flex items-center gap-2" aria-label="GetPawsy home">
+        <Link to="/" className="inline-flex items-center gap-2 self-center" aria-label="GetPawsy home">
           <span className="text-base font-display font-extrabold tracking-tight text-foreground">
             Get<span className="text-[hsl(25,95%,53%)]">Pawsy</span>
           </span>
         </Link>
 
         {/* 1. HERO — above the fold */}
-        <h1 className="text-[28px] sm:text-4xl font-display font-extrabold leading-[1.1] text-foreground tracking-tight">
-          I haven&apos;t scooped in 3 months...
-        </h1>
-        <p className="text-base font-semibold text-foreground/80 -mt-2">
-          Here&apos;s exactly why <span className="text-[hsl(25,95%,53%)]">👇</span>
-        </p>
+        <header className="text-center flex flex-col gap-3">
+          <span className="self-center inline-flex items-center gap-1.5 rounded-full bg-[hsl(25,95%,53%)]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[hsl(25,95%,53%)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[hsl(25,95%,53%)] animate-pulse" />
+            As seen on TikTok
+          </span>
+          <h1 className="text-[30px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
+            I haven&apos;t scooped in <span className="text-[hsl(25,95%,53%)]">3 months</span>.
+          </h1>
+          <p className="text-[15px] font-medium text-foreground/75 max-w-[28ch] mx-auto">
+            The self-cleaning litter box that cat owners can&apos;t stop talking about.
+          </p>
+        </header>
 
-        <div className="w-full rounded-2xl bg-card shadow-lg p-3">
+        {/* Product image */}
+        <div className="w-full rounded-2xl bg-card shadow-lg ring-1 ring-border/40 p-3">
           <img
             src={PRODUCT_IMAGE}
             alt="GetPawsy automatic self-cleaning cat litter box"
@@ -299,86 +306,88 @@ export default function LinkInBio() {
         </div>
 
         {/* 2. PRIMARY CTA */}
-        <div className="w-full" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
-          <div className="animate-bounce">
-            <TikTokDeepLinkButton
-              label="Get Yours Now →"
-              campaign="tt_bio_link"
-              content="bio_primary"
-              className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold shadow-lg shadow-[hsl(25,95%,53%)]/30"
-            />
-          </div>
+        <div className="w-full flex flex-col gap-2" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
+          <TikTokDeepLinkButton
+            label="Get Yours Now →"
+            campaign="tt_bio_link"
+            content="bio_primary"
+            className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+          />
+          <p className="text-center text-[12px] font-medium text-muted-foreground">
+            🇺🇸 Ships from US · 30-day returns · Secure checkout
+          </p>
         </div>
 
-        {/* 3. TRUST STRIP */}
-        <ul className="grid grid-cols-2 gap-1.5 w-full text-[12px] font-medium text-foreground/80 text-left">
-          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">🇺🇸 Ships from US warehouse</li>
-          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">✔ Free US Shipping $35+</li>
-          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">✔ 30-Day Returns</li>
-          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">✔ Secure Checkout</li>
+        {/* 3. TRUST BADGES */}
+        <ul className="grid grid-cols-2 gap-2 w-full text-[12px] font-semibold text-foreground/85">
+          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
+            <span aria-hidden>🚚</span> Free US Shipping $35+
+          </li>
+          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
+            <span aria-hidden>↩️</span> 30-Day Returns
+          </li>
+          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
+            <span aria-hidden>🔒</span> Secure Checkout
+          </li>
+          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
+            <span aria-hidden>💬</span> 24h US Support
+          </li>
         </ul>
 
-        {/* 4. PAIN vs SOLUTION */}
-        <div className="w-full grid grid-cols-2 gap-2 text-left pt-2">
-          <div className="rounded-xl border border-border/60 bg-card/60 p-3">
-            <p className="text-[13px] font-bold text-foreground/70 mb-1.5">Manual litter box</p>
-            <ul className="grid gap-1 text-[12px] text-muted-foreground">
-              <li>✗ Daily scooping</li>
-              <li>✗ Bad smell</li>
-              <li>✗ Mess everywhere</li>
-            </ul>
+        {/* 4. MANUAL vs SMART comparison */}
+        <section className="w-full rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="grid grid-cols-3 text-[12px] font-bold uppercase tracking-wider bg-muted/40 px-3 py-2.5 text-foreground/70">
+            <span>Feature</span>
+            <span className="text-center">Manual</span>
+            <span className="text-center text-[hsl(25,95%,53%)]">Smart Box</span>
           </div>
-          <div className="rounded-xl border-2 border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/5 p-3">
-            <p className="text-[13px] font-bold text-[hsl(25,95%,53%)] mb-1.5">This smart litter box</p>
-            <ul className="grid gap-1 text-[12px] text-foreground/85 font-medium">
-              <li>✓ Cleans itself</li>
-              <li>✓ No smell</li>
-              <li>✓ Always fresh</li>
-            </ul>
+          {COMPARISON_ROWS.map((row, i) => (
+            <div
+              key={row.label}
+              className={`grid grid-cols-3 items-center text-[13px] px-3 py-2.5 ${
+                i % 2 === 1 ? 'bg-muted/20' : ''
+              }`}
+            >
+              <span className="font-medium text-foreground">{row.label}</span>
+              <span className="text-center text-muted-foreground">{row.manual}</span>
+              <span className="text-center font-bold text-[hsl(25,95%,53%)]">{row.smart}</span>
+            </div>
+          ))}
+        </section>
+
+        {/* 5. SOCIAL PROOF — multiple reviews */}
+        <section className="w-full flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[15px] font-display font-bold text-foreground">What cat owners say</h2>
+            <span className="text-[12px] font-semibold text-amber-500">★★★★★ 4.8/5</span>
           </div>
-        </div>
+          {REVIEWS.map((r) => (
+            <article key={r.name} className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+              <p className="text-amber-500 text-sm leading-none mb-2" aria-label="5 out of 5 stars">★★★★★</p>
+              <p className="text-[14px] font-medium text-foreground leading-snug">
+                “{r.quote}”
+              </p>
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                — {r.name}, {r.location}
+              </p>
+            </article>
+          ))}
+        </section>
 
-        {/* 5. SOCIAL PROOF */}
-        <div className="w-full rounded-xl border border-border/60 bg-card p-4 text-left shadow-sm">
-          <p className="text-base text-amber-500 leading-none" aria-label="5 out of 5 stars">★★★★★</p>
-          <p className="mt-2 text-[15px] font-medium text-foreground leading-snug">
-            “This literally changed my life. No more smell.”
-          </p>
-          <p className="mt-1.5 text-[12px] text-muted-foreground">— Sarah M., cat owner</p>
-        </div>
-
-        {/* 6. FEATURES */}
-        <ul className="w-full text-left grid gap-1.5 text-[15px] font-medium text-foreground pt-1">
-          <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> Cleans itself automatically</li>
-          <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> No smell, ever</li>
-          <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> Works with most cat litter</li>
-          <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> App-controlled</li>
-        </ul>
-
-        {/* 7. URGENCY */}
-        <div className="w-full rounded-xl border border-[hsl(25,95%,53%)]/30 bg-[hsl(25,95%,53%)]/5 p-3 text-left">
-          <p className="text-[14px] font-bold text-[hsl(25,95%,53%)]">
-            ⚠️ Limited stock — selling out fast
-          </p>
-          <p className="mt-1 text-[12px] text-foreground/75">
-            Most people wait too long — and regret it.
-          </p>
-        </div>
-
-        {/* 8. FINAL CTA */}
-        <div className="w-full" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
+        {/* 6. FINAL CTA */}
+        <div className="w-full flex flex-col gap-2" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
           <TikTokDeepLinkButton
             label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_secondary"
-            className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
-          <p className="mt-2 text-[13px] font-semibold text-foreground/80 text-center">
+          <p className="text-center text-[13px] font-semibold text-foreground/80">
             Try it risk-free for 30 days
           </p>
         </div>
 
-        <p className="pt-6 text-[11px] text-muted-foreground">
+        <p className="pt-6 text-[11px] text-muted-foreground text-center">
           © {new Date().getFullYear()} GetPawsy
         </p>
       </div>
