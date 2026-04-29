@@ -112,6 +112,16 @@ export function setConsent(
     }
   } catch { /* ignore */ }
 
+  // Auto-start Microsoft Clarity the moment the user grants consent, so
+  // heatmaps capture the rest of the current session instead of waiting
+  // for the next navigation. The helper itself re-checks Founder Mode +
+  // consent + project-id, so this call is a safe no-op if any gate fails.
+  if (value === 'all') {
+    void import('./clarity')
+      .then(({ initClarity }) => { initClarity(); })
+      .catch(() => { /* analytics must never break the app */ });
+  }
+
   // Record the change for diagnostic logging
   void import('./consentLog')
     .then(({ logConsentChange }) => {
