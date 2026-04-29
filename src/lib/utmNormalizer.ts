@@ -48,6 +48,65 @@ function safeSession(): Storage | null {
   }
 }
 
+function safeLocal(): Storage | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Long-lived UTM persistence (30-day attribution window).
+ * Survives tab close so a returning visitor who completes checkout
+ * 2 days after a TikTok ad click still attributes the purchase to
+ * the original utm_campaign / utm_content.
+ *
+ * Keyed independently of session keys so we can read both layers and
+ * pick the freshest non-null value.
+ */
+const LOCAL_UTM_PREFIX = 'gp_utm_';
+const LOCAL_UTM_TS_KEY = 'gp_utm_ts';
+const LOCAL_UTM_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function readLocalUtm(): UtmRecord {
+  const store = safeLocal();
+  if (!store) return {};
+  const ts = Number(store.getItem(LOCAL_UTM_TS_KEY) || 0);
+  if (!ts || Date.now() - ts > LOCAL_UTM_TTL_MS) return {};
+  const out: UtmRecord = {};
+  for (const key of UTM_KEYS) {
+    const value = store.getItem(LOCAL_UTM_PREFIX + key);
+    if (value) out[key] = value;
+  }
+  return out;
+}
+
+function writeLocalUtm(utm: UtmRecord): void {
+  const store = safeLocal();
+  if (!store) return;
+  let wrote = false;
+  for (const key of UTM_KEYS) {
+    const value = utm[key];
+    if (value) {
+      try {
+        store.setItem(LOCAL_UTM_PREFIX + key, value);
+        wrote = true;
+      } catch {
+        /* quota — non-fatal */
+      }
+    }
+  }
+  if (wrote) {
+    try {
+      store.setItem(LOCAL_UTM_TS_KEY, String(Date.now()));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 function readSearch(input?: string | URLSearchParams | null): URLSearchParams {
   if (input instanceof URLSearchParams) return input;
   if (typeof input === 'string') {
