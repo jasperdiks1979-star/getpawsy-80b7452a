@@ -2105,6 +2105,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-funnel-debug"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokFunnelDebugPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-config-checklist"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
