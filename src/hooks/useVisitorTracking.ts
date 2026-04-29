@@ -362,6 +362,7 @@ export const trackVisitorEvent = async (
   if (!isProductionDomain() || isBot()) return;
 
   const sessionId = getSessionId();
+  const visitorId = getVisitorId();
   const utmParams = getUTMParams();
   const referrer = getReferrer();
   const deviceInfo = getDeviceInfo();
@@ -384,6 +385,7 @@ export const trackVisitorEvent = async (
     .from("visitor_activity")
     .insert({
       session_id: sessionId,
+      visitor_id: visitorId,
       activity_type: activityType,
       latitude: location?.latitude || null,
       longitude: location?.longitude || null,
