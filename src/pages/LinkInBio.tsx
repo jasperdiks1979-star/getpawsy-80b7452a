@@ -40,28 +40,67 @@ export default function LinkInBio() {
   //
   // Paid ads (?utm_campaign=hook1..5) are NEVER rewritten — the URL
   // already carries the correct bucket.
-  const attribution = useRef<Record<string, string | null>>(
-    (() => {
-      const urlCampaign = searchParams.get('utm_campaign');
-      const isPaidHook = !!urlCampaign && (BIO_HOOKS as readonly string[]).includes(urlCampaign.toLowerCase());
-      const resolvedCampaign = isPaidHook ? urlCampaign! : assignBioHook();
-      const resolvedContent = searchParams.get('utm_content') || (isPaidHook ? null : 'tt_bio_link');
-      return {
-        utm_source: searchParams.get('utm_source') || 'tiktok',
-        utm_medium: searchParams.get('utm_medium') || 'social',
-        utm_campaign: resolvedCampaign,
-        utm_content: resolvedContent,
-        utm_term: searchParams.get('utm_term'),
-        ad: searchParams.get('ad') || 'tt',
-        referrer: typeof document !== 'undefined' ? document.referrer || null : null,
-      };
-    })(),
-  ).current;
+  // Resolve attribution + sync URL SYNCHRONOUSLY during render setup so the
+  // global visitor tracker (SafeGlobalVisitorTracker → useVisitorTracking)
+  // sees the bucketed UTMs on its FIRST insert into visitor_activity.
+  //
+  // Why useState initializer + history.replaceState (not useEffect):
+  //   useEffect runs AFTER children mount, which means the global tracker's
+  //   own useEffect can fire first and persist a row with utm_source=null
+  //   /utm_campaign=null. That made the TikTok dashboard show 0 sessions for
+  //   bio-link visitors. Doing it during render guarantees the URL — and
+  //   sessionStorage UTM cache (set by getUTMParams) — are correct before
+  //   any tracking call resolves them.
+  const [attribution] = useState<Record<string, string | null>>(() => {
+    const urlCampaign = searchParams.get('utm_campaign');
+    const isPaidHook = !!urlCampaign && (BIO_HOOKS as readonly string[]).includes(urlCampaign.toLowerCase());
+    const resolvedCampaign = isPaidHook ? urlCampaign! : assignBioHook();
+    const resolvedContent = searchParams.get('utm_content') || (isPaidHook ? null : 'tt_bio_link');
+    const resolved = {
+      utm_source: searchParams.get('utm_source') || 'tiktok',
+      utm_medium: searchParams.get('utm_medium') || 'social',
+      utm_campaign: resolvedCampaign,
+      utm_content: resolvedContent,
+      utm_term: searchParams.get('utm_term'),
+      ad: searchParams.get('ad') || 'tt',
+      referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+    };
 
-  // Mirror the resolved attribution into the URL so child components that
-  // read UTMs from useSearchParams (e.g. <TikTokDeepLinkButton/>) forward
-  // the bucketed campaign through the deep-link click into the PDP. This
-  // runs once on mount; user navigation away from /go is unaffected.
+    // Mirror into the URL synchronously via history.replaceState so the
+    // first read of window.location.search sees the bucketed UTMs.
+    if (typeof window !== 'undefined') {
+      const next = new URLSearchParams(window.location.search);
+      next.set('utm_source', resolved.utm_source!);
+      next.set('utm_medium', resolved.utm_medium!);
+      next.set('utm_campaign', resolved.utm_campaign!);
+      if (resolved.utm_content) next.set('utm_content', resolved.utm_content);
+      next.set('ad', resolved.ad!);
+      const newSearch = next.toString();
+      if (newSearch !== window.location.search.replace(/^\?/, '')) {
+        window.history.replaceState(
+          window.history.state,
+          '',
+          `${window.location.pathname}?${newSearch}${window.location.hash}`,
+        );
+      }
+      // Pre-warm the visitor-tracking UTM cache so the very first
+      // trackBrowsing() insert carries the bucketed campaign.
+      try {
+        sessionStorage.setItem('utm_source', resolved.utm_source!);
+        sessionStorage.setItem('utm_medium', resolved.utm_medium!);
+        sessionStorage.setItem('utm_campaign', resolved.utm_campaign!);
+        if (resolved.utm_content) sessionStorage.setItem('utm_content', resolved.utm_content);
+      } catch {
+        // ignore (private mode)
+      }
+    }
+    return resolved;
+  });
+
+  // Keep react-router's useSearchParams in sync with the rewritten URL on
+  // the next tick so child components (TikTokDeepLinkButton) read the
+  // bucketed campaign. history.replaceState above does NOT notify the
+  // router, so we follow up with setSearchParams to push the same values.
   useEffect(() => {
     const current = searchParams.get('utm_campaign');
     if (current === attribution.utm_campaign && searchParams.get('utm_content') === attribution.utm_content) {
@@ -74,7 +113,6 @@ export default function LinkInBio() {
     if (attribution.utm_content) next.set('utm_content', attribution.utm_content);
     next.set('ad', attribution.ad!);
     setSearchParams(next, { replace: true });
-    // Mount-only sync — do not chase searchParams updates.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
