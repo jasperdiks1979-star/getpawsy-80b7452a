@@ -213,7 +213,7 @@ export default function LinkInBio() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 px-5 pt-5 pb-32">
-      <div className="mx-auto max-w-md flex flex-col items-center text-center gap-3">
+      <div className="mx-auto max-w-md flex flex-col items-center text-center gap-4">
         {/* Brand mark — minimal, no nav */}
         <Link to="/" className="inline-flex items-center gap-2" aria-label="GetPawsy home">
           <span className="text-base font-display font-extrabold tracking-tight text-foreground">
@@ -221,21 +221,15 @@ export default function LinkInBio() {
           </span>
         </Link>
 
-        {/* HOOK — matches TikTok video */}
+        {/* 1. HERO — above the fold */}
         <h1 className="text-[28px] sm:text-4xl font-display font-extrabold leading-[1.1] text-foreground tracking-tight">
           I haven&apos;t scooped in 3 months...
         </h1>
-        <p className="text-base font-semibold text-foreground/80 -mt-1">
+        <p className="text-base font-semibold text-foreground/80 -mt-2">
           Here&apos;s exactly why <span className="text-[hsl(25,95%,53%)]">👇</span>
         </p>
 
-        {/* PAIN HOOK — emotional connection */}
-        <p className="text-[15px] font-medium text-foreground/75">
-          Still scooping every single day? 😩
-        </p>
-
-        {/* PRODUCT VISUAL — single, large, centered */}
-        <div className="w-full">
+        <div className="w-full rounded-2xl bg-card shadow-lg p-3">
           <img
             src={PRODUCT_IMAGE}
             alt="GetPawsy automatic self-cleaning cat litter box"
@@ -243,43 +237,35 @@ export default function LinkInBio() {
             height={640}
             fetchPriority="high"
             decoding="async"
-            className="w-full max-w-[300px] mx-auto aspect-square object-contain rounded-2xl bg-card shadow-md"
+            className="w-full max-w-[320px] mx-auto aspect-square object-contain rounded-xl"
           />
         </div>
 
-        {/* MOTION PROOF — simulated before → cleaning → after sequence */}
-        <div
-          className="w-full grid grid-cols-3 gap-2 text-center"
-          aria-label="How the self-cleaning litter box works in three steps"
-        >
-          {[
-            { label: 'Before', icon: '🐾', tone: 'text-foreground/70', ring: 'border-border/60 bg-card/60' },
-            { label: 'Cleaning', icon: '🔄', tone: 'text-[hsl(25,95%,53%)] animate-spin-slow', ring: 'border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/5' },
-            { label: 'Fresh', icon: '✨', tone: 'text-[hsl(142,71%,45%)]', ring: 'border-[hsl(142,71%,45%)]/40 bg-[hsl(142,71%,45%)]/5' },
-          ].map((step, i) => (
-            <div
-              key={step.label}
-              className={`rounded-xl border ${step.ring} px-2 py-3 flex flex-col items-center gap-1`}
-            >
-              <span
-                className={`text-2xl ${step.tone}`}
-                style={{ animation: `fade-in 0.6s ease-out ${i * 0.2}s both` }}
-                aria-hidden="true"
-              >
-                {step.icon}
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-wide text-foreground/70">
-                {step.label}
-              </span>
-            </div>
-          ))}
+        {/* 2. PRIMARY CTA */}
+        <div className="w-full" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
+          <div className="animate-bounce">
+            <TikTokDeepLinkButton
+              label="Get Yours Now →"
+              campaign="tt_bio_link"
+              content="bio_primary"
+              className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            />
+          </div>
         </div>
 
-        {/* VISUAL PROOF — before/after comparison */}
-        <div className="w-full grid grid-cols-2 gap-2 text-left">
+        {/* 3. TRUST STRIP */}
+        <ul className="grid grid-cols-2 gap-1.5 w-full text-[12px] font-medium text-foreground/80 text-left">
+          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">🇺🇸 Ships from US warehouse</li>
+          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">✔ Free US Shipping $35+</li>
+          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">✔ 30-Day Returns</li>
+          <li className="rounded-lg bg-card border border-border/50 px-2 py-1.5">✔ Secure Checkout</li>
+        </ul>
+
+        {/* 4. PAIN vs SOLUTION */}
+        <div className="w-full grid grid-cols-2 gap-2 text-left pt-2">
           <div className="rounded-xl border border-border/60 bg-card/60 p-3">
             <p className="text-[13px] font-bold text-foreground/70 mb-1.5">Manual litter box</p>
-            <ul className="grid gap-0.5 text-[12px] text-muted-foreground">
+            <ul className="grid gap-1 text-[12px] text-muted-foreground">
               <li>✗ Daily scooping</li>
               <li>✗ Bad smell</li>
               <li>✗ Mess everywhere</li>
@@ -287,7 +273,7 @@ export default function LinkInBio() {
           </div>
           <div className="rounded-xl border-2 border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/5 p-3">
             <p className="text-[13px] font-bold text-[hsl(25,95%,53%)] mb-1.5">This smart litter box</p>
-            <ul className="grid gap-0.5 text-[12px] text-foreground/85 font-medium">
+            <ul className="grid gap-1 text-[12px] text-foreground/85 font-medium">
               <li>✓ Cleans itself</li>
               <li>✓ No smell</li>
               <li>✓ Always fresh</li>
@@ -295,76 +281,41 @@ export default function LinkInBio() {
           </div>
         </div>
 
-        {/* SOCIAL PROOF — single testimonial card */}
-        <div className="w-full rounded-xl border border-border/60 bg-card p-3 text-left shadow-sm">
-          <p className="text-[13px] text-amber-500 leading-none" aria-label="5 out of 5 stars">★★★★★</p>
-          <p className="mt-1.5 text-[14px] font-medium text-foreground leading-snug">
+        {/* 5. SOCIAL PROOF */}
+        <div className="w-full rounded-xl border border-border/60 bg-card p-4 text-left shadow-sm">
+          <p className="text-base text-amber-500 leading-none" aria-label="5 out of 5 stars">★★★★★</p>
+          <p className="mt-2 text-[15px] font-medium text-foreground leading-snug">
             “This literally changed my life. No more smell.”
           </p>
-          <p className="mt-1 text-[12px] text-muted-foreground">— Sarah M., cat owner</p>
+          <p className="mt-1.5 text-[12px] text-muted-foreground">— Sarah M., cat owner</p>
         </div>
 
-        {/* PRIMARY CTA — above the fold */}
-        <div className="w-full" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
-          <TikTokDeepLinkButton
-            label="Get Yours Now – Before It Sells Out →"
-            campaign="tt_bio_link"
-            content="bio_primary"
-            className="h-14 text-base w-full"
-          />
-          {/* URGENCY — compliant, no fake countdown */}
-          <p className="mt-2 text-[13px] font-medium text-foreground/70">
-            ⚠️ Limited stock – selling out fast
-          </p>
-          {/* SPEED TRIGGER */}
-          <p className="mt-1 text-[12px] font-medium text-foreground/75">
-            Ships from US warehouse 🇺🇸
-          </p>
-          {/* MICRO TRUST — compliant, no fabricated counts */}
-          <p className="mt-1 text-[12px] font-medium text-muted-foreground">
-            Loved by cat owners across the US 🇺🇸
-          </p>
-        </div>
-
-        {/* TRUST STRIP — moved directly under CTA */}
-        <ul className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[12px] font-medium text-muted-foreground w-full">
-          <li>✔ Free US Shipping</li>
-          <li>✔ 30-Day Returns</li>
-          <li>✔ Secure Checkout</li>
-        </ul>
-
-        {/* BENEFIT BULLETS — short, scannable */}
-        <ul className="w-full text-left grid gap-1 text-[15px] font-medium text-foreground pt-2">
+        {/* 6. FEATURES */}
+        <ul className="w-full text-left grid gap-1.5 text-[15px] font-medium text-foreground pt-1">
           <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> Cleans itself automatically</li>
           <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> No smell, ever</li>
-        </ul>
-
-        {/* PATTERN INTERRUPT */}
-        <p className="w-full text-left text-[13px] font-semibold text-[hsl(25,95%,53%)]/90 py-1">
-          ⚠️ Most people wait too long — and regret it.
-        </p>
-
-        <ul className="w-full text-left grid gap-1 text-[15px] font-medium text-foreground">
           <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> Works with most cat litter</li>
-          <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> App-controlled convenience</li>
+          <li className="flex items-center gap-2"><span className="text-[hsl(25,95%,53%)] font-bold">✔</span> App-controlled</li>
         </ul>
 
-        {/* FRICTION KILLER */}
-        <ul className="w-full text-left grid gap-1 text-[14px] font-medium text-foreground/85 pt-1">
-          <li className="flex items-center gap-2"><span className="text-[hsl(142,71%,45%)] font-bold">✓</span> Works in under 60 seconds</li>
-          <li className="flex items-center gap-2"><span className="text-[hsl(142,71%,45%)] font-bold">✓</span> No installation needed</li>
-          <li className="flex items-center gap-2"><span className="text-[hsl(142,71%,45%)] font-bold">✓</span> Plug &amp; play</li>
-        </ul>
+        {/* 7. URGENCY */}
+        <div className="w-full rounded-xl border border-[hsl(25,95%,53%)]/30 bg-[hsl(25,95%,53%)]/5 p-3 text-left">
+          <p className="text-[14px] font-bold text-[hsl(25,95%,53%)]">
+            ⚠️ Limited stock — selling out fast
+          </p>
+          <p className="mt-1 text-[12px] text-foreground/75">
+            Most people wait too long — and regret it.
+          </p>
+        </div>
 
-        {/* SECONDARY CTA — repeat after benefits */}
-        <div className="w-full pt-2" onClickCapture={handleCtaClick('bio_secondary')}>
+        {/* 8. FINAL CTA */}
+        <div className="w-full" onClickCapture={handleCtaClick('bio_secondary')}>
           <TikTokDeepLinkButton
-            label="Get Yours Now – Before It Sells Out →"
+            label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_secondary"
-            className="h-14 text-base w-full"
+            className="h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
-          {/* MICRO RISK REVERSAL */}
           <p className="mt-2 text-[13px] font-semibold text-foreground/80 text-center">
             Try it risk-free for 30 days
           </p>
@@ -387,7 +338,7 @@ export default function LinkInBio() {
             label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_sticky"
-            className="h-13 text-base w-full"
+            className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
           />
         </div>
       </div>
