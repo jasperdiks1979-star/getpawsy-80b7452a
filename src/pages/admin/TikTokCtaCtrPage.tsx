@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet, CalendarIcon, Users, UserCheck, UserPlus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { DateRange } from 'react-day-picker';
+import { TikTokVariantKpis } from '@/components/admin/TikTokVariantKpis';
 
 type RawRow = {
   placement: string | null;
@@ -657,6 +658,27 @@ export default function TikTokCtaCtrPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Per-variant KPI widget — impressions / CTR / CVR / CPA per
+              utm_campaign (the 3 TikTok video variants + bio hooks).
+              Shares the same date window as the rest of the page. */}
+          <TikTokVariantKpis
+            startIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? startOfDay(customRange.from).toISOString()
+                : startOfDay(subDays(new Date(), days - 1)).toISOString()
+            }
+            endIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? endOfDay(customRange.to).toISOString()
+                : endOfDay(new Date()).toISOString()
+            }
+            windowLabel={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? `${format(customRange.from, 'MMM d')} → ${format(customRange.to, 'MMM d')}`
+                : `Last ${days} days`
+            }
+          />
 
           {/* Side-by-side placement comparison */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

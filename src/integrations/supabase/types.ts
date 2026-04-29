@@ -8546,6 +8546,23 @@ export type Database = {
         }
         Returns: Json
       }
+      get_tiktok_variant_kpis: {
+        Args: { p_end: string; p_include_internal?: boolean; p_start: string }
+        Returns: {
+          add_to_carts: number
+          arpv: number
+          clicks: number
+          ctr: number
+          impressions: number
+          pdp_views: number
+          purchases: number
+          revenue: number
+          utm_campaign: string
+          utm_content: string
+          view_to_atc: number
+          view_to_purchase: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
