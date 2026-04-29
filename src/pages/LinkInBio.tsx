@@ -223,6 +223,8 @@ export default function LinkInBio() {
       { el: primaryCtaRef.current, placement: 'bio_primary' },
       { el: secondaryCtaRef.current, placement: 'bio_secondary' },
       { el: stickyCtaRef.current, placement: 'bio_sticky' },
+      { el: proofBlockRef.current, placement: 'uplift_proof' },
+      { el: nudgeBlockRef.current, placement: 'uplift_nudge' },
     ];
     const seen = new Set<string>();
     const io = new IntersectionObserver(
@@ -232,11 +234,16 @@ export default function LinkInBio() {
           if (!placement || seen.has(placement)) continue;
           if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
             seen.add(placement);
+            // Mirror to a window-scoped set so handleCtaClick can read which
+            // uplift elements were already visible when the click happened.
+            (window as any).__gpGoSeen = seen;
             trackEvent('lp_cta_impression', {
               page: '/go',
               funnel: 'tiktok_bio',
               funnel_step: 2,
               placement,
+              cta_variant: CTA_VARIANT,
+              ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
           }
@@ -268,6 +275,7 @@ export default function LinkInBio() {
         page: '/go',
         funnel: 'tiktok_bio',
         missing_placements: missing.join(','),
+        cta_variant: CTA_VARIANT,
         ...attribution,
       });
     }
@@ -282,6 +290,11 @@ export default function LinkInBio() {
     // outgoing lp_cta_click event AND stored for the next view_item /
     // add_to_cart to pick up on its own.
     const link = recordLpCtaClick({ placement, attribution });
+    // Read which uplift elements were visible at click time. Lets us answer:
+    // "Of the users who clicked, what % had actually seen the proof line?"
+    const seenBefore: Set<string> | undefined = (window as any).__gpGoSeen;
+    const sawProof = seenBefore?.has('uplift_proof') ?? false;
+    const sawNudge = seenBefore?.has('uplift_nudge') ?? false;
     trackEvent('lp_cta_click', {
       page: '/go',
       funnel: 'tiktok_bio',
@@ -289,6 +302,10 @@ export default function LinkInBio() {
       placement,
       lp_click_id: link.click_id,
       lp_clicked_at: link.clicked_at,
+      cta_variant: CTA_VARIANT,
+      ...CTA_FEATURE_FLAGS,
+      saw_proof_before_click: sawProof,
+      saw_nudge_before_click: sawNudge,
       ...attribution,
     });
     // Debug checkpoint #2 — captures UTM state at the moment of click,
