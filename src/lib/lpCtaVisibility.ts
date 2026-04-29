@@ -19,6 +19,11 @@ export type SeenSet = Set<string> | undefined | null;
 export type VisibilityFlags = {
   saw_proof_before_click: boolean;
   saw_nudge_before_click: boolean;
+  /** True if the bouncing directional arrow specifically scrolled into
+   *  view before the click. Tracked separately from the nudge block so
+   *  we can isolate the arrow's contribution to CTR uplift — the arrow
+   *  has its own ref and IntersectionObserver target on /go. */
+  saw_arrow_before_click: boolean;
 };
 
 /**
@@ -31,6 +36,7 @@ export function visibilityFlagsFromSeen(seen: SeenSet): VisibilityFlags {
   return {
     saw_proof_before_click: seen?.has('uplift_proof') ?? false,
     saw_nudge_before_click: seen?.has('uplift_nudge') ?? false,
+    saw_arrow_before_click: seen?.has('uplift_arrow') ?? false,
   };
 }
 
