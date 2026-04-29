@@ -82,6 +82,19 @@ export default function TikTokCtaCtrPage() {
   );
   const [exportCampaigns, setExportCampaigns] = useState<Set<string> | null>(null); // null = all
 
+  // Returning visitor stats for the same date window — answers "how many of
+  // the people we saw are coming back vs. brand-new?". Uses persistent
+  // visitor_id (localStorage), so it only counts hits since that ID was added.
+  type ReturningStats = {
+    total_visitors: number;
+    returning_visitors: number;
+    new_visitors: number;
+    total_sessions: number;
+    returning_visitor_pct: number;
+  };
+  const [returningStats, setReturningStats] = useState<ReturningStats | null>(null);
+  const [returningLoading, setReturningLoading] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -114,6 +127,38 @@ export default function TikTokCtaCtrPage() {
       cancelled = true;
     };
   }, [rangeMode, days, customRange?.from?.getTime(), customRange?.to?.getTime(), campaign]);
+
+  // Fetch returning-visitor stats for the active window. Independent of the
+  // funnel RPC so a slow analytics query never blocks the CTR cards.
+  useEffect(() => {
+    let cancelled = false;
+    const useCustom = rangeMode === 'custom' && customRange?.from && customRange?.to;
+    const start = useCustom
+      ? startOfDay(customRange!.from!).toISOString()
+      : startOfDay(subDays(new Date(), days - 1)).toISOString();
+    const end = useCustom
+      ? endOfDay(customRange!.to!).toISOString()
+      : endOfDay(new Date()).toISOString();
+    setReturningLoading(true);
+    (supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: ReturningStats[] | null; error: { message: string } | null }>)(
+      'get_returning_visitor_stats',
+      { p_start: start, p_end: end, p_include_internal: false },
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error || !data || data.length === 0) {
+        setReturningStats(null);
+      } else {
+        setReturningStats(data[0]);
+      }
+      setReturningLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rangeMode, days, customRange?.from?.getTime(), customRange?.to?.getTime()]);
 
   const campaigns = useMemo(() => {
     const set = new Set<string>();
