@@ -399,16 +399,56 @@ export default function TikTokCtaCtrPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          {/* Range mode toggles between preset "Last N days" and a custom date range */}
+          <Select
+            value={rangeMode === 'preset' ? `preset:${days}` : 'custom'}
+            onValueChange={(v) => {
+              if (v === 'custom') {
+                setRangeMode('custom');
+              } else {
+                setRangeMode('preset');
+                setDays(Number(v.replace('preset:', '')));
+              }
+            }}
+          >
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Last 1 day</SelectItem>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="14">Last 14 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="preset:1">Last 1 day</SelectItem>
+              <SelectItem value="preset:7">Last 7 days</SelectItem>
+              <SelectItem value="preset:14">Last 14 days</SelectItem>
+              <SelectItem value="preset:30">Last 30 days</SelectItem>
+              <SelectItem value="preset:90">Last 90 days</SelectItem>
+              <SelectItem value="custom">Custom range…</SelectItem>
             </SelectContent>
           </Select>
+          {rangeMode === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn('gap-2 font-normal', !customRange?.from && 'text-muted-foreground')}
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  {customRange?.from && customRange?.to
+                    ? `${format(customRange.from, 'MMM d')} – ${format(customRange.to, 'MMM d, yyyy')}`
+                    : 'Pick range'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={customRange}
+                  onSelect={setCustomRange}
+                  defaultMonth={customRange?.from}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
           <Select value={campaign} onValueChange={setCampaign}>
             <SelectTrigger className="w-44"><SelectValue placeholder="All campaigns" /></SelectTrigger>
             <SelectContent>
