@@ -49,6 +49,7 @@ import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackViewItem, trackEvent } from "@/lib/analytics";
+import { logUtmCheckpoint } from "@/lib/utmDebugLog";
 import { calculateSellingPrice } from "@/lib/pricing";
 import { getProductDiscount } from "@/lib/discount";
 import { safeString, safeNumber, safeArray } from "@/lib/safe-render";
@@ -579,6 +580,15 @@ const ProductDetail = () => {
   // Scroll to top when navigating to product page
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [slug]);
+
+  // Debug checkpoint #3 — captures UTM state at PDP load. Compared against
+  // /go's go_mount and cta_click in the admin "TikTok Funnel Debug" view
+  // to localize where utm_campaign was dropped (URL/redirect/session).
+  // Cheap no-op unless ?debug_utm=1 is set on the session.
+  useEffect(() => {
+    if (!slug) return;
+    logUtmCheckpoint('pdp_load', { slug });
   }, [slug]);
 
   // Track product views in visitor analytics
