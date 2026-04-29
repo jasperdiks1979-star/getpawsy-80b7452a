@@ -8446,6 +8446,27 @@ export type Database = {
           utm_campaign: string
         }[]
       }
+      get_lp_funnel_report_range: {
+        Args: {
+          p_campaign?: string
+          p_end: string
+          p_include_internal?: boolean
+          p_start: string
+        }
+        Returns: {
+          add_to_cart: number
+          atc_rate: number
+          click_through_rate: number
+          end_to_end_rate: number
+          lp_cta_click: number
+          lp_cta_impression: number
+          lp_view: number
+          pdp_rate: number
+          pdp_view: number
+          placement: string
+          utm_campaign: string
+        }[]
+      }
       get_render_trace_slug_timeline: {
         Args: { p_slug: string; p_window_days?: number }
         Returns: Json
