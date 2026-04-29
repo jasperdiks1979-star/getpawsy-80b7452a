@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed, Download } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed, Download, Info, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -210,6 +210,21 @@ export default function TikTokAdsPerformancePage() {
     return merged;
   }, [data]);
 
+  // Non-hook TikTok campaigns (e.g. tt_bio_link from the TikTok profile bio,
+  // organic posts, manual experiments). These are real revenue sources too —
+  // showing them prevents the dashboard from feeling broken when ads haven't
+  // started yet but bio-link traffic is already flowing.
+  const otherCampaignRows = useMemo<HookRow[]>(() => {
+    const live = data?.per_hook ?? [];
+    return live.filter((r) => !EXPECTED_HOOKS.includes(r.hook.toLowerCase()));
+  }, [data]);
+
+  const hasHookTraffic = useMemo(
+    () => hookRows.some((r) => EXPECTED_HOOKS.includes(r.hook.toLowerCase()) && r.sessions > 0),
+    [hookRows],
+  );
+  const hasOtherTraffic = otherCampaignRows.some((r) => r.sessions > 0);
+
   const totals: Totals = data?.totals ?? {
     sessions: 0,
     pdp_sessions: 0,
@@ -281,6 +296,33 @@ export default function TikTokAdsPerformancePage() {
         {error && (
           <Card className="p-4 border-destructive/50 bg-destructive/5 text-sm text-destructive">
             Failed to load: {error}
+          </Card>
+        )}
+
+        {/* Diagnostic banner: explains the difference between bio-link traffic
+            (utm_campaign=tt_bio_link, organic from your TikTok profile) and
+            paid ad traffic (utm_campaign=hook1..5). Without this, an empty
+            hook table looks like broken tracking when in reality the ads
+            simply haven't been clicked yet. */}
+        {!loading && !hasHookTraffic && hasOtherTraffic && (
+          <Card className="p-4 border-amber-500/40 bg-amber-500/5">
+            <div className="flex gap-3">
+              <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-sm space-y-1">
+                <p className="font-semibold text-foreground">
+                  TikTok traffic detected — but not from the paid ad hooks yet.
+                </p>
+                <p className="text-muted-foreground">
+                  All current TikTok visitors are arriving via your{" "}
+                  <span className="font-mono text-xs px-1 py-0.5 rounded bg-muted">utm_campaign</span> values
+                  shown below (e.g. <span className="font-mono text-xs px-1 py-0.5 rounded bg-muted">tt_bio_link</span>{" "}
+                  = your profile bio link). The 5 ad-hook URLs
+                  (<span className="font-mono text-xs px-1 py-0.5 rounded bg-muted">hook1..5</span>)
+                  haven&apos;t been clicked in this window yet — once your TikTok ads start
+                  driving clicks, those rows will fill in automatically.
+                </p>
+              </div>
+            </div>
           </Card>
         )}
 
@@ -429,6 +471,64 @@ export default function TikTokAdsPerformancePage() {
             </div>
           )}
         </Card>
+
+        {/* Other (non-hook) TikTok campaigns: bio-link, organic posts, etc.
+            Identical funnel breakdown so you can compare paid hooks vs.
+            organic profile traffic side-by-side. */}
+        {otherCampaignRows.length > 0 && (
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold text-foreground">Other TikTok campaigns</h2>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Bio link, organic posts &amp; manual UTMs (everything not <code className="px-1 py-0.5 rounded bg-muted text-[10px]">hook1..5</code>)
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-medium">Campaign</th>
+                    <th className="text-right px-3 py-2 font-medium">Sessions</th>
+                    <th className="text-right px-3 py-2 font-medium">PDP</th>
+                    <th className="text-right px-3 py-2 font-medium">PDP CTR</th>
+                    <th className="text-right px-3 py-2 font-medium">Cart</th>
+                    <th className="text-right px-3 py-2 font-medium">Checkout</th>
+                    <th className="text-right px-3 py-2 font-medium">Purchases</th>
+                    <th className="text-right px-3 py-2 font-medium">CVR</th>
+                    <th className="text-right px-3 py-2 font-medium">Revenue</th>
+                    <th className="text-right px-4 py-2 font-medium">AOV</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {otherCampaignRows.map((r) => (
+                    <tr key={r.hook} className="border-t border-border/60 hover:bg-accent/40 transition-colors">
+                      <td className="px-4 py-2.5 font-mono font-semibold text-foreground">{r.hook}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{fmtInt(r.sessions)}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{fmtInt(r.pdp_sessions)}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{fmtPct(r.pdp_ctr)}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{fmtInt(r.cart_sessions)}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{fmtInt(r.checkout_sessions)}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-semibold">{fmtInt(r.purchases)}</td>
+                      <td className={cn(
+                        "px-3 py-2.5 text-right tabular-nums font-semibold",
+                        r.cvr >= 2 ? "text-green-600 dark:text-green-400" : r.cvr > 0 ? "text-foreground" : "text-muted-foreground",
+                      )}>
+                        {fmtPct(r.cvr)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{fmtMoney(r.revenue)}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
+                        {r.purchases > 0 ? fmtMoney(r.aov) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
 
         {/* Daily trend */}
         {data && data.per_day.length > 0 && (
