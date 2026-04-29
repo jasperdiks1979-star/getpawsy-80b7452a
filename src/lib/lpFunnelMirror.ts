@@ -85,6 +85,10 @@ export function mirrorLpFunnelEvent(
     utm_campaign: pickString(params, 'utm_campaign'),
     utm_content: pickString(params, 'utm_content'),
     funnel: pickString(params, 'funnel') ?? 'tiktok_bio',
+    // CTA variant tag — flows through from LinkInBio's CTA_VARIANT constant
+    // (currently 'high_conv_v2'). Lets the admin dashboard compare CTR per
+    // variant × placement to attribute uplift to specific UI experiments.
+    cta_variant: pickString(params, 'cta_variant'),
     is_internal: isInternal,
   };
 
