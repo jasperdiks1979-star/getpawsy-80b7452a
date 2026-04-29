@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet, CalendarIcon, Users, UserCheck, UserPlus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { DateRange } from 'react-day-picker';
+import { TikTokVariantKpis } from '@/components/admin/TikTokVariantKpis';
 
 type RawRow = {
   placement: string | null;
