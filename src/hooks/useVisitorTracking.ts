@@ -72,46 +72,76 @@ const isPinterestInAppBrowser = (): boolean => {
   return ua.includes('pinterest') || ua.includes('pinterestbot');
 };
 
-// Extract all UTM parameters from URL, with Pinterest auto-detection
+// Extract all UTM parameters.
+//
+// Resolution order (per call — must NOT memoize on first page load,
+// otherwise UTMs added later in the funnel are lost):
+//   1. Current URL ?utm_* (highest priority — reflects the live click).
+//   2. sessionStorage (persisted from an earlier page in the same session).
+//   3. TikTok inference: if the previous page was /go OR the referrer hostname
+//      contains tiktok, force utm_source=tiktok so PDP visits land in the
+//      TikTok Ads Performance dashboard even when the deep-link UTMs were
+//      stripped by a route-level redirect (e.g. /products → /product).
+//   4. Pinterest auto-detection (in-app browser / epik / pin_id).
 const getUTMParams = (): UTMParams => {
-  // First check if we already have UTM params stored
-  const storedSource = sessionStorage.getItem("utm_source");
-  if (storedSource) {
-    return {
-      utm_source: storedSource,
-      utm_medium: sessionStorage.getItem("utm_medium"),
-      utm_campaign: sessionStorage.getItem("utm_campaign"),
-      utm_term: sessionStorage.getItem("utm_term"),
-      utm_content: sessionStorage.getItem("utm_content"),
-    };
-  }
-  
   const params = new URLSearchParams(window.location.search);
-  
+
+  // 1. URL is source of truth when present
+  const urlSource = params.get('utm_source');
+  const urlMedium = params.get('utm_medium');
+  const urlCampaign = params.get('utm_campaign');
+  const urlTerm = params.get('utm_term');
+  const urlContent = params.get('utm_content');
+
   // Check for Pinterest-specific parameters
   const hasPinterestParam = params.has('epik') || params.has('pin_id');
-  
+
   // Auto-detect Pinterest as source if their params are present OR in-app browser
   const isPinterestApp = isPinterestInAppBrowser();
   const isPinterest = hasPinterestParam || isPinterestApp;
-  
-  let utm_source = params.get('utm_source');
-  if (!utm_source && isPinterest) {
+
+  // TikTok inference: previous page was /go (LinkInBio funnel) OR referrer is tiktok.
+  // Without this, a /products → /product redirect that strips UTMs would land
+  // in the PDP with utm_source=null, causing TikTok dashboard PDP CTR = 0%.
+  const internalReferrer = sessionStorage.getItem('gp_internal_prev_path') || '';
+  const externalReferrer = (typeof document !== 'undefined' ? document.referrer : '') || '';
+  const cameFromGo =
+    internalReferrer === '/go' || internalReferrer.startsWith('/go?');
+  const referrerIsTikTok = /(?:^|\.)tiktok\.com/i.test(externalReferrer);
+  const isTikTokInferred = cameFromGo || referrerIsTikTok;
+
+  let utm_source = urlSource;
+  if (!utm_source && isTikTokInferred) {
+    utm_source = 'tiktok';
+  } else if (!utm_source && isPinterest) {
     utm_source = 'pinterest';
   }
-  
-  const utm_medium = params.get('utm_medium') || (isPinterest ? 'social' : null);
-  const utm_campaign = params.get('utm_campaign') || (isPinterest ? 'pinterest_auto' : null);
-  const utm_term = params.get('utm_term');
-  const utm_content = params.get('utm_content');
-  
-  // Store all UTM params in sessionStorage for funnel persistence
+
+  let utm_medium = urlMedium;
+  if (!utm_medium) {
+    if (isTikTokInferred) utm_medium = sessionStorage.getItem('utm_medium') || 'social';
+    else if (isPinterest) utm_medium = 'social';
+  }
+
+  let utm_campaign = urlCampaign;
+  if (!utm_campaign) {
+    // Carry the bucketed hookN from the previous /go page when the redirect
+    // dropped query params. Without this, PDP rows attribute to (none).
+    if (isTikTokInferred) utm_campaign = sessionStorage.getItem('utm_campaign');
+    else if (isPinterest) utm_campaign = 'pinterest_auto';
+  }
+
+  const utm_term = urlTerm || sessionStorage.getItem('utm_term');
+  const utm_content = urlContent || (isTikTokInferred ? sessionStorage.getItem('utm_content') : null);
+
+  // Persist whatever we resolved (URL > inferred > stored) so subsequent
+  // pages in the session can fall back to it. Never overwrite with null.
   if (utm_source) sessionStorage.setItem("utm_source", utm_source);
   if (utm_medium) sessionStorage.setItem("utm_medium", utm_medium);
   if (utm_campaign) sessionStorage.setItem("utm_campaign", utm_campaign);
   if (utm_term) sessionStorage.setItem("utm_term", utm_term);
   if (utm_content) sessionStorage.setItem("utm_content", utm_content);
-  
+
   return { utm_source, utm_medium, utm_campaign, utm_term, utm_content };
 };
 
@@ -213,7 +243,6 @@ export const useVisitorTracking = () => {
   const locationRef = useRef<GeoLocation | null>(null);
   const lastActivityRef = useRef<string | null>(null);
   const sessionId = useRef<string>(getSessionId());
-  const utmParamsRef = useRef<UTMParams>(getUTMParams());
   const referrerRef = useRef<string | null>(getReferrer());
   const deviceInfoRef = useRef<DeviceInfo>(getDeviceInfo());
 
@@ -269,7 +298,11 @@ export const useVisitorTracking = () => {
 
     try {
       const location = await fetchLocation();
-      const utmParams = utmParamsRef.current;
+      // Re-resolve every call so URL UTMs added later in the funnel
+      // (e.g. /go rewriting utm_campaign=hookN on mount, or a deep-link
+      // click into /product/?utm_campaign=hookN) are tracked on the row
+      // they actually apply to — not frozen to the first page's URL.
+      const utmParams = getUTMParams();
       const referrer = referrerRef.current;
       const deviceInfo = deviceInfoRef.current;
       const referrerCategory = categorizeReferrer(referrer, utmParams);
@@ -308,6 +341,16 @@ export const useVisitorTracking = () => {
       if (error) {
         console.error("Error tracking activity:", error);
       } else {
+        // Remember this path so the NEXT navigation can infer attribution
+        // (e.g. PDP after /go) even if a redirect strips the query string.
+        try {
+          sessionStorage.setItem(
+            'gp_internal_prev_path',
+            window.location.pathname + window.location.search,
+          );
+        } catch {
+          // sessionStorage can throw in private mode — non-fatal.
+        }
         console.log(`[Visitor Tracking] ${activityType} tracked`, { 
           productId: options?.productId, 
           orderId: options?.orderId,

@@ -6,7 +6,7 @@ const Sonner = lazy(() => import("@/components/ui/sonner").then((m) => ({ defaul
 const TooltipProvider = lazy(() => import("@/components/ui/tooltip").then((m) => ({ default: m.TooltipProvider })));
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 
 // Redirect /lp/:slug → /products/:slug (preserves UTM params from Pinterest pins)
 const LpRedirect = () => {
@@ -280,16 +280,34 @@ function CollectionRedirect() {
   return <Navigate to={`/collections/${slug || ""}`} replace />;
 }
 
-/** Redirect legacy /products/:slug to canonical /product/:slug */
+/**
+ * Redirect legacy /products/:slug to canonical /product/:slug.
+ * CRITICAL: must preserve `?search` (UTMs) and `#hash` so TikTok ad
+ * attribution (utm_campaign=hookN) survives the redirect — otherwise the
+ * PDP loads with no UTMs and the TikTok Ads Performance dashboard
+ * undercounts every hook to 0 PDP visits.
+ */
 function ProductRouteRedirect() {
   const { slug } = useParams<{ slug: string }>();
-  return <Navigate to={`/product/${slug || ""}`} replace />;
+  const location = useLocation();
+  return (
+    <Navigate
+      to={`/product/${slug || ""}${location.search}${location.hash}`}
+      replace
+    />
+  );
 }
 
-/** Redirect /bestseller/:slug to canonical /product/:slug */
+/** Redirect /bestseller/:slug to canonical /product/:slug, preserving query/hash. */
 function BestsellerSlugRedirect() {
   const { slug } = useParams<{ slug: string }>();
-  return <Navigate to={`/product/${slug || ""}`} replace />;
+  const location = useLocation();
+  return (
+    <Navigate
+      to={`/product/${slug || ""}${location.search}${location.hash}`}
+      replace
+    />
+  );
 }
 
 // Admin sub-pages (all lazy-loaded, admin-only)
