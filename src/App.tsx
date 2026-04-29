@@ -413,6 +413,7 @@ const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAut
 const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
 const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
 const TikTokExcludedSessionsPage = lazyWithRetry(() => import("./pages/admin/TikTokExcludedSessionsPage"));
+const TikTokFunnelReportPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelReportPage"));
 const TikTokSessionDecisionLogPage = lazyWithRetry(() => import("./pages/admin/TikTokSessionDecisionLogPage"));
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
@@ -2127,6 +2128,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokSessionDecisionLogPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tiktok-funnel-report"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokFunnelReportPage />
                                 </Suspense>
                               }
                             />

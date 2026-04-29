@@ -8,6 +8,7 @@ import {
 } from '@/lib/tiktok-pixel';
 import { enrichEventWithLpCta } from '@/lib/lpCtaCorrelation';
 import { validateUtmAttribution } from '@/lib/utmAttributionValidator';
+import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 
 declare global {
   interface Window {
@@ -72,6 +73,14 @@ export const trackEvent = (
   logFounderEvent(eventName, false);
   window.gtag('event', eventName, enrichedParams);
   console.debug('[Analytics] Event tracked:', eventName, enrichedParams);
+
+  // Mirror funnel + downstream events to Postgres for the admin
+  // drop-off report (best-effort, never blocks the UX).
+  try {
+    mirrorLpFunnelEvent(eventName, enrichedParams);
+  } catch (err) {
+    console.debug('[Analytics] funnel mirror failed:', err);
+  }
 
   // Cross-event UTM consistency guard. Runs AFTER dispatch so the
   // primary event still ships even if validation throws. Skip the
