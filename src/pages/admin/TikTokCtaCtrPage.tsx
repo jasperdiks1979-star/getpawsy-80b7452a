@@ -6,6 +6,7 @@
  * full funnel report. This is the "which CTA is winning" view.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { format, startOfDay, endOfDay, subDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,8 +14,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet, CalendarIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import type { DateRange } from 'react-day-picker';
 
 type RawRow = {
   placement: string | null;
@@ -58,7 +62,13 @@ function fmtPct(value: number, denominator: number): string {
 }
 
 export default function TikTokCtaCtrPage() {
+  // Range mode: 'preset' (last N days) OR 'custom' (explicit from/to via DayPicker).
+  const [rangeMode, setRangeMode] = useState<'preset' | 'custom'>('preset');
   const [days, setDays] = useState(14);
+  const [customRange, setCustomRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 13),
+    to: new Date(),
+  });
   const [campaign, setCampaign] = useState<string>('all');
   const [rows, setRows] = useState<RawRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,12 +86,20 @@ export default function TikTokCtaCtrPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    supabase
-      .rpc('get_lp_funnel_report', {
-        p_days: days,
-        p_campaign: campaign === 'all' ? null : campaign,
-        p_include_internal: false,
-      })
+    const useCustom = rangeMode === 'custom' && customRange?.from && customRange?.to;
+    const promise = useCustom
+      ? supabase.rpc('get_lp_funnel_report_range', {
+          p_start: startOfDay(customRange!.from!).toISOString(),
+          p_end: endOfDay(customRange!.to!).toISOString(),
+          p_campaign: campaign === 'all' ? null : campaign,
+          p_include_internal: false,
+        })
+      : supabase.rpc('get_lp_funnel_report', {
+          p_days: days,
+          p_campaign: campaign === 'all' ? null : campaign,
+          p_include_internal: false,
+        });
+    promise
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) {
@@ -95,7 +113,7 @@ export default function TikTokCtaCtrPage() {
     return () => {
       cancelled = true;
     };
-  }, [days, campaign]);
+  }, [rangeMode, days, customRange?.from?.getTime(), customRange?.to?.getTime(), campaign]);
 
   const campaigns = useMemo(() => {
     const set = new Set<string>();
@@ -272,10 +290,13 @@ export default function TikTokCtaCtrPage() {
     const wb = XLSX.utils.book_new();
 
     // ---------- Summary sheet ----------
+    const windowLabel = rangeMode === 'custom' && customRange?.from && customRange?.to
+      ? `${format(customRange.from, 'yyyy-MM-dd')} → ${format(customRange.to, 'yyyy-MM-dd')}`
+      : `Last ${days} days`;
     const summaryAoa: (string | number)[][] = [
       ['TikTok CTA CTR Export'],
       ['Generated', new Date().toISOString()],
-      ['Window (days)', days],
+      ['Window', windowLabel],
       ['View filter (campaign)', campaign],
       ['Export placements', Array.from(exportPlacements).join(', ') || '(none)'],
       ['Export campaigns', exportCampaigns === null ? 'All' : (Array.from(exportCampaigns).join(', ') || '(none)')],
@@ -378,16 +399,56 @@ export default function TikTokCtaCtrPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          {/* Range mode toggles between preset "Last N days" and a custom date range */}
+          <Select
+            value={rangeMode === 'preset' ? `preset:${days}` : 'custom'}
+            onValueChange={(v) => {
+              if (v === 'custom') {
+                setRangeMode('custom');
+              } else {
+                setRangeMode('preset');
+                setDays(Number(v.replace('preset:', '')));
+              }
+            }}
+          >
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Last 1 day</SelectItem>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="14">Last 14 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="preset:1">Last 1 day</SelectItem>
+              <SelectItem value="preset:7">Last 7 days</SelectItem>
+              <SelectItem value="preset:14">Last 14 days</SelectItem>
+              <SelectItem value="preset:30">Last 30 days</SelectItem>
+              <SelectItem value="preset:90">Last 90 days</SelectItem>
+              <SelectItem value="custom">Custom range…</SelectItem>
             </SelectContent>
           </Select>
+          {rangeMode === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn('gap-2 font-normal', !customRange?.from && 'text-muted-foreground')}
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  {customRange?.from && customRange?.to
+                    ? `${format(customRange.from, 'MMM d')} – ${format(customRange.to, 'MMM d, yyyy')}`
+                    : 'Pick range'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={customRange}
+                  onSelect={setCustomRange}
+                  defaultMonth={customRange?.from}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
           <Select value={campaign} onValueChange={setCampaign}>
             <SelectTrigger className="w-44"><SelectValue placeholder="All campaigns" /></SelectTrigger>
             <SelectContent>
