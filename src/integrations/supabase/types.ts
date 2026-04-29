@@ -2788,6 +2788,66 @@ export type Database = {
           },
         ]
       }
+      lp_funnel_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          funnel: string | null
+          id: string
+          is_internal: boolean | null
+          lp_click_id: string | null
+          lp_placement: string | null
+          page_path: string | null
+          placement: string | null
+          product_id: string | null
+          product_name: string | null
+          session_id: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          funnel?: string | null
+          id?: string
+          is_internal?: boolean | null
+          lp_click_id?: string | null
+          lp_placement?: string | null
+          page_path?: string | null
+          placement?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          session_id: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          funnel?: string | null
+          id?: string
+          is_internal?: boolean | null
+          lp_click_id?: string | null
+          lp_placement?: string | null
+          page_path?: string | null
+          placement?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          session_id?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
       market_share_simulations: {
         Row: {
           cluster_expansion_growth: number | null
@@ -8365,6 +8425,26 @@ export type Database = {
       get_crawler_sampling_last_hour: {
         Args: { p_minutes?: number; p_top_pages?: number }
         Returns: Json
+      }
+      get_lp_funnel_report: {
+        Args: {
+          p_campaign?: string
+          p_days?: number
+          p_include_internal?: boolean
+        }
+        Returns: {
+          add_to_cart: number
+          atc_rate: number
+          click_through_rate: number
+          end_to_end_rate: number
+          lp_cta_click: number
+          lp_cta_impression: number
+          lp_view: number
+          pdp_rate: number
+          pdp_view: number
+          placement: string
+          utm_campaign: string
+        }[]
       }
       get_render_trace_slug_timeline: {
         Args: { p_slug: string; p_window_days?: number }
