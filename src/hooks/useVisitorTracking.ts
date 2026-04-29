@@ -211,6 +211,7 @@ export const useVisitorTracking = () => {
   const locationRef = useRef<GeoLocation | null>(null);
   const lastActivityRef = useRef<string | null>(null);
   const sessionId = useRef<string>(getSessionId());
+  const visitorId = useRef<string>(getVisitorId());
   const referrerRef = useRef<string | null>(getReferrer());
   const deviceInfoRef = useRef<DeviceInfo>(getDeviceInfo());
 
@@ -280,6 +281,7 @@ export const useVisitorTracking = () => {
         .from("visitor_activity")
         .insert({
           session_id: sessionId.current,
+          visitor_id: visitorId.current,
           activity_type: activityType,
           latitude: location?.latitude || null,
           longitude: location?.longitude || null,
