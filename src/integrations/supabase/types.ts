@@ -8380,20 +8380,45 @@ export type Database = {
         }
         Returns: Json
       }
-      get_tiktok_bio_split: { Args: { p_window_days?: number }; Returns: Json }
-      get_tiktok_excluded_sessions: {
-        Args: {
-          p_limit?: number
-          p_offset?: number
-          p_rule?: string
-          p_window_days?: number
-        }
-        Returns: Json
-      }
-      get_tiktok_hook_performance: {
-        Args: { p_campaign_pattern?: string; p_window_days?: number }
-        Returns: Json
-      }
+      get_tiktok_bio_split:
+        | { Args: { p_window_days?: number }; Returns: Json }
+        | {
+            Args: { p_include_excluded?: boolean; p_window_days?: number }
+            Returns: Json
+          }
+      get_tiktok_excluded_sessions:
+        | {
+            Args: {
+              p_limit?: number
+              p_offset?: number
+              p_rule?: string
+              p_window_days?: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_include_excluded?: boolean
+              p_limit?: number
+              p_offset?: number
+              p_rule?: string
+              p_window_days?: number
+            }
+            Returns: Json
+          }
+      get_tiktok_hook_performance:
+        | {
+            Args: { p_campaign_pattern?: string; p_window_days?: number }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_campaign_pattern?: string
+              p_include_excluded?: boolean
+              p_window_days?: number
+            }
+            Returns: Json
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

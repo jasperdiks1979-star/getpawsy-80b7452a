@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 
 type RuleKey = 'is_internal' | 'country=NL' | 'admin_route' | 'bot_heuristic';
@@ -27,6 +29,7 @@ interface ExcludedRow {
   browser: string;
   screen_width: number;
   rules: RuleKey[];
+  is_excluded?: boolean;
 }
 
 interface Summary {
@@ -44,6 +47,7 @@ interface Payload {
   limit: number;
   offset: number;
   rule_filter: string | null;
+  include_excluded?: boolean;
   summary: Summary;
   rows: ExcludedRow[];
 }
@@ -80,6 +84,10 @@ export default function TikTokExcludedSessionsPage() {
   const [windowDays, setWindowDays] = useState<number>(30);
   const [rule, setRule] = useState<string>('all');
   const [offset, setOffset] = useState<number>(0);
+  // Admin override: when ON, the RPC returns ALL TikTok sessions (including
+  // ones that would normally be kept), so admins can validate exactly which
+  // sessions the dashboard counts vs. drops.
+  const [includeExcluded, setIncludeExcluded] = useState<boolean>(false);
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +102,7 @@ export default function TikTokExcludedSessionsPage() {
         p_limit: PAGE_SIZE,
         p_offset: offset,
         p_rule: rule === 'all' ? null : rule,
+        p_include_excluded: includeExcluded,
       });
       if (cancelled) return;
       if (error) { setError(error.message); setData(null); }
@@ -101,7 +110,7 @@ export default function TikTokExcludedSessionsPage() {
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [windowDays, rule, offset]);
+  }, [windowDays, rule, offset, includeExcluded]);
 
   const summary = data?.summary;
   const rows = data?.rows ?? [];
@@ -145,8 +154,27 @@ export default function TikTokExcludedSessionsPage() {
               {RULE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-2 pl-2 border-l border-border/60">
+            <Switch
+              id="tiktok-excl-show-all"
+              checked={includeExcluded}
+              onCheckedChange={(v) => { setOffset(0); setIncludeExcluded(Boolean(v)); }}
+              aria-label="Show all sessions including kept ones"
+            />
+            <Label htmlFor="tiktok-excl-show-all" className="text-xs whitespace-nowrap cursor-pointer">
+              Show all sessions
+            </Label>
+          </div>
         </div>
       </div>
+
+      {includeExcluded && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900">
+          <strong>Admin override:</strong> showing every TikTok session in the window — kept rows
+          appear with an empty rules list. Use to verify exactly what each performance report
+          would and would not include.
+        </div>
+      )}
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
         <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Excluded sessions</CardTitle></CardHeader>
@@ -205,6 +233,11 @@ export default function TikTokExcludedSessionsPage() {
                       <td className="py-2 pr-3 text-right tabular-nums">{r.event_count}</td>
                       <td className="py-2 pr-3">
                         <div className="flex flex-wrap gap-1">
+                          {r.rules.length === 0 ? (
+                            <span className="inline-block px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wide bg-emerald-500/15 text-emerald-700 border-emerald-500/30">
+                              kept
+                            </span>
+                          ) : null}
                           {r.rules.map((k) => (
                             <span key={k} className={`inline-block px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wide ${RULE_TONE[k]}`}>
                               {RULE_LABEL[k]}

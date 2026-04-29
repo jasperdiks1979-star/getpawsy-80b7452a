@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 /**
@@ -190,12 +192,16 @@ function downloadCsv(filename: string, content: string) {
 
 export default function TikTokAdsPerformancePage() {
   const [windowDays, setWindowDays] = useState<number>(30);
+  // Admin override: when ON, the RPCs return the raw, unfiltered data set
+  // (internal/NL/admin/bot sessions are no longer dropped). Use only for
+  // manual validation; defaults OFF so the dashboard stays compliant.
+  const [includeExcluded, setIncludeExcluded] = useState<boolean>(false);
   const [data, setData] = useState<Payload | null>(null);
   const [bioData, setBioData] = useState<BioPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async (days: number) => {
+  const load = async (days: number, includeExcludedFlag: boolean) => {
     setLoading(true);
     setError(null);
     // Fetch the funnel and the bio-link split in parallel — both are admin-
@@ -205,8 +211,12 @@ export default function TikTokAdsPerformancePage() {
       supabase.rpc("get_tiktok_hook_performance" as any, {
         p_window_days: days,
         p_campaign_pattern: null,
+        p_include_excluded: includeExcludedFlag,
       }),
-      supabase.rpc("get_tiktok_bio_split" as any, { p_window_days: days }),
+      supabase.rpc("get_tiktok_bio_split" as any, {
+        p_window_days: days,
+        p_include_excluded: includeExcludedFlag,
+      }),
     ]);
     if (funnelRes.error) {
       setError(funnelRes.error.message);
@@ -226,8 +236,8 @@ export default function TikTokAdsPerformancePage() {
   };
 
   useEffect(() => {
-    load(windowDays);
-  }, [windowDays]);
+    load(windowDays, includeExcluded);
+  }, [windowDays, includeExcluded]);
 
   // Merge live rows with the 5 expected hooks so every hook is visible even
   // before its first click — gives the user a deterministic 5-row table that
@@ -382,7 +392,7 @@ export default function TikTokAdsPerformancePage() {
                 ))}
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="icon" onClick={() => load(windowDays)} aria-label="Refresh">
+            <Button variant="outline" size="icon" onClick={() => load(windowDays, includeExcluded)} aria-label="Refresh">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
             <Button
@@ -402,8 +412,37 @@ export default function TikTokAdsPerformancePage() {
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Export CSV</span>
             </Button>
+            <div
+              className={cn(
+                "flex items-center gap-2 pl-2 ml-1 border-l border-border/60",
+                includeExcluded && "text-amber-700",
+              )}
+              title="Admin override: temporarily disables internal/NL/admin/bot exclusions so you can validate the same data points the reports normally drop."
+            >
+              <Switch
+                id="tiktok-include-excluded"
+                checked={includeExcluded}
+                onCheckedChange={(v) => setIncludeExcluded(Boolean(v))}
+                aria-label="Include excluded sessions (admin override)"
+              />
+              <Label htmlFor="tiktok-include-excluded" className="text-xs whitespace-nowrap cursor-pointer">
+                Include excluded
+              </Label>
+            </div>
           </div>
         </header>
+
+        {includeExcluded && (
+          <Card className="p-3 border-amber-500/40 bg-amber-500/10 text-sm flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 text-amber-700 shrink-0" />
+            <div className="text-amber-900">
+              <strong>Admin override active.</strong> Filters for internal traffic, NL country,
+              admin route visits and bot heuristic are temporarily disabled. These numbers
+              include sessions that are normally excluded from compliance reports — use for
+              manual validation only.
+            </div>
+          </Card>
+        )}
 
         {error && (
           <Card className="p-4 border-destructive/50 bg-destructive/5 text-sm text-destructive">
