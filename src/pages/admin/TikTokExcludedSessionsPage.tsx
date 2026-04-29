@@ -177,6 +177,8 @@ export default function TikTokExcludedSessionsPage() {
         </div>
       )}
 
+      <TikTokBotDetectionImpactCard windowDays={windowDays} />
+
       <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
         <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Excluded sessions</CardTitle></CardHeader>
           <CardContent className="text-2xl font-bold">{summary?.any_excluded ?? 0}<div className="text-xs text-muted-foreground font-normal mt-1">{exclusionRate}% of TikTok sessions</div></CardContent></Card>
