@@ -233,6 +233,11 @@ export default function TikTokExcludedSessionsPage() {
                       <td className="py-2 pr-3 text-right tabular-nums">{r.event_count}</td>
                       <td className="py-2 pr-3">
                         <div className="flex flex-wrap gap-1">
+                          {r.rules.length === 0 ? (
+                            <span className="inline-block px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wide bg-emerald-500/15 text-emerald-700 border-emerald-500/30">
+                              kept
+                            </span>
+                          ) : null}
                           {r.rules.map((k) => (
                             <span key={k} className={`inline-block px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wide ${RULE_TONE[k]}`}>
                               {RULE_LABEL[k]}
