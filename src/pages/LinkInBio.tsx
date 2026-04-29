@@ -15,6 +15,7 @@ import { assignBioHook, BIO_HOOKS, EXPLICIT_PAID_CAMPAIGNS } from '@/lib/bioHook
 import { resolveUtm, syncUtmToUrl, persistUtmToSession } from '@/lib/utmNormalizer';
 import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
+import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
@@ -189,6 +190,16 @@ export default function LinkInBio() {
     // Debug checkpoint #1 — captures UTM state right after /go mounts +
     // bucketing/syncUtmToUrl have run. Safe no-op without ?debug_utm=1.
     logUtmCheckpoint('go_mount', { attribution });
+    // Microsoft Clarity — funnel-scoped boot. The helper itself is gated by
+    // marketing consent + Founder Mode so we never pollute heatmaps with
+    // internal sessions. Tags let us slice heatmaps by variant + campaign.
+    initClarity();
+    clarityTag('page', '/go');
+    clarityTag('funnel', 'tiktok_bio');
+    clarityTag('cta_variant', CTA_VARIANT);
+    if (attribution.utm_campaign) clarityTag('utm_campaign', attribution.utm_campaign);
+    if (attribution.utm_content) clarityTag('utm_content', attribution.utm_content);
+    clarityMilestone('go_landing_view');
   }, [attribution]);
 
   // FUNNEL STEP 2 — Scroll-depth milestones to surface where users drop off
@@ -246,6 +257,22 @@ export default function LinkInBio() {
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
+            // Clarity custom event per visibility milestone — lets us filter
+            // heatmaps & recordings by "users who saw the proof" vs not.
+            //   - bio_primary / bio_secondary / bio_sticky → cta_visible_<placement>
+            //   - uplift_proof  → proof_visible
+            //   - uplift_nudge  → nudge_visible (+ arrow_visible — the arrow lives
+            //     inside the nudge block, so when nudge crosses 50% the arrow is
+            //     guaranteed to be on screen too)
+            if (placement === 'uplift_proof') {
+              clarityMilestone('proof_visible');
+            } else if (placement === 'uplift_nudge') {
+              clarityMilestone('nudge_visible');
+              clarityMilestone('arrow_visible');
+            } else {
+              clarityMilestone(`cta_visible_${placement}`);
+              if (placement === 'bio_primary') clarityMilestone('cta_visible');
+            }
           }
         }
       },
@@ -308,6 +335,12 @@ export default function LinkInBio() {
       saw_nudge_before_click: sawNudge,
       ...attribution,
     });
+    // Clarity click beacon + tags so heatmap funnels can answer:
+    // "of users who saw proof, how many actually clicked?"
+    clarityTag('saw_proof_before_click', sawProof);
+    clarityTag('saw_nudge_before_click', sawNudge);
+    clarityMilestone(`cta_click_${placement}`);
+    clarityMilestone('cta_click');
     // Debug checkpoint #2 — captures UTM state at the moment of click,
     // BEFORE the outbound navigation, so we can compare against pdp_load.
     logUtmCheckpoint('cta_click', { placement, attribution });
