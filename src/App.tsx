@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 
 import { resolveUtm, appendUtmToPath } from "@/lib/utmNormalizer";
+import { logUtmCheckpoint } from "@/lib/utmDebugLog";
 
 // Redirect /lp/:slug → /products/:slug (preserves UTM params from Pinterest pins)
 const LpRedirect = () => {
@@ -18,6 +19,7 @@ const LpRedirect = () => {
   // even if the inbound /lp link was stripped of its query string.
   const utm = resolveUtm({ search: searchParams });
   const to = appendUtmToPath(`/products/${slug}`, utm, `?${searchParams.toString()}`);
+  logUtmCheckpoint('redirect', { from: 'lp', to });
   return <Navigate to={to} replace />;
 };
 import { CartProvider } from "@/contexts/CartContext";
@@ -298,6 +300,7 @@ function ProductRouteRedirect() {
   // Re-resolve UTMs through the central normalizer so attribution survives
   // even if a deep-link client stripped query params on the way in.
   const utm = resolveUtm({ search: location.search });
+  logUtmCheckpoint('redirect', { from: '/products', slug });
   return (
     <Navigate
       to={appendUtmToPath(`/product/${slug || ""}`, utm, location.search, location.hash)}
@@ -311,6 +314,7 @@ function BestsellerSlugRedirect() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const utm = resolveUtm({ search: location.search });
+  logUtmCheckpoint('redirect', { from: '/bestseller', slug });
   return (
     <Navigate
       to={appendUtmToPath(`/product/${slug || ""}`, utm, location.search, location.hash)}
@@ -407,6 +411,7 @@ const PinterestScaleModePage = lazyWithRetry(() => import("./pages/admin/Pintere
 const PinterestAutomationPage = lazyWithRetry(() => import("./pages/admin/PinterestAutomationPage"));
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
 const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
+const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
 const TikTokStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokStatusPage"));
@@ -2096,6 +2101,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokAdsPerformancePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tiktok-funnel-debug"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokFunnelDebugPage />
                                 </Suspense>
                               }
                             />
