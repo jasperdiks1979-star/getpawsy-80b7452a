@@ -1,0 +1,98 @@
+/**
+ * lpFunnelMirror — best-effort mirror of the TikTok bio funnel events
+ * into Postgres so the admin dashboard can compute drop-off rates that
+ * GA4 alone cannot reliably surface (sampling, ad-blockers, consent).
+ *
+ * Only a curated subset of events is mirrored — anything else stays in
+ * GA4 only. Failures are swallowed: analytics must never break the UX.
+ */
+import { supabase } from '@/integrations/supabase/client';
+import { getFounderModeStatus } from '@/lib/founder-mode';
+
+const MIRRORED_EVENTS = new Set([
+  'lp_view',
+  'lp_cta_impression',
+  'lp_cta_click',
+  'view_item',
+  'add_to_cart',
+]);
+
+const SESSION_ID_KEY = 'gp_session_id';
+
+function getSessionId(): string {
+  try {
+    const store = window.sessionStorage;
+    let id = store.getItem(SESSION_ID_KEY);
+    if (!id) {
+      id =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      store.setItem(SESSION_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return `anon_${Date.now()}`;
+  }
+}
+
+function pickString(params: Record<string, unknown> | undefined, key: string): string | null {
+  const value = params?.[key];
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function pickNumber(params: Record<string, unknown> | undefined, key: string): number | null {
+  const value = params?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function pickProductFromItems(params: Record<string, unknown> | undefined): {
+  product_id: string | null;
+  product_name: string | null;
+} {
+  const items = params?.items;
+  if (!Array.isArray(items) || items.length === 0) return { product_id: null, product_name: null };
+  const first = items[0] as Record<string, unknown>;
+  return {
+    product_id: typeof first?.item_id === 'string' ? (first.item_id as string) : null,
+    product_name: typeof first?.item_name === 'string' ? (first.item_name as string) : null,
+  };
+}
+
+/** Fire-and-forget mirror. Never throws, never blocks the caller. */
+export function mirrorLpFunnelEvent(
+  eventName: string,
+  params?: Record<string, unknown>,
+): void {
+  if (!MIRRORED_EVENTS.has(eventName)) return;
+  if (typeof window === 'undefined') return;
+
+  const isInternal = getFounderModeStatus();
+  const { product_id, product_name } = pickProductFromItems(params);
+
+  const row = {
+    session_id: getSessionId(),
+    event_name: eventName,
+    placement: pickString(params, 'placement'),
+    page_path: pickString(params, 'page') || (typeof window !== 'undefined' ? window.location.pathname : null),
+    product_id: product_id || pickString(params, 'product_id'),
+    product_name,
+    value: pickNumber(params, 'value'),
+    lp_click_id: pickString(params, 'lp_click_id'),
+    lp_placement: pickString(params, 'lp_placement'),
+    utm_source: pickString(params, 'utm_source'),
+    utm_medium: pickString(params, 'utm_medium'),
+    utm_campaign: pickString(params, 'utm_campaign'),
+    utm_content: pickString(params, 'utm_content'),
+    funnel: pickString(params, 'funnel') ?? 'tiktok_bio',
+    is_internal: isInternal,
+  };
+
+  // Fire-and-forget — analytics must never affect the user experience.
+  void supabase
+    .from('lp_funnel_events')
+    .insert(row)
+    .then(({ error }) => {
+      if (error) console.debug('[lpFunnelMirror] insert failed:', error.message);
+    });
+}
