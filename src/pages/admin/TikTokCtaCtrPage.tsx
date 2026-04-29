@@ -11,7 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal } from 'lucide-react';
 
 type RawRow = {
   placement: string | null;
@@ -61,6 +63,14 @@ export default function TikTokCtaCtrPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Export selection — defaults to "everything visible". When the dashboard
+  // filter is set to a single campaign we still want users to optionally narrow
+  // the export further (e.g. only bio_primary across two specific campaigns).
+  const [exportPlacements, setExportPlacements] = useState<Set<string>>(
+    () => new Set(PLACEMENTS),
+  );
+  const [exportCampaigns, setExportCampaigns] = useState<Set<string> | null>(null); // null = all
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -91,6 +101,13 @@ export default function TikTokCtaCtrPage() {
     rows.forEach((r) => r.utm_campaign && set.add(r.utm_campaign));
     return Array.from(set).sort();
   }, [rows]);
+
+  // When the underlying campaign list changes (filter change / new data),
+  // reset the export campaign selection so it stays in sync and never targets
+  // campaigns that no longer exist in the current dataset.
+  useEffect(() => {
+    setExportCampaigns(null);
+  }, [campaigns.join('|')]);
 
   /** Aggregate raw rows (which are split by placement × campaign) into a single
    *  row per placement so we can directly compare bio_primary vs secondary vs sticky. */
@@ -142,6 +159,25 @@ export default function TikTokCtaCtrPage() {
    *  placement with totals + CTRs) and the per-placement × campaign breakdown.
    *  The two sections are separated by a blank line so the file opens cleanly
    *  in Excel / Google Sheets while still being a single download. */
+  function togglePlacement(p: string) {
+    setExportPlacements((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      return next;
+    });
+  }
+
+  function toggleCampaign(c: string) {
+    setExportCampaigns((prev) => {
+      const base = prev ?? new Set(campaigns);
+      const next = new Set(base);
+      if (next.has(c)) next.delete(c);
+      else next.add(c);
+      return next;
+    });
+  }
+
   function handleExportCsv() {
     const escape = (v: unknown): string => {
       if (v === null || v === undefined) return '';
@@ -150,14 +186,25 @@ export default function TikTokCtaCtrPage() {
     };
     const fmtNum = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '');
 
+    const placementsToExport = aggregated.filter((a) => exportPlacements.has(a.placement));
+    const campaignFilter = (utm: string | null): boolean => {
+      if (exportCampaigns === null) return true;
+      return exportCampaigns.has(utm ?? '');
+    };
+
     const lines: string[] = [];
-    lines.push(`# TikTok CTA CTR export — last ${days} days — campaign: ${campaign}`);
+    const placementSummary = Array.from(exportPlacements).join('+') || 'none';
+    const campaignSummary =
+      exportCampaigns === null ? 'all' : Array.from(exportCampaigns).join('+') || 'none';
+    lines.push(`# TikTok CTA CTR export — last ${days} days — view filter: ${campaign}`);
+    lines.push(`# Export placements: ${placementSummary}`);
+    lines.push(`# Export campaigns: ${campaignSummary}`);
     lines.push(`# Generated: ${new Date().toISOString()}`);
     lines.push('');
 
-    // Section 1: aggregate per placement
+    // Section 1: aggregate per placement (only selected placements)
     lines.push('Section,Placement,Campaign,Impressions,Clicks,CTR %,PDP Views,Add to Cart,Click→PDP %,PDP→ATC %,Impression→ATC %');
-    aggregated.forEach((a) => {
+    placementsToExport.forEach((a) => {
       lines.push([
         'Aggregate',
         a.placement,
@@ -175,9 +222,11 @@ export default function TikTokCtaCtrPage() {
 
     lines.push('');
 
-    // Section 2: per placement × campaign breakdown
+    // Section 2: per placement × campaign breakdown (filtered)
     rows
       .filter((r) => r.placement && PLACEMENTS.includes(r.placement as typeof PLACEMENTS[number]))
+      .filter((r) => exportPlacements.has(r.placement as string))
+      .filter((r) => campaignFilter(r.utm_campaign))
       .forEach((r) => {
         const ctr = pct(r.lp_cta_click, r.lp_cta_impression);
         const c2p = pct(r.pdp_view, r.lp_cta_click);
@@ -203,15 +252,21 @@ export default function TikTokCtaCtrPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const stamp = new Date().toISOString().slice(0, 10);
+    const slug = `${placementSummary}_${campaignSummary}`.replace(/[^a-z0-9_+-]+/gi, '-').slice(0, 60);
     a.href = url;
-    a.download = `tiktok-cta-ctr_${stamp}_${days}d_${campaign}.csv`;
+    a.download = `tiktok-cta-ctr_${stamp}_${days}d_${slug}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
-  const canExport = !loading && !error && (aggregated.some((a) => a.lp_cta_impression > 0) || rows.length > 0);
+  const canExport =
+    !loading &&
+    !error &&
+    exportPlacements.size > 0 &&
+    (exportCampaigns === null || exportCampaigns.size > 0) &&
+    (aggregated.some((a) => a.lp_cta_impression > 0) || rows.length > 0);
 
   return (
     <div className="space-y-6">
@@ -251,6 +306,70 @@ export default function TikTokCtaCtrPage() {
           >
             <Download className="w-4 h-4" /> Export CSV
           </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1" aria-label="Export options">
+                <SlidersHorizontal className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Placements
+                </p>
+                <div className="space-y-2">
+                  {PLACEMENTS.map((p) => (
+                    <label key={p} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={exportPlacements.has(p)}
+                        onCheckedChange={() => togglePlacement(p)}
+                      />
+                      <span className="font-mono text-xs">{p}</span>
+                      <span className="text-muted-foreground text-xs">— {PLACEMENT_LABELS[p]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Campaigns
+                  </p>
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline"
+                    onClick={() =>
+                      setExportCampaigns((prev) => (prev === null ? new Set() : null))
+                    }
+                  >
+                    {exportCampaigns === null ? 'Customize' : 'All'}
+                  </button>
+                </div>
+                {campaigns.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No campaigns in current data.</p>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                    {campaigns.map((c) => {
+                      const checked =
+                        exportCampaigns === null ? true : exportCampaigns.has(c);
+                      return (
+                        <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleCampaign(c)}
+                          />
+                          <span className="text-xs truncate">{c}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground border-t pt-2">
+                Aggregates and per-campaign rows in the CSV are filtered by these selections.
+              </p>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
