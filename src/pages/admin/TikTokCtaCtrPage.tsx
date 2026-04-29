@@ -659,6 +659,27 @@ export default function TikTokCtaCtrPage() {
             </Card>
           </div>
 
+          {/* Per-variant KPI widget — impressions / CTR / CVR / CPA per
+              utm_campaign (the 3 TikTok video variants + bio hooks).
+              Shares the same date window as the rest of the page. */}
+          <TikTokVariantKpis
+            startIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? startOfDay(customRange.from).toISOString()
+                : startOfDay(subDays(new Date(), days - 1)).toISOString()
+            }
+            endIso={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? endOfDay(customRange.to).toISOString()
+                : endOfDay(new Date()).toISOString()
+            }
+            windowLabel={
+              rangeMode === 'custom' && customRange?.from && customRange?.to
+                ? `${format(customRange.from, 'MMM d')} → ${format(customRange.to, 'MMM d')}`
+                : `Last ${days} days`
+            }
+          />
+
           {/* Side-by-side placement comparison */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {aggregated.map((a) => {
