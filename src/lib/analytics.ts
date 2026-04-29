@@ -9,6 +9,28 @@ import {
 import { enrichEventWithLpCta } from '@/lib/lpCtaCorrelation';
 import { validateUtmAttribution } from '@/lib/utmAttributionValidator';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
+import { getPersistedUtm } from '@/lib/utmNormalizer';
+
+/**
+ * Conversion-event UTM enricher. Pulls the persisted attribution
+ * (session → 30-day localStorage) and exposes it on the GA4 event so
+ * downstream funnel reports can group revenue by the original
+ * utm_source / utm_campaign / utm_content even when the user landed
+ * on /checkout or /payment-success without UTMs in the URL.
+ */
+function withPersistedUtm(
+  params: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const utm = getPersistedUtm();
+  return {
+    ...params,
+    utm_source: utm.utm_source ?? null,
+    utm_medium: utm.utm_medium ?? null,
+    utm_campaign: utm.utm_campaign ?? null,
+    utm_content: utm.utm_content ?? null,
+    utm_term: utm.utm_term ?? null,
+  };
+}
 
 declare global {
   interface Window {
@@ -143,7 +165,7 @@ export const trackAddToCart = (
   productPrice: number,
   quantity: number = 1
 ): void => {
-  trackEvent('add_to_cart', {
+  trackEvent('add_to_cart', withPersistedUtm({
     currency: 'USD',
     value: productPrice * quantity,
     items: [{
@@ -152,7 +174,7 @@ export const trackAddToCart = (
       price: productPrice,
       quantity,
     }],
-  });
+  }));
 
   // TikTok Pixel — respect founder mode suppression
   if (!getFounderModeStatus()) {
@@ -225,16 +247,17 @@ export const trackBeginCheckout = (
   items: Array<{ id: string; name: string; price: number; quantity: number }>,
   totalValue: number
 ): void => {
-  trackEvent('begin_checkout', {
+  trackEvent('begin_checkout', withPersistedUtm({
     currency: 'USD',
     value: totalValue,
+    funnel_step: 5,
     items: items.map(item => ({
       item_id: item.id,
       item_name: item.name,
       price: item.price,
       quantity: item.quantity,
     })),
-  });
+  }));
 
   // TikTok Pixel — respect founder mode suppression
   if (!getFounderModeStatus()) {
@@ -271,17 +294,18 @@ export const trackPurchase = (
     }
   }
 
-  trackEvent('purchase', {
+  trackEvent('purchase', withPersistedUtm({
     transaction_id: transactionId,
     currency: 'USD',
     value: totalValue,
+    funnel_step: 6,
     items: items.map(item => ({
       item_id: item.id,
       item_name: item.name,
       price: item.price,
       quantity: item.quantity,
     })),
-  });
+  }));
 
   // TikTok Pixel — respect founder mode suppression
   if (!getFounderModeStatus()) {
