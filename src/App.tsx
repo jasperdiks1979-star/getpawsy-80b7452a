@@ -2114,6 +2114,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-excluded-sessions"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokExcludedSessionsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-config-checklist"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
