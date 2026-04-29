@@ -45,6 +45,24 @@ const COMPARISON_ROWS: Array<{ label: string; manual: string; smart: string }> =
   { label: 'Works with most litter', manual: 'Yes', smart: 'Yes' },
 ];
 
+/**
+ * /go CTA variant tag. Bumped whenever we change the high-conversion
+ * stack around the primary CTA (proof line, nudge text, bouncing arrow,
+ * pulse). Flows into every lp_cta_* event so dashboards can attribute
+ * PDP CTR lift to a specific variant of the page.
+ *
+ *   high_conv_v1 = baseline pre-uplift (Get Yours Now, no proof/nudge)
+ *   high_conv_v2 = current — proof + nudge + arrow + pulse + new CTA copy
+ */
+const CTA_VARIANT = 'high_conv_v2';
+const CTA_FEATURE_FLAGS = {
+  has_proof: true,
+  has_nudge: true,
+  has_arrow: true,
+  has_pulse: true,
+  cta_copy: 'see_how_it_works',
+} as const;
+
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
@@ -52,6 +70,10 @@ export default function LinkInBio() {
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   const secondaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
+  // Refs for the new proof + nudge blocks so we can measure WHO actually
+  // saw them before clicking — that's how we attribute the CTR lift.
+  const proofBlockRef = useRef<HTMLDivElement>(null);
+  const nudgeBlockRef = useRef<HTMLDivElement>(null);
 
   // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
   //
@@ -201,6 +223,8 @@ export default function LinkInBio() {
       { el: primaryCtaRef.current, placement: 'bio_primary' },
       { el: secondaryCtaRef.current, placement: 'bio_secondary' },
       { el: stickyCtaRef.current, placement: 'bio_sticky' },
+      { el: proofBlockRef.current, placement: 'uplift_proof' },
+      { el: nudgeBlockRef.current, placement: 'uplift_nudge' },
     ];
     const seen = new Set<string>();
     const io = new IntersectionObserver(
@@ -210,11 +234,16 @@ export default function LinkInBio() {
           if (!placement || seen.has(placement)) continue;
           if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
             seen.add(placement);
+            // Mirror to a window-scoped set so handleCtaClick can read which
+            // uplift elements were already visible when the click happened.
+            (window as any).__gpGoSeen = seen;
             trackEvent('lp_cta_impression', {
               page: '/go',
               funnel: 'tiktok_bio',
               funnel_step: 2,
               placement,
+              cta_variant: CTA_VARIANT,
+              ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
           }
@@ -246,6 +275,7 @@ export default function LinkInBio() {
         page: '/go',
         funnel: 'tiktok_bio',
         missing_placements: missing.join(','),
+        cta_variant: CTA_VARIANT,
         ...attribution,
       });
     }
@@ -260,6 +290,11 @@ export default function LinkInBio() {
     // outgoing lp_cta_click event AND stored for the next view_item /
     // add_to_cart to pick up on its own.
     const link = recordLpCtaClick({ placement, attribution });
+    // Read which uplift elements were visible at click time. Lets us answer:
+    // "Of the users who clicked, what % had actually seen the proof line?"
+    const seenBefore: Set<string> | undefined = (window as any).__gpGoSeen;
+    const sawProof = seenBefore?.has('uplift_proof') ?? false;
+    const sawNudge = seenBefore?.has('uplift_nudge') ?? false;
     trackEvent('lp_cta_click', {
       page: '/go',
       funnel: 'tiktok_bio',
@@ -267,6 +302,10 @@ export default function LinkInBio() {
       placement,
       lp_click_id: link.click_id,
       lp_clicked_at: link.clicked_at,
+      cta_variant: CTA_VARIANT,
+      ...CTA_FEATURE_FLAGS,
+      saw_proof_before_click: sawProof,
+      saw_nudge_before_click: sawNudge,
       ...attribution,
     });
     // Debug checkpoint #2 — captures UTM state at the moment of click,
@@ -314,7 +353,7 @@ export default function LinkInBio() {
         {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
         <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
           {/* Proof line */}
-          <div className="text-center flex flex-col gap-0.5">
+          <div ref={proofBlockRef} className="text-center flex flex-col gap-0.5">
             <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
             <p className="text-[13px] font-semibold text-foreground/85">
               Over 12,000 cat owners switched
@@ -322,7 +361,7 @@ export default function LinkInBio() {
           </div>
 
           {/* Big nudge + bouncing arrow */}
-          <div className="text-center flex flex-col items-center gap-1">
+          <div ref={nudgeBlockRef} className="text-center flex flex-col items-center gap-1">
             <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
               👇 Tap below to see how it works
             </p>
