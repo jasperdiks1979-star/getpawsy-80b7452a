@@ -8380,6 +8380,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_tiktok_bio_split: { Args: { p_window_days?: number }; Returns: Json }
       get_tiktok_hook_performance: {
         Args: { p_campaign_pattern?: string; p_window_days?: number }
         Returns: Json
