@@ -76,6 +76,11 @@ export default function LinkInBio() {
   // saw them before clicking — that's how we attribute the CTR lift.
   const proofBlockRef = useRef<HTMLDivElement>(null);
   const nudgeBlockRef = useRef<HTMLDivElement>(null);
+  // Dedicated ref on the bouncing arrow itself. The arrow lives inside
+  // the nudge block, but tracking it separately lets us measure the
+  // arrow's own contribution to CTR — the nudge text alone is also
+  // visible without the arrow when scrolled past the threshold.
+  const arrowRef = useRef<HTMLSpanElement>(null);
 
   // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
   //
@@ -237,6 +242,11 @@ export default function LinkInBio() {
       { el: stickyCtaRef.current, placement: 'bio_sticky' },
       { el: proofBlockRef.current, placement: 'uplift_proof' },
       { el: nudgeBlockRef.current, placement: 'uplift_nudge' },
+      // Arrow is observed standalone so we can isolate its CTR contribution.
+      // It lives inside nudgeBlockRef, but since IntersectionObserver fires
+      // per-element the arrow can cross the 0.5 threshold independently
+      // (smaller bounding box → may register sooner or later than the nudge).
+      { el: arrowRef.current, placement: 'uplift_arrow' },
     ];
     const seen = new Set<string>();
     const io = new IntersectionObserver(
@@ -269,6 +279,9 @@ export default function LinkInBio() {
               clarityMilestone('proof_visible');
             } else if (placement === 'uplift_nudge') {
               clarityMilestone('nudge_visible');
+            } else if (placement === 'uplift_arrow') {
+              // Dedicated arrow visibility — fires independently from the
+              // surrounding nudge block so we can A/B the arrow's effect.
               clarityMilestone('arrow_visible');
             } else {
               clarityMilestone(`cta_visible_${placement}`);
@@ -340,6 +353,9 @@ export default function LinkInBio() {
     // "of users who saw proof, how many actually clicked?"
     clarityTag('saw_proof_before_click', sawProof);
     clarityTag('saw_nudge_before_click', sawNudge);
+    // Arrow tag is the cleanest A/B dimension — it isolates the bouncing
+    // arrow's contribution to CTR vs the nudge text alone.
+    clarityTag('saw_arrow_before_click', flags.saw_arrow_before_click);
     clarityMilestone(`cta_click_${placement}`);
     clarityMilestone('cta_click');
     // Debug checkpoint #2 — captures UTM state at the moment of click,
@@ -399,7 +415,11 @@ export default function LinkInBio() {
             <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
               👇 Tap below to see how it works
             </p>
-            <span aria-hidden className="gp-arrow-bounce text-[hsl(25,95%,53%)]">▼</span>
+            <span
+              ref={arrowRef}
+              aria-hidden
+              className="gp-arrow-bounce text-[hsl(25,95%,53%)]"
+            >▼</span>
           </div>
 
           <TikTokDeepLinkButton

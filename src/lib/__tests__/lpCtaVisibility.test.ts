@@ -54,6 +54,7 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
       expect(visibilityFlagsFromSeen(undefined)).toEqual({
         saw_proof_before_click: false,
         saw_nudge_before_click: false,
+        saw_arrow_before_click: false,
       });
     });
 
@@ -61,6 +62,7 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
       expect(visibilityFlagsFromSeen(null)).toEqual({
         saw_proof_before_click: false,
         saw_nudge_before_click: false,
+        saw_arrow_before_click: false,
       });
     });
 
@@ -68,6 +70,7 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
       expect(visibilityFlagsFromSeen(new Set())).toEqual({
         saw_proof_before_click: false,
         saw_nudge_before_click: false,
+        saw_arrow_before_click: false,
       });
     });
 
@@ -88,6 +91,30 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
       expect(flags).toEqual({
         saw_proof_before_click: true,
         saw_nudge_before_click: true,
+        saw_arrow_before_click: false,
+      });
+    });
+
+    it('marks arrow as seen independently from the nudge block', () => {
+      // The arrow lives inside the nudge block but has its own observer
+      // target — when only the arrow has crossed 0.5 visibility (e.g. the
+      // nudge text was clipped above the fold), saw_arrow must still be true.
+      const arrowOnly = visibilityFlagsFromSeen(new Set(['uplift_arrow']));
+      expect(arrowOnly).toEqual({
+        saw_proof_before_click: false,
+        saw_nudge_before_click: false,
+        saw_arrow_before_click: true,
+      });
+    });
+
+    it('all three flags fire when proof + nudge + arrow all visible', () => {
+      const allSeen = visibilityFlagsFromSeen(
+        new Set(['uplift_proof', 'uplift_nudge', 'uplift_arrow']),
+      );
+      expect(allSeen).toEqual({
+        saw_proof_before_click: true,
+        saw_nudge_before_click: true,
+        saw_arrow_before_click: true,
       });
     });
 
@@ -98,6 +125,7 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
       expect(flags).toEqual({
         saw_proof_before_click: true,
         saw_nudge_before_click: false,
+        saw_arrow_before_click: false,
       });
     });
   });
@@ -131,10 +159,22 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
     });
 
     it('SCENARIO 3 (full-funnel): both uplift blocks visible → both flags true', () => {
-      simulateVisibility('uplift_proof', 'uplift_nudge', 'bio_primary');
+      simulateVisibility('uplift_proof', 'uplift_nudge', 'uplift_arrow', 'bio_primary');
       const payload = buildClickPayload('bio_primary');
       expect(payload.saw_proof_before_click).toBe(true);
       expect(payload.saw_nudge_before_click).toBe(true);
+      expect(payload.saw_arrow_before_click).toBe(true);
+    });
+
+    it('SCENARIO 4 (arrow-attribution): nudge text but NO arrow → saw_arrow=false', () => {
+      // Edge case — user saw the directional copy ("Tap below…") but the
+      // bouncing arrow itself was below the fold or hidden by the keyboard.
+      // Lets us measure: of clicks where saw_nudge=true & saw_arrow=false,
+      // what's the CTR vs both=true → that's the arrow's lift.
+      simulateVisibility('uplift_nudge', 'bio_primary');
+      const payload = buildClickPayload('bio_primary');
+      expect(payload.saw_nudge_before_click).toBe(true);
+      expect(payload.saw_arrow_before_click).toBe(false);
     });
 
     it('flags reflect the LATEST observer state, not the click order', () => {
@@ -160,8 +200,10 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
       const payload = buildClickPayload('bio_primary');
       expect(payload).toHaveProperty('saw_proof_before_click');
       expect(payload).toHaveProperty('saw_nudge_before_click');
+      expect(payload).toHaveProperty('saw_arrow_before_click');
       expect(typeof payload.saw_proof_before_click).toBe('boolean');
       expect(typeof payload.saw_nudge_before_click).toBe('boolean');
+      expect(typeof payload.saw_arrow_before_click).toBe('boolean');
     });
 
     it('flags are stable booleans, never truthy non-bool values', () => {
