@@ -43,10 +43,13 @@ function extractRule(selector: string): string {
 
 /** Pull every `property: value;` declaration out of a rule body. */
 function declarations(body: string): Array<{ prop: string; value: string }> {
-  return body
+  // Strip /* ... */ comments first so they cannot fuse with adjacent
+  // declarations when we split on `;`.
+  const stripped = body.replace(/\/\*[\s\S]*?\*\//g, '');
+  return stripped
     .split(';')
     .map((d) => d.trim())
-    .filter((d) => d.length > 0 && !d.startsWith('/*'))
+    .filter((d) => d.length > 0 && d.includes(':'))
     .map((d) => {
       const idx = d.indexOf(':');
       return {
