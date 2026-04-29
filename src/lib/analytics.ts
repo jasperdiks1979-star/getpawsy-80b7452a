@@ -247,6 +247,24 @@ export const trackBeginCheckout = (
   items: Array<{ id: string; name: string; price: number; quantity: number }>,
   totalValue: number
 ): void => {
+  // Idempotency: prevent duplicate begin_checkout within the same checkout session.
+  // Key = stable cart signature (sorted item ids + qty + value). Cleared on purchase.
+  try {
+    const sig = items
+      .map(i => `${i.id}:${i.quantity}`)
+      .sort()
+      .join('|') + `@${totalValue.toFixed(2)}`;
+    const STORAGE_KEY = 'gp_begin_checkout_fired';
+    const prev = sessionStorage.getItem(STORAGE_KEY);
+    if (prev === sig) {
+      console.debug('[Analytics] begin_checkout suppressed (idempotent)', sig);
+      return;
+    }
+    sessionStorage.setItem(STORAGE_KEY, sig);
+  } catch {
+    // sessionStorage unavailable — fall through and fire event
+  }
+
   trackEvent('begin_checkout', withPersistedUtm({
     currency: 'USD',
     value: totalValue,
@@ -280,6 +298,31 @@ export const trackPurchase = (
   items: Array<{ id: string; name: string; price: number; quantity: number }>,
   totalValue: number
 ): void => {
+  // Idempotency: a single transaction_id must only fire purchase once,
+  // even across reloads of the success page. Use localStorage with a 24h TTL
+  // and a small ring buffer to avoid unbounded growth.
+  const PURCHASE_KEY = 'gp_purchase_fired';
+  const TTL_MS = 24 * 60 * 60 * 1000;
+  try {
+    const raw = localStorage.getItem(PURCHASE_KEY);
+    const now = Date.now();
+    let fired: Array<{ id: string; ts: number }> = raw ? JSON.parse(raw) : [];
+    fired = fired.filter(f => now - f.ts < TTL_MS);
+    if (fired.some(f => f.id === transactionId)) {
+      console.debug('[Analytics] purchase suppressed (idempotent)', transactionId);
+      return;
+    }
+    fired.push({ id: transactionId, ts: now });
+    // Keep last 50 entries max
+    if (fired.length > 50) fired = fired.slice(-50);
+    localStorage.setItem(PURCHASE_KEY, JSON.stringify(fired));
+  } catch {
+    // localStorage unavailable — fall through and fire event
+  }
+
+  // Clear begin_checkout signature so a follow-up cart re-enters cleanly
+  try { sessionStorage.removeItem('gp_begin_checkout_fired'); } catch {}
+
   // Country guard: only send purchase to GA4 for US traffic
   const cachedLocation = sessionStorage.getItem('visitor_location');
   if (cachedLocation) {
