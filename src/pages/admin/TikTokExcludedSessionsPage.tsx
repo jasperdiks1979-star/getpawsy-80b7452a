@@ -154,8 +154,27 @@ export default function TikTokExcludedSessionsPage() {
               {RULE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-2 pl-2 border-l border-border/60">
+            <Switch
+              id="tiktok-excl-show-all"
+              checked={includeExcluded}
+              onCheckedChange={(v) => { setOffset(0); setIncludeExcluded(Boolean(v)); }}
+              aria-label="Show all sessions including kept ones"
+            />
+            <Label htmlFor="tiktok-excl-show-all" className="text-xs whitespace-nowrap cursor-pointer">
+              Show all sessions
+            </Label>
+          </div>
         </div>
       </div>
+
+      {includeExcluded && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900">
+          <strong>Admin override:</strong> showing every TikTok session in the window — kept rows
+          appear with an empty rules list. Use to verify exactly what each performance report
+          would and would not include.
+        </div>
+      )}
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
         <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Excluded sessions</CardTitle></CardHeader>
