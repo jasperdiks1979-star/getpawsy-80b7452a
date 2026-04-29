@@ -67,6 +67,31 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Persistent visitor ID (localStorage) — stable across browser sessions so we
+// can identify returning visitors. Falls back to in-memory if localStorage
+// is unavailable (private mode, blocked storage, etc.).
+const VISITOR_ID_KEY = "gp_visitor_id";
+let inMemoryVisitorId: string | null = null;
+const getVisitorId = (): string => {
+  if (inMemoryVisitorId) return inMemoryVisitorId;
+  try {
+    let id = localStorage.getItem(VISITOR_ID_KEY);
+    if (!id) {
+      id = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(VISITOR_ID_KEY, id);
+    }
+    inMemoryVisitorId = id;
+    return id;
+  } catch {
+    if (!inMemoryVisitorId) {
+      inMemoryVisitorId = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    }
+    return inMemoryVisitorId;
+  }
+};
+
 // Detect Pinterest in-app browser via user agent
 const isPinterestInAppBrowser = (): boolean => {
   const ua = navigator.userAgent.toLowerCase();
