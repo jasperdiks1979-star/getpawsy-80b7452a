@@ -412,7 +412,11 @@ export default function LinkInBio() {
             <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
               👇 Tap below to see how it works
             </p>
-            <span aria-hidden className="gp-arrow-bounce text-[hsl(25,95%,53%)]">▼</span>
+            <span
+              ref={arrowRef}
+              aria-hidden
+              className="gp-arrow-bounce text-[hsl(25,95%,53%)]"
+            >▼</span>
           </div>
 
           <TikTokDeepLinkButton
