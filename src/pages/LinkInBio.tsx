@@ -257,6 +257,22 @@ export default function LinkInBio() {
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
+            // Clarity custom event per visibility milestone — lets us filter
+            // heatmaps & recordings by "users who saw the proof" vs not.
+            //   - bio_primary / bio_secondary / bio_sticky → cta_visible_<placement>
+            //   - uplift_proof  → proof_visible
+            //   - uplift_nudge  → nudge_visible (+ arrow_visible — the arrow lives
+            //     inside the nudge block, so when nudge crosses 50% the arrow is
+            //     guaranteed to be on screen too)
+            if (placement === 'uplift_proof') {
+              clarityMilestone('proof_visible');
+            } else if (placement === 'uplift_nudge') {
+              clarityMilestone('nudge_visible');
+              clarityMilestone('arrow_visible');
+            } else {
+              clarityMilestone(`cta_visible_${placement}`);
+              if (placement === 'bio_primary') clarityMilestone('cta_visible');
+            }
           }
         }
       },
@@ -319,6 +335,12 @@ export default function LinkInBio() {
       saw_nudge_before_click: sawNudge,
       ...attribution,
     });
+    // Clarity click beacon + tags so heatmap funnels can answer:
+    // "of users who saw proof, how many actually clicked?"
+    clarityTag('saw_proof_before_click', sawProof);
+    clarityTag('saw_nudge_before_click', sawNudge);
+    clarityMilestone(`cta_click_${placement}`);
+    clarityMilestone('cta_click');
     // Debug checkpoint #2 — captures UTM state at the moment of click,
     // BEFORE the outbound navigation, so we can compare against pdp_load.
     logUtmCheckpoint('cta_click', { placement, attribution });
