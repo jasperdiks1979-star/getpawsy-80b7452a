@@ -7,6 +7,7 @@
  * dropped session here matches what's missing in those dashboards.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { TikTokBotDetectionImpactCard } from '@/components/admin/TikTokBotDetectionImpactCard';
 import { Helmet } from 'react-helmet-async';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
