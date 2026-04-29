@@ -10,7 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download } from 'lucide-react';
 
 type RawRow = {
   placement: string | null;
@@ -137,6 +138,81 @@ export default function TikTokCtaCtrPage() {
 
   const maxCtr = Math.max(1, ...aggregated.map((a) => a.ctr));
 
+  /** Build a CSV containing both the per-placement aggregate (one row per
+   *  placement with totals + CTRs) and the per-placement × campaign breakdown.
+   *  The two sections are separated by a blank line so the file opens cleanly
+   *  in Excel / Google Sheets while still being a single download. */
+  function handleExportCsv() {
+    const escape = (v: unknown): string => {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const fmtNum = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '');
+
+    const lines: string[] = [];
+    lines.push(`# TikTok CTA CTR export — last ${days} days — campaign: ${campaign}`);
+    lines.push(`# Generated: ${new Date().toISOString()}`);
+    lines.push('');
+
+    // Section 1: aggregate per placement
+    lines.push('Section,Placement,Campaign,Impressions,Clicks,CTR %,PDP Views,Add to Cart,Click→PDP %,PDP→ATC %,Impression→ATC %');
+    aggregated.forEach((a) => {
+      lines.push([
+        'Aggregate',
+        a.placement,
+        'all',
+        a.lp_cta_impression,
+        a.lp_cta_click,
+        fmtNum(a.ctr),
+        a.pdp_view,
+        a.add_to_cart,
+        fmtNum(a.click_to_pdp),
+        fmtNum(a.pdp_to_atc),
+        fmtNum(a.end_to_end),
+      ].map(escape).join(','));
+    });
+
+    lines.push('');
+
+    // Section 2: per placement × campaign breakdown
+    rows
+      .filter((r) => r.placement && PLACEMENTS.includes(r.placement as typeof PLACEMENTS[number]))
+      .forEach((r) => {
+        const ctr = pct(r.lp_cta_click, r.lp_cta_impression);
+        const c2p = pct(r.pdp_view, r.lp_cta_click);
+        const p2a = pct(r.add_to_cart, r.pdp_view);
+        const e2e = pct(r.add_to_cart, r.lp_cta_impression);
+        lines.push([
+          'Per campaign',
+          r.placement ?? '',
+          r.utm_campaign ?? '',
+          r.lp_cta_impression,
+          r.lp_cta_click,
+          fmtNum(ctr),
+          r.pdp_view,
+          r.add_to_cart,
+          fmtNum(c2p),
+          fmtNum(p2a),
+          fmtNum(e2e),
+        ].map(escape).join(','));
+      });
+
+    const csv = lines.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `tiktok-cta-ctr_${stamp}_${days}d_${campaign}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  const canExport = !loading && !error && (aggregated.some((a) => a.lp_cta_impression > 0) || rows.length > 0);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -166,6 +242,15 @@ export default function TikTokCtaCtrPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={!canExport}
+            className="gap-1"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </Button>
         </div>
       </div>
 
