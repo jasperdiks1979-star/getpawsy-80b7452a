@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed, Download, Info, Link2 } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Target, CheckCircle2, AlertCircle, CircleDashed, Download, Info, Link2, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,6 +51,43 @@ type Payload = {
   totals: Totals;
   per_hook: HookRow[];
   per_day: DayRow[];
+};
+
+/**
+ * Bio-link split — per-hook breakdown of organic profile traffic
+ * (utm_content=tt_bio_link) vs everything else (paid ads, manual UTMs).
+ * Shape mirrors the public.get_tiktok_bio_split RPC.
+ */
+type BioHookRow = {
+  hook: string;
+  bio_sessions: number;
+  other_sessions: number;
+  total_sessions: number;
+  bio_share: number;          // % of this hook's sessions that came from bio
+  bio_purchases: number;
+  other_purchases: number;
+  bio_revenue: number;
+  other_revenue: number;
+  bio_cvr: number;
+  other_cvr: number;
+  bio_aov: number;
+  other_aov: number;
+};
+
+type BioPayload = {
+  window_days: number;
+  from: string;
+  totals: {
+    bio_sessions: number;
+    other_sessions: number;
+    total_sessions: number;
+    bio_share: number;
+    bio_purchases: number;
+    other_purchases: number;
+    bio_revenue: number;
+    other_revenue: number;
+  };
+  per_hook: BioHookRow[];
 };
 
 const WINDOWS: { label: string; days: number }[] = [
@@ -154,21 +191,36 @@ function downloadCsv(filename: string, content: string) {
 export default function TikTokAdsPerformancePage() {
   const [windowDays, setWindowDays] = useState<number>(30);
   const [data, setData] = useState<Payload | null>(null);
+  const [bioData, setBioData] = useState<BioPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = async (days: number) => {
     setLoading(true);
     setError(null);
-    const { data: rpcData, error: rpcError } = await supabase.rpc("get_tiktok_hook_performance" as any, {
-      p_window_days: days,
-      p_campaign_pattern: null,
-    });
-    if (rpcError) {
-      setError(rpcError.message);
+    // Fetch the funnel and the bio-link split in parallel — both are admin-
+    // only RPCs and the UI shows them on the same screen, so failing one
+    // shouldn't blank the other (we surface a single combined error line).
+    const [funnelRes, bioRes] = await Promise.all([
+      supabase.rpc("get_tiktok_hook_performance" as any, {
+        p_window_days: days,
+        p_campaign_pattern: null,
+      }),
+      supabase.rpc("get_tiktok_bio_split" as any, { p_window_days: days }),
+    ]);
+    if (funnelRes.error) {
+      setError(funnelRes.error.message);
       setData(null);
     } else {
-      setData(rpcData as unknown as Payload);
+      setData(funnelRes.data as unknown as Payload);
+    }
+    if (bioRes.error) {
+      // Don't clobber the primary error if both failed — funnel is the
+      // headline data set; bio split is a sidecar widget.
+      if (!funnelRes.error) setError(bioRes.error.message);
+      setBioData(null);
+    } else {
+      setBioData(bioRes.data as unknown as BioPayload);
     }
     setLoading(false);
   };
