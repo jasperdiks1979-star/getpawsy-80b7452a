@@ -6,6 +6,7 @@ import {
   ttTrackInitiateCheckout,
   ttTrackPurchase,
 } from '@/lib/tiktok-pixel';
+import { enrichEventWithLpCta } from '@/lib/lpCtaCorrelation';
 
 declare global {
   interface Window {
@@ -59,10 +60,12 @@ export const trackEvent = (
   }
 
   // Tag all events with traffic_type
+  const lpEnrichment = enrichEventWithLpCta(eventName, params);
   const enrichedParams = {
     ...params,
     traffic_type: getTrafficType(),
     ...(isFounder ? { gp_client: 'founder' } : {}),
+    ...(lpEnrichment ?? {}),
   };
 
   logFounderEvent(eventName, false);

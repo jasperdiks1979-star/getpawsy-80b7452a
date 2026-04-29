@@ -14,6 +14,7 @@ import { trackEvent } from '@/lib/analytics';
 import { assignBioHook, BIO_HOOKS } from '@/lib/bioHookBucket';
 import { resolveUtm, syncUtmToUrl, persistUtmToSession } from '@/lib/utmNormalizer';
 import { logUtmCheckpoint } from '@/lib/utmDebugLog';
+import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
@@ -201,11 +202,17 @@ export default function LinkInBio() {
   // log even if the underlying <Link>'s own onClick changes. Outbound nav to
   // PDP is still tracked separately by TikTokDeepLinkButton (tiktok_deep_link_click).
   const handleCtaClick = (placement: string) => () => {
+    // Record the click FIRST so the click_id we mint is included in the
+    // outgoing lp_cta_click event AND stored for the next view_item /
+    // add_to_cart to pick up on its own.
+    const link = recordLpCtaClick({ placement, attribution });
     trackEvent('lp_cta_click', {
       page: '/go',
       funnel: 'tiktok_bio',
       funnel_step: 3,
       placement,
+      lp_click_id: link.click_id,
+      lp_clicked_at: link.clicked_at,
       ...attribution,
     });
     // Debug checkpoint #2 — captures UTM state at the moment of click,
