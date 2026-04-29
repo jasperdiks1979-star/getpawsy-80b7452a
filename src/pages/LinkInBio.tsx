@@ -19,6 +19,32 @@ import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
 
+const REVIEWS = [
+  {
+    quote: 'Honestly the best purchase I made this year. My apartment finally smells like an apartment, not a litter box.',
+    name: 'Sarah M.',
+    location: 'Austin, TX',
+  },
+  {
+    quote: 'I have 2 cats and used to scoop twice a day. Haven’t touched it in weeks. Worth every dollar.',
+    name: 'Jessica R.',
+    location: 'Brooklyn, NY',
+  },
+  {
+    quote: 'Was skeptical but the app actually works. I get a notification when it needs emptying. That’s it.',
+    name: 'Michael T.',
+    location: 'Denver, CO',
+  },
+];
+
+const COMPARISON_ROWS: Array<{ label: string; manual: string; smart: string }> = [
+  { label: 'Daily scooping', manual: 'Every day', smart: 'Never' },
+  { label: 'Odor control', manual: 'Constant smell', smart: 'Sealed & fresh' },
+  { label: 'Time per week', manual: '~70 min', smart: '< 5 min' },
+  { label: 'Phone alerts', manual: 'No', smart: 'Yes' },
+  { label: 'Works with most litter', manual: 'Yes', smart: 'Yes' },
+];
+
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
