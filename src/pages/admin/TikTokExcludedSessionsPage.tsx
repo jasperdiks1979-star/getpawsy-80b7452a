@@ -88,19 +88,18 @@ export default function TikTokExcludedSessionsPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    supabase
-      .rpc('get_tiktok_excluded_sessions', {
+    (async () => {
+      const { data, error } = await supabase.rpc('get_tiktok_excluded_sessions', {
         p_window_days: windowDays,
         p_limit: PAGE_SIZE,
         p_offset: offset,
         p_rule: rule === 'all' ? null : rule,
-      })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) { setError(error.message); setData(null); }
-        else setData(data as unknown as Payload);
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      });
+      if (cancelled) return;
+      if (error) { setError(error.message); setData(null); }
+      else setData(data as unknown as Payload);
+      if (!cancelled) setLoading(false);
+    })();
     return () => { cancelled = true; };
   }, [windowDays, rule, offset]);
 
