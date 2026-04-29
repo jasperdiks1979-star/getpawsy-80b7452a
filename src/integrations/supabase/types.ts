@@ -8072,6 +8072,7 @@ export type Database = {
           utm_medium: string | null
           utm_source: string | null
           utm_term: string | null
+          visitor_id: string | null
         }
         Insert: {
           activity_type: string
@@ -8103,6 +8104,7 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          visitor_id?: string | null
         }
         Update: {
           activity_type?: string
@@ -8134,6 +8136,7 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          visitor_id?: string | null
         }
         Relationships: [
           {
@@ -8480,6 +8483,16 @@ export type Database = {
           p_window_days?: number
         }
         Returns: Json
+      }
+      get_returning_visitor_stats: {
+        Args: { p_end: string; p_include_internal?: boolean; p_start: string }
+        Returns: {
+          new_visitors: number
+          returning_visitor_pct: number
+          returning_visitors: number
+          total_sessions: number
+          total_visitors: number
+        }[]
       }
       get_tiktok_bio_split:
         | { Args: { p_window_days?: number }; Returns: Json }

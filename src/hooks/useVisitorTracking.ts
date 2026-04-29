@@ -67,6 +67,31 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Persistent visitor ID (localStorage) — stable across browser sessions so we
+// can identify returning visitors. Falls back to in-memory if localStorage
+// is unavailable (private mode, blocked storage, etc.).
+const VISITOR_ID_KEY = "gp_visitor_id";
+let inMemoryVisitorId: string | null = null;
+const getVisitorId = (): string => {
+  if (inMemoryVisitorId) return inMemoryVisitorId;
+  try {
+    let id = localStorage.getItem(VISITOR_ID_KEY);
+    if (!id) {
+      id = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(VISITOR_ID_KEY, id);
+    }
+    inMemoryVisitorId = id;
+    return id;
+  } catch {
+    if (!inMemoryVisitorId) {
+      inMemoryVisitorId = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    }
+    return inMemoryVisitorId;
+  }
+};
+
 // Detect Pinterest in-app browser via user agent
 const isPinterestInAppBrowser = (): boolean => {
   const ua = navigator.userAgent.toLowerCase();
@@ -186,6 +211,7 @@ export const useVisitorTracking = () => {
   const locationRef = useRef<GeoLocation | null>(null);
   const lastActivityRef = useRef<string | null>(null);
   const sessionId = useRef<string>(getSessionId());
+  const visitorId = useRef<string>(getVisitorId());
   const referrerRef = useRef<string | null>(getReferrer());
   const deviceInfoRef = useRef<DeviceInfo>(getDeviceInfo());
 
@@ -255,6 +281,7 @@ export const useVisitorTracking = () => {
         .from("visitor_activity")
         .insert({
           session_id: sessionId.current,
+          visitor_id: visitorId.current,
           activity_type: activityType,
           latitude: location?.latitude || null,
           longitude: location?.longitude || null,
@@ -335,6 +362,7 @@ export const trackVisitorEvent = async (
   if (!isProductionDomain() || isBot()) return;
 
   const sessionId = getSessionId();
+  const visitorId = getVisitorId();
   const utmParams = getUTMParams();
   const referrer = getReferrer();
   const deviceInfo = getDeviceInfo();
@@ -357,6 +385,7 @@ export const trackVisitorEvent = async (
     .from("visitor_activity")
     .insert({
       session_id: sessionId,
+      visitor_id: visitorId,
       activity_type: activityType,
       latitude: location?.latitude || null,
       longitude: location?.longitude || null,

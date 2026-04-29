@@ -16,7 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet, CalendarIcon } from 'lucide-react';
+import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet, CalendarIcon, Users, UserCheck, UserPlus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { DateRange } from 'react-day-picker';
 
@@ -82,6 +82,19 @@ export default function TikTokCtaCtrPage() {
   );
   const [exportCampaigns, setExportCampaigns] = useState<Set<string> | null>(null); // null = all
 
+  // Returning visitor stats for the same date window — answers "how many of
+  // the people we saw are coming back vs. brand-new?". Uses persistent
+  // visitor_id (localStorage), so it only counts hits since that ID was added.
+  type ReturningStats = {
+    total_visitors: number;
+    returning_visitors: number;
+    new_visitors: number;
+    total_sessions: number;
+    returning_visitor_pct: number;
+  };
+  const [returningStats, setReturningStats] = useState<ReturningStats | null>(null);
+  const [returningLoading, setReturningLoading] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -114,6 +127,38 @@ export default function TikTokCtaCtrPage() {
       cancelled = true;
     };
   }, [rangeMode, days, customRange?.from?.getTime(), customRange?.to?.getTime(), campaign]);
+
+  // Fetch returning-visitor stats for the active window. Independent of the
+  // funnel RPC so a slow analytics query never blocks the CTR cards.
+  useEffect(() => {
+    let cancelled = false;
+    const useCustom = rangeMode === 'custom' && customRange?.from && customRange?.to;
+    const start = useCustom
+      ? startOfDay(customRange!.from!).toISOString()
+      : startOfDay(subDays(new Date(), days - 1)).toISOString();
+    const end = useCustom
+      ? endOfDay(customRange!.to!).toISOString()
+      : endOfDay(new Date()).toISOString();
+    setReturningLoading(true);
+    supabase
+      .rpc('get_returning_visitor_stats', {
+        p_start: start,
+        p_end: end,
+        p_include_internal: false,
+      })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data || data.length === 0) {
+          setReturningStats(null);
+        } else {
+          setReturningStats(data[0] as ReturningStats);
+        }
+        setReturningLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rangeMode, days, customRange?.from?.getTime(), customRange?.to?.getTime()]);
 
   const campaigns = useMemo(() => {
     const set = new Set<string>();
@@ -557,6 +602,62 @@ export default function TikTokCtaCtrPage() {
         </Card>
       ) : (
         <>
+          {/* Returning visitors KPI — uses persistent localStorage visitor_id.
+              Only counts visitors seen since the visitor_id rollout, so early
+              data may show 0% returning until the cohort accumulates. */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <Users className="w-3.5 h-3.5" /> Unique visitors
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.total_visitors ?? 0).toLocaleString()}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <UserCheck className="w-3.5 h-3.5" /> Returning visitors
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.returning_visitors ?? 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {returningLoading || !returningStats || returningStats.total_visitors === 0
+                    ? '—'
+                    : `${Number(returningStats.returning_visitor_pct).toFixed(1)}% of unique`}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <UserPlus className="w-3.5 h-3.5" /> New visitors
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.new_visitors ?? 0).toLocaleString()}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                  <Eye className="w-3.5 h-3.5" /> Sessions
+                </div>
+                <p className="text-2xl font-bold">
+                  {returningLoading ? '—' : (returningStats?.total_sessions ?? 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {returningLoading || !returningStats || returningStats.total_visitors === 0
+                    ? '—'
+                    : `${(returningStats.total_sessions / Math.max(returningStats.total_visitors, 1)).toFixed(2)} per visitor`}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Side-by-side placement comparison */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {aggregated.map((a) => {
