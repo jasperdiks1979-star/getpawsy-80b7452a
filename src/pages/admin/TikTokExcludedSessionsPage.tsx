@@ -7,6 +7,7 @@
  * dropped session here matches what's missing in those dashboards.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { TikTokBotDetectionImpactCard } from '@/components/admin/TikTokBotDetectionImpactCard';
 import { Helmet } from 'react-helmet-async';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -175,6 +176,8 @@ export default function TikTokExcludedSessionsPage() {
           would and would not include.
         </div>
       )}
+
+      <TikTokBotDetectionImpactCard windowDays={windowDays} />
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
         <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Excluded sessions</CardTitle></CardHeader>
