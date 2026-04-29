@@ -13,7 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 type RawRow = {
   placement: string | null;
@@ -202,50 +203,46 @@ export default function TikTokCtaCtrPage() {
     lines.push(`# Generated: ${new Date().toISOString()}`);
     lines.push('');
 
-    // Section 1: aggregate per placement (only selected placements)
-    lines.push('Section,Placement,Campaign,Impressions,Clicks,CTR %,PDP Views,Add to Cart,Click→PDP %,PDP→ATC %,Impression→ATC %');
-    placementsToExport.forEach((a) => {
+    const headerCols = [
+      'Section', 'Placement', 'Campaign',
+      'Impressions', 'Clicks', 'CTR %',
+      'PDP Views', 'Add to Cart',
+      'Click→PDP %', 'PDP→ATC %', 'Impression→ATC %',
+    ];
+
+    // One section per selected placement: aggregate row + per-campaign rows.
+    placementsToExport.forEach((agg, idx) => {
+      if (idx > 0) lines.push('');
+      lines.push(`## Placement: ${agg.placement} — ${PLACEMENT_LABELS[agg.placement] ?? ''}`);
+      lines.push(headerCols.join(','));
+      // Aggregate row first
       lines.push([
-        'Aggregate',
-        a.placement,
-        'all',
-        a.lp_cta_impression,
-        a.lp_cta_click,
-        fmtNum(a.ctr),
-        a.pdp_view,
-        a.add_to_cart,
-        fmtNum(a.click_to_pdp),
-        fmtNum(a.pdp_to_atc),
-        fmtNum(a.end_to_end),
+        'Aggregate', agg.placement, 'all',
+        agg.lp_cta_impression, agg.lp_cta_click, fmtNum(agg.ctr),
+        agg.pdp_view, agg.add_to_cart,
+        fmtNum(agg.click_to_pdp), fmtNum(agg.pdp_to_atc), fmtNum(agg.end_to_end),
       ].map(escape).join(','));
+      // Per-campaign rows for this placement
+      const placementRows = rows
+        .filter((r) => r.placement === agg.placement)
+        .filter((r) => campaignFilter(r.utm_campaign));
+      if (placementRows.length === 0) {
+        lines.push(['Per campaign', agg.placement, '(no campaigns in selection)', '', '', '', '', '', '', '', ''].map(escape).join(','));
+      } else {
+        placementRows.forEach((r) => {
+          const ctr = pct(r.lp_cta_click, r.lp_cta_impression);
+          const c2p = pct(r.pdp_view, r.lp_cta_click);
+          const p2a = pct(r.add_to_cart, r.pdp_view);
+          const e2e = pct(r.add_to_cart, r.lp_cta_impression);
+          lines.push([
+            'Per campaign', r.placement ?? '', r.utm_campaign ?? '',
+            r.lp_cta_impression, r.lp_cta_click, fmtNum(ctr),
+            r.pdp_view, r.add_to_cart,
+            fmtNum(c2p), fmtNum(p2a), fmtNum(e2e),
+          ].map(escape).join(','));
+        });
+      }
     });
-
-    lines.push('');
-
-    // Section 2: per placement × campaign breakdown (filtered)
-    rows
-      .filter((r) => r.placement && PLACEMENTS.includes(r.placement as typeof PLACEMENTS[number]))
-      .filter((r) => exportPlacements.has(r.placement as string))
-      .filter((r) => campaignFilter(r.utm_campaign))
-      .forEach((r) => {
-        const ctr = pct(r.lp_cta_click, r.lp_cta_impression);
-        const c2p = pct(r.pdp_view, r.lp_cta_click);
-        const p2a = pct(r.add_to_cart, r.pdp_view);
-        const e2e = pct(r.add_to_cart, r.lp_cta_impression);
-        lines.push([
-          'Per campaign',
-          r.placement ?? '',
-          r.utm_campaign ?? '',
-          r.lp_cta_impression,
-          r.lp_cta_click,
-          fmtNum(ctr),
-          r.pdp_view,
-          r.add_to_cart,
-          fmtNum(c2p),
-          fmtNum(p2a),
-          fmtNum(e2e),
-        ].map(escape).join(','));
-      });
 
     const csv = lines.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -259,6 +256,109 @@ export default function TikTokCtaCtrPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  /** Build a multi-sheet XLSX workbook: a Summary sheet that compares all
+   *  selected placements, plus one dedicated tab per placement containing both
+   *  the aggregate totals and the per-campaign breakdown. */
+  function handleExportXlsx() {
+    const round2 = (n: number) => (Number.isFinite(n) ? Number(n.toFixed(2)) : '');
+    const placementsToExport = aggregated.filter((a) => exportPlacements.has(a.placement));
+    const campaignFilter = (utm: string | null): boolean => {
+      if (exportCampaigns === null) return true;
+      return exportCampaigns.has(utm ?? '');
+    };
+
+    const wb = XLSX.utils.book_new();
+
+    // ---------- Summary sheet ----------
+    const summaryAoa: (string | number)[][] = [
+      ['TikTok CTA CTR Export'],
+      ['Generated', new Date().toISOString()],
+      ['Window (days)', days],
+      ['View filter (campaign)', campaign],
+      ['Export placements', Array.from(exportPlacements).join(', ') || '(none)'],
+      ['Export campaigns', exportCampaigns === null ? 'All' : (Array.from(exportCampaigns).join(', ') || '(none)')],
+      [],
+      ['Placement', 'Label', 'Impressions', 'Clicks', 'CTR %', 'PDP Views', 'Add to Cart', 'Click→PDP %', 'PDP→ATC %', 'Impression→ATC %'],
+    ];
+    placementsToExport.forEach((a) => {
+      summaryAoa.push([
+        a.placement,
+        PLACEMENT_LABELS[a.placement] ?? '',
+        a.lp_cta_impression,
+        a.lp_cta_click,
+        round2(a.ctr),
+        a.pdp_view,
+        a.add_to_cart,
+        round2(a.click_to_pdp),
+        round2(a.pdp_to_atc),
+        round2(a.end_to_end),
+      ]);
+    });
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryAoa);
+    summarySheet['!cols'] = [
+      { wch: 16 }, { wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 10 },
+      { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 },
+    ];
+    XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+
+    // ---------- One tab per placement ----------
+    placementsToExport.forEach((agg) => {
+      const placementRows = rows
+        .filter((r) => r.placement === agg.placement)
+        .filter((r) => campaignFilter(r.utm_campaign));
+
+      const aoa: (string | number)[][] = [
+        [`Placement: ${agg.placement}`],
+        [PLACEMENT_LABELS[agg.placement] ?? ''],
+        [],
+        ['Aggregate (across selected campaigns)'],
+        ['Metric', 'Value'],
+        ['Impressions', agg.lp_cta_impression],
+        ['Clicks', agg.lp_cta_click],
+        ['CTR %', round2(agg.ctr)],
+        ['PDP Views', agg.pdp_view],
+        ['Add to Cart', agg.add_to_cart],
+        ['Click→PDP %', round2(agg.click_to_pdp)],
+        ['PDP→ATC %', round2(agg.pdp_to_atc)],
+        ['Impression→ATC %', round2(agg.end_to_end)],
+        [],
+        ['Per campaign breakdown'],
+        ['Campaign', 'Impressions', 'Clicks', 'CTR %', 'PDP Views', 'Add to Cart', 'Click→PDP %', 'PDP→ATC %', 'Impression→ATC %'],
+      ];
+      if (placementRows.length === 0) {
+        aoa.push(['(no campaign data in current selection)']);
+      } else {
+        placementRows.forEach((r) => {
+          aoa.push([
+            r.utm_campaign ?? '(none)',
+            r.lp_cta_impression,
+            r.lp_cta_click,
+            round2(pct(r.lp_cta_click, r.lp_cta_impression)),
+            r.pdp_view,
+            r.add_to_cart,
+            round2(pct(r.pdp_view, r.lp_cta_click)),
+            round2(pct(r.add_to_cart, r.pdp_view)),
+            round2(pct(r.add_to_cart, r.lp_cta_impression)),
+          ]);
+        });
+      }
+      const sheet = XLSX.utils.aoa_to_sheet(aoa);
+      sheet['!cols'] = [
+        { wch: 28 }, { wch: 14 }, { wch: 12 }, { wch: 10 },
+        { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 },
+      ];
+      // Excel sheet names: max 31 chars, no special chars
+      const sheetName = agg.placement.replace(/[\\/?*[\]:]/g, '_').slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, sheet, sheetName);
+    });
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    const placementSummary = Array.from(exportPlacements).join('+') || 'none';
+    const campaignSummary = exportCampaigns === null ? 'all' : (Array.from(exportCampaigns).join('+') || 'none');
+    const slug = `${placementSummary}_${campaignSummary}`.replace(/[^a-z0-9_+-]+/gi, '-').slice(0, 60);
+    XLSX.writeFile(wb, `tiktok-cta-ctr_${stamp}_${days}d_${slug}.xlsx`);
   }
 
   const canExport =
@@ -305,6 +405,15 @@ export default function TikTokCtaCtrPage() {
             className="gap-1"
           >
             <Download className="w-4 h-4" /> Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportXlsx}
+            disabled={!canExport}
+            className="gap-1"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> Export XLSX
           </Button>
           <Popover>
             <PopoverTrigger asChild>
