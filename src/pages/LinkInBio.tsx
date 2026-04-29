@@ -242,6 +242,11 @@ export default function LinkInBio() {
       { el: stickyCtaRef.current, placement: 'bio_sticky' },
       { el: proofBlockRef.current, placement: 'uplift_proof' },
       { el: nudgeBlockRef.current, placement: 'uplift_nudge' },
+      // Arrow is observed standalone so we can isolate its CTR contribution.
+      // It lives inside nudgeBlockRef, but since IntersectionObserver fires
+      // per-element the arrow can cross the 0.5 threshold independently
+      // (smaller bounding box → may register sooner or later than the nudge).
+      { el: arrowRef.current, placement: 'uplift_arrow' },
     ];
     const seen = new Set<string>();
     const io = new IntersectionObserver(
@@ -274,6 +279,9 @@ export default function LinkInBio() {
               clarityMilestone('proof_visible');
             } else if (placement === 'uplift_nudge') {
               clarityMilestone('nudge_visible');
+            } else if (placement === 'uplift_arrow') {
+              // Dedicated arrow visibility — fires independently from the
+              // surrounding nudge block so we can A/B the arrow's effect.
               clarityMilestone('arrow_visible');
             } else {
               clarityMilestone(`cta_visible_${placement}`);
