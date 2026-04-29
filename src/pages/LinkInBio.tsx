@@ -76,6 +76,11 @@ export default function LinkInBio() {
   // saw them before clicking — that's how we attribute the CTR lift.
   const proofBlockRef = useRef<HTMLDivElement>(null);
   const nudgeBlockRef = useRef<HTMLDivElement>(null);
+  // Dedicated ref on the bouncing arrow itself. The arrow lives inside
+  // the nudge block, but tracking it separately lets us measure the
+  // arrow's own contribution to CTR — the nudge text alone is also
+  // visible without the arrow when scrolled past the threshold.
+  const arrowRef = useRef<HTMLSpanElement>(null);
 
   // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
   //
