@@ -448,6 +448,98 @@ export default function TikTokAdsPerformancePage() {
           <KpiTile icon={<TrendingUp className="h-4 w-4" />} label="Revenue" value={fmtMoney(totals.revenue)} />
         </div>
 
+        {/* PDP-lag alert — surfaces hooks where /go traffic isn't reaching
+            the product page. Only renders when there's at least one flagged
+            hook so the dashboard stays quiet when everything is healthy. */}
+        {pdpLagAlerts.length > 0 && (
+          <Card
+            className={cn(
+              'overflow-hidden border-l-4',
+              pdpLagAlerts.some((a) => a.severity === 'critical')
+                ? 'border-l-destructive bg-destructive/5'
+                : 'border-l-amber-500 bg-amber-500/5',
+            )}
+            role="alert"
+            aria-live="polite"
+          >
+            <div className="px-4 py-3 border-b border-border/60 flex items-start gap-3">
+              <AlertCircle
+                className={cn(
+                  'h-5 w-5 shrink-0 mt-0.5',
+                  pdpLagAlerts.some((a) => a.severity === 'critical')
+                    ? 'text-destructive'
+                    : 'text-amber-600 dark:text-amber-400',
+                )}
+              />
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-semibold text-foreground">
+                  PDP visits lag behind CTA clicks
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {pdpLagAlerts.length === 1
+                    ? `1 hook is sending TikTok sessions but not landing them on the product page (PDP CTR < ${PDP_CTR_WARN}%).`
+                    : `${pdpLagAlerts.length} hooks are sending TikTok sessions but not landing them on the product page (PDP CTR < ${PDP_CTR_WARN}%).`}
+                </p>
+              </div>
+            </div>
+            <ul className="divide-y divide-border/60">
+              {pdpLagAlerts.map((a) => (
+                <li key={a.hook} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:w-28 shrink-0">
+                    <span
+                      className={cn(
+                        'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide',
+                        a.severity === 'critical'
+                          ? 'bg-destructive/15 text-destructive'
+                          : 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+                      )}
+                    >
+                      {a.severity === 'critical' ? 'Critical' : 'Warning'}
+                    </span>
+                    <span className="font-mono font-semibold text-sm text-foreground">{a.hook}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground tabular-nums sm:w-56 shrink-0">
+                    {fmtInt(a.sessions)} sessions · {fmtInt(a.pdp)} PDP ·{' '}
+                    <span
+                      className={cn(
+                        'font-semibold',
+                        a.severity === 'critical' ? 'text-destructive' : 'text-amber-700 dark:text-amber-400',
+                      )}
+                    >
+                      {fmtPct(a.pdp_ctr)} PDP CTR
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/80 leading-snug">{a.likelyCause}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="px-4 py-2 border-t border-border/60 bg-muted/30 text-[11px] text-muted-foreground">
+              Threshold: ≥ {MIN_SESSIONS_FOR_ALERT} sessions, PDP CTR &lt; {PDP_CTR_WARN}% (warning) or &lt; {PDP_CTR_CRITICAL}% (critical).
+              The lp_cta_click → tiktok_deep_link_click → PDP chain is healthy when PDP CTR ≥ {PDP_CTR_WARN}%.
+            </div>
+          </Card>
+        )}
+
+        {/* Healthy-state confirmation: explicit "all good" tile so the
+            absence of alerts isn't ambiguous (especially after we just
+            shipped the redirect / UTM-preservation fix). Only shows when
+            we have enough traffic to actually evaluate the hooks. */}
+        {pdpLagAlerts.length === 0 && hasHookTraffic && (
+          <Card className="overflow-hidden border-l-4 border-l-green-500/60 bg-green-500/5">
+            <div className="px-4 py-3 flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  CTA → PDP chain is healthy.
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Every hook with ≥ {MIN_SESSIONS_FOR_ALERT} sessions is sending traffic through to the product page above the {PDP_CTR_WARN}% PDP CTR threshold.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Tracking status per hook — verifies that the tiktok_deep_link_click
             event is propagating utm_campaign correctly for each of the 5 ad
             URLs. A hook is "verified" when we see both /go landings AND a
