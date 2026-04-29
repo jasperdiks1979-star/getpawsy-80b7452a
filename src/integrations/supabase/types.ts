@@ -8409,6 +8409,10 @@ export type Database = {
           id: string
         }[]
       }
+      test_tiktok_exclusion_fixtures: {
+        Args: { p_prefix: string }
+        Returns: Json
+      }
       update_session_heartbeat: {
         Args: { p_session_id: string }
         Returns: undefined
