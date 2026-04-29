@@ -190,11 +190,33 @@ export default function LinkInBio() {
       },
       { threshold: [0.5] },
     );
+    // Debug guard — if a CTA ref never attached to a DOM element, its
+    // impression event will silently never fire. Warn loudly so we catch
+    // refactors that drop a ref={} prop on the primary/secondary/sticky
+    // CTA wrappers before the dashboard quietly under-reports.
+    const missing: string[] = [];
     targets.forEach(({ el, placement }) => {
-      if (!el) return;
+      if (!el) {
+        missing.push(placement);
+        return;
+      }
       el.dataset.ctaPlacement = placement;
       io.observe(el);
     });
+    if (missing.length > 0) {
+      console.warn(
+        `[LinkInBio] CTA ref(s) not attached — impressions will be missing for: ${missing.join(
+          ', ',
+        )}. Check that <div ref={...CtaRef}> still wraps each CTA.`,
+        { missing, attribution },
+      );
+      trackEvent('lp_cta_ref_missing', {
+        page: '/go',
+        funnel: 'tiktok_bio',
+        missing_placements: missing.join(','),
+        ...attribution,
+      });
+    }
     return () => io.disconnect();
   }, [attribution]);
 
