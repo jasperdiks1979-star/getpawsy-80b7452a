@@ -414,6 +414,7 @@ const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTo
 const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
 const TikTokExcludedSessionsPage = lazyWithRetry(() => import("./pages/admin/TikTokExcludedSessionsPage"));
 const TikTokFunnelReportPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelReportPage"));
+const TikTokCtaCtrPage = lazyWithRetry(() => import("./pages/admin/TikTokCtaCtrPage"));
 const TikTokSessionDecisionLogPage = lazyWithRetry(() => import("./pages/admin/TikTokSessionDecisionLogPage"));
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
@@ -2136,6 +2137,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokFunnelReportPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tiktok-cta-ctr"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokCtaCtrPage />
                                 </Suspense>
                               }
                             />
