@@ -311,7 +311,7 @@ export default function LinkInBio() {
         </div>
 
         {/* 8. FINAL CTA */}
-        <div className="w-full" onClickCapture={handleCtaClick('bio_secondary')}>
+        <div className="w-full" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
           <TikTokDeepLinkButton
             label="Get Yours Now →"
             campaign="tt_bio_link"
