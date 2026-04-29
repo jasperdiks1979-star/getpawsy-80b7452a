@@ -16,6 +16,7 @@ import { resolveUtm, syncUtmToUrl, persistUtmToSession } from '@/lib/utmNormaliz
 import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
 import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
+import { visibilityFlagsAtClickTime } from '@/lib/lpCtaVisibility';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
@@ -317,11 +318,12 @@ export default function LinkInBio() {
     // outgoing lp_cta_click event AND stored for the next view_item /
     // add_to_cart to pick up on its own.
     const link = recordLpCtaClick({ placement, attribution });
-    // Read which uplift elements were visible at click time. Lets us answer:
-    // "Of the users who clicked, what % had actually seen the proof line?"
-    const seenBefore: Set<string> | undefined = (window as any).__gpGoSeen;
-    const sawProof = seenBefore?.has('uplift_proof') ?? false;
-    const sawNudge = seenBefore?.has('uplift_nudge') ?? false;
+    // Read which uplift elements were visible at click time. Single source of
+    // truth in lpCtaVisibility — the verification test imports the same fn
+    // so this contract can never silently drift.
+    const flags = visibilityFlagsAtClickTime();
+    const sawProof = flags.saw_proof_before_click;
+    const sawNudge = flags.saw_nudge_before_click;
     trackEvent('lp_cta_click', {
       page: '/go',
       funnel: 'tiktok_bio',
@@ -331,8 +333,7 @@ export default function LinkInBio() {
       lp_clicked_at: link.clicked_at,
       cta_variant: CTA_VARIANT,
       ...CTA_FEATURE_FLAGS,
-      saw_proof_before_click: sawProof,
-      saw_nudge_before_click: sawNudge,
+      ...flags,
       ...attribution,
     });
     // Clarity click beacon + tags so heatmap funnels can answer:
