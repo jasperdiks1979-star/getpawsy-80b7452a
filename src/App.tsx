@@ -2123,6 +2123,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-session-decision-log"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokSessionDecisionLogPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-config-checklist"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
