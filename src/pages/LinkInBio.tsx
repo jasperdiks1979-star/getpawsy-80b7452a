@@ -190,6 +190,16 @@ export default function LinkInBio() {
     // Debug checkpoint #1 — captures UTM state right after /go mounts +
     // bucketing/syncUtmToUrl have run. Safe no-op without ?debug_utm=1.
     logUtmCheckpoint('go_mount', { attribution });
+    // Microsoft Clarity — funnel-scoped boot. The helper itself is gated by
+    // marketing consent + Founder Mode so we never pollute heatmaps with
+    // internal sessions. Tags let us slice heatmaps by variant + campaign.
+    initClarity();
+    clarityTag('page', '/go');
+    clarityTag('funnel', 'tiktok_bio');
+    clarityTag('cta_variant', CTA_VARIANT);
+    if (attribution.utm_campaign) clarityTag('utm_campaign', attribution.utm_campaign);
+    if (attribution.utm_content) clarityTag('utm_content', attribution.utm_content);
+    clarityMilestone('go_landing_view');
   }, [attribution]);
 
   // FUNNEL STEP 2 — Scroll-depth milestones to surface where users drop off
