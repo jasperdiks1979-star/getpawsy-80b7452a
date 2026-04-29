@@ -125,6 +125,7 @@ describe('lpCtaVisibility — visibility flags on lp_cta_click', () => {
       expect(flags).toEqual({
         saw_proof_before_click: true,
         saw_nudge_before_click: false,
+        saw_arrow_before_click: false,
       });
     });
   });
