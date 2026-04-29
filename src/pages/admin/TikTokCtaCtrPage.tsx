@@ -6,6 +6,7 @@
  * full funnel report. This is the "which CTA is winning" view.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { format, startOfDay, endOfDay, subDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,8 +14,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet, CalendarIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import type { DateRange } from 'react-day-picker';
 
 type RawRow = {
   placement: string | null;
@@ -58,7 +62,13 @@ function fmtPct(value: number, denominator: number): string {
 }
 
 export default function TikTokCtaCtrPage() {
+  // Range mode: 'preset' (last N days) OR 'custom' (explicit from/to via DayPicker).
+  const [rangeMode, setRangeMode] = useState<'preset' | 'custom'>('preset');
   const [days, setDays] = useState(14);
+  const [customRange, setCustomRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 13),
+    to: new Date(),
+  });
   const [campaign, setCampaign] = useState<string>('all');
   const [rows, setRows] = useState<RawRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,12 +86,20 @@ export default function TikTokCtaCtrPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    supabase
-      .rpc('get_lp_funnel_report', {
-        p_days: days,
-        p_campaign: campaign === 'all' ? null : campaign,
-        p_include_internal: false,
-      })
+    const useCustom = rangeMode === 'custom' && customRange?.from && customRange?.to;
+    const promise = useCustom
+      ? supabase.rpc('get_lp_funnel_report_range', {
+          p_start: startOfDay(customRange!.from!).toISOString(),
+          p_end: endOfDay(customRange!.to!).toISOString(),
+          p_campaign: campaign === 'all' ? null : campaign,
+          p_include_internal: false,
+        })
+      : supabase.rpc('get_lp_funnel_report', {
+          p_days: days,
+          p_campaign: campaign === 'all' ? null : campaign,
+          p_include_internal: false,
+        });
+    promise
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) {
@@ -95,7 +113,7 @@ export default function TikTokCtaCtrPage() {
     return () => {
       cancelled = true;
     };
-  }, [days, campaign]);
+  }, [rangeMode, days, customRange?.from?.getTime(), customRange?.to?.getTime(), campaign]);
 
   const campaigns = useMemo(() => {
     const set = new Set<string>();
