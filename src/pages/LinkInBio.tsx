@@ -353,6 +353,9 @@ export default function LinkInBio() {
     // "of users who saw proof, how many actually clicked?"
     clarityTag('saw_proof_before_click', sawProof);
     clarityTag('saw_nudge_before_click', sawNudge);
+    // Arrow tag is the cleanest A/B dimension — it isolates the bouncing
+    // arrow's contribution to CTR vs the nudge text alone.
+    clarityTag('saw_arrow_before_click', flags.saw_arrow_before_click);
     clarityMilestone(`cta_click_${placement}`);
     clarityMilestone('cta_click');
     // Debug checkpoint #2 — captures UTM state at the moment of click,
