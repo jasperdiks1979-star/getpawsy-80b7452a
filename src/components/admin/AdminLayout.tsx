@@ -54,6 +54,7 @@ const navItems = [
   { to: '/admin/tiktok-automation', label: 'TikTok Auto', icon: Activity },
   { to: '/admin/tiktok-ads-performance', label: 'TikTok Ads Perf', icon: TrendingUp },
   { to: '/admin/tiktok-funnel-debug', label: 'TikTok Funnel Debug', icon: Activity },
+  { to: '/admin/tiktok-excluded-sessions', label: 'TikTok Excluded Sessions', icon: ShieldAlert },
   { to: '/admin/job-retry-policies', label: 'Job Retry Policies', icon: Wrench },
   { to: '/admin/job-retry-metrics', label: 'Job Retry Metrics', icon: Activity },
 ];
