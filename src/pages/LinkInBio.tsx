@@ -19,6 +19,8 @@ import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 import { visibilityFlagsAtClickTime } from '@/lib/lpCtaVisibility';
 import { getVisitorCohort } from '@/lib/visitorCohort';
 import { useCtaVariant } from '@/hooks/useCtaVariant';
+import { useCtaCopyWinner } from '@/hooks/useCtaCopyWinner';
+import type { CtaPlacement, CtaCopyMode } from '@/lib/ctaCopyRegistry';
 
 /**
  * /go CTA variant tag. Bumped whenever we change the high-conversion
@@ -66,19 +68,19 @@ const CTA_FEATURE_FLAGS = {
 const URGENCY_REVEAL_THRESHOLD = 60;
 
 /**
- * Dynamic CTA copy — swapped in once the visitor crosses
- * URGENCY_REVEAL_THRESHOLD scroll-depth. The pre-60 % copy is calm
- * ("Get Yours Now") to avoid scaring cold TikTok traffic above the
- * fold; the post-60 % copy escalates urgency now that the visitor has
- * shown intent. Only the visible LABEL changes — UTM / campaign /
- * content / tracking refs are untouched, so funnel attribution stays
- * stable across the swap.
+ * Dynamic CTA copy is now driven by the auto-winner system.
+ *
+ *   - Candidate labels live in `src/lib/ctaCopyRegistry.ts`.
+ *   - The `cta-copy-winner-elector` edge function picks the winning
+ *     label per (placement, mode) every hour based on 48h CTR
+ *     (≥50 imps per variant required).
+ *   - `useCtaCopyWinner` fetches the active winners and resolves them
+ *     to visible button text via `pickCopy(placement, mode)`.
+ *
+ * Only the visible button TEXT changes — UTM / campaign / content /
+ * deep-link refs are untouched, so funnel attribution stays stable
+ * across copy swaps.
  */
-const CTA_COPY = {
-  primary:   { calm: 'Get Yours Now →',          urgent: '👉 Claim Yours — Limited Stock' },
-  secondary: { calm: 'Get Yours Now →',          urgent: '🔥 Order Today — Ships in 24h' },
-  sticky:    { calm: 'Get Yours Now →',          urgent: '⚡ Tap to Claim Yours' },
-} as const;
 
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,6 +89,14 @@ export default function LinkInBio() {
   // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
   // so impressions are never tagged with an empty variant.
   const { variant: ctaVariant } = useCtaVariant(CTA_VARIANT_DEFAULT);
+  // Auto-elected winning copy per (placement, mode). Falls back to the
+  // build-time defaults while the network fetch is in flight so the
+  // button never renders blank for cold TikTok traffic.
+  const { pickCopy } = useCtaCopyWinner();
+  const copyMode: CtaCopyMode = urgencyVisible ? 'urgent' : 'calm';
+  const primaryCopy = pickCopy('bio_primary', copyMode);
+  const secondaryCopy = pickCopy('bio_secondary', copyMode);
+  const stickyCopy = pickCopy('bio_sticky', copyMode);
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
