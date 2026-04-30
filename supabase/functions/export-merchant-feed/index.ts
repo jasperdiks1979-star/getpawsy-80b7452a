@@ -758,6 +758,16 @@ Deno.serve(async (req) => {
 
     const feedItems: SanitizedProduct[] = [];
     const holdoutItems: SanitizedProduct[] = [];
+    const excludedItems: Array<{
+      id: string;
+      name: string;
+      slug: string;
+      sku: string | null;
+      category: string | null;
+      price: number | null;
+      stock: number | null;
+      reason: string;
+    }> = [];
 
     for (const p of allProducts) {
       const result = sanitizeProductForMerchant(p);
@@ -770,6 +780,16 @@ Deno.serve(async (req) => {
         } else {
           audit.excluded_quality++;
         }
+        excludedItems.push({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          sku: p.sku ?? null,
+          category: p.category ?? null,
+          price: p.price ?? null,
+          stock: p.stock ?? null,
+          reason,
+        });
         continue;
       }
 
@@ -789,6 +809,16 @@ Deno.serve(async (req) => {
           holdoutItems.push(result.product);
           audit.holdout_review_queue++;
           audit.holdout_ids.push(p.id);
+          excludedItems.push({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            sku: p.sku ?? null,
+            category: p.category ?? null,
+            price: p.price ?? null,
+            stock: p.stock ?? null,
+            reason: "not_top80",
+          });
         }
       } else {
         // "all" mode — export everything that passes sanitization
@@ -806,6 +836,26 @@ Deno.serve(async (req) => {
     }
 
     console.log(`[Merchant Feed] mode=${feedMode} scanned=${audit.total_scanned} sanitized=${audit.total_sanitized} exported=${audit.included_in_feed} holdout=${audit.holdout_review_queue} policy_excluded=${audit.excluded_policy} quality_excluded=${audit.excluded_quality}`);
+
+    // ── Excluded CSV format ──
+    if (format === "excluded-csv") {
+      const cols = ["id", "name", "slug", "sku", "category", "price", "stock", "reason"] as const;
+      const esc = (v: unknown) => {
+        const s = String(v ?? "");
+        return s.includes(",") || s.includes('"') || s.includes("\n") ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
+      const lines = [cols.join(",")];
+      for (const e of excludedItems) lines.push(cols.map(c => esc((e as any)[c])).join(","));
+      return new Response("\uFEFF" + lines.join("\n"), {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="getpawsy_merchant_excluded_${feedMode}_${new Date().toISOString().split("T")[0]}.csv"`,
+          "X-Excluded-Total": String(excludedItems.length),
+          "X-Feed-Mode": feedMode,
+          ...corsHeaders,
+        },
+      });
+    }
 
     // ── CSV format ──
     if (format === "csv") {
