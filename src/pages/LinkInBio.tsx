@@ -690,7 +690,7 @@ export default function LinkInBio() {
           and now urgency converts intent into action instead of scaring
           first-time visitors away. `aria-hidden` mirrors the visible state.
         */}
-        {urgencyVisible && (
+        {isV3 && urgencyVisible && (
           <aside
             className="w-full rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
             role="status"
