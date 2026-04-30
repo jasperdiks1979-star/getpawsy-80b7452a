@@ -387,6 +387,22 @@ export default function LinkInBio() {
     const flags = visibilityFlagsAtClickTime();
     const sawProof = flags.saw_proof_before_click;
     const sawNudge = flags.saw_nudge_before_click;
+    // Per-placement timing stamps. `time_to_click_ms` is from page mount
+    // (raw engagement speed); `dwell_ms` is from when THIS placement first
+    // became visible (true consideration time). Together they let the
+    // dashboard separate "fast skim → click" from "saw it, hesitated, clicked".
+    const nowClick = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const timeToClickMs = Math.max(0, Math.round(nowClick - pageMountAtRef.current));
+    const visibleAt = firstVisibleAtRef.current[placement];
+    const dwellMs = visibleAt != null ? Math.max(0, Math.round(nowClick - visibleAt)) : null;
+    const scrollDepthAtClick = currentScrollDepthPct();
+    // First-click attribution — only the FIRST CTA wins. If a user clicks
+    // bio_post_image then later bio_sticky, the analytics dashboard should
+    // attribute the conversion to bio_post_image (the placement that
+    // actually triggered intent). Subsequent clicks still fire events for
+    // diagnostic purposes but are tagged is_repeat_click=true.
+    const isFirstClick = firstClickPlacementRef.current === null;
+    if (isFirstClick) firstClickPlacementRef.current = placement;
     trackEvent('lp_cta_click', {
       page: '/go',
       funnel: 'tiktok_bio',
@@ -394,6 +410,11 @@ export default function LinkInBio() {
       placement,
       lp_click_id: link.click_id,
       lp_clicked_at: link.clicked_at,
+      time_to_click_ms: timeToClickMs,
+      dwell_ms: dwellMs,
+      scroll_depth_at_click: scrollDepthAtClick,
+      is_first_click: isFirstClick,
+      first_click_placement: firstClickPlacementRef.current,
       cta_variant: CTA_VARIANT,
       ...CTA_FEATURE_FLAGS,
       ...flags,
@@ -406,8 +427,21 @@ export default function LinkInBio() {
     // Arrow tag is the cleanest A/B dimension — it isolates the bouncing
     // arrow's contribution to CTR vs the nudge text alone.
     clarityTag('saw_arrow_before_click', flags.saw_arrow_before_click);
+    // Per-placement click tags — these are the heatmap-filter goldmine.
+    // On the Clarity dashboard you can now segment:
+    //   - "users who clicked bio_primary" vs "clicked bio_sticky"
+    //   - "first_click_placement = bio_post_image" → scroll heatmap of
+    //     ONLY users who converted via the post-image CTA
+    //   - "scroll_depth_at_click < 30" → above-the-fold winners
+    clarityTag(`clicked_${placement}`, true);
+    clarityTag('last_click_placement', placement);
+    clarityTag('first_click_placement', firstClickPlacementRef.current!);
+    clarityTag('time_to_click_ms', timeToClickMs);
+    clarityTag('scroll_depth_at_click', scrollDepthAtClick);
+    if (dwellMs != null) clarityTag(`dwell_${placement}_ms`, dwellMs);
     clarityMilestone(`cta_click_${placement}`);
     clarityMilestone('cta_click');
+    if (isFirstClick) clarityMilestone(`first_click_${placement}`);
     // Debug checkpoint #2 — captures UTM state at the moment of click,
     // BEFORE the outbound navigation, so we can compare against pdp_load.
     logUtmCheckpoint('cta_click', { placement, attribution });
