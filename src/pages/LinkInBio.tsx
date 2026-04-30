@@ -394,6 +394,7 @@ export default function LinkInBio() {
               time_to_visible_ms: timeToVisibleMs,
               scroll_depth_at_visible: scrollDepthAtVisible,
               cta_variant: ctaVariant,
+              cohort: getVisitorCohort(),
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
