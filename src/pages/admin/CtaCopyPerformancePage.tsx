@@ -228,7 +228,7 @@ export default function CtaCopyPerformancePage() {
               <code className="text-xs">/go</code>. Excludes internal traffic.
             </p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center flex-wrap">
             {RANGES.map((r) => (
               <Button
                 key={r.label}
@@ -239,6 +239,16 @@ export default function CtaCopyPerformancePage() {
                 {r.label}
               </Button>
             ))}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportCsv}
+              disabled={buckets.length === 0}
+              className="ml-2 gap-1"
+              title="Download all rows as CSV"
+            >
+              <Download className="h-3.5 w-3.5" /> CSV
+            </Button>
           </div>
         </div>
 
