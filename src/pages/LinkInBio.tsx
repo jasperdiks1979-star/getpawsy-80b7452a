@@ -553,6 +553,50 @@ export default function LinkInBio() {
           />
         </div>
 
+        {/*
+          DEMO VIDEO + CTA — TikTok-style 9:16 muted autoplay loop sitting
+          directly above the proof block. Cold TikTok traffic expects video
+          first, so we give them a 12s product loop. Clicking ANYWHERE on
+          the wrapper (video or button) fires the bio_video_cta placement
+          so the heatmap dashboard can isolate "watched demo → clicked"
+          conversion paths from text-only CTA paths.
+
+          Performance:
+            - poster image (~32KB jpg) renders instantly while video loads
+            - playsInline + muted required for iOS autoplay
+            - preload="metadata" so we don't burn 475KB before the user
+              has even scrolled to the section
+        */}
+        <div
+          ref={videoCtaRef}
+          className="w-full flex flex-col gap-3"
+          onClickCapture={handleCtaClick('bio_video_cta')}
+        >
+          <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-lg aspect-[9/16] max-h-[420px] mx-auto">
+            <video
+              src="/videos/go-demo.mp4"
+              poster="/videos/go-demo-poster.jpg"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover"
+              aria-label="Self-cleaning litter box demo"
+            />
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+              <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
+              Demo
+            </div>
+          </div>
+          <TikTokDeepLinkButton
+            label="See it in action →"
+            campaign="tt_bio_link"
+            content="bio_video_cta"
+            className="h-12 text-[15px] w-full bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
+          />
+        </div>
+
         {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
         <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
           {/* Proof line */}
