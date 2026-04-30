@@ -53,6 +53,17 @@ type TrendRow = {
   median_time_to_click_ms: number | null;
 };
 
+type CohortRow = {
+  placement: string;
+  cohort: 'first_session' | 'returning' | string;
+  impressions: number;
+  clicks: number;
+  ctr_pct: number;
+  median_time_to_visible_ms: number | null;
+  median_time_to_click_ms: number | null;
+  first_click_wins: number;
+};
+
 const PLACEMENT_LABELS: Record<string, string> = {
   bio_primary: 'Primary (above the fold)',
   bio_secondary: 'Secondary (final CTA)',
@@ -113,8 +124,10 @@ function pivotTrend(
 
 export default function PlacementOverviewPage() {
   const [days, setDays] = useState(14);
+  const [cohort, setCohort] = useState<'all' | 'first_session' | 'returning'>('all');
   const [overview, setOverview] = useState<OverviewRow[]>([]);
   const [trend, setTrend] = useState<TrendRow[]>([]);
+  const [cohortRows, setCohortRows] = useState<CohortRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,21 +135,36 @@ export default function PlacementOverviewPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    const cohortParam = cohort === 'all' ? null : cohort;
     Promise.all([
-      supabase.rpc('get_placement_overview', { p_days: days, p_include_internal: false }),
-      supabase.rpc('get_placement_overview_trend', { p_days: days, p_include_internal: false }),
-    ]).then(([ov, tr]) => {
+      supabase.rpc('get_placement_overview', {
+        p_days: days,
+        p_include_internal: false,
+        p_cohort: cohortParam,
+      }),
+      supabase.rpc('get_placement_overview_trend', {
+        p_days: days,
+        p_include_internal: false,
+        p_cohort: cohortParam,
+      }),
+      supabase.rpc('get_placement_overview_by_cohort', {
+        p_days: days,
+        p_include_internal: false,
+      }),
+    ]).then(([ov, tr, ch]) => {
       if (cancelled) return;
       if (ov.error) setError(ov.error.message);
       else setOverview((ov.data ?? []) as OverviewRow[]);
       if (tr.error && !ov.error) setError(tr.error.message);
       else setTrend((tr.data ?? []) as TrendRow[]);
+      if (ch.error && !ov.error && !tr.error) setError(ch.error.message);
+      else setCohortRows((ch.data ?? []) as CohortRow[]);
       setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [days]);
+  }, [days, cohort]);
 
   // Highest CTR (with a minimum sample-size guard so a 1/1 row doesn't crown
   // itself the winner) and absolute first-click leader.
@@ -167,6 +195,31 @@ export default function PlacementOverviewPage() {
   const impPivot = useMemo(() => pivotTrend(trend, 'impressions'), [trend]);
   const ttvPivot = useMemo(() => pivotTrend(trend, 'median_time_to_visible_ms'), [trend]);
 
+  // Pivot the cohort rows into one entry per placement with `first` and
+  // `returning` columns + delta. Placements with zero data on either side
+  // still render so the gap is obvious.
+  const cohortCompare = useMemo(() => {
+    const map = new Map<string, { first?: CohortRow; returning?: CohortRow }>();
+    for (const r of cohortRows) {
+      const slot = map.get(r.placement) ?? {};
+      if (r.cohort === 'first_session') slot.first = r;
+      else if (r.cohort === 'returning') slot.returning = r;
+      map.set(r.placement, slot);
+    }
+    return Array.from(map.entries())
+      .map(([placement, v]) => {
+        const firstCtr = v.first?.ctr_pct ?? 0;
+        const retCtr = v.returning?.ctr_pct ?? 0;
+        return {
+          placement,
+          first: v.first,
+          returning: v.returning,
+          deltaPp: retCtr - firstCtr, // returning − cold (positive = returning clicks more)
+        };
+      })
+      .sort((a, b) => (b.first?.impressions ?? 0) - (a.first?.impressions ?? 0));
+  }, [cohortRows]);
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
       <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -177,19 +230,115 @@ export default function PlacementOverviewPage() {
             <code className="text-xs">/go</code>. Excludes internal traffic.
           </p>
         </div>
-        <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="3">Last 3 days</SelectItem>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="14">Last 14 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="60">Last 60 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={cohort} onValueChange={(v) => setCohort(v as typeof cohort)}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All visitors</SelectItem>
+              <SelectItem value="first_session">Cold TikTok (first session)</SelectItem>
+              <SelectItem value="returning">Returning visitors</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">Last 3 days</SelectItem>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="14">Last 14 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="60">Last 60 days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </header>
+
+      {/* Cohort comparison — first_session vs returning, side by side per placement.
+          This is the heatmap counterpart inside the app: identical rows so a
+          regression on cold traffic alone is immediately visible. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Cohort comparison · cold TikTok vs returning</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {cohortCompare.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              No cohort-tagged events yet — fresh /go visits will start populating this once
+              deployed.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2 pr-3">Placement</th>
+                    <th className="py-2 pr-3 text-right">Cold impr.</th>
+                    <th className="py-2 pr-3 text-right">Cold CTR</th>
+                    <th className="py-2 pr-3 text-right">Cold time-to-click</th>
+                    <th className="py-2 pr-3 text-right">Returning impr.</th>
+                    <th className="py-2 pr-3 text-right">Returning CTR</th>
+                    <th className="py-2 pr-3 text-right">Returning time-to-click</th>
+                    <th className="py-2 pr-3 text-right">Δ CTR (pp)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cohortCompare.map((c) => {
+                    const deltaClass =
+                      c.deltaPp > 0
+                        ? 'text-emerald-600'
+                        : c.deltaPp < 0
+                          ? 'text-red-600'
+                          : 'text-muted-foreground';
+                    return (
+                      <tr key={c.placement} className="border-b last:border-0 hover:bg-muted/30">
+                        <td className="py-2 pr-3 font-medium">
+                          <span
+                            className="inline-block w-2 h-2 rounded-full mr-2 align-middle"
+                            style={{ background: colorFor(c.placement) }}
+                          />
+                          {PLACEMENT_LABELS[c.placement] ?? c.placement}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {(c.first?.impressions ?? 0).toLocaleString()}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {fmtPct(c.first?.ctr_pct)}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-xs">
+                          {fmtMs(c.first?.median_time_to_click_ms)}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {(c.returning?.impressions ?? 0).toLocaleString()}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {fmtPct(c.returning?.ctr_pct)}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-xs">
+                          {fmtMs(c.returning?.median_time_to_click_ms)}
+                        </td>
+                        <td className={`py-2 pr-3 text-right tabular-nums font-semibold ${deltaClass}`}>
+                          {c.deltaPp > 0 ? '+' : ''}
+                          {c.deltaPp.toFixed(2)} pp
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <p className="text-[11px] text-muted-foreground mt-3">
+                Δ CTR = returning − cold. Positive = returning visitors click more on this
+                placement (i.e. it works as a re-engagement nudge); negative = the placement
+                punches harder against fresh TikTok traffic. Pair this view with the matching
+                Microsoft Clarity heatmap (filter <code>cohort = first_session</code> vs{' '}
+                <code>cohort = returning</code>) to see WHY the gap exists.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {error && (
         <Card className="border-destructive">
