@@ -17,6 +17,7 @@ import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
 import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 import { visibilityFlagsAtClickTime } from '@/lib/lpCtaVisibility';
+import { useCtaVariant } from '@/hooks/useCtaVariant';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
@@ -54,9 +55,17 @@ const COMPARISON_ROWS: Array<{ label: string; manual: string; smart: string }> =
  * PDP CTR lift to a specific variant of the page.
  *
  *   high_conv_v1 = baseline pre-uplift (Get Yours Now, no proof/nudge)
- *   high_conv_v2 = current — proof + nudge + arrow + pulse + new CTA copy
+ *   high_conv_v2 = baseline rollback target — proof + nudge + arrow + pulse
+ *   high_conv_v3 = current — adds video + post-image CTA + scroll-gated urgency
+ *
+ * NOTE: The string below is just the BUILD-TIME DEFAULT. The page reads
+ * the actual active variant at runtime from `cta_variant_config` via the
+ * `useCtaVariant` hook — the auto-rollback edge function may have flipped
+ * it back to the baseline if CTR dropped below the configured floor.
+ * Always reference the runtime `ctaVariant` inside the component, never
+ * this constant directly.
  */
-const CTA_VARIANT = 'high_conv_v3';
+const CTA_VARIANT_DEFAULT = 'high_conv_v3';
 const CTA_FEATURE_FLAGS = {
   has_proof: true,
   has_nudge: true,
