@@ -98,6 +98,12 @@ export default function LinkInBio() {
   // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
   // so impressions are never tagged with an empty variant.
   const { variant: ctaVariant } = useCtaVariant(CTA_VARIANT_DEFAULT);
+  // A/B render gating. v3 = full high-conversion stack (video CTA, post-image
+  // CTA, "Watch how it works" copy, scroll-gated urgency, sub-headline);
+  // anything else (currently v2 baseline) renders the leaner version so the
+  // CTR delta we measure is attributable to the v3 feature stack only.
+  const isV3 = ctaVariant === 'high_conv_v3';
+  const ctaLabel = isV3 ? 'Watch how it works →' : 'Get Yours Now →';
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
