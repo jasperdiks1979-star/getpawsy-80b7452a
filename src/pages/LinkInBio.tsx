@@ -271,6 +271,25 @@ export default function LinkInBio() {
       const scrolled = window.scrollY + window.innerHeight;
       const total = Math.max(doc.scrollHeight, 1);
       const pct = Math.min(100, Math.round((scrolled / total) * 100));
+      // Scroll-gated urgency reveal — flip-and-stick once the user passes
+      // the threshold. Fire-and-forget tracking + Clarity beacon so the
+      // dashboard can attribute clicks that happened AFTER urgency surfaced.
+      if (pct >= URGENCY_REVEAL_THRESHOLD) {
+        setUrgencyVisible((prev) => {
+          if (prev) return prev;
+          trackEvent('lp_urgency_revealed', {
+            page: '/go',
+            funnel: 'tiktok_bio',
+            depth_pct: pct,
+            threshold_pct: URGENCY_REVEAL_THRESHOLD,
+            cta_variant: CTA_VARIANT,
+            ...attribution,
+          });
+          clarityMilestone('urgency_revealed');
+          clarityTag('saw_urgency', true);
+          return true;
+        });
+      }
       for (const m of milestones) {
         if (pct >= m && !fired.has(m)) {
           fired.add(m);
