@@ -65,6 +65,21 @@ const CTA_FEATURE_FLAGS = {
  */
 const URGENCY_REVEAL_THRESHOLD = 60;
 
+/**
+ * Dynamic CTA copy — swapped in once the visitor crosses
+ * URGENCY_REVEAL_THRESHOLD scroll-depth. The pre-60 % copy is calm
+ * ("Get Yours Now") to avoid scaring cold TikTok traffic above the
+ * fold; the post-60 % copy escalates urgency now that the visitor has
+ * shown intent. Only the visible LABEL changes — UTM / campaign /
+ * content / tracking refs are untouched, so funnel attribution stays
+ * stable across the swap.
+ */
+const CTA_COPY = {
+  primary:   { calm: 'Get Yours Now →',          urgent: '👉 Claim Yours — Limited Stock' },
+  secondary: { calm: 'Get Yours Now →',          urgent: '🔥 Order Today — Ships in 24h' },
+  sticky:    { calm: 'Get Yours Now →',          urgent: '⚡ Tap to Claim Yours' },
+} as const;
+
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
   // Runtime-controlled CTA variant. The auto-rollback edge function flips
@@ -625,7 +640,7 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_primary')}
         >
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label={urgencyVisible ? CTA_COPY.primary.urgent : CTA_COPY.primary.calm}
             campaign="tt_bio_link"
             content="bio_primary"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
@@ -731,7 +746,7 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_secondary')}
         >
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label={urgencyVisible ? CTA_COPY.secondary.urgent : CTA_COPY.secondary.calm}
             campaign="tt_bio_link"
             content="bio_secondary"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
@@ -770,7 +785,7 @@ export default function LinkInBio() {
         )}
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label={urgencyVisible ? CTA_COPY.sticky.urgent : CTA_COPY.sticky.calm}
             campaign="tt_bio_link"
             content="bio_sticky"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize h-14' : 'h-13'} text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl`}
