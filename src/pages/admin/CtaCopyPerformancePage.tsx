@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MousePointerClick } from 'lucide-react';
+import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ type Row = {
   placement: string | null;
   cta_variant: string | null;
   event_name: string;
+  created_at: string;
 };
 
 type Bucket = {
@@ -92,7 +93,7 @@ export default function CtaCopyPerformancePage() {
     (async () => {
       const { data, error } = await supabase
         .from('lp_funnel_events')
-        .select('placement, cta_variant, event_name')
+        .select('placement, cta_variant, event_name, created_at')
         .in('event_name', ['lp_cta_impression', 'lp_cta_click', 'tiktok_deep_link_click'])
         .gte('created_at', since)
         .or('is_internal.is.null,is_internal.eq.false')
