@@ -47,6 +47,12 @@ type OverviewRow = {
   p90_time_to_click_ms: number | null;
   median_dwell_ms: number | null;
   first_click_wins: number;
+  misclicks: number;
+  repeat_clicks: number;
+  misclick_rate_pct: number;
+  repeat_click_rate_pct: number;
+  intent_clicks: number;
+  intent_ctr_pct: number;
 };
 
 type TrendRow = {
