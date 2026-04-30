@@ -1587,6 +1587,11 @@ export type Database = {
       }
       cta_variant_config: {
         Row: {
+          ab_test_enabled: boolean
+          ab_test_split_a_pct: number
+          ab_test_started_at: string | null
+          ab_test_variant_a: string | null
+          ab_test_variant_b: string | null
           active_variant: string
           baseline_variant: string
           ctr_floor_pct: number
@@ -1597,6 +1602,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ab_test_enabled?: boolean
+          ab_test_split_a_pct?: number
+          ab_test_started_at?: string | null
+          ab_test_variant_a?: string | null
+          ab_test_variant_b?: string | null
           active_variant?: string
           baseline_variant?: string
           ctr_floor_pct?: number
@@ -1607,6 +1617,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ab_test_enabled?: boolean
+          ab_test_split_a_pct?: number
+          ab_test_started_at?: string | null
+          ab_test_variant_a?: string | null
+          ab_test_variant_b?: string | null
           active_variant?: string
           baseline_variant?: string
           ctr_floor_pct?: number
@@ -8494,6 +8509,15 @@ export type Database = {
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_old_web_vitals: { Args: never; Returns: undefined }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
+      cta_ab_test_results: {
+        Args: never
+        Returns: {
+          clicks: number
+          ctr_pct: number
+          impressions: number
+          variant: string
+        }[]
+      }
       evaluate_render_trace_alerts: {
         Args: { p_record?: boolean }
         Returns: Json

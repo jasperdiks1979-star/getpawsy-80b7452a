@@ -23,6 +23,7 @@ import { TikTokVariantKpis } from '@/components/admin/TikTokVariantKpis';
 import { UtmCampaignFunnelMatching } from '@/components/admin/UtmCampaignFunnelMatching';
 import { ConversionVariantHeatmapCompare } from '@/components/admin/ConversionVariantHeatmapCompare';
 import { CtaVariantCtrMatrix } from '@/components/admin/CtaVariantCtrMatrix';
+import { CtaAbTestLiftReport } from '@/components/admin/CtaAbTestLiftReport';
 
 type RawRow = {
   placement: string | null;
@@ -727,6 +728,8 @@ export default function TikTokCtaCtrPage() {
           {/* CTA variant × placement CTR matrix — proves whether new CTA
               experiments (high_conv_v2, etc.) actually beat the previous
               version, and pinpoints which placement carried the lift. */}
+          <CtaAbTestLiftReport />
+
           <CtaVariantCtrMatrix
             startIso={
               rangeMode === 'custom' && customRange?.from && customRange?.to

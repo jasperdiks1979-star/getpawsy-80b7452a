@@ -98,6 +98,12 @@ export default function LinkInBio() {
   // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
   // so impressions are never tagged with an empty variant.
   const { variant: ctaVariant } = useCtaVariant(CTA_VARIANT_DEFAULT);
+  // A/B render gating. v3 = full high-conversion stack (video CTA, post-image
+  // CTA, "Watch how it works" copy, scroll-gated urgency, sub-headline);
+  // anything else (currently v2 baseline) renders the leaner version so the
+  // CTR delta we measure is attributable to the v3 feature stack only.
+  const isV3 = ctaVariant === 'high_conv_v3';
+  const ctaLabel = isV3 ? 'Watch how it works →' : 'Get Yours Now →';
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
@@ -533,9 +539,11 @@ export default function LinkInBio() {
           <h1 className="text-[30px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
             I haven&apos;t scooped in <span className="text-[hsl(25,95%,53%)]">3 months</span>.
           </h1>
-          <p className="text-[16px] sm:text-[17px] font-bold text-[hsl(25,95%,53%)] leading-snug">
-            👇 Watch how it works in 10 seconds
-          </p>
+          {isV3 && (
+            <p className="text-[16px] sm:text-[17px] font-bold text-[hsl(25,95%,53%)] leading-snug">
+              👇 Watch how it works in 10 seconds
+            </p>
+          )}
           <p className="text-[15px] font-medium text-foreground/75 max-w-[28ch] mx-auto">
             The self-cleaning litter box that cat owners can&apos;t stop talking about.
           </p>
@@ -556,18 +564,20 @@ export default function LinkInBio() {
 
         {/* Post-image CTA — second click point right after the visual.
             Catches users who scrolled past the hero CTA stack. */}
-        <div
-          className="w-full"
-          ref={postImageCtaRef}
-          onClickCapture={handleCtaClick('bio_post_image')}
-        >
-          <TikTokDeepLinkButton
-            label="See it in action →"
-            campaign="tt_bio_link"
-            content="bio_post_image"
-            className="gp-cta-pulse h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
-          />
-        </div>
+        {isV3 && (
+          <div
+            className="w-full"
+            ref={postImageCtaRef}
+            onClickCapture={handleCtaClick('bio_post_image')}
+          >
+            <TikTokDeepLinkButton
+              label="See it in action →"
+              campaign="tt_bio_link"
+              content="bio_post_image"
+              className="gp-cta-pulse h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            />
+          </div>
+        )}
 
         {/*
           DEMO VIDEO + CTA — TikTok-style 9:16 muted autoplay loop sitting
@@ -583,69 +593,77 @@ export default function LinkInBio() {
             - preload="metadata" so we don't burn 475KB before the user
               has even scrolled to the section
         */}
-        <div
-          ref={videoCtaRef}
-          className="w-full flex flex-col gap-3"
-          onClickCapture={handleCtaClick('bio_video_cta')}
-        >
-          <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-lg aspect-[9/16] max-h-[420px] mx-auto">
-            <video
-              src="/videos/go-demo.mp4"
-              poster="/videos/go-demo-poster.jpg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover"
-              aria-label="Self-cleaning litter box demo"
-            />
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-              <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
-              Demo
+        {isV3 && (
+          <div
+            ref={videoCtaRef}
+            className="w-full flex flex-col gap-3"
+            onClickCapture={handleCtaClick('bio_video_cta')}
+          >
+            <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-lg aspect-[9/16] max-h-[420px] mx-auto">
+              <video
+                src="/videos/go-demo.mp4"
+                poster="/videos/go-demo-poster.jpg"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 w-full h-full object-cover"
+                aria-label="Self-cleaning litter box demo"
+              />
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+                <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
+                Demo
+              </div>
             </div>
+            <TikTokDeepLinkButton
+              label="See it in action →"
+              campaign="tt_bio_link"
+              content="bio_video_cta"
+              className="h-12 text-[15px] w-full bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
+            />
           </div>
-          <TikTokDeepLinkButton
-            label="See it in action →"
-            campaign="tt_bio_link"
-            content="bio_video_cta"
-            className="h-12 text-[15px] w-full bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
-          />
-        </div>
+        )}
 
         {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
         <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
-          {/* Proof line */}
-          <div ref={proofBlockRef} className="text-center flex flex-col gap-0.5">
-            <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
-            <p className="text-[13px] font-semibold text-foreground/85">
-              Over 12,000 cat owners switched
-            </p>
-          </div>
+          {isV3 && (
+            <>
+              {/* Proof line */}
+              <div ref={proofBlockRef} className="text-center flex flex-col gap-0.5">
+                <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
+                <p className="text-[13px] font-semibold text-foreground/85">
+                  Over 12,000 cat owners switched
+                </p>
+              </div>
 
-          {/* Big nudge + bouncing arrow */}
-          <div ref={nudgeBlockRef} className="text-center flex flex-col items-center gap-1">
-            <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
-              👇 Tap below to see how it works
-            </p>
-            <span
-              ref={arrowRef}
-              aria-hidden
-              className="gp-arrow-bounce text-[hsl(25,95%,53%)]"
-            >▼</span>
-          </div>
+              {/* Big nudge + bouncing arrow */}
+              <div ref={nudgeBlockRef} className="text-center flex flex-col items-center gap-1">
+                <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
+                  👇 Tap below to see how it works
+                </p>
+                <span
+                  ref={arrowRef}
+                  aria-hidden
+                  className="gp-arrow-bounce text-[hsl(25,95%,53%)]"
+                >▼</span>
+              </div>
+            </>
+          )}
 
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label={ctaLabel}
             campaign="tt_bio_link"
             content="bio_primary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
 
-          {/* Micro-commitment */}
-          <p className="text-center text-[13px] font-semibold text-foreground/75">
-            ⏱️ Takes 10 seconds • No commitment
-          </p>
+          {isV3 && (
+            /* Micro-commitment */
+            <p className="text-center text-[13px] font-semibold text-foreground/75">
+              ⏱️ Takes 10 seconds • No commitment
+            </p>
+          )}
         </div>
 
         {/* 3. TRUST BADGES */}
@@ -672,7 +690,7 @@ export default function LinkInBio() {
           and now urgency converts intent into action instead of scaring
           first-time visitors away. `aria-hidden` mirrors the visible state.
         */}
-        {urgencyVisible && (
+        {isV3 && urgencyVisible && (
           <aside
             className="w-full rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
             role="status"
@@ -733,7 +751,7 @@ export default function LinkInBio() {
         {/* 6. FINAL CTA */}
         <div className="w-full flex flex-col gap-2" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label={ctaLabel}
             campaign="tt_bio_link"
             content="bio_secondary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
@@ -757,7 +775,7 @@ export default function LinkInBio() {
       >
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label={ctaLabel}
             campaign="tt_bio_link"
             content="bio_sticky"
             className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
