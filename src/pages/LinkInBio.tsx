@@ -388,6 +388,9 @@ export default function LinkInBio() {
           <h1 className="text-[30px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
             I haven&apos;t scooped in <span className="text-[hsl(25,95%,53%)]">3 months</span>.
           </h1>
+          <p className="text-[16px] sm:text-[17px] font-bold text-[hsl(25,95%,53%)] leading-snug">
+            👇 Watch how it works in 10 seconds
+          </p>
           <p className="text-[15px] font-medium text-foreground/75 max-w-[28ch] mx-auto">
             The self-cleaning litter box that cat owners can&apos;t stop talking about.
           </p>
@@ -403,6 +406,21 @@ export default function LinkInBio() {
             fetchPriority="high"
             decoding="async"
             className="w-full max-w-[320px] mx-auto aspect-square object-contain rounded-xl"
+          />
+        </div>
+
+        {/* Post-image CTA — second click point right after the visual.
+            Catches users who scrolled past the hero CTA stack. */}
+        <div
+          className="w-full"
+          ref={postImageCtaRef}
+          onClickCapture={handleCtaClick('bio_post_image')}
+        >
+          <TikTokDeepLinkButton
+            label="See it in action →"
+            campaign="tt_bio_link"
+            content="bio_post_image"
+            className="gp-cta-pulse h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
         </div>
 
@@ -429,7 +447,7 @@ export default function LinkInBio() {
           </div>
 
           <TikTokDeepLinkButton
-            label="See how it works →"
+            label="Watch how it works →"
             campaign="tt_bio_link"
             content="bio_primary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
@@ -437,7 +455,7 @@ export default function LinkInBio() {
 
           {/* Micro-commitment */}
           <p className="text-center text-[13px] font-semibold text-foreground/75">
-            ⏱️ Takes 10 seconds to see it
+            ⏱️ Takes 10 seconds • No commitment
           </p>
         </div>
 
@@ -500,7 +518,7 @@ export default function LinkInBio() {
         {/* 6. FINAL CTA */}
         <div className="w-full flex flex-col gap-2" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
           <TikTokDeepLinkButton
-            label="See how it works →"
+            label="Watch how it works →"
             campaign="tt_bio_link"
             content="bio_secondary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
@@ -524,7 +542,7 @@ export default function LinkInBio() {
       >
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="See how it works →"
+            label="Watch how it works →"
             campaign="tt_bio_link"
             content="bio_sticky"
             className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
