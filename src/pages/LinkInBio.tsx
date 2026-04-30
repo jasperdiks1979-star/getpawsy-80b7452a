@@ -19,6 +19,8 @@ import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 import { visibilityFlagsAtClickTime } from '@/lib/lpCtaVisibility';
 import { getVisitorCohort } from '@/lib/visitorCohort';
 import { useCtaVariant } from '@/hooks/useCtaVariant';
+import { useCtaCopyWinner } from '@/hooks/useCtaCopyWinner';
+import type { CtaPlacement, CtaCopyMode } from '@/lib/ctaCopyRegistry';
 
 /**
  * /go CTA variant tag. Bumped whenever we change the high-conversion
@@ -66,19 +68,19 @@ const CTA_FEATURE_FLAGS = {
 const URGENCY_REVEAL_THRESHOLD = 60;
 
 /**
- * Dynamic CTA copy — swapped in once the visitor crosses
- * URGENCY_REVEAL_THRESHOLD scroll-depth. The pre-60 % copy is calm
- * ("Get Yours Now") to avoid scaring cold TikTok traffic above the
- * fold; the post-60 % copy escalates urgency now that the visitor has
- * shown intent. Only the visible LABEL changes — UTM / campaign /
- * content / tracking refs are untouched, so funnel attribution stays
- * stable across the swap.
+ * Dynamic CTA copy is now driven by the auto-winner system.
+ *
+ *   - Candidate labels live in `src/lib/ctaCopyRegistry.ts`.
+ *   - The `cta-copy-winner-elector` edge function picks the winning
+ *     label per (placement, mode) every hour based on 48h CTR
+ *     (≥50 imps per variant required).
+ *   - `useCtaCopyWinner` fetches the active winners and resolves them
+ *     to visible button text via `pickCopy(placement, mode)`.
+ *
+ * Only the visible button TEXT changes — UTM / campaign / content /
+ * deep-link refs are untouched, so funnel attribution stays stable
+ * across copy swaps.
  */
-const CTA_COPY = {
-  primary:   { calm: 'Get Yours Now →',          urgent: '👉 Claim Yours — Limited Stock' },
-  secondary: { calm: 'Get Yours Now →',          urgent: '🔥 Order Today — Ships in 24h' },
-  sticky:    { calm: 'Get Yours Now →',          urgent: '⚡ Tap to Claim Yours' },
-} as const;
 
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,6 +89,10 @@ export default function LinkInBio() {
   // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
   // so impressions are never tagged with an empty variant.
   const { variant: ctaVariant } = useCtaVariant(CTA_VARIANT_DEFAULT);
+  // Auto-elected winning copy per (placement, mode). Hook is called early
+  // so it always runs in the same order; the actual `copyMode` resolution
+  // happens AFTER `urgencyVisible` is declared below.
+  const { pickCopy } = useCtaCopyWinner();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
@@ -103,6 +109,14 @@ export default function LinkInBio() {
   // first time the user crosses the URGENCY_REVEAL_THRESHOLD scroll-depth.
   // Sticky once true so it doesn't flicker if the user scrolls back up.
   const [urgencyVisible, setUrgencyVisible] = useState(false);
+
+  // Resolve copy mode + winning text/label per placement. Recomputed on
+  // every render so the calm→urgent swap fires when scroll passes 60%.
+  // Only the visible TEXT changes — UTM/campaign/content stay identical.
+  const copyMode: CtaCopyMode = urgencyVisible ? 'urgent' : 'calm';
+  const primaryCopy = pickCopy('bio_primary', copyMode);
+  const secondaryCopy = pickCopy('bio_secondary', copyMode);
+  const stickyCopy = pickCopy('bio_sticky', copyMode);
 
   // ─── Per-placement heatmap & funnel telemetry ──────────────────────────
   // Page-mount epoch — used to compute "time-to-visible" and "time-to-click"
@@ -361,6 +375,15 @@ export default function LinkInBio() {
             const timeToVisibleMs = Math.max(0, Math.round(now - pageMountAtRef.current));
             const scrollDepthAtVisible = currentScrollDepthPct();
             firstVisibleAtRef.current[placement] = now;
+            // Stamp the active copy label on impressions so the elector can
+            // attribute clicks back per copy variant. Only the 3 button
+            // placements have copy variants; other (proof/nudge/arrow/video)
+            // placements stay un-stamped.
+            const impressionCopy =
+              placement === 'bio_primary' ? primaryCopy
+              : placement === 'bio_secondary' ? secondaryCopy
+              : placement === 'bio_sticky' ? stickyCopy
+              : null;
             trackEvent('lp_cta_impression', {
               page: '/go',
               funnel: 'tiktok_bio',
@@ -370,6 +393,9 @@ export default function LinkInBio() {
               scroll_depth_at_visible: scrollDepthAtVisible,
               cta_variant: ctaVariant,
               cohort: getVisitorCohort(),
+              ...(impressionCopy
+                ? { cta_copy_label: impressionCopy.label, cta_copy_mode: copyMode }
+                : {}),
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
@@ -549,6 +575,17 @@ export default function LinkInBio() {
       is_repeat_click: isRepeatClick,
       is_misclick: isMisclick,
       repeat_index: priorCountForPlacement,
+      // Auto-winner attribution. Stamped on the canonical click event so
+      // the elector can compute per-(placement, copy_label) CTR with a
+      // single GROUP BY. Only the 3 button placements carry copy labels;
+      // ancillary placements (video/proof/nudge/arrow) stay un-stamped.
+      ...(placement === 'bio_primary'
+        ? { cta_copy_label: primaryCopy.label, cta_copy_mode: copyMode }
+        : placement === 'bio_secondary'
+        ? { cta_copy_label: secondaryCopy.label, cta_copy_mode: copyMode }
+        : placement === 'bio_sticky'
+        ? { cta_copy_label: stickyCopy.label, cta_copy_mode: copyMode }
+        : {}),
       ...CTA_FEATURE_FLAGS,
       ...flags,
       ...attribution,
@@ -640,7 +677,7 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_primary')}
         >
           <TikTokDeepLinkButton
-            label={urgencyVisible ? CTA_COPY.primary.urgent : CTA_COPY.primary.calm}
+            label={primaryCopy.text}
             campaign="tt_bio_link"
             content="bio_primary"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
@@ -746,7 +783,7 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_secondary')}
         >
           <TikTokDeepLinkButton
-            label={urgencyVisible ? CTA_COPY.secondary.urgent : CTA_COPY.secondary.calm}
+            label={secondaryCopy.text}
             campaign="tt_bio_link"
             content="bio_secondary"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
@@ -785,7 +822,7 @@ export default function LinkInBio() {
         )}
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label={urgencyVisible ? CTA_COPY.sticky.urgent : CTA_COPY.sticky.calm}
+            label={stickyCopy.text}
             campaign="tt_bio_link"
             content="bio_sticky"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize h-14' : 'h-13'} text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl`}

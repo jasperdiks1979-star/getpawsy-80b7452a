@@ -1585,6 +1585,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cta_copy_winners: {
+        Row: {
+          clicks: number
+          ctr_pct: number | null
+          evaluated_at: string
+          id: number
+          impressions: number
+          mode: string
+          notes: string | null
+          placement: string
+          window_hours: number
+          winning_label: string
+        }
+        Insert: {
+          clicks?: number
+          ctr_pct?: number | null
+          evaluated_at?: string
+          id?: number
+          impressions?: number
+          mode: string
+          notes?: string | null
+          placement: string
+          window_hours?: number
+          winning_label: string
+        }
+        Update: {
+          clicks?: number
+          ctr_pct?: number | null
+          evaluated_at?: string
+          id?: number
+          impressions?: number
+          mode?: string
+          notes?: string | null
+          placement?: string
+          window_hours?: number
+          winning_label?: string
+        }
+        Relationships: []
+      }
       cta_variant_config: {
         Row: {
           ab_test_enabled: boolean
@@ -2882,6 +2921,8 @@ export type Database = {
         Row: {
           cohort: string | null
           created_at: string
+          cta_copy_label: string | null
+          cta_copy_mode: string | null
           cta_variant: string | null
           delta_ms: number | null
           dwell_ms: number | null
@@ -2915,6 +2956,8 @@ export type Database = {
         Insert: {
           cohort?: string | null
           created_at?: string
+          cta_copy_label?: string | null
+          cta_copy_mode?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null
@@ -2948,6 +2991,8 @@ export type Database = {
         Update: {
           cohort?: string | null
           created_at?: string
+          cta_copy_label?: string | null
+          cta_copy_mode?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle, Download } from 'lucide-react';
+import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle, Download, Trophy, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { downloadCsv } from '@/lib/lpFunnelExport';
+import { CTA_COPY_REGISTRY, type CtaPlacement, type CtaCopyMode } from '@/lib/ctaCopyRegistry';
 
 /**
  * CtaCopyPerformancePage — quick scorecard of `/go` CTA copy performance.
@@ -85,6 +86,79 @@ export default function CtaCopyPerformancePage() {
   const [allRows, setAllRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ─── Auto-winner block state ──────────────────────────────────────────
+  // Mirrors `cta_copy_winners` (one row per placement+mode). Refreshed
+  // after every manual elector run so the UI reflects the latest decision.
+  type WinnerRow = {
+    placement: string;
+    mode: string;
+    winning_label: string;
+    ctr_pct: number | null;
+    impressions: number;
+    clicks: number;
+    window_hours: number;
+    evaluated_at: string;
+    notes: string | null;
+  };
+  const [winners, setWinners] = useState<WinnerRow[] | null>(null);
+  const [electionRunning, setElectionRunning] = useState(false);
+  const [electionMsg, setElectionMsg] = useState<string | null>(null);
+
+  async function loadWinners() {
+    const { data } = await supabase
+      .from('cta_copy_winners')
+      .select('placement, mode, winning_label, ctr_pct, impressions, clicks, window_hours, evaluated_at, notes')
+      .order('placement')
+      .order('mode');
+    setWinners((data ?? []) as WinnerRow[]);
+  }
+
+  useEffect(() => { void loadWinners(); }, []);
+
+  async function runElectorNow(dry: boolean) {
+    setElectionRunning(true);
+    setElectionMsg(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke(
+        'cta-copy-winner-elector',
+        { body: {}, ...(dry ? { headers: {} } : {}) },
+      );
+      // The edge function reads ?dry=1 from the URL — supabase-js doesn't
+      // expose query params on invoke, so we hit the function URL directly
+      // when running a dry preview.
+      if (dry) {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cta-copy-winner-elector?dry=1`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+            'Content-Type': 'application/json',
+          },
+          body: '{}',
+        });
+        const json = await res.json();
+        setElectionMsg(json?.message ? `Dry-run: ${json.message}` : 'Dry-run done');
+      } else if (invokeErr) {
+        setElectionMsg(`Error: ${invokeErr.message}`);
+      } else {
+        setElectionMsg(
+          (data as { message?: string })?.message ?? 'Elector ran successfully',
+        );
+        await loadWinners();
+      }
+    } catch (err) {
+      setElectionMsg(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setElectionRunning(false);
+    }
+  }
+
+  function copyTextFor(placement: string, mode: string, label: string): string {
+    const bank =
+      CTA_COPY_REGISTRY[placement as CtaPlacement]?.[mode as CtaCopyMode] ?? [];
+    return bank.find((o) => o.label === label)?.text ?? label;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -350,6 +424,120 @@ export default function CtaCopyPerformancePage() {
             <div>
               <p className="text-xs text-muted-foreground uppercase">CTR</p>
               <p className="text-2xl font-bold text-primary">{totalCtr}%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── Auto-elected winning copy ────────────────────────────────
+            Server-cached winner per (placement, mode). The elector edge
+            function (`cta-copy-winner-elector`) runs hourly via cron and
+            promotes a label only when ALL candidates have ≥50 impressions
+            in the last 48h. UTM / campaign / content / deep-link refs are
+            never touched — only the visible button TEXT changes. */}
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-primary" />
+                Auto-elected winning copy
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                48h window · ≥50 impressions/variant · runs hourly · UTM &amp; tracking unchanged
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => runElectorNow(true)}
+                disabled={electionRunning}
+              >
+                Preview
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => runElectorNow(false)}
+                disabled={electionRunning}
+              >
+                {electionRunning ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  'Run now'
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {electionMsg && (
+              <p className="px-4 py-2 text-xs text-muted-foreground border-b">
+                {electionMsg}
+              </p>
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="px-4 py-2 font-medium">Placement</th>
+                    <th className="px-4 py-2 font-medium">Mode</th>
+                    <th className="px-4 py-2 font-medium">Winning copy</th>
+                    <th className="px-4 py-2 font-medium text-right">CTR</th>
+                    <th className="px-4 py-2 font-medium text-right">Impr</th>
+                    <th className="px-4 py-2 font-medium text-right">Clicks</th>
+                    <th className="px-4 py-2 font-medium">Evaluated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(winners ?? []).map((w) => (
+                    <tr
+                      key={`${w.placement}-${w.mode}`}
+                      className="border-t border-border/60"
+                    >
+                      <td className="px-4 py-2">{placementLabel(w.placement)}</td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                            w.mode === 'urgent'
+                              ? 'bg-primary/10 text-primary'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {w.mode}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="font-medium">
+                          {copyTextFor(w.placement, w.mode, w.winning_label)}
+                        </div>
+                        <div className="text-xs text-muted-foreground font-mono">
+                          {w.winning_label}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">
+                        {w.ctr_pct != null ? `${w.ctr_pct.toFixed(2)}%` : '—'}
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">
+                        {w.impressions.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">
+                        {w.clicks.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">
+                        {new Date(w.evaluated_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {winners && winners.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-4 py-6 text-center text-sm text-muted-foreground"
+                      >
+                        No winners yet — the elector hasn't promoted any copy.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
