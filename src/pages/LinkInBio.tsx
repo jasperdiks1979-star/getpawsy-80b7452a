@@ -278,7 +278,9 @@ export default function LinkInBio() {
     if (attribution.utm_campaign) clarityTag('utm_campaign', attribution.utm_campaign);
     if (attribution.utm_content) clarityTag('utm_content', attribution.utm_content);
     clarityMilestone('go_landing_view');
-  }, [attribution]);
+    // Re-runs once `ctaVariant` resolves so Clarity tagging reflects any
+    // auto-rollback the guard performed since the last pageview.
+  }, [attribution, ctaVariant]);
 
   // FUNNEL STEP 2 — Scroll-depth milestones to surface where users drop off
   // before reaching the sticky CTA / benefits below the fold.
