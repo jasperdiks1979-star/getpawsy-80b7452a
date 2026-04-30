@@ -69,12 +69,14 @@ const COMPARISON_ROWS: Array<{ label: string; manual: string; smart: string }> =
 const CTA_VARIANT_DEFAULT = 'high_conv_v3';
 const CTA_FEATURE_FLAGS = {
   has_proof: true,
-  has_nudge: true,
-  has_arrow: true,
+  has_nudge: false,
+  has_arrow: false,
   has_pulse: true,
   cta_copy: 'watch_how_it_works',
-  has_post_image_cta: true,
+  has_post_image_cta: false,
   has_subhead_watch: true,
+  has_video_hero: true,
+  layout: 'curiosity_first_v1',
 } as const;
 
 /**
