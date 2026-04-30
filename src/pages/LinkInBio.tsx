@@ -274,7 +274,7 @@ export default function LinkInBio() {
     initClarity();
     clarityTag('page', '/go');
     clarityTag('funnel', 'tiktok_bio');
-    clarityTag('cta_variant', CTA_VARIANT);
+    clarityTag('cta_variant', ctaVariant);
     if (attribution.utm_campaign) clarityTag('utm_campaign', attribution.utm_campaign);
     if (attribution.utm_content) clarityTag('utm_content', attribution.utm_content);
     clarityMilestone('go_landing_view');
@@ -301,7 +301,7 @@ export default function LinkInBio() {
             funnel: 'tiktok_bio',
             depth_pct: pct,
             threshold_pct: URGENCY_REVEAL_THRESHOLD,
-            cta_variant: CTA_VARIANT,
+            cta_variant: ctaVariant,
             ...attribution,
           });
           clarityMilestone('urgency_revealed');
@@ -372,7 +372,7 @@ export default function LinkInBio() {
               placement,
               time_to_visible_ms: timeToVisibleMs,
               scroll_depth_at_visible: scrollDepthAtVisible,
-              cta_variant: CTA_VARIANT,
+              cta_variant: ctaVariant,
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
@@ -431,7 +431,7 @@ export default function LinkInBio() {
         page: '/go',
         funnel: 'tiktok_bio',
         missing_placements: missing.join(','),
-        cta_variant: CTA_VARIANT,
+        cta_variant: ctaVariant,
         ...attribution,
       });
     }
@@ -480,7 +480,7 @@ export default function LinkInBio() {
       scroll_depth_at_click: scrollDepthAtClick,
       is_first_click: isFirstClick,
       first_click_placement: firstClickPlacementRef.current,
-      cta_variant: CTA_VARIANT,
+      cta_variant: ctaVariant,
       ...CTA_FEATURE_FLAGS,
       ...flags,
       ...attribution,
