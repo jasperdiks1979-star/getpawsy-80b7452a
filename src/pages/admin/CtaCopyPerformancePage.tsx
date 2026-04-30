@@ -27,6 +27,10 @@ type Bucket = {
   cta_variant: string;
   impressions: number;
   clicks: number;
+  /** Subset of `clicks` that came from raw <TikTokDeepLinkButton> events
+   *  rather than the higher-level lp_cta_click wrapper. Lets us spot
+   *  placements where one event source is firing but the other isn't. */
+  deep_link_clicks: number;
 };
 
 const PLACEMENT_ORDER = ['bio_primary', 'bio_secondary', 'bio_sticky'];
@@ -44,11 +48,15 @@ function aggregate(rows: Row[]): Bucket[] {
     const key = `${placement}::${variant}`;
     let b = map.get(key);
     if (!b) {
-      b = { placement, cta_variant: variant, impressions: 0, clicks: 0 };
+      b = { placement, cta_variant: variant, impressions: 0, clicks: 0, deep_link_clicks: 0 };
       map.set(key, b);
     }
     if (r.event_name === 'lp_cta_impression') b.impressions += 1;
     else if (r.event_name === 'lp_cta_click') b.clicks += 1;
+    else if (r.event_name === 'tiktok_deep_link_click') {
+      b.clicks += 1;
+      b.deep_link_clicks += 1;
+    }
   }
   return Array.from(map.values()).sort((a, b) => {
     const ai = PLACEMENT_ORDER.indexOf(a.placement);
