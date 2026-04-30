@@ -627,37 +627,43 @@ export default function LinkInBio() {
 
         {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
         <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
-          {/* Proof line */}
-          <div ref={proofBlockRef} className="text-center flex flex-col gap-0.5">
-            <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
-            <p className="text-[13px] font-semibold text-foreground/85">
-              Over 12,000 cat owners switched
-            </p>
-          </div>
+          {isV3 && (
+            <>
+              {/* Proof line */}
+              <div ref={proofBlockRef} className="text-center flex flex-col gap-0.5">
+                <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
+                <p className="text-[13px] font-semibold text-foreground/85">
+                  Over 12,000 cat owners switched
+                </p>
+              </div>
 
-          {/* Big nudge + bouncing arrow */}
-          <div ref={nudgeBlockRef} className="text-center flex flex-col items-center gap-1">
-            <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
-              👇 Tap below to see how it works
-            </p>
-            <span
-              ref={arrowRef}
-              aria-hidden
-              className="gp-arrow-bounce text-[hsl(25,95%,53%)]"
-            >▼</span>
-          </div>
+              {/* Big nudge + bouncing arrow */}
+              <div ref={nudgeBlockRef} className="text-center flex flex-col items-center gap-1">
+                <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
+                  👇 Tap below to see how it works
+                </p>
+                <span
+                  ref={arrowRef}
+                  aria-hidden
+                  className="gp-arrow-bounce text-[hsl(25,95%,53%)]"
+                >▼</span>
+              </div>
+            </>
+          )}
 
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label={ctaLabel}
             campaign="tt_bio_link"
             content="bio_primary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
 
-          {/* Micro-commitment */}
-          <p className="text-center text-[13px] font-semibold text-foreground/75">
-            ⏱️ Takes 10 seconds • No commitment
-          </p>
+          {isV3 && (
+            /* Micro-commitment */
+            <p className="text-center text-[13px] font-semibold text-foreground/75">
+              ⏱️ Takes 10 seconds • No commitment
+            </p>
+          )}
         </div>
 
         {/* 3. TRUST BADGES */}
