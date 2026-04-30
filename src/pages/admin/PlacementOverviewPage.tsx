@@ -18,7 +18,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Trophy, Eye, MousePointerClick, Timer, Gauge } from 'lucide-react';
+import { Loader2, Trophy, Eye, MousePointerClick, Timer, Gauge, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  exportLpFunnelCsv,
+  downloadCsv,
+  type LpFunnelExportOptions,
+} from '@/lib/lpFunnelExport';
 import {
   ResponsiveContainer,
   LineChart,
@@ -130,6 +136,90 @@ export default function PlacementOverviewPage() {
   const [cohortRows, setCohortRows] = useState<CohortRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ─── CSV export state ──────────────────────────────────────────────
+  // Independent of the dashboard filters so power-users can pull a
+  // longer/different window than what's currently rendered above.
+  // Defaults: yesterday → today (UTC) and split per day so each file is
+  // small enough for Excel / Google Sheets to open without complaints.
+  const today = new Date();
+  const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+  const [exportFrom, setExportFrom] = useState<string>(isoDay(new Date(today.getTime() - 6 * 86_400_000)));
+  const [exportTo, setExportTo] = useState<string>(isoDay(today));
+  const [exportCohort, setExportCohort] = useState<'all' | 'first_session' | 'returning'>('all');
+  const [exportIncludeInternal, setExportIncludeInternal] = useState(false);
+  const [exportSplitPerDay, setExportSplitPerDay] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function handleExport() {
+    setExportError(null);
+    setExporting(true);
+    setExportProgress('Starting…');
+    try {
+      const fromDate = new Date(`${exportFrom}T00:00:00Z`);
+      const toDate = new Date(`${exportTo}T00:00:00Z`);
+      if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+        throw new Error('Invalid date range.');
+      }
+      if (toDate < fromDate) throw new Error('"To" must be on or after "From".');
+
+      const baseOpts: Omit<LpFunnelExportOptions, 'startIso' | 'endIso'> = {
+        includeInternal: exportIncludeInternal,
+        cohort: exportCohort === 'all' ? null : exportCohort,
+      };
+      const cohortTag =
+        exportCohort === 'all' ? 'all-cohorts' : exportCohort.replace('_', '-');
+
+      if (exportSplitPerDay) {
+        // One CSV per UTC day — keeps each file under ~1MB and makes
+        // day-over-day diffing trivial in any spreadsheet tool.
+        const days: Date[] = [];
+        for (let d = new Date(fromDate); d <= toDate; d = new Date(d.getTime() + 86_400_000)) {
+          days.push(new Date(d));
+        }
+        let totalRows = 0;
+        for (let i = 0; i < days.length; i++) {
+          const dayStart = days[i];
+          const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+          setExportProgress(
+            `Day ${i + 1} / ${days.length} (${isoDay(dayStart)})…`,
+          );
+          const { rowCount, csv } = await exportLpFunnelCsv({
+            ...baseOpts,
+            startIso: dayStart.toISOString(),
+            endIso: dayEnd.toISOString(),
+            onProgress: (n) =>
+              setExportProgress(
+                `Day ${i + 1} / ${days.length} (${isoDay(dayStart)}) — ${n.toLocaleString()} rows…`,
+              ),
+          });
+          totalRows += rowCount;
+          if (rowCount > 0) {
+            downloadCsv(csv, `lp_funnel_events_${isoDay(dayStart)}_${cohortTag}.csv`);
+          }
+        }
+        setExportProgress(`Done · ${totalRows.toLocaleString()} rows across ${days.length} day file(s).`);
+      } else {
+        // Single combined file across the whole range.
+        const endExclusive = new Date(toDate.getTime() + 86_400_000);
+        const { rowCount, csv } = await exportLpFunnelCsv({
+          ...baseOpts,
+          startIso: fromDate.toISOString(),
+          endIso: endExclusive.toISOString(),
+          onProgress: (n) => setExportProgress(`Fetched ${n.toLocaleString()} rows…`),
+        });
+        downloadCsv(csv, `lp_funnel_events_${exportFrom}_to_${exportTo}_${cohortTag}.csv`);
+        setExportProgress(`Done · ${rowCount.toLocaleString()} rows downloaded.`);
+      }
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : String(e));
+      setExportProgress(null);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -559,6 +649,98 @@ export default function PlacementOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* CSV export — pulls raw lp_funnel_events rows (with all Clarity-mirrored
+          dimensions: cohort, cta_variant, placement, timings, scroll depths,
+          first-click attribution, UTM context) for offline analysis. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Download className="w-4 h-4" /> Export raw event data
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Downloads <code>lp_funnel_events</code> rows with every Clarity-mirrored
+            dimension as CSV (UTF-8 BOM, Excel-friendly). Splitting per day produces
+            one file per UTC day so each file stays small enough for any spreadsheet
+            tool. Internal/Founder Mode traffic is excluded by default.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+            <label className="text-xs font-medium space-y-1 block">
+              From
+              <input
+                type="date"
+                value={exportFrom}
+                onChange={(e) => setExportFrom(e.target.value)}
+                className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm"
+              />
+            </label>
+            <label className="text-xs font-medium space-y-1 block">
+              To
+              <input
+                type="date"
+                value={exportTo}
+                onChange={(e) => setExportTo(e.target.value)}
+                className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm"
+              />
+            </label>
+            <div className="text-xs font-medium space-y-1">
+              <div>Cohort</div>
+              <Select
+                value={exportCohort}
+                onValueChange={(v) => setExportCohort(v as typeof exportCohort)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="first_session">Cold (first session)</SelectItem>
+                  <SelectItem value="returning">Returning</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="text-xs flex items-center gap-2 h-9">
+              <input
+                type="checkbox"
+                checked={exportSplitPerDay}
+                onChange={(e) => setExportSplitPerDay(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Split per day
+            </label>
+            <label className="text-xs flex items-center gap-2 h-9">
+              <input
+                type="checkbox"
+                checked={exportIncludeInternal}
+                onChange={(e) => setExportIncludeInternal(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Include internal
+            </label>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={handleExport} disabled={exporting} size="sm">
+              {exporting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Exporting…
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5 mr-2" /> Download CSV
+                </>
+              )}
+            </Button>
+            {exportProgress && (
+              <span className="text-xs text-muted-foreground">{exportProgress}</span>
+            )}
+            {exportError && (
+              <span className="text-xs text-destructive">{exportError}</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
