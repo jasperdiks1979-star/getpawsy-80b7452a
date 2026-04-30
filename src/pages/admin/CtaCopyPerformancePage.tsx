@@ -428,6 +428,120 @@ export default function CtaCopyPerformancePage() {
           </CardContent>
         </Card>
 
+        {/* ─── Auto-elected winning copy ────────────────────────────────
+            Server-cached winner per (placement, mode). The elector edge
+            function (`cta-copy-winner-elector`) runs hourly via cron and
+            promotes a label only when ALL candidates have ≥50 impressions
+            in the last 48h. UTM / campaign / content / deep-link refs are
+            never touched — only the visible button TEXT changes. */}
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-primary" />
+                Auto-elected winning copy
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                48h window · ≥50 impressions/variant · runs hourly · UTM &amp; tracking unchanged
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => runElectorNow(true)}
+                disabled={electionRunning}
+              >
+                Preview
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => runElectorNow(false)}
+                disabled={electionRunning}
+              >
+                {electionRunning ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  'Run now'
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {electionMsg && (
+              <p className="px-4 py-2 text-xs text-muted-foreground border-b">
+                {electionMsg}
+              </p>
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="px-4 py-2 font-medium">Placement</th>
+                    <th className="px-4 py-2 font-medium">Mode</th>
+                    <th className="px-4 py-2 font-medium">Winning copy</th>
+                    <th className="px-4 py-2 font-medium text-right">CTR</th>
+                    <th className="px-4 py-2 font-medium text-right">Impr</th>
+                    <th className="px-4 py-2 font-medium text-right">Clicks</th>
+                    <th className="px-4 py-2 font-medium">Evaluated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(winners ?? []).map((w) => (
+                    <tr
+                      key={`${w.placement}-${w.mode}`}
+                      className="border-t border-border/60"
+                    >
+                      <td className="px-4 py-2">{placementLabel(w.placement)}</td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                            w.mode === 'urgent'
+                              ? 'bg-primary/10 text-primary'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {w.mode}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="font-medium">
+                          {copyTextFor(w.placement, w.mode, w.winning_label)}
+                        </div>
+                        <div className="text-xs text-muted-foreground font-mono">
+                          {w.winning_label}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">
+                        {w.ctr_pct != null ? `${w.ctr_pct.toFixed(2)}%` : '—'}
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">
+                        {w.impressions.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">
+                        {w.clicks.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">
+                        {new Date(w.evaluated_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {winners && winners.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-4 py-6 text-center text-sm text-muted-foreground"
+                      >
+                        No winners yet — the elector hasn't promoted any copy.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
