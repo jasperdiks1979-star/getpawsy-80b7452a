@@ -2880,6 +2880,7 @@ export type Database = {
       }
       lp_funnel_events: {
         Row: {
+          cohort: string | null
           created_at: string
           cta_variant: string | null
           dwell_ms: number | null
@@ -2907,6 +2908,7 @@ export type Database = {
           value: number | null
         }
         Insert: {
+          cohort?: string | null
           created_at?: string
           cta_variant?: string | null
           dwell_ms?: number | null
@@ -2934,6 +2936,7 @@ export type Database = {
           value?: number | null
         }
         Update: {
+          cohort?: string | null
           created_at?: string
           cta_variant?: string | null
           dwell_ms?: number | null
@@ -8593,33 +8596,83 @@ export type Database = {
           utm_campaign: string
         }[]
       }
-      get_placement_overview: {
+      get_placement_overview:
+        | {
+            Args: { p_days?: number; p_include_internal?: boolean }
+            Returns: {
+              clicks: number
+              ctr_pct: number
+              first_click_wins: number
+              impressions: number
+              median_dwell_ms: number
+              median_time_to_click_ms: number
+              median_time_to_visible_ms: number
+              p90_time_to_click_ms: number
+              p90_time_to_visible_ms: number
+              placement: string
+            }[]
+          }
+        | {
+            Args: {
+              p_cohort?: string
+              p_days?: number
+              p_include_internal?: boolean
+            }
+            Returns: {
+              clicks: number
+              ctr_pct: number
+              first_click_wins: number
+              impressions: number
+              median_dwell_ms: number
+              median_time_to_click_ms: number
+              median_time_to_visible_ms: number
+              p90_time_to_click_ms: number
+              p90_time_to_visible_ms: number
+              placement: string
+            }[]
+          }
+      get_placement_overview_by_cohort: {
         Args: { p_days?: number; p_include_internal?: boolean }
         Returns: {
           clicks: number
+          cohort: string
           ctr_pct: number
           first_click_wins: number
           impressions: number
-          median_dwell_ms: number
-          median_time_to_click_ms: number
-          median_time_to_visible_ms: number
-          p90_time_to_click_ms: number
-          p90_time_to_visible_ms: number
-          placement: string
-        }[]
-      }
-      get_placement_overview_trend: {
-        Args: { p_days?: number; p_include_internal?: boolean }
-        Returns: {
-          clicks: number
-          ctr_pct: number
-          day: string
-          impressions: number
           median_time_to_click_ms: number
           median_time_to_visible_ms: number
           placement: string
         }[]
       }
+      get_placement_overview_trend:
+        | {
+            Args: { p_days?: number; p_include_internal?: boolean }
+            Returns: {
+              clicks: number
+              ctr_pct: number
+              day: string
+              impressions: number
+              median_time_to_click_ms: number
+              median_time_to_visible_ms: number
+              placement: string
+            }[]
+          }
+        | {
+            Args: {
+              p_cohort?: string
+              p_days?: number
+              p_include_internal?: boolean
+            }
+            Returns: {
+              clicks: number
+              ctr_pct: number
+              day: string
+              impressions: number
+              median_time_to_click_ms: number
+              median_time_to_visible_ms: number
+              placement: string
+            }[]
+          }
       get_render_trace_slug_timeline: {
         Args: { p_slug: string; p_window_days?: number }
         Returns: Json

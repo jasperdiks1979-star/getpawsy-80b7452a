@@ -17,6 +17,7 @@ import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
 import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 import { visibilityFlagsAtClickTime } from '@/lib/lpCtaVisibility';
+import { getVisitorCohort } from '@/lib/visitorCohort';
 import { useCtaVariant } from '@/hooks/useCtaVariant';
 
 const PRODUCT_IMAGE =
@@ -265,10 +266,15 @@ export default function LinkInBio() {
 
   // FUNNEL STEP 1 — Page view (entry into funnel)
   useEffect(() => {
+    // Visitor cohort — locked at first call per tab. Tagged on Clarity AND
+    // sent on the lp_view event so heatmaps and the admin overview can both
+    // segment cold (first_session) vs returning traffic side-by-side.
+    const cohort = getVisitorCohort();
     trackEvent('lp_view', {
       page: '/go',
       funnel: 'tiktok_bio',
       funnel_step: 1,
+      cohort,
       ...attribution,
     });
     // Debug checkpoint #1 — captures UTM state right after /go mounts +
@@ -281,6 +287,13 @@ export default function LinkInBio() {
     clarityTag('page', '/go');
     clarityTag('funnel', 'tiktok_bio');
     clarityTag('cta_variant', ctaVariant);
+    // Cohort tag — primary heatmap filter dimension. With this you can
+    // open Clarity and view the EXACT same heatmap twice:
+    //   - cohort = first_session  → cold TikTok, scroll/click pattern
+    //   - cohort = returning      → people who already know the brand
+    // The two heatmaps side-by-side reveal where cold traffic specifically
+    // hesitates (e.g. drops at the proof block) vs returning users.
+    clarityTag('cohort', cohort);
     if (attribution.utm_campaign) clarityTag('utm_campaign', attribution.utm_campaign);
     if (attribution.utm_content) clarityTag('utm_content', attribution.utm_content);
     clarityMilestone('go_landing_view');
@@ -381,6 +394,7 @@ export default function LinkInBio() {
               time_to_visible_ms: timeToVisibleMs,
               scroll_depth_at_visible: scrollDepthAtVisible,
               cta_variant: ctaVariant,
+              cohort: getVisitorCohort(),
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
@@ -489,6 +503,7 @@ export default function LinkInBio() {
       is_first_click: isFirstClick,
       first_click_placement: firstClickPlacementRef.current,
       cta_variant: ctaVariant,
+      cohort: getVisitorCohort(),
       ...CTA_FEATURE_FLAGS,
       ...flags,
       ...attribution,

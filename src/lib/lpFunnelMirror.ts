@@ -8,6 +8,7 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 import { getFounderModeStatus } from '@/lib/founder-mode';
+import { getVisitorCohort } from '@/lib/visitorCohort';
 
 const MIRRORED_EVENTS = new Set([
   'lp_view',
@@ -100,6 +101,10 @@ export function mirrorLpFunnelEvent(
     // variant × placement to attribute uplift to specific UI experiments.
     cta_variant: pickString(params, 'cta_variant'),
     is_internal: isInternal,
+    // Visitor cohort — 'first_session' (cold TikTok traffic, no prior visit)
+    // vs 'returning'. Lets us segment heatmaps and CTR by cohort to see
+    // whether returning users behave fundamentally differently.
+    cohort: getVisitorCohort(),
     // Per-placement timing + first-click attribution. These columns power the
     // /admin/placement-overview dashboard (CTR, time-to-visible, time-to-click,
     // first-click winner). Null on events that don't carry these params.
