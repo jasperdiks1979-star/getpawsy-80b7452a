@@ -2921,6 +2921,8 @@ export type Database = {
         Row: {
           cohort: string | null
           created_at: string
+          cta_copy_label: string | null
+          cta_copy_mode: string | null
           cta_variant: string | null
           delta_ms: number | null
           dwell_ms: number | null
@@ -2954,6 +2956,8 @@ export type Database = {
         Insert: {
           cohort?: string | null
           created_at?: string
+          cta_copy_label?: string | null
+          cta_copy_mode?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null
@@ -2987,6 +2991,8 @@ export type Database = {
         Update: {
           cohort?: string | null
           created_at?: string
+          cta_copy_label?: string | null
+          cta_copy_mode?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null
