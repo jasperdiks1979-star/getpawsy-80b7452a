@@ -90,6 +90,10 @@ export function TikTokDeepLinkButton({
       // Placement reflects WHERE the CTA lives (hardcoded prop), independent
       // of the ad-level utm_campaign that came from the URL.
       placement: content || campaign,
+      // Mirror the CTA copy as `cta_variant` so the admin CTA Copy
+      // Performance dashboard can group deep-link clicks by the exact
+      // label the user saw (e.g. urgent vs calm copy on /go).
+      cta_variant: label,
     });
   };
 

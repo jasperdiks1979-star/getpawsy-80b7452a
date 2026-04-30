@@ -27,6 +27,10 @@ type Bucket = {
   cta_variant: string;
   impressions: number;
   clicks: number;
+  /** Subset of `clicks` that came from raw <TikTokDeepLinkButton> events
+   *  rather than the higher-level lp_cta_click wrapper. Lets us spot
+   *  placements where one event source is firing but the other isn't. */
+  deep_link_clicks: number;
 };
 
 const PLACEMENT_ORDER = ['bio_primary', 'bio_secondary', 'bio_sticky'];
@@ -44,11 +48,15 @@ function aggregate(rows: Row[]): Bucket[] {
     const key = `${placement}::${variant}`;
     let b = map.get(key);
     if (!b) {
-      b = { placement, cta_variant: variant, impressions: 0, clicks: 0 };
+      b = { placement, cta_variant: variant, impressions: 0, clicks: 0, deep_link_clicks: 0 };
       map.set(key, b);
     }
     if (r.event_name === 'lp_cta_impression') b.impressions += 1;
     else if (r.event_name === 'lp_cta_click') b.clicks += 1;
+    else if (r.event_name === 'tiktok_deep_link_click') {
+      b.clicks += 1;
+      b.deep_link_clicks += 1;
+    }
   }
   return Array.from(map.values()).sort((a, b) => {
     const ai = PLACEMENT_ORDER.indexOf(a.placement);
@@ -85,7 +93,7 @@ export default function CtaCopyPerformancePage() {
       const { data, error } = await supabase
         .from('lp_funnel_events')
         .select('placement, cta_variant, event_name')
-        .in('event_name', ['lp_cta_impression', 'lp_cta_click'])
+        .in('event_name', ['lp_cta_impression', 'lp_cta_click', 'tiktok_deep_link_click'])
         .gte('created_at', since)
         .or('is_internal.is.null,is_internal.eq.false')
         .limit(50000);
@@ -199,7 +207,12 @@ export default function CtaCopyPerformancePage() {
                     <tr>
                       <th className="text-left p-3">CTA Variant</th>
                       <th className="text-right p-3">Impressions</th>
-                      <th className="text-right p-3">Clicks</th>
+                      <th className="text-right p-3" title="lp_cta_click + tiktok_deep_link_click">
+                        Clicks
+                      </th>
+                      <th className="text-right p-3" title="Subset of clicks from raw TikTokDeepLinkButton events">
+                        Deep-link
+                      </th>
                       <th className="text-right p-3">CTR</th>
                     </tr>
                   </thead>
@@ -233,6 +246,9 @@ export default function CtaCopyPerformancePage() {
                           <td className="p-3 text-right tabular-nums">
                             {b.clicks.toLocaleString()}
                           </td>
+                          <td className="p-3 text-right tabular-nums text-muted-foreground">
+                            {b.deep_link_clicks.toLocaleString()}
+                          </td>
                           <td className="p-3 text-right tabular-nums font-semibold">
                             {ctrPct(b)}
                           </td>
@@ -247,9 +263,12 @@ export default function CtaCopyPerformancePage() {
         ))}
 
         <p className="text-xs text-muted-foreground">
-          Source: <code>lp_funnel_events</code> (events <code>lp_cta_impression</code> +{' '}
-          <code>lp_cta_click</code>). The “top” badge appears once a variant has ≥ 20
-          impressions to avoid early-sample noise.
+          Source: <code>lp_funnel_events</code> — impressions from{' '}
+          <code>lp_cta_impression</code>, clicks from <code>lp_cta_click</code> +{' '}
+          <code>tiktok_deep_link_click</code> (the “Deep-link” column shows the
+          subset coming from raw <code>TikTokDeepLinkButton</code> events). The
+          “top” badge appears once a variant has ≥ 20 impressions to avoid
+          early-sample noise.
         </p>
       </div>
     </>
