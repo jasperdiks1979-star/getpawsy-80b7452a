@@ -101,6 +101,11 @@ export default function LinkInBio() {
   // arrow's own contribution to CTR — the nudge text alone is also
   // visible without the arrow when scrolled past the threshold.
   const arrowRef = useRef<HTMLSpanElement>(null);
+  // Demo video CTA placement — short muted autoplay loop sitting directly
+  // above the proof block. Tracked as its own placement (`bio_video_cta`)
+  // so the heatmap dashboard can attribute clicks that fired AFTER the
+  // user watched the demo, separate from text-driven CTAs.
+  const videoCtaRef = useRef<HTMLDivElement>(null);
 
   // Scroll-gated urgency reveal — keeps the "Limited stock" message OUT of
   // the above-the-fold experience (per the high-CTR /go playbook: no buy
