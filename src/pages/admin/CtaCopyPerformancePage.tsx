@@ -121,6 +121,50 @@ export default function CtaCopyPerformancePage() {
   const totalClicks = buckets.reduce((s, b) => s + b.clicks, 0);
   const totalCtr = totalImpr ? ((totalClicks / totalImpr) * 100).toFixed(1) : '—';
 
+  // Per-event health stats — counts and last-seen timestamp for each
+  // mirrored event the dashboard depends on. Lets the operator instantly
+  // see whether a missing CTR column is a "no traffic" issue or an actual
+  // mirroring/instrumentation regression (e.g. tiktok_deep_link_click
+  // dropped out of MIRRORED_EVENTS in lpFunnelMirror.ts).
+  const TRACKED_EVENTS = [
+    {
+      key: 'lp_cta_impression',
+      label: 'CTA impressions',
+      role: 'Denominator for CTR (fires when a CTA scrolls into view).',
+    },
+    {
+      key: 'lp_cta_click',
+      label: 'CTA clicks',
+      role: 'Wrapper-level click event used for CTR + cohort analysis.',
+    },
+    {
+      key: 'tiktok_deep_link_click',
+      label: 'TikTok deep-link clicks',
+      role: 'Raw click on <TikTokDeepLinkButton> — added to total clicks.',
+    },
+  ] as const;
+
+  const eventStats = TRACKED_EVENTS.map((e) => {
+    const matching = (rows ?? []).filter((r) => r.event_name === e.key);
+    const last = matching.reduce<string | null>((acc, r) => {
+      if (!acc || r.created_at > acc) return r.created_at;
+      return acc;
+    }, null);
+    return { ...e, count: matching.length, last };
+  });
+
+  function relativeTime(iso: string | null): string {
+    if (!iso) return 'never';
+    const diffMs = Date.now() - new Date(iso).getTime();
+    if (diffMs < 0) return 'just now';
+    const m = Math.floor(diffMs / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  }
+
   return (
     <>
       <Helmet>
