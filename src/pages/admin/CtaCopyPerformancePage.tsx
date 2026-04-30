@@ -360,8 +360,46 @@ export default function CtaCopyPerformancePage() {
           .join(',');
       })
       .join('\n');
+
+    // ─── Section 2: roll-up totals across all buckets ───────────────────
+    // External analysts shouldn't have to re-derive these in Excel — we
+    // append a clearly-separated TOTALS block at the bottom of the same
+    // file so a single CSV captures both the granular rows AND the
+    // overall scorecard for the active time window.
+    const sumImpr = buckets.reduce((s, b) => s + b.impressions, 0);
+    const sumClicks = buckets.reduce((s, b) => s + b.clicks, 0);
+    const sumDeep = buckets.reduce((s, b) => s + b.deep_link_clicks, 0);
+    const sumWrapper = sumClicks - sumDeep;
+    const overallCtr = sumImpr ? (sumClicks / sumImpr) * 100 : 0;
+
+    const totalsHeader = [
+      'metric',
+      'value',
+    ].map(escape).join(',');
+    const totalsRows = [
+      ['window_hours', hours],
+      ['bucket_count', buckets.length],
+      ['total_impressions', sumImpr],
+      ['total_clicks', sumClicks],
+      ['total_deep_link_clicks', sumDeep],
+      ['total_wrapper_clicks', sumWrapper],
+      ['overall_ctr_pct', sumImpr ? overallCtr.toFixed(2) : ''],
+    ]
+      .map((row) => row.map(escape).join(','))
+      .join('\n');
+
+    const csv = [
+      '# Section 1: per (placement, cta_variant) detail',
+      header,
+      body,
+      '',
+      '# Section 2: overall totals across all buckets',
+      totalsHeader,
+      totalsRows,
+    ].join('\n');
+
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    downloadCsv(`${header}\n${body}`, `cta-copy-performance_${hours}h_${stamp}.csv`);
+    downloadCsv(csv, `cta-copy-performance_${hours}h_${stamp}.csv`);
   }
 
   return (
