@@ -375,6 +375,15 @@ export default function LinkInBio() {
             const timeToVisibleMs = Math.max(0, Math.round(now - pageMountAtRef.current));
             const scrollDepthAtVisible = currentScrollDepthPct();
             firstVisibleAtRef.current[placement] = now;
+            // Stamp the active copy label on impressions so the elector can
+            // attribute clicks back per copy variant. Only the 3 button
+            // placements have copy variants; other (proof/nudge/arrow/video)
+            // placements stay un-stamped.
+            const impressionCopy =
+              placement === 'bio_primary' ? primaryCopy
+              : placement === 'bio_secondary' ? secondaryCopy
+              : placement === 'bio_sticky' ? stickyCopy
+              : null;
             trackEvent('lp_cta_impression', {
               page: '/go',
               funnel: 'tiktok_bio',
@@ -384,6 +393,9 @@ export default function LinkInBio() {
               scroll_depth_at_visible: scrollDepthAtVisible,
               cta_variant: ctaVariant,
               cohort: getVisitorCohort(),
+              ...(impressionCopy
+                ? { cta_copy_label: impressionCopy.label, cta_copy_mode: copyMode }
+                : {}),
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
