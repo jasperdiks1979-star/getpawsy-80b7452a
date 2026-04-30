@@ -93,6 +93,11 @@ const URGENCY_REVEAL_THRESHOLD = 60;
 
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
+  // Runtime-controlled CTA variant. The auto-rollback edge function flips
+  // this to the baseline if CTR drops below the configured floor. Falls
+  // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
+  // so impressions are never tagged with an empty variant.
+  const { variant: ctaVariant } = useCtaVariant(CTA_VARIANT_DEFAULT);
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
