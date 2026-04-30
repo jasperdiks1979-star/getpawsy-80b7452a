@@ -371,6 +371,8 @@ export default function CtaCopyPerformancePage() {
     const sumDeep = buckets.reduce((s, b) => s + b.deep_link_clicks, 0);
     const sumWrapper = sumClicks - sumDeep;
     const overallCtr = sumImpr ? (sumClicks / sumImpr) * 100 : 0;
+    const overallDeepCtr = sumImpr ? (sumDeep / sumImpr) * 100 : 0;
+    const overallWrapperCtr = sumImpr ? (sumWrapper / sumImpr) * 100 : 0;
 
     const totalsHeader = [
       'metric',
@@ -384,6 +386,8 @@ export default function CtaCopyPerformancePage() {
       ['total_deep_link_clicks', sumDeep],
       ['total_wrapper_clicks', sumWrapper],
       ['overall_ctr_pct', sumImpr ? overallCtr.toFixed(2) : ''],
+      ['total_deep_link_ctr_pct', sumImpr ? overallDeepCtr.toFixed(2) : ''],
+      ['total_wrapper_ctr_pct', sumImpr ? overallWrapperCtr.toFixed(2) : ''],
     ]
       .map((row) => row.map(escape).join(','))
       .join('\n');
