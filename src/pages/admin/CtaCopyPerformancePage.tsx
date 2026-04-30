@@ -93,7 +93,7 @@ export default function CtaCopyPerformancePage() {
       const { data, error } = await supabase
         .from('lp_funnel_events')
         .select('placement, cta_variant, event_name')
-        .in('event_name', ['lp_cta_impression', 'lp_cta_click'])
+        .in('event_name', ['lp_cta_impression', 'lp_cta_click', 'tiktok_deep_link_click'])
         .gte('created_at', since)
         .or('is_internal.is.null,is_internal.eq.false')
         .limit(50000);
