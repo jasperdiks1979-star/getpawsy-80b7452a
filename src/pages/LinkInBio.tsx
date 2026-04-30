@@ -87,6 +87,32 @@ export default function LinkInBio() {
   // visible without the arrow when scrolled past the threshold.
   const arrowRef = useRef<HTMLSpanElement>(null);
 
+  // ─── Per-placement heatmap & funnel telemetry ──────────────────────────
+  // Page-mount epoch — used to compute "time-to-visible" and "time-to-click"
+  // in milliseconds for every CTA placement. This is the single most useful
+  // signal for diagnosing where cold TikTok users hesitate or scroll past
+  // without engaging. Stored in a ref so re-renders don't reset the clock.
+  const pageMountAtRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : Date.now());
+  // Per-placement first-visible timestamp — keyed by the same placement
+  // strings used in the IntersectionObserver targets list. Filled the FIRST
+  // time each placement crosses the visibility threshold; consumed at click
+  // time to compute "dwell" (visible → click delta).
+  const firstVisibleAtRef = useRef<Record<string, number>>({});
+  // First-click winner — which placement actually captured the click. Lets
+  // the dashboard answer: "of the 4 placements rendered, which one wins?".
+  const firstClickPlacementRef = useRef<string | null>(null);
+
+  // Helper: current scroll-depth as a 0..100 percentage. Used to stamp every
+  // click with HOW deep the user had scrolled — critical for distinguishing
+  // "clicked above the fold" from "scrolled all the way then clicked sticky".
+  const currentScrollDepthPct = (): number => {
+    if (typeof window === 'undefined') return 0;
+    const doc = document.documentElement;
+    const scrolled = window.scrollY + window.innerHeight;
+    const total = Math.max(doc.scrollHeight, 1);
+    return Math.min(100, Math.round((scrolled / total) * 100));
+  };
+
   // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
   //
   // Why bucket bio-link traffic: when a visitor lands on /go without an
@@ -232,6 +258,10 @@ export default function LinkInBio() {
             depth_pct: m,
             ...attribution,
           });
+          // Mirror to Clarity so heatmaps can be filtered by "users who
+          // reached 75% scroll" — the cleanest drop-off signal we have.
+          clarityMilestone(`scroll_${m}`);
+          clarityTag('max_scroll_depth', m);
         }
       }
     };
@@ -265,11 +295,22 @@ export default function LinkInBio() {
             // Mirror to a window-scoped set so handleCtaClick can read which
             // uplift elements were already visible when the click happened.
             (window as any).__gpGoSeen = seen;
+            // Per-placement first-visible timestamp + scroll depth at the
+            // moment of visibility. These two together explain WHERE in the
+            // page each placement actually surfaces for cold traffic — e.g.
+            // if bio_sticky has time_to_visible_ms ≈ 0 but bio_secondary
+            // averages 8s + 45% scroll, that's the drop-off zone.
+            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            const timeToVisibleMs = Math.max(0, Math.round(now - pageMountAtRef.current));
+            const scrollDepthAtVisible = currentScrollDepthPct();
+            firstVisibleAtRef.current[placement] = now;
             trackEvent('lp_cta_impression', {
               page: '/go',
               funnel: 'tiktok_bio',
               funnel_step: 2,
               placement,
+              time_to_visible_ms: timeToVisibleMs,
+              scroll_depth_at_visible: scrollDepthAtVisible,
               cta_variant: CTA_VARIANT,
               ...CTA_FEATURE_FLAGS,
               ...attribution,
@@ -292,6 +333,13 @@ export default function LinkInBio() {
             } else {
               clarityMilestone(`cta_visible_${placement}`);
               if (placement === 'bio_primary') clarityMilestone('cta_visible');
+              // Per-placement Clarity tags — these become FILTER DIMENSIONS
+              // on the Clarity dashboard. With these you can build heatmap
+              // segments like "users who saw bio_post_image but not
+              // bio_secondary" to find scroll drop-off zones.
+              clarityTag(`saw_${placement}`, true);
+              clarityTag(`time_to_visible_${placement}_ms`, timeToVisibleMs);
+              clarityTag(`scroll_at_visible_${placement}`, scrollDepthAtVisible);
             }
           }
         }
@@ -343,6 +391,22 @@ export default function LinkInBio() {
     const flags = visibilityFlagsAtClickTime();
     const sawProof = flags.saw_proof_before_click;
     const sawNudge = flags.saw_nudge_before_click;
+    // Per-placement timing stamps. `time_to_click_ms` is from page mount
+    // (raw engagement speed); `dwell_ms` is from when THIS placement first
+    // became visible (true consideration time). Together they let the
+    // dashboard separate "fast skim → click" from "saw it, hesitated, clicked".
+    const nowClick = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const timeToClickMs = Math.max(0, Math.round(nowClick - pageMountAtRef.current));
+    const visibleAt = firstVisibleAtRef.current[placement];
+    const dwellMs = visibleAt != null ? Math.max(0, Math.round(nowClick - visibleAt)) : null;
+    const scrollDepthAtClick = currentScrollDepthPct();
+    // First-click attribution — only the FIRST CTA wins. If a user clicks
+    // bio_post_image then later bio_sticky, the analytics dashboard should
+    // attribute the conversion to bio_post_image (the placement that
+    // actually triggered intent). Subsequent clicks still fire events for
+    // diagnostic purposes but are tagged is_repeat_click=true.
+    const isFirstClick = firstClickPlacementRef.current === null;
+    if (isFirstClick) firstClickPlacementRef.current = placement;
     trackEvent('lp_cta_click', {
       page: '/go',
       funnel: 'tiktok_bio',
@@ -350,6 +414,11 @@ export default function LinkInBio() {
       placement,
       lp_click_id: link.click_id,
       lp_clicked_at: link.clicked_at,
+      time_to_click_ms: timeToClickMs,
+      dwell_ms: dwellMs,
+      scroll_depth_at_click: scrollDepthAtClick,
+      is_first_click: isFirstClick,
+      first_click_placement: firstClickPlacementRef.current,
       cta_variant: CTA_VARIANT,
       ...CTA_FEATURE_FLAGS,
       ...flags,
@@ -362,8 +431,21 @@ export default function LinkInBio() {
     // Arrow tag is the cleanest A/B dimension — it isolates the bouncing
     // arrow's contribution to CTR vs the nudge text alone.
     clarityTag('saw_arrow_before_click', flags.saw_arrow_before_click);
+    // Per-placement click tags — these are the heatmap-filter goldmine.
+    // On the Clarity dashboard you can now segment:
+    //   - "users who clicked bio_primary" vs "clicked bio_sticky"
+    //   - "first_click_placement = bio_post_image" → scroll heatmap of
+    //     ONLY users who converted via the post-image CTA
+    //   - "scroll_depth_at_click < 30" → above-the-fold winners
+    clarityTag(`clicked_${placement}`, true);
+    clarityTag('last_click_placement', placement);
+    clarityTag('first_click_placement', firstClickPlacementRef.current!);
+    clarityTag('time_to_click_ms', timeToClickMs);
+    clarityTag('scroll_depth_at_click', scrollDepthAtClick);
+    if (dwellMs != null) clarityTag(`dwell_${placement}_ms`, dwellMs);
     clarityMilestone(`cta_click_${placement}`);
     clarityMilestone('cta_click');
+    if (isFirstClick) clarityMilestone(`first_click_${placement}`);
     // Debug checkpoint #2 — captures UTM state at the moment of click,
     // BEFORE the outbound navigation, so we can compare against pdp_load.
     logUtmCheckpoint('cta_click', { placement, attribution });
