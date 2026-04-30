@@ -87,6 +87,79 @@ export default function CtaCopyPerformancePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ─── Auto-winner block state ──────────────────────────────────────────
+  // Mirrors `cta_copy_winners` (one row per placement+mode). Refreshed
+  // after every manual elector run so the UI reflects the latest decision.
+  type WinnerRow = {
+    placement: string;
+    mode: string;
+    winning_label: string;
+    ctr_pct: number | null;
+    impressions: number;
+    clicks: number;
+    window_hours: number;
+    evaluated_at: string;
+    notes: string | null;
+  };
+  const [winners, setWinners] = useState<WinnerRow[] | null>(null);
+  const [electionRunning, setElectionRunning] = useState(false);
+  const [electionMsg, setElectionMsg] = useState<string | null>(null);
+
+  async function loadWinners() {
+    const { data } = await supabase
+      .from('cta_copy_winners')
+      .select('placement, mode, winning_label, ctr_pct, impressions, clicks, window_hours, evaluated_at, notes')
+      .order('placement')
+      .order('mode');
+    setWinners((data ?? []) as WinnerRow[]);
+  }
+
+  useEffect(() => { void loadWinners(); }, []);
+
+  async function runElectorNow(dry: boolean) {
+    setElectionRunning(true);
+    setElectionMsg(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke(
+        'cta-copy-winner-elector',
+        { body: {}, ...(dry ? { headers: {} } : {}) },
+      );
+      // The edge function reads ?dry=1 from the URL — supabase-js doesn't
+      // expose query params on invoke, so we hit the function URL directly
+      // when running a dry preview.
+      if (dry) {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cta-copy-winner-elector?dry=1`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+            'Content-Type': 'application/json',
+          },
+          body: '{}',
+        });
+        const json = await res.json();
+        setElectionMsg(json?.message ? `Dry-run: ${json.message}` : 'Dry-run done');
+      } else if (invokeErr) {
+        setElectionMsg(`Error: ${invokeErr.message}`);
+      } else {
+        setElectionMsg(
+          (data as { message?: string })?.message ?? 'Elector ran successfully',
+        );
+        await loadWinners();
+      }
+    } catch (err) {
+      setElectionMsg(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setElectionRunning(false);
+    }
+  }
+
+  function copyTextFor(placement: string, mode: string, label: string): string {
+    const bank =
+      CTA_COPY_REGISTRY[placement as CtaPlacement]?.[mode as CtaCopyMode] ?? [];
+    return bank.find((o) => o.label === label)?.text ?? label;
+  }
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
