@@ -598,6 +598,32 @@ export default function LinkInBio() {
           </li>
         </ul>
 
+        {/*
+          URGENCY REVEAL — scroll-gated.
+          Hidden above the fold to protect cold-traffic CTR. Renders only
+          after the user has scrolled past URGENCY_REVEAL_THRESHOLD (60%),
+          i.e. they've already engaged with proof, nudge, comparison-context
+          and now urgency converts intent into action instead of scaring
+          first-time visitors away. `aria-hidden` mirrors the visible state.
+        */}
+        {urgencyVisible && (
+          <aside
+            className="w-full rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            role="status"
+            aria-live="polite"
+          >
+            <span aria-hidden className="text-lg">⚡</span>
+            <div className="flex-1">
+              <p className="text-[13px] font-bold text-foreground leading-tight">
+                Limited stock — selling fast this week
+              </p>
+              <p className="text-[11px] text-foreground/70 leading-tight mt-0.5">
+                Restocks ship in 2–3 weeks. Order now to lock in today's batch.
+              </p>
+            </div>
+          </aside>
+        )}
+
         {/* 4. MANUAL vs SMART comparison */}
         <section className="w-full rounded-2xl border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-3 text-[12px] font-bold uppercase tracking-wider bg-muted/40 px-3 py-2.5 text-foreground/70">
