@@ -21,6 +21,7 @@ import {
   X,
   History,
   Wrench,
+  Gauge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
