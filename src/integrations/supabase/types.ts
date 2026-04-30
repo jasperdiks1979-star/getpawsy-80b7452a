@@ -2882,9 +2882,12 @@ export type Database = {
         Row: {
           created_at: string
           cta_variant: string | null
+          dwell_ms: number | null
           event_name: string
+          first_click_placement: string | null
           funnel: string | null
           id: string
+          is_first_click: boolean | null
           is_internal: boolean | null
           lp_click_id: string | null
           lp_placement: string | null
@@ -2892,7 +2895,11 @@ export type Database = {
           placement: string | null
           product_id: string | null
           product_name: string | null
+          scroll_depth_at_click: number | null
+          scroll_depth_at_visible: number | null
           session_id: string
+          time_to_click_ms: number | null
+          time_to_visible_ms: number | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -2902,9 +2909,12 @@ export type Database = {
         Insert: {
           created_at?: string
           cta_variant?: string | null
+          dwell_ms?: number | null
           event_name: string
+          first_click_placement?: string | null
           funnel?: string | null
           id?: string
+          is_first_click?: boolean | null
           is_internal?: boolean | null
           lp_click_id?: string | null
           lp_placement?: string | null
@@ -2912,7 +2922,11 @@ export type Database = {
           placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          scroll_depth_at_click?: number | null
+          scroll_depth_at_visible?: number | null
           session_id: string
+          time_to_click_ms?: number | null
+          time_to_visible_ms?: number | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -2922,9 +2936,12 @@ export type Database = {
         Update: {
           created_at?: string
           cta_variant?: string | null
+          dwell_ms?: number | null
           event_name?: string
+          first_click_placement?: string | null
           funnel?: string | null
           id?: string
+          is_first_click?: boolean | null
           is_internal?: boolean | null
           lp_click_id?: string | null
           lp_placement?: string | null
@@ -2932,7 +2949,11 @@ export type Database = {
           placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          scroll_depth_at_click?: number | null
+          scroll_depth_at_visible?: number | null
           session_id?: string
+          time_to_click_ms?: number | null
+          time_to_visible_ms?: number | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -8570,6 +8591,33 @@ export type Database = {
           pdp_view: number
           placement: string
           utm_campaign: string
+        }[]
+      }
+      get_placement_overview: {
+        Args: { p_days?: number; p_include_internal?: boolean }
+        Returns: {
+          clicks: number
+          ctr_pct: number
+          first_click_wins: number
+          impressions: number
+          median_dwell_ms: number
+          median_time_to_click_ms: number
+          median_time_to_visible_ms: number
+          p90_time_to_click_ms: number
+          p90_time_to_visible_ms: number
+          placement: string
+        }[]
+      }
+      get_placement_overview_trend: {
+        Args: { p_days?: number; p_include_internal?: boolean }
+        Returns: {
+          clicks: number
+          ctr_pct: number
+          day: string
+          impressions: number
+          median_time_to_click_ms: number
+          median_time_to_visible_ms: number
+          placement: string
         }[]
       }
       get_render_trace_slug_timeline: {
