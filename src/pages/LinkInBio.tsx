@@ -150,6 +150,20 @@ export default function LinkInBio() {
   // the dashboard answer: "of the 4 placements rendered, which one wins?".
   const firstClickPlacementRef = useRef<string | null>(null);
 
+  // Per-placement click count + the last click metadata (placement + ts).
+  // Powers two new analytics signals:
+  //   • lp_cta_repeat_click → SAME placement re-clicked within 30s
+  //     ("user hesitated / re-engaged on the same CTA")
+  //   • lp_cta_misclick     → DIFFERENT placement clicked within 600ms of
+  //     the previous click ("likely fat-finger / accidental tap on an
+  //     adjacent element"). 600ms is the upper bound for human reaction
+  //     after committing to a tap — anything faster than that on a new
+  //     placement is almost certainly not a deliberate second decision.
+  const placementClickCountRef = useRef<Record<string, number>>({});
+  const lastClickRef = useRef<{ placement: string; at: number } | null>(null);
+  const MISCLICK_WINDOW_MS = 600;
+  const REPEAT_CLICK_WINDOW_MS = 30_000;
+
   // Helper: current scroll-depth as a 0..100 percentage. Used to stamp every
   // click with HOW deep the user had scrolled — critical for distinguishing
   // "clicked above the fold" from "scrolled all the way then clicked sticky".
