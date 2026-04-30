@@ -727,17 +727,26 @@ export default function LinkInBio() {
 
       {/* STICKY CTA */}
       <div
-        className={`fixed bottom-0 inset-x-0 z-50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-background/95 backdrop-blur border-t border-border/60 transition-transform duration-300 ${
+        className={`fixed bottom-0 inset-x-0 z-50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur border-t transition-all duration-300 ${
           showSticky ? 'translate-y-0' : 'translate-y-full'
+        } ${
+          urgencyVisible
+            ? 'bg-[hsl(25,95%,97%)]/95 border-[hsl(25,95%,53%)]/60 shadow-[0_-12px_32px_-8px_hsl(25_95%_53%_/_0.35)]'
+            : 'bg-background/95 border-border/60'
         }`}
         aria-hidden={!showSticky}
       >
+        {urgencyVisible && (
+          <p className="mx-auto max-w-md mb-1.5 text-center text-[11px] font-bold uppercase tracking-wider text-[hsl(25,95%,46%)]">
+            ⏱ Tap below — 10 seconds, no signup
+          </p>
+        )}
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
             label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_sticky"
-            className={`${urgencyVisible ? 'gp-cta-emphasize' : ''} h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold`}
+            className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize h-14' : 'h-13'} text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl`}
           />
         </div>
       </div>
