@@ -415,6 +415,7 @@ const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFu
 const TikTokExcludedSessionsPage = lazyWithRetry(() => import("./pages/admin/TikTokExcludedSessionsPage"));
 const TikTokFunnelReportPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelReportPage"));
 const TikTokCtaCtrPage = lazyWithRetry(() => import("./pages/admin/TikTokCtaCtrPage"));
+const PlacementOverviewPage = lazyWithRetry(() => import("./pages/admin/PlacementOverviewPage"));
 const TikTokSessionDecisionLogPage = lazyWithRetry(() => import("./pages/admin/TikTokSessionDecisionLogPage"));
 const TikTokConfigChecklistPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigChecklistPage"));
 const TikTokTestUsersPage = lazyWithRetry(() => import("./pages/admin/TikTokTestUsersPage"));
