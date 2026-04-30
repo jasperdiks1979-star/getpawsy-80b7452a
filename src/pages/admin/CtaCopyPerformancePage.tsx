@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { downloadCsv } from '@/lib/lpFunnelExport';
 
 /**
  * CtaCopyPerformancePage — quick scorecard of `/go` CTA copy performance.
@@ -165,6 +166,45 @@ export default function CtaCopyPerformancePage() {
     return `${Math.floor(h / 24)}d ago`;
   }
 
+  // CSV export — flattens every (placement, cta_variant) bucket into a row
+  // so the data lines up exactly with what's rendered on screen. Uses the
+  // shared RFC-4180 helper from lpFunnelExport so Excel-on-Windows opens
+  // it cleanly (UTF-8 BOM + quoted cells).
+  function handleExportCsv() {
+    const escape = (v: unknown): string => {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = [
+      'placement',
+      'cta_variant',
+      'impressions',
+      'clicks',
+      'deep_link_clicks',
+      'wrapper_clicks',
+      'ctr_pct',
+    ].join(',');
+    const body = buckets
+      .map((b) => {
+        const ctr = b.impressions ? (b.clicks / b.impressions) * 100 : 0;
+        return [
+          b.placement,
+          b.cta_variant,
+          b.impressions,
+          b.clicks,
+          b.deep_link_clicks,
+          b.clicks - b.deep_link_clicks,
+          b.impressions ? ctr.toFixed(2) : '',
+        ]
+          .map(escape)
+          .join(',');
+      })
+      .join('\n');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    downloadCsv(`${header}\n${body}`, `cta-copy-performance_${hours}h_${stamp}.csv`);
+  }
+
   return (
     <>
       <Helmet>
@@ -188,7 +228,7 @@ export default function CtaCopyPerformancePage() {
               <code className="text-xs">/go</code>. Excludes internal traffic.
             </p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center flex-wrap">
             {RANGES.map((r) => (
               <Button
                 key={r.label}
@@ -199,6 +239,16 @@ export default function CtaCopyPerformancePage() {
                 {r.label}
               </Button>
             ))}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportCsv}
+              disabled={buckets.length === 0}
+              className="ml-2 gap-1"
+              title="Download all rows as CSV"
+            >
+              <Download className="h-3.5 w-3.5" /> CSV
+            </Button>
           </div>
         </div>
 
