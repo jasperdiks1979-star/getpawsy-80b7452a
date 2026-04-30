@@ -219,6 +219,99 @@ export default function CtaCopyPerformancePage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              Event ingestion status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="text-left p-3">Event</th>
+                    <th className="text-left p-3">Status</th>
+                    <th className="text-right p-3">Rows in window</th>
+                    <th className="text-right p-3">Last seen</th>
+                    <th className="text-left p-3">Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eventStats.map((e) => {
+                    const ok = e.count > 0;
+                    const stale =
+                      ok &&
+                      e.last !== null &&
+                      Date.now() - new Date(e.last).getTime() > hours * 60 * 60 * 1000 * 0.5;
+                    return (
+                      <tr key={e.key} className="border-t align-top">
+                        <td className="p-3">
+                          <div className="font-medium">{e.label}</div>
+                          <code className="text-[11px] text-muted-foreground">{e.key}</code>
+                        </td>
+                        <td className="p-3">
+                          {ok ? (
+                            stale ? (
+                              <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-semibold">
+                                <AlertTriangle className="h-3.5 w-3.5" /> Stale
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-semibold">
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Receiving
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-destructive text-xs font-semibold">
+                              <XCircle className="h-3.5 w-3.5" /> Missing
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right tabular-nums">
+                          {e.count.toLocaleString()}
+                        </td>
+                        <td className="p-3 text-right tabular-nums text-muted-foreground">
+                          {relativeTime(e.last)}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground">{e.role}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground">Active filters</p>
+              <ul className="list-disc pl-5 space-y-0.5">
+                <li>
+                  Window: last <strong>{hours}h</strong> (from{' '}
+                  <code>created_at &gt;= now() - {hours}h</code>)
+                </li>
+                <li>
+                  Source table: <code>lp_funnel_events</code>
+                </li>
+                <li>
+                  Events: <code>lp_cta_impression</code>, <code>lp_cta_click</code>,{' '}
+                  <code>tiktok_deep_link_click</code>
+                </li>
+                <li>
+                  Internal traffic: <strong>excluded</strong> (
+                  <code>is_internal IS NULL OR is_internal = false</code>)
+                </li>
+                <li>
+                  Row cap: 50 000 per fetch — bump the time window down if you hit
+                  this on heavy days.
+                </li>
+              </ul>
+              <p className="pt-1">
+                Missing events usually mean the event name was removed from{' '}
+                <code>MIRRORED_EVENTS</code> in <code>src/lib/lpFunnelMirror.ts</code>,
+                or the firing component stopped calling <code>trackEvent()</code>.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {error && (
           <Card className="border-destructive">
             <CardContent className="p-4 text-sm text-destructive">
