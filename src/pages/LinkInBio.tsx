@@ -751,7 +751,7 @@ export default function LinkInBio() {
         {/* 6. FINAL CTA */}
         <div className="w-full flex flex-col gap-2" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label={ctaLabel}
             campaign="tt_bio_link"
             content="bio_secondary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
@@ -775,7 +775,7 @@ export default function LinkInBio() {
       >
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label={ctaLabel}
             campaign="tt_bio_link"
             content="bio_sticky"
             className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
