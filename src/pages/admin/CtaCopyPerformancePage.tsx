@@ -117,6 +117,84 @@ export default function CtaCopyPerformancePage() {
     ? allRows.filter((r) => new Date(r.created_at).getTime() >= sinceMs)
     : null;
   const buckets = rows ? aggregate(rows) : [];
+
+  // Multi-window ranking — for each placement, compute the CTR per
+  // cta_variant across 24h / 7d / 30d windows and pick the leader. Uses
+  // the cached 30d dataset so it's free; no extra queries.
+  const RANKING_WINDOWS = [
+    { key: '24h' as const, hours: 24 },
+    { key: '7d' as const, hours: 24 * 7 },
+    { key: '30d' as const, hours: 24 * 30 },
+  ];
+  const MIN_IMPRESSIONS_FOR_RANK = 20;
+
+  type RankCell = { impressions: number; clicks: number; ctr: number | null };
+  type RankRow = { cta_variant: string; cells: Record<'24h' | '7d' | '30d', RankCell> };
+
+  function bucketsForWindow(hoursWin: number): Bucket[] {
+    if (!allRows) return [];
+    const cutoff = Date.now() - hoursWin * 60 * 60 * 1000;
+    return aggregate(
+      allRows.filter((r) => new Date(r.created_at).getTime() >= cutoff),
+    );
+  }
+
+  const ranking: Array<{ placement: string; rows: RankRow[] }> = (() => {
+    if (!allRows) return [];
+    // Pre-compute buckets per window once.
+    const perWindow: Record<'24h' | '7d' | '30d', Bucket[]> = {
+      '24h': bucketsForWindow(24),
+      '7d': bucketsForWindow(24 * 7),
+      '30d': bucketsForWindow(24 * 30),
+    };
+    return PLACEMENT_ORDER.map((placement) => {
+      // Union of all variants seen for this placement across any window.
+      const variants = new Set<string>();
+      (Object.keys(perWindow) as Array<'24h' | '7d' | '30d'>).forEach((w) => {
+        perWindow[w]
+          .filter((b) => b.placement === placement)
+          .forEach((b) => variants.add(b.cta_variant));
+      });
+      const rows: RankRow[] = Array.from(variants).map((variant) => {
+        const cells = {} as RankRow['cells'];
+        (Object.keys(perWindow) as Array<'24h' | '7d' | '30d'>).forEach((w) => {
+          const b = perWindow[w].find(
+            (x) => x.placement === placement && x.cta_variant === variant,
+          );
+          const impressions = b?.impressions ?? 0;
+          const clicks = b?.clicks ?? 0;
+          const ctr =
+            impressions >= MIN_IMPRESSIONS_FOR_RANK
+              ? clicks / impressions
+              : null;
+          cells[w] = { impressions, clicks, ctr };
+        });
+        return { cta_variant: variant, cells };
+      });
+      // Sort by 7d CTR (default ranking window), nulls last.
+      rows.sort((a, b) => {
+        const ac = a.cells['7d'].ctr;
+        const bc = b.cells['7d'].ctr;
+        if (ac == null && bc == null) return 0;
+        if (ac == null) return 1;
+        if (bc == null) return -1;
+        return bc - ac;
+      });
+      return { placement, rows };
+    }).filter((g) => g.rows.length > 0);
+  })();
+
+  /** Map a CTR (0..1) to a heatmap background. Cool→hot relative to the
+   *  best CTR seen in the same column so weak placements still show
+   *  contrast. Null cells (insufficient sample) get a neutral pattern. */
+  function heatStyle(ctr: number | null, max: number): React.CSSProperties {
+    if (ctr == null || max <= 0) return {};
+    const ratio = Math.max(0, Math.min(1, ctr / max));
+    // hsl(25,95%,53%) is the brand orange. Fade alpha 0.05 → 0.45.
+    const alpha = 0.05 + ratio * 0.4;
+    return { backgroundColor: `hsl(25 95% 53% / ${alpha})` };
+  }
+
   const grouped = PLACEMENT_ORDER.map((p) => ({
     placement: p,
     rows: buckets.filter((b) => b.placement === p),
