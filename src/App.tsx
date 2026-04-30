@@ -2150,6 +2150,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="placement-overview"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PlacementOverviewPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-config-checklist"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
