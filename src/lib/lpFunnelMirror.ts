@@ -117,6 +117,15 @@ export function mirrorLpFunnelEvent(
     scroll_depth_at_click: pickInt(params, 'scroll_depth_at_click'),
     is_first_click: pickBool(params, 'is_first_click'),
     first_click_placement: pickString(params, 'first_click_placement'),
+    // Misclick / repeat-click classification (see LinkInBio.tsx). These are
+    // present on lp_cta_click rows AND on the dedicated lp_cta_misclick /
+    // lp_cta_repeat_click rows so the admin overview can compute rates with
+    // a single GROUP BY against the click stream.
+    is_misclick: pickBool(params, 'is_misclick'),
+    is_repeat_click: pickBool(params, 'is_repeat_click'),
+    repeat_index: pickInt(params, 'repeat_index'),
+    previous_placement: pickString(params, 'previous_placement'),
+    delta_ms: pickInt(params, 'delta_ms'),
   };
 
   // Fire-and-forget — analytics must never affect the user experience.
