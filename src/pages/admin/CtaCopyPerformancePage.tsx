@@ -82,7 +82,7 @@ function placementLabel(p: string): string {
 
 export default function CtaCopyPerformancePage() {
   const [hours, setHours] = useState<number>(24 * 7);
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [allRows, setAllRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,7 +90,9 @@ export default function CtaCopyPerformancePage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    // Always fetch the widest window (30d) so the multi-window ranking
+    // table can render 24h / 7d / 30d side-by-side without re-querying.
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     (async () => {
       const { data, error } = await supabase
         .from('lp_funnel_events')
@@ -101,15 +103,98 @@ export default function CtaCopyPerformancePage() {
         .limit(50000);
       if (cancelled) return;
       if (error) setError(error.message);
-      else setRows((data ?? []) as Row[]);
+      else setAllRows((data ?? []) as Row[]);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [hours]);
+  }, []);
 
+  // Slice the cached 30d dataset by the active range for the main scorecard.
+  const sinceMs = Date.now() - hours * 60 * 60 * 1000;
+  const rows = allRows
+    ? allRows.filter((r) => new Date(r.created_at).getTime() >= sinceMs)
+    : null;
   const buckets = rows ? aggregate(rows) : [];
+
+  // Multi-window ranking — for each placement, compute the CTR per
+  // cta_variant across 24h / 7d / 30d windows and pick the leader. Uses
+  // the cached 30d dataset so it's free; no extra queries.
+  const RANKING_WINDOWS = [
+    { key: '24h' as const, hours: 24 },
+    { key: '7d' as const, hours: 24 * 7 },
+    { key: '30d' as const, hours: 24 * 30 },
+  ];
+  const MIN_IMPRESSIONS_FOR_RANK = 20;
+
+  type RankCell = { impressions: number; clicks: number; ctr: number | null };
+  type RankRow = { cta_variant: string; cells: Record<'24h' | '7d' | '30d', RankCell> };
+
+  function bucketsForWindow(hoursWin: number): Bucket[] {
+    if (!allRows) return [];
+    const cutoff = Date.now() - hoursWin * 60 * 60 * 1000;
+    return aggregate(
+      allRows.filter((r) => new Date(r.created_at).getTime() >= cutoff),
+    );
+  }
+
+  const ranking: Array<{ placement: string; rows: RankRow[] }> = (() => {
+    if (!allRows) return [];
+    // Pre-compute buckets per window once.
+    const perWindow: Record<'24h' | '7d' | '30d', Bucket[]> = {
+      '24h': bucketsForWindow(24),
+      '7d': bucketsForWindow(24 * 7),
+      '30d': bucketsForWindow(24 * 30),
+    };
+    return PLACEMENT_ORDER.map((placement) => {
+      // Union of all variants seen for this placement across any window.
+      const variants = new Set<string>();
+      (Object.keys(perWindow) as Array<'24h' | '7d' | '30d'>).forEach((w) => {
+        perWindow[w]
+          .filter((b) => b.placement === placement)
+          .forEach((b) => variants.add(b.cta_variant));
+      });
+      const rows: RankRow[] = Array.from(variants).map((variant) => {
+        const cells = {} as RankRow['cells'];
+        (Object.keys(perWindow) as Array<'24h' | '7d' | '30d'>).forEach((w) => {
+          const b = perWindow[w].find(
+            (x) => x.placement === placement && x.cta_variant === variant,
+          );
+          const impressions = b?.impressions ?? 0;
+          const clicks = b?.clicks ?? 0;
+          const ctr =
+            impressions >= MIN_IMPRESSIONS_FOR_RANK
+              ? clicks / impressions
+              : null;
+          cells[w] = { impressions, clicks, ctr };
+        });
+        return { cta_variant: variant, cells };
+      });
+      // Sort by 7d CTR (default ranking window), nulls last.
+      rows.sort((a, b) => {
+        const ac = a.cells['7d'].ctr;
+        const bc = b.cells['7d'].ctr;
+        if (ac == null && bc == null) return 0;
+        if (ac == null) return 1;
+        if (bc == null) return -1;
+        return bc - ac;
+      });
+      return { placement, rows };
+    }).filter((g) => g.rows.length > 0);
+  })();
+
+  /** Map a CTR (0..1) to a heatmap background. Cool→hot relative to the
+   *  best CTR seen in the same column so weak placements still show
+   *  contrast. Null cells (insufficient sample) get a neutral pattern. */
+  function heatStyle(ctr: number | null, max: number): { backgroundColor?: string } {
+    if (ctr == null || max <= 0) return {};
+    const ratio = Math.max(0, Math.min(1, ctr / max));
+    // hsl(25,95%,53%) is the brand orange. Fade alpha 0.05 → 0.45.
+    const alpha = 0.05 + ratio * 0.4;
+    return { backgroundColor: `hsl(25 95% 53% / ${alpha})` };
+  }
+
   const grouped = PLACEMENT_ORDER.map((p) => ({
     placement: p,
     rows: buckets.filter((b) => b.placement === p),
@@ -379,6 +464,93 @@ export default function CtaCopyPerformancePage() {
             <CardContent className="p-6 text-sm text-muted-foreground text-center">
               No CTA events recorded in this window yet. Send some real /go traffic
               and check back.
+            </CardContent>
+          </Card>
+        )}
+
+        {ranking.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                CTR ranking — 24h vs 7d vs 30d
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Best CTA variant per placement, color-graded relative to the
+                top performer in each column. Variants with fewer than{' '}
+                {MIN_IMPRESSIONS_FOR_RANK} impressions in a window show “—”
+                to avoid early-sample noise. Sorted by 7d CTR.
+              </p>
+            </CardHeader>
+            <CardContent className="p-0 space-y-0">
+              {ranking.map((g) => {
+                // Per-window max CTR for the heatmap normalization.
+                const maxByWindow: Record<'24h' | '7d' | '30d', number> = {
+                  '24h': Math.max(0, ...g.rows.map((r) => r.cells['24h'].ctr ?? 0)),
+                  '7d': Math.max(0, ...g.rows.map((r) => r.cells['7d'].ctr ?? 0)),
+                  '30d': Math.max(0, ...g.rows.map((r) => r.cells['30d'].ctr ?? 0)),
+                };
+                return (
+                  <div key={g.placement} className="border-t first:border-t-0">
+                    <div className="px-4 py-2 bg-muted/30 text-xs font-semibold uppercase text-muted-foreground">
+                      {placementLabel(g.placement)}
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="text-[11px] uppercase text-muted-foreground">
+                          <tr>
+                            <th className="text-left p-2 pl-4 w-[8%]">#</th>
+                            <th className="text-left p-2">CTA Variant</th>
+                            {RANKING_WINDOWS.map((w) => (
+                              <th key={w.key} className="text-right p-2 w-[14%]">
+                                {w.key} CTR
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {g.rows.map((r, idx) => (
+                            <tr key={r.cta_variant} className="border-t">
+                              <td className="p-2 pl-4 text-muted-foreground tabular-nums">
+                                {idx + 1}
+                              </td>
+                              <td className="p-2 font-mono text-xs">
+                                {r.cta_variant}
+                                {idx === 0 && r.cells['7d'].ctr != null && (
+                                  <span className="ml-2 text-[10px] uppercase font-bold text-primary">
+                                    leader
+                                  </span>
+                                )}
+                              </td>
+                              {RANKING_WINDOWS.map((w) => {
+                                const cell = r.cells[w.key];
+                                return (
+                                  <td
+                                    key={w.key}
+                                    className="p-2 text-right tabular-nums"
+                                    style={heatStyle(cell.ctr, maxByWindow[w.key])}
+                                    title={`${cell.clicks} clicks / ${cell.impressions} impr`}
+                                  >
+                                    {cell.ctr != null ? (
+                                      <span className="font-semibold">
+                                        {(cell.ctr * 100).toFixed(1)}%
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                    <div className="text-[10px] text-muted-foreground font-normal">
+                                      {cell.clicks}/{cell.impressions}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         )}
