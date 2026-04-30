@@ -340,7 +340,7 @@ function buildItemXml(p: Product): BuildResult {
   if (title.length < 10) return { xml: "", excluded: "title_too_short" };
 
   // Classify category using official Google taxonomy numeric IDs
-  const categoryResult = classifyGoogleProductCategory(p.name, p.category);
+  const categoryResult = classifyGoogleProductCategory(p.name, p.category, p.description);
   const categoryLog = {
     original: categoryResult.original,
     mapped: categoryResult.taxonomyKey,
