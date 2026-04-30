@@ -72,33 +72,14 @@ export default function LinkInBio() {
   // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
   // so impressions are never tagged with an empty variant.
   const { variant: ctaVariant } = useCtaVariant(CTA_VARIANT_DEFAULT);
-  // A/B render gating. v3 = full high-conversion stack (video CTA, post-image
-  // CTA, "Watch how it works" copy, scroll-gated urgency, sub-headline);
-  // anything else (currently v2 baseline) renders the leaner version so the
-  // CTR delta we measure is attributable to the v3 feature stack only.
-  const isV3 = ctaVariant === 'high_conv_v3';
-  const ctaLabel = isV3 ? 'Watch how it works →' : 'Get Yours Now →';
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   const secondaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
-  // CTA placed directly under the product image — captures users who
-  // engaged with the visual but haven't scrolled to the proof block yet.
-  const postImageCtaRef = useRef<HTMLDivElement>(null);
-  // Refs for the new proof + nudge blocks so we can measure WHO actually
-  // saw them before clicking — that's how we attribute the CTR lift.
-  const proofBlockRef = useRef<HTMLDivElement>(null);
-  const nudgeBlockRef = useRef<HTMLDivElement>(null);
-  // Dedicated ref on the bouncing arrow itself. The arrow lives inside
-  // the nudge block, but tracking it separately lets us measure the
-  // arrow's own contribution to CTR — the nudge text alone is also
-  // visible without the arrow when scrolled past the threshold.
-  const arrowRef = useRef<HTMLSpanElement>(null);
-  // Demo video CTA placement — short muted autoplay loop sitting directly
-  // above the proof block. Tracked as its own placement (`bio_video_cta`)
-  // so the heatmap dashboard can attribute clicks that fired AFTER the
-  // user watched the demo, separate from text-driven CTAs.
+  // Demo video placement — autoplay loop above the fold. Tracked as its own
+  // placement (`bio_video_cta`) so heatmaps can attribute clicks that fired
+  // AFTER the user watched the demo vs text-only CTA paths.
   const videoCtaRef = useRef<HTMLDivElement>(null);
 
   // Scroll-gated urgency reveal — keeps the "Limited stock" message OUT of
