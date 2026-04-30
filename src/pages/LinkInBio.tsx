@@ -101,6 +101,11 @@ export default function LinkInBio() {
   // arrow's own contribution to CTR — the nudge text alone is also
   // visible without the arrow when scrolled past the threshold.
   const arrowRef = useRef<HTMLSpanElement>(null);
+  // Demo video CTA placement — short muted autoplay loop sitting directly
+  // above the proof block. Tracked as its own placement (`bio_video_cta`)
+  // so the heatmap dashboard can attribute clicks that fired AFTER the
+  // user watched the demo, separate from text-driven CTAs.
+  const videoCtaRef = useRef<HTMLDivElement>(null);
 
   // Scroll-gated urgency reveal — keeps the "Limited stock" message OUT of
   // the above-the-fold experience (per the high-CTR /go playbook: no buy
@@ -318,6 +323,7 @@ export default function LinkInBio() {
       { el: stickyCtaRef.current, placement: 'bio_sticky' },
       { el: postImageCtaRef.current, placement: 'bio_post_image' },
       { el: proofBlockRef.current, placement: 'uplift_proof' },
+      { el: videoCtaRef.current, placement: 'bio_video_cta' },
       { el: nudgeBlockRef.current, placement: 'uplift_nudge' },
       // Arrow is observed standalone so we can isolate its CTR contribution.
       // It lives inside nudgeBlockRef, but since IntersectionObserver fires
@@ -544,6 +550,50 @@ export default function LinkInBio() {
             campaign="tt_bio_link"
             content="bio_post_image"
             className="gp-cta-pulse h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+          />
+        </div>
+
+        {/*
+          DEMO VIDEO + CTA — TikTok-style 9:16 muted autoplay loop sitting
+          directly above the proof block. Cold TikTok traffic expects video
+          first, so we give them a 12s product loop. Clicking ANYWHERE on
+          the wrapper (video or button) fires the bio_video_cta placement
+          so the heatmap dashboard can isolate "watched demo → clicked"
+          conversion paths from text-only CTA paths.
+
+          Performance:
+            - poster image (~32KB jpg) renders instantly while video loads
+            - playsInline + muted required for iOS autoplay
+            - preload="metadata" so we don't burn 475KB before the user
+              has even scrolled to the section
+        */}
+        <div
+          ref={videoCtaRef}
+          className="w-full flex flex-col gap-3"
+          onClickCapture={handleCtaClick('bio_video_cta')}
+        >
+          <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-lg aspect-[9/16] max-h-[420px] mx-auto">
+            <video
+              src="/videos/go-demo.mp4"
+              poster="/videos/go-demo-poster.jpg"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover"
+              aria-label="Self-cleaning litter box demo"
+            />
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+              <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
+              Demo
+            </div>
+          </div>
+          <TikTokDeepLinkButton
+            label="See it in action →"
+            campaign="tt_bio_link"
+            content="bio_video_cta"
+            className="h-12 text-[15px] w-full bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
           />
         </div>
 
