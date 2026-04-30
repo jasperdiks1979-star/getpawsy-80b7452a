@@ -1585,6 +1585,81 @@ export type Database = {
         }
         Relationships: []
       }
+      cta_variant_config: {
+        Row: {
+          active_variant: string
+          baseline_variant: string
+          ctr_floor_pct: number
+          evaluation_window_hours: number
+          id: number
+          min_impressions: number
+          rollback_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          active_variant?: string
+          baseline_variant?: string
+          ctr_floor_pct?: number
+          evaluation_window_hours?: number
+          id: number
+          min_impressions?: number
+          rollback_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active_variant?: string
+          baseline_variant?: string
+          ctr_floor_pct?: number
+          evaluation_window_hours?: number
+          id?: number
+          min_impressions?: number
+          rollback_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cta_variant_rollback_log: {
+        Row: {
+          clicks: number | null
+          created_at: string
+          ctr_floor_pct: number | null
+          ctr_pct: number | null
+          from_variant: string
+          id: string
+          impressions: number | null
+          reason: string
+          to_variant: string
+          was_automatic: boolean
+          window_hours: number | null
+        }
+        Insert: {
+          clicks?: number | null
+          created_at?: string
+          ctr_floor_pct?: number | null
+          ctr_pct?: number | null
+          from_variant: string
+          id?: string
+          impressions?: number | null
+          reason: string
+          to_variant: string
+          was_automatic?: boolean
+          window_hours?: number | null
+        }
+        Update: {
+          clicks?: number | null
+          created_at?: string
+          ctr_floor_pct?: number | null
+          ctr_pct?: number | null
+          from_variant?: string
+          id?: string
+          impressions?: number | null
+          reason?: string
+          to_variant?: string
+          was_automatic?: boolean
+          window_hours?: number | null
+        }
+        Relationships: []
+      }
       ctr_model_data: {
         Row: {
           created_at: string

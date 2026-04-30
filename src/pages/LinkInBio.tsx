@@ -17,6 +17,7 @@ import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
 import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 import { visibilityFlagsAtClickTime } from '@/lib/lpCtaVisibility';
+import { useCtaVariant } from '@/hooks/useCtaVariant';
 
 const PRODUCT_IMAGE =
   'https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png';
@@ -54,9 +55,17 @@ const COMPARISON_ROWS: Array<{ label: string; manual: string; smart: string }> =
  * PDP CTR lift to a specific variant of the page.
  *
  *   high_conv_v1 = baseline pre-uplift (Get Yours Now, no proof/nudge)
- *   high_conv_v2 = current — proof + nudge + arrow + pulse + new CTA copy
+ *   high_conv_v2 = baseline rollback target — proof + nudge + arrow + pulse
+ *   high_conv_v3 = current — adds video + post-image CTA + scroll-gated urgency
+ *
+ * NOTE: The string below is just the BUILD-TIME DEFAULT. The page reads
+ * the actual active variant at runtime from `cta_variant_config` via the
+ * `useCtaVariant` hook — the auto-rollback edge function may have flipped
+ * it back to the baseline if CTR dropped below the configured floor.
+ * Always reference the runtime `ctaVariant` inside the component, never
+ * this constant directly.
  */
-const CTA_VARIANT = 'high_conv_v3';
+const CTA_VARIANT_DEFAULT = 'high_conv_v3';
 const CTA_FEATURE_FLAGS = {
   has_proof: true,
   has_nudge: true,
@@ -84,6 +93,11 @@ const URGENCY_REVEAL_THRESHOLD = 60;
 
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
+  // Runtime-controlled CTA variant. The auto-rollback edge function flips
+  // this to the baseline if CTR drops below the configured floor. Falls
+  // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
+  // so impressions are never tagged with an empty variant.
+  const { variant: ctaVariant } = useCtaVariant(CTA_VARIANT_DEFAULT);
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
@@ -260,11 +274,13 @@ export default function LinkInBio() {
     initClarity();
     clarityTag('page', '/go');
     clarityTag('funnel', 'tiktok_bio');
-    clarityTag('cta_variant', CTA_VARIANT);
+    clarityTag('cta_variant', ctaVariant);
     if (attribution.utm_campaign) clarityTag('utm_campaign', attribution.utm_campaign);
     if (attribution.utm_content) clarityTag('utm_content', attribution.utm_content);
     clarityMilestone('go_landing_view');
-  }, [attribution]);
+    // Re-runs once `ctaVariant` resolves so Clarity tagging reflects any
+    // auto-rollback the guard performed since the last pageview.
+  }, [attribution, ctaVariant]);
 
   // FUNNEL STEP 2 — Scroll-depth milestones to surface where users drop off
   // before reaching the sticky CTA / benefits below the fold.
@@ -287,7 +303,7 @@ export default function LinkInBio() {
             funnel: 'tiktok_bio',
             depth_pct: pct,
             threshold_pct: URGENCY_REVEAL_THRESHOLD,
-            cta_variant: CTA_VARIANT,
+            cta_variant: ctaVariant,
             ...attribution,
           });
           clarityMilestone('urgency_revealed');
@@ -358,7 +374,7 @@ export default function LinkInBio() {
               placement,
               time_to_visible_ms: timeToVisibleMs,
               scroll_depth_at_visible: scrollDepthAtVisible,
-              cta_variant: CTA_VARIANT,
+              cta_variant: ctaVariant,
               ...CTA_FEATURE_FLAGS,
               ...attribution,
             });
@@ -417,7 +433,7 @@ export default function LinkInBio() {
         page: '/go',
         funnel: 'tiktok_bio',
         missing_placements: missing.join(','),
-        cta_variant: CTA_VARIANT,
+        cta_variant: ctaVariant,
         ...attribution,
       });
     }
@@ -466,7 +482,7 @@ export default function LinkInBio() {
       scroll_depth_at_click: scrollDepthAtClick,
       is_first_click: isFirstClick,
       first_click_placement: firstClickPlacementRef.current,
-      cta_variant: CTA_VARIANT,
+      cta_variant: ctaVariant,
       ...CTA_FEATURE_FLAGS,
       ...flags,
       ...attribution,
