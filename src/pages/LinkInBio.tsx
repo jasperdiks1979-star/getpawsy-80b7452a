@@ -703,6 +703,27 @@ export default function LinkInBio() {
           </aside>
         )}
 
+        {/* TRUST PROOF — fades in after 60% scroll, no tracking changes */}
+        {urgencyVisible && (
+          <section
+            className="w-full grid grid-cols-3 gap-2 animate-in fade-in slide-in-from-bottom-3 duration-700"
+            aria-label="Trust signals"
+          >
+            <div className="flex flex-col items-center text-center gap-1 rounded-xl border border-border/60 bg-card px-2 py-3">
+              <span className="text-xl" aria-hidden="true">🇺🇸</span>
+              <span className="text-[11px] font-bold text-foreground leading-tight">Ships from US</span>
+            </div>
+            <div className="flex flex-col items-center text-center gap-1 rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-2 py-3">
+              <span className="text-xl" aria-hidden="true">🛡️</span>
+              <span className="text-[11px] font-bold text-foreground leading-tight">30-Day Guarantee</span>
+            </div>
+            <div className="flex flex-col items-center text-center gap-1 rounded-xl border border-border/60 bg-card px-2 py-3">
+              <span className="text-xl" aria-hidden="true">🚚</span>
+              <span className="text-[11px] font-bold text-foreground leading-tight">3–7 Day Delivery</span>
+            </div>
+          </section>
+        )}
+
         {/* FINAL CTA */}
         <div
           className="w-full flex flex-col gap-2 pt-2"
@@ -715,8 +736,14 @@ export default function LinkInBio() {
             content="bio_secondary"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
           />
-          <p className="text-center text-[13px] font-semibold text-foreground/75">
-            30-day risk-free guarantee
+          <p
+            className={`text-center text-[13px] font-semibold transition-all duration-500 ${
+              urgencyVisible
+                ? 'text-[hsl(25,95%,46%)] animate-in fade-in slide-in-from-bottom-1'
+                : 'text-foreground/75'
+            }`}
+          >
+            🛡️ 30-day risk-free guarantee
           </p>
         </div>
 
