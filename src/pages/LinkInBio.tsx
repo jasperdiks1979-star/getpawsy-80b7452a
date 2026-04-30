@@ -504,6 +504,70 @@ export default function LinkInBio() {
     // diagnostic purposes but are tagged is_repeat_click=true.
     const isFirstClick = firstClickPlacementRef.current === null;
     if (isFirstClick) firstClickPlacementRef.current = placement;
+
+    // ─── Misclick + repeat-click classification ───────────────────────
+    // Computed BEFORE we update the click bookkeeping refs so the deltas
+    // reflect the previous state. Both signals are fire-and-forget and
+    // never block the main lp_cta_click event below.
+    const prevClick = lastClickRef.current;
+    const priorCountForPlacement = placementClickCountRef.current[placement] ?? 0;
+    const isRepeatClick =
+      priorCountForPlacement > 0 &&
+      prevClick != null &&
+      prevClick.placement === placement &&
+      nowClick - prevClick.at <= REPEAT_CLICK_WINDOW_MS;
+    const isMisclick =
+      prevClick != null &&
+      prevClick.placement !== placement &&
+      nowClick - prevClick.at <= MISCLICK_WINDOW_MS;
+
+    if (isMisclick) {
+      // Most likely accidental — a click on a DIFFERENT placement within
+      // 600ms is faster than human reaction time for a deliberate
+      // re-decision, so this is almost always a fat-finger / scroll-tap.
+      // We log it so the dashboard can subtract these from "real" CTR
+      // and the heatmap can isolate the offending zones.
+      const dtMs = Math.round(nowClick - prevClick!.at);
+      trackEvent('lp_cta_misclick', {
+        page: '/go',
+        funnel: 'tiktok_bio',
+        placement,
+        previous_placement: prevClick!.placement,
+        delta_ms: dtMs,
+        scroll_depth_at_click: scrollDepthAtClick,
+        cta_variant: ctaVariant,
+        cohort: getVisitorCohort(),
+        ...attribution,
+      });
+      clarityTag('had_misclick', true);
+      clarityTag('misclick_pair', `${prevClick!.placement}->${placement}`);
+      clarityMilestone('cta_misclick');
+    } else if (isRepeatClick) {
+      // Same placement, re-clicked within 30s. Reads as hesitation /
+      // double-tap / "did it register?" — useful intent signal that
+      // doesn't deserve full credit but isn't an error either.
+      const dtMs = Math.round(nowClick - prevClick!.at);
+      trackEvent('lp_cta_repeat_click', {
+        page: '/go',
+        funnel: 'tiktok_bio',
+        placement,
+        repeat_index: priorCountForPlacement, // 1 = 2nd click, 2 = 3rd, …
+        delta_ms: dtMs,
+        scroll_depth_at_click: scrollDepthAtClick,
+        cta_variant: ctaVariant,
+        cohort: getVisitorCohort(),
+        ...attribution,
+      });
+      clarityTag(`repeat_click_${placement}`, true);
+      clarityTag('last_repeat_placement', placement);
+      clarityMilestone(`cta_repeat_click_${placement}`);
+    }
+
+    // Update bookkeeping AFTER classification so future clicks reference
+    // the prior state correctly.
+    placementClickCountRef.current[placement] = priorCountForPlacement + 1;
+    lastClickRef.current = { placement, at: nowClick };
+
     trackEvent('lp_cta_click', {
       page: '/go',
       funnel: 'tiktok_bio',
@@ -518,6 +582,12 @@ export default function LinkInBio() {
       first_click_placement: firstClickPlacementRef.current,
       cta_variant: ctaVariant,
       cohort: getVisitorCohort(),
+      // Surface classification on the canonical click event too so a single
+      // SQL query against lp_cta_click rows can answer "what % of clicks were
+      // misclicks / repeats" without joining to the dedicated event types.
+      is_repeat_click: isRepeatClick,
+      is_misclick: isMisclick,
+      repeat_index: priorCountForPlacement,
       ...CTA_FEATURE_FLAGS,
       ...flags,
       ...attribution,
