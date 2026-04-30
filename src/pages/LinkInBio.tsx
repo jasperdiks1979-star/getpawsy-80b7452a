@@ -564,18 +564,20 @@ export default function LinkInBio() {
 
         {/* Post-image CTA — second click point right after the visual.
             Catches users who scrolled past the hero CTA stack. */}
-        <div
-          className="w-full"
-          ref={postImageCtaRef}
-          onClickCapture={handleCtaClick('bio_post_image')}
-        >
-          <TikTokDeepLinkButton
-            label="See it in action →"
-            campaign="tt_bio_link"
-            content="bio_post_image"
-            className="gp-cta-pulse h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
-          />
-        </div>
+        {isV3 && (
+          <div
+            className="w-full"
+            ref={postImageCtaRef}
+            onClickCapture={handleCtaClick('bio_post_image')}
+          >
+            <TikTokDeepLinkButton
+              label="See it in action →"
+              campaign="tt_bio_link"
+              content="bio_post_image"
+              className="gp-cta-pulse h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            />
+          </div>
+        )}
 
         {/*
           DEMO VIDEO + CTA — TikTok-style 9:16 muted autoplay loop sitting
