@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MousePointerClick } from 'lucide-react';
+import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ type Row = {
   placement: string | null;
   cta_variant: string | null;
   event_name: string;
+  created_at: string;
 };
 
 type Bucket = {
@@ -92,7 +93,7 @@ export default function CtaCopyPerformancePage() {
     (async () => {
       const { data, error } = await supabase
         .from('lp_funnel_events')
-        .select('placement, cta_variant, event_name')
+        .select('placement, cta_variant, event_name, created_at')
         .in('event_name', ['lp_cta_impression', 'lp_cta_click', 'tiktok_deep_link_click'])
         .gte('created_at', since)
         .or('is_internal.is.null,is_internal.eq.false')
@@ -119,6 +120,50 @@ export default function CtaCopyPerformancePage() {
   const totalImpr = buckets.reduce((s, b) => s + b.impressions, 0);
   const totalClicks = buckets.reduce((s, b) => s + b.clicks, 0);
   const totalCtr = totalImpr ? ((totalClicks / totalImpr) * 100).toFixed(1) : '—';
+
+  // Per-event health stats — counts and last-seen timestamp for each
+  // mirrored event the dashboard depends on. Lets the operator instantly
+  // see whether a missing CTR column is a "no traffic" issue or an actual
+  // mirroring/instrumentation regression (e.g. tiktok_deep_link_click
+  // dropped out of MIRRORED_EVENTS in lpFunnelMirror.ts).
+  const TRACKED_EVENTS = [
+    {
+      key: 'lp_cta_impression',
+      label: 'CTA impressions',
+      role: 'Denominator for CTR (fires when a CTA scrolls into view).',
+    },
+    {
+      key: 'lp_cta_click',
+      label: 'CTA clicks',
+      role: 'Wrapper-level click event used for CTR + cohort analysis.',
+    },
+    {
+      key: 'tiktok_deep_link_click',
+      label: 'TikTok deep-link clicks',
+      role: 'Raw click on <TikTokDeepLinkButton> — added to total clicks.',
+    },
+  ] as const;
+
+  const eventStats = TRACKED_EVENTS.map((e) => {
+    const matching = (rows ?? []).filter((r) => r.event_name === e.key);
+    const last = matching.reduce<string | null>((acc, r) => {
+      if (!acc || r.created_at > acc) return r.created_at;
+      return acc;
+    }, null);
+    return { ...e, count: matching.length, last };
+  });
+
+  function relativeTime(iso: string | null): string {
+    if (!iso) return 'never';
+    const diffMs = Date.now() - new Date(iso).getTime();
+    if (diffMs < 0) return 'just now';
+    const m = Math.floor(diffMs / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  }
 
   return (
     <>
@@ -170,6 +215,99 @@ export default function CtaCopyPerformancePage() {
             <div>
               <p className="text-xs text-muted-foreground uppercase">CTR</p>
               <p className="text-2xl font-bold text-primary">{totalCtr}%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              Event ingestion status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="text-left p-3">Event</th>
+                    <th className="text-left p-3">Status</th>
+                    <th className="text-right p-3">Rows in window</th>
+                    <th className="text-right p-3">Last seen</th>
+                    <th className="text-left p-3">Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eventStats.map((e) => {
+                    const ok = e.count > 0;
+                    const stale =
+                      ok &&
+                      e.last !== null &&
+                      Date.now() - new Date(e.last).getTime() > hours * 60 * 60 * 1000 * 0.5;
+                    return (
+                      <tr key={e.key} className="border-t align-top">
+                        <td className="p-3">
+                          <div className="font-medium">{e.label}</div>
+                          <code className="text-[11px] text-muted-foreground">{e.key}</code>
+                        </td>
+                        <td className="p-3">
+                          {ok ? (
+                            stale ? (
+                              <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-semibold">
+                                <AlertTriangle className="h-3.5 w-3.5" /> Stale
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-semibold">
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Receiving
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-destructive text-xs font-semibold">
+                              <XCircle className="h-3.5 w-3.5" /> Missing
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right tabular-nums">
+                          {e.count.toLocaleString()}
+                        </td>
+                        <td className="p-3 text-right tabular-nums text-muted-foreground">
+                          {relativeTime(e.last)}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground">{e.role}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground">Active filters</p>
+              <ul className="list-disc pl-5 space-y-0.5">
+                <li>
+                  Window: last <strong>{hours}h</strong> (from{' '}
+                  <code>created_at &gt;= now() - {hours}h</code>)
+                </li>
+                <li>
+                  Source table: <code>lp_funnel_events</code>
+                </li>
+                <li>
+                  Events: <code>lp_cta_impression</code>, <code>lp_cta_click</code>,{' '}
+                  <code>tiktok_deep_link_click</code>
+                </li>
+                <li>
+                  Internal traffic: <strong>excluded</strong> (
+                  <code>is_internal IS NULL OR is_internal = false</code>)
+                </li>
+                <li>
+                  Row cap: 50 000 per fetch — bump the time window down if you hit
+                  this on heavy days.
+                </li>
+              </ul>
+              <p className="pt-1">
+                Missing events usually mean the event name was removed from{' '}
+                <code>MIRRORED_EVENTS</code> in <code>src/lib/lpFunnelMirror.ts</code>,
+                or the firing component stopped calling <code>trackEvent()</code>.
+              </p>
             </div>
           </CardContent>
         </Card>
