@@ -593,35 +593,37 @@ export default function LinkInBio() {
             - preload="metadata" so we don't burn 475KB before the user
               has even scrolled to the section
         */}
-        <div
-          ref={videoCtaRef}
-          className="w-full flex flex-col gap-3"
-          onClickCapture={handleCtaClick('bio_video_cta')}
-        >
-          <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-lg aspect-[9/16] max-h-[420px] mx-auto">
-            <video
-              src="/videos/go-demo.mp4"
-              poster="/videos/go-demo-poster.jpg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover"
-              aria-label="Self-cleaning litter box demo"
-            />
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-              <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
-              Demo
+        {isV3 && (
+          <div
+            ref={videoCtaRef}
+            className="w-full flex flex-col gap-3"
+            onClickCapture={handleCtaClick('bio_video_cta')}
+          >
+            <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-lg aspect-[9/16] max-h-[420px] mx-auto">
+              <video
+                src="/videos/go-demo.mp4"
+                poster="/videos/go-demo-poster.jpg"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 w-full h-full object-cover"
+                aria-label="Self-cleaning litter box demo"
+              />
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+                <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
+                Demo
+              </div>
             </div>
+            <TikTokDeepLinkButton
+              label="See it in action →"
+              campaign="tt_bio_link"
+              content="bio_video_cta"
+              className="h-12 text-[15px] w-full bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
+            />
           </div>
-          <TikTokDeepLinkButton
-            label="See it in action →"
-            campaign="tt_bio_link"
-            content="bio_video_cta"
-            className="h-12 text-[15px] w-full bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
-          />
-        </div>
+        )}
 
         {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
         <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
