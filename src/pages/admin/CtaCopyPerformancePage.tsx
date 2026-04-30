@@ -207,7 +207,12 @@ export default function CtaCopyPerformancePage() {
                     <tr>
                       <th className="text-left p-3">CTA Variant</th>
                       <th className="text-right p-3">Impressions</th>
-                      <th className="text-right p-3">Clicks</th>
+                      <th className="text-right p-3" title="lp_cta_click + tiktok_deep_link_click">
+                        Clicks
+                      </th>
+                      <th className="text-right p-3" title="Subset of clicks from raw TikTokDeepLinkButton events">
+                        Deep-link
+                      </th>
                       <th className="text-right p-3">CTR</th>
                     </tr>
                   </thead>
@@ -241,6 +246,9 @@ export default function CtaCopyPerformancePage() {
                           <td className="p-3 text-right tabular-nums">
                             {b.clicks.toLocaleString()}
                           </td>
+                          <td className="p-3 text-right tabular-nums text-muted-foreground">
+                            {b.deep_link_clicks.toLocaleString()}
+                          </td>
                           <td className="p-3 text-right tabular-nums font-semibold">
                             {ctrPct(b)}
                           </td>
@@ -255,9 +263,12 @@ export default function CtaCopyPerformancePage() {
         ))}
 
         <p className="text-xs text-muted-foreground">
-          Source: <code>lp_funnel_events</code> (events <code>lp_cta_impression</code> +{' '}
-          <code>lp_cta_click</code>). The “top” badge appears once a variant has ≥ 20
-          impressions to avoid early-sample noise.
+          Source: <code>lp_funnel_events</code> — impressions from{' '}
+          <code>lp_cta_impression</code>, clicks from <code>lp_cta_click</code> +{' '}
+          <code>tiktok_deep_link_click</code> (the “Deep-link” column shows the
+          subset coming from raw <code>TikTokDeepLinkButton</code> events). The
+          “top” badge appears once a variant has ≥ 20 impressions to avoid
+          early-sample noise.
         </p>
       </div>
     </>
