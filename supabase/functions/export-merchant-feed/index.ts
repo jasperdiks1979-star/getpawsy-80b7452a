@@ -420,6 +420,8 @@ function generateFallbackDescription(name: string): string {
 
 // ── Category correction engine ──────────────────────────────────────
 
+import { classifyGoogleProductCategory as _gpcClassify } from "../_shared/google-product-category.ts";
+
 function correctCategory(name: string, dbCategory: string | null): string {
   const n = name.toLowerCase();
 
@@ -635,7 +637,12 @@ function sanitizeProductForMerchant(p: RawProduct): SanitizeResult {
   // 6. Correct category
   const correctedCategory = correctCategory(p.name, p.category);
   result.categoryOverridden = correctedCategory !== p.category;
-  const gcatId = GCAT[correctedCategory] || "";
+  // Canonical GPC mapper takes priority (uses name + category + description).
+  // Fall back to the legacy GCAT lookup only when the canonical mapper
+  // cannot infer anything (e.g. returns the "pet_general" fallback id).
+  const gpc = _gpcClassify(p.name, p.category, p.description);
+  const legacyId = GCAT[correctedCategory];
+  const gcatId = gpc.confident ? gpc.id : (legacyId || gpc.id);
 
   // 7. Consistency check: animal mismatch → auto-fix
   if (detectAnimalMismatch(cleanTitle, cleanDesc)) {
