@@ -67,6 +67,21 @@ const CTA_FEATURE_FLAGS = {
   has_subhead_watch: true,
 } as const;
 
+/**
+ * Scroll-depth gating threshold for the urgency reveal block.
+ *
+ * The "Limited stock" message is intentionally HIDDEN above the fold (per
+ * the high-CTR /go playbook: cold TikTok traffic must not see buy-pressure
+ * before they've engaged with the proof + nudge stack). It only unlocks
+ * once the user has scrolled past this percentage of the page — i.e. they
+ * already showed intent by scrolling deep, so urgency now nudges them to
+ * convert instead of scaring them off.
+ *
+ * 60 % was chosen so the block surfaces around the comparison/reviews
+ * section, well below the primary CTA.
+ */
+const URGENCY_REVEAL_THRESHOLD = 60;
+
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
