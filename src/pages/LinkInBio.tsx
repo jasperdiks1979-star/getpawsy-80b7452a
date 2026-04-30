@@ -640,7 +640,7 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_primary')}
         >
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label={urgencyVisible ? CTA_COPY.primary.urgent : CTA_COPY.primary.calm}
             campaign="tt_bio_link"
             content="bio_primary"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
@@ -746,7 +746,7 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_secondary')}
         >
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label={urgencyVisible ? CTA_COPY.secondary.urgent : CTA_COPY.secondary.calm}
             campaign="tt_bio_link"
             content="bio_secondary"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
@@ -785,7 +785,7 @@ export default function LinkInBio() {
         )}
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="Get Yours Now →"
+            label={urgencyVisible ? CTA_COPY.sticky.urgent : CTA_COPY.sticky.calm}
             campaign="tt_bio_link"
             content="bio_sticky"
             className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize h-14' : 'h-13'} text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl`}
