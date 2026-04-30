@@ -17,6 +17,7 @@ import { logUtmCheckpoint } from '@/lib/utmDebugLog';
 import { recordLpCtaClick } from '@/lib/lpCtaCorrelation';
 import { initClarity, clarityMilestone, clarityTag } from '@/lib/clarity';
 import { visibilityFlagsAtClickTime } from '@/lib/lpCtaVisibility';
+import { getVisitorCohort } from '@/lib/visitorCohort';
 import { useCtaVariant } from '@/hooks/useCtaVariant';
 
 const PRODUCT_IMAGE =
