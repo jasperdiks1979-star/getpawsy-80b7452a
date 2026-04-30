@@ -623,233 +623,153 @@ export default function LinkInBio() {
           </span>
         </Link>
 
-        {/* 1. HERO — above the fold */}
-        <header className="text-center flex flex-col gap-3">
-          <span className="self-center inline-flex items-center gap-1.5 rounded-full bg-[hsl(25,95%,53%)]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[hsl(25,95%,53%)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[hsl(25,95%,53%)] animate-pulse" />
-            As seen on TikTok
-          </span>
-          <h1 className="text-[30px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
-            I haven&apos;t scooped in <span className="text-[hsl(25,95%,53%)]">3 months</span>.
+        {/*
+          ABOVE THE FOLD — curiosity-first.
+          Pain trigger → headline → sub → autoplay demo video → single CTA → micro-commit.
+          Nothing else. No comparison, no benefits list, no trust badges, no urgency.
+          Goal: turn cold TikTok scrollers into curious clickers.
+        */}
+        <header className="text-center flex flex-col gap-2">
+          <p className="text-[13px] font-semibold text-foreground/65">
+            Still scooping every day? 😩
+          </p>
+          <h1 className="text-[32px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
+            I stopped scooping… <span className="text-[hsl(25,95%,53%)]">forever.</span>
           </h1>
-          {isV3 && (
-            <p className="text-[16px] sm:text-[17px] font-bold text-[hsl(25,95%,53%)] leading-snug">
-              👇 Watch how it works in 10 seconds
-            </p>
-          )}
-          <p className="text-[15px] font-medium text-foreground/75 max-w-[28ch] mx-auto">
-            The self-cleaning litter box that cat owners can&apos;t stop talking about.
+          <p className="text-[15px] font-semibold text-foreground/75 leading-snug">
+            This changed everything 👇
           </p>
         </header>
 
-        {/* Product image */}
-        <div className="w-full rounded-2xl bg-card shadow-lg ring-1 ring-border/40 p-3">
-          <img
-            src={PRODUCT_IMAGE}
-            alt="GetPawsy automatic self-cleaning cat litter box"
-            width={640}
-            height={640}
-            fetchPriority="high"
-            decoding="async"
-            className="w-full max-w-[320px] mx-auto aspect-square object-contain rounded-xl"
-          />
+        {/* MAIN VISUAL — autoplay looping demo (cat → cleaning → clean result). */}
+        <div
+          ref={videoCtaRef}
+          className="w-full"
+          onClickCapture={handleCtaClick('bio_video_cta')}
+        >
+          <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-xl aspect-[9/16] max-h-[460px] mx-auto">
+            <video
+              src="/videos/go-demo.mp4"
+              poster="/videos/go-demo-poster.jpg"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover"
+              aria-label="Self-cleaning litter box demo"
+            />
+          </div>
         </div>
 
-        {/* Post-image CTA — second click point right after the visual.
-            Catches users who scrolled past the hero CTA stack. */}
-        {isV3 && (
-          <div
-            className="w-full"
-            ref={postImageCtaRef}
-            onClickCapture={handleCtaClick('bio_post_image')}
-          >
-            <TikTokDeepLinkButton
-              label="See it in action →"
-              campaign="tt_bio_link"
-              content="bio_post_image"
-              className="gp-cta-pulse h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
-            />
-          </div>
-        )}
-
-        {/*
-          DEMO VIDEO + CTA — TikTok-style 9:16 muted autoplay loop sitting
-          directly above the proof block. Cold TikTok traffic expects video
-          first, so we give them a 12s product loop. Clicking ANYWHERE on
-          the wrapper (video or button) fires the bio_video_cta placement
-          so the heatmap dashboard can isolate "watched demo → clicked"
-          conversion paths from text-only CTA paths.
-
-          Performance:
-            - poster image (~32KB jpg) renders instantly while video loads
-            - playsInline + muted required for iOS autoplay
-            - preload="metadata" so we don't burn 475KB before the user
-              has even scrolled to the section
-        */}
-        {isV3 && (
-          <div
-            ref={videoCtaRef}
-            className="w-full flex flex-col gap-3"
-            onClickCapture={handleCtaClick('bio_video_cta')}
-          >
-            <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-lg aspect-[9/16] max-h-[420px] mx-auto">
-              <video
-                src="/videos/go-demo.mp4"
-                poster="/videos/go-demo-poster.jpg"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-                className="absolute inset-0 w-full h-full object-cover"
-                aria-label="Self-cleaning litter box demo"
-              />
-              <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-                <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
-                Demo
-              </div>
-            </div>
-            <TikTokDeepLinkButton
-              label="See it in action →"
-              campaign="tt_bio_link"
-              content="bio_video_cta"
-              className="h-12 text-[15px] w-full bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
-            />
-          </div>
-        )}
-
-        {/* 2. PRIMARY CTA — high-conversion stack: proof → nudge → arrow → CTA → micro-commit */}
-        <div className="w-full flex flex-col gap-3" ref={primaryCtaRef} onClickCapture={handleCtaClick('bio_primary')}>
-          {isV3 && (
-            <>
-              {/* Proof line */}
-              <div ref={proofBlockRef} className="text-center flex flex-col gap-0.5">
-                <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</p>
-                <p className="text-[13px] font-semibold text-foreground/85">
-                  Over 12,000 cat owners switched
-                </p>
-              </div>
-
-              {/* Big nudge + bouncing arrow */}
-              <div ref={nudgeBlockRef} className="text-center flex flex-col items-center gap-1">
-                <p className="text-[18px] sm:text-[20px] font-display font-extrabold text-foreground leading-tight">
-                  👇 Tap below to see how it works
-                </p>
-                <span
-                  ref={arrowRef}
-                  aria-hidden
-                  className="gp-arrow-bounce text-[hsl(25,95%,53%)]"
-                >▼</span>
-              </div>
-            </>
-          )}
-
+        {/* SINGLE PRIMARY CTA — only button above the fold */}
+        <div
+          className="w-full flex flex-col gap-2"
+          ref={primaryCtaRef}
+          onClickCapture={handleCtaClick('bio_primary')}
+        >
           <TikTokDeepLinkButton
-            label={ctaLabel}
+            label="Watch how it works →"
             campaign="tt_bio_link"
             content="bio_primary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
-
-          {isV3 && (
-            /* Micro-commitment */
-            <p className="text-center text-[13px] font-semibold text-foreground/75">
-              ⏱️ Takes 10 seconds • No commitment
-            </p>
-          )}
+          <p className="text-center text-[13px] font-semibold text-foreground/70">
+            ⏱️ Takes 10 seconds • No signup
+          </p>
         </div>
 
-        {/* 3. TRUST BADGES */}
-        <ul className="grid grid-cols-2 gap-2 w-full text-[12px] font-semibold text-foreground/85">
-          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
-            <span aria-hidden>🚚</span> Free US Shipping $35+
-          </li>
-          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
-            <span aria-hidden>↩️</span> 30-Day Returns
-          </li>
-          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
-            <span aria-hidden>🔒</span> Secure Checkout
-          </li>
-          <li className="flex items-center gap-2 rounded-lg bg-card border border-border/50 px-3 py-2">
-            <span aria-hidden>💬</span> 24h US Support
-          </li>
-        </ul>
+        {/* ─────────── BELOW THE FOLD (post-intent) ─────────── */}
 
-        {/*
-          URGENCY REVEAL — scroll-gated.
-          Hidden above the fold to protect cold-traffic CTR. Renders only
-          after the user has scrolled past URGENCY_REVEAL_THRESHOLD (60%),
-          i.e. they've already engaged with proof, nudge, comparison-context
-          and now urgency converts intent into action instead of scaring
-          first-time visitors away. `aria-hidden` mirrors the visible state.
-        */}
-        {isV3 && urgencyVisible && (
+        {/* Benefits — appears after the user has scrolled (intent confirmed) */}
+        <section className="w-full flex flex-col gap-3 pt-4">
+          <h2 className="text-[18px] font-display font-extrabold text-foreground text-center">
+            Why everyone is switching
+          </h2>
+          <ul className="flex flex-col gap-2 text-[14px] font-medium text-foreground">
+            {[
+              'Cleans itself automatically',
+              'No smell. Ever.',
+              'Works with most litter',
+              'App-controlled convenience',
+            ].map((b) => (
+              <li
+                key={b}
+                className="flex items-center gap-2.5 rounded-xl bg-card border border-border/60 px-3.5 py-3"
+              >
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[hsl(25,95%,53%)]/15 text-[hsl(25,95%,53%)] text-[12px] font-extrabold">
+                  ✓
+                </span>
+                {b}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Comparison — simple two-column card */}
+        <section className="w-full grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4 flex flex-col gap-2">
+            <p className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
+              Manual litter box
+            </p>
+            <ul className="flex flex-col gap-1.5 text-[13px] text-foreground/80">
+              <li>✖ Daily scooping</li>
+              <li>✖ Bad smell</li>
+              <li>✖ Mess everywhere</li>
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 p-4 flex flex-col gap-2 shadow-sm">
+            <p className="text-[12px] font-bold uppercase tracking-wider text-[hsl(25,95%,53%)]">
+              This smart box
+            </p>
+            <ul className="flex flex-col gap-1.5 text-[13px] font-semibold text-foreground">
+              <li>✔ Cleans itself</li>
+              <li>✔ Always fresh</li>
+              <li>✔ Zero effort</li>
+            </ul>
+          </div>
+        </section>
+
+        {/* Social proof — single high-impact testimonial */}
+        <section className="w-full rounded-2xl border border-border/60 bg-card p-5 flex flex-col gap-2 shadow-sm">
+          <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">
+            ★★★★★
+          </p>
+          <p className="text-[15px] font-medium text-foreground leading-snug">
+            “This literally changed my life. No more smell.”
+          </p>
+          <p className="text-[12px] text-muted-foreground">— Sarah M., cat owner</p>
+        </section>
+
+        {/* Urgency + trust — surfaces only after deep scroll (intent locked in) */}
+        {urgencyVisible && (
           <aside
-            className="w-full rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            className="w-full rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-4 py-3 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-500"
             role="status"
             aria-live="polite"
           >
-            <span aria-hidden className="text-lg">⚡</span>
-            <div className="flex-1">
-              <p className="text-[13px] font-bold text-foreground leading-tight">
-                Limited stock — selling fast this week
-              </p>
-              <p className="text-[11px] text-foreground/70 leading-tight mt-0.5">
-                Restocks ship in 2–3 weeks. Order now to lock in today's batch.
-              </p>
-            </div>
+            <p className="text-[13px] font-bold text-foreground leading-tight">
+              ⚠ Limited stock — selling out fast
+            </p>
+            <p className="text-[12px] text-foreground/75 leading-tight">
+              🇺🇸 Ships from US warehouse
+            </p>
           </aside>
         )}
 
-        {/* 4. MANUAL vs SMART comparison */}
-        <section className="w-full rounded-2xl border border-border bg-card overflow-hidden">
-          <div className="grid grid-cols-3 text-[12px] font-bold uppercase tracking-wider bg-muted/40 px-3 py-2.5 text-foreground/70">
-            <span>Feature</span>
-            <span className="text-center">Manual</span>
-            <span className="text-center text-[hsl(25,95%,53%)]">Smart Box</span>
-          </div>
-          {COMPARISON_ROWS.map((row, i) => (
-            <div
-              key={row.label}
-              className={`grid grid-cols-3 items-center text-[13px] px-3 py-2.5 ${
-                i % 2 === 1 ? 'bg-muted/20' : ''
-              }`}
-            >
-              <span className="font-medium text-foreground">{row.label}</span>
-              <span className="text-center text-muted-foreground">{row.manual}</span>
-              <span className="text-center font-bold text-[hsl(25,95%,53%)]">{row.smart}</span>
-            </div>
-          ))}
-        </section>
-
-        {/* 5. SOCIAL PROOF — multiple reviews */}
-        <section className="w-full flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-display font-bold text-foreground">What cat owners say</h2>
-            <span className="text-[12px] font-semibold text-amber-500">★★★★★ 4.8/5</span>
-          </div>
-          {REVIEWS.map((r) => (
-            <article key={r.name} className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-              <p className="text-amber-500 text-sm leading-none mb-2" aria-label="5 out of 5 stars">★★★★★</p>
-              <p className="text-[14px] font-medium text-foreground leading-snug">
-                “{r.quote}”
-              </p>
-              <p className="mt-2 text-[12px] text-muted-foreground">
-                — {r.name}, {r.location}
-              </p>
-            </article>
-          ))}
-        </section>
-
-        {/* 6. FINAL CTA */}
-        <div className="w-full flex flex-col gap-2" ref={secondaryCtaRef} onClickCapture={handleCtaClick('bio_secondary')}>
+        {/* FINAL CTA */}
+        <div
+          className="w-full flex flex-col gap-2 pt-2"
+          ref={secondaryCtaRef}
+          onClickCapture={handleCtaClick('bio_secondary')}
+        >
           <TikTokDeepLinkButton
-            label={ctaLabel}
+            label="Get yours now →"
             campaign="tt_bio_link"
             content="bio_secondary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
-          <p className="text-center text-[13px] font-semibold text-foreground/80">
+          <p className="text-center text-[13px] font-semibold text-foreground/75">
             Try it risk-free for 30 days
           </p>
         </div>
@@ -859,7 +779,7 @@ export default function LinkInBio() {
         </p>
       </div>
 
-      {/* STICKY CTA — always visible on mobile-first sales page */}
+      {/* STICKY CTA — curiosity copy, matches above-the-fold intent */}
       <div
         className={`fixed bottom-0 inset-x-0 z-50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-background/95 backdrop-blur border-t border-border/60 transition-transform duration-300 ${
           showSticky ? 'translate-y-0' : 'translate-y-full'
@@ -868,7 +788,7 @@ export default function LinkInBio() {
       >
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label={ctaLabel}
+            label="Watch how it works →"
             campaign="tt_bio_link"
             content="bio_sticky"
             className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
