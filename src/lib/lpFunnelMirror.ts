@@ -16,6 +16,10 @@ const MIRRORED_EVENTS = new Set([
   'lp_cta_click',
   'lp_cta_repeat_click',
   'lp_cta_misclick',
+  // Mirrored so the admin CTA dashboard can attribute outbound deep-link
+  // clicks (raw `<TikTokDeepLinkButton>` clicks) per placement × variant
+  // — complementary to lp_cta_click which fires on the higher-level wrapper.
+  'tiktok_deep_link_click',
   'view_item',
   'add_to_cart',
 ]);
