@@ -520,6 +520,15 @@ export default function PlacementOverviewPage() {
                     <th className="py-2 pr-3 text-right">Impressions</th>
                     <th className="py-2 pr-3 text-right">Clicks</th>
                     <th className="py-2 pr-3 text-right">CTR</th>
+                    <th className="py-2 pr-3 text-right" title="Real CTR after subtracting misclicks and repeat clicks">
+                      Intent CTR
+                    </th>
+                    <th className="py-2 pr-3 text-right" title="% of clicks within 600ms of a click on a different placement (likely accidental)">
+                      Misclick %
+                    </th>
+                    <th className="py-2 pr-3 text-right" title="% of clicks that re-click the same placement within 30s (hesitation)">
+                      Repeat %
+                    </th>
                     <th className="py-2 pr-3 text-right">Time-to-visible (p50 / p90)</th>
                     <th className="py-2 pr-3 text-right">Time-to-click (p50 / p90)</th>
                     <th className="py-2 pr-3 text-right">Dwell (p50)</th>
@@ -559,6 +568,25 @@ export default function PlacementOverviewPage() {
                               </Badge>
                             )}
                           </span>
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums font-semibold">
+                          {fmtPct(r.intent_ctr_pct)}
+                        </td>
+                        <td className={`py-2 pr-3 text-right tabular-nums text-xs ${r.misclick_rate_pct >= 10 ? 'text-red-600 font-semibold' : r.misclick_rate_pct > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                          {fmtPct(r.misclick_rate_pct)}
+                          {r.misclicks > 0 && (
+                            <span className="text-[10px] text-muted-foreground ml-1">
+                              ({r.misclicks})
+                            </span>
+                          )}
+                        </td>
+                        <td className={`py-2 pr-3 text-right tabular-nums text-xs ${r.repeat_click_rate_pct >= 15 ? 'text-amber-600 font-semibold' : 'text-muted-foreground'}`}>
+                          {fmtPct(r.repeat_click_rate_pct)}
+                          {r.repeat_clicks > 0 && (
+                            <span className="text-[10px] text-muted-foreground ml-1">
+                              ({r.repeat_clicks})
+                            </span>
+                          )}
                         </td>
                         <td className="py-2 pr-3 text-right tabular-nums text-xs">
                           {fmtMs(r.median_time_to_visible_ms)} / {fmtMs(r.p90_time_to_visible_ms)}
