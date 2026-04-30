@@ -576,20 +576,17 @@ export default function LinkInBio() {
         </Link>
 
         {/*
-          ABOVE THE FOLD — curiosity-first.
-          Pain trigger → headline → sub → autoplay demo video → single CTA → micro-commit.
-          Nothing else. No comparison, no benefits list, no trust badges, no urgency.
-          Goal: turn cold TikTok scrollers into curious clickers.
+          ABOVE THE FOLD — high-converting pre-sell hook.
+          Headline → sub → autoplay demo video → trust line → primary CTA.
+          NOTE: Trust line uses category-true language only (no invented
+          star ratings or review counts) per merchant-safe compliance.
         */}
         <header className="text-center flex flex-col gap-2">
-          <p className="text-[13px] font-semibold text-foreground/65">
-            Still scooping every day? 😩
-          </p>
-          <h1 className="text-[32px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
-            I stopped scooping… <span className="text-[hsl(25,95%,53%)]">forever.</span>
+          <h1 className="text-[34px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
+            Stop Scooping Litter <span className="text-[hsl(25,95%,53%)]">Forever</span>
           </h1>
           <p className="text-[15px] font-semibold text-foreground/75 leading-snug">
-            This changed everything 👇
+            Cat owners are switching to this self-cleaning box
           </p>
         </header>
 
@@ -614,86 +611,83 @@ export default function LinkInBio() {
           </div>
         </div>
 
-        {/* SINGLE PRIMARY CTA — only button above the fold */}
+        {/* Trust line — factual, no invented metrics */}
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[12px] font-semibold text-foreground/70">
+          <span className="inline-flex items-center gap-1">🇺🇸 US warehouse</span>
+          <span className="inline-flex items-center gap-1">🚚 3–7 day delivery</span>
+          <span className="inline-flex items-center gap-1">↩ 30-day returns</span>
+        </div>
+
+        {/* PRIMARY CTA — above the fold */}
         <div
           className="w-full flex flex-col gap-2"
           ref={primaryCtaRef}
           onClickCapture={handleCtaClick('bio_primary')}
         >
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_primary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
           <p className="text-center text-[13px] font-semibold text-foreground/70">
-            ⏱️ Takes 10 seconds • No signup
+            ⏱ 10 seconds • No signup
           </p>
         </div>
 
         {/* ─────────── BELOW THE FOLD (post-intent) ─────────── */}
 
-        {/* Benefits — appears after the user has scrolled (intent confirmed) */}
-        <section className="w-full flex flex-col gap-3 pt-4">
-          <h2 className="text-[18px] font-display font-extrabold text-foreground text-center">
-            Why everyone is switching
+        {/* PAIN — short emotional bullets */}
+        <section className="w-full flex flex-col gap-2 pt-2">
+          <h2 className="text-[18px] font-display font-extrabold text-foreground">
+            Sound familiar?
           </h2>
           <ul className="flex flex-col gap-2 text-[14px] font-medium text-foreground">
             {[
-              'Cleans itself automatically',
-              'No smell. Ever.',
-              'Works with most litter',
-              'App-controlled convenience',
+              'Bad smell in your home',
+              'Daily scooping frustration',
+              'Mess around the litter box',
             ].map((b) => (
               <li
                 key={b}
                 className="flex items-center gap-2.5 rounded-xl bg-card border border-border/60 px-3.5 py-3"
               >
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[hsl(25,95%,53%)]/15 text-[hsl(25,95%,53%)] text-[12px] font-extrabold">
-                  ✓
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-destructive/10 text-destructive text-[13px] font-extrabold">
+                  ✕
                 </span>
+                {b}
+              </li>
+            ))}
+          </ul>
+          <p className="text-[14px] font-semibold text-foreground/80 text-center pt-1">
+            There’s a reason this is going viral 👇
+          </p>
+        </section>
+
+        {/* PRODUCT BENEFITS — fact-based, no review counts */}
+        <section className="w-full flex flex-col gap-2">
+          <h2 className="text-[18px] font-display font-extrabold text-foreground">
+            Why owners are switching
+          </h2>
+          <ul className="grid grid-cols-2 gap-2 text-[13px] font-medium text-foreground">
+            {[
+              'Cleans itself',
+              'Odor-sealed',
+              'App-controlled',
+              'Works with most litter',
+            ].map((b) => (
+              <li
+                key={b}
+                className="flex items-center gap-2 rounded-xl bg-card border border-border/60 px-3 py-2.5"
+              >
+                <span className="text-[hsl(25,95%,53%)] font-extrabold">✓</span>
                 {b}
               </li>
             ))}
           </ul>
         </section>
 
-        {/* Comparison — simple two-column card */}
-        <section className="w-full grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-border/60 bg-card/60 p-4 flex flex-col gap-2">
-            <p className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
-              Manual litter box
-            </p>
-            <ul className="flex flex-col gap-1.5 text-[13px] text-foreground/80">
-              <li>✖ Daily scooping</li>
-              <li>✖ Bad smell</li>
-              <li>✖ Mess everywhere</li>
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 p-4 flex flex-col gap-2 shadow-sm">
-            <p className="text-[12px] font-bold uppercase tracking-wider text-[hsl(25,95%,53%)]">
-              This smart box
-            </p>
-            <ul className="flex flex-col gap-1.5 text-[13px] font-semibold text-foreground">
-              <li>✔ Cleans itself</li>
-              <li>✔ Always fresh</li>
-              <li>✔ Zero effort</li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Social proof — single high-impact testimonial */}
-        <section className="w-full rounded-2xl border border-border/60 bg-card p-5 flex flex-col gap-2 shadow-sm">
-          <p className="text-amber-500 text-base leading-none tracking-widest" aria-label="5 out of 5 stars">
-            ★★★★★
-          </p>
-          <p className="text-[15px] font-medium text-foreground leading-snug">
-            “This literally changed my life. No more smell.”
-          </p>
-          <p className="text-[12px] text-muted-foreground">— Sarah M., cat owner</p>
-        </section>
-
-        {/* Urgency + trust — surfaces only after deep scroll (intent locked in) */}
+        {/* URGENCY — factual logistics, surfaces after scroll */}
         {urgencyVisible && (
           <aside
             className="w-full rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-4 py-3 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-500"
@@ -701,10 +695,10 @@ export default function LinkInBio() {
             aria-live="polite"
           >
             <p className="text-[13px] font-bold text-foreground leading-tight">
-              ⚠ Limited stock — selling out fast
+              📦 Limited US stock — restocks take 4–6 weeks
             </p>
             <p className="text-[12px] text-foreground/75 leading-tight">
-              🇺🇸 Ships from US warehouse
+              🚚 3–7 day shipping from US warehouse
             </p>
           </aside>
         )}
@@ -716,13 +710,13 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_secondary')}
         >
           <TikTokDeepLinkButton
-            label="Get yours now →"
+            label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_secondary"
             className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
           />
           <p className="text-center text-[13px] font-semibold text-foreground/75">
-            Try it risk-free for 30 days
+            30-day risk-free guarantee
           </p>
         </div>
 
@@ -731,7 +725,7 @@ export default function LinkInBio() {
         </p>
       </div>
 
-      {/* STICKY CTA — curiosity copy, matches above-the-fold intent */}
+      {/* STICKY CTA */}
       <div
         className={`fixed bottom-0 inset-x-0 z-50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-background/95 backdrop-blur border-t border-border/60 transition-transform duration-300 ${
           showSticky ? 'translate-y-0' : 'translate-y-full'
@@ -740,7 +734,7 @@ export default function LinkInBio() {
       >
         <div className="mx-auto max-w-md" ref={stickyCtaRef} onClickCapture={handleCtaClick('bio_sticky')}>
           <TikTokDeepLinkButton
-            label="Watch how it works →"
+            label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_sticky"
             className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
