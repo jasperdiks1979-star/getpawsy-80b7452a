@@ -87,6 +87,13 @@ export default function LinkInBio() {
   // visible without the arrow when scrolled past the threshold.
   const arrowRef = useRef<HTMLSpanElement>(null);
 
+  // Scroll-gated urgency reveal — keeps the "Limited stock" message OUT of
+  // the above-the-fold experience (per the high-CTR /go playbook: no buy
+  // pressure before the user has watched/considered). Flips to true the
+  // first time the user crosses the URGENCY_REVEAL_THRESHOLD scroll-depth.
+  // Sticky once true so it doesn't flicker if the user scrolls back up.
+  const [urgencyVisible, setUrgencyVisible] = useState(false);
+
   // ─── Per-placement heatmap & funnel telemetry ──────────────────────────
   // Page-mount epoch — used to compute "time-to-visible" and "time-to-click"
   // in milliseconds for every CTA placement. This is the single most useful
