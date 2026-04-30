@@ -1535,6 +1535,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cta-copy-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CtaCopyPerformancePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="guides"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
