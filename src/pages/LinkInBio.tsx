@@ -575,6 +575,17 @@ export default function LinkInBio() {
       is_repeat_click: isRepeatClick,
       is_misclick: isMisclick,
       repeat_index: priorCountForPlacement,
+      // Auto-winner attribution. Stamped on the canonical click event so
+      // the elector can compute per-(placement, copy_label) CTR with a
+      // single GROUP BY. Only the 3 button placements carry copy labels;
+      // ancillary placements (video/proof/nudge/arrow) stay un-stamped.
+      ...(placement === 'bio_primary'
+        ? { cta_copy_label: primaryCopy.label, cta_copy_mode: copyMode }
+        : placement === 'bio_secondary'
+        ? { cta_copy_label: secondaryCopy.label, cta_copy_mode: copyMode }
+        : placement === 'bio_sticky'
+        ? { cta_copy_label: stickyCopy.label, cta_copy_mode: copyMode }
+        : {}),
       ...CTA_FEATURE_FLAGS,
       ...flags,
       ...attribution,
