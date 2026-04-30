@@ -420,6 +420,8 @@ function generateFallbackDescription(name: string): string {
 
 // ── Category correction engine ──────────────────────────────────────
 
+import { classifyGoogleProductCategory as _gpcClassify } from "../_shared/google-product-category.ts";
+
 function correctCategory(name: string, dbCategory: string | null): string {
   const n = name.toLowerCase();
 
