@@ -67,6 +67,21 @@ const CTA_FEATURE_FLAGS = {
   has_subhead_watch: true,
 } as const;
 
+/**
+ * Scroll-depth gating threshold for the urgency reveal block.
+ *
+ * The "Limited stock" message is intentionally HIDDEN above the fold (per
+ * the high-CTR /go playbook: cold TikTok traffic must not see buy-pressure
+ * before they've engaged with the proof + nudge stack). It only unlocks
+ * once the user has scrolled past this percentage of the page — i.e. they
+ * already showed intent by scrolling deep, so urgency now nudges them to
+ * convert instead of scaring them off.
+ *
+ * 60 % was chosen so the block surfaces around the comparison/reviews
+ * section, well below the primary CTA.
+ */
+const URGENCY_REVEAL_THRESHOLD = 60;
+
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
@@ -86,6 +101,13 @@ export default function LinkInBio() {
   // arrow's own contribution to CTR — the nudge text alone is also
   // visible without the arrow when scrolled past the threshold.
   const arrowRef = useRef<HTMLSpanElement>(null);
+
+  // Scroll-gated urgency reveal — keeps the "Limited stock" message OUT of
+  // the above-the-fold experience (per the high-CTR /go playbook: no buy
+  // pressure before the user has watched/considered). Flips to true the
+  // first time the user crosses the URGENCY_REVEAL_THRESHOLD scroll-depth.
+  // Sticky once true so it doesn't flicker if the user scrolls back up.
+  const [urgencyVisible, setUrgencyVisible] = useState(false);
 
   // ─── Per-placement heatmap & funnel telemetry ──────────────────────────
   // Page-mount epoch — used to compute "time-to-visible" and "time-to-click"
@@ -249,6 +271,25 @@ export default function LinkInBio() {
       const scrolled = window.scrollY + window.innerHeight;
       const total = Math.max(doc.scrollHeight, 1);
       const pct = Math.min(100, Math.round((scrolled / total) * 100));
+      // Scroll-gated urgency reveal — flip-and-stick once the user passes
+      // the threshold. Fire-and-forget tracking + Clarity beacon so the
+      // dashboard can attribute clicks that happened AFTER urgency surfaced.
+      if (pct >= URGENCY_REVEAL_THRESHOLD) {
+        setUrgencyVisible((prev) => {
+          if (prev) return prev;
+          trackEvent('lp_urgency_revealed', {
+            page: '/go',
+            funnel: 'tiktok_bio',
+            depth_pct: pct,
+            threshold_pct: URGENCY_REVEAL_THRESHOLD,
+            cta_variant: CTA_VARIANT,
+            ...attribution,
+          });
+          clarityMilestone('urgency_revealed');
+          clarityTag('saw_urgency', true);
+          return true;
+        });
+      }
       for (const m of milestones) {
         if (pct >= m && !fired.has(m)) {
           fired.add(m);
@@ -556,6 +597,32 @@ export default function LinkInBio() {
             <span aria-hidden>💬</span> 24h US Support
           </li>
         </ul>
+
+        {/*
+          URGENCY REVEAL — scroll-gated.
+          Hidden above the fold to protect cold-traffic CTR. Renders only
+          after the user has scrolled past URGENCY_REVEAL_THRESHOLD (60%),
+          i.e. they've already engaged with proof, nudge, comparison-context
+          and now urgency converts intent into action instead of scaring
+          first-time visitors away. `aria-hidden` mirrors the visible state.
+        */}
+        {urgencyVisible && (
+          <aside
+            className="w-full rounded-xl border border-[hsl(25,95%,53%)]/40 bg-[hsl(25,95%,53%)]/8 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            role="status"
+            aria-live="polite"
+          >
+            <span aria-hidden className="text-lg">⚡</span>
+            <div className="flex-1">
+              <p className="text-[13px] font-bold text-foreground leading-tight">
+                Limited stock — selling fast this week
+              </p>
+              <p className="text-[11px] text-foreground/70 leading-tight mt-0.5">
+                Restocks ship in 2–3 weeks. Order now to lock in today's batch.
+              </p>
+            </div>
+          </aside>
+        )}
 
         {/* 4. MANUAL vs SMART comparison */}
         <section className="w-full rounded-2xl border border-border bg-card overflow-hidden">
