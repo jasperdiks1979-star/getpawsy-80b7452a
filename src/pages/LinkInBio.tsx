@@ -323,6 +323,7 @@ export default function LinkInBio() {
       { el: stickyCtaRef.current, placement: 'bio_sticky' },
       { el: postImageCtaRef.current, placement: 'bio_post_image' },
       { el: proofBlockRef.current, placement: 'uplift_proof' },
+      { el: videoCtaRef.current, placement: 'bio_video_cta' },
       { el: nudgeBlockRef.current, placement: 'uplift_nudge' },
       // Arrow is observed standalone so we can isolate its CTR contribution.
       // It lives inside nudgeBlockRef, but since IntersectionObserver fires
