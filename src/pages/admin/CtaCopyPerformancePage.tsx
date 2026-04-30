@@ -82,7 +82,7 @@ function placementLabel(p: string): string {
 
 export default function CtaCopyPerformancePage() {
   const [hours, setHours] = useState<number>(24 * 7);
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [allRows, setAllRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,7 +90,9 @@ export default function CtaCopyPerformancePage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    // Always fetch the widest window (30d) so the multi-window ranking
+    // table can render 24h / 7d / 30d side-by-side without re-querying.
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     (async () => {
       const { data, error } = await supabase
         .from('lp_funnel_events')
@@ -101,14 +103,19 @@ export default function CtaCopyPerformancePage() {
         .limit(50000);
       if (cancelled) return;
       if (error) setError(error.message);
-      else setRows((data ?? []) as Row[]);
+      else setAllRows((data ?? []) as Row[]);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [hours]);
+  }, []);
 
+  // Slice the cached 30d dataset by the active range for the main scorecard.
+  const sinceMs = Date.now() - hours * 60 * 60 * 1000;
+  const rows = allRows
+    ? allRows.filter((r) => new Date(r.created_at).getTime() >= sinceMs)
+    : null;
   const buckets = rows ? aggregate(rows) : [];
   const grouped = PLACEMENT_ORDER.map((p) => ({
     placement: p,
