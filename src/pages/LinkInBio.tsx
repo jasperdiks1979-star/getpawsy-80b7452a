@@ -628,7 +628,7 @@ export default function LinkInBio() {
             label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_primary"
-            className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
           />
           <p className="text-center text-[13px] font-semibold text-foreground/70">
             ⏱ 10 seconds • No signup
@@ -713,7 +713,7 @@ export default function LinkInBio() {
             label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_secondary"
-            className="gp-cta-pulse h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30"
+            className={`gp-cta-pulse ${urgencyVisible ? 'gp-cta-emphasize' : ''} h-14 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold rounded-xl shadow-lg shadow-[hsl(25,95%,53%)]/30`}
           />
           <p className="text-center text-[13px] font-semibold text-foreground/75">
             30-day risk-free guarantee
@@ -737,7 +737,7 @@ export default function LinkInBio() {
             label="Get Yours Now →"
             campaign="tt_bio_link"
             content="bio_sticky"
-            className="h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold"
+            className={`${urgencyVisible ? 'gp-cta-emphasize' : ''} h-13 text-base w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white font-bold`}
           />
         </div>
       </div>
