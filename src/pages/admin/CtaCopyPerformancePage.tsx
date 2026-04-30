@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { ArrowLeft, MousePointerClick, CheckCircle2, AlertTriangle, XCircle, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { downloadCsv } from '@/lib/lpFunnelExport';
 
 /**
  * CtaCopyPerformancePage — quick scorecard of `/go` CTA copy performance.
