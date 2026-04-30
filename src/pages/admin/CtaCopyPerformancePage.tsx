@@ -166,6 +166,45 @@ export default function CtaCopyPerformancePage() {
     return `${Math.floor(h / 24)}d ago`;
   }
 
+  // CSV export — flattens every (placement, cta_variant) bucket into a row
+  // so the data lines up exactly with what's rendered on screen. Uses the
+  // shared RFC-4180 helper from lpFunnelExport so Excel-on-Windows opens
+  // it cleanly (UTF-8 BOM + quoted cells).
+  function handleExportCsv() {
+    const escape = (v: unknown): string => {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = [
+      'placement',
+      'cta_variant',
+      'impressions',
+      'clicks',
+      'deep_link_clicks',
+      'wrapper_clicks',
+      'ctr_pct',
+    ].join(',');
+    const body = buckets
+      .map((b) => {
+        const ctr = b.impressions ? (b.clicks / b.impressions) * 100 : 0;
+        return [
+          b.placement,
+          b.cta_variant,
+          b.impressions,
+          b.clicks,
+          b.deep_link_clicks,
+          b.clicks - b.deep_link_clicks,
+          b.impressions ? ctr.toFixed(2) : '',
+        ]
+          .map(escape)
+          .join(',');
+      })
+      .join('\n');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    downloadCsv(`${header}\n${body}`, `cta-copy-performance_${hours}h_${stamp}.csv`);
+  }
+
   return (
     <>
       <Helmet>
