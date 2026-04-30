@@ -862,6 +862,29 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
   60%      { transform: translateY(8px); opacity: 1; }
 }
 .gp-cta-pulse { animation: gp-cta-pulse 1.8s ease-out infinite; }
+/*
+ * gp-cta-emphasize — applied to /go CTAs once the visitor crosses 60%
+ * scroll depth. Layers on top of the base pulse to make the button
+ * unmissable AFTER the user shows engagement intent (per CRO playbook:
+ * no buy-pressure above the fold, ramp it up once they're invested).
+ * Adds a subtle scale, a tighter shadow halo and a faster pulse cycle.
+ * Tracking is untouched — this is presentation-only.
+ */
+@keyframes gp-cta-emphasize {
+  0%, 100% {
+    transform: scale(1.02);
+    box-shadow: 0 14px 32px -8px hsl(25 95% 53% / 0.65), 0 0 0 0 hsl(25 95% 53% / 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 18px 38px -8px hsl(25 95% 53% / 0.75), 0 0 0 16px hsl(25 95% 53% / 0);
+  }
+}
+.gp-cta-emphasize {
+  animation: gp-cta-emphasize 1.3s ease-in-out infinite !important;
+  outline: 2px solid hsl(25 95% 53% / 0.55);
+  outline-offset: 2px;
+}
 .gp-arrow-bounce {
   /* Reserve a fixed inline-block box so opacity/translate never reflow */
   display: inline-block;
@@ -885,6 +908,7 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .gp-cta-pulse { animation: none; }
+  .gp-cta-emphasize { animation: none !important; transform: none; }
   /*
    * Reduced-motion fallback — when the user disables animations we lose
    * the bounce + pulse cues, so the arrow needs a static styling that
