@@ -291,11 +291,22 @@ export default function LinkInBio() {
             // Mirror to a window-scoped set so handleCtaClick can read which
             // uplift elements were already visible when the click happened.
             (window as any).__gpGoSeen = seen;
+            // Per-placement first-visible timestamp + scroll depth at the
+            // moment of visibility. These two together explain WHERE in the
+            // page each placement actually surfaces for cold traffic — e.g.
+            // if bio_sticky has time_to_visible_ms ≈ 0 but bio_secondary
+            // averages 8s + 45% scroll, that's the drop-off zone.
+            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            const timeToVisibleMs = Math.max(0, Math.round(now - pageMountAtRef.current));
+            const scrollDepthAtVisible = currentScrollDepthPct();
+            firstVisibleAtRef.current[placement] = now;
             trackEvent('lp_cta_impression', {
               page: '/go',
               funnel: 'tiktok_bio',
               funnel_step: 2,
               placement,
+              time_to_visible_ms: timeToVisibleMs,
+              scroll_depth_at_visible: scrollDepthAtVisible,
               cta_variant: CTA_VARIANT,
               ...CTA_FEATURE_FLAGS,
               ...attribution,
@@ -318,6 +329,13 @@ export default function LinkInBio() {
             } else {
               clarityMilestone(`cta_visible_${placement}`);
               if (placement === 'bio_primary') clarityMilestone('cta_visible');
+              // Per-placement Clarity tags — these become FILTER DIMENSIONS
+              // on the Clarity dashboard. With these you can build heatmap
+              // segments like "users who saw bio_post_image but not
+              // bio_secondary" to find scroll drop-off zones.
+              clarityTag(`saw_${placement}`, true);
+              clarityTag(`time_to_visible_${placement}_ms`, timeToVisibleMs);
+              clarityTag(`scroll_at_visible_${placement}`, scrollDepthAtVisible);
             }
           }
         }
