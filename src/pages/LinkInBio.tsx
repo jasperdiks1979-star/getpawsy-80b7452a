@@ -258,6 +258,10 @@ export default function LinkInBio() {
             depth_pct: m,
             ...attribution,
           });
+          // Mirror to Clarity so heatmaps can be filtered by "users who
+          // reached 75% scroll" — the cleanest drop-off signal we have.
+          clarityMilestone(`scroll_${m}`);
+          clarityTag('max_scroll_depth', m);
         }
       }
     };
