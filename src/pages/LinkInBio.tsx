@@ -87,6 +87,32 @@ export default function LinkInBio() {
   // visible without the arrow when scrolled past the threshold.
   const arrowRef = useRef<HTMLSpanElement>(null);
 
+  // ─── Per-placement heatmap & funnel telemetry ──────────────────────────
+  // Page-mount epoch — used to compute "time-to-visible" and "time-to-click"
+  // in milliseconds for every CTA placement. This is the single most useful
+  // signal for diagnosing where cold TikTok users hesitate or scroll past
+  // without engaging. Stored in a ref so re-renders don't reset the clock.
+  const pageMountAtRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : Date.now());
+  // Per-placement first-visible timestamp — keyed by the same placement
+  // strings used in the IntersectionObserver targets list. Filled the FIRST
+  // time each placement crosses the visibility threshold; consumed at click
+  // time to compute "dwell" (visible → click delta).
+  const firstVisibleAtRef = useRef<Record<string, number>>({});
+  // First-click winner — which placement actually captured the click. Lets
+  // the dashboard answer: "of the 4 placements rendered, which one wins?".
+  const firstClickPlacementRef = useRef<string | null>(null);
+
+  // Helper: current scroll-depth as a 0..100 percentage. Used to stamp every
+  // click with HOW deep the user had scrolled — critical for distinguishing
+  // "clicked above the fold" from "scrolled all the way then clicked sticky".
+  const currentScrollDepthPct = (): number => {
+    if (typeof window === 'undefined') return 0;
+    const doc = document.documentElement;
+    const scrolled = window.scrollY + window.innerHeight;
+    const total = Math.max(doc.scrollHeight, 1);
+    return Math.min(100, Math.round((scrolled / total) * 100));
+  };
+
   // Resolve attribution + auto-bucket bio-link traffic into hook1..hook5.
   //
   // Why bucket bio-link traffic: when a visitor lands on /go without an
