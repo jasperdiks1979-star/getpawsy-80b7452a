@@ -23,6 +23,7 @@ import { TikTokVariantKpis } from '@/components/admin/TikTokVariantKpis';
 import { UtmCampaignFunnelMatching } from '@/components/admin/UtmCampaignFunnelMatching';
 import { ConversionVariantHeatmapCompare } from '@/components/admin/ConversionVariantHeatmapCompare';
 import { CtaVariantCtrMatrix } from '@/components/admin/CtaVariantCtrMatrix';
+import { CtaAbTestLiftReport } from '@/components/admin/CtaAbTestLiftReport';
 
 type RawRow = {
   placement: string | null;
