@@ -539,9 +539,11 @@ export default function LinkInBio() {
           <h1 className="text-[30px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
             I haven&apos;t scooped in <span className="text-[hsl(25,95%,53%)]">3 months</span>.
           </h1>
-          <p className="text-[16px] sm:text-[17px] font-bold text-[hsl(25,95%,53%)] leading-snug">
-            👇 Watch how it works in 10 seconds
-          </p>
+          {isV3 && (
+            <p className="text-[16px] sm:text-[17px] font-bold text-[hsl(25,95%,53%)] leading-snug">
+              👇 Watch how it works in 10 seconds
+            </p>
+          )}
           <p className="text-[15px] font-medium text-foreground/75 max-w-[28ch] mx-auto">
             The self-cleaning litter box that cat owners can&apos;t stop talking about.
           </p>
