@@ -728,6 +728,8 @@ export default function TikTokCtaCtrPage() {
           {/* CTA variant × placement CTR matrix — proves whether new CTA
               experiments (high_conv_v2, etc.) actually beat the previous
               version, and pinpoints which placement carried the lift. */}
+          <CtaAbTestLiftReport />
+
           <CtaVariantCtrMatrix
             startIso={
               rangeMode === 'custom' && customRange?.from && customRange?.to
