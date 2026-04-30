@@ -1,9 +1,10 @@
 /**
- * Canonical Google Product Category mapper.
- * Single source of truth used by:
- *   - supabase/functions/export-merchant-feed
- *   - supabase/functions/google-shopping-feed
- *   - src/lib/google-product-category.ts (frontend re-export)
+ * Google Product Category mapper — frontend mirror.
+ *
+ * Canonical implementation lives in
+ *   supabase/functions/_shared/google-product-category.ts
+ * Both files MUST stay byte-identical (excluding this header) because
+ * Deno edge functions cannot import from the Vite src/ tree.
  *
  * Returns both the numeric Google taxonomy ID (required for GMC feeds)
  * and the full taxonomy path (used in CSV exports + admin UI).
