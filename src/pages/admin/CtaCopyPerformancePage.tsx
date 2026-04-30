@@ -468,6 +468,93 @@ export default function CtaCopyPerformancePage() {
           </Card>
         )}
 
+        {ranking.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                CTR ranking — 24h vs 7d vs 30d
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Best CTA variant per placement, color-graded relative to the
+                top performer in each column. Variants with fewer than{' '}
+                {MIN_IMPRESSIONS_FOR_RANK} impressions in a window show “—”
+                to avoid early-sample noise. Sorted by 7d CTR.
+              </p>
+            </CardHeader>
+            <CardContent className="p-0 space-y-0">
+              {ranking.map((g) => {
+                // Per-window max CTR for the heatmap normalization.
+                const maxByWindow: Record<'24h' | '7d' | '30d', number> = {
+                  '24h': Math.max(0, ...g.rows.map((r) => r.cells['24h'].ctr ?? 0)),
+                  '7d': Math.max(0, ...g.rows.map((r) => r.cells['7d'].ctr ?? 0)),
+                  '30d': Math.max(0, ...g.rows.map((r) => r.cells['30d'].ctr ?? 0)),
+                };
+                return (
+                  <div key={g.placement} className="border-t first:border-t-0">
+                    <div className="px-4 py-2 bg-muted/30 text-xs font-semibold uppercase text-muted-foreground">
+                      {placementLabel(g.placement)}
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="text-[11px] uppercase text-muted-foreground">
+                          <tr>
+                            <th className="text-left p-2 pl-4 w-[8%]">#</th>
+                            <th className="text-left p-2">CTA Variant</th>
+                            {RANKING_WINDOWS.map((w) => (
+                              <th key={w.key} className="text-right p-2 w-[14%]">
+                                {w.key} CTR
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {g.rows.map((r, idx) => (
+                            <tr key={r.cta_variant} className="border-t">
+                              <td className="p-2 pl-4 text-muted-foreground tabular-nums">
+                                {idx + 1}
+                              </td>
+                              <td className="p-2 font-mono text-xs">
+                                {r.cta_variant}
+                                {idx === 0 && r.cells['7d'].ctr != null && (
+                                  <span className="ml-2 text-[10px] uppercase font-bold text-primary">
+                                    leader
+                                  </span>
+                                )}
+                              </td>
+                              {RANKING_WINDOWS.map((w) => {
+                                const cell = r.cells[w.key];
+                                return (
+                                  <td
+                                    key={w.key}
+                                    className="p-2 text-right tabular-nums"
+                                    style={heatStyle(cell.ctr, maxByWindow[w.key])}
+                                    title={`${cell.clicks} clicks / ${cell.impressions} impr`}
+                                  >
+                                    {cell.ctr != null ? (
+                                      <span className="font-semibold">
+                                        {(cell.ctr * 100).toFixed(1)}%
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                    <div className="text-[10px] text-muted-foreground font-normal">
+                                      {cell.clicks}/{cell.impressions}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
         {grouped.map((g) => (
           <Card key={g.placement}>
             <CardHeader>
