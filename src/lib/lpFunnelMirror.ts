@@ -14,6 +14,8 @@ const MIRRORED_EVENTS = new Set([
   'lp_view',
   'lp_cta_impression',
   'lp_cta_click',
+  'lp_cta_repeat_click',
+  'lp_cta_misclick',
   'view_item',
   'add_to_cart',
 ]);
