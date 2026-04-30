@@ -43,6 +43,11 @@ const COLUMNS = [
   'scroll_depth_at_click',
   'is_first_click',
   'first_click_placement',
+  'is_misclick',
+  'is_repeat_click',
+  'repeat_index',
+  'previous_placement',
+  'delta_ms',
   'is_internal',
 ] as const;
 

@@ -2883,6 +2883,7 @@ export type Database = {
           cohort: string | null
           created_at: string
           cta_variant: string | null
+          delta_ms: number | null
           dwell_ms: number | null
           event_name: string
           first_click_placement: string | null
@@ -2890,12 +2891,16 @@ export type Database = {
           id: string
           is_first_click: boolean | null
           is_internal: boolean | null
+          is_misclick: boolean | null
+          is_repeat_click: boolean | null
           lp_click_id: string | null
           lp_placement: string | null
           page_path: string | null
           placement: string | null
+          previous_placement: string | null
           product_id: string | null
           product_name: string | null
+          repeat_index: number | null
           scroll_depth_at_click: number | null
           scroll_depth_at_visible: number | null
           session_id: string
@@ -2911,6 +2916,7 @@ export type Database = {
           cohort?: string | null
           created_at?: string
           cta_variant?: string | null
+          delta_ms?: number | null
           dwell_ms?: number | null
           event_name: string
           first_click_placement?: string | null
@@ -2918,12 +2924,16 @@ export type Database = {
           id?: string
           is_first_click?: boolean | null
           is_internal?: boolean | null
+          is_misclick?: boolean | null
+          is_repeat_click?: boolean | null
           lp_click_id?: string | null
           lp_placement?: string | null
           page_path?: string | null
           placement?: string | null
+          previous_placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          repeat_index?: number | null
           scroll_depth_at_click?: number | null
           scroll_depth_at_visible?: number | null
           session_id: string
@@ -2939,6 +2949,7 @@ export type Database = {
           cohort?: string | null
           created_at?: string
           cta_variant?: string | null
+          delta_ms?: number | null
           dwell_ms?: number | null
           event_name?: string
           first_click_placement?: string | null
@@ -2946,12 +2957,16 @@ export type Database = {
           id?: string
           is_first_click?: boolean | null
           is_internal?: boolean | null
+          is_misclick?: boolean | null
+          is_repeat_click?: boolean | null
           lp_click_id?: string | null
           lp_placement?: string | null
           page_path?: string | null
           placement?: string | null
+          previous_placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          repeat_index?: number | null
           scroll_depth_at_click?: number | null
           scroll_depth_at_visible?: number | null
           session_id?: string
@@ -8623,12 +8638,18 @@ export type Database = {
               ctr_pct: number
               first_click_wins: number
               impressions: number
+              intent_clicks: number
+              intent_ctr_pct: number
               median_dwell_ms: number
               median_time_to_click_ms: number
               median_time_to_visible_ms: number
+              misclick_rate_pct: number
+              misclicks: number
               p90_time_to_click_ms: number
               p90_time_to_visible_ms: number
               placement: string
+              repeat_click_rate_pct: number
+              repeat_clicks: number
             }[]
           }
       get_placement_overview_by_cohort: {
