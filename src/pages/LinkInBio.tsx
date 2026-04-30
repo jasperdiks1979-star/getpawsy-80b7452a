@@ -503,6 +503,7 @@ export default function LinkInBio() {
       is_first_click: isFirstClick,
       first_click_placement: firstClickPlacementRef.current,
       cta_variant: ctaVariant,
+      cohort: getVisitorCohort(),
       ...CTA_FEATURE_FLAGS,
       ...flags,
       ...attribution,
