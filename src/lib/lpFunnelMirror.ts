@@ -46,6 +46,16 @@ function pickNumber(params: Record<string, unknown> | undefined, key: string): n
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function pickInt(params: Record<string, unknown> | undefined, key: string): number | null {
+  const v = pickNumber(params, key);
+  return v == null ? null : Math.round(v);
+}
+
+function pickBool(params: Record<string, unknown> | undefined, key: string): boolean | null {
+  const value = params?.[key];
+  return typeof value === 'boolean' ? value : null;
+}
+
 function pickProductFromItems(params: Record<string, unknown> | undefined): {
   product_id: string | null;
   product_name: string | null;
@@ -90,6 +100,16 @@ export function mirrorLpFunnelEvent(
     // variant × placement to attribute uplift to specific UI experiments.
     cta_variant: pickString(params, 'cta_variant'),
     is_internal: isInternal,
+    // Per-placement timing + first-click attribution. These columns power the
+    // /admin/placement-overview dashboard (CTR, time-to-visible, time-to-click,
+    // first-click winner). Null on events that don't carry these params.
+    time_to_visible_ms: pickInt(params, 'time_to_visible_ms'),
+    time_to_click_ms: pickInt(params, 'time_to_click_ms'),
+    dwell_ms: pickInt(params, 'dwell_ms'),
+    scroll_depth_at_visible: pickInt(params, 'scroll_depth_at_visible'),
+    scroll_depth_at_click: pickInt(params, 'scroll_depth_at_click'),
+    is_first_click: pickBool(params, 'is_first_click'),
+    first_click_placement: pickString(params, 'first_click_placement'),
   };
 
   // Fire-and-forget — analytics must never affect the user experience.
