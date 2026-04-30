@@ -187,7 +187,7 @@ export default function CtaCopyPerformancePage() {
   /** Map a CTR (0..1) to a heatmap background. Cool→hot relative to the
    *  best CTR seen in the same column so weak placements still show
    *  contrast. Null cells (insufficient sample) get a neutral pattern. */
-  function heatStyle(ctr: number | null, max: number): React.CSSProperties {
+  function heatStyle(ctr: number | null, max: number): { backgroundColor?: string } {
     if (ctr == null || max <= 0) return {};
     const ratio = Math.max(0, Math.min(1, ctr / max));
     // hsl(25,95%,53%) is the brand orange. Fade alpha 0.05 → 0.45.
