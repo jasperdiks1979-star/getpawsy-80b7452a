@@ -104,6 +104,13 @@ export const VisitorWorldMap = () => {
   const mapTokenRef = useRef<string | null>(null);
   const previousContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Reset perf marks once on mount (effect, not render — safe in StrictMode)
+  useEffect(() => {
+    resetMapPerf();
+    mapPerfMark("start");
+    mapPerfMark("chunk-loaded");
+  }, []);
+
   // Callback ref to handle map container changes between render modes
   const mapContainerCallback = useCallback((node: HTMLDivElement | null) => {
     if (node && node !== previousContainerRef.current) {
