@@ -158,6 +158,22 @@ const Admin = () => {
   const [refreshMode, setRefreshMode] = useState<"all" | "new-only">("all");
   const [activeTab, setActiveTab] = useState("sales");
   const [syncStockProgress, setSyncStockProgress] = useState<SyncProgress | null>(null);
+
+  // Prefetch the heavy Mapbox chunk + token while the admin is browsing other tabs,
+  // so the visitor world map opens near-instantly.
+  useEffect(() => {
+    if (!isAdmin) return;
+    const idle = (cb: () => void) =>
+      "requestIdleCallback" in window
+        ? (window as any).requestIdleCallback(cb, { timeout: 3000 })
+        : setTimeout(cb, 1500);
+    idle(() => {
+      // Warm the lazy chunk
+      import("@/components/admin/VisitorWorldMap").catch(() => {});
+      // Warm the mapbox token cache (response is cached by edge)
+      supabase.functions.invoke("get-mapbox-token").catch(() => {});
+    });
+  }, [isAdmin]);
   const [fixPricesProgress, setFixPricesProgress] = useState<SyncProgress | null>(null);
   const queryClient = useQueryClient();
   
