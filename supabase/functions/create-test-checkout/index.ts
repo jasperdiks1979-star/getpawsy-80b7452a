@@ -28,8 +28,29 @@ serve(async (req) => {
   const traceId = crypto.randomUUID();
 
   try {
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not configured");
+    // ---- Resolve Stripe key (LIVE preferred, fallback to TEST) ----
+    // STRIPE_SECRET_KEY_LIVE is required to actually charge real money.
+    // If absent we fall back to STRIPE_SECRET_KEY (test) so the function never crashes.
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    const testKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const stripeKey = liveKey || testKey;
+    if (!stripeKey) throw new Error("No Stripe secret key configured");
+
+    // Validate prefix so we fail loudly if a publishable / restricted key was pasted.
+    const usingLive = !!liveKey;
+    if (usingLive && !liveKey!.startsWith("sk_live_")) {
+      throw new Error(
+        `STRIPE_SECRET_KEY_LIVE must start with sk_live_, got: ${liveKey!.substring(0, 8)}`,
+      );
+    }
+    if (!usingLive && !testKey!.startsWith("sk_test_")) {
+      throw new Error(
+        `STRIPE_SECRET_KEY must start with sk_test_, got: ${testKey!.substring(0, 8)}`,
+      );
+    }
+    console.log(
+      `[CREATE-TEST-CHECKOUT][${traceId}] mode=${usingLive ? "LIVE" : "TEST"} key_prefix=${stripeKey.substring(0, 8)}`,
+    );
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
