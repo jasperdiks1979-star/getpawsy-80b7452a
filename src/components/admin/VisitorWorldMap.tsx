@@ -20,6 +20,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
+import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
+import { MapPerfDashboard } from "./MapPerfDashboard";
 
 interface VisitorActivity {
   id: string;
@@ -92,6 +94,14 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[]
 ];
 
 export const VisitorWorldMap = () => {
+  // Reset perf marks on every fresh mount + record start
+  const perfStartedRef = useRef(false);
+  if (!perfStartedRef.current) {
+    perfStartedRef.current = true;
+    resetMapPerf();
+    mapPerfMark("start");
+    mapPerfMark("chunk-loaded");
+  }
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -108,6 +118,7 @@ export const VisitorWorldMap = () => {
       // Container changed - need to reinitialize map
       previousContainerRef.current = node;
       (mapContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      mapPerfMark("container-ready");
       
       // If we already have a map token and the map was previously loaded,
       // we need to recreate the map on the new container
@@ -334,6 +345,7 @@ export const VisitorWorldMap = () => {
   const { data: activities, refetch, isLoading, isFetching } = useQuery({
     queryKey: ["visitor-activities", timeRange],
     queryFn: async () => {
+      mapPerfMark("first-data-start");
       const timeRangeMs = getTimeRangeMs();
       
       if (timeRange === "live") {
@@ -356,6 +368,7 @@ export const VisitorWorldMap = () => {
           }
         });
         
+        mapPerfMark("first-data-end");
         return Array.from(sessionMap.values());
       }
       
@@ -367,6 +380,7 @@ export const VisitorWorldMap = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      mapPerfMark("first-data-end");
       return (data || []) as VisitorActivity[];
     },
     // Live mode refreshes every 3 seconds for real-time feel
@@ -495,6 +509,7 @@ export const VisitorWorldMap = () => {
         let token = mapTokenRef.current;
         
         if (!token) {
+          mapPerfMark("token-fetch-start");
           const { data, error } = await supabase.functions.invoke("get-mapbox-token");
           
           if (error || !data?.token) {
@@ -503,6 +518,10 @@ export const VisitorWorldMap = () => {
           }
           token = data.token;
           mapTokenRef.current = token;
+          mapPerfMark("token-fetch-end");
+        } else {
+          mapPerfMark("token-fetch-start");
+          mapPerfMark("token-fetch-end");
         }
 
         mapboxgl.accessToken = token;
@@ -518,6 +537,7 @@ export const VisitorWorldMap = () => {
           touchZoomRotate: true,
           touchPitch: true,
         });
+        mapPerfMark("map-ctor");
 
         map.current.addControl(
           new mapboxgl.NavigationControl({
@@ -534,6 +554,7 @@ export const VisitorWorldMap = () => {
         map.current.touchPitch.enable();
 
         map.current.on("style.load", () => {
+          mapPerfMark("style-load");
           map.current?.setFog({
             color: "rgb(20, 20, 30)",
             "high-color": "rgb(40, 40, 60)",
@@ -905,6 +926,7 @@ export const VisitorWorldMap = () => {
 
       markersRef.current.push(marker);
     });
+    mapPerfMark("first-paint");
   }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter]);
 
   // Update hot spot markers when data changes
@@ -1372,7 +1394,10 @@ export const VisitorWorldMap = () => {
         ) : (
           <div ref={mapContainerCallback} className="w-full h-full" />
         )}
-        
+
+        {/* Performance dashboard overlay */}
+        <MapPerfDashboard />
+
         {/* Custom Zoom Controls */}
         <div className="absolute bottom-8 left-4 flex flex-col gap-1 z-10">
           <Button
