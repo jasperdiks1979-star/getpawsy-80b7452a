@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { logUtmSession } from '@/lib/utm-session-logger';
 
 export interface UTMParams {
   utm_source?: string;
@@ -22,6 +23,10 @@ export function useUTMTracking() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
+
+    // Fire-and-forget: persist first UTM set for this session to the audit log.
+    // Idempotent — safe to call on every navigation.
+    logUtmSession();
     
     // Extract UTM parameters from URL
     const newUtmParams: UTMParams = {};
