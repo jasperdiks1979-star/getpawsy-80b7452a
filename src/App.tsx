@@ -422,6 +422,7 @@ const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFu
 const TikTokRealtimeFunnelPage = lazyWithRetry(() => import("./pages/admin/TikTokRealtimeFunnelPage"));
 const UtmValidationLogPage = lazyWithRetry(() => import("./pages/admin/UtmValidationLogPage"));
 const TrackingAnomaliesPage = lazyWithRetry(() => import("./pages/admin/TrackingAnomaliesPage"));
+const UtmConversionEventsPage = lazyWithRetry(() => import("./pages/admin/UtmConversionEventsPage"));
 const TikTokExcludedSessionsPage = lazyWithRetry(() => import("./pages/admin/TikTokExcludedSessionsPage"));
 const TikTokFunnelReportPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelReportPage"));
 const TikTokCtaCtrPage = lazyWithRetry(() => import("./pages/admin/TikTokCtaCtrPage"));
@@ -2189,6 +2190,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TrackingAnomaliesPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="utm-conversion-events"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <UtmConversionEventsPage />
                                 </Suspense>
                               }
                             />
