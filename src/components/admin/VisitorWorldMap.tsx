@@ -345,6 +345,7 @@ export const VisitorWorldMap = () => {
   const { data: activities, refetch, isLoading, isFetching } = useQuery({
     queryKey: ["visitor-activities", timeRange],
     queryFn: async () => {
+      mapPerfMark("first-data-start");
       const timeRangeMs = getTimeRangeMs();
       
       if (timeRange === "live") {
@@ -367,6 +368,7 @@ export const VisitorWorldMap = () => {
           }
         });
         
+        mapPerfMark("first-data-end");
         return Array.from(sessionMap.values());
       }
       
@@ -378,6 +380,7 @@ export const VisitorWorldMap = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      mapPerfMark("first-data-end");
       return (data || []) as VisitorActivity[];
     },
     // Live mode refreshes every 3 seconds for real-time feel
