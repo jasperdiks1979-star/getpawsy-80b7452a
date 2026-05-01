@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
+import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
@@ -307,6 +308,32 @@ const Checkout = () => {
         totalPrice
       );
       trackCheckoutActivity();
+
+      // Mirror begin_checkout into lp_funnel_events so the admin
+      // FunnelBySource dashboard can compute per-source conversion.
+      // Uses persisted UTMs from sessionStorage via lpFunnelMirror's
+      // standard param picker (caller passes UTMs explicitly).
+      try {
+        const utm = (() => {
+          try {
+            return {
+              utm_source: sessionStorage.getItem('gp_utm_utm_source') ?? undefined,
+              utm_medium: sessionStorage.getItem('gp_utm_utm_medium') ?? undefined,
+              utm_campaign: sessionStorage.getItem('gp_utm_utm_campaign') ?? undefined,
+              utm_content: sessionStorage.getItem('gp_utm_utm_content') ?? undefined,
+            };
+          } catch {
+            return {};
+          }
+        })();
+        mirrorLpFunnelEvent('begin_checkout', {
+          value: totalPrice,
+          items: items.map(item => ({ item_id: item.id, item_name: item.name })),
+          ...utm,
+        });
+      } catch {
+        // Non-fatal: mirror is best-effort.
+      }
       
       // A/B Test: Track checkout started with variant
       abTest.trackCheckoutStarted(totalPrice);
