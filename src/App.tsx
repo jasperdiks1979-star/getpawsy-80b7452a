@@ -419,6 +419,7 @@ const PinterestAutomationPage = lazyWithRetry(() => import("./pages/admin/Pinter
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
 const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
 const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
+const TikTokRealtimeFunnelPage = lazyWithRetry(() => import("./pages/admin/TikTokRealtimeFunnelPage"));
 const TikTokExcludedSessionsPage = lazyWithRetry(() => import("./pages/admin/TikTokExcludedSessionsPage"));
 const TikTokFunnelReportPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelReportPage"));
 const TikTokCtaCtrPage = lazyWithRetry(() => import("./pages/admin/TikTokCtaCtrPage"));
@@ -2162,6 +2163,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokFunnelReportPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tiktok-realtime-funnel"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokRealtimeFunnelPage />
                                 </Suspense>
                               }
                             />
