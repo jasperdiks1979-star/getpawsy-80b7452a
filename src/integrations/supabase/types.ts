@@ -8259,6 +8259,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_anomalies: {
+        Row: {
+          anomaly_type: string
+          created_at: string
+          details: Json
+          id: string
+          resolved: boolean
+          sample_event_ids: string[]
+          session_id: string
+          severity: string
+          source_channel: string | null
+          updated_at: string
+        }
+        Insert: {
+          anomaly_type: string
+          created_at?: string
+          details?: Json
+          id?: string
+          resolved?: boolean
+          sample_event_ids?: string[]
+          session_id: string
+          severity?: string
+          source_channel?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anomaly_type?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          resolved?: boolean
+          sample_event_ids?: string[]
+          session_id?: string
+          severity?: string
+          source_channel?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
