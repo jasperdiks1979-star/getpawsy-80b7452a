@@ -108,8 +108,6 @@ serve(async (req) => {
       ],
       mode: "payment",
       payment_method_types: ["card", "link"],
-      shipping_address_collection: { allowed_countries: ["US"] },
-      phone_number_collection: { enabled: true },
       locale: "en",
       billing_address_collection: "auto",
       success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&test=1`,
