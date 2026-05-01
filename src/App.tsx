@@ -639,15 +639,16 @@ const App = () => {
                               </Suspense>
                             }
                           />
-                          <Route path="/products/:slug" element={<ProductRouteRedirect />} />
                           <Route
-                            path="/product/:slug"
+                            path="/products/:slug"
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <ProductDetail />
                               </Suspense>
                             }
                           />
+                          {/* Legacy singular path → 302 to canonical plural, preserving UTMs */}
+                          <Route path="/product/:slug" element={<ProductRouteRedirect />} />
                           <Route
                             path="/cart"
                             element={
