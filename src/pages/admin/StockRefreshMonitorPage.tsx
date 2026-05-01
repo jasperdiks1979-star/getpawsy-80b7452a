@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -266,8 +266,8 @@ export default function StockRefreshMonitorPage() {
                     const isExpanded = expandedAttempt === a.id;
                     const hasError = a.status !== "success";
                     return (
-                      <>
-                        <tr key={a.id} className="border-b last:border-0">
+                      <Fragment key={a.id}>
+                        <tr className="border-b last:border-0">
                           <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">
                             {new Date(a.created_at).toLocaleString()}
                           </td>
@@ -302,7 +302,7 @@ export default function StockRefreshMonitorPage() {
                           </td>
                         </tr>
                         {isExpanded && (a.error_message || a.error_stack) && (
-                          <tr key={`${a.id}-detail`} className="border-b last:border-0 bg-muted/30">
+                          <tr className="border-b last:border-0 bg-muted/30">
                             <td colSpan={6} className="py-3 px-3">
                               <div className="text-xs space-y-2">
                                 {a.error_message && (
@@ -329,7 +329,7 @@ export default function StockRefreshMonitorPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
