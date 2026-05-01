@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
-import { Activity, RefreshCw, ShoppingCart, CreditCard, Eye, MousePointerClick, Radio } from "lucide-react";
+import { Activity, RefreshCw, ShoppingCart, CreditCard, Eye, MousePointerClick, Radio, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -222,6 +222,16 @@ export default function TikTokRealtimeFunnelPage() {
             </Tabs>
             <Button variant="outline" size="sm" onClick={fetchData} disabled={refreshing} title="Nu verversen">
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportFunnelCsv({ range, counts, stats, recent })}
+              disabled={initialLoading}
+              title="Exporteer huidige funnel data als CSV"
+            >
+              <Download className="h-4 w-4 mr-1.5" />
+              CSV
             </Button>
           </div>
         </div>
