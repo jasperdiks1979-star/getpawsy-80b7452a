@@ -659,17 +659,37 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_video_cta')}
         >
           <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-xl aspect-[9/16] max-h-[460px] mx-auto">
-            <video
-              src="/videos/go-demo.mp4"
-              poster="/videos/go-demo-poster.jpg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover"
-              aria-label="Self-cleaning litter box demo"
-            />
+            {videoFailed ? (
+              <img
+                src="/videos/go-demo-poster.jpg"
+                alt="Self-cleaning litter box demo"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <video
+                src="/videos/go-demo.mp4"
+                poster="/videos/go-demo-poster.jpg"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 w-full h-full object-cover"
+                aria-label="Self-cleaning litter box demo"
+                onError={() => {
+                  setVideoFailed(true);
+                  try {
+                    trackEvent('lp_video_error', {
+                      placement: 'bio_video_cta',
+                      page: '/go',
+                      funnel: 'tiktok_bio',
+                    });
+                  } catch { /* analytics must never break UX */ }
+                }}
+              />
+            )}
           </div>
         </div>
 
