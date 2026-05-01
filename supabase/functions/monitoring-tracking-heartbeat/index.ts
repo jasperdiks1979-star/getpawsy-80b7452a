@@ -109,6 +109,8 @@ serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const traceId = crypto.randomUUID();
+  const startedAt = new Date();
+  const t0 = performance.now();
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -117,6 +119,33 @@ serve(async (req: Request): Promise<Response> => {
   const now = new Date();
   const results: Array<Record<string, unknown>> = [];
   const newAlerts: string[] = [];
+
+  async function persistRun(status: "success" | "error", errorMessage: string | null) {
+    const finishedAt = new Date();
+    const duration_ms = Math.round(performance.now() - t0);
+    try {
+      await supabase.from("monitoring_runs").insert({
+        function_name: "monitoring-tracking-heartbeat",
+        trace_id: traceId,
+        run_type: "heartbeat",
+        status,
+        success: status === "success",
+        duration_ms,
+        watches_total: WATCHES.length,
+        watches_unhealthy: results.filter((r) => r.unhealthy === true).length,
+        checks_passed: results.filter((r) => r.unhealthy === false).length,
+        checks_failed: results.filter((r) => r.unhealthy === true).length,
+        new_alerts: newAlerts,
+        results,
+        details: { traceId, results, newAlerts, errorMessage },
+        error_message: errorMessage,
+        started_at: startedAt.toISOString(),
+        completed_at: finishedAt.toISOString(),
+      });
+    } catch (e) {
+      console.error("[heartbeat] failed to persist monitoring_runs row", e);
+    }
+  }
 
   try {
     for (const w of WATCHES) {
@@ -214,14 +243,18 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    await persistRun("success", null);
+
     return new Response(
       JSON.stringify({ ok: true, traceId, message: `Heartbeat run complete (${newAlerts.length} active alerts)`, results, newAlerts }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("[heartbeat] error", e);
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    await persistRun("error", msg);
     return new Response(
-      JSON.stringify({ ok: false, traceId, message: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ ok: false, traceId, message: msg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

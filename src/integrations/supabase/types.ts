@@ -4183,10 +4183,15 @@ export type Database = {
           completed_at: string | null
           created_at: string
           details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          function_name: string | null
           id: string
+          new_alerts: string[]
           run_type: string
           started_at: string
           success: boolean | null
+          trace_id: string | null
         }
         Insert: {
           checks_failed?: number | null
@@ -4194,10 +4199,15 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          function_name?: string | null
           id?: string
+          new_alerts?: string[]
           run_type: string
           started_at?: string
           success?: boolean | null
+          trace_id?: string | null
         }
         Update: {
           checks_failed?: number | null
@@ -4205,10 +4215,15 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          function_name?: string | null
           id?: string
+          new_alerts?: string[]
           run_type?: string
           started_at?: string
           success?: boolean | null
+          trace_id?: string | null
         }
         Relationships: []
       }
