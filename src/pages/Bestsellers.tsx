@@ -91,6 +91,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
     e.stopPropagation();
     addItem({
       id: bestseller.product.id,
+      slug: bestseller.product.slug ?? undefined,
       name: bestseller.product.name,
       price: canonicalPrice,
       image: bestseller.product.image_url || '/placeholder.svg',

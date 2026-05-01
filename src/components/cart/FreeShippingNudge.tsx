@@ -54,6 +54,7 @@ export const FreeShippingNudge = memo(({ amountNeeded, currentItemIds }: FreeShi
   const handleAdd = () => {
     addItem({
       id: nudgeProduct.id,
+      slug: nudgeProduct.slug ?? undefined,
       name: nudgeProduct.name,
       price: Number(nudgeProduct.price),
       image: nudgeProduct.image_url || '/placeholder.svg',

@@ -56,6 +56,7 @@ const PinterestLandingPage = () => {
     if (!product) return;
     addItem({
       id: product.id,
+      slug: product.slug ?? undefined,
       name: product.name,
       price: sellingPrice,
       image: product.image_url || '',

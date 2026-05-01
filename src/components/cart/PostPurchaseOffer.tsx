@@ -87,8 +87,8 @@ export const PostPurchaseOffer = ({ purchasedProductIds }: PostPurchaseOfferProp
   const discountedPrice = originalPrice * (1 - OFFER_DISCOUNT_PERCENT / 100);
   const savings = originalPrice - discountedPrice;
   const productUrl = offerProduct.slug
-    ? `/product/${offerProduct.slug}`
-    : `/product/${offerProduct.id}`;
+    ? `/products/${offerProduct.slug}`
+    : `/products`;
 
   return (
     <div className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-6 border border-primary/20 relative">

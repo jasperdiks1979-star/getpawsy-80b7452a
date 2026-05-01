@@ -15,6 +15,7 @@ interface CoPurchaseProduct {
   name: string;
   price: number;
   image_url: string | null;
+  slug: string | null;
   category: string | null;
   frequency: number;
 }
@@ -88,7 +89,7 @@ export const useCustomersAlsoBought = (productId: string, limit = 4) => {
       // Fetch full product details for co-purchased products
       const { data: productDetails, error: productsError } = await supabase
         .from('products_public')
-        .select('id, name, price, image_url, category')
+        .select('id, name, price, image_url, slug, category')
         .in('id', sortedProductIds);
 
       if (productsError) {
@@ -101,13 +102,14 @@ export const useCustomersAlsoBought = (productId: string, limit = 4) => {
       
       if (productDetails && Array.isArray(productDetails)) {
         for (const product of productDetails) {
-          const p = product as { id: string | null; name: string | null; price: number | null; image_url: string | null; category: string | null };
+          const p = product as { id: string | null; name: string | null; price: number | null; image_url: string | null; slug: string | null; category: string | null };
           if (p.id) {
             enrichedProducts.push({
               id: p.id,
               name: p.name || '',
               price: p.price || 0,
               image_url: p.image_url || null,
+              slug: p.slug || null,
               category: p.category || null,
               frequency: coPurchaseCounts[p.id]?.count || 0,
             });

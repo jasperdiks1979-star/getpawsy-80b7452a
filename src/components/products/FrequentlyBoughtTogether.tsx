@@ -299,6 +299,7 @@ export const FrequentlyBoughtTogether = ({
       selectedProducts.forEach(product => {
         addItem({
           id: product.id,
+          slug: product.slug ?? undefined,
           name: product.name,
           price: product.price * (1 - bundleDiscount / 100), // Apply discount to each item
           image: product.image_url || '/placeholder.svg',

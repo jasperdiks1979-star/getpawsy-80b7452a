@@ -133,6 +133,7 @@ const Wishlist = () => {
   const handleAddToCart = (product: any) => {
     addItem({
       id: product.id,
+      slug: product.slug ?? undefined,
       name: product.name,
       price: Number(product.price),
       image: product.image_url || '/placeholder.svg',
@@ -146,6 +147,7 @@ const Wishlist = () => {
     products.forEach((product) => {
       addItem({
         id: product.id,
+        slug: product.slug ?? undefined,
         name: product.name,
         price: Number(product.price),
         image: product.image_url || '/placeholder.svg',

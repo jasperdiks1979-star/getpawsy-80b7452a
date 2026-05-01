@@ -104,6 +104,7 @@ export default function SlowFeederDogBowls() {
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
+        slug: product.slug ?? undefined,
         name: product.name,
         price: effectivePrice,
         image: product.image_url || '/placeholder.svg',

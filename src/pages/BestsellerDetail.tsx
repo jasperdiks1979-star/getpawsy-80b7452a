@@ -682,6 +682,7 @@ const BestsellerDetail = () => {
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: selectedVariant ? `${product.id}_${selectedVariant.vid}` : product.id,
+        slug: product.slug ?? undefined,
         name: `${product.name}${variantSuffix}`,
         price: discountedPrice,
         image: cartItemImage,
@@ -693,6 +694,7 @@ const BestsellerDetail = () => {
       const bumpDiscountedPrice = orderBumpProduct.price * 0.9; // 10% discount
       addItem({
         id: orderBumpProduct.id,
+        slug: orderBumpProduct.slug ?? undefined,
         name: orderBumpProduct.name,
         price: bumpDiscountedPrice,
         image: orderBumpProduct.image_url || '/placeholder.svg',

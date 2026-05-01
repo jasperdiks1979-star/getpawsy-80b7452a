@@ -125,6 +125,7 @@ export const PostAddUpsellModal = ({
       
       addItem({
         id: upsellProduct.id,
+        slug: upsellProduct.slug ?? undefined,
         name: upsellProduct.name,
         price: discountedPrice,
         image: upsellProduct.image_url || '/placeholder.svg',
