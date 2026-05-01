@@ -118,6 +118,7 @@ export const VisitorWorldMap = () => {
       // Container changed - need to reinitialize map
       previousContainerRef.current = node;
       (mapContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      mapPerfMark("container-ready");
       
       // If we already have a map token and the map was previously loaded,
       // we need to recreate the map on the new container
