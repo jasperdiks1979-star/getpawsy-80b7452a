@@ -765,6 +765,7 @@ const ProductDetail = () => {
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id + (selectedVariant ? `-${selectedVariant.vid}` : ""),
+        slug: product.slug ?? undefined,
         name:
           product.name + (selectedVariant ? ` - ${selectedVariant.variantKey || selectedVariant.variantNameEn}` : ""),
         price: Math.round(cartPrice * 100) / 100,

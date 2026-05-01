@@ -109,7 +109,7 @@ const Cart = () => {
                 key={item.id}
                 className="flex gap-4 p-4 bg-card rounded-xl shadow-card"
               >
-                <Link to={`/product/${item.id}`} className="shrink-0">
+                <Link to={item.slug ? `/product/${item.slug}` : '/products'} className="shrink-0">
                   <img
                     src={item.image}
                     alt={item.name}
@@ -117,7 +117,7 @@ const Cart = () => {
                   />
                 </Link>
                 <div className="flex-1 min-w-0">
-                  <Link to={`/product/${item.id}`}>
+                  <Link to={item.slug ? `/product/${item.slug}` : '/products'}>
                     <h3 className="font-semibold hover:text-primary transition-colors">
                       {safeString(item.name)}
                     </h3>

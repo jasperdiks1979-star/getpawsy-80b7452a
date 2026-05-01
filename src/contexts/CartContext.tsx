@@ -19,6 +19,7 @@ const getTrackVisitorEvent = () => import('@/hooks/useVisitorTracking').then(m =
 
 export interface CartItem {
   id: string;
+  slug?: string;
   name: string;
   price: number;
   image: string;
@@ -148,10 +149,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // Track cart activity for visitor map
   const trackCartActivity = useCallback(async () => {
-    // Only track on production domains
-    if (!PRODUCTION_DOMAINS.includes(window.location.hostname)) {
-      return;
-    }
+    // NOTE: previously gated on PRODUCTION_DOMAINS, which silently dropped
+    // every cart event from preview/lovable.app — leaving us blind to TikTok
+    // and other paid/test traffic. Now we always insert; the hook layer marks
+    // non-prod / NL traffic as is_internal so it stays out of reporting.
+    const isProdHost = PRODUCTION_DOMAINS.includes(window.location.hostname);
 
     try {
       let sessionId = sessionStorage.getItem("visitor_session_id");
@@ -210,6 +212,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         utm_medium: utmMedium,
         utm_campaign: utmCampaign,
         referrer: referrer,
+        is_internal: !isProdHost || locationData.country === 'Netherlands' || locationData.country === 'The Netherlands',
       });
       
       if (error) {

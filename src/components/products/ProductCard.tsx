@@ -128,6 +128,7 @@ export const ProductCard = memo(
 
       addItem({
         id: product.id,
+        slug: product.slug ?? undefined,
         name: product.name,
         price: cardPrice,
         image: product.image_url || "/placeholder.svg",
