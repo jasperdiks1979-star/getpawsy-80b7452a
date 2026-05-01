@@ -510,10 +510,10 @@ export const VisitorWorldMap = () => {
         map.current = new mapboxgl.Map({
           container: mapContainerRef.current!,
           style: "mapbox://styles/mapbox/dark-v11",
-          projection: "globe",
-          zoom: 1.5,
+          projection: mapProjection,
+          zoom: mapProjection === "mercator" ? 1.2 : 1.5,
           center: [10, 30],
-          pitch: 20,
+          pitch: mapProjection === "mercator" ? 0 : 20,
           dragRotate: true,
           touchZoomRotate: true,
           touchPitch: true,
