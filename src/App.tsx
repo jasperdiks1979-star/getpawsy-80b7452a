@@ -2167,6 +2167,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-realtime-funnel"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokRealtimeFunnelPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-cta-ctr"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
