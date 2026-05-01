@@ -105,6 +105,14 @@ export default function LinkInBio() {
   // AFTER the user watched the demo vs text-only CTA paths.
   const videoCtaRef = useRef<HTMLDivElement>(null);
 
+  // Video resilience — if /videos/go-demo.mp4 fails to load (mobile data
+  // saver, CDN hiccup, slow 3G), we swap the <video> for the static poster
+  // image so the layout never collapses and the CTA stays visible. Also
+  // tracked as its own event so we can quantify how often video fails on
+  // cold TikTok traffic (which historically had ~7% PDP CTR — a broken
+  // video here would explain a big chunk of the drop-off).
+  const [videoFailed, setVideoFailed] = useState(false);
+
   // Scroll-gated urgency reveal — keeps the "Limited stock" message OUT of
   // the above-the-fold experience (per the high-CTR /go playbook: no buy
   // pressure before the user has watched/considered). Flips to true the
