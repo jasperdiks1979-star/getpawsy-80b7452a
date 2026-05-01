@@ -206,6 +206,9 @@ export default function TikTokRealtimeFunnelPage() {
             <p className="text-sm text-muted-foreground mt-1">
               Live: TikTok sessions → product views → cart → checkout, met conversiepercentages per stap. Realtime via Supabase + auto-refresh elke 30s.
             </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Mapping: <code>browsing</code> op <code>/products/*</code> = Product view · <code>cart</code> = Add to cart · <code>checkout</code> = Checkout
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
