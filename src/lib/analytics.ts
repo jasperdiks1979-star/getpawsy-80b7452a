@@ -69,11 +69,6 @@ export const trackEvent = (
   eventName: string,
   params?: Record<string, unknown>
 ): void => {
-  if (!isGtagAvailable()) {
-    console.debug('[Analytics] gtag not available, skipping event:', eventName);
-    return;
-  }
-
   const isFounder = getFounderModeStatus();
 
   // Hard suppress conversion events for founder
@@ -93,8 +88,17 @@ export const trackEvent = (
   };
 
   logFounderEvent(eventName, false);
-  window.gtag('event', eventName, enrichedParams);
-  console.debug('[Analytics] Event tracked:', eventName, enrichedParams);
+
+  // Send to GA4 only when gtag is loaded. Do NOT early-return here:
+  // the Postgres mirror + UTM validator below MUST run regardless,
+  // otherwise cold TikTok visitors (who hit the page before gtag is
+  // hydrated) leave zero funnel data behind.
+  if (isGtagAvailable()) {
+    window.gtag('event', eventName, enrichedParams);
+    console.debug('[Analytics] Event tracked:', eventName, enrichedParams);
+  } else {
+    console.debug('[Analytics] gtag not ready — mirroring only:', eventName);
+  }
 
   // Mirror funnel + downstream events to Postgres for the admin
   // drop-off report (best-effort, never blocks the UX).
@@ -107,7 +111,7 @@ export const trackEvent = (
   // Cross-event UTM consistency guard. Runs AFTER dispatch so the
   // primary event still ships even if validation throws. Skip the
   // mismatch event itself to avoid infinite recursion.
-  if (eventName !== 'lp_attribution_mismatch') {
+  if (eventName !== 'lp_attribution_mismatch' && isGtagAvailable()) {
     try {
       const violation = validateUtmAttribution(eventName, enrichedParams);
       if (violation) {
