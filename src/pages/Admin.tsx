@@ -22,7 +22,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
 const SalesDashboard = lazy(() => import("@/components/admin/SalesDashboard").then(module => ({ default: module.SalesDashboard })));
 const GoogleAdsGenerator = lazy(() => import("@/components/admin/GoogleAdsGenerator").then(module => ({ default: module.GoogleAdsGenerator })));
-const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
+const VisitorWorldMap = lazy(() =>
+  import("@/components/admin/VisitorWorldMap")
+    .then((module) => {
+      console.log("[VisitorWorldMap] chunk loaded successfully");
+      return { default: module.VisitorWorldMap };
+    })
+    .catch((err) => {
+      console.error("[VisitorWorldMap] chunk failed to load:", err);
+      throw err;
+    })
+);
 const NewsletterSubscribers = lazy(() => import("@/components/admin/NewsletterSubscribers").then(module => ({ default: module.NewsletterSubscribers })));
 const CategoryManager = lazy(() => import("@/components/admin/CategoryManager").then(module => ({ default: module.CategoryManager })));
 const CategoryOrderManager = lazy(() => import("@/components/admin/CategoryOrderManager").then(module => ({ default: module.CategoryOrderManager })));
@@ -70,6 +80,7 @@ import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload"
 import { AdminManualDownload } from "@/components/admin/AdminManualDownload";
 import { ProductCsvExport } from "@/components/admin/ProductCsvExport";
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
+import { MapLoadingFallback } from "@/components/admin/MapLoadingFallback";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -2893,23 +2904,7 @@ const Admin = () => {
           {/* Visitor World Map Tab */}
           <TabsContent value="visitor-map">
             <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex flex-col items-center justify-center gap-4 py-8">
-                    <div className="relative">
-                      <div className="h-16 w-16 rounded-full border-4 border-muted" />
-                      <Loader2 className="h-16 w-16 animate-spin text-primary absolute inset-0" />
-                    </div>
-                    <div className="text-center space-y-1">
-                      <p className="font-medium">Wereldkaart wordt geladen…</p>
-                      <p className="text-sm text-muted-foreground">
-                        Mapbox-bibliotheek (~800KB) + bezoekersdata ophalen.<br />
-                        Eerste keer: 5–10 sec. Daarna direct.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              }>
+              <Suspense fallback={<MapLoadingFallback />}>
                 <VisitorWorldMap />
               </Suspense>
             </AuthErrorBoundary>

@@ -94,14 +94,6 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[]
 ];
 
 export const VisitorWorldMap = () => {
-  // Reset perf marks on every fresh mount + record start
-  const perfStartedRef = useRef(false);
-  if (!perfStartedRef.current) {
-    perfStartedRef.current = true;
-    resetMapPerf();
-    mapPerfMark("start");
-    mapPerfMark("chunk-loaded");
-  }
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -111,6 +103,13 @@ export const VisitorWorldMap = () => {
   const [mapContainerReady, setMapContainerReady] = useState(false);
   const mapTokenRef = useRef<string | null>(null);
   const previousContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset perf marks once on mount (effect, not render — safe in StrictMode)
+  useEffect(() => {
+    resetMapPerf();
+    mapPerfMark("start");
+    mapPerfMark("chunk-loaded");
+  }, []);
 
   // Callback ref to handle map container changes between render modes
   const mapContainerCallback = useCallback((node: HTMLDivElement | null) => {
