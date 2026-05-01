@@ -213,6 +213,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
 
     addItem({
       id: product.id,
+      slug: (product as any).slug,
       name: product.name,
       price: getCanonicalPrice(product),
       image: product.image_url || '/placeholder.svg',
@@ -248,7 +249,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
               className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <Link 
-                to={`/product/${product.id}`} 
+                to={(product as any).slug ? `/product/${(product as any).slug}` : '/products'} 
                 className="shrink-0"
                 onClick={() => handleProductClick(product, index)}
               >
@@ -260,7 +261,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
               </Link>
               <div className="flex-1 min-w-0">
                 <Link 
-                  to={`/product/${product.id}`}
+                  to={(product as any).slug ? `/product/${(product as any).slug}` : '/products'}
                   onClick={() => handleProductClick(product, index)}
                 >
                   <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
@@ -314,7 +315,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
             className="group bg-card rounded-xl overflow-hidden shadow-card hover:shadow-lg transition-all"
           >
             <Link 
-              to={`/product/${product.id}`} 
+              to={(product as any).slug ? `/product/${(product as any).slug}` : '/products'} 
               className="block"
               onClick={() => handleProductClick(product, index)}
             >
@@ -328,7 +329,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
             </Link>
             <div className="p-3">
               <Link 
-                to={`/product/${product.id}`}
+                to={(product as any).slug ? `/product/${(product as any).slug}` : '/products'}
                 onClick={() => handleProductClick(product, index)}
               >
                 <h4 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors mb-1">
