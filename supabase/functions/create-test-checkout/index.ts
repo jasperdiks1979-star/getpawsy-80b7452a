@@ -75,8 +75,10 @@ serve(async (req) => {
       );
     }
 
-    // ---- Build minimal test line item ($0.50) ----
-    const TEST_AMOUNT_CENTS = 50; // $0.50 — Stripe USD minimum
+    // ---- Build minimal test line item (€0.50) ----
+    // Stripe account settles in EUR, so we charge in EUR to hit the €0.50 minimum exactly.
+    const TEST_AMOUNT_CENTS = 50; // €0.50 — Stripe EUR minimum
+    const TEST_CURRENCY = "eur";
     const TEST_ITEM_ID = "TEST-PAYMENT-VALIDATION";
 
     // Reuse Stripe customer if exists
@@ -92,7 +94,7 @@ serve(async (req) => {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: TEST_CURRENCY,
             product_data: {
               name: "Test Payment — GetPawsy Validation",
               description:
@@ -137,7 +139,7 @@ serve(async (req) => {
       stripe_session_id: session.id,
       status: "pending",
       total_amount: 0.5,
-      currency: "usd",
+      currency: TEST_CURRENCY,
       customer_email: user.email,
       items: [
         {
