@@ -115,7 +115,7 @@ export const BestsellersSection = () => {
                   className="flex-shrink-0 w-[160px] md:w-[220px] snap-start flex flex-col"
                 >
                   <Link
-                    to={`/product/${slug}`}
+                    to={`/products/${slug}`}
                     className="group flex flex-col rounded-2xl border border-border/40 bg-card overflow-hidden hover:shadow-md transition-shadow flex-1"
                   >
                     <div className="aspect-square overflow-hidden bg-muted">
