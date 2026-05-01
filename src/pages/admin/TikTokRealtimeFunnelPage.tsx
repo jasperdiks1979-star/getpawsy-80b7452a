@@ -275,8 +275,9 @@ export default function TikTokRealtimeFunnelPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recente TikTok sessions</CardTitle>
             {lastUpdated && (
-              <span className="text-xs text-muted-foreground">
-                Laatst bijgewerkt: {lastUpdated.toLocaleTimeString("nl-NL")}
+              <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                {refreshing && <RefreshCw className="h-3 w-3 animate-spin" />}
+                {refreshing ? "Verversen…" : `Laatst bijgewerkt ${lastUpdated.toLocaleTimeString("nl-NL")}`}
               </span>
             )}
           </CardHeader>
