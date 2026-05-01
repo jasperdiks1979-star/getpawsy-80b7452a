@@ -94,6 +94,14 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[]
 ];
 
 export const VisitorWorldMap = () => {
+  // Reset perf marks on every fresh mount + record start
+  const perfStartedRef = useRef(false);
+  if (!perfStartedRef.current) {
+    perfStartedRef.current = true;
+    resetMapPerf();
+    mapPerfMark("start");
+    mapPerfMark("chunk-loaded");
+  }
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
