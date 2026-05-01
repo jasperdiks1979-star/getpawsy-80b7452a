@@ -1394,7 +1394,10 @@ export const VisitorWorldMap = () => {
         ) : (
           <div ref={mapContainerCallback} className="w-full h-full" />
         )}
-        
+
+        {/* Performance dashboard overlay */}
+        <MapPerfDashboard />
+
         {/* Custom Zoom Controls */}
         <div className="absolute bottom-8 left-4 flex flex-col gap-1 z-10">
           <Button
