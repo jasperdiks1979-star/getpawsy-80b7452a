@@ -349,6 +349,7 @@ const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatL
 const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
 const HeroCtaAnalyticsPage = lazyWithRetry(() => import("./pages/admin/HeroCtaAnalyticsPage"));
 const CtaCopyPerformancePage = lazyWithRetry(() => import("./pages/admin/CtaCopyPerformancePage"));
+const StockRefreshMonitorPage = lazyWithRetry(() => import("./pages/admin/StockRefreshMonitorPage"));
 const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
 const GuideGeneratorPage = lazyWithRetry(() => import("./pages/admin/GuideGeneratorPage"));
 const ComparisonGeneratorPage = lazyWithRetry(() => import("./pages/admin/ComparisonGeneratorPage"));
