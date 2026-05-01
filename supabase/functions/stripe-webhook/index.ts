@@ -463,7 +463,7 @@ serve(async (req) => {
               stripe_payment_intent_id: session.payment_intent as string,
               status: "paid",
               total_amount: totalValue,
-              currency: session.currency || "eur",
+              currency: session.currency || "usd",
               customer_email: customerEmail,
               shipping_address: session.shipping_details,
               items: items,
@@ -488,7 +488,7 @@ serve(async (req) => {
             customerEmail,
             items,
             totalValue,
-            session.currency || "eur",
+            session.currency || "usd",
             session.shipping_details,
             customerName || undefined,
             orderAccessToken || undefined
@@ -504,7 +504,7 @@ serve(async (req) => {
           customerName || undefined,
           items,
           totalValue,
-          session.currency || "eur",
+          session.currency || "usd",
           session.shipping_details
         );
 
