@@ -8576,6 +8576,18 @@ export type Database = {
       }
     }
     Functions: {
+      bulk_reactivate_cat_dog_products: {
+        Args: never
+        Returns: {
+          category_links_created: number
+          details: Json
+          reactivated_count: number
+          skipped_no_image: number
+          skipped_no_price: number
+          skipped_other_species: number
+          skipped_policy_unsafe: number
+        }[]
+      }
       check_rate_limit: {
         Args: {
           p_function_name: string
