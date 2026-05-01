@@ -48,6 +48,7 @@ const sections = [
       { to: '/admin/tracking-alerts-history', label: 'Tracking Alerts History', icon: Activity, desc: 'Per alert: 24u current vs baseline en laatste event-tijdstip' },
       { to: '/admin/monitoring-runs', label: 'Monitoring Runs', icon: Activity, desc: 'Audit-log heartbeat-runs met filters op datum, function en status' },
       { to: '/admin/events-live', label: 'Events Live', icon: Activity, desc: 'Per-uur add_to_cart / begin_checkout / purchase, gesplitst internal vs external' },
+      { to: '/admin/funnel-by-source', label: 'Funnel by Source', icon: Filter, desc: 'view_item → add_to_cart → begin_checkout → purchase per UTM-bron met drop-off %' },
       { to: '/admin/revenue-scaling', label: 'Revenue Scaling', icon: TrendingUp, desc: '12-month blueprint' },
       { to: '/dashboard', label: 'Product Manager', icon: Package, desc: 'Products, orders, CJ tools' },
       { to: '/admin/winners-boost', label: 'Winners Auto-Boost', icon: TrendingUp, desc: 'Top products & homepage promotion' },
