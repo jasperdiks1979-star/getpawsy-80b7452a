@@ -124,7 +124,11 @@ export const VisitorWorldMap = () => {
   }, []);
   const [timeRange, setTimeRange] = useState<TimeRange>("15m");
   const [liveActivities, setLiveActivities] = useState<VisitorActivity[]>([]);
-  const [mapProjection, setMapProjection] = useState<"globe" | "mercator">("globe");
+  // Default to Mercator on mobile (loads ~2x faster than 3D globe)
+  const [mapProjection, setMapProjection] = useState<"globe" | "mercator">(() => {
+    if (typeof window === "undefined") return "globe";
+    return window.innerWidth < 768 ? "mercator" : "globe";
+  });
   const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
   const [checkoutNotifications, setCheckoutNotifications] = useState(() => {
     const saved = localStorage.getItem("checkout-notifications-enabled");
