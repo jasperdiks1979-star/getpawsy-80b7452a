@@ -426,6 +426,7 @@ const UtmConversionEventsPage = lazyWithRetry(() => import("./pages/admin/UtmCon
 const TrackingAlertsHistoryPage = lazyWithRetry(() => import("./pages/admin/TrackingAlertsHistoryPage"));
 const MonitoringRunsPage = lazyWithRetry(() => import("./pages/admin/MonitoringRunsPage"));
 const EventsLivePage = lazyWithRetry(() => import("./pages/admin/EventsLivePage"));
+const FunnelBySourcePage = lazyWithRetry(() => import("./pages/admin/FunnelBySourcePage"));
 const TikTokExcludedSessionsPage = lazyWithRetry(() => import("./pages/admin/TikTokExcludedSessionsPage"));
 const TikTokFunnelReportPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelReportPage"));
 const TikTokCtaCtrPage = lazyWithRetry(() => import("./pages/admin/TikTokCtaCtrPage"));
@@ -2225,6 +2226,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <EventsLivePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="funnel-by-source"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FunnelBySourcePage />
                                 </Suspense>
                               }
                             />
