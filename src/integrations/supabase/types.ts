@@ -4188,10 +4188,14 @@ export type Database = {
           function_name: string | null
           id: string
           new_alerts: string[]
+          results: Json
           run_type: string
           started_at: string
+          status: string | null
           success: boolean | null
           trace_id: string | null
+          watches_total: number | null
+          watches_unhealthy: number | null
         }
         Insert: {
           checks_failed?: number | null
@@ -4204,10 +4208,14 @@ export type Database = {
           function_name?: string | null
           id?: string
           new_alerts?: string[]
+          results?: Json
           run_type: string
           started_at?: string
+          status?: string | null
           success?: boolean | null
           trace_id?: string | null
+          watches_total?: number | null
+          watches_unhealthy?: number | null
         }
         Update: {
           checks_failed?: number | null
@@ -4220,10 +4228,14 @@ export type Database = {
           function_name?: string | null
           id?: string
           new_alerts?: string[]
+          results?: Json
           run_type?: string
           started_at?: string
+          status?: string | null
           success?: boolean | null
           trace_id?: string | null
+          watches_total?: number | null
+          watches_unhealthy?: number | null
         }
         Relationships: []
       }
