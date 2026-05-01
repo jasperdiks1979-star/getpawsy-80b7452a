@@ -926,6 +926,7 @@ export const VisitorWorldMap = () => {
 
       markersRef.current.push(marker);
     });
+    mapPerfMark("first-paint");
   }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter]);
 
   // Update hot spot markers when data changes
