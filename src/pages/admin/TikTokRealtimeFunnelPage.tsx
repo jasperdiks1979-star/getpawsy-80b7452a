@@ -93,9 +93,15 @@ export default function TikTokRealtimeFunnelPage() {
         if (r.created_at < cur.firstSeen) cur.firstSeen = r.created_at;
         if (!cur.lastPath && r.page_path) cur.lastPath = r.page_path;
         if (!cur.campaign && r.utm_campaign) cur.campaign = r.utm_campaign;
+        // Activity-type mapping (UI label → DB activity_type):
+        //   "Add to cart"    → activity_type = "cart"
+        //   "Checkout"       → activity_type = "checkout"
+        //   "Product view"   → activity_type = "browsing" on a /products/ path
         if (r.activity_type === "cart") cur.cart = true;
         if (r.activity_type === "checkout") cur.checkout = true;
-        if ((r.page_path || "").startsWith("/products/") || (r.page_path || "").startsWith("/product/")) {
+        const path = r.page_path || "";
+        const isProductPath = path.startsWith("/products/") || path.startsWith("/product/");
+        if (isProductPath && (r.activity_type === "browsing" || r.activity_type === "cart" || r.activity_type === "checkout")) {
           cur.productView = true;
         }
         sessions.set(r.session_id, cur);
