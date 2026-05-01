@@ -81,7 +81,7 @@ async function sendAdminOrderNotification(
     console.log("[STRIPE-WEBHOOK] Sending admin notification email to:", adminEmail);
 
     const itemsList = items.map((item: any) => 
-      `• ${item.name} (${item.quantity}x) - €${(item.price * item.quantity).toFixed(2)}`
+      `• ${item.name} (${item.quantity}x) - $${(item.price * item.quantity).toFixed(2)}`
     ).join('\n');
 
     const addressText = shippingAddress?.address ? 
@@ -100,7 +100,7 @@ ${shippingAddress.address.country || ''}` : 'Geen adres beschikbaar';
       body: JSON.stringify({
         from: "Pawsy Orders <alerts@getpawsy.pet>",
         to: [adminEmail],
-        subject: `🛒 Nieuwe bestelling #${orderId.slice(0, 8)} - €${totalAmount.toFixed(2)}`,
+        subject: `🛒 New order #${orderId.slice(0, 8)} - $${totalAmount.toFixed(2)}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #10B981;">🎉 Nieuwe bestelling ontvangen!</h1>
@@ -108,7 +108,7 @@ ${shippingAddress.address.country || ''}` : 'Geen adres beschikbaar';
             <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h2 style="margin-top: 0;">Bestellingsgegevens</h2>
               <p><strong>Order ID:</strong> ${orderId}</p>
-              <p><strong>Totaalbedrag:</strong> €${totalAmount.toFixed(2)} ${currency.toUpperCase()}</p>
+              <p><strong>Total:</strong> $${totalAmount.toFixed(2)} ${currency.toUpperCase()}</p>
               <p><strong>Klant:</strong> ${customerName || 'Onbekend'}</p>
               <p><strong>Email:</strong> ${customerEmail}</p>
             </div>
