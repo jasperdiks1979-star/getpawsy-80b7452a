@@ -62,8 +62,8 @@ export default function TestPaymentPage() {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Real charge.</strong> Your card will be debited $0.50 USD
-            (~€0.46) plus Stripe fees. Refund yourself afterwards via the
+            <strong>Real charge — LIVE mode.</strong> Your card will be debited
+            €0.50 EUR plus Stripe fees. Refund yourself afterwards via the
             Stripe Dashboard → Payments → Refund.
           </AlertDescription>
         </Alert>
@@ -108,7 +108,7 @@ export default function TestPaymentPage() {
           ) : (
             <>
               <CreditCard className="mr-2 h-4 w-4" />
-              Start $0.50 test payment
+              Start €0.50 LIVE test payment
             </>
           )}
         </Button>
