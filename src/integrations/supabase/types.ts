@@ -8821,6 +8821,7 @@ export type Database = {
           skipped_policy_unsafe: number
         }[]
       }
+      check_heartbeat_liveness: { Args: never; Returns: Json }
       check_rate_limit: {
         Args: {
           p_function_name: string
@@ -9111,6 +9112,7 @@ export type Database = {
         }
         Returns: string
       }
+      purge_old_monitoring_runs: { Args: never; Returns: number }
       test_tiktok_exclusion_fixtures: {
         Args: { p_prefix: string }
         Returns: Json
