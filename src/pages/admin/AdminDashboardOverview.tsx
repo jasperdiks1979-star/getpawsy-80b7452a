@@ -45,6 +45,7 @@ const sections = [
       { to: '/admin/utm-validation-log', label: 'UTM Validation Log', icon: ShieldAlert, desc: 'Per sessie UTMs valideren — detecteert ontbrekende/foutieve params' },
       { to: '/admin/tracking-anomalies', label: 'Tracking Anomalies', icon: ShieldAlert, desc: 'Sessies met events die niet correleren (orphan cart/checkout, mismatches)' },
       { to: '/admin/utm-conversion-events', label: 'UTM × Conversions', icon: ShieldAlert, desc: 'Per add_to_cart en checkout de UTM-set van die sessie' },
+      { to: '/admin/tracking-alerts-history', label: 'Tracking Alerts History', icon: Activity, desc: 'Per alert: 24u current vs baseline en laatste event-tijdstip' },
       { to: '/admin/revenue-scaling', label: 'Revenue Scaling', icon: TrendingUp, desc: '12-month blueprint' },
       { to: '/dashboard', label: 'Product Manager', icon: Package, desc: 'Products, orders, CJ tools' },
       { to: '/admin/winners-boost', label: 'Winners Auto-Boost', icon: TrendingUp, desc: 'Top products & homepage promotion' },
