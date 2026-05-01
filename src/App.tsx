@@ -2221,6 +2221,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="events-live"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <EventsLivePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-cta-ctr"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
