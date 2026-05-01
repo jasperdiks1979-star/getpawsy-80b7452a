@@ -2230,6 +2230,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="funnel-by-source"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FunnelBySourcePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-cta-ctr"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
