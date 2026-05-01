@@ -20,10 +20,20 @@ interface RefreshRun {
   notified_complete_at: string | null;
 }
 
+interface RecentProduct {
+  id: string;
+  name: string | null;
+  slug: string | null;
+  stock_sync_status: string | null;
+  last_stock_sync_at: string | null;
+  is_active: boolean | null;
+}
+
 export default function StockRefreshMonitorPage() {
   const [run, setRun] = useState<RefreshRun | null>(null);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [recent, setRecent] = useState<RecentProduct[]>([]);
   const { toast } = useToast();
 
   async function fetchLatestRun() {
@@ -42,6 +52,20 @@ export default function StockRefreshMonitorPage() {
     setLoading(false);
   }
 
+  async function fetchRecentSynced() {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, slug, stock_sync_status, last_stock_sync_at, is_active")
+      .not("last_stock_sync_at", "is", null)
+      .order("last_stock_sync_at", { ascending: false })
+      .limit(25);
+    if (error) {
+      console.error(error);
+      return;
+    }
+    setRecent((data ?? []) as RecentProduct[]);
+  }
+
   async function triggerMonitor() {
     setTriggering(true);
     try {
@@ -51,7 +75,7 @@ export default function StockRefreshMonitorPage() {
         title: "Monitor refreshed",
         description: data?.message ?? "Run state updated",
       });
-      await fetchLatestRun();
+      await Promise.all([fetchLatestRun(), fetchRecentSynced()]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast({ title: "Monitor failed", description: msg, variant: "destructive" });
@@ -62,7 +86,11 @@ export default function StockRefreshMonitorPage() {
 
   useEffect(() => {
     fetchLatestRun();
-    const interval = setInterval(fetchLatestRun, 30_000);
+    fetchRecentSynced();
+    const interval = setInterval(() => {
+      fetchLatestRun();
+      fetchRecentSynced();
+    }, 30_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -178,8 +206,84 @@ export default function StockRefreshMonitorPage() {
       <p className="text-xs text-muted-foreground">
         Auto-refreshes every 30 seconds. Monitor cron runs every 10 minutes and emails when complete.
       </p>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Recently synced products</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recent.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-4">
+              No products with a recorded sync yet.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase tracking-wide text-muted-foreground border-b">
+                  <tr>
+                    <th className="text-left py-2 pr-3">Product</th>
+                    <th className="text-left py-2 pr-3">Product ID</th>
+                    <th className="text-left py-2 pr-3">Status</th>
+                    <th className="text-left py-2 pr-3">Active</th>
+                    <th className="text-left py-2">Last sync</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent.map((p) => (
+                    <tr key={p.id} className="border-b last:border-0">
+                      <td className="py-2 pr-3">
+                        <div className="font-medium truncate max-w-[260px]">
+                          {p.name ?? "(no name)"}
+                        </div>
+                        {p.slug && (
+                          <div className="text-xs text-muted-foreground truncate max-w-[260px]">
+                            /{p.slug}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2 pr-3">
+                        <code className="text-xs">{p.id.slice(0, 8)}…</code>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <StatusBadge status={p.stock_sync_status} />
+                      </td>
+                      <td className="py-2 pr-3">
+                        {p.is_active ? (
+                          <Badge variant="secondary">Live</Badge>
+                        ) : (
+                          <Badge variant="outline">Hidden</Badge>
+                        )}
+                      </td>
+                      <td className="py-2 text-muted-foreground">
+                        {p.last_stock_sync_at
+                          ? new Date(p.last_stock_sync_at).toLocaleString()
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
+}
+
+function StatusBadge({ status }: { status: string | null }) {
+  if (!status) return <Badge variant="outline">unknown</Badge>;
+  const s = status.toLowerCase();
+  if (s === "ok" || s === "synced") {
+    return <Badge className="bg-green-600 hover:bg-green-600 text-white">{status}</Badge>;
+  }
+  if (s === "pending_refresh" || s === "pending") {
+    return <Badge variant="secondary">{status}</Badge>;
+  }
+  if (s.includes("error") || s.includes("fail")) {
+    return <Badge variant="destructive">{status}</Badge>;
+  }
+  return <Badge variant="outline">{status}</Badge>;
 }
 
 function Stat({
