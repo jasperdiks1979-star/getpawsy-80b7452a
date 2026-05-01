@@ -19,6 +19,7 @@ import {
   Gauge,
   Search,
   Layers,
+  Filter,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
