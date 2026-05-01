@@ -2879,9 +2879,18 @@ const Admin = () => {
             <AuthErrorBoundary>
               <Suspense fallback={
                 <Card className="p-8">
-                  <div className="flex items-center justify-center gap-3">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Wereldkaart laden...</span>
+                  <div className="flex flex-col items-center justify-center gap-4 py-8">
+                    <div className="relative">
+                      <div className="h-16 w-16 rounded-full border-4 border-muted" />
+                      <Loader2 className="h-16 w-16 animate-spin text-primary absolute inset-0" />
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="font-medium">Wereldkaart wordt geladen…</p>
+                      <p className="text-sm text-muted-foreground">
+                        Mapbox-bibliotheek (~800KB) + bezoekersdata ophalen.<br />
+                        Eerste keer: 5–10 sec. Daarna direct.
+                      </p>
+                    </div>
                   </div>
                 </Card>
               }>
