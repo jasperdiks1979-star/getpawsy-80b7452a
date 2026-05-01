@@ -445,3 +445,61 @@ function FunnelBar({ label, num, den }: { label: string; num: number; den: numbe
     </div>
   );
 }
+
+function exportFunnelCsv({
+  range,
+  counts,
+  stats,
+  recent,
+}: {
+  range: Range;
+  counts: FunnelCounts;
+  stats: { pvRate: number; cartRate: number; cartFromPv: number; checkoutRate: number; checkoutFromCart: number };
+  recent: RecentSession[];
+}) {
+  const esc = (v: unknown) => {
+    const s = v === null || v === undefined ? "" : String(v);
+    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines: string[] = [];
+  const generatedAt = new Date().toISOString();
+
+  lines.push(`# TikTok Realtime Funnel export`);
+  lines.push(`# generated_at,${generatedAt}`);
+  lines.push(`# range,${range}`);
+  lines.push("");
+
+  lines.push("section,metric,value,denominator,rate_pct");
+  lines.push(`funnel,sessions,${counts.sessions},${counts.sessions},100`);
+  lines.push(`funnel,product_views,${counts.productViews},${counts.sessions},${stats.pvRate.toFixed(2)}`);
+  lines.push(`funnel,add_to_cart,${counts.carts},${counts.sessions},${stats.cartRate.toFixed(2)}`);
+  lines.push(`funnel,checkout,${counts.checkouts},${counts.sessions},${stats.checkoutRate.toFixed(2)}`);
+  lines.push(`step,product_view_to_cart,${counts.carts},${counts.productViews},${stats.cartFromPv.toFixed(2)}`);
+  lines.push(`step,cart_to_checkout,${counts.checkouts},${counts.carts},${stats.checkoutFromCart.toFixed(2)}`);
+  lines.push("");
+
+  lines.push("session_id,first_seen,page_path,utm_campaign,reached_cart,reached_checkout");
+  for (const r of recent) {
+    lines.push(
+      [
+        esc(r.session_id),
+        esc(r.created_at),
+        esc(r.page_path || ""),
+        esc(r.utm_campaign || ""),
+        r.reachedCart ? "true" : "false",
+        r.reachedCheckout ? "true" : "false",
+      ].join(","),
+    );
+  }
+
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  a.href = url;
+  a.download = `tiktok-funnel-${range}-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
