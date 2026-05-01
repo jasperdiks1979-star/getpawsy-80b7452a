@@ -145,6 +145,7 @@ export const BestsellersSection = () => {
                     onClick={() => {
                       addItem({
                         id: product.id,
+                        slug: (product as any).slug ?? undefined,
                         name: product.name || 'Product',
                         price,
                         image: imageUrl,

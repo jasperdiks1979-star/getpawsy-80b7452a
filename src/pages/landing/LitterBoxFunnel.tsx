@@ -58,6 +58,7 @@ const LitterBoxFunnel = () => {
     for (let i = 0; i < bundle.qty; i++) {
       addItem({
         id: product.id,
+        slug: (product as any).slug ?? undefined,
         name: product.name,
         price: bundle.discount > 0 ? Math.round((price * (1 - bundle.discount / 100)) * 100) / 100 : price,
         image: product.image_url || '',

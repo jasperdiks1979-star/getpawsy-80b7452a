@@ -51,6 +51,7 @@ export default function TrainingLandingPage() {
   const handleAddToCart = (product: typeof data.primaryProduct) => {
     addItem({
       id: product.id,
+      slug: product.slug,
       name: product.name,
       price: product.price,
       image: product.image,
@@ -70,6 +71,7 @@ export default function TrainingLandingPage() {
     data.bundle.items.forEach(item => {
       addItem({
         id: item.id,
+        slug: item.slug,
         name: item.name,
         price: Math.round(item.price * (1 - data.bundle!.discount / 100) * 100) / 100,
         image: item.image,

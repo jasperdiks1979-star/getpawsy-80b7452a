@@ -138,6 +138,7 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
                 onClick={() => {
                   addItem({
                     id: product.id,
+                    slug: (product as any).slug ?? undefined,
                     name: product.name,
                     price: getCanonicalPrice(product),
                     image: product.image_url || '/placeholder.svg',

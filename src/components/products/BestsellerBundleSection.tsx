@@ -204,6 +204,7 @@ export const BestsellerBundleSection = ({
         
         addItem({
           id: product.id,
+          slug: product.slug ?? undefined,
           name: product.name,
           price: discountedPrice,
           image: product.image_url || '/placeholder.svg',

@@ -72,6 +72,7 @@ export const ProductBundleUpsell = ({
     // Add companion product to cart
     addItem({
       id: companion.id,
+      slug: companion.slug,
       name: companion.name,
       price: companion.price,
       image: companion.image_url,

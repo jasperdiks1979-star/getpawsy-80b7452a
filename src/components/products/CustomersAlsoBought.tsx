@@ -76,6 +76,7 @@ export const CustomersAlsoBought = ({
   const handleQuickAdd = (product: typeof products[0], index: number) => {
     addItem({
       id: product.id,
+      slug: (product as any).slug ?? undefined,
       name: product.name,
       price: product.price,
       image: product.image_url || '/placeholder.svg',

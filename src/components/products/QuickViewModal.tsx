@@ -129,6 +129,7 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: cartId,
+        slug: product.slug ?? undefined,
         name: `${product.name}${variantSuffix}`,
         price: displayPrice,
         image: selectedVariant?.variantImage || product.image_url || '/placeholder.svg',

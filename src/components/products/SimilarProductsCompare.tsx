@@ -59,6 +59,7 @@ export function SimilarProductsCompare({ products, currentProductName }: Similar
   const handleQuickAdd = (p: CompareProduct) => {
     addItem({
       id: p.id,
+      slug: p.slug ?? undefined,
       name: p.name,
       price: p.price,
       image: p.image_url || '/placeholder.svg',
