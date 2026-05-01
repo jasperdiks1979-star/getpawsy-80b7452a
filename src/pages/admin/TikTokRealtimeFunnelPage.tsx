@@ -325,8 +325,57 @@ export default function TikTokRealtimeFunnelPage() {
             )}
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </>
+  );
+}
+
+function LiveBadge({ status, pulse }: { status: "connecting" | "live" | "offline"; pulse: boolean }) {
+  const color =
+    status === "live"
+      ? "bg-emerald-500"
+      : status === "connecting"
+        ? "bg-amber-500"
+        : "bg-muted-foreground";
+  const label = status === "live" ? "Live" : status === "connecting" ? "Connecting…" : "Offline";
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full border border-border bg-background">
+      <span className="relative inline-flex h-2 w-2">
+        {status === "live" && (
+          <span
+            className={`absolute inline-flex h-full w-full rounded-full ${color} opacity-60 ${pulse ? "animate-ping" : ""}`}
+          />
+        )}
+        <span className={`relative inline-flex rounded-full h-2 w-2 ${color}`} />
+      </span>
+      <Radio className="h-3 w-3 text-muted-foreground" />
+      {label}
+    </span>
+  );
+}
+
+function InitialSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-lg border border-border p-4">
+            <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+            <div className="h-7 w-16 bg-muted rounded animate-pulse mt-2" />
+            <div className="h-3 w-28 bg-muted rounded animate-pulse mt-2" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border border-border p-6">
+        <div className="h-4 w-40 bg-muted rounded animate-pulse" />
+        <div className="h-2 w-full bg-muted rounded animate-pulse mt-4" />
+        <div className="h-2 w-5/6 bg-muted rounded animate-pulse mt-3" />
+        <div className="h-2 w-4/6 bg-muted rounded animate-pulse mt-3" />
+      </div>
+      <p className="text-xs text-muted-foreground text-center">Live data laden…</p>
+    </div>
   );
 }
 
