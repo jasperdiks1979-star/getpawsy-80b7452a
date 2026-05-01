@@ -22,7 +22,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
 const SalesDashboard = lazy(() => import("@/components/admin/SalesDashboard").then(module => ({ default: module.SalesDashboard })));
 const GoogleAdsGenerator = lazy(() => import("@/components/admin/GoogleAdsGenerator").then(module => ({ default: module.GoogleAdsGenerator })));
-const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
+const VisitorWorldMap = lazy(() =>
+  import("@/components/admin/VisitorWorldMap")
+    .then((module) => {
+      console.log("[VisitorWorldMap] chunk loaded successfully");
+      return { default: module.VisitorWorldMap };
+    })
+    .catch((err) => {
+      console.error("[VisitorWorldMap] chunk failed to load:", err);
+      throw err;
+    })
+);
 const NewsletterSubscribers = lazy(() => import("@/components/admin/NewsletterSubscribers").then(module => ({ default: module.NewsletterSubscribers })));
 const CategoryManager = lazy(() => import("@/components/admin/CategoryManager").then(module => ({ default: module.CategoryManager })));
 const CategoryOrderManager = lazy(() => import("@/components/admin/CategoryOrderManager").then(module => ({ default: module.CategoryOrderManager })));
