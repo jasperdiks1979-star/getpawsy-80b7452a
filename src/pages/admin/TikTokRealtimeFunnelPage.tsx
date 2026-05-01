@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
-import { Activity, RefreshCw, ShoppingCart, CreditCard, Eye, MousePointerClick } from "lucide-react";
+import { Activity, RefreshCw, ShoppingCart, CreditCard, Eye, MousePointerClick, Radio } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,13 +48,17 @@ function pct(num: number, den: number) {
 
 export default function TikTokRealtimeFunnelPage() {
   const [range, setRange] = useState<Range>("24h");
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<"connecting" | "live" | "offline">("connecting");
+  const [pulse, setPulse] = useState(false);
   const [counts, setCounts] = useState<FunnelCounts>({ sessions: 0, productViews: 0, carts: 0, checkouts: 0 });
   const [recent, setRecent] = useState<RecentSession[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    setRefreshing(true);
     try {
       const cutoff = new Date(Date.now() - RANGE_MS[range]).toISOString();
       const { data, error: err } = await supabase
@@ -123,12 +127,13 @@ export default function TikTokRealtimeFunnelPage() {
       console.error("[TikTokRealtimeFunnel] fetch error", e);
       setError(e instanceof Error ? e.message : "Onbekende fout");
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setRefreshing(false);
     }
   }, [range]);
 
   useEffect(() => {
-    setLoading(true);
+    setInitialLoading(true);
     fetchData();
   }, [fetchData]);
 
@@ -143,9 +148,15 @@ export default function TikTokRealtimeFunnelPage() {
     const ch = supabase
       .channel("tiktok-realtime-funnel")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "visitor_activity" }, () => {
+        // Pulse the "Live" indicator briefly when a fresh event lands
+        setPulse(true);
+        setTimeout(() => setPulse(false), 1200);
         fetchData();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setLiveStatus("live");
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setLiveStatus("offline");
+      });
     return () => {
       supabase.removeChannel(ch);
     };
@@ -167,15 +178,27 @@ export default function TikTokRealtimeFunnelPage() {
       <Helmet>
         <title>TikTok Realtime Funnel | Admin</title>
       </Helmet>
-      <div className="container py-6 space-y-6 max-w-6xl">
+      <div className="container py-6 space-y-6 max-w-6xl relative">
+        {/* Top progress bar — visible during any background refresh */}
+        <div
+          aria-hidden
+          className={`fixed top-0 left-0 right-0 h-0.5 z-50 overflow-hidden transition-opacity ${
+            refreshing ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <div className="h-full w-1/3 bg-primary animate-[progress-slide_1.2s_ease-in-out_infinite]" />
+        </div>
+        <style>{`@keyframes progress-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }`}</style>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
               <Activity className="h-6 w-6 text-primary" />
               TikTok Realtime Funnel
+              <LiveBadge status={liveStatus} pulse={pulse} />
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Live: TikTok sessions → product views → cart → checkout, met conversiepercentages per stap.
+              Live: TikTok sessions → product views → cart → checkout, met conversiepercentages per stap. Realtime via Supabase + auto-refresh elke 30s.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -188,11 +211,16 @@ export default function TikTokRealtimeFunnelPage() {
                 <TabsTrigger value="7d">7d</TabsTrigger>
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={refreshing} title="Nu verversen">
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
+
+        {initialLoading ? (
+          <InitialSkeleton />
+        ) : (
+          <>
 
         {error && (
           <Card className="border-destructive">
