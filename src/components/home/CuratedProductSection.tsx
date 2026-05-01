@@ -97,6 +97,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                   onClick={() =>
                     addItem({
                       id: p.id,
+                      slug: p.slug ?? undefined,
                       name: p.name || 'Product',
                       price,
                       image: p.image_url || '/placeholder.svg',
