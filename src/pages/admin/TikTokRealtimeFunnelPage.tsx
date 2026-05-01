@@ -244,21 +244,21 @@ export default function TikTokRealtimeFunnelPage() {
           />
           <FunnelStep
             icon={<Eye className="h-4 w-4" />}
-            label="Product views"
+            label="Product views (browsing)"
             value={counts.productViews}
             sub={`${stats.pvRate.toFixed(1)}% van sessions`}
             tone="default"
           />
           <FunnelStep
             icon={<ShoppingCart className="h-4 w-4" />}
-            label="Add to cart"
+            label="Add to cart (cart)"
             value={counts.carts}
             sub={`${stats.cartRate.toFixed(2)}% van sessions · ${stats.cartFromPv.toFixed(1)}% van PV`}
             tone={counts.carts === 0 && counts.sessions > 20 ? "warn" : "default"}
           />
           <FunnelStep
             icon={<CreditCard className="h-4 w-4" />}
-            label="Checkout"
+            label="Checkout (checkout)"
             value={counts.checkouts}
             sub={`${stats.checkoutRate.toFixed(2)}% van sessions · ${stats.checkoutFromCart.toFixed(1)}% van cart`}
             tone={counts.checkouts === 0 && counts.carts > 0 ? "warn" : "default"}
