@@ -62,10 +62,12 @@ const CTA_FEATURE_FLAGS = {
  * already showed intent by scrolling deep, so urgency now nudges them to
  * convert instead of scaring them off.
  *
- * 60 % was chosen so the block surfaces around the comparison/reviews
- * section, well below the primary CTA.
+ * 25 % was chosen so urgency surfaces shortly after the primary CTA — TikTok
+ * traffic is high-bounce, so we want the urgency nudge BEFORE most users leave.
+ * Previous value (60 %) only fired for the ~7 % of visitors who scrolled
+ * deep enough, missing the bulk of cold ad traffic.
  */
-const URGENCY_REVEAL_THRESHOLD = 60;
+const URGENCY_REVEAL_THRESHOLD = 25;
 
 /**
  * Dynamic CTA copy is now driven by the auto-winner system.
@@ -102,6 +104,14 @@ export default function LinkInBio() {
   // placement (`bio_video_cta`) so heatmaps can attribute clicks that fired
   // AFTER the user watched the demo vs text-only CTA paths.
   const videoCtaRef = useRef<HTMLDivElement>(null);
+
+  // Video resilience — if /videos/go-demo.mp4 fails to load (mobile data
+  // saver, CDN hiccup, slow 3G), we swap the <video> for the static poster
+  // image so the layout never collapses and the CTA stays visible. Also
+  // tracked as its own event so we can quantify how often video fails on
+  // cold TikTok traffic (which historically had ~7% PDP CTR — a broken
+  // video here would explain a big chunk of the drop-off).
+  const [videoFailed, setVideoFailed] = useState(false);
 
   // Scroll-gated urgency reveal — keeps the "Limited stock" message OUT of
   // the above-the-fold experience (per the high-CTR /go playbook: no buy
@@ -649,17 +659,37 @@ export default function LinkInBio() {
           onClickCapture={handleCtaClick('bio_video_cta')}
         >
           <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-black shadow-xl aspect-[9/16] max-h-[460px] mx-auto">
-            <video
-              src="/videos/go-demo.mp4"
-              poster="/videos/go-demo-poster.jpg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover"
-              aria-label="Self-cleaning litter box demo"
-            />
+            {videoFailed ? (
+              <img
+                src="/videos/go-demo-poster.jpg"
+                alt="Self-cleaning litter box demo"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <video
+                src="/videos/go-demo.mp4"
+                poster="/videos/go-demo-poster.jpg"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 w-full h-full object-cover"
+                aria-label="Self-cleaning litter box demo"
+                onError={() => {
+                  setVideoFailed(true);
+                  try {
+                    trackEvent('lp_video_error', {
+                      placement: 'bio_video_cta',
+                      page: '/go',
+                      funnel: 'tiktok_bio',
+                    });
+                  } catch { /* analytics must never break UX */ }
+                }}
+              />
+            )}
           </div>
         </div>
 
