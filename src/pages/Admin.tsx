@@ -80,6 +80,7 @@ import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload"
 import { AdminManualDownload } from "@/components/admin/AdminManualDownload";
 import { ProductCsvExport } from "@/components/admin/ProductCsvExport";
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
+import { MapLoadingFallback } from "@/components/admin/MapLoadingFallback";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
