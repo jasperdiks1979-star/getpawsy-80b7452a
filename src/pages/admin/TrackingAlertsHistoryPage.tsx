@@ -50,7 +50,7 @@ export default function TrackingAlertsHistoryPage() {
     setLoading(true);
     try {
       const cutoff = new Date(Date.now() - RANGE_HOURS * 60 * 60 * 1000).toISOString();
-      const { data, error: err } = await supabase
+      const { data, error: err } = await (supabase as any)
         .from("monitoring_runs")
         .select("id, trace_id, status, success, started_at, completed_at, results, error_message")
         .eq("function_name", "monitoring-tracking-heartbeat")
@@ -58,7 +58,7 @@ export default function TrackingAlertsHistoryPage() {
         .order("started_at", { ascending: false })
         .limit(500);
       if (err) throw err;
-      setRuns((data || []) as RunRow[]);
+      setRuns(((data as unknown) || []) as RunRow[]);
       setLastUpdated(new Date());
       setError(null);
     } catch (e) {
