@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,11 +29,28 @@ interface RecentProduct {
   is_active: boolean | null;
 }
 
+interface MonitorAttempt {
+  id: string;
+  run_id: string | null;
+  trace_id: string;
+  attempt_number: number;
+  status: "success" | "error" | "retrying";
+  error_message: string | null;
+  error_stack: string | null;
+  duration_ms: number | null;
+  remaining: number | null;
+  synced_ok: number | null;
+  synced_error: number | null;
+  created_at: string;
+}
+
 export default function StockRefreshMonitorPage() {
   const [run, setRun] = useState<RefreshRun | null>(null);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [recent, setRecent] = useState<RecentProduct[]>([]);
+  const [attempts, setAttempts] = useState<MonitorAttempt[]>([]);
+  const [expandedAttempt, setExpandedAttempt] = useState<string | null>(null);
   const { toast } = useToast();
 
   async function fetchLatestRun() {
@@ -66,6 +83,19 @@ export default function StockRefreshMonitorPage() {
     setRecent((data ?? []) as RecentProduct[]);
   }
 
+  async function fetchAttempts() {
+    const { data, error } = await supabase
+      .from("stock_refresh_monitor_attempts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (error) {
+      console.error(error);
+      return;
+    }
+    setAttempts((data ?? []) as MonitorAttempt[]);
+  }
+
   async function triggerMonitor() {
     setTriggering(true);
     try {
@@ -75,7 +105,7 @@ export default function StockRefreshMonitorPage() {
         title: "Monitor refreshed",
         description: data?.message ?? "Run state updated",
       });
-      await Promise.all([fetchLatestRun(), fetchRecentSynced()]);
+      await Promise.all([fetchLatestRun(), fetchRecentSynced(), fetchAttempts()]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast({ title: "Monitor failed", description: msg, variant: "destructive" });
@@ -87,9 +117,11 @@ export default function StockRefreshMonitorPage() {
   useEffect(() => {
     fetchLatestRun();
     fetchRecentSynced();
+    fetchAttempts();
     const interval = setInterval(() => {
       fetchLatestRun();
       fetchRecentSynced();
+      fetchAttempts();
     }, 30_000);
     return () => clearInterval(interval);
   }, []);
@@ -209,6 +241,106 @@ export default function StockRefreshMonitorPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Recent monitor attempts (with retry log)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {attempts.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-4">
+              No monitor attempts logged yet.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase tracking-wide text-muted-foreground border-b">
+                  <tr>
+                    <th className="text-left py-2 pr-3">Time</th>
+                    <th className="text-left py-2 pr-3">Trace</th>
+                    <th className="text-left py-2 pr-3">Attempt</th>
+                    <th className="text-left py-2 pr-3">Status</th>
+                    <th className="text-left py-2 pr-3">Duration</th>
+                    <th className="text-left py-2">Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attempts.map((a) => {
+                    const isExpanded = expandedAttempt === a.id;
+                    const hasError = a.status !== "success";
+                    return (
+                      <Fragment key={a.id}>
+                        <tr className="border-b last:border-0">
+                          <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">
+                            {new Date(a.created_at).toLocaleString()}
+                          </td>
+                          <td className="py-2 pr-3">
+                            <code className="text-xs">{a.trace_id.slice(0, 8)}…</code>
+                          </td>
+                          <td className="py-2 pr-3">{a.attempt_number}</td>
+                          <td className="py-2 pr-3">
+                            <AttemptStatusBadge status={a.status} />
+                          </td>
+                          <td className="py-2 pr-3 text-muted-foreground">
+                            {a.duration_ms != null ? `${a.duration_ms}ms` : "—"}
+                          </td>
+                          <td className="py-2">
+                            {hasError && a.error_message ? (
+                              <button
+                                onClick={() =>
+                                  setExpandedAttempt(isExpanded ? null : a.id)
+                                }
+                                className="text-xs underline text-foreground hover:text-primary text-left max-w-[360px] truncate"
+                              >
+                                {a.error_message}
+                              </button>
+                            ) : a.remaining != null ? (
+                              <span className="text-xs text-muted-foreground">
+                                remaining {a.remaining} · ok {a.synced_ok ?? 0} · err{" "}
+                                {a.synced_error ?? 0}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && (a.error_message || a.error_stack) && (
+                          <tr className="border-b last:border-0 bg-muted/30">
+                            <td colSpan={6} className="py-3 px-3">
+                              <div className="text-xs space-y-2">
+                                {a.error_message && (
+                                  <div>
+                                    <div className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                                      Error
+                                    </div>
+                                    <pre className="whitespace-pre-wrap break-words text-foreground">
+                                      {a.error_message}
+                                    </pre>
+                                  </div>
+                                )}
+                                {a.error_stack && (
+                                  <div>
+                                    <div className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                                      Stack
+                                    </div>
+                                    <pre className="whitespace-pre-wrap break-words text-muted-foreground max-h-64 overflow-auto">
+                                      {a.error_stack}
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Recently synced products</CardTitle>
         </CardHeader>
         <CardContent>
@@ -269,6 +401,20 @@ export default function StockRefreshMonitorPage() {
       </Card>
     </div>
   );
+}
+
+function AttemptStatusBadge({ status }: { status: "success" | "error" | "retrying" }) {
+  if (status === "success") {
+    return <Badge className="bg-green-600 hover:bg-green-600 text-white">success</Badge>;
+  }
+  if (status === "retrying") {
+    return (
+      <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-400">
+        retrying
+      </Badge>
+    );
+  }
+  return <Badge variant="destructive">error</Badge>;
 }
 
 function StatusBadge({ status }: { status: string | null }) {

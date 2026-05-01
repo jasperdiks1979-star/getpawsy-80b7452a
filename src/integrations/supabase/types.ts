@@ -7674,6 +7674,59 @@ export type Database = {
           },
         ]
       }
+      stock_refresh_monitor_attempts: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          error_stack: string | null
+          id: string
+          remaining: number | null
+          run_id: string | null
+          status: string
+          synced_error: number | null
+          synced_ok: number | null
+          trace_id: string
+        }
+        Insert: {
+          attempt_number: number
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          id?: string
+          remaining?: number | null
+          run_id?: string | null
+          status: string
+          synced_error?: number | null
+          synced_ok?: number | null
+          trace_id: string
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          id?: string
+          remaining?: number | null
+          run_id?: string | null
+          status?: string
+          synced_error?: number | null
+          synced_ok?: number | null
+          trace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_refresh_monitor_attempts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "stock_refresh_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_refresh_runs: {
         Row: {
           completed_at: string | null
