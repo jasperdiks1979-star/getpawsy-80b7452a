@@ -120,11 +120,13 @@ serve(async (req: Request): Promise<Response> => {
   const results: Array<Record<string, unknown>> = [];
   const newAlerts: string[] = [];
 
+  let persistError: string | null = null;
+
   async function persistRun(status: "success" | "error", errorMessage: string | null) {
     const finishedAt = new Date();
     const duration_ms = Math.round(performance.now() - t0);
     try {
-      await supabase.from("monitoring_runs").insert({
+      const { error: insertErr } = await supabase.from("monitoring_runs").insert({
         function_name: "monitoring-tracking-heartbeat",
         trace_id: traceId,
         run_type: "heartbeat",
@@ -142,7 +144,12 @@ serve(async (req: Request): Promise<Response> => {
         started_at: startedAt.toISOString(),
         completed_at: finishedAt.toISOString(),
       });
+      if (insertErr) {
+        persistError = insertErr.message;
+        console.error("[heartbeat] persist error", insertErr);
+      }
     } catch (e) {
+      persistError = e instanceof Error ? e.message : String(e);
       console.error("[heartbeat] failed to persist monitoring_runs row", e);
     }
   }
@@ -246,8 +253,15 @@ serve(async (req: Request): Promise<Response> => {
     await persistRun("success", null);
 
     return new Response(
-      JSON.stringify({ ok: true, traceId, message: `Heartbeat run complete (${newAlerts.length} active alerts)`, results, newAlerts }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        ok: persistError === null,
+        traceId,
+        message: `Heartbeat run complete (${newAlerts.length} active alerts)`,
+        results,
+        newAlerts,
+        persistError,
+      }),
+      { status: persistError ? 500 : 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("[heartbeat] error", e);
