@@ -506,6 +506,7 @@ export const VisitorWorldMap = () => {
         let token = mapTokenRef.current;
         
         if (!token) {
+          mapPerfMark("token-fetch-start");
           const { data, error } = await supabase.functions.invoke("get-mapbox-token");
           
           if (error || !data?.token) {
@@ -514,6 +515,10 @@ export const VisitorWorldMap = () => {
           }
           token = data.token;
           mapTokenRef.current = token;
+          mapPerfMark("token-fetch-end");
+        } else {
+          mapPerfMark("token-fetch-start");
+          mapPerfMark("token-fetch-end");
         }
 
         mapboxgl.accessToken = token;
@@ -529,6 +534,7 @@ export const VisitorWorldMap = () => {
           touchZoomRotate: true,
           touchPitch: true,
         });
+        mapPerfMark("map-ctor");
 
         map.current.addControl(
           new mapboxgl.NavigationControl({
@@ -545,6 +551,7 @@ export const VisitorWorldMap = () => {
         map.current.touchPitch.enable();
 
         map.current.on("style.load", () => {
+          mapPerfMark("style-load");
           map.current?.setFog({
             color: "rgb(20, 20, 30)",
             "high-color": "rgb(40, 40, 60)",
