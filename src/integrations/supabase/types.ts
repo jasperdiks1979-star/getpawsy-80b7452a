@@ -8280,6 +8280,78 @@ export type Database = {
         }
         Relationships: []
       }
+      utm_session_log: {
+        Row: {
+          created_at: string
+          fbclid: string | null
+          gclid: string | null
+          id: string
+          is_internal: boolean
+          landing_page: string | null
+          missing_fields: string[]
+          notes: string | null
+          referrer: string | null
+          session_id: string
+          source_channel: string | null
+          ttclid: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_id: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          validation_status: string
+          visitor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          fbclid?: string | null
+          gclid?: string | null
+          id?: string
+          is_internal?: boolean
+          landing_page?: string | null
+          missing_fields?: string[]
+          notes?: string | null
+          referrer?: string | null
+          session_id: string
+          source_channel?: string | null
+          ttclid?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_id?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          validation_status?: string
+          visitor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          fbclid?: string | null
+          gclid?: string | null
+          id?: string
+          is_internal?: boolean
+          landing_page?: string | null
+          missing_fields?: string[]
+          notes?: string | null
+          referrer?: string | null
+          session_id?: string
+          source_channel?: string | null
+          ttclid?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_id?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          validation_status?: string
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       variant_fix_logs: {
         Row: {
           created_at: string
@@ -8953,6 +9025,25 @@ export type Database = {
           email: string
           id: string
         }[]
+      }
+      log_utm_session: {
+        Args: {
+          p_fbclid: string
+          p_gclid: string
+          p_is_internal?: boolean
+          p_landing_page: string
+          p_referrer: string
+          p_session_id: string
+          p_ttclid: string
+          p_utm_campaign: string
+          p_utm_content: string
+          p_utm_id: string
+          p_utm_medium: string
+          p_utm_source: string
+          p_utm_term: string
+          p_visitor_id: string
+        }
+        Returns: string
       }
       test_tiktok_exclusion_fixtures: {
         Args: { p_prefix: string }
