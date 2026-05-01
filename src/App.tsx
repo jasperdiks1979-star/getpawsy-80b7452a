@@ -1544,6 +1544,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="stock-refresh-monitor"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <StockRefreshMonitorPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="guides"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
