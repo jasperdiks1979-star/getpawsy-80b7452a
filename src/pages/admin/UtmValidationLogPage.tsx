@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Helmet } from "react-helmet-async";
-import { ShieldAlert, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Search } from "lucide-react";
+import { ShieldAlert, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Search, BellRing, BellOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type Range = "1h" | "24h" | "7d" | "30d";
 
@@ -136,6 +137,44 @@ export default function UtmValidationLogPage() {
   const tiktokValid = tiktokRows.filter((r) => r.validation_status === "valid").length;
   const tiktokRate = tiktokRows.length > 0 ? (tiktokValid / tiktokRows.length) * 100 : 0;
 
+  // ---- TikTok UTM-validatie alert ----
+  const THRESHOLD_KEY = "admin.utmAlert.tiktokThreshold";
+  const MIN_SAMPLE_KEY = "admin.utmAlert.tiktokMinSample";
+  const ENABLED_KEY = "admin.utmAlert.tiktokEnabled";
+  const [threshold, setThreshold] = useState<number>(() => {
+    const v = Number(localStorage.getItem(THRESHOLD_KEY));
+    return Number.isFinite(v) && v > 0 ? v : 80;
+  });
+  const [minSample, setMinSample] = useState<number>(() => {
+    const v = Number(localStorage.getItem(MIN_SAMPLE_KEY));
+    return Number.isFinite(v) && v > 0 ? v : 10;
+  });
+  const [alertEnabled, setAlertEnabled] = useState<boolean>(() => {
+    return localStorage.getItem(ENABLED_KEY) !== "false";
+  });
+  useEffect(() => { localStorage.setItem(THRESHOLD_KEY, String(threshold)); }, [threshold]);
+  useEffect(() => { localStorage.setItem(MIN_SAMPLE_KEY, String(minSample)); }, [minSample]);
+  useEffect(() => { localStorage.setItem(ENABLED_KEY, String(alertEnabled)); }, [alertEnabled]);
+
+  const hasEnoughSample = tiktokRows.length >= minSample;
+  const isBelowThreshold = alertEnabled && hasEnoughSample && tiktokRate < threshold;
+
+  // Fire a toast once per "breach episode" (when crossing from OK → below)
+  const wasBelowRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (loading) return;
+    if (isBelowThreshold && !wasBelowRef.current) {
+      toast.error(
+        `TikTok UTM-validatie onder drempel: ${tiktokRate.toFixed(0)}% (drempel ${threshold}%)`,
+        {
+          description: `${tiktokValid}/${tiktokRows.length} sessions valide in ${range}.`,
+          duration: 8000,
+        },
+      );
+    }
+    wasBelowRef.current = isBelowThreshold;
+  }, [isBelowThreshold, tiktokRate, threshold, tiktokValid, tiktokRows.length, range, loading]);
+
   return (
     <>
       <Helmet>
@@ -172,6 +211,67 @@ export default function UtmValidationLogPage() {
             <CardContent className="p-4 text-sm text-destructive">Fout bij laden: {error}</CardContent>
           </Card>
         )}
+
+        {/* TikTok validatie-alert + drempelinstelling */}
+        <Card className={isBelowThreshold ? "border-destructive bg-destructive/5" : "border-border"}>
+          <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              {isBelowThreshold ? (
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              ) : alertEnabled ? (
+                <BellRing className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              ) : (
+                <BellOff className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              )}
+              <div className="text-sm">
+                <div className="font-medium">
+                  {isBelowThreshold
+                    ? `⚠️ TikTok UTM-validatie ${tiktokRate.toFixed(0)}% — onder drempel van ${threshold}%`
+                    : !alertEnabled
+                      ? "Alert uitgeschakeld"
+                      : !hasEnoughSample
+                        ? `Onvoldoende sample (${tiktokRows.length}/${minSample}) — geen alert`
+                        : `TikTok UTM-validatie OK: ${tiktokRate.toFixed(0)}% (drempel ${threshold}%)`}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Alert vuurt wanneer het percentage valide TikTok-sessies in het gekozen tijdvenster onder de drempel komt en de sample groot genoeg is.
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                Drempel %
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={threshold}
+                  onChange={(e) => setThreshold(Math.max(1, Math.min(100, Number(e.target.value) || 0)))}
+                  className="h-8 w-20"
+                />
+              </label>
+              <label className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                Min. sample
+                <Input
+                  type="number"
+                  min={1}
+                  max={10000}
+                  value={minSample}
+                  onChange={(e) => setMinSample(Math.max(1, Math.min(10000, Number(e.target.value) || 0)))}
+                  className="h-8 w-20"
+                />
+              </label>
+              <Button
+                variant={alertEnabled ? "outline" : "secondary"}
+                size="sm"
+                onClick={() => setAlertEnabled((v) => !v)}
+                title={alertEnabled ? "Alert uitschakelen" : "Alert inschakelen"}
+              >
+                {alertEnabled ? <><BellRing className="h-4 w-4 mr-1.5" />Aan</> : <><BellOff className="h-4 w-4 mr-1.5" />Uit</>}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <Stat label="Totaal sessions" value={summary.total} sub="met UTM-log" />
