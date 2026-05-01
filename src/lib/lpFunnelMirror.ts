@@ -22,6 +22,11 @@ const MIRRORED_EVENTS = new Set([
   'tiktok_deep_link_click',
   'view_item',
   'add_to_cart',
+  // Full ecommerce funnel mirror — required for the per-source funnel
+  // dashboard (FunnelBySourcePage) to compute view_item → add_to_cart →
+  // begin_checkout → purchase conversion per UTM source (TikTok, Pinterest…).
+  'begin_checkout',
+  'purchase',
 ]);
 
 const SESSION_ID_KEY = 'gp_session_id';

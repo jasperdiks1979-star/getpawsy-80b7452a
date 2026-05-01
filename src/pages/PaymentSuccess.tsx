@@ -9,6 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { trackPurchase, trackGoogleAdsConversion, trackGoogleAdsPageView } from '@/lib/analytics';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { fireMarketingAsync } from '@/lib/marketingClient';
+import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
@@ -63,6 +64,25 @@ const PaymentSuccess = () => {
         orderId: sessionId,
         orderValue: totalPrice,
       });
+
+      // Mirror purchase into lp_funnel_events for per-source funnel dashboard
+      // (closes the loop: view_item → add_to_cart → begin_checkout → purchase
+      // attributed by originating UTM source per session).
+      try {
+        const utm = {
+          utm_source: sessionStorage.getItem('gp_utm_utm_source') ?? undefined,
+          utm_medium: sessionStorage.getItem('gp_utm_utm_medium') ?? undefined,
+          utm_campaign: sessionStorage.getItem('gp_utm_utm_campaign') ?? undefined,
+          utm_content: sessionStorage.getItem('gp_utm_utm_content') ?? undefined,
+        };
+        mirrorLpFunnelEvent('purchase', {
+          value: totalPrice,
+          items: items.map(item => ({ item_id: item.id, item_name: item.name })),
+          ...utm,
+        });
+      } catch {
+        // Non-fatal
+      }
 
       // Pinterest purchase tracking — deferred, non-blocking
       fireMarketingAsync('pinterest-purchase', async () => {

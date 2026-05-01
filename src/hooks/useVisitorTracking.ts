@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveUtm } from "@/lib/utmNormalizer";
 
-type ActivityType = "browsing" | "cart" | "checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
+type ActivityType = "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
 
 interface GeoLocation {
   latitude: number;
@@ -342,6 +342,7 @@ export const useVisitorTracking = () => {
     trackBrowsing: (pagePath?: string) => trackActivity("browsing", { pagePath }),
     trackCart: () => trackActivity("cart"),
     trackCheckout: () => trackActivity("checkout"),
+    trackBeginCheckout: () => trackActivity("begin_checkout"),
     trackProductView: (productId: string, productName: string, productPrice?: number) => 
       trackActivity("product_view", { productId, productName, productPrice }),
     // New funnel events
