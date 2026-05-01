@@ -20,6 +20,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
+import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
+import { MapPerfDashboard } from "./MapPerfDashboard";
 
 interface VisitorActivity {
   id: string;
