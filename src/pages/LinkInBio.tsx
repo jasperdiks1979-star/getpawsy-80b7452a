@@ -62,10 +62,12 @@ const CTA_FEATURE_FLAGS = {
  * already showed intent by scrolling deep, so urgency now nudges them to
  * convert instead of scaring them off.
  *
- * 60 % was chosen so the block surfaces around the comparison/reviews
- * section, well below the primary CTA.
+ * 25 % was chosen so urgency surfaces shortly after the primary CTA — TikTok
+ * traffic is high-bounce, so we want the urgency nudge BEFORE most users leave.
+ * Previous value (60 %) only fired for the ~7 % of visitors who scrolled
+ * deep enough, missing the bulk of cold ad traffic.
  */
-const URGENCY_REVEAL_THRESHOLD = 60;
+const URGENCY_REVEAL_THRESHOLD = 25;
 
 /**
  * Dynamic CTA copy is now driven by the auto-winner system.
