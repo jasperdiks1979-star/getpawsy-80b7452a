@@ -2185,6 +2185,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tracking-anomalies"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TrackingAnomaliesPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-cta-ctr"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
