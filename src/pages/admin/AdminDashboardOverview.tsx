@@ -41,6 +41,7 @@ const sections = [
       { to: '/admin/commerce-intelligence', label: 'Commerce Intelligence', icon: BarChart3, desc: 'Demand, pricing & ads' },
       { to: '/admin/analytics-hub', label: 'Analytics Hub', icon: Gauge, desc: 'Traffic & conversion data' },
       { to: '/admin/cta-copy-performance', label: 'CTA Copy Performance', icon: Target, desc: '/go CTA CTR per placement × variant' },
+      { to: '/admin/tiktok-realtime-funnel', label: 'TikTok Realtime Funnel', icon: Activity, desc: 'Live TikTok sessions → cart → checkout met conversie %' },
       { to: '/admin/revenue-scaling', label: 'Revenue Scaling', icon: TrendingUp, desc: '12-month blueprint' },
       { to: '/dashboard', label: 'Product Manager', icon: Package, desc: 'Products, orders, CJ tools' },
       { to: '/admin/winners-boost', label: 'Winners Auto-Boost', icon: TrendingUp, desc: 'Top products & homepage promotion' },
