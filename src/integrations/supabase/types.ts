@@ -7674,6 +7674,48 @@ export type Database = {
           },
         ]
       }
+      stock_refresh_runs: {
+        Row: {
+          completed_at: string | null
+          id: string
+          label: string
+          last_checked_at: string
+          notes: Json | null
+          notified_complete_at: string | null
+          remaining: number
+          started_at: string
+          synced_error: number
+          synced_ok: number
+          total_initial: number
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          label?: string
+          last_checked_at?: string
+          notes?: Json | null
+          notified_complete_at?: string | null
+          remaining: number
+          started_at?: string
+          synced_error?: number
+          synced_ok?: number
+          total_initial: number
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          label?: string
+          last_checked_at?: string
+          notes?: Json | null
+          notified_complete_at?: string | null
+          remaining?: number
+          started_at?: string
+          synced_error?: number
+          synced_ok?: number
+          total_initial?: number
+        }
+        Relationships: []
+      }
       stock_sync_logs: {
         Row: {
           created_at: string
