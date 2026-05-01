@@ -2176,6 +2176,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="utm-validation-log"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <UtmValidationLogPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-cta-ctr"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
