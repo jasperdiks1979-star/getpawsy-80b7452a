@@ -93,9 +93,15 @@ export default function TikTokRealtimeFunnelPage() {
         if (r.created_at < cur.firstSeen) cur.firstSeen = r.created_at;
         if (!cur.lastPath && r.page_path) cur.lastPath = r.page_path;
         if (!cur.campaign && r.utm_campaign) cur.campaign = r.utm_campaign;
+        // Activity-type mapping (UI label → DB activity_type):
+        //   "Add to cart"    → activity_type = "cart"
+        //   "Checkout"       → activity_type = "checkout"
+        //   "Product view"   → activity_type = "browsing" on a /products/ path
         if (r.activity_type === "cart") cur.cart = true;
         if (r.activity_type === "checkout") cur.checkout = true;
-        if ((r.page_path || "").startsWith("/products/") || (r.page_path || "").startsWith("/product/")) {
+        const path = r.page_path || "";
+        const isProductPath = path.startsWith("/products/") || path.startsWith("/product/");
+        if (isProductPath && (r.activity_type === "browsing" || r.activity_type === "cart" || r.activity_type === "checkout")) {
           cur.productView = true;
         }
         sessions.set(r.session_id, cur);
@@ -200,6 +206,9 @@ export default function TikTokRealtimeFunnelPage() {
             <p className="text-sm text-muted-foreground mt-1">
               Live: TikTok sessions → product views → cart → checkout, met conversiepercentages per stap. Realtime via Supabase + auto-refresh elke 30s.
             </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Mapping: <code>browsing</code> op <code>/products/*</code> = Product view · <code>cart</code> = Add to cart · <code>checkout</code> = Checkout
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
@@ -238,21 +247,21 @@ export default function TikTokRealtimeFunnelPage() {
           />
           <FunnelStep
             icon={<Eye className="h-4 w-4" />}
-            label="Product views"
+            label="Product views (browsing)"
             value={counts.productViews}
             sub={`${stats.pvRate.toFixed(1)}% van sessions`}
             tone="default"
           />
           <FunnelStep
             icon={<ShoppingCart className="h-4 w-4" />}
-            label="Add to cart"
+            label="Add to cart (cart)"
             value={counts.carts}
             sub={`${stats.cartRate.toFixed(2)}% van sessions · ${stats.cartFromPv.toFixed(1)}% van PV`}
             tone={counts.carts === 0 && counts.sessions > 20 ? "warn" : "default"}
           />
           <FunnelStep
             icon={<CreditCard className="h-4 w-4" />}
-            label="Checkout"
+            label="Checkout (checkout)"
             value={counts.checkouts}
             sub={`${stats.checkoutRate.toFixed(2)}% van sessions · ${stats.checkoutFromCart.toFixed(1)}% van cart`}
             tone={counts.checkouts === 0 && counts.carts > 0 ? "warn" : "default"}
