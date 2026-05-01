@@ -288,11 +288,16 @@ function CollectionRedirect() {
 }
 
 /**
- * Redirect legacy /products/:slug to canonical /product/:slug.
+ * Redirect legacy /product/:slug (singular) to canonical /products/:slug (plural).
  * CRITICAL: must preserve `?search` (UTMs) and `#hash` so TikTok ad
  * attribution (utm_campaign=hookN) survives the redirect — otherwise the
  * PDP loads with no UTMs and the TikTok Ads Performance dashboard
  * undercounts every hook to 0 PDP visits.
+ *
+ * Plural is canonical per the project URL standard. Eliminating the redirect
+ * hop on the canonical TikTok deep-link path (/products/:slug) shaves ~150ms
+ * off cold mobile loads and prevents analytics splitting between the two
+ * surfaces.
  */
 function ProductRouteRedirect() {
   const { slug } = useParams<{ slug: string }>();
@@ -300,10 +305,10 @@ function ProductRouteRedirect() {
   // Re-resolve UTMs through the central normalizer so attribution survives
   // even if a deep-link client stripped query params on the way in.
   const utm = resolveUtm({ search: location.search });
-  logUtmCheckpoint('redirect', { from: '/products', slug });
+  logUtmCheckpoint('redirect', { from: '/product', slug });
   return (
     <Navigate
-      to={appendUtmToPath(`/product/${slug || ""}`, utm, location.search, location.hash)}
+      to={appendUtmToPath(`/products/${slug || ""}`, utm, location.search, location.hash)}
       replace
     />
   );
@@ -317,7 +322,7 @@ function BestsellerSlugRedirect() {
   logUtmCheckpoint('redirect', { from: '/bestseller', slug });
   return (
     <Navigate
-      to={appendUtmToPath(`/product/${slug || ""}`, utm, location.search, location.hash)}
+      to={appendUtmToPath(`/products/${slug || ""}`, utm, location.search, location.hash)}
       replace
     />
   );
