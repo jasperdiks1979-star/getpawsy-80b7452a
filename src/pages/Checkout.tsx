@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { trackBeginCheckout, trackEvent } from '@/lib/analytics';
+import { trackBeginCheckout } from '@/lib/analytics';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
