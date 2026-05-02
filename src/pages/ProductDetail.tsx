@@ -1084,7 +1084,7 @@ const ProductDetail = () => {
                 <p className="mt-2 text-sm text-muted-foreground">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">
-                    ${(activePrice / 4).toFixed(2)}
+                    {formatKlarnaInstallment(activePrice, 'USD')}
                   </span>{' '}
                   with{' '}
                   <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
