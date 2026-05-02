@@ -1,6 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
 import {
   ShoppingCart,
   Heart,
