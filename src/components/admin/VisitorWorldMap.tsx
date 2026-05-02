@@ -37,6 +37,31 @@ interface VisitorActivity {
   utm_source?: string | null;
 }
 
+// Full row shape returned by `select("*")` — used for the CSV export so we
+// can include every measured dimension without widening the in-memory map
+// activity type used elsewhere in this component.
+interface VisitorActivityFull extends VisitorActivity {
+  updated_at?: string | null;
+  referrer?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_term?: string | null;
+  utm_content?: string | null;
+  page_path?: string | null;
+  product_id?: string | null;
+  product_name?: string | null;
+  product_price?: number | null;
+  product_quantity?: number | null;
+  order_id?: string | null;
+  order_value?: number | null;
+  device_type?: string | null;
+  browser?: string | null;
+  screen_width?: number | null;
+  screen_height?: number | null;
+  is_internal?: boolean | null;
+  visitor_id?: string | null;
+}
+
 type SourceFilter = "all" | "pinterest" | "google" | "social" | "direct" | "organic" | "other";
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -1281,54 +1306,212 @@ export const VisitorWorldMap = () => {
     };
   })();
 
-  // Export to CSV function
-  const exportToCSV = () => {
-    if (!activities || activities.length === 0) {
-      return;
+  // ---------------------------------------------------------------------------
+  // Export to CSV — "alles wat we meten" voor de gekozen tijdsperiode.
+  //
+  // Strategie: we negeren `filteredActivities` (UI-filters) en halen één
+  // verse, volledige snapshot op uit `visitor_activity` zonder kolom-pruning.
+  // Per row voegen we session-level afgeleide velden toe (sessie-duur,
+  // pageviews, terugkerend via visitor_id) zodat de CSV stand-alone leesbaar
+  // is in Excel/Sheets/pandas zonder extra joins.
+  // ---------------------------------------------------------------------------
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportToCSV = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      // 1. Verse, volledige fetch voor de actieve tijdsperiode (los van de
+      //    realtime cache + UI filters — gebruiker wil "alles wat er was").
+      const cutoff =
+        timeRange === "live"
+          ? new Date(Date.now() - 60 * 1000).toISOString()
+          : new Date(Date.now() - getTimeRangeMs()).toISOString();
+
+      const tsCol = timeRange === "live" ? "last_seen_at" : "created_at";
+
+      // Page through 1000-row chunks (PostgREST default cap) zodat lange
+      // periodes (24h / 7d / 30d) nooit stilletjes afgekapt worden.
+      const pageSize = 1000;
+      let from = 0;
+      const all: VisitorActivityFull[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from("visitor_activity")
+          .select("*")
+          .gte(tsCol, cutoff)
+          .order("created_at", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const batch = (data || []) as unknown as VisitorActivityFull[];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      if (all.length === 0) {
+        toast({ title: "Geen data", description: "Geen bezoekersactiviteit in deze periode.", duration: 3000 });
+        return;
+      }
+
+      // 2. Sessie-aggregaten: pageviews, sessieduur, eerste/laatste pad,
+      //    funnel-stage bereikt, omzet, etc.
+      type SessionAgg = {
+        firstAt: string;
+        lastAt: string;
+        pageviews: number;
+        uniquePages: Set<string>;
+        landingPath: string | null;
+        exitPath: string | null;
+        reachedCart: boolean;
+        reachedCheckout: boolean;
+        orderValueMax: number;
+        visitorId: string | null;
+      };
+      const sessions = new Map<string, SessionAgg>();
+      for (const r of all) {
+        const s = sessions.get(r.session_id);
+        const ts = r.created_at;
+        if (!s) {
+          sessions.set(r.session_id, {
+            firstAt: ts,
+            lastAt: r.last_seen_at || ts,
+            pageviews: 1,
+            uniquePages: new Set(r.page_path ? [r.page_path] : []),
+            landingPath: r.page_path ?? null,
+            exitPath: r.page_path ?? null,
+            reachedCart: r.activity_type === "cart" || r.activity_type === "checkout",
+            reachedCheckout: r.activity_type === "checkout",
+            orderValueMax: Number(r.order_value || 0),
+            visitorId: r.visitor_id ?? null,
+          });
+        } else {
+          if (ts < s.firstAt) { s.firstAt = ts; s.landingPath = r.page_path ?? s.landingPath; }
+          const lastSeen = r.last_seen_at || ts;
+          if (lastSeen > s.lastAt) { s.lastAt = lastSeen; s.exitPath = r.page_path ?? s.exitPath; }
+          s.pageviews += 1;
+          if (r.page_path) s.uniquePages.add(r.page_path);
+          if (r.activity_type === "cart" || r.activity_type === "checkout") s.reachedCart = true;
+          if (r.activity_type === "checkout") s.reachedCheckout = true;
+          if (r.order_value && Number(r.order_value) > s.orderValueMax) s.orderValueMax = Number(r.order_value);
+          if (!s.visitorId && r.visitor_id) s.visitorId = r.visitor_id;
+        }
+      }
+
+      // 3. Terugkerende bezoekers: visitor_id met >1 unieke session_id.
+      const sessionsPerVisitor = new Map<string, Set<string>>();
+      for (const [sid, s] of sessions) {
+        if (!s.visitorId) continue;
+        const set = sessionsPerVisitor.get(s.visitorId) || new Set();
+        set.add(sid);
+        sessionsPerVisitor.set(s.visitorId, set);
+      }
+
+      // 4. CSV kolommen — alles wat we meten, plus afgeleide sessie-velden.
+      const headers = [
+        "created_at", "last_seen_at", "session_id", "visitor_id", "is_returning_visitor", "sessions_for_visitor",
+        "activity_type", "page_path",
+        "session_first_at", "session_last_at", "session_duration_seconds",
+        "session_pageviews", "session_unique_pages", "session_landing_path", "session_exit_path",
+        "reached_cart", "reached_checkout", "session_order_value",
+        "country", "city", "latitude", "longitude",
+        "device_type", "browser", "screen_width", "screen_height",
+        "referrer", "referrer_category",
+        "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+        "product_id", "product_name", "product_price", "product_quantity",
+        "order_id", "order_value",
+        "is_internal",
+      ];
+
+      const escape = (v: unknown): string => {
+        if (v === null || v === undefined) return "";
+        const s = typeof v === "string" ? v : String(v);
+        // RFC-4180: quote + double interne quotes wanneer nodig
+        if (/[",;\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+        return s;
+      };
+
+      const rows = all.map((r) => {
+        const s = sessions.get(r.session_id)!;
+        const durationSec = Math.max(
+          0,
+          Math.round((new Date(s.lastAt).getTime() - new Date(s.firstAt).getTime()) / 1000),
+        );
+        const visitorSessionCount = s.visitorId ? (sessionsPerVisitor.get(s.visitorId)?.size ?? 1) : 1;
+        return [
+          r.created_at,
+          r.last_seen_at ?? "",
+          r.session_id,
+          r.visitor_id ?? "",
+          visitorSessionCount > 1 ? "true" : "false",
+          visitorSessionCount,
+          r.activity_type,
+          r.page_path ?? "",
+          s.firstAt,
+          s.lastAt,
+          durationSec,
+          s.pageviews,
+          s.uniquePages.size,
+          s.landingPath ?? "",
+          s.exitPath ?? "",
+          s.reachedCart ? "true" : "false",
+          s.reachedCheckout ? "true" : "false",
+          s.orderValueMax || "",
+          r.country ?? "",
+          r.city ?? "",
+          r.latitude ?? "",
+          r.longitude ?? "",
+          r.device_type ?? "",
+          r.browser ?? "",
+          r.screen_width ?? "",
+          r.screen_height ?? "",
+          r.referrer ?? "",
+          r.referrer_category ?? "",
+          r.utm_source ?? "",
+          r.utm_medium ?? "",
+          r.utm_campaign ?? "",
+          r.utm_term ?? "",
+          r.utm_content ?? "",
+          r.product_id ?? "",
+          r.product_name ?? "",
+          r.product_price ?? "",
+          r.product_quantity ?? "",
+          r.order_id ?? "",
+          r.order_value ?? "",
+          r.is_internal === null || r.is_internal === undefined ? "" : String(r.is_internal),
+        ].map(escape).join(";");
+      });
+
+      const csvContent = [headers.join(";"), ...rows].join("\n");
+      const bom = "\uFEFF";
+      const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `bezoekers-${timeRange}-${new Date().toISOString().split("T")[0]}.csv`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export gereed",
+        description: `${all.length} rows, ${sessions.size} sessies geëxporteerd.`,
+        duration: 3000,
+      });
+    } catch (err) {
+      console.error("CSV export error", err);
+      toast({
+        title: "Export mislukt",
+        description: err instanceof Error ? err.message : "Onbekende fout",
+        duration: 4000,
+      });
+    } finally {
+      setIsExporting(false);
     }
-
-    // Create CSV headers
-    const headers = [
-      "Datum/Tijd",
-      "Sessie ID",
-      "Activiteit",
-      "Land",
-      "Stad",
-      "Breedtegraad",
-      "Lengtegraad"
-    ];
-
-    // Create CSV rows
-    const rows = (filteredActivities || []).map((activity) => [
-      new Date(activity.created_at).toLocaleString("nl-NL"),
-      activity.session_id,
-      ACTIVITY_LABELS[activity.activity_type] || activity.activity_type,
-      activity.country || "Onbekend",
-      activity.city || "Onbekend",
-      activity.latitude?.toString() || "",
-      activity.longitude?.toString() || ""
-    ]);
-
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(";"),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(";"))
-    ].join("\n");
-
-    // Add BOM for Excel compatibility with special characters
-    const bom = "\uFEFF";
-    const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
-    
-    // Create download link
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `bezoekers-${timeRange}-${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  }, [timeRange]);
 
   // Minimal fullscreen mode - only map with floating close button
   if (isFullscreen && fullscreenMinimal) {
@@ -1756,10 +1939,15 @@ export const VisitorWorldMap = () => {
               variant="outline"
               size="sm"
               onClick={exportToCSV}
-              disabled={!filteredActivities || filteredActivities.length === 0}
+              disabled={isExporting}
+              title="Exporteer alle bezoekersdata van deze periode (incl. paginabezoeken, sessieduur, terugkerende bezoekers, traffic-bron, device, UTM, orderwaarde)"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export
+              {isExporting ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              {isExporting ? "Exporteren…" : "Export CSV"}
             </Button>
 
             {/* Fullscreen Toggle */}
