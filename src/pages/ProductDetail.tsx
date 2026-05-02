@@ -1059,8 +1059,8 @@ const ProductDetail = () => {
                 );
               })()}
 
-              {/* Klarna BNPL messaging — only shown when eligible (>=$35) */}
-              {activePrice >= 35 && (
+              {/* Klarna BNPL messaging — only shown when Stripe-eligible. */}
+              {klarna.eligible && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">
