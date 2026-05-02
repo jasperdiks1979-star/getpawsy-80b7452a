@@ -14,6 +14,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
+import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { CartUpsell } from '@/components/cart/CartUpsell';
@@ -308,6 +309,17 @@ const Checkout = () => {
         totalPrice
       );
       trackCheckoutActivity();
+
+      // TikTok Pixel InitiateCheckout — completes the funnel events for retargeting
+      ttTrackInitiateCheckout({
+        value: totalPrice,
+        currency: 'USD',
+        contents: items.map(item => ({
+          content_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
 
       // Mirror begin_checkout into lp_funnel_events so the admin
       // FunnelBySource dashboard can compute per-source conversion.
