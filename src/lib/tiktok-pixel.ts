@@ -130,11 +130,43 @@ export function ttTrackPurchase(params: {
       currency: params.currency || 'USD',
       contents: params.contents,
       description: params.orderId,
+      event_id: params.orderId, // dedup with server-side CompletePayment
     });
     logTikTokEvent('CompletePayment', {
       orderId: params.orderId,
       value: params.value,
       itemCount: params.contents?.length ?? 0,
     });
+  });
+}
+
+/**
+ * Custom TikTok event fired when the shopper SELECTS Klarna in Stripe
+ * Checkout (proxied via the success URL's payment_method query param when
+ * available) or when Klarna messaging is shown. These are tracked as
+ * standard TikTok custom events so they can be optimised against in Ads
+ * Manager and segmented in Events Manager.
+ */
+export function ttTrackKlarnaEvent(
+  name: 'KlarnaMessageShown' | 'KlarnaProceed' | 'KlarnaPurchase',
+  params: {
+    value?: number;
+    currency?: string;
+    orderId?: string;
+    placement?: 'pdp' | 'checkout';
+  } = {},
+): void {
+  fireMarketingAsync(`tiktok:${name}`, () => {
+    const ttq = getTTQ();
+    ttq?.track(name, {
+      value: params.value,
+      currency: params.currency || 'USD',
+      description: params.orderId,
+      placement: params.placement,
+      event_id: params.orderId
+        ? `${name}_${params.orderId}`
+        : `${name}_${Date.now()}`,
+    });
+    logTikTokEvent(name, params);
   });
 }

@@ -13,7 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { trackBeginCheckout, trackEvent } from '@/lib/analytics';
+import { trackBeginCheckout } from '@/lib/analytics';
+import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
@@ -218,13 +219,15 @@ const Checkout = () => {
   // Track Klarna BNPL messaging impression on checkout (once per session/total tier).
   useEffect(() => {
     if (!klarna.eligible || total <= 0) return;
-    trackEvent('klarna_message_shown', {
+    trackCheckoutFunnel({
+      step: 'klarna_message_shown',
       placement: 'checkout',
       value: Number(stripeChargedTotal.toFixed(2)),
-      installment_amount: klarnaSplit.perInstallment,
       currency: 'USD',
-      country: 'US',
-      item_count: items.reduce((s, i) => s + i.quantity, 0),
+      metadata: {
+        installment_amount: klarnaSplit.perInstallment,
+        item_count: items.reduce((s, i) => s + i.quantity, 0),
+      },
     });
     // Only refire when eligibility flips or total changes meaningfully.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -376,6 +379,14 @@ const Checkout = () => {
       
       // A/B Test: Track checkout started with variant
       abTest.trackCheckoutStarted(totalPrice);
+
+      // Funnel: begin_checkout step (server + GA4 + TikTok mirror)
+      trackCheckoutFunnel({
+        step: 'begin_checkout',
+        value: totalPrice,
+        currency: 'USD',
+        metadata: { item_count: items.reduce((s, i) => s + i.quantity, 0) },
+      });
       
       // Pinterest Checkout tracking — deferred, non-blocking
       fireMarketingAsync('pinterest-checkout', async () => {
@@ -411,14 +422,23 @@ const Checkout = () => {
     // Track that the user proceeded to Stripe Checkout while Klarna was an
     // available option — proxy for "Klarna placement shown at checkout step".
     if (klarna.eligible) {
-      trackEvent('klarna_checkout_proceed', {
+      trackCheckoutFunnel({
+        step: 'klarna_proceed',
         placement: 'checkout',
         value: Number(stripeChargedTotal.toFixed(2)),
-        installment_amount: klarnaSplit.perInstallment,
         currency: 'USD',
-        country: 'US',
+        metadata: { installment_amount: klarnaSplit.perInstallment },
       });
     }
+
+    // Always log the Stripe redirect step so we can compute drop-off
+    // between InitiateCheckout and the actual Stripe-hosted page.
+    trackCheckoutFunnel({
+      step: 'stripe_redirect',
+      placement: 'checkout',
+      value: Number(stripeChargedTotal.toFixed(2)),
+      currency: 'USD',
+    });
     
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {

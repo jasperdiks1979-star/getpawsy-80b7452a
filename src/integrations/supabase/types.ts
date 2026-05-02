@@ -763,6 +763,51 @@ export type Database = {
           },
         ]
       }
+      checkout_funnel_events: {
+        Row: {
+          created_at: string
+          currency: string | null
+          id: string
+          is_klarna: boolean | null
+          metadata: Json | null
+          payment_method: string | null
+          session_id: string | null
+          source: string | null
+          step: string
+          stripe_session_id: string | null
+          user_id: string | null
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          is_klarna?: boolean | null
+          metadata?: Json | null
+          payment_method?: string | null
+          session_id?: string | null
+          source?: string | null
+          step: string
+          stripe_session_id?: string | null
+          user_id?: string | null
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          is_klarna?: boolean | null
+          metadata?: Json | null
+          payment_method?: string | null
+          session_id?: string | null
+          source?: string | null
+          step?: string
+          stripe_session_id?: string | null
+          user_id?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
       cj_product_bookmarks: {
         Row: {
           category_name: string | null
@@ -4494,8 +4539,11 @@ export type Database = {
           currency: string
           customer_email: string | null
           id: string
+          is_klarna: boolean
           items: Json
           order_access_token: string | null
+          payment_method: string | null
+          payment_method_detected_at: string | null
           shipping_address: Json | null
           status: string
           stripe_payment_intent_id: string | null
@@ -4515,8 +4563,11 @@ export type Database = {
           currency?: string
           customer_email?: string | null
           id?: string
+          is_klarna?: boolean
           items: Json
           order_access_token?: string | null
+          payment_method?: string | null
+          payment_method_detected_at?: string | null
           shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
@@ -4536,8 +4587,11 @@ export type Database = {
           currency?: string
           customer_email?: string | null
           id?: string
+          is_klarna?: boolean
           items?: Json
           order_access_token?: string | null
+          payment_method?: string | null
+          payment_method_detected_at?: string | null
           shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
@@ -8249,6 +8303,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tiktok_server_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_id: string | null
+          event_name: string
+          id: string
+          payload: Json | null
+          pixel_id: string | null
+          response_body: Json | null
+          response_status: number | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_id?: string | null
+          event_name: string
+          id?: string
+          payload?: Json | null
+          pixel_id?: string | null
+          response_body?: Json | null
+          response_status?: number | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_id?: string | null
+          event_name?: string
+          id?: string
+          payload?: Json | null
+          pixel_id?: string | null
+          response_body?: Json | null
+          response_status?: number | null
+        }
+        Relationships: []
       }
       tiktok_test_users: {
         Row: {

@@ -11,6 +11,7 @@ import { ttTrackPurchase } from '@/lib/tiktok-pixel';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
+import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
@@ -123,6 +124,16 @@ const PaymentSuccess = () => {
 
       clearCart(true); // Mark as recovered
       setTracked(true);
+
+      // Generic complete_payment funnel step — Klarna detection happens
+      // server-side in the Stripe webhook (where the actual payment
+      // method is known) and is mirrored as a 'klarna_purchase' step.
+      trackCheckoutFunnel({
+        step: 'complete_payment',
+        value: totalPrice,
+        currency: 'USD',
+        stripeSessionId: sessionId || undefined,
+      });
       
       console.debug('[PaymentSuccess] Conversion tracking completed:', {
         sessionId,

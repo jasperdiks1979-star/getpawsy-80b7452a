@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
 import { splitKlarnaInstallments, formatKlarnaInstallment } from "@/lib/klarna";
+import { trackCheckoutFunnel } from "@/lib/checkoutFunnel";
 import {
   ShoppingCart,
   Heart,
@@ -611,14 +612,16 @@ const ProductDetail = () => {
     if (klarnaTrackedRef.current === key) return;
     klarnaTrackedRef.current = key;
     const split = splitKlarnaInstallments(Number(product.price) || 0, 'USD');
-    trackEvent('klarna_message_shown', {
+    trackCheckoutFunnel({
+      step: 'klarna_message_shown',
       placement: 'pdp',
-      product_id: product.id,
-      product_name: product.name,
-      price: Number(product.price) || 0,
-      installment_amount: split.perInstallment,
+      value: Number(product.price) || 0,
       currency: 'USD',
-      country: 'US',
+      metadata: {
+        product_id: product.id,
+        product_name: product.name,
+        installment_amount: split.perInstallment,
+      },
     });
   }, [klarna.eligible, product?.id, product?.name, product?.price]);
 
