@@ -21,7 +21,7 @@ import { CartUpsell } from '@/components/cart/CartUpsell';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
-import { splitKlarnaInstallments, formatCurrency, formatKlarnaInstallment } from '@/lib/klarna';
+import { splitKlarnaInstallments, formatKlarnaInstallment } from '@/lib/klarna';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
