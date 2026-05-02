@@ -20,6 +20,7 @@ import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
+import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
@@ -202,6 +203,9 @@ const Checkout = () => {
   // Total discount = tier + coupon (no stacking conflict: tier is automatic reward, coupon is promotional)
   const totalDiscountAmount = tierDiscountAmount + couponDiscountAmount;
   const total = totalPrice - totalDiscountAmount + shipping;
+
+  // Klarna eligibility — only show messaging when Stripe actually offers it.
+  const klarna = useKlarnaEligibility(total, { country: 'US', currency: 'usd' });
 
   // Check for discount code in localStorage (from popups)
   useEffect(() => {
@@ -742,7 +746,7 @@ const Checkout = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
-              {total >= 35 && (
+              {klarna.eligible && (
                 <p className="mt-2 text-xs text-muted-foreground text-center">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">

@@ -1,5 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
 import {
   ShoppingCart,
   Heart,
@@ -595,6 +596,12 @@ const ProductDetail = () => {
   // Track product views in visitor analytics
   const { trackProductView } = useVisitorTracking();
 
+  // Klarna eligibility — checked against base price (hook-stable, runs unconditionally).
+  const klarna = useKlarnaEligibility(
+    product?.price ? Number(product.price) : null,
+    { country: "US", currency: "usd" },
+  );
+
   // Reset state and auto-select first variant when PRODUCT ID changes (not object ref)
   const currentProductId = product?.id;
   useEffect(() => {
@@ -1052,8 +1059,8 @@ const ProductDetail = () => {
                 );
               })()}
 
-              {/* Klarna BNPL messaging — only shown when eligible (>=$35) */}
-              {activePrice >= 35 && (
+              {/* Klarna BNPL messaging — only shown when Stripe-eligible. */}
+              {klarna.eligible && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">
