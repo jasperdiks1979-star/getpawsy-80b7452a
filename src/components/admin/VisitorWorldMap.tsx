@@ -1939,10 +1939,15 @@ export const VisitorWorldMap = () => {
               variant="outline"
               size="sm"
               onClick={exportToCSV}
-              disabled={!filteredActivities || filteredActivities.length === 0}
+              disabled={isExporting}
+              title="Exporteer alle bezoekersdata van deze periode (incl. paginabezoeken, sessieduur, terugkerende bezoekers, traffic-bron, device, UTM, orderwaarde)"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export
+              {isExporting ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              {isExporting ? "Exporteren…" : "Export CSV"}
             </Button>
 
             {/* Fullscreen Toggle */}
