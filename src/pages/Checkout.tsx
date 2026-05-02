@@ -746,7 +746,7 @@ const Checkout = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
-              {total >= 35 && (
+              {klarna.eligible && (
                 <p className="mt-2 text-xs text-muted-foreground text-center">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">
