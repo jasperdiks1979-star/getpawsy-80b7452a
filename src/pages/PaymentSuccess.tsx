@@ -7,6 +7,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { trackPurchase, trackGoogleAdsConversion, trackGoogleAdsPageView } from '@/lib/analytics';
+import { ttTrackPurchase } from '@/lib/tiktok-pixel';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
@@ -58,6 +59,19 @@ const PaymentSuccess = () => {
         name: item.name,
         price: item.price,
       })));
+
+      // TikTok Pixel Purchase — closes the loop for TikTok ad attribution
+      ttTrackPurchase({
+        orderId: sessionId,
+        value: totalPrice,
+        currency: 'USD',
+        contents: items.map(item => ({
+          content_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          content_name: item.name,
+        })),
+      });
 
       // Track in visitor_activity for internal funnel analysis
       trackVisitorEvent('purchase', {
