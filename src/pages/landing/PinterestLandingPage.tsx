@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { computeAvailability } from '@/lib/availability';
-import { trackViewItem } from '@/lib/analytics';
+import { trackViewItem, trackAddToCart } from '@/lib/analytics';
 import { ShoppingCart, Truck, RotateCcw, ShieldCheck, Check, ArrowRight } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
