@@ -21,6 +21,7 @@ import { CartUpsell } from '@/components/cart/CartUpsell';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
+import { splitKlarnaInstallments, formatCurrency, formatKlarnaInstallment } from '@/lib/klarna';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
@@ -206,6 +207,7 @@ const Checkout = () => {
 
   // Klarna eligibility — only show messaging when Stripe actually offers it.
   const klarna = useKlarnaEligibility(total, { country: 'US', currency: 'usd' });
+  const klarnaSplit = splitKlarnaInstallments(total, 'USD');
 
   // Track Klarna BNPL messaging impression on checkout (once per session/total tier).
   useEffect(() => {
@@ -213,7 +215,7 @@ const Checkout = () => {
     trackEvent('klarna_message_shown', {
       placement: 'checkout',
       value: Number(total.toFixed(2)),
-      installment_amount: Number((total / 4).toFixed(2)),
+      installment_amount: klarnaSplit.perInstallment,
       currency: 'USD',
       country: 'US',
       item_count: items.reduce((s, i) => s + i.quantity, 0),
@@ -406,7 +408,7 @@ const Checkout = () => {
       trackEvent('klarna_checkout_proceed', {
         placement: 'checkout',
         value: Number(total.toFixed(2)),
-        installment_amount: Number((total / 4).toFixed(2)),
+        installment_amount: klarnaSplit.perInstallment,
         currency: 'USD',
         country: 'US',
       });
