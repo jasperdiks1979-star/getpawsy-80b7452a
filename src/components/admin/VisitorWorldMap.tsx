@@ -37,6 +37,31 @@ interface VisitorActivity {
   utm_source?: string | null;
 }
 
+// Full row shape returned by `select("*")` — used for the CSV export so we
+// can include every measured dimension without widening the in-memory map
+// activity type used elsewhere in this component.
+interface VisitorActivityFull extends VisitorActivity {
+  updated_at?: string | null;
+  referrer?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_term?: string | null;
+  utm_content?: string | null;
+  page_path?: string | null;
+  product_id?: string | null;
+  product_name?: string | null;
+  product_price?: number | null;
+  product_quantity?: number | null;
+  order_id?: string | null;
+  order_value?: number | null;
+  device_type?: string | null;
+  browser?: string | null;
+  screen_width?: number | null;
+  screen_height?: number | null;
+  is_internal?: boolean | null;
+  visitor_id?: string | null;
+}
+
 type SourceFilter = "all" | "pinterest" | "google" | "social" | "direct" | "organic" | "other";
 
 const SOURCE_COLORS: Record<string, string> = {
