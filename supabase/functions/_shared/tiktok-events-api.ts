@@ -12,6 +12,7 @@
 // public.tiktok_server_events for verification.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { sanitizeSecret } from "./tiktok-secrets.ts";
 
 const ENDPOINT = "https://business-api.tiktok.com/open_api/v1.3/event/track/";
 
@@ -70,8 +71,8 @@ async function hashId(v?: string): Promise<string | undefined> {
 export async function sendTikTokServerEvent(
   input: ServerEventInput,
 ): Promise<{ ok: boolean; status: number; body: unknown; error?: string }> {
-  const token = Deno.env.get("TIKTOK_EVENTS_API_TOKEN") || "";
-  const pixelId = Deno.env.get("TIKTOK_PIXEL_ID") || "";
+  const token = sanitizeSecret(Deno.env.get("TIKTOK_EVENTS_API_TOKEN"));
+  const pixelId = sanitizeSecret(Deno.env.get("TIKTOK_PIXEL_ID"));
 
   // Always log attempts — even when secrets are missing — so admins can
   // see why nothing arrived in TikTok Events Manager.
