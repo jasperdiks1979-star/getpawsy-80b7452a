@@ -16,6 +16,24 @@ import { sanitizeSecret } from "./tiktok-secrets.ts";
 
 const ENDPOINT = "https://business-api.tiktok.com/open_api/v1.3/event/track/";
 
+// TikTok Pixel IDs are 20-character uppercase alphanumeric strings.
+// See src/lib/tiktok-pixel-config.ts for the same regex used client-side.
+const PIXEL_ID_REGEX = /^[A-Z0-9]{20}$/;
+
+function validatePixelId(id: string): { ok: boolean; reason?: string } {
+  if (!id) return { ok: false, reason: "TIKTOK_PIXEL_ID is empty" };
+  if (!PIXEL_ID_REGEX.test(id)) {
+    return {
+      ok: false,
+      reason:
+        `TIKTOK_PIXEL_ID="${id}" has an invalid format. ` +
+        `Expected 20 uppercase alphanumeric characters (e.g. D7KDRMBC77U9EB7RJROG). ` +
+        `This usually means an Event Source ID was pasted instead of the Pixel ID.`,
+    };
+  }
+  return { ok: true };
+}
+
 interface ContentItem {
   content_id: string;
   content_name?: string;
@@ -89,6 +107,25 @@ export async function sendTikTokServerEvent(
       event_id: input.eventId,
       pixel_id: pixelId || null,
       payload: { input },
+      response_status: null,
+      response_body: null,
+      error,
+    });
+    console.warn("[tiktok-events-api]", error);
+    return { ok: false, status: 0, body: null, error };
+  }
+
+  // Block dispatch if pixel ID format is clearly invalid — TikTok will
+  // always return 401 for malformed IDs, so save the round-trip and make
+  // the misconfiguration loud in the admin log.
+  const pixelCheck = validatePixelId(pixelId);
+  if (!pixelCheck.ok) {
+    const error = `Invalid TIKTOK_PIXEL_ID — dispatch blocked: ${pixelCheck.reason}`;
+    await admin.from("tiktok_server_events").insert({
+      event_name: input.eventName,
+      event_id: input.eventId,
+      pixel_id: pixelId,
+      payload: { input, blocked: true, reason: pixelCheck.reason },
       response_status: null,
       response_body: null,
       error,
