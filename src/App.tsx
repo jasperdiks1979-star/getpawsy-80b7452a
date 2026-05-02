@@ -334,6 +334,7 @@ const TikTokConfigPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigP
 const TikTokPixelVerifyPage = lazyWithRetry(() => import("./pages/admin/TikTokPixelVerifyPage"));
 const TikTokServerEventsPage = lazyWithRetry(() => import("./pages/admin/TikTokServerEventsPage"));
 const CheckoutFunnelEventsPage = lazyWithRetry(() => import("./pages/admin/CheckoutFunnelEventsPage"));
+const TikTokCredentialsStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokCredentialsStatusPage"));
 const ConversionDashboardPage = lazyWithRetry(() => import("./pages/admin/ConversionDashboardPage"));
 const TestPaymentPage = lazyWithRetry(() => import("./pages/admin/TestPaymentPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
@@ -2311,6 +2312,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokServerEventsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tiktok-credentials-status"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokCredentialsStatusPage />
                                 </Suspense>
                               }
                             />
