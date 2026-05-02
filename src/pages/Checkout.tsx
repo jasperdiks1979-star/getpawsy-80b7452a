@@ -785,7 +785,7 @@ const Checkout = () => {
                 <p className="mt-2 text-xs text-muted-foreground text-center">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">
-                    {formatKlarnaInstallment(total, 'USD')}
+                    {formatKlarnaInstallment(stripeChargedTotal, 'USD')}
                   </span>{' '}
                   with{' '}
                   <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
