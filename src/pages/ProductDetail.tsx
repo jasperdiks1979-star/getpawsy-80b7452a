@@ -595,6 +595,12 @@ const ProductDetail = () => {
   // Track product views in visitor analytics
   const { trackProductView } = useVisitorTracking();
 
+  // Klarna eligibility — checked against base price (hook-stable, runs unconditionally).
+  const klarna = useKlarnaEligibility(
+    product?.price ? Number(product.price) : null,
+    { country: "US", currency: "usd" },
+  );
+
   // Reset state and auto-select first variant when PRODUCT ID changes (not object ref)
   const currentProductId = product?.id;
   useEffect(() => {
