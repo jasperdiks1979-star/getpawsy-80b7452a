@@ -1052,6 +1052,19 @@ const ProductDetail = () => {
                 );
               })()}
 
+              {/* Klarna BNPL messaging — only shown when eligible (>=$35) */}
+              {activePrice >= 35 && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  or 4 interest-free payments of{' '}
+                  <span className="font-semibold text-foreground">
+                    ${(activePrice / 4).toFixed(2)}
+                  </span>{' '}
+                  with{' '}
+                  <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
+                  <span className="text-muted-foreground/80">. Available at checkout.</span>
+                </p>
+              )}
+
               {/* Selected variant badge */}
               {selectedVariant && (
                 <Badge variant="outline" className="mt-3">
