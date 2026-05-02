@@ -206,15 +206,21 @@ const Checkout = () => {
   const total = totalPrice - totalDiscountAmount + shipping;
 
   // Klarna eligibility — only show messaging when Stripe actually offers it.
-  const klarna = useKlarnaEligibility(total, { country: 'US', currency: 'usd' });
-  const klarnaSplit = splitKlarnaInstallments(total, 'USD');
+  // IMPORTANT: Stripe only charges Σ(line_items) − coupon% — shipping
+  // and the (frontend-only) tier discount are NOT sent to Stripe (see
+  // supabase/functions/create-checkout/index.ts). The Klarna installment
+  // shown to the user MUST be derived from that exact Stripe-charged
+  // amount, otherwise "4 × $X.XX" would not equal what Klarna debits.
+  const stripeChargedTotal = Math.max(0, totalPrice - couponDiscountAmount);
+  const klarna = useKlarnaEligibility(stripeChargedTotal, { country: 'US', currency: 'usd' });
+  const klarnaSplit = splitKlarnaInstallments(stripeChargedTotal, 'USD');
 
   // Track Klarna BNPL messaging impression on checkout (once per session/total tier).
   useEffect(() => {
     if (!klarna.eligible || total <= 0) return;
     trackEvent('klarna_message_shown', {
       placement: 'checkout',
-      value: Number(total.toFixed(2)),
+      value: Number(stripeChargedTotal.toFixed(2)),
       installment_amount: klarnaSplit.perInstallment,
       currency: 'USD',
       country: 'US',
@@ -222,7 +228,7 @@ const Checkout = () => {
     });
     // Only refire when eligibility flips or total changes meaningfully.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [klarna.eligible, Math.round(total)]);
+  }, [klarna.eligible, Math.round(stripeChargedTotal)]);
 
   // Check for discount code in localStorage (from popups)
   useEffect(() => {
@@ -407,7 +413,7 @@ const Checkout = () => {
     if (klarna.eligible) {
       trackEvent('klarna_checkout_proceed', {
         placement: 'checkout',
-        value: Number(total.toFixed(2)),
+        value: Number(stripeChargedTotal.toFixed(2)),
         installment_amount: klarnaSplit.perInstallment,
         currency: 'USD',
         country: 'US',
@@ -779,7 +785,7 @@ const Checkout = () => {
                 <p className="mt-2 text-xs text-muted-foreground text-center">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">
-                    {formatKlarnaInstallment(total, 'USD')}
+                    {formatKlarnaInstallment(stripeChargedTotal, 'USD')}
                   </span>{' '}
                   with{' '}
                   <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
