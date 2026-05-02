@@ -610,12 +610,13 @@ const ProductDetail = () => {
     const key = `pdp:${product.id}`;
     if (klarnaTrackedRef.current === key) return;
     klarnaTrackedRef.current = key;
+    const split = splitKlarnaInstallments(Number(product.price) || 0, 'USD');
     trackEvent('klarna_message_shown', {
       placement: 'pdp',
       product_id: product.id,
       product_name: product.name,
       price: Number(product.price) || 0,
-      installment_amount: Number(((Number(product.price) || 0) / 4).toFixed(2)),
+      installment_amount: split.perInstallment,
       currency: 'USD',
       country: 'US',
     });
