@@ -204,6 +204,9 @@ const Checkout = () => {
   const totalDiscountAmount = tierDiscountAmount + couponDiscountAmount;
   const total = totalPrice - totalDiscountAmount + shipping;
 
+  // Klarna eligibility — only show messaging when Stripe actually offers it.
+  const klarna = useKlarnaEligibility(total, { country: 'US', currency: 'usd' });
+
   // Check for discount code in localStorage (from popups)
   useEffect(() => {
     const savedCode = localStorage.getItem('getpawsy_discount_code');
