@@ -333,6 +333,7 @@ const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPag
 const TikTokConfigPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigPage"));
 const TikTokPixelVerifyPage = lazyWithRetry(() => import("./pages/admin/TikTokPixelVerifyPage"));
 const TikTokServerEventsPage = lazyWithRetry(() => import("./pages/admin/TikTokServerEventsPage"));
+const CheckoutFunnelEventsPage = lazyWithRetry(() => import("./pages/admin/CheckoutFunnelEventsPage"));
 const TestPaymentPage = lazyWithRetry(() => import("./pages/admin/TestPaymentPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
@@ -2309,6 +2310,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TikTokServerEventsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="checkout-funnel"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CheckoutFunnelEventsPage />
                                 </Suspense>
                               }
                             />
