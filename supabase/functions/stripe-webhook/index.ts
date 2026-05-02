@@ -415,6 +415,29 @@ serve(async (req) => {
         const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
         const totalValue = session.metadata?.total_value ? parseFloat(session.metadata.total_value) : (session.amount_total || 0) / 100;
 
+        // ── Detect actual payment method used (Klarna / card / link / wallet …)
+        // Stripe's Session does not include payment_method_details directly,
+        // so we expand the underlying PaymentIntent's latest_charge.
+        let paymentMethod: string | null = null;
+        let isKlarna = false;
+        try {
+          if (session.payment_intent) {
+            const pi = await stripe.paymentIntents.retrieve(
+              session.payment_intent as string,
+              { expand: ["latest_charge.payment_method_details"] },
+            );
+            const latestCharge = pi.latest_charge as Stripe.Charge | null;
+            paymentMethod =
+              latestCharge?.payment_method_details?.type ??
+              (Array.isArray(pi.payment_method_types) ? pi.payment_method_types[0] : null) ??
+              null;
+            isKlarna = paymentMethod === "klarna";
+            console.log("[STRIPE-WEBHOOK] Payment method detected:", paymentMethod, "klarna=", isKlarna);
+          }
+        } catch (pmErr) {
+          console.error("[STRIPE-WEBHOOK] Failed to detect payment method:", pmErr);
+        }
+
         // Check if order already exists and get access token
         const { data: existingOrder } = await supabaseAdmin
           .from("orders")
@@ -437,6 +460,9 @@ serve(async (req) => {
               status: "paid",
               stripe_payment_intent_id: session.payment_intent as string,
               shipping_address: session.shipping_details,
+              payment_method: paymentMethod,
+              is_klarna: isKlarna,
+              payment_method_detected_at: paymentMethod ? new Date().toISOString() : null,
             })
             .eq("stripe_session_id", session.id);
 
@@ -469,6 +495,9 @@ serve(async (req) => {
               shipping_address: session.shipping_details,
               items: items,
               order_access_token: orderAccessToken,
+              payment_method: paymentMethod,
+              is_klarna: isKlarna,
+              payment_method_detected_at: paymentMethod ? new Date().toISOString() : null,
             })
             .select("id")
             .single();
@@ -518,6 +547,69 @@ serve(async (req) => {
         // Track remarketing conversions
         if (customerEmail) {
           await trackRemarketingConversion(supabaseAdmin, customerEmail, orderId);
+        }
+
+        // ── Funnel + server-side TikTok events (best-effort, never fails the webhook)
+        try {
+          await supabaseAdmin.from("checkout_funnel_events").insert({
+            stripe_session_id: session.id,
+            step: "complete_payment",
+            value: totalValue,
+            currency: session.currency || "usd",
+            payment_method: paymentMethod,
+            is_klarna: isKlarna,
+            source: "server",
+            metadata: { order_id: orderId },
+          });
+          if (isKlarna) {
+            await supabaseAdmin.from("checkout_funnel_events").insert({
+              stripe_session_id: session.id,
+              step: "klarna_purchase",
+              value: totalValue,
+              currency: session.currency || "usd",
+              payment_method: paymentMethod,
+              is_klarna: true,
+              source: "server",
+              metadata: { order_id: orderId },
+            });
+          }
+        } catch (e) {
+          console.error("[STRIPE-WEBHOOK] funnel insert failed:", e);
+        }
+
+        try {
+          const contents = (items || []).map((it: any) => ({
+            content_id: String(it.id),
+            content_name: it.name,
+            quantity: it.quantity ?? 1,
+            price: it.price,
+          }));
+          await sendTikTokServerEvent({
+            eventName: "CompletePayment",
+            eventId: orderId,
+            email: customerEmail || undefined,
+            externalId: orderId,
+            value: totalValue,
+            currency: (session.currency || "usd").toUpperCase(),
+            contents,
+            description: orderId,
+            properties: { payment_method: paymentMethod, is_klarna: isKlarna },
+          });
+          if (isKlarna) {
+            await sendTikTokServerEvent({
+              eventName: "KlarnaPurchase",
+              eventId: `klarna_${orderId}`,
+              email: customerEmail || undefined,
+              externalId: orderId,
+              value: totalValue,
+              currency: (session.currency || "usd").toUpperCase(),
+              contents,
+              description: orderId,
+              properties: { payment_method: "klarna" },
+            });
+          }
+        } catch (e) {
+          console.error("[STRIPE-WEBHOOK] tiktok server event failed:", e);
         }
 
         break;
