@@ -49,6 +49,7 @@ import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackViewItem, trackEvent } from "@/lib/analytics";
+import { ttTrackViewContent } from "@/lib/tiktok-pixel";
 import { logUtmCheckpoint } from "@/lib/utmDebugLog";
 import { calculateSellingPrice } from "@/lib/pricing";
 import { getProductDiscount } from "@/lib/discount";
@@ -609,6 +610,13 @@ const ProductDetail = () => {
     if (product) {
       trackViewItem(currentProductId, product.name || "", product.price || 0, product.category || undefined);
       trackProductView(currentProductId, product.name || "");
+      // TikTok Pixel ViewContent — closes attribution loop for cold TikTok traffic
+      ttTrackViewContent({
+        contentId: currentProductId,
+        contentName: product.name || "",
+        value: Number(product.price) || 0,
+        currency: "USD",
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProductId]);

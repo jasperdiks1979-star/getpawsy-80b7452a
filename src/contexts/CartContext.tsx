@@ -16,6 +16,9 @@ const showToast = (msg: string) => import('sonner').then(m => m.toast.success(ms
 const showErrorToast = (msg: string) => import('sonner').then(m => m.toast.error(msg)).catch(() => {});
 const getFireMarketingAsync = () => import('@/lib/marketingClient').then(m => m.fireMarketingAsync);
 const getTrackVisitorEvent = () => import('@/hooks/useVisitorTracking').then(m => m.trackVisitorEvent);
+// TikTok Pixel — lazy import to avoid bundle bloat
+const ttAddToCart = (params: { contentId: string; contentName: string; value: number; quantity?: number }) =>
+  import('@/lib/tiktok-pixel').then(m => m.ttTrackAddToCart(params)).catch(() => {});
 
 export interface CartItem {
   id: string;
@@ -245,6 +248,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Google Ads Add to Cart
     trackGoogleAdsAddToCart(newItem.id, newItem.name, newItem.price, 1);
+
+    // TikTok Pixel AddToCart — required for TikTok ad attribution & retargeting
+    ttAddToCart({
+      contentId: newItem.id,
+      contentName: newItem.name,
+      value: newItem.price,
+      quantity: 1,
+    });
     
     // Internal visitor_activity tracking for funnel analysis
     getTrackVisitorEvent().then(fn => fn('add_to_cart', {

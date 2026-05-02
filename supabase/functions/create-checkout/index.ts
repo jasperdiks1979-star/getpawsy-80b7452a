@@ -148,9 +148,11 @@ serve(async (req) => {
       customer_email: customerId ? undefined : userEmail,
       line_items: lineItems,
       mode: "payment",
-      // Apple Pay & Google Pay surface automatically with `card`. Link is added
-      // explicitly so returning shoppers see the 1-click Stripe Link option.
-      payment_method_types: ["card", "link"],
+      // Use automatic_payment_methods so Stripe surfaces every method enabled
+      // in the dashboard (Apple Pay, Google Pay, Link, Klarna, Afterpay,
+      // Cash App Pay, etc.) — critical for high-ticket TikTok mobile traffic
+      // where wallets + BNPL meaningfully lift checkout completion.
+      automatic_payment_methods: { enabled: true },
       shipping_address_collection: {
         // US-only storefront: only accept US shipping addresses to prevent
         // accidental international orders we cannot fulfill.
