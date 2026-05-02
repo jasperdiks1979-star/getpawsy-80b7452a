@@ -2296,6 +2296,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="tiktok-pixel-verify"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TikTokPixelVerifyPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="test"
                               element={<div style={{padding:40,fontSize:24,fontWeight:'bold'}}>ADMIN ROUTE WORKS</div>}
                             />
