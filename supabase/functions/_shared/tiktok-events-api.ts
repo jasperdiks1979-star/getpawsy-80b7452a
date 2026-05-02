@@ -16,22 +16,26 @@ import { sanitizeSecret } from "./tiktok-secrets.ts";
 
 const ENDPOINT = "https://business-api.tiktok.com/open_api/v1.3/event/track/";
 
-// TikTok Pixel IDs are 20-character uppercase alphanumeric strings.
-// See src/lib/tiktok-pixel-config.ts for the same regex used client-side.
-const PIXEL_ID_REGEX = /^[A-Z0-9]{20}$/;
+// TikTok event source IDs come in two formats:
+//   • Classic Pixel ID:    20 uppercase alphanumeric chars (e.g. D7KDRMBC77U9EB7RJROG)
+//   • Web Events source:   lowercase segments separated by `-` (e.g. dyzqo2-zizkat-vaqgiJ)
+// Both are accepted; we only block obviously malformed values (empty, too short,
+// contains spaces / quotes / control chars).
+const CLASSIC_PIXEL_RE = /^[A-Z0-9]{20}$/;
+const WEB_EVENTS_SOURCE_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 function validatePixelId(id: string): { ok: boolean; reason?: string } {
   if (!id) return { ok: false, reason: "TIKTOK_PIXEL_ID is empty" };
-  if (!PIXEL_ID_REGEX.test(id)) {
-    return {
-      ok: false,
-      reason:
-        `TIKTOK_PIXEL_ID="${id}" has an invalid format. ` +
-        `Expected 20 uppercase alphanumeric characters (e.g. D7KDRMBC77U9EB7RJROG). ` +
-        `This usually means an Event Source ID was pasted instead of the Pixel ID.`,
-    };
+  if (CLASSIC_PIXEL_RE.test(id) || WEB_EVENTS_SOURCE_RE.test(id)) {
+    return { ok: true };
   }
-  return { ok: true };
+  return {
+    ok: false,
+    reason:
+      `TIKTOK_PIXEL_ID="${id}" has an invalid format. ` +
+      `Expected either a 20-char classic Pixel ID or a Web Events source ID ` +
+      `(8–64 alphanumeric chars, hyphens or underscores allowed).`,
+  };
 }
 
 interface ContentItem {
