@@ -742,6 +742,18 @@ const Checkout = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
+              {total >= 35 && (
+                <p className="mt-2 text-xs text-muted-foreground text-center">
+                  or 4 interest-free payments of{' '}
+                  <span className="font-semibold text-foreground">
+                    ${(total / 4).toFixed(2)}
+                  </span>{' '}
+                  with{' '}
+                  <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
+                  . Select at checkout.
+                </p>
+              )}
+
               <Button
                 size="lg"
                 className="w-full mt-6 gap-2"
