@@ -1513,6 +1513,198 @@ export const VisitorWorldMap = () => {
     }
   }, [timeRange]);
 
+  // ---------------------------------------------------------------------------
+  // Summary report — kort .md rapport met totalen per land, per bron en
+  // gemiddelde sessieduur voor dezelfde periode als de CSV. Ontworpen om
+  // direct in Slack/Notion te plakken zonder verdere bewerking.
+  // ---------------------------------------------------------------------------
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
+  const exportSummary = useCallback(async () => {
+    setIsSummarizing(true);
+    try {
+      const cutoff =
+        timeRange === "live"
+          ? new Date(Date.now() - 60 * 1000).toISOString()
+          : new Date(Date.now() - getTimeRangeMs()).toISOString();
+      const tsCol = timeRange === "live" ? "last_seen_at" : "created_at";
+
+      // Zelfde paging-strategie als de CSV — anders zou een 24h+ snapshot
+      // stilletjes op 1000 rows worden afgekapt.
+      const pageSize = 1000;
+      let from = 0;
+      const all: VisitorActivityFull[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from("visitor_activity")
+          .select("*")
+          .gte(tsCol, cutoff)
+          .order("created_at", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const batch = (data || []) as unknown as VisitorActivityFull[];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      if (all.length === 0) {
+        toast({ title: "Geen data", description: "Geen bezoekersactiviteit in deze periode.", duration: 3000 });
+        return;
+      }
+
+      // Per-sessie aggregatie — sessieduur = laatste activity_time (of
+      // last_seen_at) − eerste activity_time, geclamped op 0.
+      type SessAgg = {
+        firstAt: number;
+        lastAt: number;
+        country: string;
+        source: string;
+        reachedCart: boolean;
+        reachedCheckout: boolean;
+        orderValueMax: number;
+        isInternal: boolean;
+      };
+      const sessions = new Map<string, SessAgg>();
+      for (const r of all) {
+        // Pinterest komt vaak binnen zonder utm_source — heuristiek matcht
+        // de logica uit de map-filter zelf zodat de cijfers consistent zijn.
+        const source =
+          r.utm_source?.toLowerCase() ||
+          (r.referrer_category === "social" ? "social" : null) ||
+          r.referrer_category ||
+          "direct";
+        const ts = new Date(r.created_at).getTime();
+        const lastSeen = r.last_seen_at ? new Date(r.last_seen_at).getTime() : ts;
+        const s = sessions.get(r.session_id);
+        if (!s) {
+          sessions.set(r.session_id, {
+            firstAt: ts,
+            lastAt: lastSeen,
+            country: r.country || "Onbekend",
+            source,
+            reachedCart: r.activity_type !== "browsing",
+            reachedCheckout: r.activity_type === "checkout",
+            orderValueMax: Number(r.order_value || 0),
+            isInternal: r.is_internal === true,
+          });
+        } else {
+          if (ts < s.firstAt) s.firstAt = ts;
+          if (lastSeen > s.lastAt) s.lastAt = lastSeen;
+          if (s.country === "Onbekend" && r.country) s.country = r.country;
+          if (s.source === "direct" && source !== "direct") s.source = source;
+          if (r.activity_type !== "browsing") s.reachedCart = true;
+          if (r.activity_type === "checkout") s.reachedCheckout = true;
+          if (r.order_value && Number(r.order_value) > s.orderValueMax) s.orderValueMax = Number(r.order_value);
+          if (r.is_internal === true) s.isInternal = true;
+        }
+      }
+
+      // Aggregaties per dimensie. We exclude internal traffic uit de
+      // hoofdcijfers maar vermelden het apart, conform de internal-traffic
+      // sanitation policy.
+      const externalSessions = Array.from(sessions.values()).filter(s => !s.isInternal);
+      const internalCount = sessions.size - externalSessions.length;
+
+      const byCountry = new Map<string, { sessions: number; cart: number; checkout: number; revenue: number }>();
+      const bySource = new Map<string, { sessions: number; cart: number; checkout: number; revenue: number }>();
+      let durationSum = 0;
+      const durations: number[] = [];
+      for (const s of externalSessions) {
+        const dur = Math.max(0, Math.round((s.lastAt - s.firstAt) / 1000));
+        durationSum += dur;
+        durations.push(dur);
+        const c = byCountry.get(s.country) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
+        c.sessions++; if (s.reachedCart) c.cart++; if (s.reachedCheckout) c.checkout++; c.revenue += s.orderValueMax;
+        byCountry.set(s.country, c);
+        const src = bySource.get(s.source) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
+        src.sessions++; if (s.reachedCart) src.cart++; if (s.reachedCheckout) src.checkout++; src.revenue += s.orderValueMax;
+        bySource.set(s.source, src);
+      }
+
+      const avgDuration = externalSessions.length ? Math.round(durationSum / externalSessions.length) : 0;
+      // Median is robuuster tegen heartbeat-uitschieters dan het gemiddelde.
+      const sortedDur = [...durations].sort((a, b) => a - b);
+      const medianDuration = sortedDur.length
+        ? sortedDur.length % 2
+          ? sortedDur[(sortedDur.length - 1) / 2]
+          : Math.round((sortedDur[sortedDur.length / 2 - 1] + sortedDur[sortedDur.length / 2]) / 2)
+        : 0;
+
+      const fmtDur = (sec: number) => {
+        if (sec < 60) return `${sec}s`;
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return m < 60 ? `${m}m ${s}s` : `${Math.floor(m / 60)}h ${m % 60}m`;
+      };
+      const fmtPct = (n: number, d: number) => (d ? `${((n / d) * 100).toFixed(1)}%` : "—");
+      const fmtRev = (n: number) => (n ? `$${n.toFixed(2)}` : "—");
+
+      const periodLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label ?? timeRange;
+      const totalEvents = all.length;
+
+      const sortedCountries = Array.from(byCountry.entries()).sort((a, b) => b[1].sessions - a[1].sessions);
+      const sortedSources = Array.from(bySource.entries()).sort((a, b) => b[1].sessions - a[1].sessions);
+
+      const lines: string[] = [];
+      lines.push(`# Bezoekersrapport — ${periodLabel}`);
+      lines.push("");
+      lines.push(`_Gegenereerd: ${new Date().toLocaleString("nl-NL")}_`);
+      lines.push("");
+      lines.push("## Totalen");
+      lines.push("");
+      lines.push(`- Sessies (extern): **${externalSessions.length}**`);
+      lines.push(`- Sessies (intern, uitgesloten): ${internalCount}`);
+      lines.push(`- Activiteits-events: ${totalEvents}`);
+      lines.push(`- In winkelwagen: **${externalSessions.filter(s => s.reachedCart).length}** (${fmtPct(externalSessions.filter(s => s.reachedCart).length, externalSessions.length)})`);
+      lines.push(`- Checkout gestart: **${externalSessions.filter(s => s.reachedCheckout).length}** (${fmtPct(externalSessions.filter(s => s.reachedCheckout).length, externalSessions.length)})`);
+      lines.push(`- Gem. sessieduur: **${fmtDur(avgDuration)}** (mediaan ${fmtDur(medianDuration)})`);
+      lines.push("");
+      lines.push("## Top landen");
+      lines.push("");
+      lines.push("| Land | Sessies | Cart | Checkout | CR | Omzet |");
+      lines.push("|------|--------:|-----:|---------:|---:|------:|");
+      for (const [country, v] of sortedCountries.slice(0, 25)) {
+        lines.push(`| ${country} | ${v.sessions} | ${v.cart} | ${v.checkout} | ${fmtPct(v.checkout, v.sessions)} | ${fmtRev(v.revenue)} |`);
+      }
+      lines.push("");
+      lines.push("## Verkeersbronnen");
+      lines.push("");
+      lines.push("| Bron | Sessies | Cart | Checkout | CR | Omzet |");
+      lines.push("|------|--------:|-----:|---------:|---:|------:|");
+      for (const [source, v] of sortedSources) {
+        lines.push(`| ${source} | ${v.sessions} | ${v.cart} | ${v.checkout} | ${fmtPct(v.checkout, v.sessions)} | ${fmtRev(v.revenue)} |`);
+      }
+      lines.push("");
+
+      const md = lines.join("\n");
+      const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `bezoekers-samenvatting-${timeRange}-${new Date().toISOString().split("T")[0]}.md`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Samenvatting gereed",
+        description: `${externalSessions.length} sessies · ${sortedCountries.length} landen · ${sortedSources.length} bronnen`,
+        duration: 3000,
+      });
+    } catch (err) {
+      console.error("Summary export error", err);
+      toast({
+        title: "Samenvatting mislukt",
+        description: err instanceof Error ? err.message : "Onbekende fout",
+        duration: 4000,
+      });
+    } finally {
+      setIsSummarizing(false);
+    }
+  }, [timeRange]);
+
   // Minimal fullscreen mode - only map with floating close button
   if (isFullscreen && fullscreenMinimal) {
     return (
@@ -1948,6 +2140,22 @@ export const VisitorWorldMap = () => {
                 <Download className="w-4 h-4 mr-2" />
               )}
               {isExporting ? "Exporteren…" : "Export CSV"}
+            </Button>
+
+            {/* Summary Report Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportSummary}
+              disabled={isSummarizing}
+              title="Download samenvatting (totalen per land + bron, gemiddelde sessieduur) voor dezelfde periode"
+            >
+              {isSummarizing ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <BarChart3 className="w-4 h-4 mr-2" />
+              )}
+              {isSummarizing ? "Genereren…" : "Samenvatting"}
             </Button>
 
             {/* Fullscreen Toggle */}
