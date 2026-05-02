@@ -602,6 +602,24 @@ const ProductDetail = () => {
     { country: "US", currency: "usd" },
   );
 
+  // Track Klarna BNPL messaging impression on PDP (fires once per product when eligible).
+  const klarnaTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!klarna.eligible || !product?.id) return;
+    const key = `pdp:${product.id}`;
+    if (klarnaTrackedRef.current === key) return;
+    klarnaTrackedRef.current = key;
+    trackEvent('klarna_message_shown', {
+      placement: 'pdp',
+      product_id: product.id,
+      product_name: product.name,
+      price: Number(product.price) || 0,
+      installment_amount: Number(((Number(product.price) || 0) / 4).toFixed(2)),
+      currency: 'USD',
+      country: 'US',
+    });
+  }, [klarna.eligible, product?.id, product?.name, product?.price]);
+
   // Reset state and auto-select first variant when PRODUCT ID changes (not object ref)
   const currentProductId = product?.id;
   useEffect(() => {

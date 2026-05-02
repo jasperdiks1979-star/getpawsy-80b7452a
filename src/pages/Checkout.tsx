@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { trackBeginCheckout } from '@/lib/analytics';
+import { trackBeginCheckout, trackEvent } from '@/lib/analytics';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
@@ -207,6 +207,21 @@ const Checkout = () => {
   // Klarna eligibility — only show messaging when Stripe actually offers it.
   const klarna = useKlarnaEligibility(total, { country: 'US', currency: 'usd' });
 
+  // Track Klarna BNPL messaging impression on checkout (once per session/total tier).
+  useEffect(() => {
+    if (!klarna.eligible || total <= 0) return;
+    trackEvent('klarna_message_shown', {
+      placement: 'checkout',
+      value: Number(total.toFixed(2)),
+      installment_amount: Number((total / 4).toFixed(2)),
+      currency: 'USD',
+      country: 'US',
+      item_count: items.reduce((s, i) => s + i.quantity, 0),
+    });
+    // Only refire when eligibility flips or total changes meaningfully.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [klarna.eligible, Math.round(total)]);
+
   // Check for discount code in localStorage (from popups)
   useEffect(() => {
     const savedCode = localStorage.getItem('getpawsy_discount_code');
@@ -384,6 +399,18 @@ const Checkout = () => {
     }
 
     setIsProcessing(true);
+
+    // Track that the user proceeded to Stripe Checkout while Klarna was an
+    // available option — proxy for "Klarna placement shown at checkout step".
+    if (klarna.eligible) {
+      trackEvent('klarna_checkout_proceed', {
+        placement: 'checkout',
+        value: Number(total.toFixed(2)),
+        installment_amount: Number((total / 4).toFixed(2)),
+        currency: 'USD',
+        country: 'US',
+      });
+    }
     
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
