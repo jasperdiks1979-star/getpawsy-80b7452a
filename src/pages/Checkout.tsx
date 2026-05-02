@@ -379,6 +379,14 @@ const Checkout = () => {
       
       // A/B Test: Track checkout started with variant
       abTest.trackCheckoutStarted(totalPrice);
+
+      // Funnel: begin_checkout step (server + GA4 + TikTok mirror)
+      trackCheckoutFunnel({
+        step: 'begin_checkout',
+        value: totalPrice,
+        currency: 'USD',
+        metadata: { item_count: items.reduce((s, i) => s + i.quantity, 0) },
+      });
       
       // Pinterest Checkout tracking — deferred, non-blocking
       fireMarketingAsync('pinterest-checkout', async () => {
