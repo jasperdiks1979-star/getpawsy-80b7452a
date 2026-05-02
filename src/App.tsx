@@ -332,6 +332,7 @@ function BestsellerSlugRedirect() {
 const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
 const TikTokConfigPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigPage"));
 const TikTokPixelVerifyPage = lazyWithRetry(() => import("./pages/admin/TikTokPixelVerifyPage"));
+const TikTokServerEventsPage = lazyWithRetry(() => import("./pages/admin/TikTokServerEventsPage"));
 const TestPaymentPage = lazyWithRetry(() => import("./pages/admin/TestPaymentPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
