@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { computeAvailability } from '@/lib/availability';
-import { trackViewItem } from '@/lib/analytics';
+import { trackViewItem, trackAddToCart } from '@/lib/analytics';
 import { ShoppingCart, Truck, RotateCcw, ShieldCheck, Check, Star, Clock, Sparkles, Heart } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -64,6 +64,10 @@ const LitterBoxFunnel = () => {
         image: product.image_url || '',
       });
     }
+    const unitPrice = bundle.discount > 0
+      ? Math.round((price * (1 - bundle.discount / 100)) * 100) / 100
+      : price;
+    trackAddToCart(product.id, product.name, unitPrice, bundle.qty);
     toast.success(`${bundle.qty}x added to cart!`);
     navigate('/checkout');
   };

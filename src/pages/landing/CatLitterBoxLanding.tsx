@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { computeAvailability } from '@/lib/availability';
-import { trackViewItem } from '@/lib/analytics';
+import { trackViewItem, trackAddToCart } from '@/lib/analytics';
 import { ShoppingCart, Truck, RotateCcw, ShieldCheck, Check, ArrowRight, Sparkles, Clock, Zap } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -70,6 +70,7 @@ const CatLitterBoxLanding = () => {
   const handleAddToCart = () => {
     if (!product) return;
     addItem({ id: product.id, slug: product.slug ?? undefined, name: product.name, price: sellingPrice, image: product.image_url || '' });
+    trackAddToCart(product.id, product.name, sellingPrice, 1);
     toast.success('Added to cart!');
   };
 
