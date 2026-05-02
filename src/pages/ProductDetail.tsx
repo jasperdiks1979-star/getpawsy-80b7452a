@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
+import { splitKlarnaInstallments, formatKlarnaInstallment } from "@/lib/klarna";
 import {
   ShoppingCart,
   Heart,
@@ -609,12 +610,13 @@ const ProductDetail = () => {
     const key = `pdp:${product.id}`;
     if (klarnaTrackedRef.current === key) return;
     klarnaTrackedRef.current = key;
+    const split = splitKlarnaInstallments(Number(product.price) || 0, 'USD');
     trackEvent('klarna_message_shown', {
       placement: 'pdp',
       product_id: product.id,
       product_name: product.name,
       price: Number(product.price) || 0,
-      installment_amount: Number(((Number(product.price) || 0) / 4).toFixed(2)),
+      installment_amount: split.perInstallment,
       currency: 'USD',
       country: 'US',
     });
@@ -1082,7 +1084,7 @@ const ProductDetail = () => {
                 <p className="mt-2 text-sm text-muted-foreground">
                   or 4 interest-free payments of{' '}
                   <span className="font-semibold text-foreground">
-                    ${(activePrice / 4).toFixed(2)}
+                    {formatKlarnaInstallment(activePrice, 'USD')}
                   </span>{' '}
                   with{' '}
                   <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
