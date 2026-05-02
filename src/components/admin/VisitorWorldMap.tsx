@@ -2142,6 +2142,22 @@ export const VisitorWorldMap = () => {
               {isExporting ? "Exporteren…" : "Export CSV"}
             </Button>
 
+            {/* Summary Report Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportSummary}
+              disabled={isSummarizing}
+              title="Download samenvatting (totalen per land + bron, gemiddelde sessieduur) voor dezelfde periode"
+            >
+              {isSummarizing ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <BarChart3 className="w-4 h-4 mr-2" />
+              )}
+              {isSummarizing ? "Genereren…" : "Samenvatting"}
+            </Button>
+
             {/* Fullscreen Toggle */}
             <div className="flex gap-1">
               <Button
