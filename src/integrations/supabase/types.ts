@@ -8315,6 +8315,9 @@ export type Database = {
           pixel_id: string | null
           response_body: Json | null
           response_status: number | null
+          status: string | null
+          tiktok_code: number | null
+          tiktok_message: string | null
         }
         Insert: {
           created_at?: string
@@ -8326,6 +8329,9 @@ export type Database = {
           pixel_id?: string | null
           response_body?: Json | null
           response_status?: number | null
+          status?: string | null
+          tiktok_code?: number | null
+          tiktok_message?: string | null
         }
         Update: {
           created_at?: string
@@ -8337,6 +8343,9 @@ export type Database = {
           pixel_id?: string | null
           response_body?: Json | null
           response_status?: number | null
+          status?: string | null
+          tiktok_code?: number | null
+          tiktok_message?: string | null
         }
         Relationships: []
       }
