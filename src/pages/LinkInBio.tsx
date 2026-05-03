@@ -600,6 +600,30 @@ export default function LinkInBio() {
       ...flags,
       ...attribution,
     });
+    // Spec-compliant mirror: the TikTok funnel brief calls for an
+    // `lp_click` event with destination_url + UTM context. We fire it
+    // ALONGSIDE lp_cta_click (never replacing it) so existing dashboards
+    // and the auto-winner elector keep working unchanged. Wrapped in a
+    // try/catch — analytics MUST NEVER block CTA navigation.
+    try {
+      const destinationUrl =
+        `/products/automatic-cat-litter-box-self-cleaning-app-control` +
+        `?ad=${encodeURIComponent(attribution.ad || 'tt')}` +
+        `&utm_source=${encodeURIComponent(attribution.utm_source || 'tiktok')}` +
+        `&utm_medium=${encodeURIComponent(attribution.utm_medium || 'social')}` +
+        `&utm_campaign=${encodeURIComponent(attribution.utm_campaign || 'tt_bio_link')}` +
+        (attribution.utm_content ? `&utm_content=${encodeURIComponent(attribution.utm_content)}` : '');
+      trackEvent('lp_click', {
+        placement,
+        destination_url: destinationUrl,
+        utm_source: attribution.utm_source,
+        utm_medium: attribution.utm_medium,
+        utm_campaign: attribution.utm_campaign,
+        utm_content: attribution.utm_content,
+        timestamp: Date.now(),
+        lp_click_id: link.click_id,
+      });
+    } catch { /* never block navigation */ }
     // Clarity click beacon + tags so heatmap funnels can answer:
     // "of users who saw proof, how many actually clicked?"
     clarityTag('saw_proof_before_click', sawProof);
