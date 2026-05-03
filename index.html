@@ -319,6 +319,20 @@
           d.href = '/hero/dog-training-hero-desktop.webp'; d.media = '(min-width: 769px)';
           document.head.appendChild(d);
         }
+        // /go (TikTok prelander) — preload the LCP candidate (demo video
+        // poster) so the hero paints immediately on cold mobile Safari,
+        // BEFORE React hydrates and mounts the <video>. The video file
+        // itself is too large to preload; <video preload="metadata"> will
+        // pick it up. Keeping CTA paint < 1 frame is the #1 lever to
+        // recover the 0–2s bounce on TikTok cold traffic.
+        if (p === '/go') {
+          var goPoster = document.createElement('link');
+          goPoster.rel = 'preload';
+          goPoster.as = 'image';
+          goPoster.fetchPriority = 'high';
+          goPoster.href = '/videos/go-demo-poster.jpg';
+          document.head.appendChild(goPoster);
+        }
         // PRE-HYDRATION: Set meaningful title for collection pages
         if (p.indexOf('/collections/') === 0) {
           var cSlug = p.replace('/collections/', '').replace(/\/$/, '');
