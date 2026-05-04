@@ -441,6 +441,91 @@ Deno.serve(async (req) => {
       return json(cors, { ok: true, error: error?.message });
     }
 
+    if (action === "scale_100") {
+      // Generate ~100 pins/day spread across 24h, randomized intervals,
+      // pulling 5–10 cat-focused products (litter boxes, cat trees, cat care).
+      const targetPins = Math.min(Math.max(body.targetPins || 100, 10), 200);
+      const productCount = Math.min(Math.max(body.productCount || 10, 5), 20);
+
+      const { data: products, error: prodErr } = await sb
+        .from("products")
+        .select("id, name, slug, category, image_url")
+        .eq("is_active", true)
+        .eq("pinterest_disabled", false)
+        .not("image_url", "is", null)
+        .not("slug", "is", null)
+        .or("category.ilike.%cat%,name.ilike.%cat%")
+        .order("created_at", { ascending: false })
+        .limit(80);
+      if (prodErr) throw prodErr;
+
+      // Prioritize litter boxes, then cat trees, then everything else cat
+      const ranked = (products || []).sort((a, b) => {
+        const score = (p: any) => {
+          const n = (p.name || "").toLowerCase();
+          if (n.includes("litter")) return 3;
+          if (n.includes("tree") || n.includes("tower") || n.includes("condo")) return 2;
+          return 1;
+        };
+        return score(b) - score(a);
+      });
+      const selected = ranked.slice(0, productCount);
+      if (selected.length === 0) {
+        return json(cors, { ok: false, error: "No eligible cat products found" });
+      }
+
+      const pinsPerProduct = Math.ceil(targetPins / selected.length);
+
+      // Build randomized 24h slot list (minutes from now), one per pin
+      const totalSlots = pinsPerProduct * selected.length;
+      const baseInterval = (24 * 60) / totalSlots; // minutes per pin
+      const slotMinutesAll: number[] = [];
+      for (let i = 0; i < pinsPerProduct; i++) {
+        const jitter = (Math.random() - 0.5) * baseInterval * 0.6;
+        slotMinutesAll.push(Math.max(1, Math.round(i * baseInterval + jitter)));
+      }
+
+      const startMs = Date.now();
+      let allPins: any[] = [];
+      for (const p of selected) {
+        const pins = generateScalePins(p, startMs, slotMinutesAll).slice(0, pinsPerProduct);
+        allPins = allPins.concat(pins);
+      }
+      // Trim to exact target
+      allPins = allPins.slice(0, targetPins);
+
+      // Skip image-less or invalid pins
+      allPins = allPins.filter(
+        (p) => p.pin_image_url && p.pin_image_url.startsWith("https://") && p.product_slug,
+      );
+
+      if (allPins.length === 0) {
+        return json(cors, { ok: false, error: "No valid pins generated" });
+      }
+
+      const { error: insErr } = await sb.from("pinterest_pin_queue").insert(allPins);
+      if (insErr) throw insErr;
+
+      // Mark products as ready
+      for (const p of selected) {
+        await sb.from("products").update({
+          pinterest_ready: true,
+          pinterest_category: "scale",
+          pinterest_last_generated_at: new Date().toISOString(),
+          pinterest_status: "generated",
+        }).eq("id", p.id);
+      }
+
+      return json(cors, {
+        ok: true,
+        queued: allPins.length,
+        productsUsed: selected.length,
+        boards: SCALE_BOARDS,
+        firstScheduled: allPins[0]?.scheduled_at,
+        lastScheduled: allPins[allPins.length - 1]?.scheduled_at,
+      });
+    }
+
     if (action === "update_boards") {
       const { category_key, board_names } = body;
       if (!category_key || !board_names) throw new Error("category_key and board_names required");
