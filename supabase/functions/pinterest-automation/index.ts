@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
-import { PINTEREST_API_BASE, getPinterestMode } from "../_shared/pinterest-config.ts";
+import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
