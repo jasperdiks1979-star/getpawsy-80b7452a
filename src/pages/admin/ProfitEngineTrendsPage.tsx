@@ -144,7 +144,13 @@ export default function ProfitEngineTrendsPage() {
       r.cpc.toFixed(2), r.atc, r.purchases, r.revenue.toFixed(2), r.aov.toFixed(2),
     ]);
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
-    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `profit-engine-trends-${range}-${new Date().toISOString().slice(0,10)}.csv`);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `profit-engine-trends-${range}-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const exportPDF = () => {
