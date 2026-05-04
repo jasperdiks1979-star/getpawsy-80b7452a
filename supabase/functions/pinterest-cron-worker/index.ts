@@ -294,8 +294,10 @@ Deno.serve(async (req) => {
           boardIdCache.set(boardRef, boardId);
         }
 
-        console.log("Pinterest mode:", getPinterestMode(), "base:", PINTEREST_API_BASE);
-        const pinRes = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
+        const mode = await getPinterestMode(sb);
+        const apiBase = await getPinterestApiBase(sb);
+        console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
+        const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -315,6 +317,12 @@ Deno.serve(async (req) => {
 
         if (!pinRes.ok) {
           const errBody = await pinRes.text();
+          console.log("[pinterest] response", { status: pinRes.status, mode, api_base: apiBase });
+
+          // Auto-fallback on 403 from production
+          if (pinRes.status === 403 && mode === "production") {
+            await markProductionForbidden(sb);
+          }
 
           // If 401, try one token refresh mid-batch
           if (pinRes.status === 401 && conn) {
@@ -324,7 +332,7 @@ Deno.serve(async (req) => {
               accessToken = newToken;
               // Retry this pin once
               const retryRes = await fetch(
-                `${PINTEREST_API_BASE}/v5/pins`,
+                `${apiBase}/pins`,
                 {
                   method: "POST",
                   headers: {
@@ -367,6 +375,8 @@ Deno.serve(async (req) => {
         }
 
         const pinData = await pinRes.json();
+        const externalUrl = pinData?.id ? `https://www.pinterest.com/pin/${pinData.id}/` : null;
+        console.log("[pinterest] response", { status: 200, mode, api_base: apiBase, pin_id: pinData.id, external_url: externalUrl });
         await markPosted(sb, pin, pinData.id);
         results.push({
           pinId: pin.id,
