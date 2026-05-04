@@ -21,6 +21,75 @@ function getCorsHeaders(req: Request) {
 
 const BASE_URL = "https://getpawsy.pet";
 
+// ── Viral Hook System v2 — 10 universal scroll-stoppers (A/B/C variants below) ──
+const VIRAL_HOOKS: string[] = [
+  "Wait — you're still doing this?",
+  "I wish I knew this sooner",
+  "This changed everything",
+  "Pet owners are obsessed",
+  "The fix nobody talks about",
+  "Stop wasting money on this",
+  "Why didn't I do this earlier?",
+  "The 30-second pet hack",
+  "This is going viral for a reason",
+  "Your pet will thank you",
+];
+
+type ViralVariant = "A" | "B" | "C"; // A=problem, B=curiosity, C=future/innovation
+const VARIANT_LABELS: Record<ViralVariant, string> = {
+  A: "Problem-focused",
+  B: "Curiosity-driven",
+  C: "Future/innovation",
+};
+
+function buildViralTitle(hook: string, productName: string, variant: ViralVariant): string {
+  const name = (productName || "").slice(0, 50).trim();
+  const angle =
+    variant === "A" ? "the mess, smell & daily effort"
+    : variant === "B" ? "see what cat parents are switching to"
+    : "the smarter, automatic way";
+  return `${hook} · ${angle}`.slice(0, 100);
+}
+
+function buildViralDescription(hook: string, productName: string, variant: ViralVariant): string {
+  const name = (productName || "this product").slice(0, 60);
+  // Structured: problem → solution → benefit → CTA
+  const blocks: Record<ViralVariant, { problem: string; solution: string; benefit: string; cta: string }> = {
+    A: {
+      problem: "Tired of the smell, mess, and daily scooping?",
+      solution: `${name} replaces the worst part of pet care.`,
+      benefit: "Cleaner home · Less effort · Happier pet",
+      cta: "Tap to see why owners are switching →",
+    },
+    B: {
+      problem: "Most pet owners don't know this exists.",
+      solution: `${name} is quietly changing how people care for their pets.`,
+      benefit: "Loved by indoor-pet households across the US",
+      cta: "See why it's going viral →",
+    },
+    C: {
+      problem: "The old way of pet care is over.",
+      solution: `${name} brings smart, hands-off design home.`,
+      benefit: "Automatic · Modern · Built to last",
+      cta: "Learn more on GetPawsy →",
+    },
+  };
+  const b = blocks[variant];
+  return `${hook}\n\n${b.problem}\n\n${b.solution}\n\n✔ ${b.benefit}\n✔ Ships from US warehouses\n✔ 30-day returns\n\n${b.cta}\n\n#getpawsy #petproducts #catcare #smartpet #indoorcat`;
+}
+
+/** Pick 3 distinct hooks for a product, deterministic per product+variant index. */
+function pickHooksForProduct(productId: string, count: number = 3): string[] {
+  const seed = Math.abs(hashCode(productId || "x"));
+  const pool = [...VIRAL_HOOKS];
+  const out: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = (seed + i * 7) % pool.length;
+    out.push(pool.splice(idx, 1)[0]);
+  }
+  return out;
+}
+
 // ── Scale Engine: 10 unique scroll-stopping hooks for cat products ──
 const SCALE_HOOKS_CAT: string[] = [
   "Stop scooping your cat's litter every day",
@@ -159,43 +228,39 @@ function detectCategory(name: string, category: string): string {
 
 function generatePins(product: any, boards: Record<string, string[]>) {
   const catKey = detectCategory(product.name || "", product.category || "");
-  const hookSet = HOOKS[catKey] || HOOKS.cat_essentials;
   const boardList = boards[catKey] || boards.fallback || ["Pet Products"];
-  const shortName = (product.name || "").length > 50 ? (product.name || "").slice(0, 47) + "..." : (product.name || "");
 
+  // Viral system: 3 variants (A/B/C) per product, each with a distinct hook
+  const hooks = pickHooksForProduct(product.id || product.slug || product.name || "", 3);
+  const variants: ViralVariant[] = ["A", "B", "C"];
   const pins: any[] = [];
-  const groups = ["problem", "curiosity", "result", "target"] as const;
-  let pinNum = 0;
 
-  for (const group of groups) {
-    const hooks = hookSet[group];
-    for (let i = 0; i < hooks.length && pinNum < 10; i++) {
-      const hook = hooks[i];
-      const board = boardList[pinNum % boardList.length];
-      const destUrl = product.slug
-        ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=auto_pin&utm_content=${product.slug}`
-        : `${BASE_URL}/collections/${catKey.replace("_", "-")}?utm_source=pinterest&utm_medium=organic&utm_campaign=auto_pin`;
+  for (let i = 0; i < variants.length; i++) {
+    const variant = variants[i];
+    const hook = hooks[i];
+    const board = boardList[i % boardList.length];
+    const destUrl = product.slug
+      ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v2&utm_content=${product.slug}-${variant}`
+      : `${BASE_URL}/collections/${catKey.replace("_", "-")}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v2`;
 
-      pins.push({
-        product_id: product.id,
-        product_slug: product.slug || "",
-        product_name: product.name || "",
-        pin_variant: `${group}_${i + 1}`,
-        hook_group: group,
-        category_key: catKey,
-        pin_title: `${hook} — ${shortName}`,
-        pin_description: buildDescription(hook, product, group),
-        pin_image_url: product.image_url || "",
-        destination_link: destUrl,
-        board_name: board,
-        overlay_text: hook,
-        hashtags: buildHashtags(catKey),
-        priority: catKey === "cat_trees" || catKey === "cat_litter_boxes" ? "high" : catKey === "dog_travel" ? "low" : "medium",
-        status: "draft",
-        scheduled_at: null,
-      });
-      pinNum++;
-    }
+    pins.push({
+      product_id: product.id,
+      product_slug: product.slug || "",
+      product_name: product.name || "",
+      pin_variant: `viral_${variant}`,
+      hook_group: VARIANT_LABELS[variant],
+      category_key: catKey,
+      pin_title: buildViralTitle(hook, product.name || "", variant),
+      pin_description: buildViralDescription(hook, product.name || "", variant),
+      pin_image_url: product.image_url || "",
+      destination_link: destUrl,
+      board_name: board,
+      overlay_text: hook,
+      hashtags: buildHashtags(catKey),
+      priority: catKey === "cat_trees" || catKey === "cat_litter_boxes" ? "high" : catKey === "dog_travel" ? "low" : "medium",
+      status: "draft",
+      scheduled_at: null,
+    });
   }
 
   return pins;
