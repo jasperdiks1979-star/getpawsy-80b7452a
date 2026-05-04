@@ -659,6 +659,7 @@ Deno.serve(async (req) => {
         const description = `Sandbox approval test pin for GetPawsy. ${p.name}`;
         const link = `${BASE_URL}/products/${p.slug}?utm_source=pinterest&utm_medium=test&utm_campaign=approval`;
         try {
+          console.log("Pinterest mode:", getPinterestMode(), "base:", PINTEREST_API_BASE);
           const res = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
             method: "POST",
             headers: {
