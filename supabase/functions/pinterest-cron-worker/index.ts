@@ -353,11 +353,14 @@ Deno.serve(async (req) => {
               );
               if (retryRes.ok) {
                 const retryData = await retryRes.json();
-                await markPosted(sb, pin, retryData.id);
+                const verifiedR = await verifyPinExists(accessToken, apiBase, retryData.id);
+                console.log("[pinterest] verify", { pin_id: retryData.id, pin_verified: verifiedR });
+                await markPosted(sb, pin, retryData.id, verifiedR);
                 results.push({
                   pinId: pin.id,
                   status: "posted",
                   externalId: retryData.id,
+                  pinVerified: verifiedR,
                 });
                 console.log(
                   `✅ Pin ${pin.id} posted (after refresh) as ${retryData.id}`,
