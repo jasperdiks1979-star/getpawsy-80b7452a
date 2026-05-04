@@ -147,6 +147,44 @@ export default function PinterestScaleModePage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const { data: approval, refetch: refetchApproval } = useQuery({
+    queryKey: ['pinterest-approval-check'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'approval_check' },
+      });
+      if (error) throw error;
+      return data as {
+        ok: boolean;
+        mode: 'sandbox' | 'production';
+        api_base: string;
+        can_publish_production: boolean;
+        sandbox_working: boolean;
+        pins_created: number;
+        ready_for_upgrade: boolean;
+        recent_logs: any[];
+      };
+    },
+    refetchInterval: 60000,
+  });
+
+  const testPublishMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'test_publish_sandbox' },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || 'Test publish failed');
+      return data;
+    },
+    onSuccess: (data: any) => {
+      refetchApproval();
+      const ok = data?.success_count || 0;
+      toast.success(`Created ${ok}/${data?.created?.length || 0} test pins on ${data?.mode}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const syncMutation = useMutation({
     mutationFn: async (pins: any[]) => {
       const { data, error } = await supabase.functions.invoke('pinterest-optimizer', {
@@ -249,6 +287,74 @@ export default function PinterestScaleModePage() {
               <RefreshCw className="h-4 w-4 mr-1" /> Retry Failed
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Pinterest Approval Readiness */}
+      <Card className="border-blue-500/30 bg-blue-500/5">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Target className="h-5 w-5 text-blue-500" /> Pinterest Approval Readiness
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Mode: <span className="font-mono">{approval?.mode || '…'}</span> · API:{' '}
+            <span className="font-mono">{approval?.api_base || '…'}</span>
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div className="p-2 rounded bg-background border">
+              <div className="text-xs text-muted-foreground">Pins created</div>
+              <div className="text-lg font-bold">{approval?.pins_created ?? '—'}</div>
+            </div>
+            <div className="p-2 rounded bg-background border">
+              <div className="text-xs text-muted-foreground">Sandbox working</div>
+              <div className="text-lg font-bold">{approval?.sandbox_working ? '✅' : '⏳'}</div>
+            </div>
+            <div className="p-2 rounded bg-background border">
+              <div className="text-xs text-muted-foreground">Can publish prod</div>
+              <div className="text-lg font-bold">{approval?.can_publish_production ? '✅' : '❌'}</div>
+            </div>
+            <div className="p-2 rounded bg-background border">
+              <div className="text-xs text-muted-foreground">Ready for upgrade</div>
+              <div className="text-lg font-bold">{approval?.ready_for_upgrade ? '✅' : '❌'}</div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => testPublishMutation.mutate()}
+              disabled={testPublishMutation.isPending}
+              variant="outline"
+            >
+              {testPublishMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+              Create 3 Test Pins (Sandbox)
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!approval?.ready_for_upgrade}
+              onClick={() => {
+                const proof = (approval?.recent_logs || [])
+                  .filter((l: any) => l.status === 'success')
+                  .slice(0, 5);
+                if (!proof.length) {
+                  toast.error('No proof logs found yet — run test pins first');
+                  return;
+                }
+                navigator.clipboard.writeText(JSON.stringify(proof, null, 2));
+                toast.success('Proof logs copied to clipboard — paste in Pinterest upgrade request');
+              }}
+            >
+              Request Production Upgrade Ready
+            </Button>
+          </div>
+          {approval?.recent_logs?.length ? (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-muted-foreground">Recent proof logs</summary>
+              <pre className="mt-2 p-2 bg-background border rounded overflow-auto max-h-60">
+{JSON.stringify(approval.recent_logs.slice(0, 10), null, 2)}
+              </pre>
+            </details>
+          ) : null}
         </CardContent>
       </Card>
 
