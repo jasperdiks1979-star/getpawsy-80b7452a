@@ -475,7 +475,14 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
     pin_queue_id: pin.id,
     action: "publish",
     status: "success",
-    response_data: { external_id: externalId, pin_verified: verified },
+    response_data: {
+      external_id: externalId,
+      pin_verified: verified,
+      hook_used: pin.overlay_text || null,
+      variant_type: pin.pin_variant || null,
+      pin_id: externalId,
+      outbound_click_ready: Boolean(pin.destination_link),
+    },
   });
 }
 
