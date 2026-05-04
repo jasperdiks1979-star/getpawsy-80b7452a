@@ -295,6 +295,17 @@ export default function PinterestScaleModePage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Target className="h-5 w-5 text-blue-500" /> Pinterest Approval Readiness
+            {approval?.mode && (
+              <span
+                className={`ml-2 px-2 py-0.5 rounded text-xs font-bold tracking-wide ${
+                  approval.mode === 'production'
+                    ? 'bg-green-500/20 text-green-700 border border-green-500/40'
+                    : 'bg-amber-500/20 text-amber-700 border border-amber-500/40'
+                }`}
+              >
+                {approval.mode === 'production' ? 'PRODUCTION MODE' : 'SANDBOX MODE ACTIVE'}
+              </span>
+            )}
           </CardTitle>
           <p className="text-xs text-muted-foreground">
             Mode: <span className="font-mono">{approval?.mode || '…'}</span> · API:{' '}
