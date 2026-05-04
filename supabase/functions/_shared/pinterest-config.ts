@@ -1,11 +1,11 @@
 /**
  * Pinterest API configuration.
- * 
- * SANDBOX MODE: Set to true while awaiting Standard Access approval.
- * Once approved by Pinterest, no changes needed — already on production.
+ *
+ * Hardcoded to PRODUCTION per project memory
+ * (mem://infrastructure/pinterest-api-sandbox-testing-constraints).
+ *
+ * Sandbox returns spurious 200/"success" responses without ever creating
+ * a real, viewable pin, which made admin "Posted" counters lie. Production
+ * is the only mode where a verified `pin_id` / `external_url` is returned.
  */
-const USE_SANDBOX = true;
-
-export const PINTEREST_API_BASE = USE_SANDBOX
-  ? "https://api-sandbox.pinterest.com"
-  : "https://api.pinterest.com";
+export const PINTEREST_API_BASE = "https://api.pinterest.com";
