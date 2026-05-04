@@ -488,15 +488,28 @@ Deno.serve(async (req) => {
 
       if (!drafts?.length) return json(cors, { ok: true, queued: 0 });
 
-      // Interleave: avoid two consecutive pins sharing the same variant or hook text
+      // Interleave: avoid consecutive same-hook/variant; inject high-risk hook every 3rd slot
+      const HIGH_RISK = new Set<string>([
+        "This feels illegal for cat owners",
+        "I replaced my litter box with THIS",
+        "You're doing this wrong",
+      ]);
       const ordered: any[] = [];
       const remaining = [...drafts];
       while (remaining.length) {
-        let pickIdx = remaining.findIndex((d) => {
-          const last = ordered[ordered.length - 1];
-          if (!last) return true;
-          return d.pin_variant !== last.pin_variant && d.overlay_text !== last.overlay_text;
-        });
+        const last = ordered[ordered.length - 1];
+        const wantHighRisk = ordered.length > 0 && (ordered.length + 1) % 3 === 0;
+        let pickIdx = -1;
+        if (wantHighRisk) {
+          pickIdx = remaining.findIndex(
+            (d) => HIGH_RISK.has(d.overlay_text) && (!last || d.overlay_text !== last.overlay_text),
+          );
+        }
+        if (pickIdx === -1) {
+          pickIdx = remaining.findIndex(
+            (d) => !last || (d.pin_variant !== last.pin_variant && d.overlay_text !== last.overlay_text),
+          );
+        }
         if (pickIdx === -1) pickIdx = 0;
         ordered.push(remaining.splice(pickIdx, 1)[0]);
       }
