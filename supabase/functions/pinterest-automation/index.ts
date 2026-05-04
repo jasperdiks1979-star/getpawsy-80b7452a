@@ -21,6 +21,98 @@ function getCorsHeaders(req: Request) {
 
 const BASE_URL = "https://getpawsy.pet";
 
+// ── Scale Engine: 10 unique scroll-stopping hooks for cat products ──
+const SCALE_HOOKS_CAT: string[] = [
+  "Stop scooping your cat's litter every day",
+  "This fixes the worst part of owning a cat",
+  "Cat owners are switching to this",
+  "No smell. No mess. No effort.",
+  "I wish I bought this when I got my cat",
+  "The litter box hack every cat parent needs",
+  "Why your house smells like cat (and how to fix it)",
+  "Cleaner litter box. Happier cat. Less work.",
+  "If you have a cat, you need this",
+  "The 30-second cat litter trick changing everything",
+];
+
+const SCALE_HOOKS_TREE: string[] = [
+  "Your cat secretly hates that flimsy cat tree",
+  "The cat tree that actually survives big cats",
+  "Stop buying cat trees that fall apart",
+  "Indoor cats deserve better than this",
+  "This cat tree changed our living room",
+  "The only cat tree worth your money",
+  "Why every cat in your house will fight for this",
+  "Built like furniture. Loved by cats.",
+  "If you have an apartment, this cat tree fits",
+  "The Maine Coon-approved cat tree",
+];
+
+const SCALE_HOOKS_CARE: string[] = [
+  "Cat care got 10x easier with this",
+  "Smart cat owners are doing this differently",
+  "The cat care upgrade you didn't know you needed",
+  "Stop overpaying for cat supplies that don't work",
+  "This is the cat product going viral",
+  "Cat parents swear by this one thing",
+  "Make cat ownership 90% easier",
+  "Your cat's new favorite thing",
+  "The clever cat care trick saving hours",
+  "If you have an indoor cat, read this",
+];
+
+const SCALE_BOARDS = [
+  "Cat Care Essentials",
+  "Smart Pet Products",
+  "Cat Owner Hacks",
+  "Pet Cleaning Solutions",
+];
+
+function pickHookSet(name: string): string[] {
+  const n = name.toLowerCase();
+  if (n.includes("tree") || n.includes("tower") || n.includes("condo")) return SCALE_HOOKS_TREE;
+  if (n.includes("litter")) return SCALE_HOOKS_CAT;
+  return SCALE_HOOKS_CARE;
+}
+
+function buildScaleDescription(hook: string, productName: string): string {
+  return `${hook}.\n\n✔ Made for indoor cats\n✔ Easy to set up — most owners do it in 10 min\n✔ Ships from US warehouses\n\nSee why thousands of cat parents picked ${productName.slice(0, 60)} on GetPawsy.\n\n#catlitterbox #selfcleaninglitterbox #catcare #smartpetproducts #catmom #indoorcat`;
+}
+
+/** Build 10 scale-engine pins for one product, distributing across 4 boards & randomized 24h schedule. */
+function generateScalePins(product: any, startMs: number, slotMinutes: number[]): any[] {
+  const hooks = pickHookSet(product.name || "");
+  const slug = product.slug;
+  const pins: any[] = [];
+  for (let i = 0; i < hooks.length; i++) {
+    const hook = hooks[i];
+    const board = SCALE_BOARDS[i % SCALE_BOARDS.length];
+    const variantTag = `scale_${Date.now().toString(36)}_${i + 1}`;
+    const destUrl = `${BASE_URL}/products/${slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=scale&utm_content=${slug}-v${i + 1}`;
+    const minutesOffset = slotMinutes[i % slotMinutes.length];
+    const scheduledAt = new Date(startMs + minutesOffset * 60_000).toISOString();
+    pins.push({
+      product_id: product.id,
+      product_slug: slug,
+      product_name: product.name,
+      pin_variant: variantTag,
+      hook_group: "scale",
+      category_key: "scale",
+      pin_title: `${hook} — ${(product.name || "").slice(0, 60)}`.slice(0, 100),
+      pin_description: buildScaleDescription(hook, product.name || ""),
+      pin_image_url: product.image_url || "",
+      destination_link: destUrl,
+      board_name: board,
+      overlay_text: hook,
+      hashtags: ["#catlitterbox", "#selfcleaninglitterbox", "#catcare", "#smartpetproducts", "#getpawsy"],
+      priority: "high",
+      status: "queued",
+      scheduled_at: scheduledAt,
+    });
+  }
+  return pins;
+}
+
 // ── GetPawsy-specific hook templates ──
 const HOOKS: Record<string, { problem: string[]; curiosity: string[]; result: string[]; target: string[] }> = {
   cat_trees: {
@@ -347,6 +439,91 @@ Deno.serve(async (req) => {
         .update({ status: "queued", error_message: null })
         .eq("status", "failed");
       return json(cors, { ok: true, error: error?.message });
+    }
+
+    if (action === "scale_100") {
+      // Generate ~100 pins/day spread across 24h, randomized intervals,
+      // pulling 5–10 cat-focused products (litter boxes, cat trees, cat care).
+      const targetPins = Math.min(Math.max(body.targetPins || 100, 10), 200);
+      const productCount = Math.min(Math.max(body.productCount || 10, 5), 20);
+
+      const { data: products, error: prodErr } = await sb
+        .from("products")
+        .select("id, name, slug, category, image_url")
+        .eq("is_active", true)
+        .eq("pinterest_disabled", false)
+        .not("image_url", "is", null)
+        .not("slug", "is", null)
+        .or("category.ilike.%cat%,name.ilike.%cat%")
+        .order("created_at", { ascending: false })
+        .limit(80);
+      if (prodErr) throw prodErr;
+
+      // Prioritize litter boxes, then cat trees, then everything else cat
+      const ranked = (products || []).sort((a, b) => {
+        const score = (p: any) => {
+          const n = (p.name || "").toLowerCase();
+          if (n.includes("litter")) return 3;
+          if (n.includes("tree") || n.includes("tower") || n.includes("condo")) return 2;
+          return 1;
+        };
+        return score(b) - score(a);
+      });
+      const selected = ranked.slice(0, productCount);
+      if (selected.length === 0) {
+        return json(cors, { ok: false, error: "No eligible cat products found" });
+      }
+
+      const pinsPerProduct = Math.ceil(targetPins / selected.length);
+
+      // Build randomized 24h slot list (minutes from now), one per pin
+      const totalSlots = pinsPerProduct * selected.length;
+      const baseInterval = (24 * 60) / totalSlots; // minutes per pin
+      const slotMinutesAll: number[] = [];
+      for (let i = 0; i < pinsPerProduct; i++) {
+        const jitter = (Math.random() - 0.5) * baseInterval * 0.6;
+        slotMinutesAll.push(Math.max(1, Math.round(i * baseInterval + jitter)));
+      }
+
+      const startMs = Date.now();
+      let allPins: any[] = [];
+      for (const p of selected) {
+        const pins = generateScalePins(p, startMs, slotMinutesAll).slice(0, pinsPerProduct);
+        allPins = allPins.concat(pins);
+      }
+      // Trim to exact target
+      allPins = allPins.slice(0, targetPins);
+
+      // Skip image-less or invalid pins
+      allPins = allPins.filter(
+        (p) => p.pin_image_url && p.pin_image_url.startsWith("https://") && p.product_slug,
+      );
+
+      if (allPins.length === 0) {
+        return json(cors, { ok: false, error: "No valid pins generated" });
+      }
+
+      const { error: insErr } = await sb.from("pinterest_pin_queue").insert(allPins);
+      if (insErr) throw insErr;
+
+      // Mark products as ready
+      for (const p of selected) {
+        await sb.from("products").update({
+          pinterest_ready: true,
+          pinterest_category: "scale",
+          pinterest_last_generated_at: new Date().toISOString(),
+          pinterest_status: "generated",
+        }).eq("id", p.id);
+      }
+
+      return json(cors, {
+        ok: true,
+        queued: allPins.length,
+        productsUsed: selected.length,
+        boards: SCALE_BOARDS,
+        firstScheduled: allPins[0]?.scheduled_at,
+        lastScheduled: allPins[allPins.length - 1]?.scheduled_at,
+      });
     }
 
     if (action === "update_boards") {
