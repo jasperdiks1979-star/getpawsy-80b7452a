@@ -377,11 +377,14 @@ Deno.serve(async (req) => {
         const pinData = await pinRes.json();
         const externalUrl = pinData?.id ? `https://www.pinterest.com/pin/${pinData.id}/` : null;
         console.log("[pinterest] response", { status: 200, mode, api_base: apiBase, pin_id: pinData.id, external_url: externalUrl });
-        await markPosted(sb, pin, pinData.id);
+        const verified = await verifyPinExists(accessToken, apiBase, pinData.id);
+        console.log("[pinterest] verify", { pin_id: pinData.id, pin_verified: verified });
+        await markPosted(sb, pin, pinData.id, verified);
         results.push({
           pinId: pin.id,
           status: "posted",
           externalId: pinData.id,
+          pinVerified: verified,
         });
         console.log(`✅ Pin ${pin.id} posted as ${pinData.id}`);
       } catch (e) {
