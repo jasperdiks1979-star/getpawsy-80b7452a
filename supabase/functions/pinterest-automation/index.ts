@@ -21,6 +21,98 @@ function getCorsHeaders(req: Request) {
 
 const BASE_URL = "https://getpawsy.pet";
 
+// ── Scale Engine: 10 unique scroll-stopping hooks for cat products ──
+const SCALE_HOOKS_CAT: string[] = [
+  "Stop scooping your cat's litter every day",
+  "This fixes the worst part of owning a cat",
+  "Cat owners are switching to this",
+  "No smell. No mess. No effort.",
+  "I wish I bought this when I got my cat",
+  "The litter box hack every cat parent needs",
+  "Why your house smells like cat (and how to fix it)",
+  "Cleaner litter box. Happier cat. Less work.",
+  "If you have a cat, you need this",
+  "The 30-second cat litter trick changing everything",
+];
+
+const SCALE_HOOKS_TREE: string[] = [
+  "Your cat secretly hates that flimsy cat tree",
+  "The cat tree that actually survives big cats",
+  "Stop buying cat trees that fall apart",
+  "Indoor cats deserve better than this",
+  "This cat tree changed our living room",
+  "The only cat tree worth your money",
+  "Why every cat in your house will fight for this",
+  "Built like furniture. Loved by cats.",
+  "If you have an apartment, this cat tree fits",
+  "The Maine Coon-approved cat tree",
+];
+
+const SCALE_HOOKS_CARE: string[] = [
+  "Cat care got 10x easier with this",
+  "Smart cat owners are doing this differently",
+  "The cat care upgrade you didn't know you needed",
+  "Stop overpaying for cat supplies that don't work",
+  "This is the cat product going viral",
+  "Cat parents swear by this one thing",
+  "Make cat ownership 90% easier",
+  "Your cat's new favorite thing",
+  "The clever cat care trick saving hours",
+  "If you have an indoor cat, read this",
+];
+
+const SCALE_BOARDS = [
+  "Cat Care Essentials",
+  "Smart Pet Products",
+  "Cat Owner Hacks",
+  "Pet Cleaning Solutions",
+];
+
+function pickHookSet(name: string): string[] {
+  const n = name.toLowerCase();
+  if (n.includes("tree") || n.includes("tower") || n.includes("condo")) return SCALE_HOOKS_TREE;
+  if (n.includes("litter")) return SCALE_HOOKS_CAT;
+  return SCALE_HOOKS_CARE;
+}
+
+function buildScaleDescription(hook: string, productName: string): string {
+  return `${hook}.\n\n✔ Made for indoor cats\n✔ Easy to set up — most owners do it in 10 min\n✔ Ships from US warehouses\n\nSee why thousands of cat parents picked ${productName.slice(0, 60)} on GetPawsy.\n\n#catlitterbox #selfcleaninglitterbox #catcare #smartpetproducts #catmom #indoorcat`;
+}
+
+/** Build 10 scale-engine pins for one product, distributing across 4 boards & randomized 24h schedule. */
+function generateScalePins(product: any, startMs: number, slotMinutes: number[]): any[] {
+  const hooks = pickHookSet(product.name || "");
+  const slug = product.slug;
+  const pins: any[] = [];
+  for (let i = 0; i < hooks.length; i++) {
+    const hook = hooks[i];
+    const board = SCALE_BOARDS[i % SCALE_BOARDS.length];
+    const variantTag = `scale_${Date.now().toString(36)}_${i + 1}`;
+    const destUrl = `${BASE_URL}/products/${slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=scale&utm_content=${slug}-v${i + 1}`;
+    const minutesOffset = slotMinutes[i % slotMinutes.length];
+    const scheduledAt = new Date(startMs + minutesOffset * 60_000).toISOString();
+    pins.push({
+      product_id: product.id,
+      product_slug: slug,
+      product_name: product.name,
+      pin_variant: variantTag,
+      hook_group: "scale",
+      category_key: "scale",
+      pin_title: `${hook} — ${(product.name || "").slice(0, 60)}`.slice(0, 100),
+      pin_description: buildScaleDescription(hook, product.name || ""),
+      pin_image_url: product.image_url || "",
+      destination_link: destUrl,
+      board_name: board,
+      overlay_text: hook,
+      hashtags: ["#catlitterbox", "#selfcleaninglitterbox", "#catcare", "#smartpetproducts", "#getpawsy"],
+      priority: "high",
+      status: "queued",
+      scheduled_at: scheduledAt,
+    });
+  }
+  return pins;
+}
+
 // ── GetPawsy-specific hook templates ──
 const HOOKS: Record<string, { problem: string[]; curiosity: string[]; result: string[]; target: string[] }> = {
   cat_trees: {
