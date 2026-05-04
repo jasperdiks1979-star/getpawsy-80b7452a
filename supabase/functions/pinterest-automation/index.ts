@@ -617,7 +617,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "approval_check") {
-      const mode = getPinterestMode();
+      const mode = await getPinterestMode(sb);
+      const apiBase = await getPinterestApiBase(sb);
       const { count: pinsCreated } = await sb
         .from("pinterest_pin_queue")
         .select("id", { count: "exact", head: true })
@@ -634,13 +635,32 @@ Deno.serve(async (req) => {
       return json(cors, {
         ok: true,
         mode,
-        api_base: PINTEREST_API_BASE,
+        api_base: apiBase,
         can_publish_production: mode === "production",
         sandbox_working: sandboxWorking,
         pins_created: pinsCreated || 0,
         ready_for_upgrade: (pinsCreated || 0) >= 3,
         recent_logs: recentLogs || [],
       });
+    }
+
+    if (action === "set_mode") {
+      // Admin-only: switch runtime mode (sandbox|production)
+      const next = (body.mode || "").toLowerCase();
+      if (next !== "sandbox" && next !== "production") {
+        return json(cors, { ok: false, error: "mode must be 'sandbox' or 'production'" });
+      }
+      const { error: upErr } = await sb
+        .from("pinterest_runtime_settings")
+        .update({ mode: next, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+      if (upErr) return json(cors, { ok: false, error: upErr.message });
+      await sb.from("pinterest_post_logs").insert({
+        action: "mode_change",
+        status: "success",
+        response_data: { mode: next },
+      });
+      return json(cors, { ok: true, mode: next });
     }
 
     if (action === "test_publish_sandbox") {
@@ -667,8 +687,10 @@ Deno.serve(async (req) => {
         const description = `Sandbox approval test pin for GetPawsy. ${p.name}`;
         const link = `${BASE_URL}/products/${p.slug}?utm_source=pinterest&utm_medium=test&utm_campaign=approval`;
         try {
-          console.log("Pinterest mode:", getPinterestMode(), "base:", PINTEREST_API_BASE);
-          const res = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
+          const mode = await getPinterestMode(sb);
+          const apiBase = await getPinterestApiBase(sb);
+          console.log("[pinterest] publish", { mode, api_base: apiBase, test: true });
+          const res = await fetch(`${apiBase}/pins`, {
             method: "POST",
             headers: {
               Authorization: `Bearer ${conn.access_token}`,
@@ -683,12 +705,16 @@ Deno.serve(async (req) => {
             }),
           });
           const body = await res.json().catch(() => ({}));
+          console.log("[pinterest] response", { status: res.status, mode, api_base: apiBase, pin_id: body?.id });
           if (!res.ok || !body?.id) {
+            if (res.status === 403 && mode === "production") {
+              await markProductionForbidden(sb);
+            }
             await sb.from("pinterest_post_logs").insert({
               action: "test_publish",
               status: "failed",
               error_message: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 500)}`,
-              response_data: { mode: getPinterestMode(), api_base: PINTEREST_API_BASE },
+              response_data: { mode, api_base: apiBase },
             });
             created.push({ product_id: p.id, ok: false, error: body });
             continue;
@@ -698,8 +724,8 @@ Deno.serve(async (req) => {
             action: "test_publish",
             status: "success",
             response_data: {
-              mode: getPinterestMode(),
-              api_base: PINTEREST_API_BASE,
+              mode,
+              api_base: apiBase,
               external_pin_id: body.id,
               external_url: externalUrl,
               image_url: p.image_url,
@@ -713,8 +739,8 @@ Deno.serve(async (req) => {
 
       return json(cors, {
         ok: true,
-        mode: getPinterestMode(),
-        api_base: PINTEREST_API_BASE,
+        mode: await getPinterestMode(sb),
+        api_base: await getPinterestApiBase(sb),
         created,
         success_count: created.filter((c) => c.ok).length,
       });
