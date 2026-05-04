@@ -435,6 +435,19 @@ function QueueTab() {
                   <span>{item.posting_slot}</span>
                   <span>{new Date(item.created_at).toLocaleDateString()}</span>
                 </div>
+                {item.pin_external_id && (
+                  <a
+                    href={`https://www.pinterest.com/pin/${item.pin_external_id}/`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-primary underline"
+                  >
+                    View live pin →
+                  </a>
+                )}
+                {item.error_message && (
+                  <div className="text-xs text-destructive truncate">⚠ {item.error_message}</div>
+                )}
               </div>
             ))}
           </div>
