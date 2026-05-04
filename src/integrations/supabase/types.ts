@@ -53,6 +53,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_spend_entries: {
+        Row: {
+          add_to_cart: number
+          campaign: string | null
+          clicks: number
+          created_at: string
+          created_by: string | null
+          entry_date: string
+          id: string
+          impressions: number
+          pin_id: string | null
+          platform: string
+          product_id: string | null
+          purchases: number
+          revenue: number
+          spend: number
+        }
+        Insert: {
+          add_to_cart?: number
+          campaign?: string | null
+          clicks?: number
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          id?: string
+          impressions?: number
+          pin_id?: string | null
+          platform?: string
+          product_id?: string | null
+          purchases?: number
+          revenue?: number
+          spend?: number
+        }
+        Update: {
+          add_to_cart?: number
+          campaign?: string | null
+          clicks?: number
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          id?: string
+          impressions?: number
+          pin_id?: string | null
+          platform?: string
+          product_id?: string | null
+          purchases?: number
+          revenue?: number
+          spend?: number
+        }
+        Relationships: []
+      }
       admin_resources: {
         Row: {
           created_at: string
@@ -5952,6 +6003,45 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profit_engine_settings: {
+        Row: {
+          blended_margin_pct: number
+          created_at: string
+          ctr_kill_pct: number
+          ctr_scale_pct: number
+          id: string
+          min_impressions_kill: number
+          scale_budget_pct: number
+          singleton: boolean
+          target_roas: number
+          updated_at: string
+        }
+        Insert: {
+          blended_margin_pct?: number
+          created_at?: string
+          ctr_kill_pct?: number
+          ctr_scale_pct?: number
+          id?: string
+          min_impressions_kill?: number
+          scale_budget_pct?: number
+          singleton?: boolean
+          target_roas?: number
+          updated_at?: string
+        }
+        Update: {
+          blended_margin_pct?: number
+          created_at?: string
+          ctr_kill_pct?: number
+          ctr_scale_pct?: number
+          id?: string
+          min_impressions_kill?: number
+          scale_budget_pct?: number
+          singleton?: boolean
+          target_roas?: number
           updated_at?: string
         }
         Relationships: []
