@@ -380,6 +380,7 @@ const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
 const WinnersBoostDashboard = lazyWithRetry(() => import("./pages/admin/WinnersBoostDashboard"));
 const ProfitSystemDashboard = lazyWithRetry(() => import("./pages/admin/ProfitSystemDashboard"));
 const ProfitEnginePage = lazyWithRetry(() => import("./pages/admin/ProfitEnginePage"));
+const ProfitEngineTrendsPage = lazyWithRetry(() => import("./pages/admin/ProfitEngineTrendsPage"));
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
@@ -1705,6 +1706,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ProfitEnginePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="profit-engine/trends"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProfitEngineTrendsPage />
                                 </Suspense>
                               }
                             />
