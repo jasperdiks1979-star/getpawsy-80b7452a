@@ -5242,6 +5242,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_runtime_settings: {
+        Row: {
+          id: number
+          mode: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       product_bundles: {
         Row: {
           created_at: string

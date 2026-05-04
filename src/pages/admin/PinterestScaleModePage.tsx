@@ -185,6 +185,22 @@ export default function PinterestScaleModePage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const setModeMutation = useMutation({
+    mutationFn: async (mode: 'sandbox' | 'production') => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'set_mode', mode },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || 'Failed to switch mode');
+      return data;
+    },
+    onSuccess: (data: any) => {
+      refetchApproval();
+      toast.success(`Pinterest mode set to ${data.mode}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const syncMutation = useMutation({
     mutationFn: async (pins: any[]) => {
       const { data, error } = await supabase.functions.invoke('pinterest-optimizer', {
@@ -357,6 +373,28 @@ export default function PinterestScaleModePage() {
             >
               Request Production Upgrade Ready
             </Button>
+            {approval?.mode === 'sandbox' ? (
+              <Button
+                variant="default"
+                disabled={setModeMutation.isPending}
+                onClick={() => {
+                  if (confirm('Switch Pinterest to PRODUCTION mode? Only do this after Pinterest approval.')) {
+                    setModeMutation.mutate('production');
+                  }
+                }}
+              >
+                {setModeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Switch to Production Mode
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                disabled={setModeMutation.isPending}
+                onClick={() => setModeMutation.mutate('sandbox')}
+              >
+                Switch to Sandbox Mode
+              </Button>
+            )}
           </div>
           {approval?.recent_logs?.length ? (
             <details className="text-xs">

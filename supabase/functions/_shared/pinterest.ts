@@ -23,7 +23,7 @@ async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[
   let bookmark: string | null = null;
 
   for (let page = 0; page < 5; page++) {
-    const url = new URL(`${PINTEREST_API_BASE}/v5/boards`);
+    const url = new URL(`${PINTEREST_API_BASE}/boards`);
     url.searchParams.set("page_size", "250");
     url.searchParams.set("privacy", "ALL");
     if (bookmark) url.searchParams.set("bookmark", bookmark);
@@ -87,7 +87,7 @@ function boardNameToSlug(name: string): string {
  */
 async function tryGetBoardBySlug(accessToken: string, boardName: string): Promise<string | null> {
   try {
-    const userRes = await fetch(`${PINTEREST_API_BASE}/v5/user_account`, {
+    const userRes = await fetch(`${PINTEREST_API_BASE}/user_account`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!userRes.ok) {
@@ -105,7 +105,7 @@ async function tryGetBoardBySlug(accessToken: string, boardName: string): Promis
     const boardPath = `${username}/${slug}`;
     console.log(`[Pinterest] Trying direct board lookup: ${boardPath}`);
 
-    const boardRes = await fetch(`${PINTEREST_API_BASE}/v5/boards/${boardPath}`, {
+    const boardRes = await fetch(`${PINTEREST_API_BASE}/boards/${boardPath}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!boardRes.ok) {
@@ -165,7 +165,7 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
 
   // Auto-create the board if it doesn't exist
   console.log(`[Pinterest] Board "${trimmedBoardRef}" not found, creating it...`);
-  const createRes = await fetch(`${PINTEREST_API_BASE}/v5/boards`, {
+  const createRes = await fetch(`${PINTEREST_API_BASE}/boards`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

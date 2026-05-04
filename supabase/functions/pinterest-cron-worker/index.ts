@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
-import { PINTEREST_API_BASE, getPinterestMode } from "../_shared/pinterest-config.ts";
+import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 
-const MAX_RETRIES = 3;
-const BATCH_SIZE = 5; // max pins per cron run
-const MIN_DELAY_MS = 2000; // minimum 2s between posts
-const MAX_DELAY_MS = 5000; // maximum 5s between posts
+const MAX_RETRIES = 2;
+const BATCH_SIZE = 3; // max concurrency per cron run
+const MIN_DELAY_MS = 5000; // minimum 5s between posts
+const MAX_DELAY_MS = 15000; // maximum 15s between posts
 const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
 
 function sleep(ms: number) {
@@ -61,7 +61,8 @@ async function refreshPinterestToken(
   }
 
   try {
-    const res = await fetch(`${PINTEREST_API_BASE}/v5/oauth/token`, {
+    const apiBase = await getPinterestApiBase(sb);
+    const res = await fetch(`${apiBase}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -293,8 +294,10 @@ Deno.serve(async (req) => {
           boardIdCache.set(boardRef, boardId);
         }
 
-        console.log("Pinterest mode:", getPinterestMode(), "base:", PINTEREST_API_BASE);
-        const pinRes = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
+        const mode = await getPinterestMode(sb);
+        const apiBase = await getPinterestApiBase(sb);
+        console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
+        const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -314,6 +317,12 @@ Deno.serve(async (req) => {
 
         if (!pinRes.ok) {
           const errBody = await pinRes.text();
+          console.log("[pinterest] response", { status: pinRes.status, mode, api_base: apiBase });
+
+          // Auto-fallback on 403 from production
+          if (pinRes.status === 403 && mode === "production") {
+            await markProductionForbidden(sb);
+          }
 
           // If 401, try one token refresh mid-batch
           if (pinRes.status === 401 && conn) {
@@ -323,7 +332,7 @@ Deno.serve(async (req) => {
               accessToken = newToken;
               // Retry this pin once
               const retryRes = await fetch(
-                `${PINTEREST_API_BASE}/v5/pins`,
+                `${apiBase}/pins`,
                 {
                   method: "POST",
                   headers: {
@@ -366,6 +375,8 @@ Deno.serve(async (req) => {
         }
 
         const pinData = await pinRes.json();
+        const externalUrl = pinData?.id ? `https://www.pinterest.com/pin/${pinData.id}/` : null;
+        console.log("[pinterest] response", { status: 200, mode, api_base: apiBase, pin_id: pinData.id, external_url: externalUrl });
         await markPosted(sb, pin, pinData.id);
         results.push({
           pinId: pin.id,
