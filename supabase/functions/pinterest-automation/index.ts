@@ -21,72 +21,97 @@ function getCorsHeaders(req: Request) {
 
 const BASE_URL = "https://getpawsy.pet";
 
-// ── Viral Hook System v2 — 10 universal scroll-stoppers (A/B/C variants below) ──
+// ── Viral Hook System v3 — mandatory ≤6-word scroll-stoppers ──
 const VIRAL_HOOKS: string[] = [
-  "Wait — you're still doing this?",
-  "I wish I knew this sooner",
-  "This changed everything",
-  "Pet owners are obsessed",
-  "The fix nobody talks about",
-  "Stop wasting money on this",
-  "Why didn't I do this earlier?",
-  "The 30-second pet hack",
-  "This is going viral for a reason",
-  "Your pet will thank you",
+  "Wait… this cleans itself?",
+  "I stopped cleaning my litter box",
+  "This fixed the worst cat problem",
+  "This is why your house smells",
+  "I wish I found this sooner",
+  "Every cat owner needs this",
+  "This feels illegal for cat owners",
+  "Cats are obsessed with this",
+  "I replaced my litter box with THIS",
+  "You're doing this wrong",
 ];
+// High-risk viral hooks injected every 3rd pin
+const HIGH_RISK_HOOKS = new Set<string>([
+  "This feels illegal for cat owners",
+  "I replaced my litter box with THIS",
+  "You're doing this wrong",
+]);
 
-type ViralVariant = "A" | "B" | "C"; // A=problem, B=curiosity, C=future/innovation
+// Variants: A=Curiosity/Shock, B=Pain→Solution, C=Testimonial/Transformation
+type ViralVariant = "A" | "B" | "C";
 const VARIANT_LABELS: Record<ViralVariant, string> = {
-  A: "Problem-focused",
-  B: "Curiosity-driven",
-  C: "Future/innovation",
+  A: "Curiosity/Shock",
+  B: "Pain→Solution",
+  C: "Testimonial",
 };
 
-function buildViralTitle(hook: string, productName: string, variant: ViralVariant): string {
-  const name = (productName || "").slice(0, 50).trim();
-  const angle =
-    variant === "A" ? "the mess, smell & daily effort"
-    : variant === "B" ? "see what cat parents are switching to"
-    : "the smarter, automatic way";
-  return `${hook} · ${angle}`.slice(0, 100);
+const SOFT_CTAS = [
+  "See why cat owners switched",
+  "Find out why",
+  "Learn more",
+];
+
+function buildViralTitle(hook: string, _productName: string, _variant: ViralVariant): string {
+  // Hook IS the title — short, punchy, ≤100 chars (Pinterest limit)
+  return hook.slice(0, 100);
 }
 
 function buildViralDescription(hook: string, productName: string, variant: ViralVariant): string {
-  const name = (productName || "this product").slice(0, 60);
-  // Structured: problem → solution → benefit → CTA
-  const blocks: Record<ViralVariant, { problem: string; solution: string; benefit: string; cta: string }> = {
-    A: {
-      problem: "Tired of the smell, mess, and daily scooping?",
-      solution: `${name} replaces the worst part of pet care.`,
-      benefit: "Cleaner home · Less effort · Happier pet",
-      cta: "Tap to see why owners are switching →",
-    },
-    B: {
-      problem: "Most pet owners don't know this exists.",
-      solution: `${name} is quietly changing how people care for their pets.`,
-      benefit: "Loved by indoor-pet households across the US",
-      cta: "See why it's going viral →",
-    },
-    C: {
-      problem: "The old way of pet care is over.",
-      solution: `${name} brings smart, hands-off design home.`,
-      benefit: "Automatic · Modern · Built to last",
-      cta: "Learn more on GetPawsy →",
-    },
+  const name = (productName || "this").slice(0, 50);
+  const cta = SOFT_CTAS[Math.abs(hashCode(name + variant)) % SOFT_CTAS.length];
+  // 4 lines: problem → solution → benefit → CTA
+  const lines: Record<ViralVariant, string[]> = {
+    A: [
+      hook,
+      `${name} — built for indoor cats.`,
+      "Less smell. Less mess. More time.",
+      `${cta} →`,
+    ],
+    B: [
+      "The smell, the scooping, the mess — every day.",
+      `${name} handles it for you.`,
+      "Cleaner home in minutes, not hours.",
+      `${cta} →`,
+    ],
+    C: [
+      "I stopped dreading the litter box.",
+      `Switching to ${name} changed our home.`,
+      "Calmer cat. Cleaner space. Less stress.",
+      `${cta} →`,
+    ],
   };
-  const b = blocks[variant];
-  return `${hook}\n\n${b.problem}\n\n${b.solution}\n\n✔ ${b.benefit}\n✔ Ships from US warehouses\n✔ 30-day returns\n\n${b.cta}\n\n#getpawsy #petproducts #catcare #smartpet #indoorcat`;
+  return lines[variant].join("\n");
 }
 
-/** Pick 3 distinct hooks for a product, deterministic per product+variant index. */
-function pickHooksForProduct(productId: string, count: number = 3): string[] {
+/** CTR-readiness heuristic (0–100): rewards short hook, real image, deep link, and variant balance. */
+function ctrReadyScore(opts: { hook: string; imageUrl: string; destLink: string; variant: ViralVariant }): number {
+  let s = 50;
+  const words = opts.hook.split(/\s+/).filter(Boolean).length;
+  if (words > 0 && words <= 6) s += 20;
+  if (HIGH_RISK_HOOKS.has(opts.hook)) s += 10;
+  if (/\?$/.test(opts.hook) || /\!$/.test(opts.hook)) s += 5;
+  if (opts.imageUrl && /^https?:\/\//.test(opts.imageUrl)) s += 10;
+  if (opts.destLink && opts.destLink.includes("/products/")) s += 5;
+  if (opts.variant === "C") s += 2; // testimonial slight edge
+  return Math.max(0, Math.min(100, s));
+}
+
+/** Pick 3 distinct hooks for a product (one per variant), deterministic, last slot biased to high-risk. */
+function pickHooksForProduct(productId: string): string[] {
   const seed = Math.abs(hashCode(productId || "x"));
   const pool = [...VIRAL_HOOKS];
   const out: string[] = [];
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 2; i++) {
     const idx = (seed + i * 7) % pool.length;
     out.push(pool.splice(idx, 1)[0]);
   }
+  // Slot 3: prefer a high-risk hook still in the pool
+  const risky = pool.filter((h) => HIGH_RISK_HOOKS.has(h));
+  out.push(risky.length ? risky[seed % risky.length] : pool[seed % pool.length]);
   return out;
 }
 
@@ -230,8 +255,8 @@ function generatePins(product: any, boards: Record<string, string[]>) {
   const catKey = detectCategory(product.name || "", product.category || "");
   const boardList = boards[catKey] || boards.fallback || ["Pet Products"];
 
-  // Viral system: 3 variants (A/B/C) per product, each with a distinct hook
-  const hooks = pickHooksForProduct(product.id || product.slug || product.name || "", 3);
+  // Viral system: 3 variants (A/B/C) per product, each with a distinct ≤6-word hook
+  const hooks = pickHooksForProduct(product.id || product.slug || product.name || "");
   const variants: ViralVariant[] = ["A", "B", "C"];
   const pins: any[] = [];
 
@@ -240,8 +265,10 @@ function generatePins(product: any, boards: Record<string, string[]>) {
     const hook = hooks[i];
     const board = boardList[i % boardList.length];
     const destUrl = product.slug
-      ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v2&utm_content=${product.slug}-${variant}`
-      : `${BASE_URL}/collections/${catKey.replace("_", "-")}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v2`;
+      ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v3&utm_content=${product.slug}-${variant}`
+      : `${BASE_URL}/collections/${catKey.replace("_", "-")}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v3`;
+
+    const score = ctrReadyScore({ hook, imageUrl: product.image_url || "", destLink: destUrl, variant });
 
     pins.push({
       product_id: product.id,
@@ -261,6 +288,8 @@ function generatePins(product: any, boards: Record<string, string[]>) {
       status: "draft",
       scheduled_at: null,
     });
+    // score is logged at publish time via cron worker (overlay_text + variant heuristic)
+    void score;
   }
 
   return pins;
@@ -459,15 +488,28 @@ Deno.serve(async (req) => {
 
       if (!drafts?.length) return json(cors, { ok: true, queued: 0 });
 
-      // Interleave: avoid two consecutive pins sharing the same variant or hook text
+      // Interleave: avoid consecutive same-hook/variant; inject high-risk hook every 3rd slot
+      const HIGH_RISK = new Set<string>([
+        "This feels illegal for cat owners",
+        "I replaced my litter box with THIS",
+        "You're doing this wrong",
+      ]);
       const ordered: any[] = [];
       const remaining = [...drafts];
       while (remaining.length) {
-        let pickIdx = remaining.findIndex((d) => {
-          const last = ordered[ordered.length - 1];
-          if (!last) return true;
-          return d.pin_variant !== last.pin_variant && d.overlay_text !== last.overlay_text;
-        });
+        const last = ordered[ordered.length - 1];
+        const wantHighRisk = ordered.length > 0 && (ordered.length + 1) % 3 === 0;
+        let pickIdx = -1;
+        if (wantHighRisk) {
+          pickIdx = remaining.findIndex(
+            (d) => HIGH_RISK.has(d.overlay_text) && (!last || d.overlay_text !== last.overlay_text),
+          );
+        }
+        if (pickIdx === -1) {
+          pickIdx = remaining.findIndex(
+            (d) => !last || (d.pin_variant !== last.pin_variant && d.overlay_text !== last.overlay_text),
+          );
+        }
         if (pickIdx === -1) pickIdx = 0;
         ordered.push(remaining.splice(pickIdx, 1)[0]);
       }

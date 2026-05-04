@@ -482,8 +482,29 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
       variant_type: pin.pin_variant || null,
       pin_id: externalId,
       outbound_click_ready: Boolean(pin.destination_link),
+      external_url: externalId ? `https://www.pinterest.com/pin/${externalId}/` : null,
+      ctr_ready_score: ctrReadyScore(pin),
     },
   });
+}
+
+/** Heuristic CTR readiness 0-100 for logging — must mirror automation function. */
+function ctrReadyScore(pin: any): number {
+  const hook: string = pin?.overlay_text || "";
+  const HIGH_RISK = new Set<string>([
+    "This feels illegal for cat owners",
+    "I replaced my litter box with THIS",
+    "You're doing this wrong",
+  ]);
+  let s = 50;
+  const words = hook.split(/\s+/).filter(Boolean).length;
+  if (words > 0 && words <= 6) s += 20;
+  if (HIGH_RISK.has(hook)) s += 10;
+  if (/[!?]$/.test(hook)) s += 5;
+  if (pin?.pin_image_url && /^https?:\/\//.test(pin.pin_image_url)) s += 10;
+  if (pin?.destination_link?.includes("/products/")) s += 5;
+  if (pin?.pin_variant === "viral_C") s += 2;
+  return Math.max(0, Math.min(100, s));
 }
 
 /** Verify a pin exists by fetching it. Retries once after 5s if not found. */
