@@ -1,9 +1,14 @@
 ---
 name: Pinterest API mode toggle
-description: PINTEREST_MODE secret switches between sandbox (Trial/Eval access) and production API base
+description: Pinterest mode is DB-driven via pinterest_runtime_settings; admin toggles between sandbox and production
 type: feature
 ---
-Pinterest API base is selected at runtime via `PINTEREST_MODE` secret (`sandbox` | `production`, defaults to `sandbox`).
-- sandbox → https://api-sandbox.pinterest.com
-- production → https://api.pinterest.com
-While the app has Trial/Evaluation access only, production /v5/pins returns "Apps with Trial access may not create Pins in production". Keep `PINTEREST_MODE=sandbox` until Pinterest grants production approval. Helpers: `getPinterestMode()`, `getPinterestApiBase()`, plus legacy `PINTEREST_API_BASE` export in `supabase/functions/_shared/pinterest-config.ts`. Admin → Pinterest Scale Mode shows an Approval Readiness card with `approval_check` + `test_publish_sandbox` actions; "success" requires a real `pin_id` from the API.
+Single source of truth for the active Pinterest API base is `pinterest_runtime_settings.mode` (`sandbox` | `production`, default `sandbox`). The `PINTEREST_MODE` env secret is only a fallback when the DB row is missing. `PINTEREST_FORCE_SANDBOX` and any hardcoded sandbox overrides have been removed.
+
+Helpers in `supabase/functions/_shared/pinterest-config.ts`:
+- `getPinterestMode(sb)` — async, reads DB then env, 30s in-memory cache
+- `getPinterestApiBase(sb)` — returns `https://api-sandbox.pinterest.com/v5` or `https://api.pinterest.com/v5` (note: `/v5` is now part of the base)
+- `markProductionForbidden(sb)` — auto-flips DB row to sandbox on 403 from production
+- `PINTEREST_API_BASE` — sync env-only fallback, used by board listing + OAuth token exchange where no `sb` client is handy
+
+Publish flow always logs `{mode, api_base, status, pin_id, external_url}`. Admin → Pinterest Scale Mode shows a SANDBOX/PRODUCTION badge plus a "Switch to Production Mode" button that calls action `set_mode` (admin-only via RLS). Cron worker uses BATCH_SIZE=3 concurrency, MAX_RETRIES=2, 5–15s random delay between posts.
