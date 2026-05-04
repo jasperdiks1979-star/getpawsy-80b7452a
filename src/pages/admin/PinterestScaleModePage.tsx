@@ -161,6 +161,7 @@ export default function PinterestScaleModePage() {
         can_publish_production: boolean;
         sandbox_working: boolean;
         pins_created: number;
+        verified_pins_count?: number;
         ready_for_upgrade: boolean;
         recent_logs: any[];
       };
@@ -329,10 +330,14 @@ export default function PinterestScaleModePage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
             <div className="p-2 rounded bg-background border">
               <div className="text-xs text-muted-foreground">Pins created</div>
               <div className="text-lg font-bold">{approval?.pins_created ?? '—'}</div>
+            </div>
+            <div className="p-2 rounded bg-background border">
+              <div className="text-xs text-muted-foreground">Verified pins</div>
+              <div className="text-lg font-bold">{approval?.verified_pins_count ?? '—'}</div>
             </div>
             <div className="p-2 rounded bg-background border">
               <div className="text-xs text-muted-foreground">Sandbox working</div>
