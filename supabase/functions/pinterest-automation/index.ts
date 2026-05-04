@@ -732,6 +732,21 @@ Deno.serve(async (req) => {
             continue;
           }
           const externalUrl = `https://www.pinterest.com/pin/${body.id}/`;
+          // Verify pin exists (retry once after 5s if missing)
+          const verifyOnce = async (): Promise<boolean> => {
+            try {
+              const vr = await fetch(`${apiBase}/pins/${body.id}`, {
+                headers: { Authorization: `Bearer ${conn.access_token}` },
+              });
+              return vr.ok;
+            } catch { return false; }
+          };
+          let pinVerified = await verifyOnce();
+          if (!pinVerified) {
+            await new Promise((r) => setTimeout(r, 5000));
+            pinVerified = await verifyOnce();
+          }
+          console.log("[pinterest] verify", { pin_id: body.id, pin_verified: pinVerified });
           await sb.from("pinterest_post_logs").insert({
             action: "test_publish",
             status: "success",
@@ -741,9 +756,10 @@ Deno.serve(async (req) => {
               external_pin_id: body.id,
               external_url: externalUrl,
               image_url: p.image_url,
+              pin_verified: pinVerified,
             },
           });
-          created.push({ product_id: p.id, ok: true, external_pin_id: body.id, external_url: externalUrl, image_url: p.image_url });
+          created.push({ product_id: p.id, ok: true, external_pin_id: body.id, external_url: externalUrl, image_url: p.image_url, pin_verified: pinVerified });
         } catch (e) {
           created.push({ product_id: p.id, ok: false, error: e instanceof Error ? e.message : String(e) });
         }
