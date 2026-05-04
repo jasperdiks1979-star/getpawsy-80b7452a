@@ -452,21 +452,34 @@ Deno.serve(async (req) => {
     if (action === "queue_pins") {
       const limit = Math.min(body.count || 9, 30);
       const { data: drafts } = await sb.from("pinterest_pin_queue")
-        .select("id, priority")
+        .select("id, priority, pin_variant, overlay_text")
         .eq("status", "draft")
         .order("priority", { ascending: true })
         .limit(limit);
 
       if (!drafts?.length) return json(cors, { ok: true, queued: 0 });
 
-      const now = Date.now();
-      for (let i = 0; i < drafts.length; i++) {
-        const hoursOffset = Math.floor(i / 3) * 24 + (i % 3) * 8;
-        const scheduledAt = new Date(now + hoursOffset * 3600000).toISOString();
-        await sb.from("pinterest_pin_queue").update({ status: "queued", scheduled_at: scheduledAt }).eq("id", drafts[i].id);
+      // Interleave: avoid two consecutive pins sharing the same variant or hook text
+      const ordered: any[] = [];
+      const remaining = [...drafts];
+      while (remaining.length) {
+        let pickIdx = remaining.findIndex((d) => {
+          const last = ordered[ordered.length - 1];
+          if (!last) return true;
+          return d.pin_variant !== last.pin_variant && d.overlay_text !== last.overlay_text;
+        });
+        if (pickIdx === -1) pickIdx = 0;
+        ordered.push(remaining.splice(pickIdx, 1)[0]);
       }
 
-      return json(cors, { ok: true, queued: drafts.length });
+      const now = Date.now();
+      for (let i = 0; i < ordered.length; i++) {
+        const hoursOffset = Math.floor(i / 3) * 24 + (i % 3) * 8;
+        const scheduledAt = new Date(now + hoursOffset * 3600000).toISOString();
+        await sb.from("pinterest_pin_queue").update({ status: "queued", scheduled_at: scheduledAt }).eq("id", ordered[i].id);
+      }
+
+      return json(cors, { ok: true, queued: ordered.length });
     }
 
     if (action === "get_queue") {
