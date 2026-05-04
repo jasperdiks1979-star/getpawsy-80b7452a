@@ -2,8 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 
-const MAX_RETRIES = 3;
-const BATCH_SIZE = 5; // max pins per cron run
+const MAX_RETRIES = 2;
+const BATCH_SIZE = 3; // max concurrency per cron run
 const MIN_DELAY_MS = 5000; // minimum 5s between posts
 const MAX_DELAY_MS = 15000; // maximum 15s between posts
 const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
