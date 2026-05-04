@@ -63,6 +63,13 @@ export async function getPinterestApiBase(sb?: any): Promise<string> {
   return apiBaseFor(await getPinterestMode(sb));
 }
 
+/**
+ * Sync, env-only base. Used by utility helpers (board listing, OAuth token
+ * exchange) where we don't have a Supabase client handy. Publish paths must
+ * use the async `getPinterestApiBase(sb)` to honor runtime mode + fallback.
+ */
+export const PINTEREST_API_BASE = apiBaseFor(envMode());
+
 /** Auto-fallback: 403 from production → flip runtime to sandbox */
 export async function markProductionForbidden(sb: any, reason = "production not allowed, fallback active"): Promise<void> {
   try {
