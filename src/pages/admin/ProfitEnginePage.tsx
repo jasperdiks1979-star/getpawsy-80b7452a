@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target, Zap, LineChart } from "lucide-react";
+import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target, Zap, LineChart, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 type Settings = {
@@ -221,8 +221,11 @@ export default function ProfitEnginePage() {
       return data;
     },
     onSuccess: (d: any) => {
-      toast.success(`Synced ${d?.updated ?? 0} pins (${d?.failed ?? 0} failed)`);
+      toast.success(
+        `Synced ${d?.updated ?? 0} pins · ${d?.spend_rows_written ?? 0} signal rows · ${d?.attributed_purchases ?? 0} purchases attributed`,
+      );
       qc.invalidateQueries({ queryKey: ["pin-performance"] });
+      qc.invalidateQueries({ queryKey: ["ad-spend"] });
     },
     onError: (e: any) => toast.error(`Sync failed: ${e.message ?? e}`),
   });
@@ -243,6 +246,26 @@ export default function ProfitEnginePage() {
       qc.invalidateQueries({ queryKey: ["profit-decisions"] });
     },
     onError: (e: any) => toast.error(`Decision run failed: ${e.message ?? e}`),
+  });
+
+  const syncAndScoreMut = useMutation({
+    mutationFn: async () => {
+      const sync = await supabase.functions.invoke("profit-engine-sync");
+      if (sync.error) throw sync.error;
+      const dec = await supabase.functions.invoke("profit-engine-decide", { body: { apply: true } });
+      if (dec.error) throw dec.error;
+      return { sync: sync.data, decide: dec.data };
+    },
+    onSuccess: ({ sync, decide }: any) => {
+      const c = decide?.counts ?? {};
+      toast.success(
+        `✓ ${sync?.updated ?? 0} pins synced · scored — kill ${c.kill ?? 0} · pause ${c.pause ?? 0} · scale ${c.scale ?? 0}`,
+      );
+      qc.invalidateQueries({ queryKey: ["pin-performance"] });
+      qc.invalidateQueries({ queryKey: ["ad-spend"] });
+      qc.invalidateQueries({ queryKey: ["profit-decisions"] });
+    },
+    onError: (e: any) => toast.error(`Sync & score failed: ${e.message ?? e}`),
   });
 
   const decisionsQ = useQuery({
@@ -280,12 +303,31 @@ export default function ProfitEnginePage() {
             <RefreshCw className={`h-4 w-4 mr-2 ${syncMut.isPending ? "animate-spin" : ""}`} />
             Sync analytics
           </Button>
-          <Button onClick={() => decideMut.mutate(true)} disabled={decideMut.isPending}>
+          <Button variant="outline" onClick={() => decideMut.mutate(true)} disabled={decideMut.isPending}>
             <Zap className={`h-4 w-4 mr-2 ${decideMut.isPending ? "animate-pulse" : ""}`} />
-            Run decision engine
+            Score only
+          </Button>
+          <Button onClick={() => syncAndScoreMut.mutate()} disabled={syncAndScoreMut.isPending}>
+            <CheckCircle2 className={`h-4 w-4 mr-2 ${syncAndScoreMut.isPending ? "animate-pulse" : ""}`} />
+            Sync &amp; score now
           </Button>
         </div>
       </header>
+
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="p-4 text-sm space-y-1">
+          <div className="font-semibold flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />Sync analytics — what it does
+          </div>
+          <ol className="list-decimal pl-5 text-muted-foreground space-y-0.5">
+            <li>Pulls <strong>impressions, pin clicks, outbound clicks, saves</strong> per posted pin from Pinterest (last 30 days).</li>
+            <li>Computes <strong>CTR</strong> and writes it into the pin performance table.</li>
+            <li>Attributes <strong>add-to-cart and purchases</strong> from paid orders to each pin's product, writes a daily <em>pinterest_organic</em> spend row (spend = $0).</li>
+            <li>Decision engine consumes these signals to score Kill / Pause / Scale.</li>
+          </ol>
+          <div className="text-xs text-muted-foreground pt-1">Use <strong>Sync &amp; score now</strong> to do steps 1–4 in one click.</div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-3 md:grid-cols-4">
         <SummaryCard label="Scale" value={summary.counts.scale} cls="text-emerald-600" />
