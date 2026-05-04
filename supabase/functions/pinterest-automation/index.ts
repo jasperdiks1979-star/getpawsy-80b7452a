@@ -631,6 +631,17 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .limit(20);
 
+      // Count verified pins from logs (response_data.pin_verified === true)
+      const { data: verifiedLogs } = await sb
+        .from("pinterest_post_logs")
+        .select("response_data")
+        .eq("status", "success")
+        .in("action", ["publish", "test_publish"])
+        .limit(1000);
+      const verifiedPinsCount = (verifiedLogs || []).filter(
+        (l: any) => l?.response_data?.pin_verified === true,
+      ).length;
+
       const sandboxWorking = (pinsCreated || 0) >= 3 && mode === "sandbox";
       return json(cors, {
         ok: true,
@@ -639,6 +650,7 @@ Deno.serve(async (req) => {
         can_publish_production: mode === "production",
         sandbox_working: sandboxWorking,
         pins_created: pinsCreated || 0,
+        verified_pins_count: verifiedPinsCount,
         ready_for_upgrade: (pinsCreated || 0) >= 3,
         recent_logs: recentLogs || [],
       });
