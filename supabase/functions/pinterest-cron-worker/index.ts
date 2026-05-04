@@ -150,6 +150,7 @@ Deno.serve(async (req) => {
       .from("pinterest_pin_queue")
       .select("*")
       .eq("status", "queued")
+      .or("profit_state.is.null,profit_state.neq.kill")
       .lte("scheduled_at", new Date().toISOString())
       .lt("retries", MAX_RETRIES)
       .order("priority", { ascending: true })

@@ -5093,6 +5093,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
+          profit_state: string | null
           retries: number
           scheduled_at: string | null
           status: string
@@ -5118,6 +5119,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
+          profit_state?: string | null
           retries?: number
           scheduled_at?: string | null
           status?: string
@@ -5143,6 +5145,7 @@ export type Database = {
           product_id?: string
           product_name?: string
           product_slug?: string
+          profit_state?: string | null
           retries?: number
           scheduled_at?: string | null
           status?: string
@@ -6004,6 +6007,57 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      profit_engine_decisions: {
+        Row: {
+          applied: boolean
+          break_even_cpc: number | null
+          clicks: number
+          cpc: number | null
+          ctr: number
+          decided_at: string
+          id: string
+          impressions: number
+          margin_usd: number | null
+          pin_id: string
+          product_id: string | null
+          reason: string
+          recommended_budget_delta_pct: number
+          verdict: string
+        }
+        Insert: {
+          applied?: boolean
+          break_even_cpc?: number | null
+          clicks?: number
+          cpc?: number | null
+          ctr?: number
+          decided_at?: string
+          id?: string
+          impressions?: number
+          margin_usd?: number | null
+          pin_id: string
+          product_id?: string | null
+          reason: string
+          recommended_budget_delta_pct?: number
+          verdict: string
+        }
+        Update: {
+          applied?: boolean
+          break_even_cpc?: number | null
+          clicks?: number
+          cpc?: number | null
+          ctr?: number
+          decided_at?: string
+          id?: string
+          impressions?: number
+          margin_usd?: number | null
+          pin_id?: string
+          product_id?: string | null
+          reason?: string
+          recommended_budget_delta_pct?: number
+          verdict?: string
         }
         Relationships: []
       }

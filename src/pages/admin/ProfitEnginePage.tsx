@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target } from "lucide-react";
+import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target, Zap } from "lucide-react";
 
 type Settings = {
   blended_margin_pct: number;
@@ -226,6 +226,37 @@ export default function ProfitEnginePage() {
     onError: (e: any) => toast.error(`Sync failed: ${e.message ?? e}`),
   });
 
+  const decideMut = useMutation({
+    mutationFn: async (apply: boolean) => {
+      const { data, error } = await supabase.functions.invoke("profit-engine-decide", {
+        body: { apply },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (d: any) => {
+      const c = d?.counts ?? {};
+      toast.success(
+        `Decided ${d?.message ?? ""} — kill ${c.kill ?? 0} · pause ${c.pause ?? 0} · scale ${c.scale ?? 0}`,
+      );
+      qc.invalidateQueries({ queryKey: ["profit-decisions"] });
+    },
+    onError: (e: any) => toast.error(`Decision run failed: ${e.message ?? e}`),
+  });
+
+  const decisionsQ = useQuery({
+    queryKey: ["profit-decisions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profit_engine_decisions")
+        .select("*")
+        .order("decided_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       <Helmet>
@@ -238,10 +269,16 @@ export default function ProfitEnginePage() {
           <h1 className="text-3xl font-bold tracking-tight">Profit Engine</h1>
           <p className="text-muted-foreground">Kill / pause / scale ads using break-even math.</p>
         </div>
-        <Button onClick={() => syncMut.mutate()} disabled={syncMut.isPending}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncMut.isPending ? "animate-spin" : ""}`} />
-          Sync Pinterest analytics
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => syncMut.mutate()} disabled={syncMut.isPending}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncMut.isPending ? "animate-spin" : ""}`} />
+            Sync analytics
+          </Button>
+          <Button onClick={() => decideMut.mutate(true)} disabled={decideMut.isPending}>
+            <Zap className={`h-4 w-4 mr-2 ${decideMut.isPending ? "animate-pulse" : ""}`} />
+            Run decision engine
+          </Button>
+        </div>
       </header>
 
       <div className="grid gap-3 md:grid-cols-4">
@@ -258,6 +295,7 @@ export default function ProfitEnginePage() {
       <Tabs defaultValue="ads">
         <TabsList>
           <TabsTrigger value="ads">Ad decisions</TabsTrigger>
+          <TabsTrigger value="log">Decision log</TabsTrigger>
           <TabsTrigger value="spend">Spend entry</TabsTrigger>
           <TabsTrigger value="settings">Break-even settings</TabsTrigger>
         </TabsList>
@@ -316,6 +354,62 @@ export default function ProfitEnginePage() {
                         <TableCell className="text-right">{r.beCpc != null ? `$${r.beCpc.toFixed(2)}` : "—"}</TableCell>
                         <TableCell className="text-right">{r.cpc != null ? `$${r.cpc.toFixed(2)}` : "—"}</TableCell>
                         <TableCell className="text-right">{r.roas != null ? `${r.roas.toFixed(2)}x` : "—"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="log" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent decisions</CardTitle>
+              <CardDescription>
+                Each run logs verdicts here. "Applied" means the queue row was annotated (kill = skipped, scale = boosted).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Verdict</TableHead>
+                    <TableHead>Pin</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead className="text-right">CTR</TableHead>
+                    <TableHead className="text-right">Δ Budget</TableHead>
+                    <TableHead>Applied</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(decisionsQ.data ?? []).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        No decisions yet. Click "Run decision engine".
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {(decisionsQ.data ?? []).map((d: any) => {
+                    const meta = verdictMeta[d.verdict as Verdict] ?? verdictMeta.watch;
+                    const Icon = meta.icon;
+                    return (
+                      <TableRow key={d.id}>
+                        <TableCell className="text-xs">{new Date(d.decided_at).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge className={meta.cls}>
+                            <Icon className="h-3 w-3 mr-1" />{meta.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{d.pin_id}</TableCell>
+                        <TableCell className="max-w-[320px] truncate" title={d.reason}>{d.reason}</TableCell>
+                        <TableCell className="text-right">{(Number(d.ctr) * 100).toFixed(2)}%</TableCell>
+                        <TableCell className="text-right">
+                          {d.recommended_budget_delta_pct > 0 ? "+" : ""}{d.recommended_budget_delta_pct}%
+                        </TableCell>
+                        <TableCell>{d.applied ? "✓" : "—"}</TableCell>
                       </TableRow>
                     );
                   })}
