@@ -551,6 +551,7 @@ Deno.serve(async (req) => {
 
       try {
         const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
+        console.log("Pinterest mode:", getPinterestMode(), "base:", PINTEREST_API_BASE);
         const pinRes = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
           method: "POST",
           headers: {
