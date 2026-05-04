@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LineChart, Line,
 } from "recharts";
-import { TrendingUp, MousePointerClick, DollarSign, ShoppingCart, Package, Eye } from "lucide-react";
+import { TrendingUp, MousePointerClick, DollarSign, ShoppingCart, Package, Eye, FileDown, FileText } from "lucide-react";
 
 type Range = "7d" | "30d" | "90d";
 const RANGE_DAYS: Record<Range, number> = { "7d": 7, "30d": 30, "90d": 90 };
@@ -136,6 +137,59 @@ export default function ProfitEngineTrendsPage() {
   const dollars = (n: number) => `$${n.toFixed(2)}`;
   const pct = (n: number) => `${n.toFixed(2)}%`;
 
+  const exportCSV = () => {
+    const headers = ["date","impressions","clicks","ctr_pct","spend_usd","cpc_usd","add_to_cart","purchases","revenue_usd","aov_usd"];
+    const rows = series.map((r) => [
+      r.date, r.impressions, r.clicks, r.ctr.toFixed(2), r.spend.toFixed(2),
+      r.cpc.toFixed(2), r.atc, r.purchases, r.revenue.toFixed(2), r.aov.toFixed(2),
+    ]);
+    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `profit-engine-trends-${range}-${new Date().toISOString().slice(0,10)}.csv`);
+  };
+
+  const exportPDF = () => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const rowsHtml = series.map((r) => `
+      <tr>
+        <td>${r.date}</td><td>${fmt(r.impressions)}</td><td>${fmt(r.clicks)}</td>
+        <td>${pct(r.ctr)}</td><td>${dollars(r.spend)}</td><td>${dollars(r.cpc)}</td>
+        <td>${fmt(r.atc)}</td><td>${fmt(r.purchases)}</td>
+        <td>${dollars(r.revenue)}</td><td>${dollars(r.aov)}</td>
+      </tr>`).join("");
+    win.document.write(`<!doctype html><html><head><title>Profit Engine Trends — ${range}</title>
+      <style>
+        body{font-family:system-ui,sans-serif;padding:24px;color:#111}
+        h1{margin:0 0 4px} .muted{color:#666;margin-bottom:16px}
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+        .stat{border:1px solid #e5e7eb;border-radius:8px;padding:10px}
+        .stat .l{font-size:11px;text-transform:uppercase;color:#666}
+        .stat .v{font-size:18px;font-weight:600;margin-top:4px}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th,td{border-bottom:1px solid #eee;padding:6px 8px;text-align:right}
+        th:first-child,td:first-child{text-align:left}
+        thead th{background:#f8fafc}
+        @media print{button{display:none}}
+      </style></head><body>
+      <h1>Performance trends — ${range}</h1>
+      <div class="muted">Generated ${new Date().toLocaleString()}</div>
+      <div class="stats">
+        <div class="stat"><div class="l">Impressions</div><div class="v">${fmt(totals.imp)}</div></div>
+        <div class="stat"><div class="l">CTR</div><div class="v">${pct(totals.ctr)}</div></div>
+        <div class="stat"><div class="l">CPC</div><div class="v">${dollars(totals.cpc)}</div></div>
+        <div class="stat"><div class="l">Add to cart</div><div class="v">${fmt(totals.atc)}</div></div>
+        <div class="stat"><div class="l">Purchases</div><div class="v">${fmt(totals.purch)}</div></div>
+        <div class="stat"><div class="l">AOV</div><div class="v">${dollars(totals.aov)}</div></div>
+      </div>
+      <table><thead><tr>
+        <th>Date</th><th>Impr</th><th>Clicks</th><th>CTR</th><th>Spend</th><th>CPC</th>
+        <th>ATC</th><th>Purch</th><th>Revenue</th><th>AOV</th>
+      </tr></thead><tbody>${rowsHtml}</tbody></table>
+      <script>setTimeout(()=>window.print(),300)</script>
+      </body></html>`);
+    win.document.close();
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       <Helmet>
@@ -155,6 +209,14 @@ export default function ProfitEngineTrendsPage() {
             <TabsTrigger value="90d">90 days</TabsTrigger>
           </TabsList>
         </Tabs>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={!series.length}>
+            <FileDown className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportPDF} disabled={!series.length}>
+            <FileText className="h-4 w-4 mr-2" /> PDF
+          </Button>
+        </div>
       </header>
 
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
