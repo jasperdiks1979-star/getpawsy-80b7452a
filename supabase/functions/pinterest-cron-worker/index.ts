@@ -353,11 +353,14 @@ Deno.serve(async (req) => {
               );
               if (retryRes.ok) {
                 const retryData = await retryRes.json();
-                await markPosted(sb, pin, retryData.id);
+                const verifiedR = await verifyPinExists(accessToken, apiBase, retryData.id);
+                console.log("[pinterest] verify", { pin_id: retryData.id, pin_verified: verifiedR });
+                await markPosted(sb, pin, retryData.id, verifiedR);
                 results.push({
                   pinId: pin.id,
                   status: "posted",
                   externalId: retryData.id,
+                  pinVerified: verifiedR,
                 });
                 console.log(
                   `✅ Pin ${pin.id} posted (after refresh) as ${retryData.id}`,
@@ -377,11 +380,14 @@ Deno.serve(async (req) => {
         const pinData = await pinRes.json();
         const externalUrl = pinData?.id ? `https://www.pinterest.com/pin/${pinData.id}/` : null;
         console.log("[pinterest] response", { status: 200, mode, api_base: apiBase, pin_id: pinData.id, external_url: externalUrl });
-        await markPosted(sb, pin, pinData.id);
+        const verified = await verifyPinExists(accessToken, apiBase, pinData.id);
+        console.log("[pinterest] verify", { pin_id: pinData.id, pin_verified: verified });
+        await markPosted(sb, pin, pinData.id, verified);
         results.push({
           pinId: pin.id,
           status: "posted",
           externalId: pinData.id,
+          pinVerified: verified,
         });
         console.log(`✅ Pin ${pin.id} posted as ${pinData.id}`);
       } catch (e) {
@@ -448,7 +454,7 @@ Deno.serve(async (req) => {
 });
 
 /** Helper: mark a pin as posted and update product status */
-async function markPosted(sb: any, pin: any, externalId: string) {
+async function markPosted(sb: any, pin: any, externalId: string, verified: boolean = false) {
   const now = new Date().toISOString();
   await sb
     .from("pinterest_pin_queue")
@@ -469,6 +475,24 @@ async function markPosted(sb: any, pin: any, externalId: string) {
     pin_queue_id: pin.id,
     action: "publish",
     status: "success",
-    response_data: { external_id: externalId },
+    response_data: { external_id: externalId, pin_verified: verified },
   });
+}
+
+/** Verify a pin exists by fetching it. Retries once after 5s if not found. */
+async function verifyPinExists(accessToken: string, apiBase: string, pinId: string): Promise<boolean> {
+  const tryFetch = async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`${apiBase}/pins/${pinId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+  if (await tryFetch()) return true;
+  console.log("[pinterest] verify retry in 5s", { pin_id: pinId });
+  await new Promise((r) => setTimeout(r, 5000));
+  return await tryFetch();
 }
