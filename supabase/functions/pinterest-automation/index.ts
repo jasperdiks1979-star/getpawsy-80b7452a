@@ -287,8 +287,9 @@ function generatePins(product: any, boards: Record<string, string[]>) {
       priority: catKey === "cat_trees" || catKey === "cat_litter_boxes" ? "high" : catKey === "dog_travel" ? "low" : "medium",
       status: "draft",
       scheduled_at: null,
-      ctr_ready_score: score,
     });
+    // score is logged at publish time via cron worker (overlay_text + variant heuristic)
+    void score;
   }
 
   return pins;
