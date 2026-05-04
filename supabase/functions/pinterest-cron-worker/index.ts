@@ -454,7 +454,7 @@ Deno.serve(async (req) => {
 });
 
 /** Helper: mark a pin as posted and update product status */
-async function markPosted(sb: any, pin: any, externalId: string) {
+async function markPosted(sb: any, pin: any, externalId: string, verified: boolean = false) {
   const now = new Date().toISOString();
   await sb
     .from("pinterest_pin_queue")
@@ -475,6 +475,24 @@ async function markPosted(sb: any, pin: any, externalId: string) {
     pin_queue_id: pin.id,
     action: "publish",
     status: "success",
-    response_data: { external_id: externalId },
+    response_data: { external_id: externalId, pin_verified: verified },
   });
+}
+
+/** Verify a pin exists by fetching it. Retries once after 5s if not found. */
+async function verifyPinExists(accessToken: string, apiBase: string, pinId: string): Promise<boolean> {
+  const tryFetch = async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`${apiBase}/pins/${pinId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+  if (await tryFetch()) return true;
+  console.log("[pinterest] verify retry in 5s", { pin_id: pinId });
+  await new Promise((r) => setTimeout(r, 5000));
+  return await tryFetch();
 }
