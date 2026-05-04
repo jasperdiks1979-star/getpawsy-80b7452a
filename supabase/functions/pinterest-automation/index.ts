@@ -607,6 +607,109 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (action === "approval_check") {
+      const mode = getPinterestMode();
+      const { count: pinsCreated } = await sb
+        .from("pinterest_pin_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "posted")
+        .not("pin_external_id", "is", null);
+
+      const { data: recentLogs } = await sb
+        .from("pinterest_post_logs")
+        .select("status, response_data, created_at, error_message")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      const sandboxWorking = (pinsCreated || 0) >= 3 && mode === "sandbox";
+      return json(cors, {
+        ok: true,
+        mode,
+        api_base: PINTEREST_API_BASE,
+        can_publish_production: mode === "production",
+        sandbox_working: sandboxWorking,
+        pins_created: pinsCreated || 0,
+        ready_for_upgrade: (pinsCreated || 0) >= 3,
+        recent_logs: recentLogs || [],
+      });
+    }
+
+    if (action === "test_publish_sandbox") {
+      // Create 3 real test pins against the active API base (sandbox by default).
+      const { data: conn } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
+      if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected" });
+
+      const { data: products } = await sb
+        .from("products")
+        .select("id, name, slug, image_url")
+        .eq("is_active", true)
+        .not("image_url", "is", null)
+        .not("slug", "is", null)
+        .limit(3);
+
+      if (!products || products.length < 1) return json(cors, { ok: false, error: "No eligible products" });
+
+      const boardName = SCALE_BOARDS[0];
+      const boardId = await resolvePinterestBoardId(conn.access_token, boardName);
+
+      const created: any[] = [];
+      for (const p of products) {
+        const title = `Test Pin — ${(p.name || "GetPawsy").slice(0, 90)}`;
+        const description = `Sandbox approval test pin for GetPawsy. ${p.name}`;
+        const link = `${BASE_URL}/products/${p.slug}?utm_source=pinterest&utm_medium=test&utm_campaign=approval`;
+        try {
+          const res = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${conn.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title,
+              description,
+              board_id: boardId,
+              media_source: { source_type: "image_url", url: p.image_url },
+              link,
+            }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok || !body?.id) {
+            await sb.from("pinterest_post_logs").insert({
+              action: "test_publish",
+              status: "failed",
+              error_message: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 500)}`,
+              response_data: { mode: getPinterestMode(), api_base: PINTEREST_API_BASE },
+            });
+            created.push({ product_id: p.id, ok: false, error: body });
+            continue;
+          }
+          const externalUrl = `https://www.pinterest.com/pin/${body.id}/`;
+          await sb.from("pinterest_post_logs").insert({
+            action: "test_publish",
+            status: "success",
+            response_data: {
+              mode: getPinterestMode(),
+              api_base: PINTEREST_API_BASE,
+              external_pin_id: body.id,
+              external_url: externalUrl,
+              image_url: p.image_url,
+            },
+          });
+          created.push({ product_id: p.id, ok: true, external_pin_id: body.id, external_url: externalUrl, image_url: p.image_url });
+        } catch (e) {
+          created.push({ product_id: p.id, ok: false, error: e instanceof Error ? e.message : String(e) });
+        }
+      }
+
+      return json(cors, {
+        ok: true,
+        mode: getPinterestMode(),
+        api_base: PINTEREST_API_BASE,
+        created,
+        success_count: created.filter((c) => c.ok).length,
+      });
+    }
+
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
     console.error("pinterest-automation error:", e);
