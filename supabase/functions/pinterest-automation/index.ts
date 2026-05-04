@@ -255,8 +255,8 @@ function generatePins(product: any, boards: Record<string, string[]>) {
   const catKey = detectCategory(product.name || "", product.category || "");
   const boardList = boards[catKey] || boards.fallback || ["Pet Products"];
 
-  // Viral system: 3 variants (A/B/C) per product, each with a distinct hook
-  const hooks = pickHooksForProduct(product.id || product.slug || product.name || "", 3);
+  // Viral system: 3 variants (A/B/C) per product, each with a distinct ≤6-word hook
+  const hooks = pickHooksForProduct(product.id || product.slug || product.name || "");
   const variants: ViralVariant[] = ["A", "B", "C"];
   const pins: any[] = [];
 
@@ -265,8 +265,10 @@ function generatePins(product: any, boards: Record<string, string[]>) {
     const hook = hooks[i];
     const board = boardList[i % boardList.length];
     const destUrl = product.slug
-      ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v2&utm_content=${product.slug}-${variant}`
-      : `${BASE_URL}/collections/${catKey.replace("_", "-")}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v2`;
+      ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v3&utm_content=${product.slug}-${variant}`
+      : `${BASE_URL}/collections/${catKey.replace("_", "-")}?utm_source=pinterest&utm_medium=organic&utm_campaign=viral_v3`;
+
+    const score = ctrReadyScore({ hook, imageUrl: product.image_url || "", destLink: destUrl, variant });
 
     pins.push({
       product_id: product.id,
@@ -285,6 +287,7 @@ function generatePins(product: any, boards: Record<string, string[]>) {
       priority: catKey === "cat_trees" || catKey === "cat_litter_boxes" ? "high" : catKey === "dog_travel" ? "low" : "medium",
       status: "draft",
       scheduled_at: null,
+      ctr_ready_score: score,
     });
   }
 
