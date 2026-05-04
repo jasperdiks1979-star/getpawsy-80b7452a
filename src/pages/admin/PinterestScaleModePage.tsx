@@ -99,6 +99,54 @@ export default function PinterestScaleModePage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const scale100Mutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'scale_100', targetPins: 100, productCount: 10 },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || 'Scale 100 failed');
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['pinterest-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['pinterest-queue'] });
+      toast.success(`Queued ${data.queued} pins across ${data.productsUsed} products (24h spread)`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const publishNextMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'publish_next' },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['pinterest-queue'] });
+      if (data?.published) toast.success(`Published pin: ${data.published}`);
+      else toast.message(data?.message || data?.error || 'No action');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const retryFailedMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'retry_failed' },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pinterest-queue'] });
+      toast.success('Failed pins requeued');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const syncMutation = useMutation({
     mutationFn: async (pins: any[]) => {
       const { data, error } = await supabase.functions.invoke('pinterest-optimizer', {
@@ -156,6 +204,53 @@ export default function PinterestScaleModePage() {
           </Button>
         </div>
       </div>
+
+      {/* Scale Engine — 100 Pins/Day */}
+      <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Zap className="h-5 w-5 text-amber-500" /> Scale Engine — 100 Pins/Day
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Generates 100 pins from 10 cat products (litter boxes, cat trees, cat care). 10 unique
+            hooks per product, distributed across 4 boards, randomized over 24h to avoid burst posting.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => scale100Mutation.mutate()}
+              disabled={scale100Mutation.isPending}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+            >
+              {scale100Mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Generate 100 Pins
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => scale100Mutation.mutate()}
+              disabled={scale100Mutation.isPending}
+            >
+              <Play className="h-4 w-4 mr-1" /> Queue Next 100
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => publishNextMutation.mutate()}
+              disabled={publishNextMutation.isPending}
+            >
+              {publishNextMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              Publish Next Pin Now
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => retryFailedMutation.mutate()}
+              disabled={retryFailedMutation.isPending}
+            >
+              <RefreshCw className="h-4 w-4 mr-1" /> Retry Failed
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
