@@ -32,9 +32,11 @@ Deno.serve(async (req) => {
 
     const apiBase = await getPinterestApiBase(sb);
     const { data: pins } = await sb
-      .from("pinterest_pins")
-      .select("pin_id, product_id, pin_url, title, description, hook, created_at")
-      .order("created_at", { ascending: false })
+      .from("pinterest_pin_queue")
+      .select("pin_external_id, product_id, destination_link, pin_title, pin_description, hook_group, posted_at")
+      .eq("status", "posted")
+      .not("pin_external_id", "is", null)
+      .order("posted_at", { ascending: false })
       .limit(200);
 
     const today = new Date();
@@ -45,9 +47,10 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const p of pins ?? []) {
-      if (!p.pin_id) continue;
+      const pinId = p.pin_external_id;
+      if (!pinId) continue;
       try {
-        const url = new URL(`${apiBase}/pins/${p.pin_id}/analytics`);
+        const url = new URL(`${apiBase}/pins/${pinId}/analytics`);
         url.searchParams.set("start_date", fmt(start));
         url.searchParams.set("end_date", fmt(today));
         url.searchParams.set("metric_types", "IMPRESSION,PIN_CLICK,OUTBOUND_CLICK,SAVE");
@@ -72,12 +75,12 @@ Deno.serve(async (req) => {
 
         await sb.from("pinterest_pin_performance").upsert(
           {
-            pin_id: p.pin_id,
+            pin_id: pinId,
             product_id: String(p.product_id ?? ""),
-            product_url: p.pin_url ?? null,
-            pin_title: p.title ?? null,
-            pin_description: p.description ?? null,
-            hook_angle: p.hook ?? null,
+            product_url: p.destination_link ?? null,
+            pin_title: p.pin_title ?? null,
+            pin_description: p.pin_description ?? null,
+            hook_angle: p.hook_group ?? null,
             impressions,
             clicks,
             saves,
