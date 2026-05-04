@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target, Zap } from "lucide-react";
+import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target, Zap, LineChart } from "lucide-react";
+import { Link } from "react-router-dom";
 
 type Settings = {
   blended_margin_pct: number;
@@ -270,6 +271,11 @@ export default function ProfitEnginePage() {
           <p className="text-muted-foreground">Kill / pause / scale ads using break-even math.</p>
         </div>
         <div className="flex gap-2">
+          <Button asChild variant="ghost">
+            <Link to="/admin/profit-engine/trends">
+              <LineChart className="h-4 w-4 mr-2" />Trends
+            </Link>
+          </Button>
           <Button variant="outline" onClick={() => syncMut.mutate()} disabled={syncMut.isPending}>
             <RefreshCw className={`h-4 w-4 mr-2 ${syncMut.isPending ? "animate-spin" : ""}`} />
             Sync analytics
