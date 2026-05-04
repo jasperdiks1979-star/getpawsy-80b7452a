@@ -551,8 +551,10 @@ Deno.serve(async (req) => {
 
       try {
         const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
-        console.log("Pinterest mode:", getPinterestMode(), "base:", PINTEREST_API_BASE);
-        const pinRes = await fetch(`${PINTEREST_API_BASE}/v5/pins`, {
+        const mode = await getPinterestMode(sb);
+        const apiBase = await getPinterestApiBase(sb);
+        console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
+        const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${conn.access_token}`,
@@ -572,10 +574,16 @@ Deno.serve(async (req) => {
 
         if (!pinRes.ok) {
           const errBody = await pinRes.text();
+          console.log("[pinterest] response", { status: pinRes.status, mode, api_base: apiBase });
+          if (pinRes.status === 403 && mode === "production") {
+            await markProductionForbidden(sb);
+          }
           throw new Error(`Pinterest API ${pinRes.status}: ${errBody}`);
         }
 
         const pinData = await pinRes.json();
+        const externalUrl = pinData?.id ? `https://www.pinterest.com/pin/${pinData.id}/` : null;
+        console.log("[pinterest] response", { status: 200, mode, api_base: apiBase, pin_id: pinData.id, external_url: externalUrl });
         await sb.from("pinterest_pin_queue").update({
           status: "posted",
           posted_at: new Date().toISOString(),
