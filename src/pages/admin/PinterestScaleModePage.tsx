@@ -147,6 +147,44 @@ export default function PinterestScaleModePage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const { data: approval, refetch: refetchApproval } = useQuery({
+    queryKey: ['pinterest-approval-check'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'approval_check' },
+      });
+      if (error) throw error;
+      return data as {
+        ok: boolean;
+        mode: 'sandbox' | 'production';
+        api_base: string;
+        can_publish_production: boolean;
+        sandbox_working: boolean;
+        pins_created: number;
+        ready_for_upgrade: boolean;
+        recent_logs: any[];
+      };
+    },
+    refetchInterval: 60000,
+  });
+
+  const testPublishMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'test_publish_sandbox' },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || 'Test publish failed');
+      return data;
+    },
+    onSuccess: (data: any) => {
+      refetchApproval();
+      const ok = data?.success_count || 0;
+      toast.success(`Created ${ok}/${data?.created?.length || 0} test pins on ${data?.mode}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const syncMutation = useMutation({
     mutationFn: async (pins: any[]) => {
       const { data, error } = await supabase.functions.invoke('pinterest-optimizer', {
