@@ -664,20 +664,8 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
 
     // Strip optional visual metadata (backdrop_*) before insert — those columns
     // do not exist on pinterest_pin_queue. Insert must never fail because of
-    // optional enrichment data.
-    const ALLOWED_QUEUE_COLUMNS = new Set([
-      "product_id", "product_slug", "product_name", "pin_variant",
-      "pin_title", "pin_description", "pin_image_url", "destination_link",
-      "board_name", "hashtags", "priority", "status", "scheduled_at",
-      "hook_group", "category_key", "overlay_text",
-    ]);
-    const sanitizedRows = rows.map((r: any) => {
-      const out: Record<string, any> = {};
-      for (const k of Object.keys(r)) {
-        if (ALLOWED_QUEUE_COLUMNS.has(k)) out[k] = r[k];
-      }
-      return out;
-    });
+    // optional enrichment data. See sanitizeQueueRows() for the column whitelist.
+    const sanitizedRows = sanitizeQueueRows(rows as Record<string, unknown>[]);
     const { data: inserted, error: insErr } = await sb
       .from("pinterest_pin_queue")
       .insert(sanitizedRows)
