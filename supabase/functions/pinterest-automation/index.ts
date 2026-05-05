@@ -662,6 +662,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "publish_next") {
+      // 🔒 Manual publish path is gated to allowed slugs + approved drafts only.
       const { data: conn } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
       if (!conn || conn.status !== "connected" || !conn.access_token) {
         return json(cors, { ok: false, error: "Pinterest not connected" });
@@ -670,12 +671,24 @@ Deno.serve(async (req) => {
       const { data: pin } = await sb.from("pinterest_pin_queue")
         .select("*")
         .eq("status", "queued")
+        .not("approved_at", "is", null)
+        .in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS))
         .lte("scheduled_at", new Date().toISOString())
         .order("scheduled_at", { ascending: true })
         .limit(1)
         .maybeSingle();
 
-      if (!pin) return json(cors, { ok: true, message: "No pins ready to publish" });
+      if (!pin) return json(cors, { ok: true, message: "No approved pins ready to publish" });
+
+      const qaReasons = runPinQa(pin);
+      if (qaReasons.length > 0) {
+        await sb.from("pinterest_pin_queue").update({
+          status: "skipped",
+          qa_reasons: qaReasons,
+          error_message: `QA gate: ${qaReasons.join(",")}`,
+        }).eq("id", pin.id);
+        return json(cors, { ok: false, error: `QA gate blocked pin: ${qaReasons.join(",")}` });
+      }
 
       try {
         const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
