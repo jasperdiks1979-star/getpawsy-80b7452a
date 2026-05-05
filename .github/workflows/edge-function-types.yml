@@ -28,6 +28,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js (for npm run)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
@@ -51,36 +56,8 @@ jobs:
             supabase/functions/pinterest-viral-batch/types_test.ts \
             supabase/functions/pinterest-viral-batch/sanitize_test.ts
 
-      - name: Type-check shared queue contract
-        run: |
-          deno check \
-            supabase/functions/_shared/pinterest-queue-types.ts \
-            supabase/functions/pinterest-viral-batch/index.ts \
-            supabase/functions/pinterest-viral-batch/types_test.ts \
-            supabase/functions/pinterest-viral-batch/sanitize_test.ts
-
-      - name: Run pinterest-viral-batch Deno tests (fresh cache, fails build on regression)
-        run: |
-          deno test \
-            --reload \
-            --allow-net --allow-env \
-            supabase/functions/pinterest-viral-batch/types_test.ts \
-            supabase/functions/pinterest-viral-batch/sanitize_test.ts
-
-      - name: Guard — refuse backdrop_* keys in PinterestQueueInsert
-        run: |
-          if grep -nE '^\s*backdrop_[a-z_]+\s*[?:]?\s*:' \
-               supabase/functions/_shared/pinterest-queue-types.ts \
-             | grep -v 'BackdropMetadata' \
-             | awk -F: '{print $0}' \
-             | grep -E 'PinterestQueueInsert' ; then
-            echo "::error::backdrop_* field detected inside PinterestQueueInsert. Move it to BackdropMetadata."
-            exit 1
-          fi
-          # Belt-and-suspenders: ensure the interface block itself contains no backdrop_ keys.
-          if awk '/export interface PinterestQueueInsert/{flag=1;next}/^}/{flag=0}flag' \
-               supabase/functions/_shared/pinterest-queue-types.ts \
-             | grep -E '^\s*backdrop_' ; then
-            echo "::error::backdrop_* field detected inside PinterestQueueInsert interface body."
-            exit 1
-          fi
+      # Single source of truth — same script developers run locally via
+      # `npm run edge:contract`. Keeps CI and local in lockstep so a green
+      # local run guarantees a green CI run (and vice-versa).
+      - name: Run edge:contract (deno check + tests + backdrop_* guard)
+        run: npm run edge:contract
