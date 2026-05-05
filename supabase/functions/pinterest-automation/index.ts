@@ -915,6 +915,62 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "approve_pin") {
+      const pinId = body.pinId;
+      if (!pinId) return json(cors, { ok: false, error: "pinId required" });
+      const { data: pin } = await sb.from("pinterest_pin_queue").select("*").eq("id", pinId).maybeSingle();
+      if (!pin) return json(cors, { ok: false, error: "Pin not found" });
+      if (!PINTEREST_ALLOWED_SLUGS.has(pin.product_slug)) {
+        return json(cors, QA_LOCKDOWN_ERROR);
+      }
+      const reasons = runPinQa(pin);
+      if (reasons.length > 0) {
+        await sb.from("pinterest_pin_queue").update({
+          qa_reasons: reasons,
+          error_message: `QA gate: ${reasons.join(",")}`,
+        }).eq("id", pinId);
+        return json(cors, { ok: false, error: `QA failed: ${reasons.join(",")}`, qa_reasons: reasons });
+      }
+      await sb.from("pinterest_pin_queue").update({
+        status: "queued",
+        approved_at: new Date().toISOString(),
+        qa_reasons: [],
+        error_message: null,
+        scheduled_at: new Date().toISOString(),
+      }).eq("id", pinId);
+      return json(cors, { ok: true });
+    }
+
+    if (action === "reject_pin") {
+      const pinId = body.pinId;
+      if (!pinId) return json(cors, { ok: false, error: "pinId required" });
+      await sb.from("pinterest_pin_queue").update({
+        status: "skipped",
+        approved_at: null,
+        error_message: body.reason || "Rejected by admin",
+      }).eq("id", pinId);
+      return json(cors, { ok: true });
+    }
+
+    if (action === "purge_bad_pins") {
+      // Delete every draft/queued/failed/skipped pin that is either not on
+      // the allowlist OR currently flagged with any QA reason.
+      const allowed = Array.from(PINTEREST_ALLOWED_SLUGS);
+      const { data: candidates } = await sb.from("pinterest_pin_queue")
+        .select("id, product_slug, qa_reasons, status")
+        .in("status", ["draft", "queued", "failed", "skipped"]);
+      const ids = (candidates || [])
+        .filter((p: any) =>
+          !allowed.includes(p.product_slug) ||
+          (Array.isArray(p.qa_reasons) && p.qa_reasons.length > 0)
+        )
+        .map((p: any) => p.id);
+      if (ids.length === 0) return json(cors, { ok: true, deleted: 0 });
+      const { error: delErr } = await sb.from("pinterest_pin_queue").delete().in("id", ids);
+      if (delErr) return json(cors, { ok: false, error: delErr.message });
+      return json(cors, { ok: true, deleted: ids.length });
+    }
+
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
     console.error("pinterest-automation error:", e);
