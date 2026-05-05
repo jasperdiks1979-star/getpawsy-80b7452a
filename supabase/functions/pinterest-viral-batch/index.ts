@@ -477,8 +477,16 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         const hook = HOOK_GROUPS[i];
         const productImage = allImages[i % allImages.length];
         const query = PEXELS_QUERIES[i] || "happy cat";
-        const backdrop = await fetchPexelsBackdrop(query);
-        if (!backdrop) continue; // graceful fallback to product-only pin
+        let backdrop = await fetchPexelsBackdrop(query);
+        let backdropSource: "pexels" | "cloudinary_fallback" = "pexels";
+        if (!backdrop) {
+          // Pexels unavailable (no key, network error, empty result) — render
+          // a Cloudinary-only backdrop in the same color temperature as the
+          // hook's intended Pexels query, so the lifestyle layer never silently
+          // disappears.
+          backdrop = buildCloudinaryFallbackBackdrop(hook.key);
+          backdropSource = "cloudinary_fallback";
+        }
         const [top, bot] = (rows[i].overlay_text as string).split(" | ");
         const bottomText = bot || hook.cta;
 
@@ -497,6 +505,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         (rows[i] as any).backdrop_url = backdrop.url;
         (rows[i] as any).backdrop_query = query;
         (rows[i] as any).backdrop_avg_color = backdrop.avgColor;
+        (rows[i] as any).backdrop_source = backdropSource;
         (rows[i] as any).backdrop_style = winner.style;
         (rows[i] as any).backdrop_score = winner.score;
         (rows[i] as any).backdrop_variants = scored.map((s) => ({
@@ -529,6 +538,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
             backdrop_url: r.backdrop_url || null,
             backdrop_query: r.backdrop_query || null,
             backdrop_avg_color: r.backdrop_avg_color || null,
+            backdrop_source: r.backdrop_source || null,
             backdrop_style: r.backdrop_style || null,
             backdrop_score: r.backdrop_score ?? null,
             backdrop_variants: r.backdrop_variants || null,
