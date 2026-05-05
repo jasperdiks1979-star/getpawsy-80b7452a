@@ -49,6 +49,64 @@ export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]):
   });
 }
 
+// Required columns the insert payload absolutely needs. If any of these are
+// missing from the live table the function aborts BEFORE building/inserting
+// pins so we never burn AI/Pexels credits on a doomed batch.
+export const REQUIRED_QUEUE_COLUMNS = [
+  "product_id", "product_slug", "pin_variant", "pin_title",
+  "pin_image_url", "destination_link", "status", "scheduled_at",
+] as const;
+
+type SchemaCheck =
+  | { ok: true; columns: Set<string> }
+  | { ok: false; code: "SCHEMA_INVALID"; missing: string[]; message: string };
+
+// Cached per cold start — information_schema lookup is cheap but pointless
+// to repeat on every invocation.
+let _schemaCache: SchemaCheck | null = null;
+
+export async function verifyQueueSchema(
+  sb: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> },
+  opts: { force?: boolean } = {},
+): Promise<SchemaCheck> {
+  if (_schemaCache && !opts.force) return _schemaCache;
+  // Use a tiny RPC-free probe: select 0 rows but request every required column.
+  // PostgREST returns 400 with column name on mismatch.
+  // We can't easily do that from the client without leaking the API surface,
+  // so query information_schema via a SECURITY DEFINER RPC if available;
+  // otherwise fall back to a HEAD request shape.
+  try {
+    // @ts-ignore — runtime client passes through here
+    const { data, error } = await (sb as unknown as {
+      from: (t: string) => { select: (s: string, o: { head: boolean; count: "exact" }) => Promise<{ data: unknown; error: { message: string } | null }> };
+    })
+      .from("pinterest_pin_queue")
+      .select(REQUIRED_QUEUE_COLUMNS.join(","), { head: true, count: "exact" });
+    if (error) {
+      const missing = REQUIRED_QUEUE_COLUMNS.filter((c) => error.message.includes(c));
+      const result: SchemaCheck = {
+        ok: false,
+        code: "SCHEMA_INVALID",
+        missing: missing.length ? missing : [error.message],
+        message: `pinterest_pin_queue schema check failed: ${error.message}`,
+      };
+      _schemaCache = result;
+      return result;
+    }
+    void data;
+    const result: SchemaCheck = { ok: true, columns: new Set(ALLOWED_QUEUE_COLUMNS) };
+    _schemaCache = result;
+    return result;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "unknown schema check error";
+    return { ok: false, code: "SCHEMA_INVALID", missing: [], message: msg };
+  }
+}
+
+export function __resetSchemaCacheForTests() {
+  _schemaCache = null;
+}
+
 // ---- Pexels (OPTIONAL secondary layer) ---------------------------------
 // Used ONLY as a subtle lifestyle backdrop behind the real product image
 // when the caller explicitly opts in (`useLifestyleBackdrop: true`).
