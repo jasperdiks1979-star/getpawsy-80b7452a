@@ -75,6 +75,10 @@ export default function PinterestBackdropPreviewPage() {
   const PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
   const [pageSize, setPageSize] = useState<number>(24);
   const [page, setPage] = useState(1);
+  // Sorting — operates on the filtered list before pagination.
+  type SortKey = "default" | "hook" | "query" | "product" | "scheduled";
+  const [sortKey, setSortKey] = useState<SortKey>("default");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   function toggleSelectedHook(key: string) {
     setSelectedHooks((prev) => {
@@ -102,7 +106,7 @@ export default function PinterestBackdropPreviewPage() {
     );
   }
 
-  const filteredPins = useMemo(() => pins.filter((p) => {
+  const filteredPinsRaw = useMemo(() => pins.filter((p) => {
     if (hookFilter !== "all" && p.hook_group !== hookFilter) return false;
     if (backdropOnlyFilter && !p.uses_lifestyle_backdrop) return false;
     const q = searchQuery.trim().toLowerCase();
@@ -124,6 +128,42 @@ export default function PinterestBackdropPreviewPage() {
     return haystack.includes(q);
   }), [pins, hookFilter, backdropOnlyFilter, searchQuery, slug]);
 
+  const filteredPins = useMemo(() => {
+    if (sortKey === "default") return filteredPinsRaw;
+    const dir = sortDir === "asc" ? 1 : -1;
+    const productOf = (p: PreviewPin) => {
+      // Destination link slug is the most reliable per-pin product key.
+      try {
+        const u = new URL(p.destination_link);
+        const m = u.pathname.match(/\/products\/([^/?#]+)/);
+        return (m?.[1] || u.pathname || slug).toLowerCase();
+      } catch {
+        return slug.toLowerCase();
+      }
+    };
+    const keyOf = (p: PreviewPin): string | number => {
+      switch (sortKey) {
+        case "hook":
+          return (p.hook_group || "").toLowerCase();
+        case "query":
+          return (p.backdrop_query || "~").toLowerCase();
+        case "product":
+          return productOf(p);
+        case "scheduled":
+          return new Date(p.scheduled_at).getTime() || 0;
+        default:
+          return 0;
+      }
+    };
+    return [...filteredPinsRaw].sort((a, b) => {
+      const ka = keyOf(a);
+      const kb = keyOf(b);
+      if (ka < kb) return -1 * dir;
+      if (ka > kb) return 1 * dir;
+      return 0;
+    });
+  }, [filteredPinsRaw, sortKey, sortDir, slug]);
+
   const totalPages = Math.max(1, Math.ceil(filteredPins.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const pageStart = (safePage - 1) * pageSize;
@@ -132,7 +172,7 @@ export default function PinterestBackdropPreviewPage() {
   // Reset to page 1 whenever filters or page size change.
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, hookFilter, backdropOnlyFilter, pageSize, pins.length]);
+  }, [searchQuery, hookFilter, backdropOnlyFilter, pageSize, pins.length, sortKey, sortDir]);
 
   async function runPreview() {
     setLoading(true);
@@ -517,6 +557,52 @@ export default function PinterestBackdropPreviewPage() {
                     Only with backdrop
                   </Label>
                 </div>
+              </div>
+              <div className="flex flex-wrap items-end gap-3 border-t pt-3">
+                <div>
+                  <Label htmlFor="sort-key" className="text-xs">
+                    Sort by
+                  </Label>
+                  <select
+                    id="sort-key"
+                    value={sortKey}
+                    onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+                    className="h-9 w-44 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="default">Default (queue order)</option>
+                    <option value="hook">Hook group</option>
+                    <option value="query">Pexels query</option>
+                    <option value="product">Product</option>
+                    <option value="scheduled">Scheduled time</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="sort-dir" className="text-xs">
+                    Direction
+                  </Label>
+                  <select
+                    id="sort-dir"
+                    value={sortDir}
+                    onChange={(e) => setSortDir(e.target.value as "asc" | "desc")}
+                    disabled={sortKey === "default"}
+                    className="h-9 w-32 rounded-md border bg-background px-3 text-sm disabled:opacity-50"
+                  >
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </div>
+                {sortKey !== "default" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortKey("default");
+                      setSortDir("asc");
+                    }}
+                    className="text-[11px] underline text-muted-foreground hover:text-foreground pb-2"
+                  >
+                    Reset sort
+                  </button>
+                )}
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
