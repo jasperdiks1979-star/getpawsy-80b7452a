@@ -12,6 +12,7 @@ import type {
   PinterestPinDraft,
   BackdropMetadata,
 } from "../_shared/pinterest-queue-types.ts";
+import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 
 export type {
   PinterestQueueInsert,
@@ -47,7 +48,7 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "product_id", "product_slug", "product_name", "pin_variant",
   "pin_title", "pin_description", "pin_image_url", "destination_link",
   "board_name", "hashtags", "priority", "status", "scheduled_at",
-  "hook_group", "category_key", "overlay_text",
+  "hook_group", "category_key", "overlay_text", "qa_reasons",
 ]);
 
 export interface SanitizeReport {
@@ -510,6 +511,14 @@ serve(async (req) => {
     const verboseSanitize: boolean = qpVerbose === "1" || qpVerbose === "true"
       || !!body.verboseSanitize;
     const slug: string = body.productSlug || DEFAULT_SLUG;
+    // 🛡️ Allowlist gate — during QA stabilization only one product is allowed.
+    if (!PINTEREST_ALLOWED_SLUGS.has(slug)) {
+      return respond({
+        ok: false,
+        code: "ALLOWLIST_DISABLED",
+        message: `Pinterest automation is restricted to: ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}. Slug "${slug}" is not allowed.`,
+      });
+    }
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
     const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
@@ -683,7 +692,8 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         board_name: "Smart Pet Gadgets",
         hashtags: tags,
         priority: "high",
-        status: "queued",
+        // Always insert as DRAFT — admin must approve before cron worker publishes.
+        status: "draft",
         scheduled_at: new Date(now + i * STAGGER_MIN * 60_000).toISOString(),
         hook_group: hook.key,
         category_key: "cat-litter",
@@ -790,6 +800,11 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     // optional enrichment data. See sanitizeQueueRows() for the column whitelist.
     const sanitized = sanitizeQueueRowsWithReport(rows as Record<string, unknown>[]);
     const sanitizedRows = sanitized.rows;
+    // Annotate each row with QA reasons (empty array if clean).
+    const annotatedRows = sanitizedRows.map((r) => ({
+      ...r,
+      qa_reasons: runPinQa(r as Record<string, unknown>),
+    }));
     if (sanitized.droppedColumns.length > 0) {
       // Per-batch summary
       console.warn(
@@ -812,7 +827,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     }
     const { data: inserted, error: insErr } = await sb
       .from("pinterest_pin_queue")
-      .insert(sanitizedRows)
+      .insert(annotatedRows)
       .select("id, pin_variant, hook_group, scheduled_at, pin_image_url");
     if (insErr) {
       console.error("[pinterest-viral-batch] Queue insert failed:", insErr.message);
