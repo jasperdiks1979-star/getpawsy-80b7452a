@@ -29,6 +29,37 @@ const CLOUDINARY_CLOUD = "dlkqycfzn";
 const BASE_URL = "https://getpawsy.pet";
 const DEFAULT_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
 
+// ---- Pexels (OPTIONAL secondary layer) ---------------------------------
+// Used ONLY as a subtle lifestyle backdrop behind the real product image
+// when the caller explicitly opts in (`useLifestyleBackdrop: true`).
+// Product photo always remains the dominant visual — never replaced.
+const PEXELS_QUERIES = [
+  "happy cat home",        // pain
+  "curious cat",           // curiosity
+  "clean modern living room", // time_saving
+  "cat owner with cat",    // social_proof
+  "cozy cat sleeping",     // transformation
+];
+
+async function fetchPexelsBackdrop(query: string): Promise<string | null> {
+  const key = Deno.env.get("PEXELS_API_KEY");
+  if (!key) return null;
+  try {
+    const r = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&orientation=portrait&size=large&per_page=10`,
+      { headers: { Authorization: key } },
+    );
+    if (!r.ok) return null;
+    const j = await r.json();
+    const photos: any[] = Array.isArray(j?.photos) ? j.photos : [];
+    if (photos.length === 0) return null;
+    const pick = photos[Math.floor(Math.random() * photos.length)];
+    return pick?.src?.portrait || pick?.src?.large2x || pick?.src?.large || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
 // Hook frameworks — the AI must produce ONE variant per group, in this order.
 const HOOK_GROUPS = [
   { key: "pain",            angle: "Pain point",       cta: "End the Daily Scoop" },
@@ -101,6 +132,68 @@ function buildPinImage(productImageUrl: string, top: string, bottom: string): st
   return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${base}/${topOverlay}/${bottomOverlay}/${productImageUrl}`;
 }
 
+/**
+ * Variant: Pexels lifestyle backdrop with the REAL product image as the
+ * dominant centered hero (≈70% of frame). Backdrop is darkened so it never
+ * competes with the product. Only used when caller opts in AND Pexels returns
+ * a valid image — otherwise we fall back to buildPinImage.
+ */
+function buildPinImageWithBackdrop(
+  productImageUrl: string,
+  backdropUrl: string,
+  top: string,
+  bottom: string,
+): string {
+  const W = 1080;
+  const H = 1920;
+  const base = [
+    `w_${W}`,
+    `h_${H}`,
+    "c_fill",
+    "g_center",
+    "e_brightness:-25",
+    "q_auto",
+    "f_jpg",
+  ].join(",");
+
+  // Product image overlay — large, centered, dominant
+  const productOverlay = [
+    `l_fetch:${btoa(productImageUrl).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`,
+    "w_820",
+    "h_1100",
+    "c_fit",
+    "g_center",
+    "y_60",
+    "r_32",
+    "bo_6px_solid_rgb:FFFFFF",
+  ].join(",");
+
+  const topOverlay = [
+    `l_text:Arial_72_bold:${escapeOverlay(top)}`,
+    "co_rgb:FFFFFF",
+    "b_rgb:FF6A1A",
+    "bo_8px_solid_rgb:FFFFFF",
+    "r_24",
+    "w_900",
+    "c_fit",
+    "g_north",
+    "y_120",
+  ].join(",");
+
+  const bottomOverlay = [
+    `l_text:Arial_56_bold:${escapeOverlay(bottom)}`,
+    "co_rgb:1A1410",
+    "b_rgb:FFFFFF",
+    "r_20",
+    "w_900",
+    "c_fit",
+    "g_south",
+    "y_140",
+  ].join(",");
+
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${base}/${productOverlay}/${topOverlay}/${bottomOverlay}/${backdropUrl}`;
+}
+
 function buildPinUrl(slug: string, hookKey: string): string {
   const intent = HOOK_TO_INTENT[hookKey] || "solution";
   return `${BASE_URL}/products/${slug}?utm_source=pinterest&utm_medium=social&utm_campaign=viral_batch&utm_content=${hookKey}&hook=${intent}`;
@@ -113,6 +206,9 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const slug: string = body.productSlug || DEFAULT_SLUG;
+    // Optional: enable Pexels lifestyle backdrop layer.
+    // OFF by default — product images stay primary.
+    const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
 
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -234,6 +330,25 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         overlay_text: `${topOverlay} | ${bottomOverlay}`,
       };
     });
+
+    // Optional secondary layer: enrich SOME pins (every other one) with a
+    // Pexels lifestyle backdrop while keeping the product image dominant.
+    if (useLifestyleBackdrop) {
+      for (let i = 0; i < rows.length; i += 2) {
+        const hook = HOOK_GROUPS[i];
+        const productImage = allImages[i % allImages.length];
+        const backdrop = await fetchPexelsBackdrop(PEXELS_QUERIES[i] || "happy cat");
+        if (!backdrop) continue; // graceful fallback to product-only pin
+        const [top, bot] = (rows[i].overlay_text as string).split(" | ");
+        rows[i].pin_image_url = buildPinImageWithBackdrop(
+          productImage,
+          backdrop,
+          top,
+          bot || hook.cta,
+        );
+        rows[i].pin_variant = `${rows[i].pin_variant}_lifestyle`;
+      }
+    }
 
     const { data: inserted, error: insErr } = await sb
       .from("pinterest_pin_queue")
