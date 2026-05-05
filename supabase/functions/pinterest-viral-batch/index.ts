@@ -129,7 +129,14 @@ function buildCloudinaryFallbackBackdrop(hookKey: string): PexelsPhoto {
     "e_blur:600",
   ].join(",");
   const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${base}/${accent}/${seed}`;
-  return { url, avgColor: `#${palette.primary}` };
+  return {
+    url,
+    avgColor: `#${palette.primary}`,
+    width: 1080,
+    height: 1920,
+    photographer: null,
+    pexelsPageUrl: null,
+  };
 }
 
 /* ─── Backdrop styles + readability scorer ──────────────────────────────
