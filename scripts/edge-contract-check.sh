@@ -35,10 +35,19 @@ echo -e "${YLW}▶ deno check${NC} (${#FILES[@]} files)"
 deno check "${FILES[@]}"
 
 echo -e "${YLW}▶ deno test${NC} (pinterest-viral-batch contract suite)"
+COVERAGE_DIR="${COVERAGE_DIR:-coverage/edge-contract}"
+rm -rf "$COVERAGE_DIR"
+mkdir -p "$COVERAGE_DIR"
 deno test \
   --allow-net --allow-env \
+  --coverage="$COVERAGE_DIR" \
   supabase/functions/pinterest-viral-batch/types_test.ts \
   supabase/functions/pinterest-viral-batch/sanitize_test.ts
+
+echo -e "${YLW}▶ deno coverage${NC} (summary + lcov)"
+deno coverage "$COVERAGE_DIR" || true
+deno coverage "$COVERAGE_DIR" --lcov --output="$COVERAGE_DIR/lcov.info"
+echo "Coverage report written to $COVERAGE_DIR (lcov: $COVERAGE_DIR/lcov.info)"
 
 # Static guard: no backdrop_* keys may live inside the PinterestQueueInsert
 # interface body. Mirrors the CI guard in edge-function-types.yml.
