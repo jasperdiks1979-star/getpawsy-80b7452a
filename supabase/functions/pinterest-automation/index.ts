@@ -569,6 +569,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "scale_100") {
+      return json(cors, QA_LOCKDOWN_ERROR);
       // Generate ~100 pins/day spread across 24h, randomized intervals,
       // pulling 5–10 cat-focused products (litter boxes, cat trees, cat care).
       const targetPins = Math.min(Math.max(body.targetPins || 100, 10), 200);
