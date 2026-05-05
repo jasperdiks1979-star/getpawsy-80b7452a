@@ -39,14 +39,46 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "hook_group", "category_key", "overlay_text",
 ]);
 
-export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]): Record<string, unknown>[] {
-  return rows.map((r) => {
+export interface SanitizeReport {
+  rows: Record<string, unknown>[];
+  /** Per-row list of dropped column names (parallel to `rows`). */
+  droppedPerRow: string[][];
+  /** Aggregate count of drops across all rows, keyed by column name. */
+  droppedCounts: Record<string, number>;
+  /** Distinct dropped column names across the whole batch. */
+  droppedColumns: string[];
+}
+
+export function sanitizeQueueRowsWithReport<T extends Record<string, unknown>>(
+  rows: T[],
+): SanitizeReport {
+  const droppedPerRow: string[][] = [];
+  const droppedCounts: Record<string, number> = {};
+  const cleaned = rows.map((r) => {
     const out: Record<string, unknown> = {};
+    const dropped: string[] = [];
     for (const k of Object.keys(r)) {
-      if (ALLOWED_QUEUE_COLUMNS.has(k)) out[k] = (r as Record<string, unknown>)[k];
+      if (ALLOWED_QUEUE_COLUMNS.has(k)) {
+        out[k] = (r as Record<string, unknown>)[k];
+      } else {
+        dropped.push(k);
+        droppedCounts[k] = (droppedCounts[k] ?? 0) + 1;
+      }
     }
+    droppedPerRow.push(dropped);
     return out;
   });
+  return {
+    rows: cleaned,
+    droppedPerRow,
+    droppedCounts,
+    droppedColumns: Object.keys(droppedCounts).sort(),
+  };
+}
+
+/** Back-compat wrapper kept for existing callers/tests. */
+export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]): Record<string, unknown>[] {
+  return sanitizeQueueRowsWithReport(rows).rows;
 }
 
 // Required columns the insert payload absolutely needs. If any of these are
@@ -737,7 +769,28 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     // Strip optional visual metadata (backdrop_*) before insert — those columns
     // do not exist on pinterest_pin_queue. Insert must never fail because of
     // optional enrichment data. See sanitizeQueueRows() for the column whitelist.
-    const sanitizedRows = sanitizeQueueRows(rows as Record<string, unknown>[]);
+    const sanitized = sanitizeQueueRowsWithReport(rows as Record<string, unknown>[]);
+    const sanitizedRows = sanitized.rows;
+    if (sanitized.droppedColumns.length > 0) {
+      // Per-batch summary
+      console.warn(
+        `[pinterest-viral-batch] sanitize trace=${traceId} dropped_columns=${sanitized.droppedColumns.length}`,
+        JSON.stringify({
+          traceId,
+          slug,
+          totalRows: sanitizedRows.length,
+          droppedColumns: sanitized.droppedColumns,
+          droppedCounts: sanitized.droppedCounts,
+        }),
+      );
+      // Per-row detail (only rows that actually lost fields)
+      sanitized.droppedPerRow.forEach((cols, i) => {
+        if (cols.length === 0) return;
+        console.warn(
+          `[pinterest-viral-batch] sanitize trace=${traceId} row=${i} variant=${(rows as any)[i]?.pin_variant ?? "?"} dropped=${cols.join(",")}`,
+        );
+      });
+    }
     const { data: inserted, error: insErr } = await sb
       .from("pinterest_pin_queue")
       .insert(sanitizedRows)
@@ -755,6 +808,11 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
       product: { id: product.id, slug: product.slug, name: product.name },
       batchTag,
       pins: inserted,
+      sanitize: {
+        droppedColumns: sanitized.droppedColumns,
+        droppedCounts: sanitized.droppedCounts,
+        rowsAffected: sanitized.droppedPerRow.filter((d) => d.length > 0).length,
+      },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
