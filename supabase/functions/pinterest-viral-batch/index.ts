@@ -803,7 +803,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     // Annotate each row with QA reasons (empty array if clean).
     const annotatedRows = sanitizedRows.map((r) => ({
       ...r,
-      qa_reasons: runPinQa(r as Record<string, unknown>),
+      qa_reasons: runPinQa(r as unknown as Record<string, unknown>),
     }));
     if (sanitized.droppedColumns.length > 0) {
       // Per-batch summary
