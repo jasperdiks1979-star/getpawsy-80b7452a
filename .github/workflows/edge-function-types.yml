@@ -33,6 +33,24 @@ jobs:
         with:
           deno-version: v1.x
 
+      # Run on every PR with a fresh, isolated DENO_DIR to guarantee no
+      # cached modules from previous runs hide a regression. The directory
+      # is unique per run so cache restores can never repopulate it.
+      - name: Prepare clean Deno cache (fresh on every PR)
+        run: |
+          FRESH_DIR="${RUNNER_TEMP}/deno-cache-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$FRESH_DIR"
+          echo "DENO_DIR=$FRESH_DIR" >> "$GITHUB_ENV"
+          echo "Using clean DENO_DIR=$FRESH_DIR"
+
+      - name: Reload remote modules from origin (no cache)
+        run: |
+          deno cache --reload \
+            supabase/functions/_shared/pinterest-queue-types.ts \
+            supabase/functions/pinterest-viral-batch/index.ts \
+            supabase/functions/pinterest-viral-batch/types_test.ts \
+            supabase/functions/pinterest-viral-batch/sanitize_test.ts
+
       - name: Type-check shared queue contract
         run: |
           deno check \
@@ -41,9 +59,10 @@ jobs:
             supabase/functions/pinterest-viral-batch/types_test.ts \
             supabase/functions/pinterest-viral-batch/sanitize_test.ts
 
-      - name: Run pinterest-viral-batch Deno tests (fails build on regression)
+      - name: Run pinterest-viral-batch Deno tests (fresh cache, fails build on regression)
         run: |
           deno test \
+            --reload \
             --allow-net --allow-env \
             supabase/functions/pinterest-viral-batch/types_test.ts \
             supabase/functions/pinterest-viral-batch/sanitize_test.ts
