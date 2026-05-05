@@ -345,6 +345,13 @@ serve(async (req) => {
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
     const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
+    // Per-hook override: { pain: true, curiosity: false, ... }
+    // When provided it FULLY replaces the default "every other pin" pattern
+    // and only the explicitly enabled hooks get a backdrop.
+    const backdropByHook: Record<string, boolean> | null =
+      body.backdropByHook && typeof body.backdropByHook === "object"
+        ? body.backdropByHook
+        : null;
     // Dry-run mode: build pins + Pexels backdrops but DO NOT insert into queue.
     // Used by the admin preview screen to inspect lifestyle backdrops first.
     const dryRun: boolean = !!body.dryRun;
@@ -473,7 +480,16 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     // Optional secondary layer: enrich SOME pins (every other one) with a
     // Pexels lifestyle backdrop while keeping the product image dominant.
     if (useLifestyleBackdrop) {
-      for (let i = 0; i < rows.length; i += 2) {
+      // Decide which pin indexes get a backdrop:
+      // - explicit per-hook map wins (only `true` entries)
+      // - else fall back to legacy "every other pin" pattern (0,2,4)
+      const enabledIdx: number[] = backdropByHook
+        ? rows
+            .map((_, idx) => (backdropByHook[HOOK_GROUPS[idx].key] ? idx : -1))
+            .filter((idx) => idx >= 0)
+        : rows.map((_, idx) => idx).filter((idx) => idx % 2 === 0);
+
+      for (const i of enabledIdx) {
         const hook = HOOK_GROUPS[i];
         const productImage = allImages[i % allImages.length];
         const query = PEXELS_QUERIES[i] || "happy cat";
