@@ -69,6 +69,34 @@ export default function PinterestBackdropPreviewPage() {
   // Per-hook approval map. Pins start approved; unchecking forces the backdrop
   // off for that hook when queueing (product-only image is queued instead).
   const [approvedByHook, setApprovedByHook] = useState<Record<string, boolean>>({});
+  // Multi-select: which hooks are currently selected for bulk on/off actions.
+  const [selectedHooks, setSelectedHooks] = useState<Set<string>>(new Set());
+
+  function toggleSelectedHook(key: string) {
+    setSelectedHooks((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function applyBulkBackdrop(value: boolean) {
+    if (selectedHooks.size === 0) {
+      toast.error("Selecteer eerst hooks");
+      return;
+    }
+    setBackdropByHook((prev) => {
+      const next = { ...prev };
+      selectedHooks.forEach((k) => {
+        next[k] = value;
+      });
+      return next;
+    });
+    toast.success(
+      `${value ? "Enabled" : "Disabled"} backdrop for ${selectedHooks.size} hook${selectedHooks.size === 1 ? "" : "s"}`,
+    );
+  }
 
   const filteredPins = pins.filter((p) => {
     if (hookFilter !== "all" && p.hook_group !== hookFilter) return false;
@@ -289,20 +317,84 @@ export default function PinterestBackdropPreviewPage() {
                     </button>
                   </div>
                 </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-1.5 rounded border bg-muted/40">
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Checkbox
+                      checked={
+                        selectedHooks.size === HOOKS.length
+                          ? true
+                          : selectedHooks.size === 0
+                          ? false
+                          : "indeterminate"
+                      }
+                      onCheckedChange={(v) =>
+                        setSelectedHooks(
+                          v === true ? new Set(HOOKS.map((h) => h.key)) : new Set(),
+                        )
+                      }
+                    />
+                    <span>
+                      {selectedHooks.size} of {HOOKS.length} selected
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px]"
+                      disabled={selectedHooks.size === 0}
+                      onClick={() => applyBulkBackdrop(true)}
+                    >
+                      Enable selected
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px]"
+                      disabled={selectedHooks.size === 0}
+                      onClick={() => applyBulkBackdrop(false)}
+                    >
+                      Disable selected
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[11px]"
+                      disabled={selectedHooks.size === 0}
+                      onClick={() => setSelectedHooks(new Set())}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {HOOKS.map((h) => (
-                    <label
+                    <div
                       key={h.key}
-                      className="flex items-center gap-2 text-xs px-2 py-1.5 rounded border cursor-pointer hover:bg-accent"
+                      className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded border ${
+                        selectedHooks.has(h.key)
+                          ? "border-primary bg-primary/5"
+                          : "hover:bg-accent"
+                      }`}
                     >
+                      <Checkbox
+                        checked={selectedHooks.has(h.key)}
+                        onCheckedChange={() => toggleSelectedHook(h.key)}
+                        aria-label={`Select ${h.label}`}
+                      />
                       <Switch
                         checked={!!backdropByHook[h.key]}
                         onCheckedChange={(v) =>
                           setBackdropByHook((prev) => ({ ...prev, [h.key]: v }))
                         }
                       />
-                      <span>{h.label}</span>
-                    </label>
+                      <span className="cursor-pointer" onClick={() => toggleSelectedHook(h.key)}>
+                        {h.label}
+                      </span>
+                    </div>
                   ))}
                 </div>
               </div>
