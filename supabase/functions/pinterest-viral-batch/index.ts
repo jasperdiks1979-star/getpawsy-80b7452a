@@ -808,6 +808,11 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
       product: { id: product.id, slug: product.slug, name: product.name },
       batchTag,
       pins: inserted,
+      sanitize: {
+        droppedColumns: sanitized.droppedColumns,
+        droppedCounts: sanitized.droppedCounts,
+        rowsAffected: sanitized.droppedPerRow.filter((d) => d.length > 0).length,
+      },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
