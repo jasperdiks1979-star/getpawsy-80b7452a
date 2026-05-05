@@ -548,6 +548,22 @@ export default function PinterestBackdropPreviewPage() {
           </CardContent>
         </Card>
 
+        {loading && pins.length === 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="aspect-[9/16] w-full rounded-none" />
+                <CardContent className="p-3 space-y-2">
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-5/6" />
+                  <Skeleton className="h-3 w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {pins.length === 0 && !loading && (
           <Card>
             <CardContent className="p-12 text-center text-sm text-muted-foreground">
