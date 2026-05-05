@@ -1,5 +1,11 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { sanitizeQueueRows, ALLOWED_QUEUE_COLUMNS } from "./index.ts";
+import {
+  sanitizeQueueRows,
+  ALLOWED_QUEUE_COLUMNS,
+  REQUIRED_QUEUE_COLUMNS,
+  verifyQueueSchema,
+  __resetSchemaCacheForTests,
+} from "./index.ts";
 
 // Regression: the production DB does NOT have backdrop_* columns on
 // pinterest_pin_queue. The viral-batch function must drop them silently so
@@ -80,4 +86,45 @@ Deno.test("sanitizeQueueRows preserves row order and count", () => {
   const out = sanitizeQueueRows(input);
   assertEquals(out.length, 5);
   assertEquals(out.map((r) => r.pin_variant), ["v0", "v1", "v2", "v3", "v4"]);
+});
+
+// ─────────────────────────────────────────────────────────────
+// Schema guard regression — verifyQueueSchema must short-circuit
+// before any pin generation when required columns are missing.
+// ─────────────────────────────────────────────────────────────
+
+function fakeClient(error: { message: string } | null) {
+  return {
+    from: () => ({
+      // deno-lint-ignore require-await
+      select: async () => ({ data: null, error }),
+    }),
+  } as unknown as Parameters<typeof verifyQueueSchema>[0];
+}
+
+Deno.test("verifyQueueSchema returns ok=true when select succeeds", async () => {
+  __resetSchemaCacheForTests();
+  const result = await verifyQueueSchema(fakeClient(null));
+  assertEquals(result.ok, true);
+});
+
+Deno.test("verifyQueueSchema returns SCHEMA_INVALID when a required column is missing", async () => {
+  __resetSchemaCacheForTests();
+  const result = await verifyQueueSchema(
+    fakeClient({ message: 'column pinterest_pin_queue.pin_image_url does not exist' }),
+    { force: true },
+  );
+  assertEquals(result.ok, false);
+  if (!result.ok) {
+    assertEquals(result.code, "SCHEMA_INVALID");
+    assertEquals(result.missing.includes("pin_image_url"), true);
+  }
+});
+
+Deno.test("REQUIRED_QUEUE_COLUMNS is a subset of ALLOWED_QUEUE_COLUMNS", () => {
+  for (const col of REQUIRED_QUEUE_COLUMNS) {
+    if (!ALLOWED_QUEUE_COLUMNS.has(col)) {
+      throw new Error(`Required column "${col}" missing from ALLOWED_QUEUE_COLUMNS`);
+    }
+  }
 });
