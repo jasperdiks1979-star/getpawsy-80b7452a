@@ -1,0 +1,67 @@
+name: Edge Function Type Contract
+
+# Runs Deno type-checking + tests for the pinterest_pin_queue contract so
+# backdrop_* fields can never be reintroduced into PinterestQueueInsert
+# without breaking CI. See mem://infrastructure/pinterest-pin-queue-type-contract.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/edge-function-types.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/edge-function-types.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  edge-function-types:
+    name: Pinterest queue type contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Type-check shared queue contract
+        run: |
+          deno check \
+            supabase/functions/_shared/pinterest-queue-types.ts \
+            supabase/functions/pinterest-viral-batch/index.ts \
+            supabase/functions/pinterest-viral-batch/types_test.ts \
+            supabase/functions/pinterest-viral-batch/sanitize_test.ts
+
+      - name: Run pinterest-viral-batch Deno tests (fails build on regression)
+        run: |
+          deno test \
+            --allow-net --allow-env \
+            supabase/functions/pinterest-viral-batch/types_test.ts \
+            supabase/functions/pinterest-viral-batch/sanitize_test.ts
+
+      - name: Guard — refuse backdrop_* keys in PinterestQueueInsert
+        run: |
+          if grep -nE '^\s*backdrop_[a-z_]+\s*[?:]?\s*:' \
+               supabase/functions/_shared/pinterest-queue-types.ts \
+             | grep -v 'BackdropMetadata' \
+             | awk -F: '{print $0}' \
+             | grep -E 'PinterestQueueInsert' ; then
+            echo "::error::backdrop_* field detected inside PinterestQueueInsert. Move it to BackdropMetadata."
+            exit 1
+          fi
+          # Belt-and-suspenders: ensure the interface block itself contains no backdrop_ keys.
+          if awk '/export interface PinterestQueueInsert/{flag=1;next}/^}/{flag=0}flag' \
+               supabase/functions/_shared/pinterest-queue-types.ts \
+             | grep -E '^\s*backdrop_' ; then
+            echo "::error::backdrop_* field detected inside PinterestQueueInsert interface body."
+            exit 1
+          fi
