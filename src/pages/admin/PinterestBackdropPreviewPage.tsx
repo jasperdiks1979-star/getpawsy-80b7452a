@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type PreviewPin = {
@@ -1047,6 +1047,16 @@ export default function PinterestBackdropPreviewPage() {
                 type="button"
                 size="sm"
                 variant="outline"
+                onClick={() => setPage(1)}
+                disabled={safePage <= 1}
+                aria-label="First page"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={safePage <= 1}
               >
@@ -1084,6 +1094,16 @@ export default function PinterestBackdropPreviewPage() {
               >
                 Next
                 <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPage(totalPages)}
+                disabled={safePage >= totalPages}
+                aria-label="Last page"
+              >
+                <ChevronsRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
