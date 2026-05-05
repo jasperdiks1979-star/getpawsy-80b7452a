@@ -158,7 +158,7 @@ function buildPinImageWithBackdrop(
 
   // Product image overlay — large, centered, dominant
   const productOverlay = [
-    `l_fetch:${btoa(productImageUrl).replace(/=+$/, "")}`,
+    `l_fetch:${btoa(productImageUrl).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`,
     "w_820",
     "h_1100",
     "c_fit",
