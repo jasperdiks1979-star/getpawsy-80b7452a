@@ -1010,6 +1010,25 @@ export default function PinterestBackdropPreviewPage() {
               <span className="text-xs text-muted-foreground tabular-nums">
                 Page {safePage} / {totalPages}
               </span>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="goto-page" className="text-xs text-muted-foreground">
+                    Go to
+                  </Label>
+                  <select
+                    id="goto-page"
+                    value={safePage}
+                    onChange={(e) => setPage(Number(e.target.value))}
+                    className="h-8 rounded-md border bg-background px-2 text-xs tabular-nums"
+                  >
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>
+                        Page {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <Button
                 type="button"
                 size="sm"
