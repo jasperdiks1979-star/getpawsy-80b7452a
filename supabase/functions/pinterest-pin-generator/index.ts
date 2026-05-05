@@ -20,9 +20,16 @@ function getCorsHeaders(req: Request) {
 serve(async (req) => {
   const cors = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  const traceId = crypto.randomUUID();
+  const respond = (payload: Record<string, unknown>) =>
+    new Response(JSON.stringify({ traceId, ...payload }), {
+      status: 200,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
 
   try {
-    const { productId, productSlug } = await req.json();
+    const { productId, productSlug } = await req.json().catch(() => ({}));
+    console.log(`[pinterest-pin-generator] start trace=${traceId} productId=${productId} slug=${productSlug}`);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -32,13 +39,23 @@ serve(async (req) => {
     let query = sb.from("products").select("id, name, slug, description, price, category, image_url");
     if (productId) query = query.eq("id", productId);
     else if (productSlug) query = query.eq("slug", productSlug);
-    else throw new Error("productId or productSlug required");
+    else return respond({ ok: false, code: "MISSING_INPUT", message: "productId or productSlug required" });
 
     const { data: product, error } = await query.single();
-    if (error || !product) throw new Error("Product not found");
+    if (error || !product) {
+      console.error(`[pinterest-pin-generator] Product lookup failed:`, error?.message);
+      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: "Product not found" });
+    }
+    if (!product.image_url) {
+      console.error(`[pinterest-pin-generator] Product "${product.slug}" has no image_url`);
+      return respond({ ok: false, code: "NO_PRODUCT_IMAGES", message: "Product has no images — cannot render pins" });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY) {
+      console.error("[pinterest-pin-generator] LOVABLE_API_KEY missing");
+      return respond({ ok: false, code: "LOVABLE_API_KEY_MISSING", message: "AI gateway key not configured" });
+    }
 
     const BASE_URL = "https://getpawsy.pet";
     const baseProductUrl = `${BASE_URL}/products/${product.slug}`;
@@ -118,35 +135,49 @@ Requirements:
 - Suggest Pinterest board names
 - Occasionally include soft brand mention like "Browse more smart pet products on GetPawsy"`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.8,
-      }),
-    });
+    let parsed: any;
+    try {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.8,
+        }),
+      });
 
-    if (!response.ok) {
-      const status = response.status;
-      if (status === 429) return new Response(JSON.stringify({ error: "Rate limited. Try again shortly." }), { status: 429, headers: { ...cors, "Content-Type": "application/json" } });
-      if (status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...cors, "Content-Type": "application/json" } });
-      throw new Error(`AI gateway error: ${status}`);
+      if (!response.ok) {
+        const status = response.status;
+        const text = await response.text().catch(() => "");
+        console.error(`[pinterest-pin-generator] AI gateway ${status}: ${text.slice(0, 300)}`);
+        if (status === 429) return respond({ ok: false, code: "AI_RATE_LIMITED", message: "Rate limited. Try again shortly.", fallback: true });
+        if (status === 402) return respond({ ok: false, code: "AI_CREDITS_EXHAUSTED", message: "AI credits exhausted — top up Lovable AI", fallback: true });
+        return respond({ ok: false, code: "AI_GATEWAY_ERROR", message: `AI gateway error: ${status}`, fallback: true });
+      }
+
+      const aiData = await response.json();
+      const raw = aiData.choices?.[0]?.message?.content || "";
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error("[pinterest-pin-generator] AI returned no JSON");
+        return respond({ ok: false, code: "AI_PARSE_ERROR", message: "Failed to parse AI response", fallback: true });
+      }
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[pinterest-pin-generator] AI call threw:", msg);
+      return respond({ ok: false, code: "AI_NETWORK_ERROR", message: msg, fallback: true });
     }
 
-    const aiData = await response.json();
-    const raw = aiData.choices?.[0]?.message?.content || "";
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Failed to parse AI response");
-
-    const parsed = JSON.parse(jsonMatch[0]);
+    // Hard cap to 3 pins per run
+    if (Array.isArray(parsed?.pins)) parsed.pins = parsed.pins.slice(0, 3);
 
     // Tag every pin's destination URL with its hookGroup so the PDP can swap
     // headline + subline on arrival (see src/hooks/useAdIntent.ts).
@@ -175,14 +206,11 @@ Requirements:
       generated_at: new Date().toISOString(),
     }, { onConflict: "product_id" });
 
-    return new Response(JSON.stringify({ ok: true, data: parsed }), {
-      headers: { ...cors, "Content-Type": "application/json" },
-    });
+    console.log(`[pinterest-pin-generator] success trace=${traceId} pins=${parsed?.pins?.length ?? 0}`);
+    return respond({ ok: true, data: parsed });
   } catch (e) {
-    console.error("pinterest-pin-generator error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
-    );
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    console.error(`[pinterest-pin-generator] UNCAUGHT trace=${traceId}:`, msg, e instanceof Error ? e.stack : "");
+    return respond({ ok: false, code: "UNEXPECTED_ERROR", message: msg, fallback: true });
   }
 });

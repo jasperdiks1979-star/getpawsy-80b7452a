@@ -67,16 +67,26 @@ type PexelsPhoto = {
 
 async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
   const key = Deno.env.get("PEXELS_API_KEY");
-  if (!key) return null;
+  if (!key) {
+    console.warn("[pinterest-viral-batch] PEXELS_API_KEY missing — using Cloudinary fallback backdrop");
+    return null;
+  }
   try {
     const r = await fetch(
       `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&orientation=portrait&size=large&per_page=10`,
       { headers: { Authorization: key } },
     );
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      console.warn(`[pinterest-viral-batch] Pexels ${r.status} for "${query}": ${body.slice(0, 200)}`);
+      return null;
+    }
     const j = await r.json();
     const photos: any[] = Array.isArray(j?.photos) ? j.photos : [];
-    if (photos.length === 0) return null;
+    if (photos.length === 0) {
+      console.warn(`[pinterest-viral-batch] Pexels returned 0 photos for "${query}"`);
+      return null;
+    }
     const pick = photos[Math.floor(Math.random() * photos.length)];
     const url = pick?.src?.portrait || pick?.src?.large2x || pick?.src?.large || null;
     if (!url) return null;
@@ -88,7 +98,8 @@ async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
       photographer: typeof pick?.photographer === "string" ? pick.photographer : null,
       pexelsPageUrl: typeof pick?.url === "string" ? pick.url : null,
     };
-  } catch (_e) {
+  } catch (e) {
+    console.error(`[pinterest-viral-batch] Pexels fetch threw for "${query}":`, e instanceof Error ? e.message : e);
     return null;
   }
 }
@@ -359,6 +370,13 @@ function buildPinUrl(slug: string, hookKey: string): string {
 serve(async (req) => {
   const headers = cors(req);
   if (req.method === "OPTIONS") return new Response(null, { headers });
+  const traceId = crypto.randomUUID();
+  // Helper: always 200 to caller — frontend reads `ok` flag.
+  const respond = (payload: Record<string, unknown>, status = 200) =>
+    new Response(JSON.stringify({ traceId, ...payload }), {
+      status,
+      headers: { ...headers, "Content-Type": "application/json" },
+    });
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -376,6 +394,11 @@ serve(async (req) => {
     // Dry-run mode: build pins + Pexels backdrops but DO NOT insert into queue.
     // Used by the admin preview screen to inspect lifestyle backdrops first.
     const dryRun: boolean = !!body.dryRun;
+    // Hard cap to prevent overload — never generate more than 3 pins per run.
+    const MAX_PINS_PER_RUN = 3;
+    const requestedLimit = Number.isFinite(Number(body.maxPins)) ? Number(body.maxPins) : MAX_PINS_PER_RUN;
+    const pinLimit = Math.max(1, Math.min(MAX_PINS_PER_RUN, requestedLimit));
+    console.log(`[pinterest-viral-batch] start trace=${traceId} slug=${slug} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} limit=${pinLimit}`);
 
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -387,16 +410,25 @@ serve(async (req) => {
       .select("id, name, slug, description, category, image_url, images")
       .eq("slug", slug)
       .single();
-    if (pErr || !product) throw new Error(`Product not found: ${slug}`);
+    if (pErr || !product) {
+      console.error(`[pinterest-viral-batch] Product lookup failed for "${slug}":`, pErr?.message);
+      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: `Product not found: ${slug}` });
+    }
 
     const allImages: string[] = [
       product.image_url,
       ...((Array.isArray(product.images) ? product.images : []) as string[]),
     ].filter((u): u is string => typeof u === "string" && u.length > 0);
-    if (allImages.length === 0) throw new Error("Product has no images");
+    if (allImages.length === 0) {
+      console.error(`[pinterest-viral-batch] Product "${slug}" has no usable images`);
+      return respond({ ok: false, code: "NO_PRODUCT_IMAGES", message: "Product has no images — cannot render pins" });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+    if (!LOVABLE_API_KEY) {
+      console.error("[pinterest-viral-batch] LOVABLE_API_KEY missing");
+      return respond({ ok: false, code: "LOVABLE_API_KEY_MISSING", message: "AI gateway key not configured" });
+    }
 
     const systemPrompt = `You write US-targeted Pinterest pins that convert clicks into product views.
 RULES:
@@ -427,39 +459,57 @@ Description: ${product.description || ""}
 
 SEO keywords to weave in naturally: self cleaning litter box, automatic litter box, smart litter box, cat hygiene, app controlled litter box.`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.85,
-        response_format: { type: "json_object" },
-      }),
-    });
+    let parsed: any = { pins: [] };
+    let aiFallback = false;
+    try {
+      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.85,
+          response_format: { type: "json_object" },
+        }),
+      });
 
-    if (!aiRes.ok) {
-      const text = await aiRes.text();
-      if (aiRes.status === 429) return new Response(JSON.stringify({ ok: false, message: "AI rate limited" }), { status: 429, headers: { ...headers, "Content-Type": "application/json" } });
-      if (aiRes.status === 402) return new Response(JSON.stringify({ ok: false, message: "AI credits exhausted" }), { status: 402, headers: { ...headers, "Content-Type": "application/json" } });
-      throw new Error(`AI gateway ${aiRes.status}: ${text.slice(0, 200)}`);
+      if (!aiRes.ok) {
+        const text = await aiRes.text().catch(() => "");
+        console.error(`[pinterest-viral-batch] AI gateway ${aiRes.status}: ${text.slice(0, 300)}`);
+        if (aiRes.status === 429) return respond({ ok: false, code: "AI_RATE_LIMITED", message: "AI rate limited — try again in a minute", fallback: true });
+        if (aiRes.status === 402) return respond({ ok: false, code: "AI_CREDITS_EXHAUSTED", message: "AI credits exhausted — top up Lovable AI", fallback: true });
+        aiFallback = true;
+      } else {
+        const aiJson = await aiRes.json();
+        const raw = aiJson?.choices?.[0]?.message?.content || "";
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (!match) {
+          console.warn("[pinterest-viral-batch] AI returned no JSON — using deterministic fallback copy");
+          aiFallback = true;
+        } else {
+          try {
+            parsed = JSON.parse(match[0]);
+          } catch (e) {
+            console.warn("[pinterest-viral-batch] AI JSON parse failed:", e instanceof Error ? e.message : e);
+            aiFallback = true;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[pinterest-viral-batch] AI gateway threw:", e instanceof Error ? e.message : e);
+      aiFallback = true;
     }
 
-    const aiJson = await aiRes.json();
-    const raw = aiJson?.choices?.[0]?.message?.content || "";
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("AI returned no JSON");
-    const parsed = JSON.parse(match[0]);
-
     let aiPins: any[] = Array.isArray(parsed?.pins) ? parsed.pins : [];
-    // Ensure exactly 5, in hook order
-    aiPins = HOOK_GROUPS.map((h, i) => {
+    // Limit to first N hook groups (cap = pinLimit, max 3)
+    const ACTIVE_HOOKS = HOOK_GROUPS.slice(0, pinLimit);
+    aiPins = ACTIVE_HOOKS.map((h, i) => {
       const found = aiPins.find((p) => String(p?.hookKey).toLowerCase() === h.key) || aiPins[i] || {};
       return { ...found, hookKey: h.key };
     });
@@ -469,7 +519,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     const batchTag = `batch_${new Date(now).toISOString().slice(0, 16).replace(/[-:T]/g, "")}`;
 
     const rows = aiPins.map((p, i) => {
-      const hook = HOOK_GROUPS[i];
+      const hook = ACTIVE_HOOKS[i];
       const productImage = allImages[i % allImages.length];
       const topOverlay = String(p.topOverlay || "Stop scooping every day").slice(0, 50);
       const bottomOverlay = String(p.bottomOverlay || hook.cta).slice(0, 30);
@@ -506,12 +556,12 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
       // - else fall back to legacy "every other pin" pattern (0,2,4)
       const enabledIdx: number[] = backdropByHook
         ? rows
-            .map((_, idx) => (backdropByHook[HOOK_GROUPS[idx].key] ? idx : -1))
+            .map((_, idx) => (backdropByHook[ACTIVE_HOOKS[idx].key] ? idx : -1))
             .filter((idx) => idx >= 0)
         : rows.map((_, idx) => idx).filter((idx) => idx % 2 === 0);
 
       for (const i of enabledIdx) {
-        const hook = HOOK_GROUPS[i];
+        const hook = ACTIVE_HOOKS[i];
         const productImage = allImages[i % allImages.length];
         const query = PEXELS_QUERIES[i] || "happy cat";
         let backdrop = await fetchPexelsBackdrop(query);
@@ -559,12 +609,10 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     }
 
     if (dryRun) {
-      const traceId = crypto.randomUUID();
-      return new Response(
-        JSON.stringify({
+      return respond({
           ok: true,
-          traceId,
           dryRun: true,
+          aiFallback,
           message: `Preview ${rows.length} pins (not queued)`,
           product: { id: product.id, slug: product.slug, name: product.name },
           batchTag,
@@ -591,34 +639,31 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
             backdrop_variants: r.backdrop_variants || null,
             uses_lifestyle_backdrop: !!r.backdrop_url,
           })),
-        }),
-        { headers: { ...headers, "Content-Type": "application/json" } },
-      );
+        });
     }
 
     const { data: inserted, error: insErr } = await sb
       .from("pinterest_pin_queue")
       .insert(rows)
       .select("id, pin_variant, hook_group, scheduled_at, pin_image_url");
-    if (insErr) throw new Error(`Queue insert failed: ${insErr.message}`);
+    if (insErr) {
+      console.error("[pinterest-viral-batch] Queue insert failed:", insErr.message);
+      return respond({ ok: false, code: "QUEUE_INSERT_FAILED", message: `Queue insert failed: ${insErr.message}` });
+    }
 
-    const traceId = crypto.randomUUID();
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        traceId,
-        message: `Queued ${inserted?.length ?? 0} viral pins`,
-        product: { id: product.id, slug: product.slug, name: product.name },
-        batchTag,
-        pins: inserted,
-      }),
-      { headers: { ...headers, "Content-Type": "application/json" } },
-    );
+    console.log(`[pinterest-viral-batch] success trace=${traceId} queued=${inserted?.length ?? 0}`);
+    return respond({
+      ok: true,
+      aiFallback,
+      message: `Queued ${inserted?.length ?? 0} viral pins`,
+      product: { id: product.id, slug: product.slug, name: product.name },
+      batchTag,
+      pins: inserted,
+    });
   } catch (e) {
-    console.error("[pinterest-viral-batch]", e);
-    return new Response(
-      JSON.stringify({ ok: false, message: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...cors(req), "Content-Type": "application/json" } },
-    );
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    const stack = e instanceof Error ? e.stack : undefined;
+    console.error(`[pinterest-viral-batch] UNCAUGHT trace=${traceId}:`, msg, stack);
+    return respond({ ok: false, code: "UNEXPECTED_ERROR", message: msg, fallback: true });
   }
 });
