@@ -558,6 +558,52 @@ export default function PinterestBackdropPreviewPage() {
                   </Label>
                 </div>
               </div>
+              <div className="flex flex-wrap items-end gap-3 border-t pt-3">
+                <div>
+                  <Label htmlFor="sort-key" className="text-xs">
+                    Sort by
+                  </Label>
+                  <select
+                    id="sort-key"
+                    value={sortKey}
+                    onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+                    className="h-9 w-44 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="default">Default (queue order)</option>
+                    <option value="hook">Hook group</option>
+                    <option value="query">Pexels query</option>
+                    <option value="product">Product</option>
+                    <option value="scheduled">Scheduled time</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="sort-dir" className="text-xs">
+                    Direction
+                  </Label>
+                  <select
+                    id="sort-dir"
+                    value={sortDir}
+                    onChange={(e) => setSortDir(e.target.value as "asc" | "desc")}
+                    disabled={sortKey === "default"}
+                    className="h-9 w-32 rounded-md border bg-background px-3 text-sm disabled:opacity-50"
+                  >
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </div>
+                {sortKey !== "default" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortKey("default");
+                      setSortDir("asc");
+                    }}
+                    className="text-[11px] underline text-muted-foreground hover:text-foreground pb-2"
+                  >
+                    Reset sort
+                  </button>
+                )}
+              </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
                   Showing {filteredPins.length === 0 ? 0 : pageStart + 1}–
