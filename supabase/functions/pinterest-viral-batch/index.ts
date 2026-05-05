@@ -543,6 +543,11 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         (rows[i] as any).backdrop_query = query;
         (rows[i] as any).backdrop_avg_color = backdrop.avgColor;
         (rows[i] as any).backdrop_source = backdropSource;
+        (rows[i] as any).backdrop_width = backdrop.width;
+        (rows[i] as any).backdrop_height = backdrop.height;
+        (rows[i] as any).backdrop_photographer = backdrop.photographer;
+        (rows[i] as any).backdrop_pexels_page = backdrop.pexelsPageUrl;
+        (rows[i] as any).backdrop_hook_group = hook.key;
         (rows[i] as any).backdrop_style = winner.style;
         (rows[i] as any).backdrop_score = winner.score;
         (rows[i] as any).backdrop_variants = scored.map((s) => ({
@@ -576,6 +581,11 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
             backdrop_query: r.backdrop_query || null,
             backdrop_avg_color: r.backdrop_avg_color || null,
             backdrop_source: r.backdrop_source || null,
+            backdrop_width: r.backdrop_width ?? null,
+            backdrop_height: r.backdrop_height ?? null,
+            backdrop_photographer: r.backdrop_photographer || null,
+            backdrop_pexels_page: r.backdrop_pexels_page || null,
+            backdrop_hook_group: r.backdrop_hook_group || null,
             backdrop_style: r.backdrop_style || null,
             backdrop_score: r.backdrop_score ?? null,
             backdrop_variants: r.backdrop_variants || null,
