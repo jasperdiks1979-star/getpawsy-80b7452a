@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Image as ImageIcon, Send, RefreshCw } from "lucide-react";
+import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices } from "lucide-react";
 
 type PreviewPin = {
   hook_group: string;
@@ -57,6 +57,8 @@ export default function PinterestBackdropPreviewPage() {
   });
   const [loading, setLoading] = useState(false);
   const [queueing, setQueueing] = useState(false);
+  const [rerollingAll, setRerollingAll] = useState(false);
+  const [rerollingHook, setRerollingHook] = useState<string | null>(null);
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
 
@@ -81,6 +83,69 @@ export default function PinterestBackdropPreviewPage() {
       toast.error(e?.message || "Preview failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  /**
+   * Re-roll backdrops without rebuilding AI copy / queue order.
+   * - When `hookKey` is null → reroll ALL enabled hooks.
+   * - When `hookKey` is set  → reroll just that one hook (others unchanged).
+   * Server returns a fresh dry-run; we merge only the backdrop_* fields onto
+   * existing pins so titles/descriptions/scheduled_at stay stable.
+   */
+  async function rerollBackdrops(hookKey: string | null) {
+    if (!useBackdrop) {
+      toast.error("Lifestyle backdrop is uitgeschakeld");
+      return;
+    }
+    if (hookKey) setRerollingHook(hookKey);
+    else setRerollingAll(true);
+    try {
+      const targetMap: Record<string, boolean> = hookKey
+        ? { ...Object.fromEntries(HOOKS.map((h) => [h.key, false])), [hookKey]: true }
+        : backdropByHook;
+      const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
+        body: {
+          productSlug: slug,
+          useLifestyleBackdrop: true,
+          backdropByHook: targetMap,
+          dryRun: true,
+        },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message || "Reroll failed");
+      const fresh: PreviewPin[] = data.pins || [];
+      setPins((prev) =>
+        prev.map((p) => {
+          const updated = fresh.find((f) => f.hook_group === p.hook_group);
+          if (!updated || !updated.uses_lifestyle_backdrop) return p;
+          if (hookKey && p.hook_group !== hookKey) return p;
+          return {
+            ...p,
+            pin_image_url: updated.pin_image_url,
+            pin_variant: updated.pin_variant,
+            backdrop_url: updated.backdrop_url,
+            backdrop_query: updated.backdrop_query,
+            backdrop_avg_color: updated.backdrop_avg_color,
+            backdrop_source: updated.backdrop_source,
+            backdrop_width: updated.backdrop_width,
+            backdrop_height: updated.backdrop_height,
+            backdrop_photographer: updated.backdrop_photographer,
+            backdrop_pexels_page: updated.backdrop_pexels_page,
+            backdrop_hook_group: updated.backdrop_hook_group,
+            backdrop_style: updated.backdrop_style,
+            backdrop_score: updated.backdrop_score,
+            backdrop_variants: updated.backdrop_variants,
+            uses_lifestyle_backdrop: true,
+          };
+        }),
+      );
+      toast.success(hookKey ? `Re-rolled ${hookKey}` : "Re-rolled all backdrops");
+    } catch (e: any) {
+      toast.error(e?.message || "Reroll failed");
+    } finally {
+      setRerollingAll(false);
+      setRerollingHook(null);
     }
   }
 
@@ -205,10 +270,24 @@ export default function PinterestBackdropPreviewPage() {
                   Batch: <span className="font-mono">{batchTag}</span> · {pins.length} pins ·{" "}
                   {pins.filter((p) => p.uses_lifestyle_backdrop).length} met backdrop
                 </div>
-                <Button onClick={queueForReal} disabled={queueing}>
-                  {queueing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                  Queue for publish
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => rerollBackdrops(null)}
+                    disabled={rerollingAll || !useBackdrop}
+                  >
+                    {rerollingAll ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Dices className="h-4 w-4 mr-2" />
+                    )}
+                    Reroll all backdrops
+                  </Button>
+                  <Button onClick={queueForReal} disabled={queueing}>
+                    {queueing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                    Queue for publish
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -239,6 +318,22 @@ export default function PinterestBackdropPreviewPage() {
                   <Badge variant="secondary" className="absolute top-2 right-2">
                     Lifestyle
                   </Badge>
+                )}
+                {pin.uses_lifestyle_backdrop && (
+                  <button
+                    type="button"
+                    onClick={() => rerollBackdrops(pin.hook_group)}
+                    disabled={rerollingHook === pin.hook_group || rerollingAll}
+                    className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/90 backdrop-blur text-[10px] font-medium border hover:bg-background disabled:opacity-50"
+                    title="Reroll this backdrop"
+                  >
+                    {rerollingHook === pin.hook_group ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Dices className="h-3 w-3" />
+                    )}
+                    Reroll
+                  </button>
                 )}
               </div>
               <CardContent className="p-3 space-y-2">
