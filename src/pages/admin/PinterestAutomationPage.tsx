@@ -17,6 +17,7 @@ import {
   Sparkles,
   Trash2,
   Wand2,
+  Zap,
   XCircle,
 } from "lucide-react";
 
@@ -468,6 +469,27 @@ function PinterestDashboard() {
           </Button>
           <Button size="sm" variant="outline" onClick={handleForceRun} disabled={!!actionLoading}>
             <Play className="h-3 w-3 mr-1" /> Force Cron Run
+          </Button>
+          <Button
+            size="sm"
+            onClick={async () => {
+              const t = toast.loading("Generating 5 viral pins…");
+              try {
+                const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
+                  body: { productSlug: "automatic-cat-litter-box-self-cleaning-app-control" },
+                });
+                if (error) throw error;
+                if (data?.ok === false) throw new Error(data?.message || "Failed");
+                toast.success(data?.message || "Queued 5 viral pins", { id: t });
+                await fetchAll();
+              } catch (e: any) {
+                toast.error(e?.message || "Failed to generate viral pins", { id: t });
+              }
+            }}
+            disabled={!!actionLoading}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            <Zap className="h-3 w-3 mr-1" /> Generate 5 Viral Pins
           </Button>
           {failed.length > 0 && (
             <>
