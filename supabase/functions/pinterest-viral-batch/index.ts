@@ -483,6 +483,20 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // 🛡️ Schema guard — abort BEFORE building pins / calling AI / Pexels if
+    // pinterest_pin_queue is missing required columns. Cached per cold start.
+    const schema = await verifyQueueSchema(sb as unknown as Parameters<typeof verifyQueueSchema>[0]);
+    if (!schema.ok) {
+      console.error(`[pinterest-viral-batch] SCHEMA GUARD trace=${traceId}`, schema);
+      return respond({
+        ok: false,
+        code: schema.code,
+        message: schema.message,
+        missingColumns: schema.missing,
+        fallback: true,
+      });
+    }
+
     const { data: product, error: pErr } = await sb
       .from("products")
       .select("id, name, slug, description, category, image_url, images")
