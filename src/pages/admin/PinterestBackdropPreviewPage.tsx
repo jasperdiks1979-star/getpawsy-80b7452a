@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff } from "lucide-react";
+import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type PreviewPin = {
@@ -71,6 +71,10 @@ export default function PinterestBackdropPreviewPage() {
   const [approvedByHook, setApprovedByHook] = useState<Record<string, boolean>>({});
   // Multi-select: which hooks are currently selected for bulk on/off actions.
   const [selectedHooks, setSelectedHooks] = useState<Set<string>>(new Set());
+  // Pagination — keeps the grid snappy with large pin counts.
+  const PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
+  const [pageSize, setPageSize] = useState<number>(24);
+  const [page, setPage] = useState(1);
 
   function toggleSelectedHook(key: string) {
     setSelectedHooks((prev) => {
@@ -98,7 +102,7 @@ export default function PinterestBackdropPreviewPage() {
     );
   }
 
-  const filteredPins = pins.filter((p) => {
+  const filteredPins = useMemo(() => pins.filter((p) => {
     if (hookFilter !== "all" && p.hook_group !== hookFilter) return false;
     if (backdropOnlyFilter && !p.uses_lifestyle_backdrop) return false;
     const q = searchQuery.trim().toLowerCase();
@@ -118,7 +122,17 @@ export default function PinterestBackdropPreviewPage() {
       .join(" ")
       .toLowerCase();
     return haystack.includes(q);
-  });
+  }), [pins, hookFilter, backdropOnlyFilter, searchQuery, slug]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPins.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pagedPins = filteredPins.slice(pageStart, pageStart + pageSize);
+
+  // Reset to page 1 whenever filters or page size change.
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, hookFilter, backdropOnlyFilter, pageSize, pins.length]);
 
   async function runPreview() {
     setLoading(true);
@@ -506,7 +520,11 @@ export default function PinterestBackdropPreviewPage() {
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  Showing {filteredPins.length} of {pins.length} pins
+                  Showing {filteredPins.length === 0 ? 0 : pageStart + 1}–
+                  {Math.min(pageStart + pageSize, filteredPins.length)} of {filteredPins.length}
+                  {filteredPins.length !== pins.length && (
+                    <> (filtered from {pins.length})</>
+                  )}
                 </span>
                 {(searchQuery || hookFilter !== "all" || backdropOnlyFilter) && (
                   <button
@@ -535,7 +553,7 @@ export default function PinterestBackdropPreviewPage() {
         )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPins.map((pin, i) => {
+          {pagedPins.map((pin, i) => {
             const approved = approvedByHook[pin.hook_group] !== false;
             const hookEnabled = !!backdropByHook[pin.hook_group];
             // The pin image already reflects whether it was rendered with a
@@ -780,6 +798,50 @@ export default function PinterestBackdropPreviewPage() {
             );
           })}
         </div>
+
+        {filteredPins.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Per page</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Prev
+              </Button>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Page {safePage} / {totalPages}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
