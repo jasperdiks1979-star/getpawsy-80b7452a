@@ -209,6 +209,9 @@ serve(async (req) => {
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
     const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
+    // Dry-run mode: build pins + Pexels backdrops but DO NOT insert into queue.
+    // Used by the admin preview screen to inspect lifestyle backdrops first.
+    const dryRun: boolean = !!body.dryRun;
 
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -347,7 +350,37 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
           bot || hook.cta,
         );
         rows[i].pin_variant = `${rows[i].pin_variant}_lifestyle`;
+        (rows[i] as any).backdrop_url = backdrop;
+        (rows[i] as any).backdrop_query = PEXELS_QUERIES[i] || "happy cat";
       }
+    }
+
+    if (dryRun) {
+      const traceId = crypto.randomUUID();
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          traceId,
+          dryRun: true,
+          message: `Preview ${rows.length} pins (not queued)`,
+          product: { id: product.id, slug: product.slug, name: product.name },
+          batchTag,
+          pins: rows.map((r: any) => ({
+            hook_group: r.hook_group,
+            pin_variant: r.pin_variant,
+            pin_title: r.pin_title,
+            pin_description: r.pin_description,
+            pin_image_url: r.pin_image_url,
+            destination_link: r.destination_link,
+            scheduled_at: r.scheduled_at,
+            overlay_text: r.overlay_text,
+            backdrop_url: r.backdrop_url || null,
+            backdrop_query: r.backdrop_query || null,
+            uses_lifestyle_backdrop: !!r.backdrop_url,
+          })),
+        }),
+        { headers: { ...headers, "Content-Type": "application/json" } },
+      );
     }
 
     const { data: inserted, error: insErr } = await sb
