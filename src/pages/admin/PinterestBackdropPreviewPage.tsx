@@ -22,6 +22,7 @@ type PreviewPin = {
   backdrop_url: string | null;
   backdrop_query: string | null;
   backdrop_avg_color?: string | null;
+  backdrop_source?: "pexels" | "cloudinary_fallback" | null;
   backdrop_style?: "dark" | "subtle" | "accent" | null;
   backdrop_score?: number | null;
   backdrop_variants?: Array<{ style: string; score: number; url: string }> | null;
@@ -172,13 +173,18 @@ export default function PinterestBackdropPreviewPage() {
                 {pin.uses_lifestyle_backdrop && pin.backdrop_url && (
                   <div className="border-t pt-2 space-y-1.5">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Pexels · "{pin.backdrop_query}"
+                      {pin.backdrop_source === "cloudinary_fallback" ? "Fallback" : "Pexels"} · "{pin.backdrop_query}"
                       {pin.backdrop_avg_color && (
                         <span
                           className="inline-block w-3 h-3 rounded-sm border ml-2 align-middle"
                           style={{ backgroundColor: pin.backdrop_avg_color }}
                           title={`avg color ${pin.backdrop_avg_color}`}
                         />
+                      )}
+                      {pin.backdrop_source === "cloudinary_fallback" && (
+                        <Badge variant="outline" className="ml-2 text-[9px] py-0 px-1">
+                          fallback
+                        </Badge>
                       )}
                     </p>
                     {pin.backdrop_variants && pin.backdrop_variants.length > 0 ? (
