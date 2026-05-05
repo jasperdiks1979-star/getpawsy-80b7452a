@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2 } from "lucide-react";
+import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type PreviewPin = {
@@ -535,8 +535,22 @@ export default function PinterestBackdropPreviewPage() {
         )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPins.map((pin, i) => (
-            <Card key={i} className="overflow-hidden">
+          {filteredPins.map((pin, i) => {
+            const approved = approvedByHook[pin.hook_group] !== false;
+            const hookEnabled = !!backdropByHook[pin.hook_group];
+            // The pin image already reflects whether it was rendered with a
+            // backdrop in the dry-run. The "effective" state is what will
+            // actually be queued: backdrop only happens when global toggle is
+            // on AND hook is enabled AND the pin is approved.
+            const willHaveBackdrop =
+              useBackdrop && hookEnabled && approved && pin.uses_lifestyle_backdrop;
+            return (
+            <Card
+              key={i}
+              className={`overflow-hidden transition ${
+                willHaveBackdrop ? "ring-2 ring-primary/60" : ""
+              }`}
+            >
               <div className="relative bg-muted aspect-[9/16]">
                 <img
                   src={pin.pin_image_url}
@@ -547,12 +561,29 @@ export default function PinterestBackdropPreviewPage() {
                 <Badge className="absolute top-2 left-2 capitalize">
                   {pin.hook_group.replace("_", " ")}
                 </Badge>
-                {pin.uses_lifestyle_backdrop && (
-                  <Badge variant="secondary" className="absolute top-2 right-2">
-                    Lifestyle
-                  </Badge>
-                )}
-                {approvedByHook[pin.hook_group] === false && (
+                <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+                  {willHaveBackdrop ? (
+                    <Badge className="bg-primary text-primary-foreground gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      Lifestyle ON
+                    </Badge>
+                  ) : pin.uses_lifestyle_backdrop && useBackdrop && hookEnabled && !approved ? (
+                    <Badge variant="outline" className="gap-1 border-dashed">
+                      <ImageOff className="h-3 w-3" />
+                      Backdrop blocked
+                    </Badge>
+                  ) : pin.uses_lifestyle_backdrop ? (
+                    <Badge variant="secondary" className="gap-1 opacity-70">
+                      <ImageOff className="h-3 w-3" />
+                      Backdrop off
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="opacity-80">
+                      Product only
+                    </Badge>
+                  )}
+                </div>
+                {!approved && (
                   <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border border-dashed rounded px-3 py-1 bg-background/80">
                       Not approved
@@ -577,6 +608,25 @@ export default function PinterestBackdropPreviewPage() {
                 )}
               </div>
               <CardContent className="p-3 space-y-2">
+                <div
+                  className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 ${
+                    willHaveBackdrop
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {willHaveBackdrop ? (
+                    <>
+                      <Sparkles className="h-3 w-3" />
+                      Will queue WITH lifestyle backdrop
+                    </>
+                  ) : (
+                    <>
+                      <ImageOff className="h-3 w-3" />
+                      Will queue product-only
+                    </>
+                  )}
+                </div>
                 <label className="flex items-center gap-2 cursor-pointer select-none -mx-1 px-1 py-1 rounded hover:bg-accent/50">
                   <Checkbox
                     checked={approvedByHook[pin.hook_group] !== false}
@@ -727,7 +777,8 @@ export default function PinterestBackdropPreviewPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
