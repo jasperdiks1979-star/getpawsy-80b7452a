@@ -422,18 +422,34 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
       for (let i = 0; i < rows.length; i += 2) {
         const hook = HOOK_GROUPS[i];
         const productImage = allImages[i % allImages.length];
-        const backdrop = await fetchPexelsBackdrop(PEXELS_QUERIES[i] || "happy cat");
+        const query = PEXELS_QUERIES[i] || "happy cat";
+        const backdrop = await fetchPexelsBackdrop(query);
         if (!backdrop) continue; // graceful fallback to product-only pin
         const [top, bot] = (rows[i].overlay_text as string).split(" | ");
-        rows[i].pin_image_url = buildPinImageWithBackdrop(
-          productImage,
-          backdrop,
-          top,
-          bot || hook.cta,
-        );
-        rows[i].pin_variant = `${rows[i].pin_variant}_lifestyle`;
-        (rows[i] as any).backdrop_url = backdrop;
-        (rows[i] as any).backdrop_query = PEXELS_QUERIES[i] || "happy cat";
+        const bottomText = bot || hook.cta;
+
+        // Score all 3 backdrop styles for this photo and pick the winner.
+        const styles: BackdropStyle[] = ["dark", "subtle", "accent"];
+        const scored = styles.map((style) => ({
+          style,
+          score: scoreStyle(style, backdrop.avgColor),
+          url: buildPinImageWithBackdrop(productImage, backdrop.url, top, bottomText, style),
+        }));
+        scored.sort((a, b) => b.score - a.score);
+        const winner = scored[0];
+
+        rows[i].pin_image_url = winner.url;
+        rows[i].pin_variant = `${rows[i].pin_variant}_lifestyle_${winner.style}`;
+        (rows[i] as any).backdrop_url = backdrop.url;
+        (rows[i] as any).backdrop_query = query;
+        (rows[i] as any).backdrop_avg_color = backdrop.avgColor;
+        (rows[i] as any).backdrop_style = winner.style;
+        (rows[i] as any).backdrop_score = winner.score;
+        (rows[i] as any).backdrop_variants = scored.map((s) => ({
+          style: s.style,
+          score: s.score,
+          url: s.url,
+        }));
       }
     }
 
@@ -458,6 +474,10 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
             overlay_text: r.overlay_text,
             backdrop_url: r.backdrop_url || null,
             backdrop_query: r.backdrop_query || null,
+            backdrop_avg_color: r.backdrop_avg_color || null,
+            backdrop_style: r.backdrop_style || null,
+            backdrop_score: r.backdrop_score ?? null,
+            backdrop_variants: r.backdrop_variants || null,
             uses_lifestyle_backdrop: !!r.backdrop_url,
           })),
         }),
