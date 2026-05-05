@@ -5,6 +5,7 @@ import {
   REQUIRED_QUEUE_COLUMNS,
   verifyQueueSchema,
   __resetSchemaCacheForTests,
+  sanitizeQueueRowsWithReport,
 } from "./index.ts";
 
 // Regression: the production DB does NOT have backdrop_* columns on
@@ -127,4 +128,19 @@ Deno.test("REQUIRED_QUEUE_COLUMNS is a subset of ALLOWED_QUEUE_COLUMNS", () => {
       throw new Error(`Required column "${col}" missing from ALLOWED_QUEUE_COLUMNS`);
     }
   }
+});
+
+Deno.test("sanitizeQueueRowsWithReport returns dropped column diagnostics", () => {
+  const report = sanitizeQueueRowsWithReport([
+    { pin_variant: "v0", backdrop_url: "x", backdrop_avg_color: "#fff" },
+    { pin_variant: "v1", backdrop_avg_color: "#000", uses_lifestyle_backdrop: true },
+    { pin_variant: "v2" },
+  ]);
+  assertEquals(report.rows.length, 3);
+  assertEquals(report.droppedColumns.sort(), [
+    "backdrop_avg_color", "backdrop_url", "uses_lifestyle_backdrop",
+  ]);
+  assertEquals(report.droppedCounts.backdrop_avg_color, 2);
+  assertEquals(report.droppedCounts.backdrop_url, 1);
+  assertEquals(report.droppedPerRow[2], []);
 });
