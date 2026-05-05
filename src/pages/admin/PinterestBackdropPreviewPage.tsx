@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,6 +77,8 @@ export default function PinterestBackdropPreviewPage() {
   const PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
   const [pageSize, setPageSize] = useState<number>(24);
   const [page, setPage] = useState(1);
+  // Brief skeleton flash while page/sort/filter recompute, so UI feels live.
+  const [transitioning, setTransitioning] = useState(false);
   // Sorting — operates on the filtered list before pagination.
   type SortKey = "default" | "hook" | "query" | "product" | "scheduled";
   const [sortKey, setSortKey] = useState<SortKey>("default");
@@ -174,6 +177,15 @@ export default function PinterestBackdropPreviewPage() {
   useEffect(() => {
     setPage(1);
   }, [searchQuery, hookFilter, backdropOnlyFilter, pageSize, pins.length, sortKey, sortDir]);
+
+  // Show a short skeleton flash whenever the visible slice changes, so the
+  // user gets immediate feedback even though slicing/sorting is sync.
+  useEffect(() => {
+    if (pins.length === 0) return;
+    setTransitioning(true);
+    const t = window.setTimeout(() => setTransitioning(false), 180);
+    return () => window.clearTimeout(t);
+  }, [safePage, pageSize, sortKey, sortDir, hookFilter, backdropOnlyFilter, searchQuery, pins.length]);
 
   // ---------------- Virtualization ----------------
   // Auto-virtualize when there are many cards on a single page; can be
@@ -535,6 +547,22 @@ export default function PinterestBackdropPreviewPage() {
             )}
           </CardContent>
         </Card>
+
+        {loading && pins.length === 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="aspect-[9/16] w-full rounded-none" />
+                <CardContent className="p-3 space-y-2">
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-5/6" />
+                  <Skeleton className="h-3 w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {pins.length === 0 && !loading && (
           <Card>
@@ -936,6 +964,24 @@ export default function PinterestBackdropPreviewPage() {
             </Card>
             );
           };
+
+          if (transitioning) {
+            return (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: Math.min(pageSize, 6) }).map((_, i) => (
+                  <Card key={i} className="overflow-hidden animate-pulse">
+                    <Skeleton className="aspect-[9/16] w-full rounded-none" />
+                    <CardContent className="p-3 space-y-2">
+                      <Skeleton className="h-3 w-2/3" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-5/6" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          }
 
           if (!shouldVirtualize) {
             return (
