@@ -31,9 +31,25 @@ type PreviewPin = {
 
 const DEFAULT_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
 
+const HOOKS: Array<{ key: string; label: string }> = [
+  { key: "pain", label: "Pain" },
+  { key: "curiosity", label: "Curiosity" },
+  { key: "time_saving", label: "Time-saving" },
+  { key: "social_proof", label: "Social proof" },
+  { key: "transformation", label: "Transformation" },
+];
+
 export default function PinterestBackdropPreviewPage() {
   const [slug, setSlug] = useState(DEFAULT_SLUG);
   const [useBackdrop, setUseBackdrop] = useState(true);
+  // Per-hook toggle. Default mirrors legacy "every other pin" pattern (0,2,4).
+  const [backdropByHook, setBackdropByHook] = useState<Record<string, boolean>>({
+    pain: true,
+    curiosity: false,
+    time_saving: true,
+    social_proof: false,
+    transformation: true,
+  });
   const [loading, setLoading] = useState(false);
   const [queueing, setQueueing] = useState(false);
   const [pins, setPins] = useState<PreviewPin[]>([]);
@@ -44,7 +60,12 @@ export default function PinterestBackdropPreviewPage() {
     setPins([]);
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
-        body: { productSlug: slug, useLifestyleBackdrop: useBackdrop, dryRun: true },
+        body: {
+          productSlug: slug,
+          useLifestyleBackdrop: useBackdrop,
+          backdropByHook: useBackdrop ? backdropByHook : undefined,
+          dryRun: true,
+        },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message || "Preview failed");
@@ -62,7 +83,11 @@ export default function PinterestBackdropPreviewPage() {
     setQueueing(true);
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
-        body: { productSlug: slug, useLifestyleBackdrop: useBackdrop },
+        body: {
+          productSlug: slug,
+          useLifestyleBackdrop: useBackdrop,
+          backdropByHook: useBackdrop ? backdropByHook : undefined,
+        },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message || "Queue failed");
@@ -122,6 +147,52 @@ export default function PinterestBackdropPreviewPage() {
                 Generate preview
               </Button>
             </div>
+
+            {useBackdrop && (
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Backdrop per hook
+                  </Label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBackdropByHook(Object.fromEntries(HOOKS.map((h) => [h.key, true])))
+                      }
+                      className="text-[10px] underline text-muted-foreground hover:text-foreground"
+                    >
+                      All on
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBackdropByHook(Object.fromEntries(HOOKS.map((h) => [h.key, false])))
+                      }
+                      className="text-[10px] underline text-muted-foreground hover:text-foreground"
+                    >
+                      All off
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {HOOKS.map((h) => (
+                    <label
+                      key={h.key}
+                      className="flex items-center gap-2 text-xs px-2 py-1.5 rounded border cursor-pointer hover:bg-accent"
+                    >
+                      <Switch
+                        checked={!!backdropByHook[h.key]}
+                        onCheckedChange={(v) =>
+                          setBackdropByHook((prev) => ({ ...prev, [h.key]: v }))
+                        }
+                      />
+                      <span>{h.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {pins.length > 0 && (
               <div className="flex items-center justify-between border-t pt-4">
