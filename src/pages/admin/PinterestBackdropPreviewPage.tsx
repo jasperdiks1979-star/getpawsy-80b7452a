@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices } from "lucide-react";
+import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X } from "lucide-react";
 
 type PreviewPin = {
   hook_group: string;
@@ -61,6 +61,32 @@ export default function PinterestBackdropPreviewPage() {
   const [rerollingHook, setRerollingHook] = useState<string | null>(null);
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
+  // Filter/search state for the rendered preview grid.
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hookFilter, setHookFilter] = useState<string>("all");
+  const [backdropOnlyFilter, setBackdropOnlyFilter] = useState(false);
+
+  const filteredPins = pins.filter((p) => {
+    if (hookFilter !== "all" && p.hook_group !== hookFilter) return false;
+    if (backdropOnlyFilter && !p.uses_lifestyle_backdrop) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const haystack = [
+      p.pin_title,
+      p.pin_description,
+      p.overlay_text,
+      p.hook_group,
+      p.backdrop_query,
+      p.backdrop_hook_group,
+      p.backdrop_photographer,
+      p.destination_link,
+      slug,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  });
 
   async function runPreview() {
     setLoading(true);
@@ -301,8 +327,96 @@ export default function PinterestBackdropPreviewPage() {
           </Card>
         )}
 
+        {pins.length > 0 && (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] items-end">
+                <div>
+                  <Label htmlFor="pin-search" className="text-xs">
+                    Search pins
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      id="pin-search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Title, description, Pexels query, product…"
+                      className="pl-7 pr-7"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="hook-filter" className="text-xs">
+                    Hook group
+                  </Label>
+                  <select
+                    id="hook-filter"
+                    value={hookFilter}
+                    onChange={(e) => setHookFilter(e.target.value)}
+                    className="h-10 w-full md:w-48 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="all">All hooks</option>
+                    {HOOKS.map((h) => (
+                      <option key={h.key} value={h.key}>
+                        {h.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 pb-2">
+                  <Switch
+                    id="backdrop-only"
+                    checked={backdropOnlyFilter}
+                    onCheckedChange={setBackdropOnlyFilter}
+                  />
+                  <Label htmlFor="backdrop-only" className="text-xs cursor-pointer">
+                    Only with backdrop
+                  </Label>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  Showing {filteredPins.length} of {pins.length} pins
+                </span>
+                {(searchQuery || hookFilter !== "all" || backdropOnlyFilter) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setHookFilter("all");
+                      setBackdropOnlyFilter(false);
+                    }}
+                    className="underline hover:text-foreground"
+                  >
+                    Reset filters
+                  </button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {pins.length > 0 && filteredPins.length === 0 && (
+          <Card>
+            <CardContent className="p-12 text-center text-sm text-muted-foreground">
+              Geen pins komen overeen met je filter.
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {pins.map((pin, i) => (
+          {filteredPins.map((pin, i) => (
             <Card key={i} className="overflow-hidden">
               <div className="relative bg-muted aspect-[9/16]">
                 <img
