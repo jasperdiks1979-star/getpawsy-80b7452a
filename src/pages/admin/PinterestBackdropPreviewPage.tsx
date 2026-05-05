@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X } from "lucide-react";
+import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type PreviewPin = {
   hook_group: string;
@@ -65,6 +66,9 @@ export default function PinterestBackdropPreviewPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hookFilter, setHookFilter] = useState<string>("all");
   const [backdropOnlyFilter, setBackdropOnlyFilter] = useState(false);
+  // Per-hook approval map. Pins start approved; unchecking forces the backdrop
+  // off for that hook when queueing (product-only image is queued instead).
+  const [approvedByHook, setApprovedByHook] = useState<Record<string, boolean>>({});
 
   const filteredPins = pins.filter((p) => {
     if (hookFilter !== "all" && p.hook_group !== hookFilter) return false;
@@ -104,6 +108,12 @@ export default function PinterestBackdropPreviewPage() {
       if (!data?.ok) throw new Error(data?.message || "Preview failed");
       setPins(data.pins || []);
       setBatchTag(data.batchTag || null);
+      // Default every hook to approved on a fresh preview.
+      const fresh: Record<string, boolean> = {};
+      for (const p of (data.pins || []) as PreviewPin[]) {
+        fresh[p.hook_group] = true;
+      }
+      setApprovedByHook(fresh);
       toast.success(`Preview ready — ${data.pins?.length ?? 0} pins`);
     } catch (e: any) {
       toast.error(e?.message || "Preview failed");
@@ -178,11 +188,19 @@ export default function PinterestBackdropPreviewPage() {
   async function queueForReal() {
     setQueueing(true);
     try {
+      // Build effective backdrop map: a hook only keeps its backdrop if the
+      // user toggled it on AND approved the preview. Unapproved hooks fall
+      // back to product-only (no lifestyle backdrop) when queued.
+      const effectiveBackdropByHook: Record<string, boolean> = {};
+      for (const h of HOOKS) {
+        effectiveBackdropByHook[h.key] =
+          !!backdropByHook[h.key] && approvedByHook[h.key] !== false;
+      }
       const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
         body: {
           productSlug: slug,
           useLifestyleBackdrop: useBackdrop,
-          backdropByHook: useBackdrop ? backdropByHook : undefined,
+          backdropByHook: useBackdrop ? effectiveBackdropByHook : undefined,
         },
       });
       if (error) throw error;
