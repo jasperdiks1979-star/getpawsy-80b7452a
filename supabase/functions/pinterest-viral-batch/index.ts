@@ -41,6 +41,21 @@ const PEXELS_QUERIES = [
   "cozy cat sleeping",     // transformation
 ];
 
+/**
+ * Per-hook fallback palette — used when Pexels is unavailable. Each palette
+ * matches the *color temperature* and emotional tone of its Pexels query so
+ * the resulting Cloudinary-rendered backdrop feels cohesive with what would
+ * have been fetched. Two colors per hook → primary fill + accent for a soft
+ * duotone gradient.
+ */
+const HOOK_FALLBACK_PALETTE: Record<string, { primary: string; accent: string; temp: "warm" | "cool" | "neutral" }> = {
+  pain:           { primary: "C97B2B", accent: "5A2A12", temp: "warm" },     // amber → deep brown (urgency)
+  curiosity:      { primary: "2B6E7A", accent: "0F2A33", temp: "cool" },     // teal → ink (intrigue)
+  time_saving:   { primary: "3A4A5C", accent: "1A2230", temp: "cool" },      // slate → navy (calm)
+  social_proof:   { primary: "B5946A", accent: "5C432A", temp: "warm" },     // cream → cocoa (trust)
+  transformation: { primary: "4A2E5C", accent: "1F1330", temp: "cool" },     // plum → midnight (wow)
+};
+
 type PexelsPhoto = { url: string; avgColor: string | null };
 
 async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
@@ -62,6 +77,45 @@ async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
   } catch (_e) {
     return null;
   }
+}
+
+/**
+ * Cloudinary-only fallback backdrop. Renders a 1080×1920 portrait canvas
+ * with the hook's primary color as fill, an accent-color radial overlay,
+ * a gentle blur, and JPEG output — usable as a drop-in replacement for a
+ * Pexels photo URL. Always succeeds (no network dependency on Pexels).
+ */
+function buildCloudinaryFallbackBackdrop(hookKey: string): PexelsPhoto {
+  const palette = HOOK_FALLBACK_PALETTE[hookKey] || HOOK_FALLBACK_PALETTE.curiosity;
+  // Seed asset: a public SVG we already host. Cloudinary fetches it, then
+  // we discard its pixels by padding to 1080×1920 with a solid bg color
+  // and stacking a soft accent overlay on top.
+  const seed = encodeURIComponent(`${BASE_URL}/placeholder.svg`);
+  const base = [
+    "w_1080",
+    "h_1920",
+    "c_pad",
+    `b_rgb:${palette.primary}`,
+    "f_jpg",
+    "q_auto",
+  ].join(",");
+  // Soft accent vignette — second colored "image" via text trick (a single
+  // space rendered huge with a colored background) blurred heavily so it
+  // feels like a radial gradient. Cloudinary text overlays accept bg color.
+  const accent = [
+    "l_text:Arial_400_bold:%20",
+    `b_rgb:${palette.accent}`,
+    "co_rgb:00000000",
+    "w_1400",
+    "h_1400",
+    "c_fit",
+    "g_south",
+    "y_-200",
+    "o_70",
+    "e_blur:600",
+  ].join(",");
+  const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${base}/${accent}/${seed}`;
+  return { url, avgColor: `#${palette.primary}` };
 }
 
 /* ─── Backdrop styles + readability scorer ──────────────────────────────
@@ -423,8 +477,16 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         const hook = HOOK_GROUPS[i];
         const productImage = allImages[i % allImages.length];
         const query = PEXELS_QUERIES[i] || "happy cat";
-        const backdrop = await fetchPexelsBackdrop(query);
-        if (!backdrop) continue; // graceful fallback to product-only pin
+        let backdrop = await fetchPexelsBackdrop(query);
+        let backdropSource: "pexels" | "cloudinary_fallback" = "pexels";
+        if (!backdrop) {
+          // Pexels unavailable (no key, network error, empty result) — render
+          // a Cloudinary-only backdrop in the same color temperature as the
+          // hook's intended Pexels query, so the lifestyle layer never silently
+          // disappears.
+          backdrop = buildCloudinaryFallbackBackdrop(hook.key);
+          backdropSource = "cloudinary_fallback";
+        }
         const [top, bot] = (rows[i].overlay_text as string).split(" | ");
         const bottomText = bot || hook.cta;
 
@@ -443,6 +505,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         (rows[i] as any).backdrop_url = backdrop.url;
         (rows[i] as any).backdrop_query = query;
         (rows[i] as any).backdrop_avg_color = backdrop.avgColor;
+        (rows[i] as any).backdrop_source = backdropSource;
         (rows[i] as any).backdrop_style = winner.style;
         (rows[i] as any).backdrop_score = winner.score;
         (rows[i] as any).backdrop_variants = scored.map((s) => ({
@@ -475,6 +538,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
             backdrop_url: r.backdrop_url || null,
             backdrop_query: r.backdrop_query || null,
             backdrop_avg_color: r.backdrop_avg_color || null,
+            backdrop_source: r.backdrop_source || null,
             backdrop_style: r.backdrop_style || null,
             backdrop_score: r.backdrop_score ?? null,
             backdrop_variants: r.backdrop_variants || null,
