@@ -777,7 +777,8 @@ export default function PinterestBackdropPreviewPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
