@@ -21,6 +21,10 @@ type PreviewPin = {
   overlay_text: string;
   backdrop_url: string | null;
   backdrop_query: string | null;
+  backdrop_avg_color?: string | null;
+  backdrop_style?: "dark" | "subtle" | "accent" | null;
+  backdrop_score?: number | null;
+  backdrop_variants?: Array<{ style: string; score: number; url: string }> | null;
   uses_lifestyle_backdrop: boolean;
 };
 
@@ -168,21 +172,67 @@ export default function PinterestBackdropPreviewPage() {
                 {pin.uses_lifestyle_backdrop && pin.backdrop_url && (
                   <div className="border-t pt-2 space-y-1.5">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Pexels backdrop · query "{pin.backdrop_query}"
+                      Pexels · "{pin.backdrop_query}"
+                      {pin.backdrop_avg_color && (
+                        <span
+                          className="inline-block w-3 h-3 rounded-sm border ml-2 align-middle"
+                          style={{ backgroundColor: pin.backdrop_avg_color }}
+                          title={`avg color ${pin.backdrop_avg_color}`}
+                        />
+                      )}
                     </p>
-                    <a
-                      href={pin.backdrop_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <img
-                        src={pin.backdrop_url}
-                        alt="Pexels backdrop"
-                        className="w-full h-24 object-cover rounded border"
-                        loading="lazy"
-                      />
-                    </a>
+                    {pin.backdrop_variants && pin.backdrop_variants.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {pin.backdrop_variants.map((v) => {
+                          const isWinner = v.style === pin.backdrop_style;
+                          return (
+                            <a
+                              key={v.style}
+                              href={v.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`block rounded border overflow-hidden ${
+                                isWinner
+                                  ? "ring-2 ring-primary border-primary"
+                                  : "opacity-70 hover:opacity-100"
+                              }`}
+                              title={`${v.style} · score ${v.score}`}
+                            >
+                              <div className="aspect-[9/16] bg-muted">
+                                <img
+                                  src={v.url}
+                                  alt={`${v.style} variant`}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                              <div className="px-1 py-0.5 flex items-center justify-between text-[9px]">
+                                <span className="capitalize font-medium">
+                                  {v.style}
+                                </span>
+                                <span className="font-mono text-muted-foreground">
+                                  {v.score.toFixed(2)}
+                                </span>
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <a
+                        href={pin.backdrop_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <img
+                          src={pin.backdrop_url}
+                          alt="Pexels backdrop"
+                          className="w-full h-24 object-cover rounded border"
+                          loading="lazy"
+                        />
+                      </a>
+                    )}
                   </div>
                 )}
                 <div className="text-[10px] text-muted-foreground font-mono truncate">
