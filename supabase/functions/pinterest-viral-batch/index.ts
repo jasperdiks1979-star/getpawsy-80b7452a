@@ -29,6 +29,26 @@ const CLOUDINARY_CLOUD = "dlkqycfzn";
 const BASE_URL = "https://getpawsy.pet";
 const DEFAULT_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
 
+// Whitelist of columns that exist on pinterest_pin_queue. Any extra fields
+// (e.g. optional backdrop_* visual metadata) are silently dropped so the
+// queue insert can never fail because of missing columns.
+export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
+  "product_id", "product_slug", "product_name", "pin_variant",
+  "pin_title", "pin_description", "pin_image_url", "destination_link",
+  "board_name", "hashtags", "priority", "status", "scheduled_at",
+  "hook_group", "category_key", "overlay_text",
+]);
+
+export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]): Record<string, unknown>[] {
+  return rows.map((r) => {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(r)) {
+      if (ALLOWED_QUEUE_COLUMNS.has(k)) out[k] = (r as Record<string, unknown>)[k];
+    }
+    return out;
+  });
+}
+
 // ---- Pexels (OPTIONAL secondary layer) ---------------------------------
 // Used ONLY as a subtle lifestyle backdrop behind the real product image
 // when the caller explicitly opts in (`useLifestyleBackdrop: true`).
