@@ -39,14 +39,46 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "hook_group", "category_key", "overlay_text",
 ]);
 
-export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]): Record<string, unknown>[] {
-  return rows.map((r) => {
+export interface SanitizeReport {
+  rows: Record<string, unknown>[];
+  /** Per-row list of dropped column names (parallel to `rows`). */
+  droppedPerRow: string[][];
+  /** Aggregate count of drops across all rows, keyed by column name. */
+  droppedCounts: Record<string, number>;
+  /** Distinct dropped column names across the whole batch. */
+  droppedColumns: string[];
+}
+
+export function sanitizeQueueRowsWithReport<T extends Record<string, unknown>>(
+  rows: T[],
+): SanitizeReport {
+  const droppedPerRow: string[][] = [];
+  const droppedCounts: Record<string, number> = {};
+  const cleaned = rows.map((r) => {
     const out: Record<string, unknown> = {};
+    const dropped: string[] = [];
     for (const k of Object.keys(r)) {
-      if (ALLOWED_QUEUE_COLUMNS.has(k)) out[k] = (r as Record<string, unknown>)[k];
+      if (ALLOWED_QUEUE_COLUMNS.has(k)) {
+        out[k] = (r as Record<string, unknown>)[k];
+      } else {
+        dropped.push(k);
+        droppedCounts[k] = (droppedCounts[k] ?? 0) + 1;
+      }
     }
+    droppedPerRow.push(dropped);
     return out;
   });
+  return {
+    rows: cleaned,
+    droppedPerRow,
+    droppedCounts,
+    droppedColumns: Object.keys(droppedCounts).sort(),
+  };
+}
+
+/** Back-compat wrapper kept for existing callers/tests. */
+export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]): Record<string, unknown>[] {
+  return sanitizeQueueRowsWithReport(rows).rows;
 }
 
 // Required columns the insert payload absolutely needs. If any of these are
