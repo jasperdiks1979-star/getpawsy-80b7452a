@@ -682,14 +682,23 @@ export default function PinterestBackdropPreviewPage() {
           </Card>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {pagedPins.map((pin, i) => {
+        {filteredPins.length > pageSize && (
+          <div className="flex items-center justify-end gap-2 -mb-2">
+            <Switch
+              id="virtualize"
+              checked={virtualize}
+              onCheckedChange={setVirtualize}
+            />
+            <Label htmlFor="virtualize" className="text-xs cursor-pointer">
+              Virtualize grid (faster for large pages)
+            </Label>
+          </div>
+        )}
+
+        {(() => {
+          const renderPin = (pin: PreviewPin, i: number) => {
             const approved = approvedByHook[pin.hook_group] !== false;
             const hookEnabled = !!backdropByHook[pin.hook_group];
-            // The pin image already reflects whether it was rendered with a
-            // backdrop in the dry-run. The "effective" state is what will
-            // actually be queued: backdrop only happens when global toggle is
-            // on AND hook is enabled AND the pin is approved.
             const willHaveBackdrop =
               useBackdrop && hookEnabled && approved && pin.uses_lifestyle_backdrop;
             return (
@@ -926,8 +935,50 @@ export default function PinterestBackdropPreviewPage() {
               </CardContent>
             </Card>
             );
-          })}
-        </div>
+          };
+
+          if (!shouldVirtualize) {
+            return (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {pagedPins.map((p, i) => renderPin(p, i))}
+              </div>
+            );
+          }
+
+          const items = virtualizer.getVirtualItems();
+          const totalSize = virtualizer.getTotalSize();
+          const offset = items[0]?.start ?? 0;
+          const scrollMargin = gridContainerRef.current?.offsetTop ?? 0;
+          return (
+            <div ref={gridContainerRef} style={{ height: totalSize, position: "relative" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  transform: `translateY(${offset - scrollMargin}px)`,
+                }}
+              >
+                {items.map((vi) => {
+                  const row = rows[vi.index];
+                  if (!row) return null;
+                  const startIdx = vi.index * cols;
+                  return (
+                    <div
+                      key={vi.key}
+                      ref={virtualizer.measureElement}
+                      data-index={vi.index}
+                      className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pb-4"
+                    >
+                      {row.map((p, j) => renderPin(p, startIdx + j))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {filteredPins.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
