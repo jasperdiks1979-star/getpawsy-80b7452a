@@ -312,7 +312,10 @@ export default function PinterestBackdropPreviewPage() {
               <div className="flex items-center justify-between border-t pt-4">
                 <div className="text-xs text-muted-foreground">
                   Batch: <span className="font-mono">{batchTag}</span> · {pins.length} pins ·{" "}
-                  {pins.filter((p) => p.uses_lifestyle_backdrop).length} met backdrop
+                  {pins.filter((p) => p.uses_lifestyle_backdrop).length} met backdrop ·{" "}
+                  <span className="text-foreground font-medium">
+                    {pins.filter((p) => approvedByHook[p.hook_group] !== false).length} approved
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -327,7 +330,13 @@ export default function PinterestBackdropPreviewPage() {
                     )}
                     Reroll all backdrops
                   </Button>
-                  <Button onClick={queueForReal} disabled={queueing}>
+                  <Button
+                    onClick={queueForReal}
+                    disabled={
+                      queueing ||
+                      pins.filter((p) => approvedByHook[p.hook_group] !== false).length === 0
+                    }
+                  >
                     {queueing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                     Queue for publish
                   </Button>
@@ -451,6 +460,13 @@ export default function PinterestBackdropPreviewPage() {
                     Lifestyle
                   </Badge>
                 )}
+                {approvedByHook[pin.hook_group] === false && (
+                  <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border border-dashed rounded px-3 py-1 bg-background/80">
+                      Not approved
+                    </span>
+                  </div>
+                )}
                 {pin.uses_lifestyle_backdrop && (
                   <button
                     type="button"
@@ -469,6 +485,27 @@ export default function PinterestBackdropPreviewPage() {
                 )}
               </div>
               <CardContent className="p-3 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none -mx-1 px-1 py-1 rounded hover:bg-accent/50">
+                  <Checkbox
+                    checked={approvedByHook[pin.hook_group] !== false}
+                    onCheckedChange={(v) =>
+                      setApprovedByHook((prev) => ({
+                        ...prev,
+                        [pin.hook_group]: v === true,
+                      }))
+                    }
+                  />
+                  <span className="text-xs font-medium flex items-center gap-1">
+                    {approvedByHook[pin.hook_group] !== false ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                        Approved for queue
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Approve for queue</span>
+                    )}
+                  </span>
+                </label>
                 <p className="text-sm font-medium line-clamp-2">{pin.pin_title}</p>
                 <p className="text-xs text-muted-foreground line-clamp-3">
                   {pin.pin_description}
