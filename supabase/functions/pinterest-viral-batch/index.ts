@@ -7,6 +7,17 @@
 // progressively.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import type {
+  PinterestQueueInsert,
+  PinterestPinDraft,
+  BackdropMetadata,
+} from "../_shared/pinterest-queue-types.ts";
+
+export type {
+  PinterestQueueInsert,
+  PinterestPinDraft,
+  BackdropMetadata,
+} from "../_shared/pinterest-queue-types.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
@@ -40,7 +51,8 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
 ]);
 
 export interface SanitizeReport {
-  rows: Record<string, unknown>[];
+  /** Type-safe rows ready for `.insert()` — guaranteed free of backdrop_* fields. */
+  rows: PinterestQueueInsert[];
   /** Per-row list of dropped column names (parallel to `rows`). */
   droppedPerRow: string[][];
   /** Aggregate count of drops across all rows, keyed by column name. */
@@ -66,7 +78,7 @@ export function sanitizeQueueRowsWithReport<T extends Record<string, unknown>>(
       }
     }
     droppedPerRow.push(dropped);
-    return out;
+    return out as unknown as PinterestQueueInsert;
   });
   return {
     rows: cleaned,
@@ -77,7 +89,7 @@ export function sanitizeQueueRowsWithReport<T extends Record<string, unknown>>(
 }
 
 /** Back-compat wrapper kept for existing callers/tests. */
-export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]): Record<string, unknown>[] {
+export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]): PinterestQueueInsert[] {
   return sanitizeQueueRowsWithReport(rows).rows;
 }
 
