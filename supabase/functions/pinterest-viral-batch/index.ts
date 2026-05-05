@@ -7,6 +7,17 @@
 // progressively.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import type {
+  PinterestQueueInsert,
+  PinterestPinDraft,
+  BackdropMetadata,
+} from "../_shared/pinterest-queue-types.ts";
+
+export type {
+  PinterestQueueInsert,
+  PinterestPinDraft,
+  BackdropMetadata,
+} from "../_shared/pinterest-queue-types.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
