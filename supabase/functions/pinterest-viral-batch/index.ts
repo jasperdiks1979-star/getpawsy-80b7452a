@@ -56,7 +56,14 @@ const HOOK_FALLBACK_PALETTE: Record<string, { primary: string; accent: string; t
   transformation: { primary: "4A2E5C", accent: "1F1330", temp: "cool" },     // plum → midnight (wow)
 };
 
-type PexelsPhoto = { url: string; avgColor: string | null };
+type PexelsPhoto = {
+  url: string;
+  avgColor: string | null;
+  width: number | null;
+  height: number | null;
+  photographer: string | null;
+  pexelsPageUrl: string | null;
+};
 
 async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
   const key = Deno.env.get("PEXELS_API_KEY");
@@ -73,7 +80,14 @@ async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
     const pick = photos[Math.floor(Math.random() * photos.length)];
     const url = pick?.src?.portrait || pick?.src?.large2x || pick?.src?.large || null;
     if (!url) return null;
-    return { url, avgColor: typeof pick?.avg_color === "string" ? pick.avg_color : null };
+    return {
+      url,
+      avgColor: typeof pick?.avg_color === "string" ? pick.avg_color : null,
+      width: typeof pick?.width === "number" ? pick.width : null,
+      height: typeof pick?.height === "number" ? pick.height : null,
+      photographer: typeof pick?.photographer === "string" ? pick.photographer : null,
+      pexelsPageUrl: typeof pick?.url === "string" ? pick.url : null,
+    };
   } catch (_e) {
     return null;
   }
@@ -115,7 +129,14 @@ function buildCloudinaryFallbackBackdrop(hookKey: string): PexelsPhoto {
     "e_blur:600",
   ].join(",");
   const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${base}/${accent}/${seed}`;
-  return { url, avgColor: `#${palette.primary}` };
+  return {
+    url,
+    avgColor: `#${palette.primary}`,
+    width: 1080,
+    height: 1920,
+    photographer: null,
+    pexelsPageUrl: null,
+  };
 }
 
 /* ─── Backdrop styles + readability scorer ──────────────────────────────
@@ -522,6 +543,11 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         (rows[i] as any).backdrop_query = query;
         (rows[i] as any).backdrop_avg_color = backdrop.avgColor;
         (rows[i] as any).backdrop_source = backdropSource;
+        (rows[i] as any).backdrop_width = backdrop.width;
+        (rows[i] as any).backdrop_height = backdrop.height;
+        (rows[i] as any).backdrop_photographer = backdrop.photographer;
+        (rows[i] as any).backdrop_pexels_page = backdrop.pexelsPageUrl;
+        (rows[i] as any).backdrop_hook_group = hook.key;
         (rows[i] as any).backdrop_style = winner.style;
         (rows[i] as any).backdrop_score = winner.score;
         (rows[i] as any).backdrop_variants = scored.map((s) => ({
@@ -555,6 +581,11 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
             backdrop_query: r.backdrop_query || null,
             backdrop_avg_color: r.backdrop_avg_color || null,
             backdrop_source: r.backdrop_source || null,
+            backdrop_width: r.backdrop_width ?? null,
+            backdrop_height: r.backdrop_height ?? null,
+            backdrop_photographer: r.backdrop_photographer || null,
+            backdrop_pexels_page: r.backdrop_pexels_page || null,
+            backdrop_hook_group: r.backdrop_hook_group || null,
             backdrop_style: r.backdrop_style || null,
             backdrop_score: r.backdrop_score ?? null,
             backdrop_variants: r.backdrop_variants || null,

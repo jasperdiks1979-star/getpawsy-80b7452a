@@ -23,6 +23,11 @@ type PreviewPin = {
   backdrop_query: string | null;
   backdrop_avg_color?: string | null;
   backdrop_source?: "pexels" | "cloudinary_fallback" | null;
+  backdrop_width?: number | null;
+  backdrop_height?: number | null;
+  backdrop_photographer?: string | null;
+  backdrop_pexels_page?: string | null;
+  backdrop_hook_group?: string | null;
   backdrop_style?: "dark" | "subtle" | "accent" | null;
   backdrop_score?: number | null;
   backdrop_variants?: Array<{ style: string; score: number; url: string }> | null;
@@ -258,6 +263,55 @@ export default function PinterestBackdropPreviewPage() {
                         </Badge>
                       )}
                     </p>
+                    <div className="text-[10px] text-muted-foreground space-y-0.5 leading-snug">
+                      {pin.backdrop_hook_group && (
+                        <div>
+                          Hook:{" "}
+                          <span className="font-medium capitalize text-foreground">
+                            {pin.backdrop_hook_group.replace("_", " ")}
+                          </span>
+                        </div>
+                      )}
+                      {pin.backdrop_width && pin.backdrop_height && (
+                        <div>
+                          Resolution:{" "}
+                          <span className="font-mono">
+                            {pin.backdrop_width}×{pin.backdrop_height}
+                          </span>
+                        </div>
+                      )}
+                      {pin.backdrop_photographer && (
+                        <div className="truncate">
+                          Photo by{" "}
+                          {pin.backdrop_pexels_page ? (
+                            <a
+                              href={pin.backdrop_pexels_page}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline hover:text-foreground"
+                            >
+                              {pin.backdrop_photographer}
+                            </a>
+                          ) : (
+                            <span>{pin.backdrop_photographer}</span>
+                          )}{" "}
+                          on Pexels
+                        </div>
+                      )}
+                      <div className="truncate">
+                        Source:{" "}
+                        <a
+                          href={pin.backdrop_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono underline hover:text-foreground"
+                          title={pin.backdrop_url}
+                        >
+                          {pin.backdrop_url.replace(/^https?:\/\//, "").slice(0, 48)}
+                          {pin.backdrop_url.length > 55 ? "…" : ""}
+                        </a>
+                      </div>
+                    </div>
                     {pin.backdrop_variants && pin.backdrop_variants.length > 0 ? (
                       <div className="grid grid-cols-3 gap-1.5">
                         {pin.backdrop_variants.map((v) => {
