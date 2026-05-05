@@ -2159,6 +2159,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-backdrop-preview"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestBackdropPreviewPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-automation"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
