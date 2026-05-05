@@ -5074,6 +5074,8 @@ export type Database = {
       }
       pinterest_pin_queue: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           board_name: string
           category_key: string | null
           created_at: string
@@ -5094,12 +5096,15 @@ export type Database = {
           product_name: string
           product_slug: string
           profit_state: string | null
+          qa_reasons: string[]
           retries: number
           scheduled_at: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           board_name?: string
           category_key?: string | null
           created_at?: string
@@ -5120,12 +5125,15 @@ export type Database = {
           product_name: string
           product_slug: string
           profit_state?: string | null
+          qa_reasons?: string[]
           retries?: number
           scheduled_at?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           board_name?: string
           category_key?: string | null
           created_at?: string
@@ -5146,6 +5154,7 @@ export type Database = {
           product_name?: string
           product_slug?: string
           profit_state?: string | null
+          qa_reasons?: string[]
           retries?: number
           scheduled_at?: string | null
           status?: string
