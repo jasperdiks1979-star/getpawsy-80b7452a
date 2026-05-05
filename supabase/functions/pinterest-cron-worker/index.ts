@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
+import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 
 const MAX_RETRIES = 2;
 const BATCH_SIZE = 3; // max concurrency per cron run
@@ -153,6 +154,8 @@ Deno.serve(async (req) => {
       .or("profit_state.is.null,profit_state.neq.kill")
       .lte("scheduled_at", new Date().toISOString())
       .lt("retries", MAX_RETRIES)
+      .not("approved_at", "is", null)
+      .in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS))
       .order("priority", { ascending: true })
       .order("scheduled_at", { ascending: true })
       .limit(BATCH_SIZE);
@@ -262,6 +265,26 @@ Deno.serve(async (req) => {
           error_message: `Validation: ${validationError}`,
         });
         results.push({ pinId: pin.id, status: "failed", error: validationError });
+        continue;
+      }
+
+      // 🛡️ Pre-publish QA gate — last line of defense before Pinterest API call.
+      const qaReasons = runPinQa(pin);
+      if (qaReasons.length > 0) {
+        const reasonStr = qaReasons.join(",");
+        console.warn(`[cron] Pin ${pin.id} blocked by QA gate: ${reasonStr}`);
+        await sb.from("pinterest_pin_queue").update({
+          status: "skipped",
+          qa_reasons: qaReasons,
+          error_message: `QA gate: ${reasonStr}`,
+        }).eq("id", pin.id);
+        await sb.from("pinterest_post_logs").insert({
+          pin_queue_id: pin.id,
+          action: "publish",
+          status: "skipped",
+          error_message: `QA gate: ${reasonStr}`,
+        });
+        results.push({ pinId: pin.id, status: "skipped", error: `QA: ${reasonStr}` });
         continue;
       }
 
