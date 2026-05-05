@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff } from "lucide-react";
+import { Loader2, Image as ImageIcon, Send, RefreshCw, Dices, Search, X, CheckCircle2, Sparkles, ImageOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type PreviewPin = {
@@ -71,6 +71,10 @@ export default function PinterestBackdropPreviewPage() {
   const [approvedByHook, setApprovedByHook] = useState<Record<string, boolean>>({});
   // Multi-select: which hooks are currently selected for bulk on/off actions.
   const [selectedHooks, setSelectedHooks] = useState<Set<string>>(new Set());
+  // Pagination — keeps the grid snappy with large pin counts.
+  const PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
+  const [pageSize, setPageSize] = useState<number>(24);
+  const [page, setPage] = useState(1);
 
   function toggleSelectedHook(key: string) {
     setSelectedHooks((prev) => {
@@ -98,7 +102,7 @@ export default function PinterestBackdropPreviewPage() {
     );
   }
 
-  const filteredPins = pins.filter((p) => {
+  const filteredPins = useMemo(() => pins.filter((p) => {
     if (hookFilter !== "all" && p.hook_group !== hookFilter) return false;
     if (backdropOnlyFilter && !p.uses_lifestyle_backdrop) return false;
     const q = searchQuery.trim().toLowerCase();
@@ -118,7 +122,17 @@ export default function PinterestBackdropPreviewPage() {
       .join(" ")
       .toLowerCase();
     return haystack.includes(q);
-  });
+  }), [pins, hookFilter, backdropOnlyFilter, searchQuery, slug]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPins.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pagedPins = filteredPins.slice(pageStart, pageStart + pageSize);
+
+  // Reset to page 1 whenever filters or page size change.
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, hookFilter, backdropOnlyFilter, pageSize, pins.length]);
 
   async function runPreview() {
     setLoading(true);
