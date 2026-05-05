@@ -502,6 +502,13 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    // Optional verbose sanitize report — when truthy the response includes
+    // per-row dropped field details. Defaults to false to keep payloads small.
+    // Accepts ?verboseSanitize=1 in the URL OR { verboseSanitize: true } in body.
+    const url = new URL(req.url);
+    const qpVerbose = url.searchParams.get("verboseSanitize");
+    const verboseSanitize: boolean = qpVerbose === "1" || qpVerbose === "true"
+      || !!body.verboseSanitize;
     const slug: string = body.productSlug || DEFAULT_SLUG;
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
