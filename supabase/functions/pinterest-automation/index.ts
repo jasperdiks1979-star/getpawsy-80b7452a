@@ -1,4 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { PINTEREST_ALLOWED_SLUGS, runPinQa } from "../_shared/pinterest-qa.ts";
+
+const QA_LOCKDOWN_ERROR = {
+  ok: false,
+  code: "PINTEREST_QA_LOCKDOWN",
+  error: `Pinterest automation is restricted to: ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}. Use the Generate Viral Pins button to create draft pins for the approved product.`,
+};
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 
@@ -562,6 +569,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "scale_100") {
+      return json(cors, QA_LOCKDOWN_ERROR);
       // Generate ~100 pins/day spread across 24h, randomized intervals,
       // pulling 5–10 cat-focused products (litter boxes, cat trees, cat care).
       const targetPins = Math.min(Math.max(body.targetPins || 100, 10), 200);
@@ -654,6 +662,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "publish_next") {
+      // 🔒 Manual publish path is gated to allowed slugs + approved drafts only.
       const { data: conn } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
       if (!conn || conn.status !== "connected" || !conn.access_token) {
         return json(cors, { ok: false, error: "Pinterest not connected" });
@@ -662,12 +671,24 @@ Deno.serve(async (req) => {
       const { data: pin } = await sb.from("pinterest_pin_queue")
         .select("*")
         .eq("status", "queued")
+        .not("approved_at", "is", null)
+        .in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS))
         .lte("scheduled_at", new Date().toISOString())
         .order("scheduled_at", { ascending: true })
         .limit(1)
         .maybeSingle();
 
-      if (!pin) return json(cors, { ok: true, message: "No pins ready to publish" });
+      if (!pin) return json(cors, { ok: true, message: "No approved pins ready to publish" });
+
+      const qaReasons = runPinQa(pin);
+      if (qaReasons.length > 0) {
+        await sb.from("pinterest_pin_queue").update({
+          status: "skipped",
+          qa_reasons: qaReasons,
+          error_message: `QA gate: ${qaReasons.join(",")}`,
+        }).eq("id", pin.id);
+        return json(cors, { ok: false, error: `QA gate blocked pin: ${qaReasons.join(",")}` });
+      }
 
       try {
         const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
@@ -892,6 +913,62 @@ Deno.serve(async (req) => {
         created,
         success_count: created.filter((c) => c.ok).length,
       });
+    }
+
+    if (action === "approve_pin") {
+      const pinId = body.pinId;
+      if (!pinId) return json(cors, { ok: false, error: "pinId required" });
+      const { data: pin } = await sb.from("pinterest_pin_queue").select("*").eq("id", pinId).maybeSingle();
+      if (!pin) return json(cors, { ok: false, error: "Pin not found" });
+      if (!PINTEREST_ALLOWED_SLUGS.has(pin.product_slug)) {
+        return json(cors, QA_LOCKDOWN_ERROR);
+      }
+      const reasons = runPinQa(pin);
+      if (reasons.length > 0) {
+        await sb.from("pinterest_pin_queue").update({
+          qa_reasons: reasons,
+          error_message: `QA gate: ${reasons.join(",")}`,
+        }).eq("id", pinId);
+        return json(cors, { ok: false, error: `QA failed: ${reasons.join(",")}`, qa_reasons: reasons });
+      }
+      await sb.from("pinterest_pin_queue").update({
+        status: "queued",
+        approved_at: new Date().toISOString(),
+        qa_reasons: [],
+        error_message: null,
+        scheduled_at: new Date().toISOString(),
+      }).eq("id", pinId);
+      return json(cors, { ok: true });
+    }
+
+    if (action === "reject_pin") {
+      const pinId = body.pinId;
+      if (!pinId) return json(cors, { ok: false, error: "pinId required" });
+      await sb.from("pinterest_pin_queue").update({
+        status: "skipped",
+        approved_at: null,
+        error_message: body.reason || "Rejected by admin",
+      }).eq("id", pinId);
+      return json(cors, { ok: true });
+    }
+
+    if (action === "purge_bad_pins") {
+      // Delete every draft/queued/failed/skipped pin that is either not on
+      // the allowlist OR currently flagged with any QA reason.
+      const allowed = Array.from(PINTEREST_ALLOWED_SLUGS);
+      const { data: candidates } = await sb.from("pinterest_pin_queue")
+        .select("id, product_slug, qa_reasons, status")
+        .in("status", ["draft", "queued", "failed", "skipped"]);
+      const ids = (candidates || [])
+        .filter((p: any) =>
+          !allowed.includes(p.product_slug) ||
+          (Array.isArray(p.qa_reasons) && p.qa_reasons.length > 0)
+        )
+        .map((p: any) => p.id);
+      if (ids.length === 0) return json(cors, { ok: true, deleted: 0 });
+      const { error: delErr } = await sb.from("pinterest_pin_queue").delete().in("id", ids);
+      if (delErr) return json(cors, { ok: false, error: delErr.message });
+      return json(cors, { ok: true, deleted: ids.length });
     }
 
     throw new Error(`Unknown action: ${action}`);

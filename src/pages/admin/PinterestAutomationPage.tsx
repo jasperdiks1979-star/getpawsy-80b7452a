@@ -15,6 +15,8 @@ import {
   RefreshCw,
   RotateCcw,
   Sparkles,
+  ShieldCheck,
+  ShieldAlert,
   Trash2,
   Wand2,
   Zap,
@@ -172,6 +174,7 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
           <tr className="border-b text-left text-xs text-muted-foreground">
             <th className="py-2 pr-2">Title</th>
             <th className="py-2 pr-2">Status</th>
+            <th className="py-2 pr-2">QA</th>
             <th className="py-2 pr-2">Scheduled</th>
             <th className="py-2 pr-2">Retries</th>
             {onAction && <th className="py-2">Actions</th>}
@@ -182,12 +185,35 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
             <tr key={pin.id} className="border-b border-border/50">
               <td className="py-2 pr-2 max-w-[200px] truncate" title={pin.pin_title}>{pin.pin_title}</td>
               <td className="py-2 pr-2"><StatusBadge status={pin.status} /></td>
+              <td className="py-2 pr-2">
+                {Array.isArray(pin.qa_reasons) && pin.qa_reasons.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {pin.qa_reasons.map((r: string) => (
+                      <Badge key={r} variant="destructive" className="text-[10px]">{r}</Badge>
+                    ))}
+                  </div>
+                ) : pin.approved_at ? (
+                  <Badge variant="default" className="text-[10px]">approved</Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </td>
               <td className="py-2 pr-2 text-xs text-muted-foreground">
                 {pin.scheduled_at ? new Date(pin.scheduled_at).toLocaleString() : "—"}
               </td>
               <td className="py-2 pr-2">{pin.retries ?? 0}</td>
               {onAction && (
                 <td className="py-2 flex gap-1">
+                  {pin.status === "draft" && (
+                    <>
+                      <Button size="sm" variant="default" className="h-6 px-2" onClick={() => onAction("approve", pin.id)} title="Approve & queue">
+                        <ShieldCheck className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-destructive" onClick={() => onAction("reject", pin.id)} title="Reject">
+                        <ShieldAlert className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
                   {pin.status === "failed" && (
                     <>
                       <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => onAction("retry", pin.id)} title="Retry">
@@ -395,10 +421,16 @@ function PinterestDashboard() {
       } else if (action === "force") {
         await supabase.from("pinterest_pin_queue").update({ status: "queued", scheduled_at: new Date().toISOString() }).eq("id", pinId);
         toast.success("Pin scheduled for immediate posting");
+      } else if (action === "approve") {
+        await invokePinterestAction("approve_pin", { pinId });
+        toast.success("Pin approved & queued");
+      } else if (action === "reject") {
+        await invokePinterestAction("reject_pin", { pinId });
+        toast.success("Pin rejected");
       }
       await fetchAll();
     } catch (e) {
-      toast.error("Action failed");
+      toast.error(e instanceof Error ? e.message : "Action failed");
     }
     setActionLoading(null);
   };
@@ -416,6 +448,19 @@ function PinterestDashboard() {
     await supabase.from("pinterest_pin_queue").delete().eq("status", "failed");
     toast.success("All failed pins deleted");
     await fetchAll();
+    setActionLoading(null);
+  };
+
+  const handlePurgeBad = async () => {
+    if (!window.confirm("Delete every draft/queued/failed/skipped pin that fails QA or is not the approved Automatic Cat Litter Box?")) return;
+    setActionLoading("purge-bad");
+    try {
+      const data = await invokePinterestAction<{ deleted?: number }>("purge_bad_pins");
+      toast.success(`Purged ${data.deleted ?? 0} bad pins`);
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Purge failed");
+    }
     setActionLoading(null);
   };
 
@@ -501,6 +546,9 @@ function PinterestDashboard() {
               </Button>
             </>
           )}
+          <Button size="sm" variant="destructive" onClick={handlePurgeBad} disabled={!!actionLoading}>
+            <Trash2 className="h-3 w-3 mr-1" /> Purge bad pins
+          </Button>
           {actionLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground self-center" />}
         </CardContent>
       </Card>
