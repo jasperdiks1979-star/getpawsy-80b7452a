@@ -520,7 +520,11 @@ export default function PinterestBackdropPreviewPage() {
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  Showing {filteredPins.length} of {pins.length} pins
+                  Showing {filteredPins.length === 0 ? 0 : pageStart + 1}–
+                  {Math.min(pageStart + pageSize, filteredPins.length)} of {filteredPins.length}
+                  {filteredPins.length !== pins.length && (
+                    <> (filtered from {pins.length})</>
+                  )}
                 </span>
                 {(searchQuery || hookFilter !== "all" || backdropOnlyFilter) && (
                   <button
@@ -549,7 +553,7 @@ export default function PinterestBackdropPreviewPage() {
         )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPins.map((pin, i) => {
+          {pagedPins.map((pin, i) => {
             const approved = approvedByHook[pin.hook_group] !== false;
             const hookEnabled = !!backdropByHook[pin.hook_group];
             // The pin image already reflects whether it was rendered with a
