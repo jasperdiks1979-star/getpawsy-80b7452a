@@ -6,6 +6,7 @@ import type {
   BackdropMetadata,
   NoBackdropFields,
 } from "../_shared/pinterest-queue-types.ts";
+import { stripBackdropFields } from "../_shared/pinterest-queue-types.ts";
 
 // ─────────────────────────────────────────────────────────────────
 // Compile-time contract tests. If these stop type-checking, the
@@ -76,6 +77,32 @@ Deno.test("NoBackdropFields<T> erases backdrop_* keys from the type", () => {
   // backdrop_url is typed as `undefined` only — assigning a value would fail.
   const _check: undefined = safe.backdrop_url;
   assertEquals(_check, undefined);
+});
+
+Deno.test("NoBackdropFields rejects backdrop_* even when null (compile + runtime)", () => {
+  const _bad: NoBackdropFields<PinterestQueueInsert> = {
+    product_id: "p",
+    product_slug: "s",
+    pin_variant: "v",
+    pin_title: "t",
+    pin_image_url: "https://x",
+    destination_link: "https://x",
+    status: "queued",
+    scheduled_at: new Date().toISOString(),
+    // @ts-expect-error — `null` must NOT satisfy backdrop_* (typed as `never | undefined`).
+    backdrop_avg_color: null,
+  };
+  // Runtime: stripBackdropFields removes the key entirely (not just nulls it).
+  const cleaned = stripBackdropFields({
+    product_id: "p",
+    backdrop_avg_color: null,
+    backdrop_url: null,
+    backdrop_source: "pexels",
+  });
+  assertEquals("backdrop_avg_color" in cleaned, false);
+  assertEquals("backdrop_url" in cleaned, false);
+  assertEquals("backdrop_source" in cleaned, false);
+  assertEquals((cleaned as { product_id: string }).product_id, "p");
 });
 
 Deno.test("sanitizeQueueRowsWithReport returns PinterestQueueInsert[]", () => {

@@ -78,10 +78,49 @@ export type PinterestPinDraft = PinterestQueueInsert & BackdropMetadata;
 
 /**
  * Compile-time helper that asserts ANY object passed to .insert() does NOT
- * carry backdrop_* fields. Use it in call sites that build inserts manually.
+ * carry backdrop_* fields — not even as `null`. Use it in call sites that
+ * build inserts manually.
  *
  *   const safe: NoBackdropFields<typeof row> = row;
+ *
+ * Implementation notes:
+ *   1. We Omit the backdrop_* keys from `T` first, so any pre-existing
+ *      typing (incl. `string | null`) is wiped before we re-stamp them.
+ *   2. We then re-add each backdrop_* key as optional `never`, which means
+ *      the property may only be `undefined` — assigning `null`, `""`, a
+ *      string, or a number all fail to compile.
  */
-export type NoBackdropFields<T> = T & {
+export type NoBackdropFields<T> = Omit<T, keyof BackdropMetadata> & {
   [K in keyof BackdropMetadata]?: never;
 };
+
+/**
+ * Runtime counterpart: returns a shallow copy with every backdrop_* key
+ * removed, regardless of whether the value was `null`, `undefined`, or set.
+ * Use this defensively right before `.insert()` when the source object's
+ * type is unknown / dynamic.
+ */
+export function stripBackdropFields<T extends Record<string, unknown>>(
+  obj: T,
+): NoBackdropFields<T> {
+  const BACKDROP_KEYS: ReadonlyArray<keyof BackdropMetadata> = [
+    "backdrop_url",
+    "backdrop_query",
+    "backdrop_avg_color",
+    "backdrop_source",
+    "backdrop_width",
+    "backdrop_height",
+    "backdrop_photographer",
+    "backdrop_pexels_page",
+    "backdrop_hook_group",
+    "backdrop_style",
+    "backdrop_score",
+    "backdrop_variants",
+    "uses_lifestyle_backdrop",
+  ];
+  const out: Record<string, unknown> = { ...obj };
+  for (const k of BACKDROP_KEYS) {
+    if (k in out) delete out[k as string];
+  }
+  return out as NoBackdropFields<T>;
+}
