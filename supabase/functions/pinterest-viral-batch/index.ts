@@ -831,6 +831,15 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         droppedColumns: sanitized.droppedColumns,
         droppedCounts: sanitized.droppedCounts,
         rowsAffected: sanitized.droppedPerRow.filter((d) => d.length > 0).length,
+        ...(verboseSanitize
+          ? {
+              droppedPerRow: sanitized.droppedPerRow.map((cols, i) => ({
+                index: i,
+                variant: (rows as Array<Record<string, unknown>>)[i]?.pin_variant ?? null,
+                dropped: cols,
+              })),
+            }
+          : {}),
       },
     });
   } catch (e) {
