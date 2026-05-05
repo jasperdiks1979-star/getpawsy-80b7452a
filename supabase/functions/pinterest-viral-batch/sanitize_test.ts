@@ -65,10 +65,11 @@ Deno.test("sanitizeQueueRows strips backdrop_* and unknown columns", () => {
   assertEquals(out[0].hook_group, "pain");
 
   // Forbidden columns dropped
-  assertEquals((out[0] as Record<string, unknown>).backdrop_avg_color, undefined);
-  assertEquals((out[0] as Record<string, unknown>).backdrop_url, undefined);
-  assertEquals((out[0] as Record<string, unknown>).uses_lifestyle_backdrop, undefined);
-  assertEquals((out[0] as Record<string, unknown>).some_future_column, undefined);
+  const row0 = out[0] as unknown as Record<string, unknown>;
+  assertEquals(row0.backdrop_avg_color, undefined);
+  assertEquals(row0.backdrop_url, undefined);
+  assertEquals(row0.uses_lifestyle_backdrop, undefined);
+  assertEquals(row0.some_future_column, undefined);
 });
 
 Deno.test("sanitizeQueueRows handles rows with ONLY backdrop fields without throwing", () => {
