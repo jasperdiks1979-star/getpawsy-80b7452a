@@ -1,4 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { PINTEREST_ALLOWED_SLUGS, runPinQa } from "../_shared/pinterest-qa.ts";
+
+const QA_LOCKDOWN_ERROR = {
+  ok: false,
+  code: "PINTEREST_QA_LOCKDOWN",
+  error: `Pinterest automation is restricted to: ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}. Use the Generate Viral Pins button to create draft pins for the approved product.`,
+};
 import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 
