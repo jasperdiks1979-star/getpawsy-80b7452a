@@ -41,7 +41,9 @@ const PEXELS_QUERIES = [
   "cozy cat sleeping",     // transformation
 ];
 
-async function fetchPexelsBackdrop(query: string): Promise<string | null> {
+type PexelsPhoto = { url: string; avgColor: string | null };
+
+async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
   const key = Deno.env.get("PEXELS_API_KEY");
   if (!key) return null;
   try {
@@ -54,10 +56,89 @@ async function fetchPexelsBackdrop(query: string): Promise<string | null> {
     const photos: any[] = Array.isArray(j?.photos) ? j.photos : [];
     if (photos.length === 0) return null;
     const pick = photos[Math.floor(Math.random() * photos.length)];
-    return pick?.src?.portrait || pick?.src?.large2x || pick?.src?.large || null;
+    const url = pick?.src?.portrait || pick?.src?.large2x || pick?.src?.large || null;
+    if (!url) return null;
+    return { url, avgColor: typeof pick?.avg_color === "string" ? pick.avg_color : null };
   } catch (_e) {
     return null;
   }
+}
+
+/* ─── Backdrop styles + readability scorer ──────────────────────────────
+ * We render the SAME Pexels backdrop with 3 different Cloudinary effect
+ * stacks and pick the style that maximizes overlay readability based on
+ * the photo's average color luminance + saturation. The product image
+ * stays the visual hero in every variant.
+ */
+type BackdropStyle = "dark" | "subtle" | "accent";
+
+const STYLE_EFFECTS: Record<BackdropStyle, string[]> = {
+  // Heavy darken + slight blur — best for bright/busy photos so white
+  // headline pills always pop. Mimics a "cinematic poster" look.
+  dark:   ["e_brightness:-50", "e_saturation:-20", "e_blur:120"],
+  // Lightly darkened + desaturated — best when photo is already moody so
+  // we don't crush detail. Keeps lifestyle context visible.
+  subtle: ["e_brightness:-15", "e_saturation:-25", "e_blur:60"],
+  // Mid darken + boosted saturation — best when photo has a strong color
+  // accent that complements the brand orange CTA pill.
+  accent: ["e_brightness:-30", "e_saturation:35", "e_blur:80", "e_vignette:30"],
+};
+
+/** Convert hex (#RRGGBB) → relative luminance 0–1 (sRGB). */
+function hexLuminance(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return 0.5;
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  // Rec. 709 luma — good enough proxy for perceived brightness.
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Saturation 0–1 from hex (HSL S component). */
+function hexSaturation(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return 0;
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return 0;
+  const d = max - min;
+  return l > 0.5 ? d / (2 - max - min) : d / (max + min);
+}
+
+/**
+ * Score readability for each style. Higher = better.
+ * After applying the style's brightness offset we want the *effective*
+ * backdrop luminance to land near 0.22 — dark enough so white-on-orange
+ * top pill and dark-on-white bottom pill both have ≥4.5 contrast against
+ * neighboring backdrop pixels, but not so dark we lose all atmosphere.
+ */
+function scoreStyle(style: BackdropStyle, avgColor: string | null): number {
+  if (!avgColor) {
+    // No color signal — slight bias toward subtle (safest middle ground).
+    return style === "subtle" ? 0.6 : 0.5;
+  }
+  const lum = hexLuminance(avgColor);
+  const sat = hexSaturation(avgColor);
+  const brightnessDelta =
+    style === "dark" ? -0.40 : style === "subtle" ? -0.15 : -0.30;
+  const effectiveLum = Math.max(0, Math.min(1, lum + brightnessDelta));
+  const TARGET = 0.22;
+  // 1.0 when at target, falls off linearly.
+  const proximity = 1 - Math.min(1, Math.abs(effectiveLum - TARGET) / 0.5);
+  // Bonus for accent style when source has real color punch.
+  const accentBonus = style === "accent" ? sat * 0.35 : 0;
+  // Mild bonus for dark style when source is very bright (>0.7).
+  const darkBonus = style === "dark" && lum > 0.65 ? 0.15 : 0;
+  // Mild bonus for subtle when source is already moody (<0.35).
+  const subtleBonus = style === "subtle" && lum < 0.35 ? 0.15 : 0;
+  return Number((proximity + accentBonus + darkBonus + subtleBonus).toFixed(3));
 }
 
 // Hook frameworks — the AI must produce ONE variant per group, in this order.
@@ -134,15 +215,16 @@ function buildPinImage(productImageUrl: string, top: string, bottom: string): st
 
 /**
  * Variant: Pexels lifestyle backdrop with the REAL product image as the
- * dominant centered hero (≈70% of frame). Backdrop is darkened so it never
- * competes with the product. Only used when caller opts in AND Pexels returns
- * a valid image — otherwise we fall back to buildPinImage.
+ * dominant centered hero (≈70% of frame). Backdrop effects vary per style
+ * (dark / subtle / accent) so the auto-picker can choose the most readable
+ * variant per photo. Product photo always remains the visual hero.
  */
 function buildPinImageWithBackdrop(
   productImageUrl: string,
   backdropUrl: string,
   top: string,
   bottom: string,
+  style: BackdropStyle = "dark",
 ): string {
   const W = 1080;
   const H = 1920;
@@ -151,7 +233,7 @@ function buildPinImageWithBackdrop(
     `h_${H}`,
     "c_fill",
     "g_center",
-    "e_brightness:-25",
+    ...STYLE_EFFECTS[style],
     "q_auto",
     "f_jpg",
   ].join(",");
