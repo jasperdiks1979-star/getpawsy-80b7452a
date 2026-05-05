@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -173,6 +174,49 @@ export default function PinterestBackdropPreviewPage() {
   useEffect(() => {
     setPage(1);
   }, [searchQuery, hookFilter, backdropOnlyFilter, pageSize, pins.length, sortKey, sortDir]);
+
+  // ---------------- Virtualization ----------------
+  // Auto-virtualize when there are many cards on a single page; can be
+  // toggled. Only the visible rows (+ overscan) are mounted in the DOM.
+  const [virtualize, setVirtualize] = useState(true);
+  const shouldVirtualize = virtualize && pagedPins.length > 24;
+
+  // Responsive column count mirrors the Tailwind grid: 1 / 2 / 3.
+  const [cols, setCols] = useState<number>(() =>
+    typeof window === "undefined"
+      ? 3
+      : window.innerWidth >= 1024
+      ? 3
+      : window.innerWidth >= 768
+      ? 2
+      : 1,
+  );
+  useEffect(() => {
+    const onResize = () => {
+      const w = window.innerWidth;
+      setCols(w >= 1024 ? 3 : w >= 768 ? 2 : 1);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Chunk paged pins into rows of `cols` items.
+  const rows = useMemo(() => {
+    if (!shouldVirtualize) return [] as PreviewPin[][];
+    const out: PreviewPin[][] = [];
+    for (let i = 0; i < pagedPins.length; i += cols) {
+      out.push(pagedPins.slice(i, i + cols));
+    }
+    return out;
+  }, [pagedPins, cols, shouldVirtualize]);
+
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useWindowVirtualizer({
+    count: rows.length,
+    estimateSize: () => 720, // approx pin card height incl. backdrop block
+    overscan: 4,
+    scrollMargin: gridContainerRef.current?.offsetTop ?? 0,
+  });
 
   async function runPreview() {
     setLoading(true);
