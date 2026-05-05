@@ -965,6 +965,24 @@ export default function PinterestBackdropPreviewPage() {
             );
           };
 
+          if (transitioning) {
+            return (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: Math.min(pageSize, 6) }).map((_, i) => (
+                  <Card key={i} className="overflow-hidden animate-pulse">
+                    <Skeleton className="aspect-[9/16] w-full rounded-none" />
+                    <CardContent className="p-3 space-y-2">
+                      <Skeleton className="h-3 w-2/3" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-5/6" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          }
+
           if (!shouldVirtualize) {
             return (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
