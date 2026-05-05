@@ -769,7 +769,28 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     // Strip optional visual metadata (backdrop_*) before insert — those columns
     // do not exist on pinterest_pin_queue. Insert must never fail because of
     // optional enrichment data. See sanitizeQueueRows() for the column whitelist.
-    const sanitizedRows = sanitizeQueueRows(rows as Record<string, unknown>[]);
+    const sanitized = sanitizeQueueRowsWithReport(rows as Record<string, unknown>[]);
+    const sanitizedRows = sanitized.rows;
+    if (sanitized.droppedColumns.length > 0) {
+      // Per-batch summary
+      console.warn(
+        `[pinterest-viral-batch] sanitize trace=${traceId} dropped_columns=${sanitized.droppedColumns.length}`,
+        JSON.stringify({
+          traceId,
+          slug,
+          totalRows: sanitizedRows.length,
+          droppedColumns: sanitized.droppedColumns,
+          droppedCounts: sanitized.droppedCounts,
+        }),
+      );
+      // Per-row detail (only rows that actually lost fields)
+      sanitized.droppedPerRow.forEach((cols, i) => {
+        if (cols.length === 0) return;
+        console.warn(
+          `[pinterest-viral-batch] sanitize trace=${traceId} row=${i} variant=${(rows as any)[i]?.pin_variant ?? "?"} dropped=${cols.join(",")}`,
+        );
+      });
+    }
     const { data: inserted, error: insErr } = await sb
       .from("pinterest_pin_queue")
       .insert(sanitizedRows)
