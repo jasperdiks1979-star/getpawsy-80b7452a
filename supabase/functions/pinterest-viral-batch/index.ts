@@ -56,7 +56,14 @@ const HOOK_FALLBACK_PALETTE: Record<string, { primary: string; accent: string; t
   transformation: { primary: "4A2E5C", accent: "1F1330", temp: "cool" },     // plum → midnight (wow)
 };
 
-type PexelsPhoto = { url: string; avgColor: string | null };
+type PexelsPhoto = {
+  url: string;
+  avgColor: string | null;
+  width: number | null;
+  height: number | null;
+  photographer: string | null;
+  pexelsPageUrl: string | null;
+};
 
 async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
   const key = Deno.env.get("PEXELS_API_KEY");
@@ -73,7 +80,14 @@ async function fetchPexelsBackdrop(query: string): Promise<PexelsPhoto | null> {
     const pick = photos[Math.floor(Math.random() * photos.length)];
     const url = pick?.src?.portrait || pick?.src?.large2x || pick?.src?.large || null;
     if (!url) return null;
-    return { url, avgColor: typeof pick?.avg_color === "string" ? pick.avg_color : null };
+    return {
+      url,
+      avgColor: typeof pick?.avg_color === "string" ? pick.avg_color : null,
+      width: typeof pick?.width === "number" ? pick.width : null,
+      height: typeof pick?.height === "number" ? pick.height : null,
+      photographer: typeof pick?.photographer === "string" ? pick.photographer : null,
+      pexelsPageUrl: typeof pick?.url === "string" ? pick.url : null,
+    };
   } catch (_e) {
     return null;
   }
