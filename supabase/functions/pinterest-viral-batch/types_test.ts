@@ -80,7 +80,6 @@ Deno.test("NoBackdropFields<T> erases backdrop_* keys from the type", () => {
 });
 
 Deno.test("NoBackdropFields rejects backdrop_* even when null (compile + runtime)", () => {
-  // @ts-expect-error — `null` must NOT satisfy `?: never`.
   const _bad: NoBackdropFields<PinterestQueueInsert> = {
     product_id: "p",
     product_slug: "s",
@@ -90,6 +89,7 @@ Deno.test("NoBackdropFields rejects backdrop_* even when null (compile + runtime
     destination_link: "https://x",
     status: "queued",
     scheduled_at: new Date().toISOString(),
+    // @ts-expect-error — `null` must NOT satisfy backdrop_* (typed as `never | undefined`).
     backdrop_avg_color: null,
   };
   // Runtime: stripBackdropFields removes the key entirely (not just nulls it).
