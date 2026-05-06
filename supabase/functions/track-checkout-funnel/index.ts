@@ -4,6 +4,7 @@
 // in checkout_funnel_events so the admin can compute funnel drop-off.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { checkEvent, quarantineEvent } from "../_shared/event-sanitizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +62,43 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
+    // ── Strict sanitization ────────────────────────────────────────────────
+    const ua = req.headers.get("user-agent");
+    const fwd = req.headers.get("x-forwarded-for") || "";
+    const meta = (body.metadata || {}) as Record<string, unknown>;
+    const referrer = typeof meta.referrer === "string" ? meta.referrer : null;
+    const url = typeof meta.url === "string" ? meta.url : null;
+    const utmRaw = (meta.utm || {}) as Record<string, unknown>;
+    const check = checkEvent({
+      url,
+      referrer,
+      userAgent: ua,
+      utm: {
+        source: typeof utmRaw.source === "string" ? utmRaw.source : null,
+        medium: typeof utmRaw.medium === "string" ? utmRaw.medium : null,
+        campaign: typeof utmRaw.campaign === "string" ? utmRaw.campaign : null,
+        term: typeof utmRaw.term === "string" ? utmRaw.term : null,
+        content: typeof utmRaw.content === "string" ? utmRaw.content : null,
+      },
+      rapidKey: `cfe:${body.sessionId || fwd || "anon"}`,
+    });
+    if (!check.ok) {
+      await quarantineEvent(admin, {
+        source: "checkout_funnel_events",
+        reasons: check.reasons,
+        payload: { step, body },
+        userAgent: ua,
+        sessionId: body.sessionId ?? null,
+        referrer,
+        pagePath: typeof meta.placement === "string" ? meta.placement : null,
+        utmSource: typeof utmRaw.source === "string" ? utmRaw.source : null,
+      });
+      return new Response(
+        JSON.stringify({ ok: true, traceId, message: "quarantined" }),
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Try to resolve user from auth header (optional).
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
@@ -82,7 +120,12 @@ serve(async (req) => {
       currency: (body.currency || "usd").toLowerCase(),
       payment_method: body.paymentMethod ?? null,
       is_klarna: !!body.isKlarna,
-      metadata: body.metadata ?? {},
+      metadata: {
+        ...(body.metadata ?? {}),
+        utm: check.utm,
+        url: check.cleanedUrl,
+        referrer: check.cleanedReferrer,
+      },
       source: "client",
     });
 

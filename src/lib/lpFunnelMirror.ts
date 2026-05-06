@@ -9,6 +9,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getFounderModeStatus } from '@/lib/founder-mode';
 import { getVisitorCohort } from '@/lib/visitorCohort';
+import { sanitizeTrackingFields, cleanString, isBotUserAgent } from '@/lib/eventSanitizer';
 
 const MIRRORED_EVENTS = new Set([
   'lp_view',
@@ -88,25 +89,35 @@ export function mirrorLpFunnelEvent(
 ): void {
   if (!MIRRORED_EVENTS.has(eventName)) return;
   if (typeof window === 'undefined') return;
+  if (typeof navigator !== 'undefined' && isBotUserAgent(navigator.userAgent)) return;
 
   const isInternal = getFounderModeStatus();
   const { product_id, product_name } = pickProductFromItems(params);
 
-  const row = {
-    session_id: getSessionId(),
-    event_name: eventName,
-    placement: pickString(params, 'placement'),
-    page_path: pickString(params, 'page') || (typeof window !== 'undefined' ? window.location.pathname : null),
-    product_id: product_id || pickString(params, 'product_id'),
-    product_name,
-    value: pickNumber(params, 'value'),
-    lp_click_id: pickString(params, 'lp_click_id'),
-    lp_placement: pickString(params, 'lp_placement'),
+  const clean = sanitizeTrackingFields({
+    page_path: pickString(params, 'page') || window.location.pathname,
     utm_source: pickString(params, 'utm_source'),
     utm_medium: pickString(params, 'utm_medium'),
     utm_campaign: pickString(params, 'utm_campaign'),
     utm_content: pickString(params, 'utm_content'),
-    funnel: pickString(params, 'funnel') ?? 'tiktok_bio',
+  });
+  if (!clean.page_path) return; // drop spam
+
+  const row = {
+    session_id: getSessionId(),
+    event_name: eventName,
+    placement: cleanString(pickString(params, 'placement'), 120),
+    page_path: clean.page_path,
+    product_id: cleanString(product_id || pickString(params, 'product_id'), 120),
+    product_name: cleanString(product_name, 240),
+    value: pickNumber(params, 'value'),
+    lp_click_id: cleanString(pickString(params, 'lp_click_id'), 200),
+    lp_placement: cleanString(pickString(params, 'lp_placement'), 120),
+    utm_source: clean.utm_source,
+    utm_medium: clean.utm_medium,
+    utm_campaign: clean.utm_campaign,
+    utm_content: clean.utm_content,
+    funnel: cleanString(pickString(params, 'funnel'), 60) ?? 'tiktok_bio',
     // CTA variant tag — flows through from LinkInBio's CTA_VARIANT constant
     // (currently 'high_conv_v2'). Lets the admin dashboard compare CTR per
     // variant × placement to attribute uplift to specific UI experiments.

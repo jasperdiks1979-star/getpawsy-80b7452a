@@ -516,6 +516,48 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_quarantine: {
+        Row: {
+          created_at: string
+          id: string
+          ip_hash: string | null
+          page_path: string | null
+          payload: Json
+          reasons: string[]
+          referrer: string | null
+          session_id: string | null
+          source: string
+          user_agent: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          page_path?: string | null
+          payload?: Json
+          reasons?: string[]
+          referrer?: string | null
+          session_id?: string | null
+          source: string
+          user_agent?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          page_path?: string | null
+          payload?: Json
+          reasons?: string[]
+          referrer?: string | null
+          session_id?: string | null
+          source?: string
+          user_agent?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       authority_clusters: {
         Row: {
           config: Json | null
@@ -9112,6 +9154,14 @@ export type Database = {
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_old_web_vitals: { Args: never; Returns: undefined }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
+      count_rejected_events: {
+        Args: { window_hours?: number }
+        Returns: {
+          n: number
+          reason: string
+          source: string
+        }[]
+      }
       cta_ab_test_results: {
         Args: never
         Returns: {

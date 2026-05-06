@@ -13,6 +13,7 @@ import type {
   BackdropMetadata,
 } from "../_shared/pinterest-queue-types.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
+import { sanitizeUrl, quarantineEvent } from "../_shared/event-sanitizer.ts";
 
 export type {
   PinterestQueueInsert,
@@ -800,11 +801,30 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     // optional enrichment data. See sanitizeQueueRows() for the column whitelist.
     const sanitized = sanitizeQueueRowsWithReport(rows as Record<string, unknown>[]);
     const sanitizedRows = sanitized.rows;
-    // Annotate each row with QA reasons (empty array if clean).
-    const annotatedRows = sanitizedRows.map((r) => ({
-      ...r,
-      qa_reasons: runPinQa(r as unknown as Record<string, unknown>),
-    }));
+    // Annotate each row with QA reasons + URL sanitization. Any row whose
+    // destination_link is non-getpawsy or contains corrupted/encoded payloads
+    // is diverted to analytics_quarantine instead of being inserted.
+    const annotatedRows: typeof sanitizedRows = [];
+    for (const r of sanitizedRows) {
+      const destCheck = sanitizeUrl((r as Record<string, unknown>).destination_link as string | undefined);
+      const imgCheck = sanitizeUrl((r as Record<string, unknown>).pin_image_url as string | undefined, { allowExternalReferrer: true });
+      const urlReasons = [...destCheck.reasons, ...imgCheck.reasons];
+      const qaReasons = runPinQa(r as unknown as Record<string, unknown>);
+      const allReasons = Array.from(new Set([...qaReasons, ...urlReasons]));
+      const fatalUrl = !destCheck.ok || !imgCheck.ok;
+      if (fatalUrl) {
+        await quarantineEvent(sb, {
+          source: "pinterest_pin_queue",
+          reasons: urlReasons,
+          payload: r as Record<string, unknown>,
+        });
+        continue;
+      }
+      annotatedRows.push({ ...r, qa_reasons: allReasons } as typeof r);
+    }
+    if (annotatedRows.length === 0) {
+      return respond({ ok: false, code: "ALL_ROWS_QUARANTINED", message: "All pins were rejected by URL sanitizer" });
+    }
     if (sanitized.droppedColumns.length > 0) {
       // Per-batch summary
       console.warn(

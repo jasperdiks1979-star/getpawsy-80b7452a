@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveUtm } from "@/lib/utmNormalizer";
+import { sanitizeTrackingFields, isBotUserAgent } from "@/lib/eventSanitizer";
 
 type ActivityType = "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
 
@@ -48,7 +49,7 @@ const BOT_PATTERNS = [
 // Check if the current user agent is a bot
 const isBot = (): boolean => {
   const userAgent = navigator.userAgent.toLowerCase();
-  return BOT_PATTERNS.some(pattern => userAgent.includes(pattern));
+  return BOT_PATTERNS.some(pattern => userAgent.includes(pattern)) || isBotUserAgent(userAgent);
 };
 
 // Check if we're on a production domain
@@ -276,7 +277,22 @@ export const useVisitorTracking = () => {
       const deviceInfo = deviceInfoRef.current;
       const referrerCategory = categorizeReferrer(referrer, utmParams);
       const isInternal = isInternalTraffic(location?.country);
-      
+
+      const clean = sanitizeTrackingFields({
+        page_path: currentPath,
+        referrer,
+        utm_source: utmParams.utm_source,
+        utm_medium: utmParams.utm_medium,
+        utm_campaign: utmParams.utm_campaign,
+        utm_term: utmParams.utm_term,
+        utm_content: utmParams.utm_content,
+      });
+      // Drop the row entirely if its page_path is malformed/spam.
+      if (!clean.page_path) {
+        console.warn('[Visitor Tracking] Quarantined: malformed page_path');
+        return;
+      }
+
       const { error } = await supabase
         .from("visitor_activity")
         .insert({
@@ -287,13 +303,13 @@ export const useVisitorTracking = () => {
           longitude: location?.longitude || null,
           country: location?.country || null,
           city: location?.city || null,
-          referrer: referrer,
-          utm_source: utmParams.utm_source,
-          utm_medium: utmParams.utm_medium,
-          utm_campaign: utmParams.utm_campaign,
-          utm_term: utmParams.utm_term,
-          utm_content: utmParams.utm_content,
-          page_path: currentPath,
+          referrer: clean.referrer,
+          utm_source: clean.utm_source,
+          utm_medium: clean.utm_medium,
+          utm_campaign: clean.utm_campaign,
+          utm_term: clean.utm_term,
+          utm_content: clean.utm_content,
+          page_path: clean.page_path,
           product_id: options?.productId || null,
           product_name: options?.productName || null,
           product_price: options?.productPrice || null,
@@ -382,6 +398,17 @@ export const trackVisitorEvent = async (
 
   const isInternal = isInternalTraffic(location?.country);
 
+  const clean = sanitizeTrackingFields({
+    page_path: options?.pagePath || window.location.pathname,
+    referrer,
+    utm_source: utmParams.utm_source,
+    utm_medium: utmParams.utm_medium,
+    utm_campaign: utmParams.utm_campaign,
+    utm_term: utmParams.utm_term,
+    utm_content: utmParams.utm_content,
+  });
+  if (!clean.page_path) return;
+
   const { error } = await supabase
     .from("visitor_activity")
     .insert({
@@ -392,13 +419,13 @@ export const trackVisitorEvent = async (
       longitude: location?.longitude || null,
       country: location?.country || null,
       city: location?.city || null,
-      referrer: referrer,
-      utm_source: utmParams.utm_source,
-      utm_medium: utmParams.utm_medium,
-      utm_campaign: utmParams.utm_campaign,
-      utm_term: utmParams.utm_term,
-      utm_content: utmParams.utm_content,
-      page_path: options?.pagePath || window.location.pathname,
+      referrer: clean.referrer,
+      utm_source: clean.utm_source,
+      utm_medium: clean.utm_medium,
+      utm_campaign: clean.utm_campaign,
+      utm_term: clean.utm_term,
+      utm_content: clean.utm_content,
+      page_path: clean.page_path,
       product_id: options?.productId || null,
       product_name: options?.productName || null,
       product_price: options?.productPrice || null,
