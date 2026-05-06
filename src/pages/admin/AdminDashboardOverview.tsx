@@ -79,6 +79,7 @@ const sections = [
       { to: '/admin/crawler-sampling-decisions', label: 'Sampling Decisions', icon: Search, desc: 'Why each crawler-visit was kept or sampled out' },
       { to: '/admin/security-credentials', label: 'Security & Credentials', icon: ShieldAlert, desc: 'API key management' },
       { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert, desc: 'Anti-suspension shield' },
+      { to: '/admin/rejected-spam-events', label: 'Rejected Spam Events', icon: ShieldAlert, desc: 'Quarantined analytics & Pinterest payloads' },
     ],
   },
 ];
