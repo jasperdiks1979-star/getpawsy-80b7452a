@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { cleanUtmSource, cleanUtmMedium, cleanUtmFreeform, cleanReferrer, cleanString, isBotUserAgent } from "@/lib/eventSanitizer";
 
 const LOG_SENTINEL_KEY = "gp_utm_logged";
 
@@ -38,6 +39,7 @@ function isInternalTraffic(): boolean {
  */
 export async function logUtmSession(): Promise<void> {
   if (typeof window === "undefined") return;
+  if (typeof navigator !== "undefined" && isBotUserAgent(navigator.userAgent)) return;
 
   const sid = getSessionId();
   if (!sid) return;
@@ -55,20 +57,22 @@ export async function logUtmSession(): Promise<void> {
     return v && v.trim() ? v.trim().slice(0, 255) : null;
   };
 
+  // Strict sanitization — anything malformed becomes null. We still log
+  // the row so the session is tracked, but spam values are removed.
   const payload = {
     p_session_id: sid,
     p_visitor_id: getVisitorId(),
-    p_utm_source: get("utm_source"),
-    p_utm_medium: get("utm_medium"),
-    p_utm_campaign: get("utm_campaign"),
-    p_utm_term: get("utm_term"),
-    p_utm_content: get("utm_content"),
-    p_utm_id: get("utm_id"),
-    p_gclid: get("gclid"),
-    p_fbclid: get("fbclid"),
-    p_ttclid: get("ttclid"),
-    p_referrer: (document.referrer || "").slice(0, 500) || null,
-    p_landing_page: (window.location.pathname + window.location.search).slice(0, 500),
+    p_utm_source: cleanUtmSource(get("utm_source")),
+    p_utm_medium: cleanUtmMedium(get("utm_medium")),
+    p_utm_campaign: cleanUtmFreeform(get("utm_campaign")),
+    p_utm_term: cleanUtmFreeform(get("utm_term")),
+    p_utm_content: cleanUtmFreeform(get("utm_content")),
+    p_utm_id: cleanUtmFreeform(get("utm_id")),
+    p_gclid: cleanString(get("gclid"), 255),
+    p_fbclid: cleanString(get("fbclid"), 255),
+    p_ttclid: cleanString(get("ttclid"), 255),
+    p_referrer: cleanReferrer((document.referrer || "").slice(0, 500) || null),
+    p_landing_page: cleanString((window.location.pathname + window.location.search).slice(0, 500), 500),
     p_is_internal: isInternalTraffic(),
   };
 
