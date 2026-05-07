@@ -9,6 +9,7 @@ const MIN_DELAY_MS = 5000; // minimum 5s between posts
 const MAX_DELAY_MS = 15000; // maximum 15s between posts
 const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
 const HERO_DAILY_CAP = 3;     // Performance Mode: 3 pins/day until scale_unlocked
+const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -122,6 +123,31 @@ async function refreshPinterestToken(
     });
     return null;
   }
+}
+
+async function fetchPinterestJson(url: string, accessToken: string) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const text = await res.text();
+  let body: any = null;
+  try { body = JSON.parse(text); } catch { body = { raw: text }; }
+  return { ok: res.ok, status: res.status, body, text };
+}
+
+async function validatePinterestAuthForCron(sb: any, conn: any, accessToken: string) {
+  const account = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
+  const boards = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
+  const boardCount = Array.isArray(boards.body?.items) ? boards.body.items.length : 0;
+  const ok = account.ok && boards.ok && boardCount > 0;
+  const error = ok ? null : `AUTH FAILURE: /user_account=${account.status}, /boards=${boards.status}, board_count=${boardCount}`;
+  await sb.from("pinterest_connection").update({
+    status: ok ? "connected" : "auth_failed",
+    last_error: error,
+    last_account_status: account.status,
+    last_boards_status: boards.status,
+    board_count: boardCount,
+    updated_at: new Date().toISOString(),
+  }).eq("id", conn.id);
+  return { ok, error, account, boards, boardCount };
 }
 
 Deno.serve(async (req) => {
