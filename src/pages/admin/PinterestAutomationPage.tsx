@@ -377,6 +377,7 @@ function PinterestDashboard() {
   const [failed, setFailed] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [health, setHealth] = useState<any | null>(null);
+  const [directTestResult, setDirectTestResult] = useState<any | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -495,6 +496,27 @@ function PinterestDashboard() {
       await fetchAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not publish to Pinterest");
+      await fetchAll();
+    }
+    setActionLoading(null);
+  };
+
+  const handleDirectApiTest = async () => {
+    setActionLoading("direct-api-test");
+    setDirectTestResult(null);
+    try {
+      const data = await invokePinterestAction<any>("direct_pinterest_api_test");
+      setDirectTestResult(data);
+      if (data?.pin_id && data?.external_url) {
+        toast.success(`Direct Pinterest API Test published ${data.pin_id}`);
+      } else {
+        throw new Error(data?.error || JSON.stringify(data?.response_body || "No Pinterest pin ID returned"));
+      }
+      await fetchAll();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Direct Pinterest API Test failed";
+      setDirectTestResult((prev: any) => prev || { ok: false, error: message });
+      toast.error(message);
       await fetchAll();
     }
     setActionLoading(null);
