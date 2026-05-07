@@ -1087,7 +1087,7 @@ Deno.serve(async (req) => {
       const [{ data: stuck }, { data: lastCron }, { data: conn }] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id, publishing_started_at").eq("status", "publishing").lt("publishing_started_at", new Date(Date.now() - 15 * 60_000).toISOString()),
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
-        sb.from("pinterest_connection").select("status, last_error, last_publish_at").limit(1).maybeSingle(),
+        sb.from("pinterest_connection").select("status, last_error, last_publish_at, token_created_at, token_prefix, token_sha256, scopes, last_account_status, last_boards_status, board_count, updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       const [draftCount, queuedCount, publishingCount, postedCount, failedCount, skippedCount] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "draft"),
@@ -1142,10 +1142,17 @@ Deno.serve(async (req) => {
       const nextEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
       const nextPublishNowEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: true, allowed, maxRetries: 2 });
 
+      const authValid = conn?.status === "connected" && conn?.last_account_status === 200 && conn?.last_boards_status === 200 && (conn?.board_count || 0) > 0;
       return json(cors, {
         ok: true,
         api_status: conn?.status || "disconnected",
         api_last_error: conn?.last_error || null,
+        auth_valid: authValid,
+        auth_failure_warning: authValid ? null : "AUTH FAILURE: publishing is disabled until /user_account returns 200 and /boards returns at least one real board.",
+        token: conn ? { prefix: conn.token_prefix, token_created_at: conn.token_created_at, token_sha256: conn.token_sha256, scopes: conn.scopes, connection_updated_at: conn.updated_at } : null,
+        account_status_code: conn?.last_account_status ?? null,
+        boards_status_code: conn?.last_boards_status ?? null,
+        board_count: conn?.board_count ?? null,
         last_publish_at: conn?.last_publish_at || null,
         last_cron_tick: lastCron?.[0]?.created_at || null,
         last_cron_status: lastCron?.[0]?.status || null,
