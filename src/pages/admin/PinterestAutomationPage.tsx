@@ -21,6 +21,9 @@ import {
   Wand2,
   Zap,
   XCircle,
+  Activity,
+  AlertTriangle,
+  Wrench,
 } from "lucide-react";
 
 type PinterestConnection = {
@@ -306,6 +309,7 @@ function PinterestDashboard() {
   const [posted, setPosted] = useState<any[]>([]);
   const [failed, setFailed] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [health, setHealth] = useState<any | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -328,6 +332,12 @@ function PinterestDashboard() {
       setFailed(failedRes.data || []);
       setLogs(logRes.data || []);
       setConnection(connectionRes.connection || null);
+      try {
+        const diag = await invokePinterestAction<any>("publish_diagnostics");
+        setHealth(diag || null);
+      } catch (diagErr) {
+        console.warn("publish_diagnostics failed:", diagErr);
+      }
     } catch (e) {
       console.error("Failed to fetch pinterest data:", e);
       toast.error("Could not load Pinterest automation data");
@@ -422,7 +432,20 @@ function PinterestDashboard() {
       } else if (firstError) {
         throw new Error(firstError);
       } else {
-        toast("No queued pins are ready to publish yet");
+        // Surface why nothing ran by querying diagnostics.
+        try {
+          const diag = await invokePinterestAction<any>("publish_diagnostics");
+          const r = diag?.queued_breakdown;
+          const parts: string[] = [];
+          if (r?.not_approved) parts.push(`${r.not_approved} not approved`);
+          if (r?.scheduled_in_future) parts.push(`${r.scheduled_in_future} scheduled later`);
+          if (r?.slug_not_allowed) parts.push(`${r.slug_not_allowed} blocked by allowlist`);
+          if (r?.retries_exceeded) parts.push(`${r.retries_exceeded} hit retry limit`);
+          if (r?.ready) parts.push(`${r.ready} ready (cron should pick up)`);
+          toast(parts.length ? `No pins published. Reasons: ${parts.join(", ")}` : "No queued pins are ready to publish yet");
+        } catch {
+          toast("No queued pins are ready to publish yet");
+        }
       }
 
       await fetchAll();
@@ -441,9 +464,14 @@ function PinterestDashboard() {
       } else if (action === "delete") {
         await supabase.from("pinterest_pin_queue").delete().eq("id", pinId);
         toast.success("Pin deleted");
-      } else if (action === "force") {
-        await supabase.from("pinterest_pin_queue").update({ status: "queued", scheduled_at: new Date().toISOString() }).eq("id", pinId);
-        toast.success("Pin scheduled for immediate posting");
+      } else if (action === "force" || action === "test") {
+        const data = await invokePinterestAction<any>("force_publish", { pinId });
+        if (data?.ok === false) {
+          toast.error(data?.error || "Force publish failed");
+        } else {
+          toast.success(`Published live as ${data?.published || "—"}`);
+          if (data?.external_url) console.info("[force_publish] external URL:", data.external_url, data.response);
+        }
       } else if (action === "approve") {
         await invokePinterestAction("approve_pin", { pinId });
         toast.success("Pin approved & queued");
@@ -522,6 +550,20 @@ function PinterestDashboard() {
       await fetchAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Bulk reject failed");
+    }
+    setActionLoading(null);
+  };
+
+  const runRecovery = async (action: string, label: string) => {
+    setActionLoading(action);
+    try {
+      const data = await invokePinterestAction<any>(action);
+      if (data?.ok === false) throw new Error(data?.error || "Recovery failed");
+      const n = data?.recovered ?? data?.cleared ?? data?.deleted ?? 0;
+      toast.success(`${label}: ${n}`);
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Recovery failed");
     }
     setActionLoading(null);
   };
