@@ -659,6 +659,44 @@ function PinterestDashboard() {
         onPublishNow={handlePublishNow}
       />
 
+      <Card className="border-destructive/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Zap className="h-4 w-4 text-destructive" /> Direct Pinterest API Test
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button onClick={() => void handleDirectApiTest()} disabled={!!actionLoading}>
+            {actionLoading === "direct-api-test" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+            Direct Pinterest API Test
+          </Button>
+          {directTestResult && (
+            <div className="space-y-3 rounded-md border border-border p-3 text-xs">
+              <div className="grid gap-3 md:grid-cols-2">
+                <DiagnosticValue label="request endpoint" value={directTestResult.request_endpoint} mono />
+                <DiagnosticValue label="board_id" value={directTestResult.board_id || directTestResult.request_payload?.board_id} mono />
+                <DiagnosticValue label="image_url" value={directTestResult.image_url || directTestResult.request_payload?.media_source?.url} mono />
+                <DiagnosticValue label="destination_url" value={directTestResult.destination_url || directTestResult.request_payload?.link} mono />
+                <DiagnosticValue label="status code" value={directTestResult.status_code} />
+                <DiagnosticValue label="returned pin_id" value={directTestResult.pin_id} mono />
+                <DiagnosticValue label="returned pin URL" value={directTestResult.external_url} mono />
+                <DiagnosticValue label="exact error" value={directTestResult.error} mono />
+              </div>
+              {directTestResult.external_url && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={directTestResult.external_url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-2 h-3 w-3" /> Open live Pinterest pin
+                  </a>
+                </Button>
+              )}
+              <pre className="max-h-80 overflow-auto rounded bg-muted p-3 text-[11px] text-muted-foreground">
+                {JSON.stringify(directTestResult.response_body ?? directTestResult, null, 2)}
+              </pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
