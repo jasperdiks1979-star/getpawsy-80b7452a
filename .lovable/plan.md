@@ -1,91 +1,74 @@
-## Pinterest Performance Mode — GetPawsy
+# Pinterest Publish Pipeline — Repair Plan
 
-Transition Pinterest automation from experimental to production-grade. **Quality over volume.** The hero product (Automatic Cat Litter Box) is the only product allowed to publish. Every pin goes through Generate → Review → Approve → Publish.
+## Root Cause (verified against the database)
 
-Most of the foundation is already in place from prior work (QA gate, allowlist, draft-first inserts, analytics quarantine, sandbox/production toggle, BATCH_SIZE=3). This plan closes the remaining gaps to reach "production quality".
+Queue snapshot:
 
----
+```text
+status   | count | with approved_at
+---------+-------+------------------
+posted   |   895 | 0
+skipped  |   162 | 0
+draft    |   128 | 0
+queued   |    86 | 0
+```
 
-### 1. Lock down hero-product-only mode (Phases 1, 2, 11)
+All 86 `queued` pins have `approved_at = NULL`. The QA hardening added in the last loop introduced
+`.not("approved_at", "is", null)` in both `pinterest-cron-worker` and `publish_next`. Result: every
+queued pin is silently filtered out, hence "No queued pins ready to publish yet" while the queue
+grows. The viral-batch generator now correctly inserts as `draft`, but legacy code paths
+(`scale_100`, `queue_pins`, manual seeds) still insert directly as `queued` with no `approved_at`.
 
-- Confirm `PINTEREST_ALLOWED_SLUGS` only contains `automatic-cat-litter-box-self-cleaning-app-control` (already done) and remove every other code path that can bypass it:
-  - `pinterest-scheduler` currently generates pins for *any* active product → restrict it to allowed slugs or disable it entirely.
-  - `pinterest-automation` `bulk_generate` / `scale_100` already disabled — verify and remove dead UI buttons.
-- Enforce a hard daily cap of **3 pins/day** in `pinterest-cron-worker` (count `posted` rows in last 24h before publishing).
-- Hide non-hero products from the admin "Generate" form.
+## Fix Scope
 
-### 2. Pin Quality Engine (Phases 3, 4, 8, 9)
+### 1. Strict state machine + DB hygiene (migration)
 
-Refactor `pinterest-viral-batch` so every draft is built from a **constrained creative spec**:
+- Add columns: `pinterest_pin_queue.publishing_started_at timestamptz`, `pinterest_pin_queue.publish_attempts int default 0`, `pinterest_pin_queue.last_publish_error text`.
+- Add `pinterest_publish_logs` table — one row per publish attempt with: `pin_queue_id`, `attempt`, `status` (`started`/`success`/`failed`/`skipped_duplicate`), `board_id`, `image_url`, `pin_title`, `destination_link`, `request_payload jsonb`, `response_payload jsonb`, `error_message`, `duration_ms`, `created_at`.
+- Add partial index `(status, scheduled_at)` filtered on `status IN ('queued','publishing')`.
+- Backfill: any row `status='queued' AND approved_at IS NULL` → `status='draft'` so it shows in review (admin can bulk-approve).
 
-- **Layouts:** only Style A (hero + soft backdrop), Style B (before/after), Style C (problem/solution). Reject anything else at QA.
-- **Hooks:** introduce `_shared/pinterest-hooks.ts` exporting only the approved PAIN / TIME-SAVING / TRANSFORMATION / SOCIAL-PROOF / CURIOSITY lists. Generator picks from this list; `runPinQa` adds a `weak_hook` reason if the title/overlay isn't a member.
-- **SEO fields:** title (≤100 chars), description (200–500 chars, includes 1 target keyword), 5 fixed hashtags, board = `Cat Essentials` or `Smart Cat Products`. Alt text mirrors title.
-- **Visual:** keep the Cloudinary 9:16 backdrop pipeline; add `low_resolution` check (reject < 1000×1500), `duplicate_asset` check (hash of `pin_image_url` already used in last 14 days).
+### 2. Recovery & state transitions in `pinterest-automation`
 
-### 3. Strengthen the QA gate (Phase 5)
+- New actions: `recover_orphaned_queued` (queued→draft when no approved_at), `clear_stuck_publishing` (publishing→queued when `publishing_started_at < now()-15min`), `force_publish` (admin override that bypasses `approved_at` check, still runs QA), `dedupe_queue` (delete duplicates by `(product_id, pin_variant)` keeping oldest), `delete_pin` (single-row purge).
+- Tighten `publish_next` to return a structured diagnostic when 0 rows match: `{ok:true, ready:0, reasons:{not_approved, scheduled_in_future, missing_slug}}`.
+- Tighten `approve_pin` / `bulk_approve` to set `status='queued'`, `approved_at=now()`, `scheduled_at=now()` only when QA passes (already correct).
 
-Extend `_shared/pinterest-qa.ts` with the missing reason codes from the brief:
+### 3. Cron worker (`pinterest-cron-worker`)
 
-- `unreadable_overlay` (replaces ambiguous `unreadable_text` — keep both for back-compat)
-- `low_resolution`
-- `malformed_url`
-- `spam_payload` (runs the event-sanitizer's `isCleanString` on title/description/overlay)
-- `duplicate_asset`
-- `weak_hook`
+- Lock-then-publish: before fetch loop, do `UPDATE … SET status='publishing', publishing_started_at=now() WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED)` to prevent races.
+- Wrap each publish: insert `pinterest_publish_logs` row with `status='started'`, then update with response or error.
+- Duplicate guard already present (7-day same product+variant) — extend to also check `image_hash` from previous loop's migration.
+- On success: `status='posted'`, `posted_at`, `pin_external_id`. On failure under MAX_RETRIES: `status='queued'`, increment `publish_attempts`. At MAX: `status='failed'`.
 
-`runPinQa` returns the union; the worker still refuses to publish if `qa_reasons` is non-empty OR `approved_at` is null.
+### 4. Admin UI (`PinterestAutomationPage.tsx`)
 
-### 4. Human review pipeline (Phase 6)
+- New "Publish Health" panel at top: API status (from `pinterest_connection.status`), last cron run (latest `pinterest_post_logs.action='cron_tick'`), queue depth, posted-last-24h, success rate (posted / posted+failed last 24h), avg publish duration (from new logs table), stuck-publishing count.
+- New "Recovery" toolbar: buttons for the 5 new actions above, each with confirm dialog and toast feedback.
+- Force-publish row action on each draft/queued pin.
+- Dashboard counts now read directly from `pinterest_pin_queue` grouped by status — already correct, but add `publishing` bucket.
 
-Admin UI `/admin/pinterest-automation` already has Approve / Reject / Purge. Add:
+### 5. Live test mode
 
-- **Regenerate** button on each draft → calls `pinterest-viral-batch` with `{ regenerate_id }` to swap copy/backdrop.
-- **Bulk approve** / **Bulk reject** with a confirm dialog (limit 10 at a time).
-- Visible badges for every new QA reason code with tooltip explaining the failure.
+- `test_publish_now` action: takes `pinId`, bypasses scheduler, runs QA, posts, returns full Pinterest API JSON in the response. Surfaces in UI as "Test publish now" button.
 
-### 5. Analytics hardening verification (Phase 7)
+## Out of scope
 
-The quarantine table + sanitizer modules already exist. Verify and tighten:
+- TikTok automation, Google Ads, Pinterest OAuth refactor, board mapping changes, scheduler/cron schedule change. Pinterest mode (sandbox/prod) and existing rate limits stay as configured.
 
-- `pinterest-viral-batch` rejects malformed `destination_link` → quarantine (already done).
-- Add a small `useRejectedSpamCount` widget on the Pinterest dashboard so spikes are visible alongside pin metrics.
+## Files
 
-### 6. Performance dashboard (Phase 10)
+**New**
+- `supabase/migrations/<ts>_pinterest_publish_pipeline.sql`
 
-New page `src/pages/admin/PinterestPerformancePage.tsx` (route `/admin/pinterest-performance`) showing:
+**Edited**
+- `supabase/functions/pinterest-cron-worker/index.ts` — lock, publish logs, attempts.
+- `supabase/functions/pinterest-automation/index.ts` — recovery actions, force/test publish, diagnostics.
+- `src/pages/admin/PinterestAutomationPage.tsx` — health panel, recovery toolbar, per-row actions.
+- `src/integrations/supabase/types.ts` — auto-regenerates after migration.
 
-- Last 30 days: impressions, outbound clicks, saves, CTR, add-to-cart rate (joined from `lp_funnel_events` where `utm_source = 'pinterest'`), checkout rate.
-- Top hooks / best board / best layout / best CTA tables (group by `pin_variant`, `board_name`, `overlay_text` first segment).
-- Best publishing hour-of-day.
-- Worst-performing pins (lowest CTR with ≥100 impressions).
-- Rejected-spam-events counter.
+## Verification
 
-Data source: existing `pinterest_pin_queue` (status, posted_at, external_url) joined to `lp_funnel_events` via `utm_content = product_slug` + `utm_campaign`.
-
-### 7. Smart scaling guardrails (Phase 11)
-
-Add `pinterest_runtime_settings.scale_unlocked` boolean (default false). The cron worker reads it: while false, hard cap = 3/day, single product. A nightly job evaluates last-7-day CTR and surfaces an "Unlock scaling" recommendation in the admin UI — but the toggle stays manual.
-
----
-
-### Technical Details
-
-**Files to create**
-- `supabase/functions/_shared/pinterest-hooks.ts` — approved hook bank + `pickHook(category)` + `isApprovedHook(text)`.
-- `src/pages/admin/PinterestPerformancePage.tsx` + route in `App.tsx`.
-- Migration: add `scale_unlocked boolean default false` to `pinterest_runtime_settings`; add `image_hash text` + index to `pinterest_pin_queue` for duplicate detection.
-
-**Files to edit**
-- `supabase/functions/_shared/pinterest-qa.ts` — new reason codes, hook validation, image-hash dedup, `isCleanString` for spam.
-- `supabase/functions/pinterest-viral-batch/index.ts` — generator uses approved hook bank, computes `image_hash`, enforces layout enum.
-- `supabase/functions/pinterest-cron-worker/index.ts` — daily cap, scale-unlocked check, re-runs QA last.
-- `supabase/functions/pinterest-scheduler/index.ts` — gate by `PINTEREST_ALLOWED_SLUGS` (or disable entirely).
-- `src/pages/admin/PinterestAutomationPage.tsx` — Regenerate, Bulk approve/reject, new QA badges, hide non-hero products.
-
-**Out of scope**
-- TikTok, Google Ads, other channels.
-- Any change to existing Pinterest OAuth / sandbox-vs-production toggle (already correct).
-- Volume scaling — explicitly deferred behind `scale_unlocked`.
-
-Approve this plan and I'll implement it in order (QA + hooks → batch generator → worker cap → admin UI → dashboard → migration).
+1. After migration, confirm 86 orphaned `queued` pins moved to `draft` (visible in review).
+2. Bulk-approve a small set (3) → cron tick or "Publish next now" → verify rows reach `posted` with `pin_external_id` and a row in `pinterest_publish_logs`.
+3. Health panel reflects real counts; success rate updates after first run.
