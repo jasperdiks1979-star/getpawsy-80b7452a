@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-import { resolvePinterestBoardId } from "../_shared/pinterest.ts";
+import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 
@@ -419,14 +419,15 @@ Deno.serve(async (req) => {
               );
               if (retryRes.ok) {
                 const retryData = await retryRes.json();
-                const verifiedR = await verifyPinExists(accessToken, apiBase, retryData.id);
-                console.log("[pinterest] verify", { pin_id: retryData.id, pin_verified: verifiedR });
-                await markPosted(sb, pin, retryData.id, verifiedR);
+                const externalUrlR = `https://www.pinterest.com/pin/${retryData.id}/`;
+                const verificationR = await validatePinterestExternalUrl(accessToken, apiBase, externalUrlR, retryData.id);
+                console.log("[pinterest] verify", { pin_id: retryData.id, ...verificationR });
+                await markPosted(sb, pin, retryData.id, verificationR);
                 results.push({
                   pinId: pin.id,
                   status: "posted",
                   externalId: retryData.id,
-                  pinVerified: verifiedR,
+                  pinVerified: verificationR.ok,
                 });
                 console.log(
                   `✅ Pin ${pin.id} posted (after refresh) as ${retryData.id}`,
@@ -449,26 +450,26 @@ Deno.serve(async (req) => {
         if (!pinData?.id || !externalUrl) {
           throw new Error(`Pinterest response missing real pin id or external URL: ${JSON.stringify(pinData)}`);
         }
-        const verified = await verifyPinExists(accessToken, apiBase, pinData.id);
-        console.log("[pinterest] verify", { pin_id: pinData.id, pin_verified: verified });
-        await markPosted(sb, pin, pinData.id, verified);
+        const verification = await validatePinterestExternalUrl(accessToken, apiBase, externalUrl, pinData.id);
+        console.log("[pinterest] verify", { pin_id: pinData.id, ...verification });
+        await markPosted(sb, pin, pinData.id, verification);
         await sb.from("pinterest_publish_logs").insert({
           pin_queue_id: pin.id,
           attempt: (pin.publish_attempts || 0) + 1,
-          status: "success",
+          status: verification.ok ? "success" : "warning",
           board_id: boardId,
           image_url: pin.pin_image_url,
           pin_title: pin.pin_title,
           destination_link: pin.destination_link,
           request_payload: requestPayload,
-          response_payload: { ...pinData, pin_verified: verified, external_url: externalUrl },
+          response_payload: { ...pinData, pin_verified: verification.ok, pin_verification_reason: verification.reason, external_url: externalUrl },
           duration_ms: Date.now() - publishStartedAt,
         });
         results.push({
           pinId: pin.id,
           status: "posted",
           externalId: pinData.id,
-          pinVerified: verified,
+          pinVerified: verification.ok,
         });
         console.log(`✅ Pin ${pin.id} posted as ${pinData.id}`);
       } catch (e) {
@@ -547,8 +548,14 @@ Deno.serve(async (req) => {
 });
 
 /** Helper: mark a pin as posted and update product status */
-async function markPosted(sb: any, pin: any, externalId: string, verified: boolean = false) {
+async function markPosted(
+  sb: any,
+  pin: any,
+  externalId: string,
+  verification: { ok: boolean; reason: string } = { ok: false, reason: "not_validated" },
+) {
   const now = new Date().toISOString();
+  const externalUrl = `https://www.pinterest.com/pin/${externalId}/`;
   await sb
     .from("pinterest_pin_queue")
     .update({
@@ -556,11 +563,14 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
       posted_at: now,
       pin_external_id: externalId,
       pinterest_pin_id: externalId,
-      external_url: `https://www.pinterest.com/pin/${externalId}/`,
+      external_url: externalUrl,
       error_message: null,
       last_publish_error: null,
       rejection_reason: null,
       publishing_started_at: null,
+      pin_verified: verification.ok,
+      pin_verification_reason: verification.reason,
+      pin_verified_at: now,
     })
     .eq("id", pin.id);
 
@@ -572,15 +582,17 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
   await sb.from("pinterest_post_logs").insert({
     pin_queue_id: pin.id,
     action: "publish",
-    status: "success",
+    status: verification.ok ? "success" : "warning",
+    error_message: verification.ok ? null : verification.reason,
     response_data: {
       external_id: externalId,
-      pin_verified: verified,
+      pin_verified: verification.ok,
+      pin_verification_reason: verification.reason,
       hook_used: pin.overlay_text || null,
       variant_type: pin.pin_variant || null,
       pin_id: externalId,
       outbound_click_ready: Boolean(pin.destination_link),
-      external_url: externalId ? `https://www.pinterest.com/pin/${externalId}/` : null,
+      external_url: externalUrl,
       ctr_ready_score: ctrReadyScore(pin),
     },
   });

@@ -5136,6 +5136,9 @@ export type Database = {
           pin_image_url: string | null
           pin_title: string
           pin_variant: string
+          pin_verification_reason: string | null
+          pin_verified: boolean | null
+          pin_verified_at: string | null
           pinterest_pin_id: string | null
           posted_at: string | null
           priority: string
@@ -5173,6 +5176,9 @@ export type Database = {
           pin_image_url?: string | null
           pin_title: string
           pin_variant: string
+          pin_verification_reason?: string | null
+          pin_verified?: boolean | null
+          pin_verified_at?: string | null
           pinterest_pin_id?: string | null
           posted_at?: string | null
           priority?: string
@@ -5210,6 +5216,9 @@ export type Database = {
           pin_image_url?: string | null
           pin_title?: string
           pin_variant?: string
+          pin_verification_reason?: string | null
+          pin_verified?: boolean | null
+          pin_verified_at?: string | null
           pinterest_pin_id?: string | null
           posted_at?: string | null
           priority?: string
