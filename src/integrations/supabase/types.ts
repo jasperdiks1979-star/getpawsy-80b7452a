@@ -4997,6 +4997,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_debug_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          label: string | null
+          minted_by: string | null
+          minted_by_email: string | null
+          token_hash: string
+          used_at: string | null
+          used_ip: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          label?: string | null
+          minted_by?: string | null
+          minted_by_email?: string | null
+          token_hash: string
+          used_at?: string | null
+          used_ip?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          minted_by?: string | null
+          minted_by_email?: string | null
+          token_hash?: string
+          used_at?: string | null
+          used_ip?: string | null
+        }
+        Relationships: []
+      }
       pinterest_keyword_performance: {
         Row: {
           avg_ctr: number | null

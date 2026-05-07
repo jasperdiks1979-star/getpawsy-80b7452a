@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
     const action = body.action as string;
 
     if (action === "direct_pinterest_api_test") {
-      const adminCheck = await requireDirectTestAdmin(sb, req);
+      const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
 
       const { data: conn } = await sb
@@ -379,6 +379,15 @@ Deno.serve(async (req) => {
       if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
 
       return await runDirectPinterestApiTest(sb, conn, accessToken, cors);
+    }
+
+    if (action === "mint_direct_test_token") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const ttlMinutes = Math.min(60, Math.max(1, Number(body.ttl_minutes) || 10));
+      const label = typeof body.label === "string" ? body.label.slice(0, 120) : null;
+      const minted = await mintDirectTestDebugToken(sb, adminCheck.user, ttlMinutes, label);
+      return json(cors, { ok: true, ...minted });
     }
 
     if (action === "get_connection") {
@@ -1247,7 +1256,10 @@ function determineEligibility(pin: any, opts: { requireApproved: boolean; ignore
   return { eligible: true, reason: "eligible", imageValidation, destinationValidation, qa_reasons: [] };
 }
 
-async function requireDirectTestAdmin(sb: any, req: Request): Promise<{ ok: true } | { ok: false; error: string }> {
+async function requireDirectTestAdmin(
+  sb: any,
+  req: Request,
+): Promise<{ ok: true; user: { id: string; email: string | null } } | { ok: false; error: string }> {
   const authHeader = req.headers.get("authorization") || "";
   if (!authHeader.toLowerCase().startsWith("bearer ")) return { ok: false, error: "Admin auth required" };
 
@@ -1267,8 +1279,96 @@ async function requireDirectTestAdmin(sb: any, req: Request): Promise<{ ok: true
     .eq("role", "admin")
     .maybeSingle();
   const email = String(data.user.email || "").trim().toLowerCase();
-  if (role?.role === "admin" || DIRECT_TEST_ADMIN_EMAILS.has(email)) return { ok: true };
+  if (role?.role === "admin" || DIRECT_TEST_ADMIN_EMAILS.has(email)) {
+    return { ok: true, user: { id: data.user.id, email: data.user.email ?? null } };
+  }
   return { ok: false, error: "Admin role required for Direct Pinterest API Test" };
+}
+
+/**
+ * Authorize a Direct Pinterest API Test call. Accepts either:
+ *  - a logged-in admin JWT (Bearer …) — same as before, OR
+ *  - a one-shot signed debug token via `body.debug_token` or `x-pinterest-debug-token` header,
+ *    minted by an admin via action=mint_direct_test_token. Each token is single-use, hashed at rest,
+ *    and expires in ≤60 minutes.
+ */
+async function authorizeDirectTest(
+  sb: any,
+  req: Request,
+  body: any,
+): Promise<{ ok: true; via: "jwt" | "debug_token" } | { ok: false; error: string }> {
+  const debugToken = String(
+    body?.debug_token || req.headers.get("x-pinterest-debug-token") || "",
+  ).trim();
+  if (debugToken) {
+    const verdict = await consumeDirectTestDebugToken(sb, debugToken, req);
+    if (verdict.ok) return { ok: true, via: "debug_token" };
+    return { ok: false, error: verdict.error };
+  }
+  const adminCheck = await requireDirectTestAdmin(sb, req);
+  if (!adminCheck.ok) return adminCheck;
+  return { ok: true, via: "jwt" };
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function mintDirectTestDebugToken(
+  sb: any,
+  user: { id: string; email: string | null },
+  ttlMinutes: number,
+  label: string | null,
+): Promise<{ token: string; expires_at: string; ttl_minutes: number; label: string | null }> {
+  const raw = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  const token = `pdt_${raw}`;
+  const tokenHash = await sha256Hex(token);
+  const expiresAt = new Date(Date.now() + ttlMinutes * 60_000).toISOString();
+  await sb.from("pinterest_debug_tokens").insert({
+    token_hash: tokenHash,
+    label,
+    minted_by: user.id,
+    minted_by_email: user.email,
+    expires_at: expiresAt,
+  });
+  await sb.from("pinterest_post_logs").insert({
+    action: "mint_direct_test_token",
+    status: "success",
+    response_data: { minted_by_email: user.email, ttl_minutes: ttlMinutes, expires_at: expiresAt, label },
+  });
+  return { token, expires_at: expiresAt, ttl_minutes: ttlMinutes, label };
+}
+
+async function consumeDirectTestDebugToken(
+  sb: any,
+  token: string,
+  req: Request,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!token.startsWith("pdt_") || token.length < 16) {
+    return { ok: false, error: "Invalid debug token format" };
+  }
+  const tokenHash = await sha256Hex(token);
+  const { data: row } = await sb
+    .from("pinterest_debug_tokens")
+    .select("id, expires_at, used_at")
+    .eq("token_hash", tokenHash)
+    .maybeSingle();
+  if (!row) return { ok: false, error: "Debug token not recognized" };
+  if (row.used_at) return { ok: false, error: "Debug token already used" };
+  if (new Date(row.expires_at).getTime() < Date.now()) return { ok: false, error: "Debug token expired" };
+
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("cf-connecting-ip") || null;
+  // Atomic single-use claim — only succeeds if used_at is still NULL.
+  const { data: claimed } = await sb
+    .from("pinterest_debug_tokens")
+    .update({ used_at: new Date().toISOString(), used_ip: ip })
+    .eq("id", row.id)
+    .is("used_at", null)
+    .select("id")
+    .maybeSingle();
+  if (!claimed) return { ok: false, error: "Debug token already used" };
+  return { ok: true };
 }
 
 async function getFreshPinterestProductionToken(sb: any, conn: any): Promise<string | null> {

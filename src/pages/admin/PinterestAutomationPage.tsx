@@ -380,6 +380,8 @@ function PinterestDashboard() {
   const [directTestResult, setDirectTestResult] = useState<any | null>(null);
   const [directTestHistory, setDirectTestHistory] = useState<any[]>([]);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [debugToken, setDebugToken] = useState<{ token: string; expires_at: string; ttl_minutes: number; label: string | null } | null>(null);
+  const [debugTokenTtl, setDebugTokenTtl] = useState<number>(10);
 
   const fetchDirectTestHistory = useCallback(async () => {
     const { data, error } = await supabase
@@ -543,6 +545,54 @@ function PinterestDashboard() {
     setActionLoading(null);
   };
 
+  const handleMintDebugToken = async () => {
+    setActionLoading("mint-debug-token");
+    try {
+      const data = await invokePinterestAction<{ token: string; expires_at: string; ttl_minutes: number; label: string | null }>("mint_direct_test_token", {
+        ttl_minutes: debugTokenTtl,
+        label: `admin-ui ${new Date().toISOString()}`,
+      });
+      setDebugToken(data);
+      try { await navigator.clipboard.writeText(data.token); } catch {}
+      toast.success(`Debug token minted (expires ${new Date(data.expires_at).toLocaleTimeString()})`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not mint debug token");
+    }
+    setActionLoading(null);
+  };
+
+  const handleRunWithDebugToken = async () => {
+    if (!debugToken?.token) return toast.error("Mint a debug token first");
+    setActionLoading("direct-api-test-token");
+    setDirectTestResult(null);
+    try {
+      // Call without admin JWT — token-only auth path. Use raw fetch so no Bearer header is sent.
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-automation`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "x-pinterest-debug-token": debugToken.token,
+        },
+        body: JSON.stringify({ action: "direct_pinterest_api_test", debug_token: debugToken.token }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setDirectTestResult(data);
+      if (data?.pin_id && data?.external_url) {
+        toast.success(`Token-auth test published ${data.pin_id}`);
+      } else {
+        throw new Error(data?.error || "Token-auth test failed");
+      }
+      // Token is single-use — clear the local copy.
+      setDebugToken(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Token-auth test failed");
+    }
+    await fetchDirectTestHistory();
+    setActionLoading(null);
+  };
+
   const handleAction = async (action: string, pinId: string) => {
     setActionLoading(pinId);
     try {
@@ -688,6 +738,42 @@ function PinterestDashboard() {
             {actionLoading === "direct-api-test" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
             Direct Pinterest API Test
           </Button>
+
+          <div className="space-y-2 rounded-md border border-dashed border-border p-3 text-xs">
+            <p className="font-semibold text-foreground">One-shot debug token</p>
+            <p className="text-muted-foreground">
+              Mint a single-use, time-limited token so the test can run without exposing your admin JWT
+              (e.g. from curl or another client). Each token is hashed at rest and consumed on first use.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-[11px] uppercase text-muted-foreground">TTL (min)</label>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={debugTokenTtl}
+                onChange={(e) => setDebugTokenTtl(Math.max(1, Math.min(60, Number(e.target.value) || 10)))}
+                className="h-8 w-20 rounded-md border border-input bg-background px-2 text-xs"
+              />
+              <Button size="sm" variant="outline" onClick={() => void handleMintDebugToken()} disabled={!!actionLoading}>
+                {actionLoading === "mint-debug-token" ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <ShieldCheck className="mr-2 h-3 w-3" />}
+                Mint debug token
+              </Button>
+              <Button size="sm" onClick={() => void handleRunWithDebugToken()} disabled={!!actionLoading || !debugToken?.token}>
+                {actionLoading === "direct-api-test-token" ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Play className="mr-2 h-3 w-3" />}
+                Run test with token
+              </Button>
+            </div>
+            {debugToken && (
+              <div className="space-y-1 rounded bg-muted p-2 font-mono text-[11px] text-foreground">
+                <p className="break-all">{debugToken.token}</p>
+                <p className="text-muted-foreground">
+                  Expires {new Date(debugToken.expires_at).toLocaleString()} · Single-use · Copied to clipboard
+                </p>
+              </div>
+            )}
+          </div>
+
           {directTestResult && (
             <div className="space-y-3 rounded-md border border-border p-3 text-xs">
               <div className="grid gap-3 md:grid-cols-2">
