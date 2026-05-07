@@ -1002,9 +1002,22 @@ Deno.serve(async (req) => {
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
         sb.from("pinterest_connection").select("status, last_error, last_publish_at").limit(1).maybeSingle(),
       ]);
-      const { data: counts } = await sb.from("pinterest_pin_queue").select("status", { count: "exact" });
-      const grouped: Record<string, number> = {};
-      for (const row of counts || []) grouped[(row as any).status] = (grouped[(row as any).status] || 0) + 1;
+      const [draftCount, queuedCount, publishingCount, postedCount, failedCount, skippedCount] = await Promise.all([
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "draft"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "queued"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "publishing"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "posted"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "failed"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "skipped"),
+      ]);
+      const grouped: Record<string, number> = {
+        draft: draftCount.count || 0,
+        queued: queuedCount.count || 0,
+        publishing: publishingCount.count || 0,
+        posted: postedCount.count || 0,
+        failed: failedCount.count || 0,
+        skipped: skippedCount.count || 0,
+      };
 
       const since = new Date(Date.now() - 86_400_000).toISOString();
       const [{ count: posted24 }, { count: failed24 }, { data: durRows }, { data: lastPublishLog }] = await Promise.all([
