@@ -738,6 +738,42 @@ function PinterestDashboard() {
             {actionLoading === "direct-api-test" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
             Direct Pinterest API Test
           </Button>
+
+          <div className="space-y-2 rounded-md border border-dashed border-border p-3 text-xs">
+            <p className="font-semibold text-foreground">One-shot debug token</p>
+            <p className="text-muted-foreground">
+              Mint a single-use, time-limited token so the test can run without exposing your admin JWT
+              (e.g. from curl or another client). Each token is hashed at rest and consumed on first use.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-[11px] uppercase text-muted-foreground">TTL (min)</label>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={debugTokenTtl}
+                onChange={(e) => setDebugTokenTtl(Math.max(1, Math.min(60, Number(e.target.value) || 10)))}
+                className="h-8 w-20 rounded-md border border-input bg-background px-2 text-xs"
+              />
+              <Button size="sm" variant="outline" onClick={() => void handleMintDebugToken()} disabled={!!actionLoading}>
+                {actionLoading === "mint-debug-token" ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <ShieldCheck className="mr-2 h-3 w-3" />}
+                Mint debug token
+              </Button>
+              <Button size="sm" onClick={() => void handleRunWithDebugToken()} disabled={!!actionLoading || !debugToken?.token}>
+                {actionLoading === "direct-api-test-token" ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Play className="mr-2 h-3 w-3" />}
+                Run test with token
+              </Button>
+            </div>
+            {debugToken && (
+              <div className="space-y-1 rounded bg-muted p-2 font-mono text-[11px] text-foreground">
+                <p className="break-all">{debugToken.token}</p>
+                <p className="text-muted-foreground">
+                  Expires {new Date(debugToken.expires_at).toLocaleString()} · Single-use · Copied to clipboard
+                </p>
+              </div>
+            )}
+          </div>
+
           {directTestResult && (
             <div className="space-y-3 rounded-md border border-border p-3 text-xs">
               <div className="grid gap-3 md:grid-cols-2">
