@@ -434,6 +434,38 @@ function PinterestDashboard() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => { void fetchDirectTestHistory(); }, [fetchDirectTestHistory]);
 
+  const exportDirectTestHistory = useCallback((format: "json" | "csv") => {
+    if (directTestHistory.length === 0) return;
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    let blob: Blob;
+    let filename: string;
+    if (format === "json") {
+      blob = new Blob([JSON.stringify(directTestHistory, null, 2)], { type: "application/json" });
+      filename = `pinterest-direct-test-history-${ts}.json`;
+    } else {
+      const headers = ["id", "created_at", "status", "status_code", "returned_pin_id", "returned_pin_url", "board_id", "hint_category", "hint_title", "error_message"];
+      const escape = (v: any) => {
+        if (v === null || v === undefined) return "";
+        const s = typeof v === "string" ? v : JSON.stringify(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const rows = directTestHistory.map((e) => {
+        const d = e.response_data || {};
+        return [e.id, e.created_at, e.status, d.status_code, d.returned_pin_id, d.returned_pin_url, d.selected_board?.id || d.board_id, d.hint?.category, d.hint?.title, e.error_message].map(escape).join(",");
+      });
+      blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv" });
+      filename = `pinterest-direct-test-history-${ts}.csv`;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [directTestHistory]);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const oauthSuccess = params.get("oauth_success");
@@ -815,9 +847,17 @@ function PinterestDashboard() {
               <p className="text-xs font-semibold uppercase text-muted-foreground">
                 Run history ({directTestHistory.length})
               </p>
-              <Button size="sm" variant="ghost" onClick={() => void fetchDirectTestHistory()}>
-                <RefreshCw className="mr-1 h-3 w-3" /> Refresh
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="ghost" onClick={() => exportDirectTestHistory("json")} disabled={directTestHistory.length === 0}>
+                  Export JSON
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => exportDirectTestHistory("csv")} disabled={directTestHistory.length === 0}>
+                  Export CSV
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => void fetchDirectTestHistory()}>
+                  <RefreshCw className="mr-1 h-3 w-3" /> Refresh
+                </Button>
+              </div>
             </div>
             {directTestHistory.length === 0 ? (
               <p className="text-xs text-muted-foreground">No direct API test runs logged yet.</p>
