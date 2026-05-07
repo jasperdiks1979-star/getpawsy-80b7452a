@@ -5127,6 +5127,7 @@ export type Database = {
           hook_group: string | null
           id: string
           image_hash: string | null
+          last_publish_error: string | null
           overlay_text: string | null
           pin_description: string
           pin_external_id: string | null
@@ -5139,6 +5140,8 @@ export type Database = {
           product_name: string
           product_slug: string
           profit_state: string | null
+          publish_attempts: number
+          publishing_started_at: string | null
           qa_reasons: string[]
           retries: number
           scheduled_at: string | null
@@ -5157,6 +5160,7 @@ export type Database = {
           hook_group?: string | null
           id?: string
           image_hash?: string | null
+          last_publish_error?: string | null
           overlay_text?: string | null
           pin_description: string
           pin_external_id?: string | null
@@ -5169,6 +5173,8 @@ export type Database = {
           product_name: string
           product_slug: string
           profit_state?: string | null
+          publish_attempts?: number
+          publishing_started_at?: string | null
           qa_reasons?: string[]
           retries?: number
           scheduled_at?: string | null
@@ -5187,6 +5193,7 @@ export type Database = {
           hook_group?: string | null
           id?: string
           image_hash?: string | null
+          last_publish_error?: string | null
           overlay_text?: string | null
           pin_description?: string
           pin_external_id?: string | null
@@ -5199,6 +5206,8 @@ export type Database = {
           product_name?: string
           product_slug?: string
           profit_state?: string | null
+          publish_attempts?: number
+          publishing_started_at?: string | null
           qa_reasons?: string[]
           retries?: number
           scheduled_at?: string | null
@@ -5289,6 +5298,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pinterest_post_logs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_publish_logs: {
+        Row: {
+          attempt: number
+          board_id: string | null
+          created_at: string
+          destination_link: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          image_url: string | null
+          pin_queue_id: string | null
+          pin_title: string | null
+          request_payload: Json | null
+          response_payload: Json | null
+          status: string
+        }
+        Insert: {
+          attempt?: number
+          board_id?: string | null
+          created_at?: string
+          destination_link?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          image_url?: string | null
+          pin_queue_id?: string | null
+          pin_title?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status: string
+        }
+        Update: {
+          attempt?: number
+          board_id?: string | null
+          created_at?: string
+          destination_link?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          image_url?: string | null
+          pin_queue_id?: string | null
+          pin_title?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_publish_logs_pin_queue_id_fkey"
             columns: ["pin_queue_id"]
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
