@@ -378,7 +378,8 @@ Deno.serve(async (req) => {
       const accessToken = await getFreshPinterestProductionToken(sb, conn);
       if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
 
-      return await runDirectPinterestApiTest(sb, conn, accessToken, cors);
+      const sourceLogId = typeof body.source_log_id === "string" && body.source_log_id.trim() ? body.source_log_id.trim() : null;
+      return await runDirectPinterestApiTest(sb, conn, accessToken, cors, { sourceLogId });
     }
 
     if (action === "mint_direct_test_token") {
