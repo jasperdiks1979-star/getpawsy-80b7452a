@@ -8,6 +8,24 @@ const ALLOWED_FRONTEND_BASES = [
 ];
 
 const DEFAULT_FRONTEND_BASE = Deno.env.get("APP_BASE_URL") || "https://getpawsy.pet";
+const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function tokenPrefix(token: string | null | undefined) {
+  return token ? token.slice(0, 12) : null;
+}
+
+async function fetchPinterestJson(url: string, accessToken: string) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const text = await res.text();
+  let body: any = null;
+  try { body = JSON.parse(text); } catch { body = { raw: text }; }
+  return { ok: res.ok, status: res.status, body, text };
+}
 
 function decodeFrontendBaseFromState(state: string | null): string {
   if (!state || !state.includes("::")) return DEFAULT_FRONTEND_BASE;
@@ -78,9 +96,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Use sandbox API for token exchange when in sandbox mode
-    const { PINTEREST_API_BASE } = await import("../_shared/pinterest-config.ts");
-    const tokenRes = await fetch(`${PINTEREST_API_BASE}/oauth/token`, {
+    const tokenRes = await fetch(`${PINTEREST_PRODUCTION_API_BASE}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -105,13 +121,23 @@ Deno.serve(async (req) => {
     }
 
     const tokenData = await tokenRes.json();
-    console.log("[pinterest-oauth-callback] Token exchange successful, scopes:", tokenData.scope);
+    const tokenCreatedAt = new Date().toISOString();
+    const accessToken = String(tokenData.access_token || "");
+    const accessTokenSha256 = accessToken ? await sha256Hex(accessToken) : null;
+    console.log("[pinterest-oauth-callback] Token exchange successful", {
+      scopes: tokenData.scope,
+      access_token_prefix: tokenPrefix(accessToken),
+      access_token_length: accessToken.length,
+      access_token_sha256: accessTokenSha256,
+      token_created_at: tokenCreatedAt,
+      api_base: PINTEREST_PRODUCTION_API_BASE,
+    });
 
     // Fetch user account info
     let accountName = "Pinterest Account";
     let accountId = "";
     try {
-      const userRes = await fetch(`${PINTEREST_API_BASE}/user_account`, {
+      const userRes = await fetch(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
       });
       if (userRes.ok) {
@@ -123,6 +149,11 @@ Deno.serve(async (req) => {
     } catch (e) {
       console.warn("[pinterest-oauth-callback] Could not fetch user info:", e);
     }
+
+    const accountApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
+    const boardsApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
+    const boardCount = Array.isArray(boardsApi.body?.items) ? boardsApi.body.items.length : 0;
+    const authValid = accountApi.ok && boardsApi.ok && boardCount > 0;
 
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000).toISOString();
 
@@ -139,8 +170,15 @@ Deno.serve(async (req) => {
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token || null,
       token_expires_at: expiresAt,
-      status: "connected",
-      last_error: null,
+      token_created_at: tokenCreatedAt,
+      scopes: tokenData.scope || null,
+      token_prefix: tokenPrefix(accessToken),
+      token_sha256: accessTokenSha256,
+      last_account_status: accountApi.status,
+      last_boards_status: boardsApi.status,
+      board_count: boardCount,
+      status: authValid ? "connected" : "auth_failed",
+      last_error: authValid ? null : `AUTH FAILURE: /user_account=${accountApi.status}, /boards=${boardsApi.status}, board_count=${boardCount}`,
       updated_at: new Date().toISOString(),
     };
 
@@ -171,8 +209,29 @@ Deno.serve(async (req) => {
         account: accountName,
         scopes: tokenData.scope,
         expires_at: expiresAt,
+        token_created_at: tokenCreatedAt,
+        token_prefix: tokenPrefix(accessToken),
+        token_sha256: accessTokenSha256,
+        api_base: PINTEREST_PRODUCTION_API_BASE,
+        user_account_status: accountApi.status,
+        boards_status: boardsApi.status,
+        board_count: boardCount,
+        auth_valid: authValid,
       },
     });
+
+    if (!authValid) {
+      console.error("[pinterest-oauth-callback] AUTH FAILURE after token save", {
+        user_account_status: accountApi.status,
+        user_account_body: accountApi.body,
+        boards_status: boardsApi.status,
+        boards_body: boardsApi.body,
+        board_count: boardCount,
+        token_prefix: tokenPrefix(accessToken),
+        token_sha256: accessTokenSha256,
+      });
+      return Response.redirect(`${adminUrl}?oauth_error=auth_validation_failed`, 302);
+    }
 
     console.log("[pinterest-oauth-callback] ✅ Pinterest connected successfully!");
     return Response.redirect(`${adminUrl}?oauth_success=true`, 302);
