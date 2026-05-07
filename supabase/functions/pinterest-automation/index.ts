@@ -392,6 +392,25 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
 
+    if (action === "pinterest_auth_api_test") {
+      const adminCheck = await authorizeDirectTest(sb, req, body);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+
+      const { data: conn } = await sb
+        .from("pinterest_connection")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!conn?.access_token) return json(cors, { ok: false, error: "No latest Pinterest OAuth access token found" });
+
+      const accessToken = await getFreshPinterestProductionToken(sb, conn);
+      if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
+
+      const target = body.target === "boards" ? "boards" : body.target === "account" ? "account" : "both";
+      return await runPinterestAuthApiTest(sb, conn, accessToken, cors, target);
+    }
+
     if (action === "direct_pinterest_api_test") {
       const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
@@ -399,7 +418,6 @@ Deno.serve(async (req) => {
       const { data: conn } = await sb
         .from("pinterest_connection")
         .select("*")
-        .eq("status", "connected")
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -407,6 +425,9 @@ Deno.serve(async (req) => {
 
       const accessToken = await getFreshPinterestProductionToken(sb, conn);
       if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
+
+      const authCheck = await validatePinterestAuth(sb, conn, accessToken);
+      if (!authCheck.auth_valid) return json(cors, authCheck.failure_response);
 
       const sourceLogId = typeof body.source_log_id === "string" && body.source_log_id.trim() ? body.source_log_id.trim() : null;
       return await runDirectPinterestApiTest(sb, conn, accessToken, cors, { sourceLogId });
@@ -422,8 +443,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "get_connection") {
-      const { data } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
-      return json(cors, { ok: true, connection: data });
+      const { data } = await sb.from("pinterest_connection").select("*").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      return json(cors, { ok: true, connection: sanitizePinterestConnection(data) });
     }
 
     if (action === "set_sandbox_token") {
