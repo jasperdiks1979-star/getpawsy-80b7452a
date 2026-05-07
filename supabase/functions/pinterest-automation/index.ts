@@ -1848,13 +1848,18 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     return json(cors, { ok: false, error: reason, selected_pin: compactPinForDiagnostics({ ...pin, rejection_reason: reason }), eligibility });
   }
 
+  const accessToken = await getFreshPinterestProductionToken(sb, conn);
+  if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed", selected_pin: compactPinForDiagnostics(pin) });
+  const authCheck = await validatePinterestAuth(sb, conn, accessToken);
+  if (!authCheck.auth_valid) return json(cors, { ...authCheck.failure_response, selected_pin: compactPinForDiagnostics(pin) });
+
   let boardId: string | null = null;
   try {
-    boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name || "");
+    boardId = await resolvePinterestBoardId(accessToken, pin.board_name || "", PINTEREST_PRODUCTION_API_BASE);
     console.log("[pinterest-publish] Pinterest board id used", { pin_id: pin.id, board_name: pin.board_name, board_id: boardId });
 
-    const apiBase = await getPinterestApiBase(sb);
-    const mode = await getPinterestMode(sb);
+    const apiBase = PINTEREST_PRODUCTION_API_BASE;
+    const mode = "production";
     const requestPayload = {
       title: pin.pin_title,
       description: pin.pin_description,
@@ -1895,7 +1900,7 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
 
     const response = await fetch(`${apiBase}/pins`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${conn.access_token}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify(requestPayload),
     });
     const responseText = await response.text();
@@ -1904,7 +1909,6 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     console.log("[pinterest-publish] Pinterest API response status/body", { status: response.status, body: responseJson });
 
     if (!response.ok) {
-      if (response.status === 403 && mode === "production") await markProductionForbidden(sb);
       throw new Error(`Pinterest API ${response.status}: ${responseText}`);
     }
 
@@ -1914,7 +1918,7 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       throw new Error(`Pinterest response missing real pin id or external URL: ${responseText}`);
     }
 
-    const verification = await validatePinterestExternalUrl(conn.access_token, apiBase, externalUrl, pinterestPinId);
+    const verification = await validatePinterestExternalUrl(accessToken, apiBase, externalUrl, pinterestPinId);
     console.log("[pinterest-publish] external_url validation", { pin_id: pin.id, ...verification });
     const verifiedAt = new Date().toISOString();
 
