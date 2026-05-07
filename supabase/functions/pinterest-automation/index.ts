@@ -1434,8 +1434,9 @@ async function checkPublicUrl(url: string, expectedHost: string) {
   }
 }
 
-async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>) {
+async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, opts?: { sourceLogId?: string | null }) {
   const startedAt = Date.now();
+  const replaysLogId = opts?.sourceLogId || null;
   const endpoint = `${PINTEREST_PRODUCTION_API_BASE}/pins`;
   const tokenMetadata = { prefix: accessToken.slice(0, 8), length: accessToken.length, latest_connection_id: conn.id };
   const imageCheck = await checkPublicUrl(DIRECT_TEST_IMAGE_URL, "getpawsy.pet");
