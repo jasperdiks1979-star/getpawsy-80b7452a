@@ -27,6 +27,13 @@ function getCorsHeaders(req: Request) {
 }
 
 const BASE_URL = "https://getpawsy.pet";
+const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
+const DIRECT_TEST_IMAGE_URL = "https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.webp";
+const DIRECT_TEST_DESTINATION_URL = "https://getpawsy.pet/products/automatic-cat-litter-box-self-cleaning-app-control";
+const DIRECT_TEST_TITLE = "Self-Cleaning Cat Litter Box";
+const DIRECT_TEST_DESCRIPTION = "A smart automatic litter box for busy cat owners.";
+const DIRECT_TEST_REQUIRED_SCOPE = "pins:write";
+const DIRECT_TEST_ADMIN_EMAILS = new Set(["jasperdiks@hotmail.com"]);
 
 // ── Viral Hook System v3 — mandatory ≤6-word scroll-stoppers ──
 const VIRAL_HOOKS: string[] = [
