@@ -496,6 +496,38 @@ function PinterestDashboard() {
     await handlePublishNow();
   };
 
+  const handleBulkApprove = async () => {
+    const pinIds = drafts.slice(0, 10).map((p) => p.id);
+    if (!pinIds.length) return toast("No drafts to approve");
+    setActionLoading("bulk-approve");
+    try {
+      const data = await invokePinterestAction<{ approved: number; failures: any[] }>("bulk_approve", { pinIds });
+      toast.success(`Approved ${data.approved} of ${pinIds.length}`);
+      if (data.failures?.length) {
+        toast.error(`${data.failures.length} pins failed QA — check Drafts tab`);
+      }
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk approve failed");
+    }
+    setActionLoading(null);
+  };
+
+  const handleBulkReject = async () => {
+    const pinIds = drafts.slice(0, 10).map((p) => p.id);
+    if (!pinIds.length) return toast("No drafts to reject");
+    if (!window.confirm(`Reject ${pinIds.length} draft pin(s)?`)) return;
+    setActionLoading("bulk-reject");
+    try {
+      await invokePinterestAction("bulk_reject", { pinIds });
+      toast.success(`Rejected ${pinIds.length} drafts`);
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk reject failed");
+    }
+    setActionLoading(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -577,6 +609,16 @@ function PinterestDashboard() {
           <Button size="sm" variant="destructive" onClick={handlePurgeBad} disabled={!!actionLoading}>
             <Trash2 className="h-3 w-3 mr-1" /> Purge bad pins
           </Button>
+          {drafts.length > 0 && (
+            <>
+              <Button size="sm" variant="default" onClick={handleBulkApprove} disabled={!!actionLoading}>
+                <ShieldCheck className="h-3 w-3 mr-1" /> Bulk Approve ({Math.min(drafts.length, 10)})
+              </Button>
+              <Button size="sm" variant="destructive" onClick={handleBulkReject} disabled={!!actionLoading}>
+                <ShieldAlert className="h-3 w-3 mr-1" /> Bulk Reject ({Math.min(drafts.length, 10)})
+              </Button>
+            </>
+          )}
           {actionLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground self-center" />}
         </CardContent>
       </Card>
