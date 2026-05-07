@@ -37,6 +37,26 @@ type PinterestConnection = {
 
 const PREPARE_QUEUE_COUNT = 3;
 
+const QA_TOOLTIPS: Record<string, string> = {
+  product_mismatch: "Pin copy or board references a different animal/product",
+  category_mismatch: "Board does not match the product category",
+  bad_crop: "Image is not 9:16 or not a valid Cloudinary render",
+  unreadable_text: "Overlay text is too short, too long, or missing",
+  unreadable_overlay: "Overlay text is unreadable on mobile",
+  missing_cta: "Bottom CTA segment is missing or too short",
+  wrong_destination_url: "Destination URL does not point to /products/<slug>",
+  allowlist_disabled: "Product not in the Performance Mode allowlist",
+  low_resolution: "Cloudinary asset requested below 1080×1920",
+  malformed_url: "Destination link is not a valid getpawsy.pet URL",
+  spam_payload: "Title/description/overlay contains spam or invalid UTF",
+  duplicate_asset: "Same image was used for another pin in the last 14 days",
+  weak_hook: "Hook is not in the approved hook bank",
+};
+
+function qaReasonTooltip(reason: string): string {
+  return QA_TOOLTIPS[reason] || reason;
+}
+
 function humanizeOauthError(error: string) {
   return error.replace(/_/g, " ");
 }
