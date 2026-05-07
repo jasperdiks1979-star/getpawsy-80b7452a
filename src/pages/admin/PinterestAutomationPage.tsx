@@ -783,12 +783,17 @@ function PinterestDashboard() {
     );
   }
 
+  const authValid = Boolean(health?.auth_valid);
+  const authWarning = health?.auth_failure_warning || connection?.last_error || null;
+
   return (
     <div className="space-y-4">
       <ConnectionCard
         connection={connection}
         queuedCount={queued.length}
         actionLoading={actionLoading}
+        authValid={authValid}
+        authWarning={authWarning}
         onConnect={handleConnect}
         onRefresh={handleRefreshConnection}
         onGenerateDrafts={handleGenerateDrafts}
@@ -803,7 +808,36 @@ function PinterestDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button onClick={() => void handleDirectApiTest()} disabled={!!actionLoading}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => void handleAuthApiTest("account")} disabled={!!actionLoading}>
+              {actionLoading === "auth-api-test-account" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
+              Test Pinterest Account API
+            </Button>
+            <Button variant="outline" onClick={() => void handleAuthApiTest("boards")} disabled={!!actionLoading}>
+              {actionLoading === "auth-api-test-boards" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
+              Test Pinterest Boards API
+            </Button>
+          </div>
+
+          {authApiTestResult && (
+            <div className="space-y-3 rounded-md border border-border p-3 text-xs">
+              <div className="grid gap-3 md:grid-cols-2">
+                <DiagnosticValue label="token prefix" value={authApiTestResult.token_prefix || authApiTestResult.token?.prefix} mono />
+                <DiagnosticValue label="token created" value={authApiTestResult.token_created_at} mono />
+                <DiagnosticValue label="scopes" value={authApiTestResult.scopes} mono />
+                <DiagnosticValue label="board count" value={authApiTestResult.board_count} />
+                <DiagnosticValue label="account status" value={authApiTestResult.account_status} />
+                <DiagnosticValue label="boards status" value={authApiTestResult.boards_status} />
+                <DiagnosticValue label="redirect URI" value={authApiTestResult.env_status?.redirect_uri_value} mono />
+                <DiagnosticValue label="auth valid" value={authApiTestResult.auth_valid ? "true" : "false"} />
+              </div>
+              <pre className="max-h-80 overflow-auto rounded bg-muted p-3 text-[11px] text-muted-foreground">
+                {JSON.stringify(authApiTestResult, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          <Button onClick={() => void handleDirectApiTest()} disabled={!authValid || !!actionLoading}>
             {actionLoading === "direct-api-test" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
             Direct Pinterest API Test
           </Button>
