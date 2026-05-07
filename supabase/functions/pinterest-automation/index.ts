@@ -362,6 +362,25 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
 
+    if (action === "direct_pinterest_api_test") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+
+      const { data: conn } = await sb
+        .from("pinterest_connection")
+        .select("*")
+        .eq("status", "connected")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected: no latest OAuth access token found" });
+
+      const accessToken = await getFreshPinterestProductionToken(sb, conn);
+      if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
+
+      return await runDirectPinterestApiTest(sb, conn, accessToken, cors);
+    }
+
     if (action === "get_connection") {
       const { data } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
       return json(cors, { ok: true, connection: data });
