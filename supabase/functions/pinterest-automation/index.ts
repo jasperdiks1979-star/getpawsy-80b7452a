@@ -1454,13 +1454,24 @@ async function getFreshPinterestProductionToken(sb: any, conn: any): Promise<str
   }
 
   const nextExpiresAt = new Date(Date.now() + (responseJson.expires_in || 3600) * 1000).toISOString();
+  const nextCreatedAt = new Date().toISOString();
+  const nextTokenHash = await sha256Hex(responseJson.access_token);
   await sb.from("pinterest_connection").update({
     access_token: responseJson.access_token,
     refresh_token: responseJson.refresh_token || conn.refresh_token,
     token_expires_at: nextExpiresAt,
+    token_created_at: nextCreatedAt,
+    token_prefix: tokenPrefix(responseJson.access_token),
+    token_sha256: nextTokenHash,
+    scopes: responseJson.scope || conn.scopes || null,
     last_error: null,
     updated_at: new Date().toISOString(),
   }).eq("id", conn.id);
+  await sb.from("pinterest_post_logs").insert({
+    action: "direct_api_token_refresh",
+    status: "success",
+    response_data: { api_base: PINTEREST_PRODUCTION_API_BASE, token_prefix: tokenPrefix(responseJson.access_token), token_sha256: nextTokenHash, token_created_at: nextCreatedAt, expires_at: nextExpiresAt, scopes: responseJson.scope || conn.scopes || null },
+  });
   return responseJson.access_token;
 }
 
@@ -1470,6 +1481,93 @@ async function fetchJsonWithText(url: string, accessToken: string) {
   let body: any = null;
   try { body = JSON.parse(text); } catch { body = { raw: text }; }
   return { ok: response.ok, status: response.status, body, text };
+}
+
+async function validatePinterestAuth(sb: any, conn: any, accessToken: string) {
+  const tokenMetadata = {
+    prefix: tokenPrefix(accessToken),
+    length: accessToken.length,
+    token_created_at: conn.token_created_at || conn.created_at || null,
+    token_sha256: conn.token_sha256 || null,
+    scopes: conn.scopes || null,
+    connection_id: conn.id,
+    loaded_connection_updated_at: conn.updated_at || null,
+  };
+  const accountResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
+  const boardsResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
+  const boards = Array.isArray(boardsResponse.body?.items) ? boardsResponse.body.items : [];
+  const authValid = accountResponse.ok && boardsResponse.ok && boards.length > 0;
+  const nextStatus = authValid ? "connected" : "auth_failed";
+  const lastError = authValid ? null : `AUTH FAILURE: /user_account=${accountResponse.status}, /boards=${boardsResponse.status}, board_count=${boards.length}`;
+
+  await sb.from("pinterest_connection").update({
+    status: nextStatus,
+    last_error: lastError,
+    token_prefix: tokenMetadata.prefix,
+    last_account_status: accountResponse.status,
+    last_boards_status: boardsResponse.status,
+    board_count: boards.length,
+    updated_at: new Date().toISOString(),
+  }).eq("id", conn.id);
+
+  const diagnostics = {
+    api_base: PINTEREST_PRODUCTION_API_BASE,
+    token: tokenMetadata,
+    account_status_code: accountResponse.status,
+    account_response_body: accountResponse.body,
+    boards_status_code: boardsResponse.status,
+    boards_response_body: boardsResponse.body,
+    board_count: boards.length,
+    scopes_ok: requiredScopesPresent(conn.scopes),
+    auth_valid: authValid,
+  };
+
+  return {
+    auth_valid: authValid,
+    diagnostics,
+    accountResponse,
+    boardsResponse,
+    boards,
+    failure_response: {
+      ok: false,
+      error: lastError,
+      code: "PINTEREST_AUTH_FAILURE",
+      message: "AUTH FAILURE: Pinterest token is rejected before pin creation. Reconnect Pinterest to persist a fresh production token.",
+      diagnostics,
+      publishing_disabled: true,
+    },
+  };
+}
+
+async function runPinterestAuthApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, target: "account" | "boards" | "both") {
+  const auth = await validatePinterestAuth(sb, conn, accessToken);
+  const accountIncluded = target === "account" || target === "both";
+  const boardsIncluded = target === "boards" || target === "both";
+  const responseBody = {
+    ok: target === "account" ? auth.accountResponse.ok : target === "boards" ? auth.boardsResponse.ok && auth.boards.length > 0 : auth.auth_valid,
+    api_base: PINTEREST_PRODUCTION_API_BASE,
+    target,
+    token: auth.diagnostics.token,
+    scopes: auth.diagnostics.token.scopes,
+    token_created_at: auth.diagnostics.token.token_created_at,
+    token_prefix: auth.diagnostics.token.prefix,
+    board_count: auth.boards.length,
+    account_status: accountIncluded ? auth.accountResponse.status : null,
+    account_response_body: accountIncluded ? auth.accountResponse.body : null,
+    boards_status: boardsIncluded ? auth.boardsResponse.status : null,
+    boards_response_body: boardsIncluded ? auth.boardsResponse.body : null,
+    auth_valid: auth.auth_valid,
+    publishing_disabled: !auth.auth_valid,
+  };
+
+  await sb.from("pinterest_post_logs").insert({
+    action: `auth_api_test_${target}`,
+    status: responseBody.ok ? "success" : "failed",
+    error_message: responseBody.ok ? null : auth.failure_response.error,
+    response_data: responseBody,
+  });
+
+  return json(cors, responseBody);
 }
 
 async function checkPublicUrl(url: string, expectedHost: string) {
