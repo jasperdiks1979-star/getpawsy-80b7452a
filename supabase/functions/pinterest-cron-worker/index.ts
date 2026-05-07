@@ -450,26 +450,26 @@ Deno.serve(async (req) => {
         if (!pinData?.id || !externalUrl) {
           throw new Error(`Pinterest response missing real pin id or external URL: ${JSON.stringify(pinData)}`);
         }
-        const verified = await verifyPinExists(accessToken, apiBase, pinData.id);
-        console.log("[pinterest] verify", { pin_id: pinData.id, pin_verified: verified });
-        await markPosted(sb, pin, pinData.id, verified);
+        const verification = await validatePinterestExternalUrl(accessToken, apiBase, externalUrl, pinData.id);
+        console.log("[pinterest] verify", { pin_id: pinData.id, ...verification });
+        await markPosted(sb, pin, pinData.id, verification);
         await sb.from("pinterest_publish_logs").insert({
           pin_queue_id: pin.id,
           attempt: (pin.publish_attempts || 0) + 1,
-          status: "success",
+          status: verification.ok ? "success" : "warning",
           board_id: boardId,
           image_url: pin.pin_image_url,
           pin_title: pin.pin_title,
           destination_link: pin.destination_link,
           request_payload: requestPayload,
-          response_payload: { ...pinData, pin_verified: verified, external_url: externalUrl },
+          response_payload: { ...pinData, pin_verified: verification.ok, pin_verification_reason: verification.reason, external_url: externalUrl },
           duration_ms: Date.now() - publishStartedAt,
         });
         results.push({
           pinId: pin.id,
           status: "posted",
           externalId: pinData.id,
-          pinVerified: verified,
+          pinVerified: verification.ok,
         });
         console.log(`✅ Pin ${pin.id} posted as ${pinData.id}`);
       } catch (e) {
