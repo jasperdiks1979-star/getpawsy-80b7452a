@@ -35,6 +35,36 @@ const DIRECT_TEST_DESCRIPTION = "A smart automatic litter box for busy cat owner
 const DIRECT_TEST_REQUIRED_SCOPE = "pins:write";
 const DIRECT_TEST_ADMIN_EMAILS = new Set(["jasperdiks@hotmail.com"]);
 
+function tokenPrefix(token: string | null | undefined) {
+  return token ? token.slice(0, 12) : null;
+}
+
+function requiredScopesPresent(scopeText: string | null | undefined) {
+  const scopes = String(scopeText || "").split(/[\s,]+/).filter(Boolean);
+  return ["boards:read", "boards:write", "pins:read", "pins:write"].every((scope) => scopes.includes(scope));
+}
+
+function sanitizePinterestConnection(conn: any) {
+  if (!conn) return null;
+  return {
+    id: conn.id,
+    account_id: conn.account_id || null,
+    account_name: conn.account_name || null,
+    status: conn.status,
+    token_expires_at: conn.token_expires_at || null,
+    token_created_at: conn.token_created_at || conn.created_at || null,
+    token_prefix: conn.token_prefix || tokenPrefix(conn.access_token),
+    token_sha256: conn.token_sha256 || null,
+    scopes: conn.scopes || null,
+    last_account_status: conn.last_account_status ?? null,
+    last_boards_status: conn.last_boards_status ?? null,
+    board_count: conn.board_count ?? null,
+    last_publish_at: conn.last_publish_at || null,
+    last_error: conn.last_error || null,
+    updated_at: conn.updated_at || null,
+  };
+}
+
 // ── Viral Hook System v3 — mandatory ≤6-word scroll-stoppers ──
 const VIRAL_HOOKS: string[] = [
   "Wait… this cleans itself?",
@@ -362,6 +392,25 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
 
+    if (action === "pinterest_auth_api_test") {
+      const adminCheck = await authorizeDirectTest(sb, req, body);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+
+      const { data: conn } = await sb
+        .from("pinterest_connection")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!conn?.access_token) return json(cors, { ok: false, error: "No latest Pinterest OAuth access token found" });
+
+      const accessToken = await getFreshPinterestProductionToken(sb, conn);
+      if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
+
+      const target = body.target === "boards" ? "boards" : body.target === "account" ? "account" : "both";
+      return await runPinterestAuthApiTest(sb, conn, accessToken, cors, target);
+    }
+
     if (action === "direct_pinterest_api_test") {
       const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
@@ -369,7 +418,6 @@ Deno.serve(async (req) => {
       const { data: conn } = await sb
         .from("pinterest_connection")
         .select("*")
-        .eq("status", "connected")
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -377,6 +425,9 @@ Deno.serve(async (req) => {
 
       const accessToken = await getFreshPinterestProductionToken(sb, conn);
       if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
+
+      const authCheck = await validatePinterestAuth(sb, conn, accessToken);
+      if (!authCheck.auth_valid) return json(cors, authCheck.failure_response);
 
       const sourceLogId = typeof body.source_log_id === "string" && body.source_log_id.trim() ? body.source_log_id.trim() : null;
       return await runDirectPinterestApiTest(sb, conn, accessToken, cors, { sourceLogId });
@@ -392,8 +443,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "get_connection") {
-      const { data } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
-      return json(cors, { ok: true, connection: data });
+      const { data } = await sb.from("pinterest_connection").select("*").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      return json(cors, { ok: true, connection: sanitizePinterestConnection(data) });
     }
 
     if (action === "set_sandbox_token") {
@@ -1036,7 +1087,7 @@ Deno.serve(async (req) => {
       const [{ data: stuck }, { data: lastCron }, { data: conn }] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id, publishing_started_at").eq("status", "publishing").lt("publishing_started_at", new Date(Date.now() - 15 * 60_000).toISOString()),
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
-        sb.from("pinterest_connection").select("status, last_error, last_publish_at").limit(1).maybeSingle(),
+        sb.from("pinterest_connection").select("status, last_error, last_publish_at, token_created_at, token_prefix, token_sha256, scopes, last_account_status, last_boards_status, board_count, updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       const [draftCount, queuedCount, publishingCount, postedCount, failedCount, skippedCount] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "draft"),
@@ -1091,10 +1142,17 @@ Deno.serve(async (req) => {
       const nextEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
       const nextPublishNowEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: true, allowed, maxRetries: 2 });
 
+      const authValid = conn?.status === "connected" && conn?.last_account_status === 200 && conn?.last_boards_status === 200 && (conn?.board_count || 0) > 0;
       return json(cors, {
         ok: true,
         api_status: conn?.status || "disconnected",
         api_last_error: conn?.last_error || null,
+        auth_valid: authValid,
+        auth_failure_warning: authValid ? null : "AUTH FAILURE: publishing is disabled until /user_account returns 200 and /boards returns at least one real board.",
+        token: conn ? { prefix: conn.token_prefix, token_created_at: conn.token_created_at, token_sha256: conn.token_sha256, scopes: conn.scopes, connection_updated_at: conn.updated_at } : null,
+        account_status_code: conn?.last_account_status ?? null,
+        boards_status_code: conn?.last_boards_status ?? null,
+        board_count: conn?.board_count ?? null,
         last_publish_at: conn?.last_publish_at || null,
         last_cron_tick: lastCron?.[0]?.created_at || null,
         last_cron_status: lastCron?.[0]?.status || null,
@@ -1403,13 +1461,24 @@ async function getFreshPinterestProductionToken(sb: any, conn: any): Promise<str
   }
 
   const nextExpiresAt = new Date(Date.now() + (responseJson.expires_in || 3600) * 1000).toISOString();
+  const nextCreatedAt = new Date().toISOString();
+  const nextTokenHash = await sha256Hex(responseJson.access_token);
   await sb.from("pinterest_connection").update({
     access_token: responseJson.access_token,
     refresh_token: responseJson.refresh_token || conn.refresh_token,
     token_expires_at: nextExpiresAt,
+    token_created_at: nextCreatedAt,
+    token_prefix: tokenPrefix(responseJson.access_token),
+    token_sha256: nextTokenHash,
+    scopes: responseJson.scope || conn.scopes || null,
     last_error: null,
     updated_at: new Date().toISOString(),
   }).eq("id", conn.id);
+  await sb.from("pinterest_post_logs").insert({
+    action: "direct_api_token_refresh",
+    status: "success",
+    response_data: { api_base: PINTEREST_PRODUCTION_API_BASE, token_prefix: tokenPrefix(responseJson.access_token), token_sha256: nextTokenHash, token_created_at: nextCreatedAt, expires_at: nextExpiresAt, scopes: responseJson.scope || conn.scopes || null },
+  });
   return responseJson.access_token;
 }
 
@@ -1419,6 +1488,100 @@ async function fetchJsonWithText(url: string, accessToken: string) {
   let body: any = null;
   try { body = JSON.parse(text); } catch { body = { raw: text }; }
   return { ok: response.ok, status: response.status, body, text };
+}
+
+async function validatePinterestAuth(sb: any, conn: any, accessToken: string) {
+  const tokenMetadata = {
+    prefix: tokenPrefix(accessToken),
+    length: accessToken.length,
+    token_created_at: conn.token_created_at || conn.created_at || null,
+    token_sha256: conn.token_sha256 || null,
+    scopes: conn.scopes || null,
+    connection_id: conn.id,
+    loaded_connection_updated_at: conn.updated_at || null,
+  };
+  const accountResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
+  const boardsResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
+  const boards = Array.isArray(boardsResponse.body?.items) ? boardsResponse.body.items : [];
+  const authValid = accountResponse.ok && boardsResponse.ok && boards.length > 0;
+  const nextStatus = authValid ? "connected" : "auth_failed";
+  const lastError = authValid ? null : `AUTH FAILURE: /user_account=${accountResponse.status}, /boards=${boardsResponse.status}, board_count=${boards.length}`;
+
+  await sb.from("pinterest_connection").update({
+    status: nextStatus,
+    last_error: lastError,
+    token_prefix: tokenMetadata.prefix,
+    last_account_status: accountResponse.status,
+    last_boards_status: boardsResponse.status,
+    board_count: boards.length,
+    updated_at: new Date().toISOString(),
+  }).eq("id", conn.id);
+
+  const diagnostics = {
+    api_base: PINTEREST_PRODUCTION_API_BASE,
+    token: tokenMetadata,
+    account_status_code: accountResponse.status,
+    account_response_body: accountResponse.body,
+    boards_status_code: boardsResponse.status,
+    boards_response_body: boardsResponse.body,
+    board_count: boards.length,
+    scopes_ok: requiredScopesPresent(conn.scopes),
+    auth_valid: authValid,
+  };
+
+  return {
+    auth_valid: authValid,
+    diagnostics,
+    accountResponse,
+    boardsResponse,
+    boards,
+    failure_response: {
+      ok: false,
+      error: lastError,
+      code: "PINTEREST_AUTH_FAILURE",
+      message: "AUTH FAILURE: Pinterest token is rejected before pin creation. Reconnect Pinterest to persist a fresh production token.",
+      diagnostics,
+      publishing_disabled: true,
+    },
+  };
+}
+
+async function runPinterestAuthApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, target: "account" | "boards" | "both") {
+  const auth = await validatePinterestAuth(sb, conn, accessToken);
+  const redirectUri = Deno.env.get("PINTEREST_REDIRECT_URI") || `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-oauth-callback`;
+  const accountIncluded = target === "account" || target === "both";
+  const boardsIncluded = target === "boards" || target === "both";
+  const responseBody = {
+    ok: target === "account" ? auth.accountResponse.ok : target === "boards" ? auth.boardsResponse.ok && auth.boards.length > 0 : auth.auth_valid,
+    api_base: PINTEREST_PRODUCTION_API_BASE,
+    target,
+    token: auth.diagnostics.token,
+    scopes: auth.diagnostics.token.scopes,
+    token_created_at: auth.diagnostics.token.token_created_at,
+    token_prefix: auth.diagnostics.token.prefix,
+    board_count: auth.boards.length,
+    env_status: {
+      PINTEREST_CLIENT_ID: Boolean(Deno.env.get("PINTEREST_CLIENT_ID")),
+      PINTEREST_CLIENT_SECRET: Boolean(Deno.env.get("PINTEREST_CLIENT_SECRET")),
+      PINTEREST_REDIRECT_URI: Boolean(Deno.env.get("PINTEREST_REDIRECT_URI")),
+      redirect_uri_value: redirectUri,
+    },
+    account_status: accountIncluded ? auth.accountResponse.status : null,
+    account_response_body: accountIncluded ? auth.accountResponse.body : null,
+    boards_status: boardsIncluded ? auth.boardsResponse.status : null,
+    boards_response_body: boardsIncluded ? auth.boardsResponse.body : null,
+    auth_valid: auth.auth_valid,
+    publishing_disabled: !auth.auth_valid,
+  };
+
+  await sb.from("pinterest_post_logs").insert({
+    action: `auth_api_test_${target}`,
+    status: responseBody.ok ? "success" : "failed",
+    error_message: responseBody.ok ? null : auth.failure_response.error,
+    response_data: responseBody,
+  });
+
+  return json(cors, responseBody);
 }
 
 async function checkPublicUrl(url: string, expectedHost: string) {
@@ -1699,13 +1862,18 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     return json(cors, { ok: false, error: reason, selected_pin: compactPinForDiagnostics({ ...pin, rejection_reason: reason }), eligibility });
   }
 
+  const accessToken = await getFreshPinterestProductionToken(sb, conn);
+  if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed", selected_pin: compactPinForDiagnostics(pin) });
+  const authCheck = await validatePinterestAuth(sb, conn, accessToken);
+  if (!authCheck.auth_valid) return json(cors, { ...authCheck.failure_response, selected_pin: compactPinForDiagnostics(pin) });
+
   let boardId: string | null = null;
   try {
-    boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name || "");
+    boardId = await resolvePinterestBoardId(accessToken, pin.board_name || "", PINTEREST_PRODUCTION_API_BASE);
     console.log("[pinterest-publish] Pinterest board id used", { pin_id: pin.id, board_name: pin.board_name, board_id: boardId });
 
-    const apiBase = await getPinterestApiBase(sb);
-    const mode = await getPinterestMode(sb);
+    const apiBase = PINTEREST_PRODUCTION_API_BASE;
+    const mode = "production";
     const requestPayload = {
       title: pin.pin_title,
       description: pin.pin_description,
@@ -1746,7 +1914,7 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
 
     const response = await fetch(`${apiBase}/pins`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${conn.access_token}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify(requestPayload),
     });
     const responseText = await response.text();
@@ -1755,7 +1923,6 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     console.log("[pinterest-publish] Pinterest API response status/body", { status: response.status, body: responseJson });
 
     if (!response.ok) {
-      if (response.status === 403 && mode === "production") await markProductionForbidden(sb);
       throw new Error(`Pinterest API ${response.status}: ${responseText}`);
     }
 
@@ -1765,7 +1932,7 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       throw new Error(`Pinterest response missing real pin id or external URL: ${responseText}`);
     }
 
-    const verification = await validatePinterestExternalUrl(conn.access_token, apiBase, externalUrl, pinterestPinId);
+    const verification = await validatePinterestExternalUrl(accessToken, apiBase, externalUrl, pinterestPinId);
     console.log("[pinterest-publish] external_url validation", { pin_id: pin.id, ...verification });
     const verifiedAt = new Date().toISOString();
 

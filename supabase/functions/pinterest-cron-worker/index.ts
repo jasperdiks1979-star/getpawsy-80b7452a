@@ -1,6 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
-import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 
 const MAX_RETRIES = 2;
@@ -9,6 +8,7 @@ const MIN_DELAY_MS = 5000; // minimum 5s between posts
 const MAX_DELAY_MS = 15000; // maximum 15s between posts
 const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
 const HERO_DAILY_CAP = 3;     // Performance Mode: 3 pins/day until scale_unlocked
+const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -63,8 +63,7 @@ async function refreshPinterestToken(
   }
 
   try {
-    const apiBase = await getPinterestApiBase(sb);
-    const res = await fetch(`${apiBase}/oauth/token`, {
+    const res = await fetch(`${PINTEREST_PRODUCTION_API_BASE}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -122,6 +121,31 @@ async function refreshPinterestToken(
     });
     return null;
   }
+}
+
+async function fetchPinterestJson(url: string, accessToken: string) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const text = await res.text();
+  let body: any = null;
+  try { body = JSON.parse(text); } catch { body = { raw: text }; }
+  return { ok: res.ok, status: res.status, body, text };
+}
+
+async function validatePinterestAuthForCron(sb: any, conn: any, accessToken: string) {
+  const account = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
+  const boards = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
+  const boardCount = Array.isArray(boards.body?.items) ? boards.body.items.length : 0;
+  const ok = account.ok && boards.ok && boardCount > 0;
+  const error = ok ? null : `AUTH FAILURE: /user_account=${account.status}, /boards=${boards.status}, board_count=${boardCount}`;
+  await sb.from("pinterest_connection").update({
+    status: ok ? "connected" : "auth_failed",
+    last_error: error,
+    last_account_status: account.status,
+    last_boards_status: boards.status,
+    board_count: boardCount,
+    updated_at: new Date().toISOString(),
+  }).eq("id", conn.id);
+  return { ok, error, account, boards, boardCount };
 }
 
 Deno.serve(async (req) => {
@@ -225,6 +249,28 @@ Deno.serve(async (req) => {
           );
         }
       }
+    }
+
+    const authCheck = await validatePinterestAuthForCron(sb, conn, accessToken);
+    if (!authCheck.ok) {
+      await sb.from("pinterest_post_logs").insert({
+        action: "cron_tick",
+        status: "skipped",
+        error_message: authCheck.error,
+        response_data: {
+          code: "PINTEREST_AUTH_FAILURE",
+          api_base: PINTEREST_PRODUCTION_API_BASE,
+          account_status: authCheck.account.status,
+          account_response_body: authCheck.account.body,
+          boards_status: authCheck.boards.status,
+          boards_response_body: authCheck.boards.body,
+          board_count: authCheck.boardCount,
+        },
+      });
+      return new Response(
+        JSON.stringify({ ok: false, error: authCheck.error, code: "PINTEREST_AUTH_FAILURE", publishing_disabled: true, results: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // ── 3. Check hourly rate limit ──
@@ -337,7 +383,7 @@ Deno.serve(async (req) => {
         const boardRef = pin.board_name || "";
         const boardId = boardIdCache.has(boardRef)
           ? boardIdCache.get(boardRef)!
-          : await resolvePinterestBoardId(accessToken, boardRef);
+          : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
 
         if (!boardIdCache.has(boardRef)) {
           boardIdCache.set(boardRef, boardId);
@@ -362,8 +408,8 @@ Deno.serve(async (req) => {
         }
 
         const publishStartedAt = Date.now();
-        const mode = await getPinterestMode(sb);
-        const apiBase = await getPinterestApiBase(sb);
+        const mode = "production";
+        const apiBase = PINTEREST_PRODUCTION_API_BASE;
         console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
         const requestPayload = {
           title: pin.pin_title,
@@ -387,7 +433,11 @@ Deno.serve(async (req) => {
 
           // Auto-fallback on 403 from production
           if (pinRes.status === 403 && mode === "production") {
-            await markProductionForbidden(sb);
+            await sb.from("pinterest_post_logs").insert({
+              action: "cron_tick",
+              status: "failed",
+              error_message: "Production Pinterest API returned 403; production mode remains enforced for token diagnosis.",
+            });
           }
 
           // If 401, try one token refresh mid-batch

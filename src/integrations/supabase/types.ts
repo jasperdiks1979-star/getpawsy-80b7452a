@@ -4960,39 +4960,60 @@ export type Database = {
           access_token: string | null
           account_id: string | null
           account_name: string | null
+          board_count: number | null
           created_at: string
           id: string
+          last_account_status: number | null
+          last_boards_status: number | null
           last_error: string | null
           last_publish_at: string | null
           refresh_token: string | null
+          scopes: string | null
           status: string
+          token_created_at: string | null
           token_expires_at: string | null
+          token_prefix: string | null
+          token_sha256: string | null
           updated_at: string
         }
         Insert: {
           access_token?: string | null
           account_id?: string | null
           account_name?: string | null
+          board_count?: number | null
           created_at?: string
           id?: string
+          last_account_status?: number | null
+          last_boards_status?: number | null
           last_error?: string | null
           last_publish_at?: string | null
           refresh_token?: string | null
+          scopes?: string | null
           status?: string
+          token_created_at?: string | null
           token_expires_at?: string | null
+          token_prefix?: string | null
+          token_sha256?: string | null
           updated_at?: string
         }
         Update: {
           access_token?: string | null
           account_id?: string | null
           account_name?: string | null
+          board_count?: number | null
           created_at?: string
           id?: string
+          last_account_status?: number | null
+          last_boards_status?: number | null
           last_error?: string | null
           last_publish_at?: string | null
           refresh_token?: string | null
+          scopes?: string | null
           status?: string
+          token_created_at?: string | null
           token_expires_at?: string | null
+          token_prefix?: string | null
+          token_sha256?: string | null
           updated_at?: string
         }
         Relationships: []

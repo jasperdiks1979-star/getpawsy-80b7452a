@@ -18,12 +18,12 @@ function normalizeBoardName(value: string): string {
     .toLowerCase();
 }
 
-async function listPinterestBoards(accessToken: string): Promise<PinterestBoard[]> {
+async function listPinterestBoards(accessToken: string, apiBase = PINTEREST_API_BASE): Promise<PinterestBoard[]> {
   const boards: PinterestBoard[] = [];
   let bookmark: string | null = null;
 
   for (let page = 0; page < 5; page++) {
-    const url = new URL(`${PINTEREST_API_BASE}/boards`);
+    const url = new URL(`${apiBase}/boards`);
     url.searchParams.set("page_size", "250");
     url.searchParams.set("privacy", "ALL");
     if (bookmark) url.searchParams.set("bookmark", bookmark);
@@ -85,9 +85,9 @@ function boardNameToSlug(name: string): string {
  * Try to fetch a board directly by username/slug.
  * This works even when the list endpoint returns 0 boards (sandbox quirk).
  */
-async function tryGetBoardBySlug(accessToken: string, boardName: string): Promise<string | null> {
+async function tryGetBoardBySlug(accessToken: string, boardName: string, apiBase = PINTEREST_API_BASE): Promise<string | null> {
   try {
-    const userRes = await fetch(`${PINTEREST_API_BASE}/user_account`, {
+    const userRes = await fetch(`${apiBase}/user_account`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!userRes.ok) {
@@ -105,7 +105,7 @@ async function tryGetBoardBySlug(accessToken: string, boardName: string): Promis
     const boardPath = `${username}/${slug}`;
     console.log(`[Pinterest] Trying direct board lookup: ${boardPath}`);
 
-    const boardRes = await fetch(`${PINTEREST_API_BASE}/boards/${boardPath}`, {
+    const boardRes = await fetch(`${apiBase}/boards/${boardPath}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!boardRes.ok) {
@@ -124,7 +124,7 @@ async function tryGetBoardBySlug(accessToken: string, boardName: string): Promis
   return null;
 }
 
-export async function resolvePinterestBoardId(accessToken: string, boardRef: string): Promise<string> {
+export async function resolvePinterestBoardId(accessToken: string, boardRef: string, apiBase = PINTEREST_API_BASE): Promise<string> {
   const trimmedBoardRef = boardRef.trim();
   const normalizedBoardRef = normalizeBoardName(trimmedBoardRef);
 
@@ -149,13 +149,13 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
     return partialMatch?.id ?? null;
   };
 
-  const initialBoards = await listPinterestBoards(accessToken);
+  const initialBoards = await listPinterestBoards(accessToken, apiBase);
   const existingBoardId = findBoardId(initialBoards);
   if (existingBoardId) return existingBoardId;
 
   // Try direct slug lookup — list API may not return all boards (sandbox quirk)
   if (trimmedBoardRef.includes(" ")) {
-    const directId = await tryGetBoardBySlug(accessToken, trimmedBoardRef);
+    const directId = await tryGetBoardBySlug(accessToken, trimmedBoardRef, apiBase);
     if (directId) return directId;
   }
 
@@ -165,7 +165,7 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
 
   // Auto-create the board if it doesn't exist
   console.log(`[Pinterest] Board "${trimmedBoardRef}" not found, creating it...`);
-  const createRes = await fetch(`${PINTEREST_API_BASE}/boards`, {
+  const createRes = await fetch(`${apiBase}/boards`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -183,14 +183,14 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
 
     if (createRes.status === 400 && errText.includes('"code":58')) {
       // Board exists but list didn't find it — try direct slug lookup
-      const directId = await tryGetBoardBySlug(accessToken, trimmedBoardRef);
+      const directId = await tryGetBoardBySlug(accessToken, trimmedBoardRef, apiBase);
       if (directId) {
         console.log(`[Pinterest] Recovered board "${trimmedBoardRef}" via slug after duplicate-name error: ${directId}`);
         return directId;
       }
 
       // Last resort: re-list and use any available board as fallback
-      const fallbackBoards = await listPinterestBoards(accessToken);
+      const fallbackBoards = await listPinterestBoards(accessToken, apiBase);
       if (fallbackBoards.length > 0) {
         const fallback = fallbackBoards[0];
         console.log(`[Pinterest] Board "${trimmedBoardRef}" exists but not visible in API — using fallback board "${fallback.name}" (${fallback.id})`);

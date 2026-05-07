@@ -33,6 +33,12 @@ type PinterestConnection = {
   account_name: string | null;
   status: string;
   token_expires_at: string | null;
+  token_created_at?: string | null;
+  token_prefix?: string | null;
+  scopes?: string | null;
+  last_account_status?: number | null;
+  last_boards_status?: number | null;
+  board_count?: number | null;
   last_publish_at: string | null;
   last_error: string | null;
 };
@@ -114,6 +120,8 @@ function ConnectionCard({
   connection,
   queuedCount,
   actionLoading,
+  authValid,
+  authWarning,
   onConnect,
   onRefresh,
   onGenerateDrafts,
@@ -123,6 +131,8 @@ function ConnectionCard({
   connection: PinterestConnection | null;
   queuedCount: number;
   actionLoading: string | null;
+  authValid: boolean;
+  authWarning?: string | null;
   onConnect: () => Promise<void>;
   onRefresh: () => Promise<void>;
   onGenerateDrafts: () => Promise<void>;
@@ -130,7 +140,7 @@ function ConnectionCard({
   onPublishNow: () => Promise<void>;
 }) {
   const isConnected = connection?.status === "connected";
-  const canPublishNow = isConnected && queuedCount > 0;
+  const canPublishNow = isConnected && authValid && queuedCount > 0;
 
   return (
     <Card>
@@ -151,7 +161,16 @@ function ConnectionCard({
             {connection?.last_publish_at && (
               <span>Last publish: {new Date(connection.last_publish_at).toLocaleString()}</span>
             )}
+            {connection?.token_prefix && <span className="font-mono">Token: {connection.token_prefix}…</span>}
+            {connection?.token_created_at && <span>Token created: {new Date(connection.token_created_at).toLocaleString()}</span>}
+            {connection?.scopes && <span>Scopes: {connection.scopes}</span>}
+            {connection?.board_count != null && <span>Boards: {connection.board_count}</span>}
           </div>
+          {!authValid && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+              AUTH FAILURE — {authWarning || "publishing is disabled until account and boards APIs validate."}
+            </p>
+          )}
           {connection?.last_error && (
             <p className="text-sm text-destructive">Last Pinterest error: {connection.last_error}</p>
           )}
@@ -175,7 +194,7 @@ function ConnectionCard({
           <Sparkles className="mr-2 h-4 w-4" />
           Generate draft pins paused
         </Button>
-        <Button variant="outline" onClick={() => void onQueueDrafts()} disabled={!!actionLoading && actionLoading !== "queue-drafts"}>
+        <Button variant="outline" onClick={() => void onQueueDrafts()} disabled={!authValid || (!!actionLoading && actionLoading !== "queue-drafts")}>
           {actionLoading === "queue-drafts" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
           Queue {PREPARE_QUEUE_COUNT} drafts
         </Button>
@@ -378,6 +397,7 @@ function PinterestDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
   const [health, setHealth] = useState<any | null>(null);
   const [directTestResult, setDirectTestResult] = useState<any | null>(null);
+  const [authApiTestResult, setAuthApiTestResult] = useState<any | null>(null);
   const [directTestHistory, setDirectTestHistory] = useState<any[]>([]);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [debugToken, setDebugToken] = useState<{ token: string; expires_at: string; ttl_minutes: number; label: string | null } | null>(null);
@@ -577,6 +597,23 @@ function PinterestDashboard() {
     setActionLoading(null);
   };
 
+  const handleAuthApiTest = async (target: "account" | "boards") => {
+    setActionLoading(`auth-api-test-${target}`);
+    try {
+      const data = await invokePinterestAction<any>("pinterest_auth_api_test", { target });
+      setAuthApiTestResult(data);
+      if (data?.ok) toast.success(`${target === "account" ? "Account" : "Boards"} API test passed`);
+      else toast.error(data?.error || "Pinterest auth API test failed");
+      await fetchAll();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Pinterest auth API test failed";
+      setAuthApiTestResult({ ok: false, error: message });
+      toast.error(message);
+      await fetchAll();
+    }
+    setActionLoading(null);
+  };
+
   const handleMintDebugToken = async () => {
     setActionLoading("mint-debug-token");
     try {
@@ -746,12 +783,17 @@ function PinterestDashboard() {
     );
   }
 
+  const authValid = Boolean(health?.auth_valid);
+  const authWarning = health?.auth_failure_warning || connection?.last_error || null;
+
   return (
     <div className="space-y-4">
       <ConnectionCard
         connection={connection}
         queuedCount={queued.length}
         actionLoading={actionLoading}
+        authValid={authValid}
+        authWarning={authWarning}
         onConnect={handleConnect}
         onRefresh={handleRefreshConnection}
         onGenerateDrafts={handleGenerateDrafts}
@@ -766,7 +808,36 @@ function PinterestDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button onClick={() => void handleDirectApiTest()} disabled={!!actionLoading}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => void handleAuthApiTest("account")} disabled={!!actionLoading}>
+              {actionLoading === "auth-api-test-account" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
+              Test Pinterest Account API
+            </Button>
+            <Button variant="outline" onClick={() => void handleAuthApiTest("boards")} disabled={!!actionLoading}>
+              {actionLoading === "auth-api-test-boards" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
+              Test Pinterest Boards API
+            </Button>
+          </div>
+
+          {authApiTestResult && (
+            <div className="space-y-3 rounded-md border border-border p-3 text-xs">
+              <div className="grid gap-3 md:grid-cols-2">
+                <DiagnosticValue label="token prefix" value={authApiTestResult.token_prefix || authApiTestResult.token?.prefix} mono />
+                <DiagnosticValue label="token created" value={authApiTestResult.token_created_at} mono />
+                <DiagnosticValue label="scopes" value={authApiTestResult.scopes} mono />
+                <DiagnosticValue label="board count" value={authApiTestResult.board_count} />
+                <DiagnosticValue label="account status" value={authApiTestResult.account_status} />
+                <DiagnosticValue label="boards status" value={authApiTestResult.boards_status} />
+                <DiagnosticValue label="redirect URI" value={authApiTestResult.env_status?.redirect_uri_value} mono />
+                <DiagnosticValue label="auth valid" value={authApiTestResult.auth_valid ? "true" : "false"} />
+              </div>
+              <pre className="max-h-80 overflow-auto rounded bg-muted p-3 text-[11px] text-muted-foreground">
+                {JSON.stringify(authApiTestResult, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          <Button onClick={() => void handleDirectApiTest()} disabled={!authValid || !!actionLoading}>
             {actionLoading === "direct-api-test" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
             Direct Pinterest API Test
           </Button>
