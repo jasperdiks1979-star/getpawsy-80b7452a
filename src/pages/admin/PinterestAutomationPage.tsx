@@ -539,6 +539,7 @@ function PinterestDashboard() {
       toast.error(message);
       await fetchAll();
     }
+    await fetchDirectTestHistory();
     setActionLoading(null);
   };
 
