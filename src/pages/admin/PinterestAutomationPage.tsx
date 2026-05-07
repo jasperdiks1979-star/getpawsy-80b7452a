@@ -606,6 +606,66 @@ function PinterestDashboard() {
         ))}
       </div>
 
+      {/* Publish Health */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Publish Health
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div>
+            <p className="text-muted-foreground">Pinterest API</p>
+            <Badge variant={health?.api_status === "connected" ? "default" : "destructive"}>
+              {health?.api_status || "unknown"}
+            </Badge>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Last cron tick</p>
+            <p className="font-medium">{health?.last_cron_tick ? new Date(health.last_cron_tick).toLocaleString() : "never"}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Posted (24h)</p>
+            <p className="font-medium">{health?.posted_24h ?? 0} · {health?.success_rate_24h ?? "—"}% success</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Avg publish time</p>
+            <p className="font-medium">{health?.avg_publish_ms ? `${health.avg_publish_ms} ms` : "—"}</p>
+          </div>
+          {health?.stuck_publishing > 0 && (
+            <div className="col-span-full flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <span>{health.stuck_publishing} pin(s) stuck in publishing &gt; 15 min</span>
+            </div>
+          )}
+          {health?.queued_breakdown && (
+            <div className="col-span-full text-muted-foreground">
+              Queued breakdown: {Object.entries(health.queued_breakdown).map(([k, v]) => `${k}=${v}`).join(" · ")}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recovery toolbar */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Wrench className="h-4 w-4" /> Recovery
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2 py-2">
+          <Button size="sm" variant="outline" disabled={!!actionLoading} onClick={() => runRecovery("recover_orphaned_queued", "Moved back to draft")}>
+            Recover orphaned queued
+          </Button>
+          <Button size="sm" variant="outline" disabled={!!actionLoading} onClick={() => runRecovery("clear_stuck_publishing", "Cleared")}>
+            Clear stuck publishing
+          </Button>
+          <Button size="sm" variant="outline" disabled={!!actionLoading} onClick={() => runRecovery("dedupe_queue", "Duplicates removed")}>
+            Dedupe queue
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Bulk actions */}
       <Card>
         <CardContent className="flex flex-wrap gap-2 py-3">
