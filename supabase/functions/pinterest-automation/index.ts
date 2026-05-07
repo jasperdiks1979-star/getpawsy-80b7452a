@@ -1468,6 +1468,7 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     endpoint,
     token: tokenMetadata,
     required_scope: DIRECT_TEST_REQUIRED_SCOPE,
+    replays_log_id: replaysLogId,
     latest_oauth_scopes: scopeText || null,
     required_scope_present: requiredScopePresent,
     account_status_code: accountResponse.status,
