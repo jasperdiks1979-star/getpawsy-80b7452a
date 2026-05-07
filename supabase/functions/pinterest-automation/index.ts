@@ -1487,7 +1487,16 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
           : !destinationCheck.ok
             ? `Fixed destination URL is not publicly reachable: ${destinationCheck.reason}`
             : `Pinterest board lookup failed: ${boardsResponse.status}: ${boardsResponse.text}`;
-    const responseBody = { error: errorMessage, diagnostics };
+    const hint = translatePinterestFailure({
+      stage: !requiredScopePresent ? "scope" : !selectedBoard?.id ? "boards" : !imageCheck.ok ? "image" : !destinationCheck.ok ? "destination" : "boards",
+      statusCode: boardsResponse.status,
+      body: boardsResponse.body,
+      rawText: boardsResponse.text,
+      imageReason: imageCheck.reason,
+      destinationReason: destinationCheck.reason,
+      missingScope: !requiredScopePresent ? DIRECT_TEST_REQUIRED_SCOPE : null,
+    });
+    const responseBody = { error: errorMessage, hint, diagnostics };
     await sb.from("pinterest_post_logs").insert({ action: "direct_api_test", status: "failed", error_message: errorMessage, response_data: responseBody });
     await sb.from("pinterest_publish_logs").insert({
       status: "failed",
@@ -1500,7 +1509,7 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
       error_message: errorMessage,
       duration_ms: Date.now() - startedAt,
     });
-    return json(cors, { ok: false, error: errorMessage, request_endpoint: endpoint, request_payload: requestPayload, status_code: null, response_body: responseBody, pin_id: null, external_url: null, diagnostics });
+    return json(cors, { ok: false, error: errorMessage, hint, request_endpoint: endpoint, request_payload: requestPayload, status_code: null, response_body: responseBody, pin_id: null, external_url: null, diagnostics });
   }
 
   const response = await fetch(endpoint, {
@@ -1515,7 +1524,15 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
   const externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
   const success = response.ok && Boolean(pinId && externalUrl);
   const errorMessage = success ? null : `Pinterest API ${response.status}: ${responseText}`;
-  const logPayload = { ...diagnostics, status_code: response.status, response_body: responseBody, returned_pin_id: pinId, returned_pin_url: externalUrl };
+  const hint = success ? null : translatePinterestFailure({
+    stage: "publish",
+    statusCode: response.status,
+    body: responseBody,
+    rawText: responseText,
+    rateLimitHeader: response.headers.get("x-ratelimit-remaining"),
+    rateLimitReset: response.headers.get("x-ratelimit-reset"),
+  });
+  const logPayload = { ...diagnostics, status_code: response.status, response_body: responseBody, returned_pin_id: pinId, returned_pin_url: externalUrl, hint };
 
   await sb.from("pinterest_post_logs").insert({
     action: "direct_api_test",
@@ -1540,6 +1557,7 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
   return json(cors, {
     ok: success,
     error: errorMessage,
+    hint,
     request_endpoint: endpoint,
     board_id: requestPayload.board_id,
     image_url: DIRECT_TEST_IMAGE_URL,
@@ -1550,6 +1568,74 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     external_url: externalUrl,
     diagnostics,
   });
+}
+
+type PinterestFailureInput = {
+  stage: "scope" | "boards" | "image" | "destination" | "publish";
+  statusCode?: number | null;
+  body?: any;
+  rawText?: string | null;
+  imageReason?: string | null;
+  destinationReason?: string | null;
+  missingScope?: string | null;
+  rateLimitHeader?: string | null;
+  rateLimitReset?: string | null;
+};
+
+function translatePinterestFailure(input: PinterestFailureInput): { title: string; summary: string; action: string; category: string } {
+  const { stage, statusCode, body, rawText } = input;
+  const code = typeof body?.code === "number" ? body.code : null;
+  const message = String(body?.message || rawText || "").toLowerCase();
+
+  if (stage === "scope") {
+    return {
+      category: "oauth_scope",
+      title: "OAuth token is missing a required scope",
+      summary: `Pinterest token does not include "${input.missingScope}". The current token cannot create pins.`,
+      action: `Disconnect Pinterest in Admin → Pinterest → Connection, then reconnect and explicitly grant the "${input.missingScope}" scope on the Pinterest consent screen.`,
+    };
+  }
+  if (stage === "image") {
+    return {
+      category: "image_fetch",
+      title: "Image URL not reachable from Pinterest",
+      summary: `Pinterest must fetch the image over public HTTPS. Reason: ${input.imageReason || "unknown"}.`,
+      action: "Verify the image is HTTPS, returns 200, has Content-Type image/*, and is not blocked by Cloudflare/robots. Re-upload to a public CDN if needed.",
+    };
+  }
+  if (stage === "destination") {
+    return {
+      category: "destination_url",
+      title: "Destination URL not reachable",
+      summary: `Pinterest validates the link before accepting the pin. Reason: ${input.destinationReason || "unknown"}.`,
+      action: "Ensure the product page returns 200 over HTTPS and is not behind auth, geo-block, or noindex redirect.",
+    };
+  }
+  if (stage === "boards") {
+    if (statusCode === 401) return { category: "auth", title: "Token rejected by Pinterest (401)", summary: "Access token is invalid, expired, or revoked.", action: "Reconnect Pinterest in Admin → Pinterest → Connection to mint a fresh token." };
+    if (statusCode === 403) return { category: "permission", title: "Account lacks board access (403)", summary: "Token is valid but the Pinterest account has no boards visible to this app.", action: "Confirm the connected Pinterest account owns at least one board, the app has Standard access, and the user granted boards:read." };
+    return { category: "boards", title: "Board lookup failed", summary: `GET /boards returned ${statusCode}.`, action: "Open the Pinterest app and verify boards exist, then reconnect." };
+  }
+
+  // publish stage
+  if (statusCode === 401) return { category: "auth", title: "Pinterest rejected the token (401)", summary: "Token expired or revoked between board lookup and pin creation.", action: "Reconnect Pinterest to refresh the access token." };
+  if (statusCode === 403) {
+    if (message.includes("scope")) return { category: "oauth_scope", title: "Missing pins:write scope (403)", summary: "Token cannot create pins.", action: "Reconnect Pinterest and grant pins:write + boards:read." };
+    return { category: "permission", title: "Forbidden by Pinterest (403)", summary: body?.message || rawText || "Account is not allowed to publish to this board.", action: "Confirm the board belongs to the connected account and Standard Access is approved for production." };
+  }
+  if (statusCode === 429) {
+    const reset = input.rateLimitReset ? ` Resets at epoch ${input.rateLimitReset}.` : "";
+    return { category: "rate_limit", title: "Rate limited by Pinterest (429)", summary: `Hourly or daily pin creation limit reached.${reset}`, action: "Wait at least 60 minutes before retrying. Reduce queue throughput to <10 pins/hour for new accounts." };
+  }
+  if (statusCode === 400) {
+    if (message.includes("image") || message.includes("media")) return { category: "image_fetch", title: "Pinterest could not load the image (400)", summary: body?.message || "media_source.url failed validation.", action: "Use HTTPS JPEG/PNG ≥ 200x300px, < 32MB, public, with image/* Content-Type." };
+    if (message.includes("link")) return { category: "destination_url", title: "Destination link rejected (400)", summary: body?.message || "link failed validation.", action: "Use a clean canonical product URL, no tracking redirects, must return 200." };
+    if (message.includes("board")) return { category: "board", title: "Board ID rejected (400)", summary: body?.message || "board_id is invalid.", action: "Refetch boards via /boards and use the exact id string returned." };
+    return { category: "bad_request", title: "Pinterest rejected the request (400)", summary: body?.message || rawText || "Validation error.", action: "Inspect response_body.message and adjust the offending field." };
+  }
+  if (statusCode === 404) return { category: "not_found", title: "Resource not found (404)", summary: body?.message || "Board or pin not found.", action: "Verify board_id belongs to the authenticated account." };
+  if (statusCode && statusCode >= 500) return { category: "pinterest_outage", title: `Pinterest server error (${statusCode})`, summary: "Pinterest API is temporarily failing.", action: "Retry in 2–5 minutes. Check status.pinterest.com." };
+  return { category: "unknown", title: `Unhandled Pinterest response (${statusCode ?? "no status"})`, summary: body?.message || rawText || "No message returned.", action: "Copy response_body and check Pinterest API docs for the code field." };
 }
 
 async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<string, string>, opts: { actionName: string; requireApproved: boolean; ignoreSchedule: boolean }) {
