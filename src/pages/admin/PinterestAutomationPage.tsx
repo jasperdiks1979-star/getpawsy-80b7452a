@@ -33,6 +33,12 @@ type PinterestConnection = {
   account_name: string | null;
   status: string;
   token_expires_at: string | null;
+  token_created_at?: string | null;
+  token_prefix?: string | null;
+  scopes?: string | null;
+  last_account_status?: number | null;
+  last_boards_status?: number | null;
+  board_count?: number | null;
   last_publish_at: string | null;
   last_error: string | null;
 };
@@ -114,6 +120,8 @@ function ConnectionCard({
   connection,
   queuedCount,
   actionLoading,
+  authValid,
+  authWarning,
   onConnect,
   onRefresh,
   onGenerateDrafts,
@@ -123,6 +131,8 @@ function ConnectionCard({
   connection: PinterestConnection | null;
   queuedCount: number;
   actionLoading: string | null;
+  authValid: boolean;
+  authWarning?: string | null;
   onConnect: () => Promise<void>;
   onRefresh: () => Promise<void>;
   onGenerateDrafts: () => Promise<void>;
@@ -130,7 +140,7 @@ function ConnectionCard({
   onPublishNow: () => Promise<void>;
 }) {
   const isConnected = connection?.status === "connected";
-  const canPublishNow = isConnected && queuedCount > 0;
+  const canPublishNow = isConnected && authValid && queuedCount > 0;
 
   return (
     <Card>
@@ -151,7 +161,16 @@ function ConnectionCard({
             {connection?.last_publish_at && (
               <span>Last publish: {new Date(connection.last_publish_at).toLocaleString()}</span>
             )}
+            {connection?.token_prefix && <span className="font-mono">Token: {connection.token_prefix}…</span>}
+            {connection?.token_created_at && <span>Token created: {new Date(connection.token_created_at).toLocaleString()}</span>}
+            {connection?.scopes && <span>Scopes: {connection.scopes}</span>}
+            {connection?.board_count != null && <span>Boards: {connection.board_count}</span>}
           </div>
+          {!authValid && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+              AUTH FAILURE — {authWarning || "publishing is disabled until account and boards APIs validate."}
+            </p>
+          )}
           {connection?.last_error && (
             <p className="text-sm text-destructive">Last Pinterest error: {connection.last_error}</p>
           )}
@@ -175,7 +194,7 @@ function ConnectionCard({
           <Sparkles className="mr-2 h-4 w-4" />
           Generate draft pins paused
         </Button>
-        <Button variant="outline" onClick={() => void onQueueDrafts()} disabled={!!actionLoading && actionLoading !== "queue-drafts"}>
+        <Button variant="outline" onClick={() => void onQueueDrafts()} disabled={!authValid || (!!actionLoading && actionLoading !== "queue-drafts")}>
           {actionLoading === "queue-drafts" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
           Queue {PREPARE_QUEUE_COUNT} drafts
         </Button>
