@@ -8,6 +8,7 @@ const BATCH_SIZE = 3; // max concurrency per cron run
 const MIN_DELAY_MS = 5000; // minimum 5s between posts
 const MAX_DELAY_MS = 15000; // maximum 15s between posts
 const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
+const HERO_DAILY_CAP = 3;     // Performance Mode: 3 pins/day until scale_unlocked
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -239,6 +240,29 @@ Deno.serve(async (req) => {
         JSON.stringify({ ok: true, message: "Hourly rate limit reached", results: [] }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // ── 3b. Performance Mode daily cap (3/day until scale_unlocked) ──
+    const { data: rtSettings } = await sb
+      .from("pinterest_runtime_settings")
+      .select("scale_unlocked")
+      .limit(1)
+      .maybeSingle();
+    const scaleUnlocked = !!rtSettings?.scale_unlocked;
+    if (!scaleUnlocked) {
+      const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+      const { count: postedToday } = await sb
+        .from("pinterest_pin_queue")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "posted")
+        .gte("posted_at", oneDayAgo);
+      if ((postedToday || 0) >= HERO_DAILY_CAP) {
+        console.log(`[cron] Performance Mode cap reached: ${postedToday}/${HERO_DAILY_CAP} pins in last 24h`);
+        return new Response(
+          JSON.stringify({ ok: true, message: `Daily cap (${HERO_DAILY_CAP}) reached`, results: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // ── 4. Publish each pin with human-like delay ──
