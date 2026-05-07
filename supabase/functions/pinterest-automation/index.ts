@@ -1123,7 +1123,7 @@ Deno.serve(async (req) => {
       }
       const { data: pin } = await sb.from("pinterest_pin_queue").select("*").eq("id", pinId).maybeSingle();
       if (!pin) return json(cors, { ok: false, error: "Pin not found" });
-      if (pin.status !== "queued" && pin.status !== "draft") {
+      if (pin.status !== "queued") {
         return json(cors, { ok: false, error: `Cannot force publish status=${pin.status}`, selected_pin: compactPinForDiagnostics(pin) });
       }
       return await publishSelectedPin(sb, conn, pin, cors, {
