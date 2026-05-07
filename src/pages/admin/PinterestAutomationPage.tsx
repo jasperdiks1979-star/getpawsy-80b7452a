@@ -397,6 +397,7 @@ function PinterestDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
   const [health, setHealth] = useState<any | null>(null);
   const [directTestResult, setDirectTestResult] = useState<any | null>(null);
+  const [authApiTestResult, setAuthApiTestResult] = useState<any | null>(null);
   const [directTestHistory, setDirectTestHistory] = useState<any[]>([]);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [debugToken, setDebugToken] = useState<{ token: string; expires_at: string; ttl_minutes: number; label: string | null } | null>(null);
@@ -593,6 +594,23 @@ function PinterestDashboard() {
       await fetchAll();
     }
     await fetchDirectTestHistory();
+    setActionLoading(null);
+  };
+
+  const handleAuthApiTest = async (target: "account" | "boards") => {
+    setActionLoading(`auth-api-test-${target}`);
+    try {
+      const data = await invokePinterestAction<any>("pinterest_auth_api_test", { target });
+      setAuthApiTestResult(data);
+      if (data?.ok) toast.success(`${target === "account" ? "Account" : "Boards"} API test passed`);
+      else toast.error(data?.error || "Pinterest auth API test failed");
+      await fetchAll();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Pinterest auth API test failed";
+      setAuthApiTestResult({ ok: false, error: message });
+      toast.error(message);
+      await fetchAll();
+    }
     setActionLoading(null);
   };
 
