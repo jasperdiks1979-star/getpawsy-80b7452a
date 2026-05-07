@@ -253,6 +253,28 @@ Deno.serve(async (req) => {
       }
     }
 
+    const authCheck = await validatePinterestAuthForCron(sb, conn, accessToken);
+    if (!authCheck.ok) {
+      await sb.from("pinterest_post_logs").insert({
+        action: "cron_tick",
+        status: "skipped",
+        error_message: authCheck.error,
+        response_data: {
+          code: "PINTEREST_AUTH_FAILURE",
+          api_base: PINTEREST_PRODUCTION_API_BASE,
+          account_status: authCheck.account.status,
+          account_response_body: authCheck.account.body,
+          boards_status: authCheck.boards.status,
+          boards_response_body: authCheck.boards.body,
+          board_count: authCheck.boardCount,
+        },
+      });
+      return new Response(
+        JSON.stringify({ ok: false, error: authCheck.error, code: "PINTEREST_AUTH_FAILURE", publishing_disabled: true, results: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // ── 3. Check hourly rate limit ──
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     const { count: recentPostCount } = await sb
