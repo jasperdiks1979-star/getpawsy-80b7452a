@@ -1057,8 +1057,7 @@ Deno.serve(async (req) => {
     if (action === "publish_diagnostics") {
       const nowIso = new Date().toISOString();
       const allowed = Array.from(PINTEREST_ALLOWED_SLUGS);
-      const [{ data: byStatus }, { data: stuck }, { data: lastCron }, { data: conn }] = await Promise.all([
-        sb.rpc("noop_dummy_does_not_exist").then(() => ({ data: null as any })).catch(() => ({ data: null })),
+      const [{ data: stuck }, { data: lastCron }, { data: conn }] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id, publishing_started_at").eq("status", "publishing").lt("publishing_started_at", new Date(Date.now() - 15 * 60_000).toISOString()),
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
         sb.from("pinterest_connection").select("status, last_error, last_publish_at").limit(1).maybeSingle(),
