@@ -21,8 +21,6 @@ import {
   Wand2,
   Zap,
   XCircle,
-  Lock,
-  Unlock,
 } from "lucide-react";
 
 type PinterestConnection = {
