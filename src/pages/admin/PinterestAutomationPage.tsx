@@ -256,11 +256,6 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
                       <Play className="h-3 w-3 mr-1" /> Force publish selected pin
                     </Button>
                   )}
-                  {pin.status === "draft" && (
-                    <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => onAction("force", pin.id)} title="Force publish draft">
-                      <Play className="h-3 w-3" />
-                    </Button>
-                  )}
                 </td>
               )}
             </tr>
