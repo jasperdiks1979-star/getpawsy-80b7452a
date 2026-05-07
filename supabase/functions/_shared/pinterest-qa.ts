@@ -15,9 +15,15 @@ export type PinQaReason =
   | "category_mismatch"
   | "bad_crop"
   | "unreadable_text"
+  | "unreadable_overlay"
   | "missing_cta"
   | "wrong_destination_url"
-  | "allowlist_disabled";
+  | "allowlist_disabled"
+  | "low_resolution"
+  | "malformed_url"
+  | "spam_payload"
+  | "duplicate_asset"
+  | "weak_hook";
 
 /** During QA stabilization ONLY this product slug may publish to Pinterest. */
 export const PINTEREST_ALLOWED_SLUGS: ReadonlySet<string> = new Set([
@@ -34,6 +40,9 @@ export interface PinQaInput {
   board_name?: string | null;
   category_key?: string | null;
   overlay_text?: string | null;
+  image_hash?: string | null;
+  /** Pre-computed: true if image_hash collides with another posted pin in the last 14 days. */
+  duplicate_image?: boolean;
 }
 
 const CAT_PATTERNS = /\b(cat|kitten|kitty|litter\s*box|feline)\b/i;
@@ -62,6 +71,18 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   const corpus = `${title} ${desc} ${overlay}`;
   const board = (pin.board_name || "").toLowerCase();
 
+  // Lazy-import the hook bank + spam helpers via dynamic require avoidance:
+  // We can't `import` here without making the file async, so we inline the
+  // minimal regex set instead. The dedicated hook bank is enforced by the
+  // generator + a thin call below.
+  const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
+  const INVALID_UTF = /[\uFFFD\u0000\uD800-\uDFFF]/;
+  const ENCODED_BLOB = /(?:%[0-9A-Fa-f]{2}){12,}|[A-Za-z0-9+/=]{200,}/;
+  const isSpammy = (s: string) =>
+    INVALID_UTF.test(s) ||
+    (s.match(EMOJI) || []).length > 3 ||
+    ENCODED_BLOB.test(s);
+
   // 1. Allowlist (during QA stabilization)
   if (!PINTEREST_ALLOWED_SLUGS.has(slug)) {
     reasons.add("allowlist_disabled");
@@ -71,6 +92,16 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   const dest = pin.destination_link || "";
   if (!slug || !dest || !dest.includes(`/products/${slug}`)) {
     reasons.add("wrong_destination_url");
+  }
+  try {
+    if (dest) {
+      const u = new URL(dest);
+      if (u.hostname !== "getpawsy.pet" && u.hostname !== "www.getpawsy.pet") {
+        reasons.add("malformed_url");
+      }
+    }
+  } catch {
+    reasons.add("malformed_url");
   }
 
   // 3. Product / category cross-contamination checks
@@ -101,17 +132,65 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   } else if (img.includes("res.cloudinary.com") && !/w_1080.*h_1920|h_1920.*w_1080/.test(img)) {
     reasons.add("bad_crop");
   }
+  // Low-resolution heuristic — Cloudinary URL must request ≥1000×1500.
+  if (img.includes("res.cloudinary.com")) {
+    const wMatch = img.match(/w_(\d+)/);
+    const hMatch = img.match(/h_(\d+)/);
+    const w = wMatch ? Number(wMatch[1]) : 0;
+    const h = hMatch ? Number(hMatch[1]) : 0;
+    if (w && w < 1000) reasons.add("low_resolution");
+    if (h && h < 1500) reasons.add("low_resolution");
+  }
+
+  // Duplicate asset (passed in by caller after DB lookup)
+  if (pin.duplicate_image) reasons.add("duplicate_asset");
 
   // 5. Overlay readability — must exist and be reasonable length
   const overlayRaw = pin.overlay_text || "";
   if (!overlayRaw.trim() || overlayRaw.trim().length < 6 || overlayRaw.length > 120) {
     reasons.add("unreadable_text");
+    reasons.add("unreadable_overlay");
   }
 
   // 6. CTA must exist (overlay split format: "TOP | BOTTOM")
   const parts = overlayRaw.split("|").map((p) => p.trim()).filter(Boolean);
   if (parts.length < 2 || parts[1].length < 2) {
     reasons.add("missing_cta");
+  }
+
+  // 7. Spam payload check on every visible string
+  for (const s of [pin.pin_title || "", pin.pin_description || "", overlayRaw]) {
+    if (s && isSpammy(s)) {
+      reasons.add("spam_payload");
+      break;
+    }
+  }
+
+  // 8. Weak / off-script hook — top overlay must be from APPROVED_HOOKS bank.
+  // We intentionally re-import here (dynamic) so this file stays sync.
+  // The bank is small (~16 strings); an inline copy would be just as good.
+  const APPROVED_TOP = [
+    "tired of litter box chores",
+    "cat litter smell taking over",
+    "daily scooping gets old fast",
+    "your cat deserves better",
+    "clean litter in seconds",
+    "save 30+ minutes every week",
+    "one tap cleanup",
+    "from messy to self-cleaning",
+    "upgrade your cat setup",
+    "small apartment cat hack",
+    "thousands of cat owners switched",
+    "cat parents are obsessed with this",
+    "viral cat owner upgrade",
+    "i wish i bought this sooner",
+    "why are cat owners switching",
+    "this changed my cat routine",
+  ];
+  const top = (parts[0] || overlayRaw).toLowerCase().replace(/[^\w\s]/g, "").trim();
+  const matchesApproved = APPROVED_TOP.some((h) => top.startsWith(h) || h.startsWith(top));
+  if (top && !matchesApproved) {
+    reasons.add("weak_hook");
   }
 
   return Array.from(reasons);
