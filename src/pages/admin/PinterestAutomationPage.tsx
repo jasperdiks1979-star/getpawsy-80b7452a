@@ -378,6 +378,22 @@ function PinterestDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
   const [health, setHealth] = useState<any | null>(null);
   const [directTestResult, setDirectTestResult] = useState<any | null>(null);
+  const [directTestHistory, setDirectTestHistory] = useState<any[]>([]);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+
+  const fetchDirectTestHistory = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("pinterest_post_logs")
+      .select("id, created_at, status, error_message, response_data")
+      .eq("action", "direct_api_test")
+      .order("created_at", { ascending: false })
+      .limit(25);
+    if (error) {
+      console.warn("[direct_api_test history] fetch failed:", error);
+      return;
+    }
+    setDirectTestHistory(data || []);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -414,6 +430,7 @@ function PinterestDashboard() {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { void fetchDirectTestHistory(); }, [fetchDirectTestHistory]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -522,6 +539,7 @@ function PinterestDashboard() {
       toast.error(message);
       await fetchAll();
     }
+    await fetchDirectTestHistory();
     setActionLoading(null);
   };
 
@@ -694,6 +712,74 @@ function PinterestDashboard() {
               </pre>
             </div>
           )}
+
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Run history ({directTestHistory.length})
+              </p>
+              <Button size="sm" variant="ghost" onClick={() => void fetchDirectTestHistory()}>
+                <RefreshCw className="mr-1 h-3 w-3" /> Refresh
+              </Button>
+            </div>
+            {directTestHistory.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No direct API test runs logged yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {directTestHistory.map((entry) => {
+                  const data = entry.response_data || {};
+                  const isOpen = expandedHistoryId === entry.id;
+                  return (
+                    <div key={entry.id} className="rounded-md border border-border text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedHistoryId(isOpen ? null : entry.id)}
+                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/50"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge variant={entry.status === "success" ? "default" : "destructive"}>
+                            {entry.status}
+                          </Badge>
+                          <span className="font-mono text-[11px] text-muted-foreground">
+                            {new Date(entry.created_at).toLocaleString()}
+                          </span>
+                          {data.status_code != null && (
+                            <span className="text-[11px] text-muted-foreground">HTTP {data.status_code}</span>
+                          )}
+                          {data.returned_pin_id && (
+                            <span className="font-mono text-[11px]">{data.returned_pin_id}</span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">{isOpen ? "Hide" : "View"}</span>
+                      </button>
+                      {isOpen && (
+                        <div className="space-y-2 border-t border-border p-3">
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <DiagnosticValue label="endpoint" value={data.endpoint} mono />
+                            <DiagnosticValue label="board_id" value={data.selected_board?.id} mono />
+                            <DiagnosticValue label="status_code" value={data.status_code} />
+                            <DiagnosticValue label="returned pin_id" value={data.returned_pin_id} mono />
+                            <DiagnosticValue label="returned pin URL" value={data.returned_pin_url} mono />
+                            <DiagnosticValue label="error" value={entry.error_message} mono />
+                          </div>
+                          {data.returned_pin_url && (
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={data.returned_pin_url} target="_blank" rel="noreferrer">
+                                <ExternalLink className="mr-2 h-3 w-3" /> Open pin
+                              </a>
+                            </Button>
+                          )}
+                          <pre className="max-h-72 overflow-auto rounded bg-muted p-3 text-[11px] text-muted-foreground">
+                            {JSON.stringify(data, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
