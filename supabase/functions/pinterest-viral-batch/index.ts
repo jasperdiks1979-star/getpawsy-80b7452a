@@ -14,6 +14,7 @@ import type {
 } from "../_shared/pinterest-queue-types.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 import { sanitizeUrl, quarantineEvent } from "../_shared/event-sanitizer.ts";
+import { hashImageUrl, containsTargetKeyword } from "../_shared/pinterest-hooks.ts";
 
 export type {
   PinterestQueueInsert,
@@ -49,7 +50,7 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "product_id", "product_slug", "product_name", "pin_variant",
   "pin_title", "pin_description", "pin_image_url", "destination_link",
   "board_name", "hashtags", "priority", "status", "scheduled_at",
-  "hook_group", "category_key", "overlay_text", "qa_reasons",
+  "hook_group", "category_key", "overlay_text", "qa_reasons", "image_hash",
 ]);
 
 export interface SanitizeReport {
