@@ -505,7 +505,10 @@ function PinterestDashboard() {
     setActionLoading("direct-api-test");
     setDirectTestResult(null);
     try {
-      const data = await invokePinterestAction<any>("direct_pinterest_api_test");
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "direct_pinterest_api_test" },
+      });
+      if (error) throw error;
       setDirectTestResult(data);
       if (data?.pin_id && data?.external_url) {
         toast.success(`Direct Pinterest API Test published ${data.pin_id}`);
