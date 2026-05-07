@@ -5126,6 +5126,7 @@ export type Database = {
           hashtags: string[] | null
           hook_group: string | null
           id: string
+          image_hash: string | null
           overlay_text: string | null
           pin_description: string
           pin_external_id: string | null
@@ -5155,6 +5156,7 @@ export type Database = {
           hashtags?: string[] | null
           hook_group?: string | null
           id?: string
+          image_hash?: string | null
           overlay_text?: string | null
           pin_description: string
           pin_external_id?: string | null
@@ -5184,6 +5186,7 @@ export type Database = {
           hashtags?: string[] | null
           hook_group?: string | null
           id?: string
+          image_hash?: string | null
           overlay_text?: string | null
           pin_description?: string
           pin_external_id?: string | null
@@ -5351,18 +5354,21 @@ export type Database = {
         Row: {
           id: number
           mode: string
+          scale_unlocked: boolean
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           id?: number
           mode?: string
+          scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           id?: number
           mode?: string
+          scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
         }

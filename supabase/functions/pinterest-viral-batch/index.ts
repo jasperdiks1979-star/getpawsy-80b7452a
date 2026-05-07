@@ -14,6 +14,7 @@ import type {
 } from "../_shared/pinterest-queue-types.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 import { sanitizeUrl, quarantineEvent } from "../_shared/event-sanitizer.ts";
+import { hashImageUrl, containsTargetKeyword } from "../_shared/pinterest-hooks.ts";
 
 export type {
   PinterestQueueInsert,
@@ -49,7 +50,7 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "product_id", "product_slug", "product_name", "pin_variant",
   "pin_title", "pin_description", "pin_image_url", "destination_link",
   "board_name", "hashtags", "priority", "status", "scheduled_at",
-  "hook_group", "category_key", "overlay_text", "qa_reasons",
+  "hook_group", "category_key", "overlay_text", "qa_reasons", "image_hash",
 ]);
 
 export interface SanitizeReport {
@@ -809,7 +810,29 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
       const destCheck = sanitizeUrl((r as Record<string, unknown>).destination_link as string | undefined);
       const imgCheck = sanitizeUrl((r as Record<string, unknown>).pin_image_url as string | undefined, { allowExternalReferrer: true });
       const urlReasons = [...destCheck.reasons, ...imgCheck.reasons];
-      const qaReasons = runPinQa(r as unknown as Record<string, unknown>);
+      const imgUrl = (r as Record<string, unknown>).pin_image_url as string;
+      const imgHash = imgUrl ? hashImageUrl(imgUrl) : null;
+      let duplicateImage = false;
+      if (imgHash) {
+        const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+        const { count: dupCount } = await sb
+          .from("pinterest_pin_queue")
+          .select("*", { count: "exact", head: true })
+          .eq("image_hash", imgHash)
+          .gte("created_at", fourteenDaysAgo);
+        duplicateImage = (dupCount || 0) > 0;
+      }
+      const qaReasons = runPinQa({
+        ...(r as Record<string, unknown>),
+        image_hash: imgHash,
+        duplicate_image: duplicateImage,
+      } as Parameters<typeof runPinQa>[0]);
+      // SEO keyword presence — soft check, logged but not fatal.
+      const hasKw = containsTargetKeyword(
+        (r as Record<string, unknown>).pin_title as string,
+        (r as Record<string, unknown>).pin_description as string,
+      );
+      if (!hasKw) console.warn(`[pinterest-viral-batch] no target keyword in pin "${(r as Record<string, unknown>).pin_title}"`);
       const allReasons = Array.from(new Set([...qaReasons, ...urlReasons]));
       const fatalUrl = !destCheck.ok || !imgCheck.ok;
       if (fatalUrl) {
@@ -820,7 +843,7 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         });
         continue;
       }
-      annotatedRows.push({ ...r, qa_reasons: allReasons } as typeof r);
+      annotatedRows.push({ ...r, qa_reasons: allReasons, image_hash: imgHash } as typeof r);
     }
     if (annotatedRows.length === 0) {
       return respond({ ok: false, code: "ALL_ROWS_QUARANTINED", message: "All pins were rejected by URL sanitizer" });

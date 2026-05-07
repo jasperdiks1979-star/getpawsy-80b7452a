@@ -971,6 +971,88 @@ Deno.serve(async (req) => {
       return json(cors, { ok: true, deleted: ids.length });
     }
 
+    if (action === "bulk_approve") {
+      const pinIds: string[] = Array.isArray(body.pinIds) ? body.pinIds.slice(0, 10) : [];
+      if (pinIds.length === 0) return json(cors, { ok: false, error: "pinIds required (max 10)" });
+      const { data: pins } = await sb.from("pinterest_pin_queue").select("*").in("id", pinIds);
+      let approved = 0;
+      const failures: Array<{ id: string; reasons: string[] }> = [];
+      for (const pin of pins || []) {
+        if (!PINTEREST_ALLOWED_SLUGS.has(pin.product_slug)) {
+          failures.push({ id: pin.id, reasons: ["allowlist_disabled"] });
+          continue;
+        }
+        const reasons = runPinQa(pin);
+        if (reasons.length > 0) {
+          await sb.from("pinterest_pin_queue").update({
+            qa_reasons: reasons,
+            error_message: `QA gate: ${reasons.join(",")}`,
+          }).eq("id", pin.id);
+          failures.push({ id: pin.id, reasons });
+          continue;
+        }
+        await sb.from("pinterest_pin_queue").update({
+          status: "queued",
+          approved_at: new Date().toISOString(),
+          qa_reasons: [],
+          error_message: null,
+          scheduled_at: new Date().toISOString(),
+        }).eq("id", pin.id);
+        approved++;
+      }
+      return json(cors, { ok: true, approved, failures });
+    }
+
+    if (action === "bulk_reject") {
+      const pinIds: string[] = Array.isArray(body.pinIds) ? body.pinIds.slice(0, 10) : [];
+      if (pinIds.length === 0) return json(cors, { ok: false, error: "pinIds required (max 10)" });
+      const { error } = await sb.from("pinterest_pin_queue").update({
+        status: "skipped",
+        approved_at: null,
+        error_message: body.reason || "Bulk rejected by admin",
+      }).in("id", pinIds);
+      if (error) return json(cors, { ok: false, error: error.message });
+      return json(cors, { ok: true, rejected: pinIds.length });
+    }
+
+    if (action === "regenerate_pin") {
+      // Mark the existing draft as skipped, then trigger a fresh viral batch
+      // for the same hero product. The cron worker will only ever publish
+      // approved pins, so a stale draft sitting in the queue is harmless.
+      const pinId = body.pinId;
+      if (!pinId) return json(cors, { ok: false, error: "pinId required" });
+      const { data: pin } = await sb.from("pinterest_pin_queue").select("product_slug").eq("id", pinId).maybeSingle();
+      if (!pin) return json(cors, { ok: false, error: "Pin not found" });
+      await sb.from("pinterest_pin_queue").update({
+        status: "skipped",
+        approved_at: null,
+        error_message: "Replaced by regenerate",
+      }).eq("id", pinId);
+      // Fire-and-await: invoke viral batch for the same slug.
+      const fnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-viral-batch`;
+      const r = await fetch(fnUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ productSlug: pin.product_slug, maxPins: 1 }),
+      });
+      const data = await r.json().catch(() => ({}));
+      return json(cors, { ok: true, regenerated: true, batch: data });
+    }
+
+    if (action === "set_scale_unlocked") {
+      const unlocked = !!body.unlocked;
+      const { data: existing } = await sb.from("pinterest_runtime_settings").select("id").limit(1).maybeSingle();
+      const payload = { scale_unlocked: unlocked, updated_at: new Date().toISOString() };
+      const { error } = existing?.id
+        ? await sb.from("pinterest_runtime_settings").update(payload).eq("id", existing.id)
+        : await sb.from("pinterest_runtime_settings").insert(payload);
+      if (error) return json(cors, { ok: false, error: error.message });
+      return json(cors, { ok: true, scale_unlocked: unlocked });
+    }
+
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
     console.error("pinterest-automation error:", e);

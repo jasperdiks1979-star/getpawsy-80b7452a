@@ -35,6 +35,26 @@ type PinterestConnection = {
 
 const PREPARE_QUEUE_COUNT = 3;
 
+const QA_TOOLTIPS: Record<string, string> = {
+  product_mismatch: "Pin copy or board references a different animal/product",
+  category_mismatch: "Board does not match the product category",
+  bad_crop: "Image is not 9:16 or not a valid Cloudinary render",
+  unreadable_text: "Overlay text is too short, too long, or missing",
+  unreadable_overlay: "Overlay text is unreadable on mobile",
+  missing_cta: "Bottom CTA segment is missing or too short",
+  wrong_destination_url: "Destination URL does not point to /products/<slug>",
+  allowlist_disabled: "Product not in the Performance Mode allowlist",
+  low_resolution: "Cloudinary asset requested below 1080×1920",
+  malformed_url: "Destination link is not a valid getpawsy.pet URL",
+  spam_payload: "Title/description/overlay contains spam or invalid UTF",
+  duplicate_asset: "Same image was used for another pin in the last 14 days",
+  weak_hook: "Hook is not in the approved hook bank",
+};
+
+function qaReasonTooltip(reason: string): string {
+  return QA_TOOLTIPS[reason] || reason;
+}
+
 function humanizeOauthError(error: string) {
   return error.replace(/_/g, " ");
 }
@@ -189,7 +209,7 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
                 {Array.isArray(pin.qa_reasons) && pin.qa_reasons.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {pin.qa_reasons.map((r: string) => (
-                      <Badge key={r} variant="destructive" className="text-[10px]">{r}</Badge>
+                      <Badge key={r} variant="destructive" className="text-[10px]" title={qaReasonTooltip(r)}>{r}</Badge>
                     ))}
                   </div>
                 ) : pin.approved_at ? (
@@ -211,6 +231,9 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
                       </Button>
                       <Button size="sm" variant="ghost" className="h-6 px-2 text-destructive" onClick={() => onAction("reject", pin.id)} title="Reject">
                         <ShieldAlert className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => onAction("regenerate", pin.id)} title="Regenerate">
+                        <Sparkles className="h-3 w-3" />
                       </Button>
                     </>
                   )}
@@ -427,6 +450,9 @@ function PinterestDashboard() {
       } else if (action === "reject") {
         await invokePinterestAction("reject_pin", { pinId });
         toast.success("Pin rejected");
+      } else if (action === "regenerate") {
+        await invokePinterestAction("regenerate_pin", { pinId });
+        toast.success("Pin regenerated — new draft queued");
       }
       await fetchAll();
     } catch (e) {
@@ -466,6 +492,38 @@ function PinterestDashboard() {
 
   const handleForceRun = async () => {
     await handlePublishNow();
+  };
+
+  const handleBulkApprove = async () => {
+    const pinIds = drafts.slice(0, 10).map((p) => p.id);
+    if (!pinIds.length) return toast("No drafts to approve");
+    setActionLoading("bulk-approve");
+    try {
+      const data = await invokePinterestAction<{ approved: number; failures: any[] }>("bulk_approve", { pinIds });
+      toast.success(`Approved ${data.approved} of ${pinIds.length}`);
+      if (data.failures?.length) {
+        toast.error(`${data.failures.length} pins failed QA — check Drafts tab`);
+      }
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk approve failed");
+    }
+    setActionLoading(null);
+  };
+
+  const handleBulkReject = async () => {
+    const pinIds = drafts.slice(0, 10).map((p) => p.id);
+    if (!pinIds.length) return toast("No drafts to reject");
+    if (!window.confirm(`Reject ${pinIds.length} draft pin(s)?`)) return;
+    setActionLoading("bulk-reject");
+    try {
+      await invokePinterestAction("bulk_reject", { pinIds });
+      toast.success(`Rejected ${pinIds.length} drafts`);
+      await fetchAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk reject failed");
+    }
+    setActionLoading(null);
   };
 
   if (loading) {
@@ -549,6 +607,16 @@ function PinterestDashboard() {
           <Button size="sm" variant="destructive" onClick={handlePurgeBad} disabled={!!actionLoading}>
             <Trash2 className="h-3 w-3 mr-1" /> Purge bad pins
           </Button>
+          {drafts.length > 0 && (
+            <>
+              <Button size="sm" variant="default" onClick={handleBulkApprove} disabled={!!actionLoading}>
+                <ShieldCheck className="h-3 w-3 mr-1" /> Bulk Approve ({Math.min(drafts.length, 10)})
+              </Button>
+              <Button size="sm" variant="destructive" onClick={handleBulkReject} disabled={!!actionLoading}>
+                <ShieldAlert className="h-3 w-3 mr-1" /> Bulk Reject ({Math.min(drafts.length, 10)})
+              </Button>
+            </>
+          )}
           {actionLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground self-center" />}
         </CardContent>
       </Card>
