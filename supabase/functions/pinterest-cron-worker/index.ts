@@ -143,6 +143,7 @@ Deno.serve(async (req) => {
     status: string;
     error?: string;
     externalId?: string;
+    pinVerified?: boolean;
   }> = [];
   const boardIdCache = new Map<string, string>();
 
