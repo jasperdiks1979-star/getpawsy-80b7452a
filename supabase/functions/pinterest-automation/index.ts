@@ -1541,6 +1541,7 @@ async function validatePinterestAuth(sb: any, conn: any, accessToken: string) {
 
 async function runPinterestAuthApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, target: "account" | "boards" | "both") {
   const auth = await validatePinterestAuth(sb, conn, accessToken);
+  const redirectUri = Deno.env.get("PINTEREST_REDIRECT_URI") || `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-oauth-callback`;
   const accountIncluded = target === "account" || target === "both";
   const boardsIncluded = target === "boards" || target === "both";
   const responseBody = {
@@ -1552,6 +1553,12 @@ async function runPinterestAuthApiTest(sb: any, conn: any, accessToken: string, 
     token_created_at: auth.diagnostics.token.token_created_at,
     token_prefix: auth.diagnostics.token.prefix,
     board_count: auth.boards.length,
+    env_status: {
+      PINTEREST_CLIENT_ID: Boolean(Deno.env.get("PINTEREST_CLIENT_ID")),
+      PINTEREST_CLIENT_SECRET: Boolean(Deno.env.get("PINTEREST_CLIENT_SECRET")),
+      PINTEREST_REDIRECT_URI: Boolean(Deno.env.get("PINTEREST_REDIRECT_URI")),
+      redirect_uri_value: redirectUri,
+    },
     account_status: accountIncluded ? auth.accountResponse.status : null,
     account_response_body: accountIncluded ? auth.accountResponse.body : null,
     boards_status: boardsIncluded ? auth.boardsResponse.status : null,
