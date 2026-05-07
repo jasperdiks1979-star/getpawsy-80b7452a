@@ -1595,7 +1595,7 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     await sb.from("pinterest_connection").update({ last_publish_at: new Date().toISOString(), last_error: null }).eq("id", conn.id);
     await sb.from("products").update({ pinterest_last_posted_at: new Date().toISOString(), pinterest_status: "posted" }).eq("id", pin.product_id);
 
-    return json(cors, { ok: true, published: pinterestPinId, pinterest_pin_id: pinterestPinId, external_url: externalUrl, board_id: boardId, selected_pin: compactPinForDiagnostics({ ...pin, pinterest_pin_id: pinterestPinId, external_url: externalUrl }, boardId), response: responseJson, duration_ms: Date.now() - startedAt });
+    return json(cors, { ok: true, published: pinterestPinId, pinterest_pin_id: pinterestPinId, external_url: externalUrl, board_id: boardId, verification, selected_pin: compactPinForDiagnostics({ ...pin, pinterest_pin_id: pinterestPinId, external_url: externalUrl }, boardId), response: responseJson, duration_ms: Date.now() - startedAt });
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : "Unknown error";
     console.log("[pinterest-publish] failed", { pin_id: pin.id, board_id: boardId, error: errMsg });
