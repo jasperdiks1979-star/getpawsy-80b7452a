@@ -877,6 +877,18 @@ function PinterestDashboard() {
                           <Badge variant={entry.status === "success" ? "default" : "destructive"}>
                             {entry.status}
                           </Badge>
+                          <Badge
+                            variant={
+                              data.pin_verified === true
+                                ? "default"
+                                : data.pin_verified === false
+                                  ? "destructive"
+                                  : "outline"
+                            }
+                            title={data.pin_verification_reason || "pin_verified status"}
+                          >
+                            verified: {data.pin_verified === true ? "true" : data.pin_verified === false ? "false" : "—"}
+                          </Badge>
                           <span className="font-mono text-[11px] text-muted-foreground">
                             {new Date(entry.created_at).toLocaleString()}
                           </span>
