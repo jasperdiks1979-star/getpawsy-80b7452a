@@ -776,6 +776,17 @@ function PinterestDashboard() {
 
           {directTestResult && (
             <div className="space-y-3 rounded-md border border-border p-3 text-xs">
+              {directTestResult.hint && (
+                <div className={`rounded-md border p-3 ${directTestResult.ok ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/40 bg-amber-500/5"}`}>
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span>Diagnosis</span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono">{directTestResult.hint.category}</span>
+                  </div>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{directTestResult.hint.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{directTestResult.hint.summary}</p>
+                  <p className="mt-2 text-xs"><span className="font-semibold text-foreground">Action:</span> {directTestResult.hint.action}</p>
+                </div>
+              )}
               <div className="grid gap-3 md:grid-cols-2">
                 <DiagnosticValue label="request endpoint" value={directTestResult.request_endpoint} mono />
                 <DiagnosticValue label="board_id" value={directTestResult.board_id || directTestResult.request_payload?.board_id} mono />
