@@ -31,7 +31,7 @@ function envMode(): PinterestMode {
 }
 
 export async function getPinterestMode(sb?: any): Promise<PinterestMode> {
-  if (_cachedMode && Date.now() - _cachedAt < CACHE_MS) return _cachedMode;
+  if (_cachedMode && Date.now() - _cachedAt < CACHE_MS) return _cachedMode as PinterestMode;
   if (sb) {
     try {
       const { data } = await sb
@@ -42,7 +42,7 @@ export async function getPinterestMode(sb?: any): Promise<PinterestMode> {
       if (data?.mode === "sandbox" || data?.mode === "production") {
         _cachedMode = data.mode;
         _cachedAt = Date.now();
-        return _cachedMode;
+        return _cachedMode as PinterestMode;
       }
     } catch {
       // ignore — fall back to env
@@ -50,7 +50,7 @@ export async function getPinterestMode(sb?: any): Promise<PinterestMode> {
   }
   _cachedMode = envMode();
   _cachedAt = Date.now();
-  return _cachedMode;
+  return _cachedMode as PinterestMode;
 }
 
 export function apiBaseFor(mode: PinterestMode): string {

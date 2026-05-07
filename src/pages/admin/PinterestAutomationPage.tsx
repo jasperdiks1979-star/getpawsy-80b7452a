@@ -24,6 +24,7 @@ import {
   Activity,
   AlertTriangle,
   Wrench,
+  ExternalLink,
 } from "lucide-react";
 
 type PinterestConnection = {
@@ -170,9 +171,9 @@ function ConnectionCard({
       </CardHeader>
 
       <CardContent className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => void onGenerateDrafts()} disabled={!!actionLoading && actionLoading !== "generate-drafts"}>
-          {actionLoading === "generate-drafts" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-          Generate draft pins
+        <Button variant="outline" onClick={() => void onGenerateDrafts()} disabled title="Disabled until one queued pin publishes end-to-end">
+          <Sparkles className="mr-2 h-4 w-4" />
+          Generate draft pins paused
         </Button>
         <Button variant="outline" onClick={() => void onQueueDrafts()} disabled={!!actionLoading && actionLoading !== "queue-drafts"}>
           {actionLoading === "queue-drafts" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
@@ -250,9 +251,9 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
                       </Button>
                     </>
                   )}
-                  {(pin.status === "queued" || pin.status === "draft") && (
-                    <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => onAction("force", pin.id)} title="Force post now">
-                      <Play className="h-3 w-3" />
+                  {pin.status === "queued" && (
+                    <Button size="sm" variant="default" className="h-7 px-2 whitespace-nowrap" onClick={() => onAction("force", pin.id)} title="Force publish selected pin">
+                      <Play className="h-3 w-3 mr-1" /> Force publish selected pin
                     </Button>
                   )}
                 </td>
@@ -262,6 +263,72 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
         </tbody>
       </table>
     </div>
+  );
+}
+
+function DiagnosticValue({ label, value, mono = false }: { label: string; value: unknown; mono?: boolean }) {
+  const text = value === null || value === undefined || value === "" ? "—" : String(value);
+  return (
+    <div className="space-y-1">
+      <p className="text-[11px] uppercase text-muted-foreground">{label}</p>
+      <p className={`${mono ? "font-mono" : ""} break-all text-xs font-medium text-foreground`}>{text}</p>
+    </div>
+  );
+}
+
+function PublishDiagnosticPanel({ health, actionLoading, onRefresh, onForcePin }: { health: any | null; actionLoading: string | null; onRefresh: () => void; onForcePin: (pinId: string) => void }) {
+  const pin = health?.next_queued_pin;
+  const eligibility = health?.next_queued_eligibility;
+  const nowEligibility = health?.publish_now_eligibility;
+  const reason = nowEligibility?.eligible ? "eligible_for_publish_now" : nowEligibility?.reason || eligibility?.reason || "no_queued_pin";
+  return (
+    <Card className="border-destructive/20">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-destructive" /> Publish Diagnostic
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <Badge variant={nowEligibility?.eligible ? "default" : "destructive"}>{reason}</Badge>
+          <span className="text-muted-foreground">Publish next ignores schedule but still requires a queued, approved, QA-valid pin.</span>
+          <Button size="sm" variant="outline" onClick={onRefresh} disabled={!!actionLoading}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Refresh diagnostic
+          </Button>
+          {pin?.id && (
+            <Button size="sm" onClick={() => onForcePin(pin.id)} disabled={!!actionLoading}>
+              {actionLoading === pin.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Play className="h-3 w-3 mr-1" />}
+              Force publish selected pin
+            </Button>
+          )}
+          {pin?.external_url && (
+            <Button size="sm" variant="outline" asChild>
+              <a href={pin.external_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3 mr-1" /> Open live pin</a>
+            </Button>
+          )}
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <DiagnosticValue label="id" value={pin?.id} mono />
+          <DiagnosticValue label="status" value={pin?.status} />
+          <DiagnosticValue label="approved" value={pin ? (pin.approved ? "yes" : "no") : null} />
+          <DiagnosticValue label="scheduled_at" value={pin?.scheduled_at} mono />
+          <DiagnosticValue label="board_id" value={pin?.board_id} mono />
+          <DiagnosticValue label="image_url" value={pin?.image_url} mono />
+          <DiagnosticValue label="destination_url" value={pin?.destination_url} mono />
+          <DiagnosticValue label="pinterest_pin_id" value={pin?.pinterest_pin_id} mono />
+          <DiagnosticValue label="retry_count" value={pin?.retry_count} />
+          <DiagnosticValue label="rejection_reason" value={pin?.rejection_reason || reason} />
+          <DiagnosticValue label="image validation" value={nowEligibility?.imageValidation?.reason || (nowEligibility?.imageValidation?.ok ? "ok" : "—")} />
+          <DiagnosticValue label="destination validation" value={nowEligibility?.destinationValidation?.reason || (nowEligibility?.destinationValidation?.ok ? "ok" : "—")} />
+        </div>
+        {health?.last_publish_log && (
+          <div className="rounded-md border border-border p-3 text-xs">
+            <p className="mb-1 font-medium">Last publish log: {health.last_publish_log.status}</p>
+            <p className="break-words text-muted-foreground">{health.last_publish_log.error_message || health.last_publish_log.response_payload?.external_url || "—"}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -419,38 +486,16 @@ function PinterestDashboard() {
   const handlePublishNow = async () => {
     setActionLoading("publish-now");
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-cron-worker", { body: {} });
-      if (error) throw error;
-      if (data?.ok === false) throw new Error(data.error || "Pinterest publish failed");
-
-      const results = Array.isArray(data?.results) ? data.results : [];
-      const postedCount = results.filter((result: { status?: string }) => result.status === "posted").length;
-      const firstError = results.find((result: { error?: string }) => result.error)?.error;
-
-      if (postedCount > 0) {
-        toast.success(`${postedCount} pin${postedCount === 1 ? "" : "s"} published to Pinterest`);
-      } else if (firstError) {
-        throw new Error(firstError);
+      const data = await invokePinterestAction<any>("publish_next");
+      if (data?.published && data?.external_url) {
+        toast.success(`Published live as ${data.published}`);
       } else {
-        // Surface why nothing ran by querying diagnostics.
-        try {
-          const diag = await invokePinterestAction<any>("publish_diagnostics");
-          const r = diag?.queued_breakdown;
-          const parts: string[] = [];
-          if (r?.not_approved) parts.push(`${r.not_approved} not approved`);
-          if (r?.scheduled_in_future) parts.push(`${r.scheduled_in_future} scheduled later`);
-          if (r?.slug_not_allowed) parts.push(`${r.slug_not_allowed} blocked by allowlist`);
-          if (r?.retries_exceeded) parts.push(`${r.retries_exceeded} hit retry limit`);
-          if (r?.ready) parts.push(`${r.ready} ready (cron should pick up)`);
-          toast(parts.length ? `No pins published. Reasons: ${parts.join(", ")}` : "No queued pins are ready to publish yet");
-        } catch {
-          toast("No queued pins are ready to publish yet");
-        }
+        throw new Error(data?.error || data?.eligibility?.reason || "No queued pin was eligible");
       }
-
       await fetchAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not publish to Pinterest");
+      await fetchAll();
     }
     setActionLoading(null);
   };
@@ -592,10 +637,10 @@ function PinterestDashboard() {
       {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Draft", count: drafts.length },
-          { label: "Queued", count: queued.length },
-          { label: "Posted", count: posted.length },
-          { label: "Failed", count: failed.length },
+          { label: "Draft", count: health?.counts_by_status?.draft ?? drafts.length },
+          { label: "Queued", count: health?.counts_by_status?.queued ?? queued.length },
+          { label: "Posted", count: health?.counts_by_status?.posted ?? posted.length },
+          { label: "Failed", count: health?.counts_by_status?.failed ?? failed.length },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="py-3 text-center">
@@ -605,6 +650,8 @@ function PinterestDashboard() {
           </Card>
         ))}
       </div>
+
+      <PublishDiagnosticPanel health={health} actionLoading={actionLoading} onRefresh={() => void fetchAll()} onForcePin={(pinId) => void handleAction("force", pinId)} />
 
       {/* Publish Health */}
       <Card>
@@ -677,6 +724,7 @@ function PinterestDashboard() {
           </Button>
           <Button
             size="sm"
+            title="Disabled until one queued pin publishes end-to-end"
             onClick={async () => {
               const t = toast.loading("Generating 5 viral pins…");
               try {
@@ -691,10 +739,10 @@ function PinterestDashboard() {
                 toast.error(e?.message || "Failed to generate viral pins", { id: t });
               }
             }}
-            disabled={!!actionLoading}
+            disabled
             className="bg-orange-600 hover:bg-orange-700 text-white"
           >
-            <Zap className="h-3 w-3 mr-1" /> Generate 5 Viral Pins
+            <Zap className="h-3 w-3 mr-1" /> Generate 5 Viral Pins paused
           </Button>
           {failed.length > 0 && (
             <>
@@ -726,10 +774,10 @@ function PinterestDashboard() {
       {/* Tabs */}
       <Tabs defaultValue="queued">
         <TabsList className="w-full grid grid-cols-5">
-          <TabsTrigger value="draft">Draft ({drafts.length})</TabsTrigger>
-          <TabsTrigger value="queued">Queued ({queued.length})</TabsTrigger>
-          <TabsTrigger value="posted">Posted ({posted.length})</TabsTrigger>
-          <TabsTrigger value="failed">Failed ({failed.length})</TabsTrigger>
+          <TabsTrigger value="draft">Draft ({health?.counts_by_status?.draft ?? drafts.length})</TabsTrigger>
+          <TabsTrigger value="queued">Queued ({health?.counts_by_status?.queued ?? queued.length})</TabsTrigger>
+          <TabsTrigger value="posted">Posted ({health?.counts_by_status?.posted ?? posted.length})</TabsTrigger>
+          <TabsTrigger value="failed">Failed ({health?.counts_by_status?.failed ?? failed.length})</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
         </TabsList>
         <TabsContent value="draft">

@@ -5118,11 +5118,13 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          board_id: string | null
           board_name: string
           category_key: string | null
           created_at: string
           destination_link: string
           error_message: string | null
+          external_url: string | null
           hashtags: string[] | null
           hook_group: string | null
           id: string
@@ -5134,6 +5136,7 @@ export type Database = {
           pin_image_url: string | null
           pin_title: string
           pin_variant: string
+          pinterest_pin_id: string | null
           posted_at: string | null
           priority: string
           product_id: string
@@ -5143,6 +5146,7 @@ export type Database = {
           publish_attempts: number
           publishing_started_at: string | null
           qa_reasons: string[]
+          rejection_reason: string | null
           retries: number
           scheduled_at: string | null
           status: string
@@ -5151,11 +5155,13 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          board_id?: string | null
           board_name?: string
           category_key?: string | null
           created_at?: string
           destination_link: string
           error_message?: string | null
+          external_url?: string | null
           hashtags?: string[] | null
           hook_group?: string | null
           id?: string
@@ -5167,6 +5173,7 @@ export type Database = {
           pin_image_url?: string | null
           pin_title: string
           pin_variant: string
+          pinterest_pin_id?: string | null
           posted_at?: string | null
           priority?: string
           product_id: string
@@ -5176,6 +5183,7 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          rejection_reason?: string | null
           retries?: number
           scheduled_at?: string | null
           status?: string
@@ -5184,11 +5192,13 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          board_id?: string | null
           board_name?: string
           category_key?: string | null
           created_at?: string
           destination_link?: string
           error_message?: string | null
+          external_url?: string | null
           hashtags?: string[] | null
           hook_group?: string | null
           id?: string
@@ -5200,6 +5210,7 @@ export type Database = {
           pin_image_url?: string | null
           pin_title?: string
           pin_variant?: string
+          pinterest_pin_id?: string | null
           posted_at?: string | null
           priority?: string
           product_id?: string
@@ -5209,6 +5220,7 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          rejection_reason?: string | null
           retries?: number
           scheduled_at?: string | null
           status?: string

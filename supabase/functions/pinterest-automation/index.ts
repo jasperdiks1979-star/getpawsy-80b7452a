@@ -662,7 +662,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "publish_next") {
-      // 🔒 Manual publish path is gated to allowed slugs + approved drafts only.
       const { data: conn } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
       if (!conn || conn.status !== "connected" || !conn.access_token) {
         return json(cors, { ok: false, error: "Pinterest not connected" });
@@ -673,88 +672,29 @@ Deno.serve(async (req) => {
         .eq("status", "queued")
         .not("approved_at", "is", null)
         .in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS))
-        .lte("scheduled_at", new Date().toISOString())
-        .order("scheduled_at", { ascending: true })
+        .lt("retries", 2)
+        .order("scheduled_at", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
 
-      if (!pin) return json(cors, { ok: true, message: "No approved pins ready to publish" });
-
-      const qaReasons = runPinQa(pin);
-      if (qaReasons.length > 0) {
-        await sb.from("pinterest_pin_queue").update({
-          status: "skipped",
-          qa_reasons: qaReasons,
-          error_message: `QA gate: ${qaReasons.join(",")}`,
-        }).eq("id", pin.id);
-        return json(cors, { ok: false, error: `QA gate blocked pin: ${qaReasons.join(",")}` });
+      if (!pin) {
+        const { data: anyQueued } = await sb.from("pinterest_pin_queue")
+          .select("*")
+          .eq("status", "queued")
+          .order("scheduled_at", { ascending: true, nullsFirst: false })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        const eligibility = determineEligibility(anyQueued, { requireApproved: true, ignoreSchedule: true, allowed: Array.from(PINTEREST_ALLOWED_SLUGS), maxRetries: 2 });
+        return json(cors, { ok: false, error: eligibility.reason || "no_eligible_queued_pin", selected_pin: compactPinForDiagnostics(anyQueued), eligibility });
       }
 
-      try {
-        const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
-        const mode = await getPinterestMode(sb);
-        const apiBase = await getPinterestApiBase(sb);
-        console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
-        const pinRes = await fetch(`${apiBase}/pins`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${conn.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: pin.pin_title,
-            description: pin.pin_description,
-            board_id: boardId,
-            media_source: {
-              source_type: "image_url",
-              url: pin.pin_image_url,
-            },
-            link: pin.destination_link,
-          }),
-        });
-
-        if (!pinRes.ok) {
-          const errBody = await pinRes.text();
-          console.log("[pinterest] response", { status: pinRes.status, mode, api_base: apiBase });
-          if (pinRes.status === 403 && mode === "production") {
-            await markProductionForbidden(sb);
-          }
-          throw new Error(`Pinterest API ${pinRes.status}: ${errBody}`);
-        }
-
-        const pinData = await pinRes.json();
-        const externalUrl = pinData?.id ? `https://www.pinterest.com/pin/${pinData.id}/` : null;
-        console.log("[pinterest] response", { status: 200, mode, api_base: apiBase, pin_id: pinData.id, external_url: externalUrl });
-        await sb.from("pinterest_pin_queue").update({
-          status: "posted",
-          posted_at: new Date().toISOString(),
-          pin_external_id: pinData.id,
-        }).eq("id", pin.id);
-
-        await sb.from("pinterest_connection").update({
-          last_publish_at: new Date().toISOString(),
-          last_error: null,
-        }).eq("id", conn.id);
-
-        await sb.from("products").update({
-          pinterest_last_posted_at: new Date().toISOString(),
-          pinterest_status: "posted",
-        }).eq("id", pin.product_id);
-
-        return json(cors, { ok: true, published: pinData.id });
-      } catch (e) {
-        const errMsg = e instanceof Error ? e.message : "Unknown error";
-        await sb.from("pinterest_pin_queue").update({
-          status: "failed",
-          error_message: errMsg,
-        }).eq("id", pin.id);
-
-        await sb.from("pinterest_connection").update({
-          last_error: errMsg,
-        }).eq("id", conn.id);
-
-        return json(cors, { ok: false, error: errMsg });
-      }
+      return await publishSelectedPin(sb, conn, pin, cors, {
+        actionName: "publish_next",
+        requireApproved: true,
+        ignoreSchedule: true,
+      });
     }
 
     if (action === "approval_check") {
@@ -1062,39 +1002,58 @@ Deno.serve(async (req) => {
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
         sb.from("pinterest_connection").select("status, last_error, last_publish_at").limit(1).maybeSingle(),
       ]);
-      const { data: counts } = await sb
-        .from("pinterest_pin_queue")
-        .select("status", { count: "exact" });
-      const grouped: Record<string, number> = {};
-      for (const row of counts || []) {
-        grouped[(row as any).status] = (grouped[(row as any).status] || 0) + 1;
-      }
+      const [draftCount, queuedCount, publishingCount, postedCount, failedCount, skippedCount] = await Promise.all([
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "draft"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "queued"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "publishing"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "posted"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "failed"),
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "skipped"),
+      ]);
+      const grouped: Record<string, number> = {
+        draft: draftCount.count || 0,
+        queued: queuedCount.count || 0,
+        publishing: publishingCount.count || 0,
+        posted: postedCount.count || 0,
+        failed: failedCount.count || 0,
+        skipped: skippedCount.count || 0,
+      };
+
       const since = new Date(Date.now() - 86_400_000).toISOString();
-      const [{ count: posted24 }, { count: failed24 }, { data: durRows }] = await Promise.all([
-        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "posted").gte("posted_at", since),
+      const [{ count: posted24 }, { count: failed24 }, { data: durRows }, { data: lastPublishLog }] = await Promise.all([
+        sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "posted").not("pinterest_pin_id", "is", null).not("external_url", "is", null).gte("posted_at", since),
         sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "failed").gte("updated_at", since),
         sb.from("pinterest_publish_logs").select("duration_ms").eq("status", "success").gte("created_at", since).limit(200),
+        sb.from("pinterest_publish_logs").select("*").order("created_at", { ascending: false }).limit(1),
       ]);
       const durations = (durRows || []).map((r: any) => r.duration_ms).filter((n: number) => Number.isFinite(n));
       const avgDuration = durations.length ? Math.round(durations.reduce((a: number, b: number) => a + b, 0) / durations.length) : null;
       const totalAttempts = (posted24 || 0) + (failed24 || 0);
       const successRate = totalAttempts > 0 ? Math.round(((posted24 || 0) / totalAttempts) * 100) : null;
 
-      // Why are queued pins not publishing? bucket the reasons.
       const { data: queuedSample } = await sb
         .from("pinterest_pin_queue")
-        .select("id, approved_at, scheduled_at, product_slug, retries")
+        .select("*")
         .eq("status", "queued")
+        .order("scheduled_at", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true })
         .limit(500);
-      const reasons = { not_approved: 0, scheduled_in_future: 0, slug_not_allowed: 0, retries_exceeded: 0, ready: 0 };
-      for (const p of queuedSample || []) {
-        const row: any = p;
-        if (!row.approved_at) reasons.not_approved++;
-        else if (row.scheduled_at && row.scheduled_at > nowIso) reasons.scheduled_in_future++;
-        else if (!allowed.includes(row.product_slug)) reasons.slug_not_allowed++;
-        else if ((row.retries || 0) >= 2) reasons.retries_exceeded++;
-        else reasons.ready++;
+      const reasons: Record<string, number> = { not_approved: 0, scheduled_in_future: 0, slug_not_allowed: 0, retries_exceeded: 0, qa_blocked: 0, invalid_image_url: 0, invalid_destination_url: 0, ready: 0 };
+      for (const row of queuedSample || []) {
+        const eligibility = determineEligibility(row, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
+        if (eligibility.eligible) reasons.ready++;
+        else if (eligibility.reason === "not_approved") reasons.not_approved++;
+        else if (eligibility.reason === "scheduled_in_future") reasons.scheduled_in_future++;
+        else if (eligibility.reason === "slug_not_allowed") reasons.slug_not_allowed++;
+        else if (eligibility.reason === "retry_limit_reached") reasons.retries_exceeded++;
+        else if (String(eligibility.reason || "").startsWith("qa_")) reasons.qa_blocked++;
+        else if (String(eligibility.reason || "").includes("image")) reasons.invalid_image_url++;
+        else if (String(eligibility.reason || "").includes("destination")) reasons.invalid_destination_url++;
       }
+
+      const nextQueued = (queuedSample || [])[0] || null;
+      const nextEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
+      const nextPublishNowEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: true, allowed, maxRetries: 2 });
 
       return json(cors, {
         ok: true,
@@ -1103,6 +1062,7 @@ Deno.serve(async (req) => {
         last_publish_at: conn?.last_publish_at || null,
         last_cron_tick: lastCron?.[0]?.created_at || null,
         last_cron_status: lastCron?.[0]?.status || null,
+        last_publish_log: lastPublishLog?.[0] || null,
         counts_by_status: grouped,
         stuck_publishing: (stuck || []).length,
         posted_24h: posted24 || 0,
@@ -1110,6 +1070,11 @@ Deno.serve(async (req) => {
         success_rate_24h: successRate,
         avg_publish_ms: avgDuration,
         queued_breakdown: reasons,
+        next_queued_pin: compactPinForDiagnostics(nextQueued),
+        next_queued_eligibility: nextEligibility,
+        publish_now_eligibility: nextPublishNowEligibility,
+        publish_next_note: "Publish next ignores schedule, but still requires queued + approved + QA-valid + allowed product.",
+        generated_disabled_until_live_publish_works: true,
       });
     }
 
@@ -1171,116 +1136,14 @@ Deno.serve(async (req) => {
       }
       const { data: pin } = await sb.from("pinterest_pin_queue").select("*").eq("id", pinId).maybeSingle();
       if (!pin) return json(cors, { ok: false, error: "Pin not found" });
-      if (!PINTEREST_ALLOWED_SLUGS.has(pin.product_slug)) {
-        return json(cors, { ok: false, error: "Slug not in Performance Mode allowlist" });
+      if (pin.status !== "queued") {
+        return json(cors, { ok: false, error: `Cannot force publish status=${pin.status}`, selected_pin: compactPinForDiagnostics(pin) });
       }
-      const qaReasons = runPinQa(pin);
-      if (qaReasons.length > 0) {
-        await sb.from("pinterest_pin_queue").update({
-          qa_reasons: qaReasons,
-          error_message: `QA gate: ${qaReasons.join(",")}`,
-        }).eq("id", pinId);
-        return json(cors, { ok: false, error: `QA gate: ${qaReasons.join(",")}`, qa_reasons: qaReasons });
-      }
-
-      const startedAt = Date.now();
-      try {
-        const boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name);
-        const apiBase = await getPinterestApiBase(sb);
-        const requestPayload = {
-          title: pin.pin_title,
-          description: pin.pin_description,
-          board_id: boardId,
-          media_source: { source_type: "image_url", url: pin.pin_image_url },
-          link: pin.destination_link,
-        };
-        await sb.from("pinterest_pin_queue").update({
-          status: "publishing",
-          publishing_started_at: new Date().toISOString(),
-          publish_attempts: (pin.publish_attempts || 0) + 1,
-        }).eq("id", pinId);
-
-        const r = await fetch(`${apiBase}/pins`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${conn.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestPayload),
-        });
-        const responseText = await r.text();
-        let responseJson: any = null;
-        try { responseJson = JSON.parse(responseText); } catch { responseJson = { raw: responseText }; }
-        const duration = Date.now() - startedAt;
-
-        if (!r.ok) {
-          await sb.from("pinterest_pin_queue").update({
-            status: "failed",
-            error_message: `Pinterest API ${r.status}: ${responseText}`,
-            last_publish_error: `Pinterest API ${r.status}`,
-            publishing_started_at: null,
-          }).eq("id", pinId);
-          await sb.from("pinterest_publish_logs").insert({
-            pin_queue_id: pinId,
-            attempt: (pin.publish_attempts || 0) + 1,
-            status: "failed",
-            board_id: boardId,
-            image_url: pin.pin_image_url,
-            pin_title: pin.pin_title,
-            destination_link: pin.destination_link,
-            request_payload: requestPayload,
-            response_payload: responseJson,
-            error_message: `Pinterest API ${r.status}`,
-            duration_ms: duration,
-          });
-          return json(cors, { ok: false, error: `Pinterest API ${r.status}`, response: responseJson, http_status: r.status });
-        }
-
-        const externalUrl = responseJson?.id ? `https://www.pinterest.com/pin/${responseJson.id}/` : null;
-        await sb.from("pinterest_pin_queue").update({
-          status: "posted",
-          posted_at: new Date().toISOString(),
-          pin_external_id: responseJson?.id || null,
-          error_message: null,
-          publishing_started_at: null,
-        }).eq("id", pinId);
-        await sb.from("pinterest_publish_logs").insert({
-          pin_queue_id: pinId,
-          attempt: (pin.publish_attempts || 0) + 1,
-          status: "success",
-          board_id: boardId,
-          image_url: pin.pin_image_url,
-          pin_title: pin.pin_title,
-          destination_link: pin.destination_link,
-          request_payload: requestPayload,
-          response_payload: { ...responseJson, external_url: externalUrl },
-          duration_ms: duration,
-        });
-        await sb.from("pinterest_connection").update({
-          last_publish_at: new Date().toISOString(),
-          last_error: null,
-        }).eq("id", conn.id);
-        return json(cors, { ok: true, published: responseJson?.id, external_url: externalUrl, response: responseJson, duration_ms: duration });
-      } catch (e) {
-        const errMsg = e instanceof Error ? e.message : "Unknown error";
-        await sb.from("pinterest_pin_queue").update({
-          status: "failed",
-          error_message: errMsg,
-          last_publish_error: errMsg,
-          publishing_started_at: null,
-        }).eq("id", pinId);
-        await sb.from("pinterest_publish_logs").insert({
-          pin_queue_id: pinId,
-          attempt: (pin.publish_attempts || 0) + 1,
-          status: "failed",
-          image_url: pin.pin_image_url,
-          pin_title: pin.pin_title,
-          destination_link: pin.destination_link,
-          error_message: errMsg,
-          duration_ms: Date.now() - startedAt,
-        });
-        return json(cors, { ok: false, error: errMsg });
-      }
+      return await publishSelectedPin(sb, conn, pin, cors, {
+        actionName: action,
+        requireApproved: false,
+        ignoreSchedule: true,
+      });
     }
 
     throw new Error(`Unknown action: ${action}`);
@@ -1292,6 +1155,238 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+function compactPinForDiagnostics(pin: any, boardId: string | null = null) {
+  if (!pin) return null;
+  return {
+    id: pin.id,
+    status: pin.status,
+    approved: Boolean(pin.approved_at),
+    approved_at: pin.approved_at || null,
+    scheduled_at: pin.scheduled_at || null,
+    board_id: pin.board_id || boardId || null,
+    board_name: pin.board_name || null,
+    image_url: pin.pin_image_url || null,
+    destination_url: pin.destination_link || null,
+    pinterest_pin_id: pin.pinterest_pin_id || pin.pin_external_id || null,
+    external_url: pin.external_url || (pin.pin_external_id ? `https://www.pinterest.com/pin/${pin.pin_external_id}/` : null),
+    retry_count: pin.retries ?? pin.publish_attempts ?? 0,
+    publish_attempts: pin.publish_attempts ?? 0,
+    rejection_reason: pin.rejection_reason || pin.error_message || pin.last_publish_error || (Array.isArray(pin.qa_reasons) && pin.qa_reasons.length ? pin.qa_reasons.join(',') : null),
+    product_slug: pin.product_slug || null,
+    title: pin.pin_title || null,
+  };
+}
+
+function validateImageUrl(url: string | null | undefined) {
+  if (!url || typeof url !== "string") return { ok: false, reason: "missing_image_url" };
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return { ok: false, reason: "image_url_not_https" };
+    return { ok: true, reason: null, host: parsed.hostname };
+  } catch {
+    return { ok: false, reason: "malformed_image_url" };
+  }
+}
+
+function validateDestinationUrl(url: string | null | undefined, slug?: string | null) {
+  if (!url || typeof url !== "string") return { ok: false, reason: "missing_destination_url" };
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return { ok: false, reason: "destination_url_not_https" };
+    if (parsed.hostname !== "getpawsy.pet" && parsed.hostname !== "www.getpawsy.pet") {
+      return { ok: false, reason: "destination_not_getpawsy" };
+    }
+    if (!parsed.pathname.startsWith("/products/")) return { ok: false, reason: "destination_not_product_url" };
+    if (slug && !parsed.pathname.includes(`/products/${slug}`)) return { ok: false, reason: "destination_slug_mismatch" };
+    return { ok: true, reason: null, host: parsed.hostname, path: parsed.pathname };
+  } catch {
+    return { ok: false, reason: "malformed_destination_url" };
+  }
+}
+
+function determineEligibility(pin: any, opts: { requireApproved: boolean; ignoreSchedule: boolean; allowed: string[]; maxRetries: number }) {
+  if (!pin) return { eligible: false, reason: "no_queued_pin" };
+  if (pin.status !== "queued") return { eligible: false, reason: `status_${pin.status || "missing"}` };
+  if (opts.requireApproved && !pin.approved_at) return { eligible: false, reason: "not_approved" };
+  if (!opts.ignoreSchedule && pin.scheduled_at && pin.scheduled_at > new Date().toISOString()) return { eligible: false, reason: "scheduled_in_future" };
+  if (!opts.allowed.includes(pin.product_slug)) return { eligible: false, reason: "slug_not_allowed" };
+  if ((pin.retries || 0) >= opts.maxRetries) return { eligible: false, reason: "retry_limit_reached" };
+  const imageValidation = validateImageUrl(pin.pin_image_url);
+  if (!imageValidation.ok) return { eligible: false, reason: imageValidation.reason, imageValidation };
+  const destinationValidation = validateDestinationUrl(pin.destination_link, pin.product_slug);
+  if (!destinationValidation.ok) return { eligible: false, reason: destinationValidation.reason, destinationValidation };
+  const qaReasons = runPinQa(pin);
+  if (qaReasons.length > 0) return { eligible: false, reason: `qa_${qaReasons.join(",")}`, qa_reasons: qaReasons, imageValidation, destinationValidation };
+  return { eligible: true, reason: "eligible", imageValidation, destinationValidation, qa_reasons: [] };
+}
+
+async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<string, string>, opts: { actionName: string; requireApproved: boolean; ignoreSchedule: boolean }) {
+  const startedAt = Date.now();
+  const attempt = (pin.publish_attempts || 0) + 1;
+  const allowed = Array.from(PINTEREST_ALLOWED_SLUGS);
+  const eligibility = determineEligibility(pin, { requireApproved: opts.requireApproved, ignoreSchedule: opts.ignoreSchedule, allowed, maxRetries: 2 });
+  console.log("[pinterest-publish] selected queue row", compactPinForDiagnostics(pin));
+  console.log("[pinterest-publish] image URL validation result", eligibility.imageValidation || validateImageUrl(pin.pin_image_url));
+  console.log("[pinterest-publish] destination URL validation result", eligibility.destinationValidation || validateDestinationUrl(pin.destination_link, pin.product_slug));
+
+  if (!eligibility.eligible) {
+    const reason = eligibility.reason || "not_eligible";
+    await sb.from("pinterest_pin_queue").update({
+      status: opts.actionName === "force_publish" ? "failed" : pin.status,
+      rejection_reason: reason,
+      error_message: reason,
+      last_publish_error: reason,
+      qa_reasons: eligibility.qa_reasons || pin.qa_reasons || [],
+      publishing_started_at: null,
+    }).eq("id", pin.id);
+    await sb.from("pinterest_publish_logs").insert({
+      pin_queue_id: pin.id,
+      attempt,
+      status: "failed",
+      image_url: pin.pin_image_url,
+      pin_title: pin.pin_title,
+      destination_link: pin.destination_link,
+      request_payload: { action: opts.actionName, selected_pin: compactPinForDiagnostics(pin), eligibility },
+      response_payload: { eligibility },
+      error_message: reason,
+      duration_ms: Date.now() - startedAt,
+    });
+    return json(cors, { ok: false, error: reason, selected_pin: compactPinForDiagnostics({ ...pin, rejection_reason: reason }), eligibility });
+  }
+
+  let boardId: string | null = null;
+  try {
+    boardId = await resolvePinterestBoardId(conn.access_token, pin.board_name || "");
+    console.log("[pinterest-publish] Pinterest board id used", { pin_id: pin.id, board_name: pin.board_name, board_id: boardId });
+
+    const apiBase = await getPinterestApiBase(sb);
+    const mode = await getPinterestMode(sb);
+    const requestPayload = {
+      title: pin.pin_title,
+      description: pin.pin_description,
+      board_id: boardId,
+      media_source: { source_type: "image_url", url: pin.pin_image_url },
+      link: pin.destination_link,
+    };
+    console.log("[pinterest-publish] Pinterest API request payload", requestPayload);
+
+    const claimUpdate: Record<string, unknown> = {
+      status: "publishing",
+      publishing_started_at: new Date().toISOString(),
+      publish_attempts: attempt,
+      board_id: boardId,
+      rejection_reason: null,
+      last_publish_error: null,
+      error_message: null,
+    };
+    if (!pin.approved_at) claimUpdate.approved_at = new Date().toISOString();
+    const { data: claimed } = await sb.from("pinterest_pin_queue")
+      .update(claimUpdate)
+      .eq("id", pin.id)
+      .in("status", ["queued", "draft"])
+      .select("id")
+      .maybeSingle();
+    if (!claimed) throw new Error("pin_already_claimed_or_not_publishable");
+
+    await sb.from("pinterest_publish_logs").insert({
+      pin_queue_id: pin.id,
+      attempt,
+      status: "started",
+      board_id: boardId,
+      image_url: pin.pin_image_url,
+      pin_title: pin.pin_title,
+      destination_link: pin.destination_link,
+      request_payload: { ...requestPayload, selected_pin: compactPinForDiagnostics(pin, boardId), image_validation: eligibility.imageValidation, destination_validation: eligibility.destinationValidation },
+    });
+
+    const response = await fetch(`${apiBase}/pins`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${conn.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(requestPayload),
+    });
+    const responseText = await response.text();
+    let responseJson: any = null;
+    try { responseJson = JSON.parse(responseText); } catch { responseJson = { raw: responseText }; }
+    console.log("[pinterest-publish] Pinterest API response status/body", { status: response.status, body: responseJson });
+
+    if (!response.ok) {
+      if (response.status === 403 && mode === "production") await markProductionForbidden(sb);
+      throw new Error(`Pinterest API ${response.status}: ${responseText}`);
+    }
+
+    const pinterestPinId = typeof responseJson?.id === "string" && responseJson.id.trim() ? responseJson.id.trim() : null;
+    const externalUrl = pinterestPinId ? `https://www.pinterest.com/pin/${pinterestPinId}/` : null;
+    if (!pinterestPinId || !externalUrl) {
+      throw new Error(`Pinterest response missing real pin id or external URL: ${responseText}`);
+    }
+
+    await sb.from("pinterest_pin_queue").update({
+      status: "posted",
+      posted_at: new Date().toISOString(),
+      pin_external_id: pinterestPinId,
+      pinterest_pin_id: pinterestPinId,
+      external_url: externalUrl,
+      board_id: boardId,
+      error_message: null,
+      last_publish_error: null,
+      rejection_reason: null,
+      publishing_started_at: null,
+    }).eq("id", pin.id);
+
+    await sb.from("pinterest_publish_logs").insert({
+      pin_queue_id: pin.id,
+      attempt,
+      status: "success",
+      board_id: boardId,
+      image_url: pin.pin_image_url,
+      pin_title: pin.pin_title,
+      destination_link: pin.destination_link,
+      request_payload: requestPayload,
+      response_payload: { ...responseJson, external_url: externalUrl },
+      duration_ms: Date.now() - startedAt,
+    });
+
+    await sb.from("pinterest_post_logs").insert({
+      pin_queue_id: pin.id,
+      action: "publish",
+      status: "success",
+      response_data: { external_id: pinterestPinId, pin_id: pinterestPinId, external_url: externalUrl, board_id: boardId },
+    });
+    await sb.from("pinterest_connection").update({ last_publish_at: new Date().toISOString(), last_error: null }).eq("id", conn.id);
+    await sb.from("products").update({ pinterest_last_posted_at: new Date().toISOString(), pinterest_status: "posted" }).eq("id", pin.product_id);
+
+    return json(cors, { ok: true, published: pinterestPinId, pinterest_pin_id: pinterestPinId, external_url: externalUrl, board_id: boardId, selected_pin: compactPinForDiagnostics({ ...pin, pinterest_pin_id: pinterestPinId, external_url: externalUrl }, boardId), response: responseJson, duration_ms: Date.now() - startedAt });
+  } catch (e) {
+    const errMsg = e instanceof Error ? e.message : "Unknown error";
+    console.log("[pinterest-publish] failed", { pin_id: pin.id, board_id: boardId, error: errMsg });
+    await sb.from("pinterest_pin_queue").update({
+      status: "failed",
+      retries: (pin.retries || 0) + 1,
+      error_message: errMsg,
+      last_publish_error: errMsg,
+      rejection_reason: errMsg,
+      board_id: boardId,
+      publishing_started_at: null,
+    }).eq("id", pin.id);
+    await sb.from("pinterest_publish_logs").insert({
+      pin_queue_id: pin.id,
+      attempt,
+      status: "failed",
+      board_id: boardId,
+      image_url: pin.pin_image_url,
+      pin_title: pin.pin_title,
+      destination_link: pin.destination_link,
+      request_payload: { action: opts.actionName, selected_pin: compactPinForDiagnostics(pin, boardId) },
+      response_payload: { error: errMsg },
+      error_message: errMsg,
+      duration_ms: Date.now() - startedAt,
+    });
+    await sb.from("pinterest_post_logs").insert({ pin_queue_id: pin.id, action: "publish", status: "failed", error_message: errMsg, response_data: { board_id: boardId } });
+    await sb.from("pinterest_connection").update({ last_error: errMsg }).eq("id", conn.id);
+    return json(cors, { ok: false, error: errMsg, selected_pin: compactPinForDiagnostics({ ...pin, rejection_reason: errMsg }, boardId), board_id: boardId });
+  }
+}
 
 function json(cors: Record<string, string>, data: any) {
   return new Response(JSON.stringify(data), {

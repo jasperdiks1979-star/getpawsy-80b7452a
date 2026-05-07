@@ -143,6 +143,7 @@ Deno.serve(async (req) => {
     status: string;
     error?: string;
     externalId?: string;
+    pinVerified?: boolean;
   }> = [];
   const boardIdCache = new Map<string, string>();
 
@@ -445,6 +446,9 @@ Deno.serve(async (req) => {
         const pinData = await pinRes.json();
         const externalUrl = pinData?.id ? `https://www.pinterest.com/pin/${pinData.id}/` : null;
         console.log("[pinterest] response", { status: 200, mode, api_base: apiBase, pin_id: pinData.id, external_url: externalUrl });
+        if (!pinData?.id || !externalUrl) {
+          throw new Error(`Pinterest response missing real pin id or external URL: ${JSON.stringify(pinData)}`);
+        }
         const verified = await verifyPinExists(accessToken, apiBase, pinData.id);
         console.log("[pinterest] verify", { pin_id: pinData.id, pin_verified: verified });
         await markPosted(sb, pin, pinData.id, verified);
@@ -470,7 +474,7 @@ Deno.serve(async (req) => {
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : "Unknown error";
         const newRetries = (pin.retries || 0) + 1;
-        const newStatus = newRetries >= MAX_RETRIES ? "failed" : "queued";
+        const newStatus = "failed";
 
         await sb
           .from("pinterest_pin_queue")
@@ -479,6 +483,7 @@ Deno.serve(async (req) => {
             status: newStatus,
             error_message: errMsg,
             last_publish_error: errMsg,
+            rejection_reason: errMsg,
             publishing_started_at: null,
           })
           .eq("id", pin.id);
@@ -550,7 +555,12 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
       status: "posted",
       posted_at: now,
       pin_external_id: externalId,
+      pinterest_pin_id: externalId,
+      external_url: `https://www.pinterest.com/pin/${externalId}/`,
       error_message: null,
+      last_publish_error: null,
+      rejection_reason: null,
+      publishing_started_at: null,
     })
     .eq("id", pin.id);
 
