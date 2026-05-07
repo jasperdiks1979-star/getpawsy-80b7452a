@@ -35,6 +35,36 @@ const DIRECT_TEST_DESCRIPTION = "A smart automatic litter box for busy cat owner
 const DIRECT_TEST_REQUIRED_SCOPE = "pins:write";
 const DIRECT_TEST_ADMIN_EMAILS = new Set(["jasperdiks@hotmail.com"]);
 
+function tokenPrefix(token: string | null | undefined) {
+  return token ? token.slice(0, 12) : null;
+}
+
+function requiredScopesPresent(scopeText: string | null | undefined) {
+  const scopes = String(scopeText || "").split(/[\s,]+/).filter(Boolean);
+  return ["boards:read", "boards:write", "pins:read", "pins:write"].every((scope) => scopes.includes(scope));
+}
+
+function sanitizePinterestConnection(conn: any) {
+  if (!conn) return null;
+  return {
+    id: conn.id,
+    account_id: conn.account_id || null,
+    account_name: conn.account_name || null,
+    status: conn.status,
+    token_expires_at: conn.token_expires_at || null,
+    token_created_at: conn.token_created_at || conn.created_at || null,
+    token_prefix: conn.token_prefix || tokenPrefix(conn.access_token),
+    token_sha256: conn.token_sha256 || null,
+    scopes: conn.scopes || null,
+    last_account_status: conn.last_account_status ?? null,
+    last_boards_status: conn.last_boards_status ?? null,
+    board_count: conn.board_count ?? null,
+    last_publish_at: conn.last_publish_at || null,
+    last_error: conn.last_error || null,
+    updated_at: conn.updated_at || null,
+  };
+}
+
 // ── Viral Hook System v3 — mandatory ≤6-word scroll-stoppers ──
 const VIRAL_HOOKS: string[] = [
   "Wait… this cleans itself?",
