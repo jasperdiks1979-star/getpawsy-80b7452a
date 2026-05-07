@@ -205,3 +205,51 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
   console.log(`[Pinterest] Board "${trimmedBoardRef}" created with id ${created.id}`);
   return String(created.id);
 }
+
+/**
+ * Validates that a returned Pinterest external_url is a real, fetchable pin.
+ * Checks:
+ *  1. URL shape matches https://www.pinterest.com/pin/<pinId>/
+ *  2. The pinId in the URL matches the expected pinId
+ *  3. GET /pins/{pinId} on the API returns 200 (with one 5s retry)
+ *
+ * Returns { ok, reason } — reason is human-readable for logging/storage.
+ */
+export async function validatePinterestExternalUrl(
+  accessToken: string,
+  apiBase: string,
+  externalUrl: string | null | undefined,
+  expectedPinId: string | null | undefined,
+): Promise<{ ok: boolean; reason: string; status?: number; resolved_pin_id?: string | null }> {
+  if (!externalUrl) return { ok: false, reason: "missing_external_url" };
+  if (!expectedPinId) return { ok: false, reason: "missing_pin_id" };
+
+  const match = /^https:\/\/www\.pinterest\.com\/pin\/([^/?#]+)\/?$/i.exec(externalUrl.trim());
+  if (!match) return { ok: false, reason: `malformed_url: ${externalUrl}` };
+  const urlPinId = match[1];
+  if (urlPinId !== String(expectedPinId)) {
+    return { ok: false, reason: `pin_id_mismatch: url=${urlPinId} expected=${expectedPinId}` };
+  }
+
+  const tryFetch = async (): Promise<{ ok: boolean; status: number }> => {
+    try {
+      const res = await fetch(`${apiBase}/pins/${expectedPinId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return { ok: res.ok, status: res.status };
+    } catch (e) {
+      return { ok: false, status: 0 };
+    }
+  };
+
+  let attempt = await tryFetch();
+  if (!attempt.ok) {
+    await new Promise((r) => setTimeout(r, 5000));
+    attempt = await tryFetch();
+  }
+
+  if (attempt.ok) {
+    return { ok: true, reason: "verified_live", status: attempt.status, resolved_pin_id: expectedPinId };
+  }
+  return { ok: false, reason: `pin_lookup_failed: HTTP ${attempt.status}`, status: attempt.status, resolved_pin_id: expectedPinId };
+}
