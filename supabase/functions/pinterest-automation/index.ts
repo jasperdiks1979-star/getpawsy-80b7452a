@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
     const action = body.action as string;
 
     if (action === "direct_pinterest_api_test") {
-      const adminCheck = await requireDirectTestAdmin(sb, req);
+      const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
 
       const { data: conn } = await sb
@@ -379,6 +379,15 @@ Deno.serve(async (req) => {
       if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
 
       return await runDirectPinterestApiTest(sb, conn, accessToken, cors);
+    }
+
+    if (action === "mint_direct_test_token") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const ttlMinutes = Math.min(60, Math.max(1, Number(body.ttl_minutes) || 10));
+      const label = typeof body.label === "string" ? body.label.slice(0, 120) : null;
+      const minted = await mintDirectTestDebugToken(sb, adminCheck.user, ttlMinutes, label);
+      return json(cors, { ok: true, ...minted });
     }
 
     if (action === "get_connection") {
