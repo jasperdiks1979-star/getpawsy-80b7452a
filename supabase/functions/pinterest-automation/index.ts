@@ -1535,7 +1535,28 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     rateLimitHeader: response.headers.get("x-ratelimit-remaining"),
     rateLimitReset: response.headers.get("x-ratelimit-reset"),
   });
-  const logPayload = { ...diagnostics, status_code: response.status, response_body: responseBody, returned_pin_id: pinId, returned_pin_url: externalUrl, hint };
+  let verification: { ok: boolean; reason: string; status?: number | null; resolved_pin_id?: string | null } | null = null;
+  let pinVerifiedAt: string | null = null;
+  if (success && pinId && externalUrl) {
+    try {
+      verification = await validatePinterestExternalUrl(accessToken, PINTEREST_PRODUCTION_API_BASE, externalUrl, pinId);
+      pinVerifiedAt = new Date().toISOString();
+    } catch (e) {
+      verification = { ok: false, reason: e instanceof Error ? e.message : String(e) };
+    }
+  }
+  const logPayload = {
+    ...diagnostics,
+    status_code: response.status,
+    response_body: responseBody,
+    returned_pin_id: pinId,
+    returned_pin_url: externalUrl,
+    hint,
+    pin_verified: verification?.ok ?? null,
+    pin_verification_reason: verification?.reason ?? null,
+    pin_verified_at: pinVerifiedAt,
+    pin_verification: verification,
+  };
 
   await sb.from("pinterest_post_logs").insert({
     action: "direct_api_test",
@@ -1570,6 +1591,9 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     pin_id: pinId,
     external_url: externalUrl,
     diagnostics,
+    pin_verified: verification?.ok ?? null,
+    pin_verification_reason: verification?.reason ?? null,
+    pin_verified_at: pinVerifiedAt,
   });
 }
 
