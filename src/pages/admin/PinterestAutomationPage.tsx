@@ -378,6 +378,22 @@ function PinterestDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
   const [health, setHealth] = useState<any | null>(null);
   const [directTestResult, setDirectTestResult] = useState<any | null>(null);
+  const [directTestHistory, setDirectTestHistory] = useState<any[]>([]);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+
+  const fetchDirectTestHistory = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("pinterest_post_logs")
+      .select("id, created_at, status, error_message, response_data")
+      .eq("action", "direct_api_test")
+      .order("created_at", { ascending: false })
+      .limit(25);
+    if (error) {
+      console.warn("[direct_api_test history] fetch failed:", error);
+      return;
+    }
+    setDirectTestHistory(data || []);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -414,6 +430,7 @@ function PinterestDashboard() {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { void fetchDirectTestHistory(); }, [fetchDirectTestHistory]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
