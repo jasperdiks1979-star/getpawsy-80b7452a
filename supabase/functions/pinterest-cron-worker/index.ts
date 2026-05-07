@@ -342,25 +342,42 @@ Deno.serve(async (req) => {
           boardIdCache.set(boardRef, boardId);
         }
 
+        // 🔒 Claim this row — only proceed if still queued (race-safe).
+        const { data: claimed } = await sb
+          .from("pinterest_pin_queue")
+          .update({
+            status: "publishing",
+            publishing_started_at: new Date().toISOString(),
+            publish_attempts: (pin.publish_attempts || 0) + 1,
+          })
+          .eq("id", pin.id)
+          .eq("status", "queued")
+          .select("id")
+          .maybeSingle();
+        if (!claimed) {
+          console.log(`[cron] Pin ${pin.id} already claimed by another worker, skipping`);
+          results.push({ pinId: pin.id, status: "skipped", error: "already_claimed" });
+          continue;
+        }
+
+        const publishStartedAt = Date.now();
         const mode = await getPinterestMode(sb);
         const apiBase = await getPinterestApiBase(sb);
         console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
+        const requestPayload = {
+          title: pin.pin_title,
+          description: pin.pin_description,
+          board_id: boardId,
+          media_source: { source_type: "image_url", url: pin.pin_image_url },
+          link: pin.destination_link,
+        };
         const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            title: pin.pin_title,
-            description: pin.pin_description,
-            board_id: boardId,
-            media_source: {
-              source_type: "image_url",
-              url: pin.pin_image_url,
-            },
-            link: pin.destination_link,
-          }),
+          body: JSON.stringify(requestPayload),
         });
 
         if (!pinRes.ok) {
@@ -431,6 +448,18 @@ Deno.serve(async (req) => {
         const verified = await verifyPinExists(accessToken, apiBase, pinData.id);
         console.log("[pinterest] verify", { pin_id: pinData.id, pin_verified: verified });
         await markPosted(sb, pin, pinData.id, verified);
+        await sb.from("pinterest_publish_logs").insert({
+          pin_queue_id: pin.id,
+          attempt: (pin.publish_attempts || 0) + 1,
+          status: "success",
+          board_id: boardId,
+          image_url: pin.pin_image_url,
+          pin_title: pin.pin_title,
+          destination_link: pin.destination_link,
+          request_payload: requestPayload,
+          response_payload: { ...pinData, pin_verified: verified, external_url: externalUrl },
+          duration_ms: Date.now() - publishStartedAt,
+        });
         results.push({
           pinId: pin.id,
           status: "posted",
@@ -449,6 +478,8 @@ Deno.serve(async (req) => {
             retries: newRetries,
             status: newStatus,
             error_message: errMsg,
+            last_publish_error: errMsg,
+            publishing_started_at: null,
           })
           .eq("id", pin.id);
 
@@ -461,6 +492,15 @@ Deno.serve(async (req) => {
             retries: newRetries,
             finalFail: newStatus === "failed",
           },
+        });
+        await sb.from("pinterest_publish_logs").insert({
+          pin_queue_id: pin.id,
+          attempt: (pin.publish_attempts || 0) + 1,
+          status: "failed",
+          image_url: pin.pin_image_url,
+          pin_title: pin.pin_title,
+          destination_link: pin.destination_link,
+          error_message: errMsg,
         });
 
         results.push({ pinId: pin.id, status: newStatus, error: errMsg });
