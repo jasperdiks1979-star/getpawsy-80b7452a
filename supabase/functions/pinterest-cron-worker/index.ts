@@ -385,7 +385,7 @@ Deno.serve(async (req) => {
         const boardRef = pin.board_name || "";
         const boardId = boardIdCache.has(boardRef)
           ? boardIdCache.get(boardRef)!
-          : await resolvePinterestBoardId(accessToken, boardRef);
+          : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
 
         if (!boardIdCache.has(boardRef)) {
           boardIdCache.set(boardRef, boardId);
@@ -410,8 +410,8 @@ Deno.serve(async (req) => {
         }
 
         const publishStartedAt = Date.now();
-        const mode = await getPinterestMode(sb);
-        const apiBase = await getPinterestApiBase(sb);
+        const mode = "production";
+        const apiBase = PINTEREST_PRODUCTION_API_BASE;
         console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
         const requestPayload = {
           title: pin.pin_title,
