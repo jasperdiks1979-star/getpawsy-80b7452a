@@ -31,7 +31,7 @@ function envMode(): PinterestMode {
 }
 
 export async function getPinterestMode(sb?: any): Promise<PinterestMode> {
-  if (_cachedMode && Date.now() - _cachedAt < CACHE_MS) return _cachedMode;
+  if (_cachedMode && Date.now() - _cachedAt < CACHE_MS) return _cachedMode as PinterestMode;
   if (sb) {
     try {
       const { data } = await sb
