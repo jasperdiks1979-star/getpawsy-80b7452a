@@ -21,6 +21,8 @@ import {
   Wand2,
   Zap,
   XCircle,
+  Lock,
+  Unlock,
 } from "lucide-react";
 
 type PinterestConnection = {
@@ -189,7 +191,7 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
                 {Array.isArray(pin.qa_reasons) && pin.qa_reasons.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {pin.qa_reasons.map((r: string) => (
-                      <Badge key={r} variant="destructive" className="text-[10px]">{r}</Badge>
+                      <Badge key={r} variant="destructive" className="text-[10px]" title={qaReasonTooltip(r)}>{r}</Badge>
                     ))}
                   </div>
                 ) : pin.approved_at ? (
@@ -211,6 +213,9 @@ function PinTable({ pins, onAction }: { pins: any[]; onAction?: (action: string,
                       </Button>
                       <Button size="sm" variant="ghost" className="h-6 px-2 text-destructive" onClick={() => onAction("reject", pin.id)} title="Reject">
                         <ShieldAlert className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => onAction("regenerate", pin.id)} title="Regenerate">
+                        <Sparkles className="h-3 w-3" />
                       </Button>
                     </>
                   )}
