@@ -380,6 +380,8 @@ function PinterestDashboard() {
   const [directTestResult, setDirectTestResult] = useState<any | null>(null);
   const [directTestHistory, setDirectTestHistory] = useState<any[]>([]);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [debugToken, setDebugToken] = useState<{ token: string; expires_at: string; ttl_minutes: number; label: string | null } | null>(null);
+  const [debugTokenTtl, setDebugTokenTtl] = useState<number>(10);
 
   const fetchDirectTestHistory = useCallback(async () => {
     const { data, error } = await supabase
