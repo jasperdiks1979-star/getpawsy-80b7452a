@@ -452,6 +452,9 @@ function PinterestDashboard() {
       } else if (action === "reject") {
         await invokePinterestAction("reject_pin", { pinId });
         toast.success("Pin rejected");
+      } else if (action === "regenerate") {
+        await invokePinterestAction("regenerate_pin", { pinId });
+        toast.success("Pin regenerated — new draft queued");
       }
       await fetchAll();
     } catch (e) {
