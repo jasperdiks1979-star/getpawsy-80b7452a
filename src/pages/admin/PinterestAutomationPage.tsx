@@ -815,9 +815,17 @@ function PinterestDashboard() {
               <p className="text-xs font-semibold uppercase text-muted-foreground">
                 Run history ({directTestHistory.length})
               </p>
-              <Button size="sm" variant="ghost" onClick={() => void fetchDirectTestHistory()}>
-                <RefreshCw className="mr-1 h-3 w-3" /> Refresh
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="ghost" onClick={() => exportDirectTestHistory("json")} disabled={directTestHistory.length === 0}>
+                  Export JSON
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => exportDirectTestHistory("csv")} disabled={directTestHistory.length === 0}>
+                  Export CSV
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => void fetchDirectTestHistory()}>
+                  <RefreshCw className="mr-1 h-3 w-3" /> Refresh
+                </Button>
+              </div>
             </div>
             {directTestHistory.length === 0 ? (
               <p className="text-xs text-muted-foreground">No direct API test runs logged yet.</p>
