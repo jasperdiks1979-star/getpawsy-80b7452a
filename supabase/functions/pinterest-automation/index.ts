@@ -1552,6 +1552,10 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       throw new Error(`Pinterest response missing real pin id or external URL: ${responseText}`);
     }
 
+    const verification = await validatePinterestExternalUrl(conn.access_token, apiBase, externalUrl, pinterestPinId);
+    console.log("[pinterest-publish] external_url validation", { pin_id: pin.id, ...verification });
+    const verifiedAt = new Date().toISOString();
+
     await sb.from("pinterest_pin_queue").update({
       status: "posted",
       posted_at: new Date().toISOString(),
@@ -1563,6 +1567,9 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       last_publish_error: null,
       rejection_reason: null,
       publishing_started_at: null,
+      pin_verified: verification.ok,
+      pin_verification_reason: verification.reason,
+      pin_verified_at: verifiedAt,
     }).eq("id", pin.id);
 
     await sb.from("pinterest_publish_logs").insert({
@@ -1574,15 +1581,16 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       pin_title: pin.pin_title,
       destination_link: pin.destination_link,
       request_payload: requestPayload,
-      response_payload: { ...responseJson, external_url: externalUrl },
+      response_payload: { ...responseJson, external_url: externalUrl, verification },
       duration_ms: Date.now() - startedAt,
     });
 
     await sb.from("pinterest_post_logs").insert({
       pin_queue_id: pin.id,
       action: "publish",
-      status: "success",
-      response_data: { external_id: pinterestPinId, pin_id: pinterestPinId, external_url: externalUrl, board_id: boardId },
+      status: verification.ok ? "success" : "warning",
+      error_message: verification.ok ? null : verification.reason,
+      response_data: { external_id: pinterestPinId, pin_id: pinterestPinId, external_url: externalUrl, board_id: boardId, verification },
     });
     await sb.from("pinterest_connection").update({ last_publish_at: new Date().toISOString(), last_error: null }).eq("id", conn.id);
     await sb.from("products").update({ pinterest_last_posted_at: new Date().toISOString(), pinterest_status: "posted" }).eq("id", pin.product_id);
