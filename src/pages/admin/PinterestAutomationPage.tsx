@@ -898,6 +898,9 @@ function PinterestDashboard() {
                             <DiagnosticValue label="returned pin_id" value={data.returned_pin_id} mono />
                             <DiagnosticValue label="returned pin URL" value={data.returned_pin_url} mono />
                             <DiagnosticValue label="error" value={entry.error_message} mono />
+                            <DiagnosticValue label="pin_verified" value={data.pin_verified === true ? "true" : data.pin_verified === false ? "false" : "—"} />
+                            <DiagnosticValue label="pin_verification_reason" value={data.pin_verification_reason} mono />
+                            <DiagnosticValue label="pin_verified_at" value={data.pin_verified_at ? new Date(data.pin_verified_at).toLocaleString() : "—"} />
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             {data.returned_pin_url && (
