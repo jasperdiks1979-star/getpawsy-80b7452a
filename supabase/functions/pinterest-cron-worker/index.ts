@@ -1,6 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
-import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 
 const MAX_RETRIES = 2;
@@ -64,8 +63,7 @@ async function refreshPinterestToken(
   }
 
   try {
-    const apiBase = await getPinterestApiBase(sb);
-    const res = await fetch(`${apiBase}/oauth/token`, {
+    const res = await fetch(`${PINTEREST_PRODUCTION_API_BASE}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -435,7 +433,11 @@ Deno.serve(async (req) => {
 
           // Auto-fallback on 403 from production
           if (pinRes.status === 403 && mode === "production") {
-            await markProductionForbidden(sb);
+            await sb.from("pinterest_post_logs").insert({
+              action: "cron_tick",
+              status: "failed",
+              error_message: "Production Pinterest API returned 403; production mode remains enforced for token diagnosis.",
+            });
           }
 
           // If 401, try one token refresh mid-batch
