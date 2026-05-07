@@ -19,6 +19,7 @@ const isDesktop = mode === 'desktop';
 const URLS = [
   'https://getpawsy.pet/',
   'https://getpawsy.pet/products?category=small-pets',
+  'https://getpawsy.pet/go',
 ];
 
 const AUDIT_DIR = './audits';
