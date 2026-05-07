@@ -545,6 +545,54 @@ function PinterestDashboard() {
     setActionLoading(null);
   };
 
+  const handleMintDebugToken = async () => {
+    setActionLoading("mint-debug-token");
+    try {
+      const data = await invokePinterestAction<{ token: string; expires_at: string; ttl_minutes: number; label: string | null }>("mint_direct_test_token", {
+        ttl_minutes: debugTokenTtl,
+        label: `admin-ui ${new Date().toISOString()}`,
+      });
+      setDebugToken(data);
+      try { await navigator.clipboard.writeText(data.token); } catch {}
+      toast.success(`Debug token minted (expires ${new Date(data.expires_at).toLocaleTimeString()})`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not mint debug token");
+    }
+    setActionLoading(null);
+  };
+
+  const handleRunWithDebugToken = async () => {
+    if (!debugToken?.token) return toast.error("Mint a debug token first");
+    setActionLoading("direct-api-test-token");
+    setDirectTestResult(null);
+    try {
+      // Call without admin JWT — token-only auth path. Use raw fetch so no Bearer header is sent.
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-automation`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "x-pinterest-debug-token": debugToken.token,
+        },
+        body: JSON.stringify({ action: "direct_pinterest_api_test", debug_token: debugToken.token }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setDirectTestResult(data);
+      if (data?.pin_id && data?.external_url) {
+        toast.success(`Token-auth test published ${data.pin_id}`);
+      } else {
+        throw new Error(data?.error || "Token-auth test failed");
+      }
+      // Token is single-use — clear the local copy.
+      setDebugToken(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Token-auth test failed");
+    }
+    await fetchDirectTestHistory();
+    setActionLoading(null);
+  };
+
   const handleAction = async (action: string, pinId: string) => {
     setActionLoading(pinId);
     try {
