@@ -419,14 +419,15 @@ Deno.serve(async (req) => {
               );
               if (retryRes.ok) {
                 const retryData = await retryRes.json();
-                const verifiedR = await verifyPinExists(accessToken, apiBase, retryData.id);
-                console.log("[pinterest] verify", { pin_id: retryData.id, pin_verified: verifiedR });
-                await markPosted(sb, pin, retryData.id, verifiedR);
+                const externalUrlR = `https://www.pinterest.com/pin/${retryData.id}/`;
+                const verificationR = await validatePinterestExternalUrl(accessToken, apiBase, externalUrlR, retryData.id);
+                console.log("[pinterest] verify", { pin_id: retryData.id, ...verificationR });
+                await markPosted(sb, pin, retryData.id, verificationR);
                 results.push({
                   pinId: pin.id,
                   status: "posted",
                   externalId: retryData.id,
-                  pinVerified: verifiedR,
+                  pinVerified: verificationR.ok,
                 });
                 console.log(
                   `✅ Pin ${pin.id} posted (after refresh) as ${retryData.id}`,
