@@ -547,8 +547,14 @@ Deno.serve(async (req) => {
 });
 
 /** Helper: mark a pin as posted and update product status */
-async function markPosted(sb: any, pin: any, externalId: string, verified: boolean = false) {
+async function markPosted(
+  sb: any,
+  pin: any,
+  externalId: string,
+  verification: { ok: boolean; reason: string } = { ok: false, reason: "not_validated" },
+) {
   const now = new Date().toISOString();
+  const externalUrl = `https://www.pinterest.com/pin/${externalId}/`;
   await sb
     .from("pinterest_pin_queue")
     .update({
@@ -556,11 +562,14 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
       posted_at: now,
       pin_external_id: externalId,
       pinterest_pin_id: externalId,
-      external_url: `https://www.pinterest.com/pin/${externalId}/`,
+      external_url: externalUrl,
       error_message: null,
       last_publish_error: null,
       rejection_reason: null,
       publishing_started_at: null,
+      pin_verified: verification.ok,
+      pin_verification_reason: verification.reason,
+      pin_verified_at: now,
     })
     .eq("id", pin.id);
 
@@ -572,15 +581,17 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
   await sb.from("pinterest_post_logs").insert({
     pin_queue_id: pin.id,
     action: "publish",
-    status: "success",
+    status: verification.ok ? "success" : "warning",
+    error_message: verification.ok ? null : verification.reason,
     response_data: {
       external_id: externalId,
-      pin_verified: verified,
+      pin_verified: verification.ok,
+      pin_verification_reason: verification.reason,
       hook_used: pin.overlay_text || null,
       variant_type: pin.pin_variant || null,
       pin_id: externalId,
       outbound_click_ready: Boolean(pin.destination_link),
-      external_url: externalId ? `https://www.pinterest.com/pin/${externalId}/` : null,
+      external_url: externalUrl,
       ctr_ready_score: ctrReadyScore(pin),
     },
   });
