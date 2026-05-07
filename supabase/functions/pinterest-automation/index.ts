@@ -27,6 +27,13 @@ function getCorsHeaders(req: Request) {
 }
 
 const BASE_URL = "https://getpawsy.pet";
+const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
+const DIRECT_TEST_IMAGE_URL = "https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.webp";
+const DIRECT_TEST_DESTINATION_URL = "https://getpawsy.pet/products/automatic-cat-litter-box-self-cleaning-app-control";
+const DIRECT_TEST_TITLE = "Self-Cleaning Cat Litter Box";
+const DIRECT_TEST_DESCRIPTION = "A smart automatic litter box for busy cat owners.";
+const DIRECT_TEST_REQUIRED_SCOPE = "pins:write";
+const DIRECT_TEST_ADMIN_EMAILS = new Set(["jasperdiks@hotmail.com"]);
 
 // ── Viral Hook System v3 — mandatory ≤6-word scroll-stoppers ──
 const VIRAL_HOOKS: string[] = [
@@ -354,6 +361,25 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+
+    if (action === "direct_pinterest_api_test") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+
+      const { data: conn } = await sb
+        .from("pinterest_connection")
+        .select("*")
+        .eq("status", "connected")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected: no latest OAuth access token found" });
+
+      const accessToken = await getFreshPinterestProductionToken(sb, conn);
+      if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
+
+      return await runDirectPinterestApiTest(sb, conn, accessToken, cors);
+    }
 
     if (action === "get_connection") {
       const { data } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
@@ -1219,6 +1245,211 @@ function determineEligibility(pin: any, opts: { requireApproved: boolean; ignore
   const qaReasons = runPinQa(pin);
   if (qaReasons.length > 0) return { eligible: false, reason: `qa_${qaReasons.join(",")}`, qa_reasons: qaReasons, imageValidation, destinationValidation };
   return { eligible: true, reason: "eligible", imageValidation, destinationValidation, qa_reasons: [] };
+}
+
+async function requireDirectTestAdmin(sb: any, req: Request): Promise<{ ok: true } | { ok: false; error: string }> {
+  const authHeader = req.headers.get("authorization") || "";
+  if (!authHeader.toLowerCase().startsWith("bearer ")) return { ok: false, error: "Admin auth required" };
+
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY");
+  if (!anonKey) return { ok: false, error: "Backend auth is missing anon key configuration" };
+
+  const authClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data, error } = await authClient.auth.getUser();
+  if (error || !data?.user?.id) return { ok: false, error: "Admin auth token invalid" };
+
+  const { data: role } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", data.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+  const email = String(data.user.email || "").trim().toLowerCase();
+  if (role?.role === "admin" || DIRECT_TEST_ADMIN_EMAILS.has(email)) return { ok: true };
+  return { ok: false, error: "Admin role required for Direct Pinterest API Test" };
+}
+
+async function getFreshPinterestProductionToken(sb: any, conn: any): Promise<string | null> {
+  const expiresAt = conn.token_expires_at ? new Date(conn.token_expires_at).getTime() : 0;
+  if (!expiresAt || Date.now() < expiresAt - 5 * 60_000) return conn.access_token;
+
+  const clientId = Deno.env.get("PINTEREST_CLIENT_ID");
+  const clientSecret = Deno.env.get("PINTEREST_CLIENT_SECRET");
+  if (!conn.refresh_token || !clientId || !clientSecret) return null;
+
+  const response = await fetch(`${PINTEREST_PRODUCTION_API_BASE}/oauth/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+    },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: conn.refresh_token }),
+  });
+  const responseText = await response.text();
+  let responseJson: any = null;
+  try { responseJson = JSON.parse(responseText); } catch { responseJson = { raw: responseText }; }
+
+  if (!response.ok || !responseJson?.access_token) {
+    await sb.from("pinterest_post_logs").insert({
+      action: "direct_api_token_refresh",
+      status: "failed",
+      error_message: `Pinterest token refresh ${response.status}: ${responseText}`,
+      response_data: { api_base: PINTEREST_PRODUCTION_API_BASE, status_code: response.status, response_body: responseJson },
+    });
+    return null;
+  }
+
+  const nextExpiresAt = new Date(Date.now() + (responseJson.expires_in || 3600) * 1000).toISOString();
+  await sb.from("pinterest_connection").update({
+    access_token: responseJson.access_token,
+    refresh_token: responseJson.refresh_token || conn.refresh_token,
+    token_expires_at: nextExpiresAt,
+    last_error: null,
+    updated_at: new Date().toISOString(),
+  }).eq("id", conn.id);
+  return responseJson.access_token;
+}
+
+async function fetchJsonWithText(url: string, accessToken: string) {
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const text = await response.text();
+  let body: any = null;
+  try { body = JSON.parse(text); } catch { body = { raw: text }; }
+  return { ok: response.ok, status: response.status, body, text };
+}
+
+async function checkPublicUrl(url: string, expectedHost: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return { ok: false, reason: "not_https", url };
+    if (parsed.hostname !== expectedHost && parsed.hostname !== `www.${expectedHost}`) return { ok: false, reason: "unexpected_host", url, host: parsed.hostname };
+    let response = await fetch(url, { method: "HEAD", redirect: "follow" });
+    if (response.status === 405 || response.status === 403) response = await fetch(url, { method: "GET", redirect: "follow" });
+    return { ok: response.ok, reason: response.ok ? "reachable" : `http_${response.status}`, url, status_code: response.status, content_type: response.headers.get("content-type") };
+  } catch (e) {
+    return { ok: false, reason: e instanceof Error ? e.message : String(e), url };
+  }
+}
+
+async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>) {
+  const startedAt = Date.now();
+  const endpoint = `${PINTEREST_PRODUCTION_API_BASE}/pins`;
+  const tokenMetadata = { prefix: accessToken.slice(0, 8), length: accessToken.length, latest_connection_id: conn.id };
+  const imageCheck = await checkPublicUrl(DIRECT_TEST_IMAGE_URL, "getpawsy.pet");
+  const destinationCheck = await checkPublicUrl(DIRECT_TEST_DESTINATION_URL, "getpawsy.pet");
+  const latestOauthLog = await sb
+    .from("pinterest_post_logs")
+    .select("response_data, created_at")
+    .eq("action", "oauth_connect")
+    .eq("status", "success")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const scopeText = String(latestOauthLog?.data?.response_data?.scopes || "");
+  const requiredScopePresent = scopeText.split(/[\s,]+/).includes(DIRECT_TEST_REQUIRED_SCOPE);
+  const accountResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
+  const boardsResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
+  const boards = Array.isArray(boardsResponse.body?.items) ? boardsResponse.body.items : [];
+  const selectedBoard = boards.find((board: any) => typeof board?.id === "string" && board.id.trim()) || null;
+
+  const requestPayload = {
+    title: DIRECT_TEST_TITLE,
+    description: DIRECT_TEST_DESCRIPTION,
+    board_id: selectedBoard?.id || null,
+    media_source: { source_type: "image_url", url: DIRECT_TEST_IMAGE_URL },
+    link: DIRECT_TEST_DESTINATION_URL,
+  };
+  const diagnostics = {
+    api_base: PINTEREST_PRODUCTION_API_BASE,
+    endpoint,
+    token: tokenMetadata,
+    required_scope: DIRECT_TEST_REQUIRED_SCOPE,
+    latest_oauth_scopes: scopeText || null,
+    required_scope_present: requiredScopePresent,
+    account_status_code: accountResponse.status,
+    account_response_body: accountResponse.body,
+    boards_status_code: boardsResponse.status,
+    boards_count: boards.length,
+    selected_board: selectedBoard ? { id: selectedBoard.id, name: selectedBoard.name || null } : null,
+    image_validation: imageCheck,
+    destination_validation: destinationCheck,
+  };
+
+  if (!imageCheck.ok || !destinationCheck.ok || !boardsResponse.ok || !selectedBoard?.id || !requiredScopePresent) {
+    const errorMessage = !requiredScopePresent
+      ? `OAuth token missing required scope: ${DIRECT_TEST_REQUIRED_SCOPE}. Latest scopes: ${scopeText || "none found"}`
+      : !selectedBoard?.id
+        ? `No real Pinterest board ID returned by production /boards. Status ${boardsResponse.status}: ${boardsResponse.text}`
+        : !imageCheck.ok
+          ? `Fixed image URL is not publicly reachable: ${imageCheck.reason}`
+          : !destinationCheck.ok
+            ? `Fixed destination URL is not publicly reachable: ${destinationCheck.reason}`
+            : `Pinterest board lookup failed: ${boardsResponse.status}: ${boardsResponse.text}`;
+    const responseBody = { error: errorMessage, diagnostics };
+    await sb.from("pinterest_post_logs").insert({ action: "direct_api_test", status: "failed", error_message: errorMessage, response_data: responseBody });
+    await sb.from("pinterest_publish_logs").insert({
+      status: "failed",
+      board_id: requestPayload.board_id,
+      image_url: DIRECT_TEST_IMAGE_URL,
+      pin_title: DIRECT_TEST_TITLE,
+      destination_link: DIRECT_TEST_DESTINATION_URL,
+      request_payload: requestPayload,
+      response_payload: responseBody,
+      error_message: errorMessage,
+      duration_ms: Date.now() - startedAt,
+    });
+    return json(cors, { ok: false, error: errorMessage, request_endpoint: endpoint, request_payload: requestPayload, status_code: null, response_body: responseBody, pin_id: null, external_url: null, diagnostics });
+  }
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(requestPayload),
+  });
+  const responseText = await response.text();
+  let responseBody: any = null;
+  try { responseBody = JSON.parse(responseText); } catch { responseBody = { raw: responseText }; }
+  const pinId = typeof responseBody?.id === "string" && responseBody.id.trim() ? responseBody.id.trim() : null;
+  const externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
+  const success = response.ok && Boolean(pinId && externalUrl);
+  const errorMessage = success ? null : `Pinterest API ${response.status}: ${responseText}`;
+  const logPayload = { ...diagnostics, status_code: response.status, response_body: responseBody, returned_pin_id: pinId, returned_pin_url: externalUrl };
+
+  await sb.from("pinterest_post_logs").insert({
+    action: "direct_api_test",
+    status: success ? "success" : "failed",
+    error_message: errorMessage,
+    response_data: logPayload,
+  });
+  await sb.from("pinterest_publish_logs").insert({
+    status: success ? "success" : "failed",
+    board_id: requestPayload.board_id,
+    image_url: DIRECT_TEST_IMAGE_URL,
+    pin_title: DIRECT_TEST_TITLE,
+    destination_link: DIRECT_TEST_DESTINATION_URL,
+    request_payload: requestPayload,
+    response_payload: logPayload,
+    error_message: errorMessage,
+    duration_ms: Date.now() - startedAt,
+  });
+  if (success) await sb.from("pinterest_connection").update({ last_publish_at: new Date().toISOString(), last_error: null }).eq("id", conn.id);
+  if (!success) await sb.from("pinterest_connection").update({ last_error: errorMessage }).eq("id", conn.id);
+
+  return json(cors, {
+    ok: success,
+    error: errorMessage,
+    request_endpoint: endpoint,
+    board_id: requestPayload.board_id,
+    image_url: DIRECT_TEST_IMAGE_URL,
+    destination_url: DIRECT_TEST_DESTINATION_URL,
+    status_code: response.status,
+    response_body: responseBody,
+    pin_id: pinId,
+    external_url: externalUrl,
+    diagnostics,
+  });
 }
 
 async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<string, string>, opts: { actionName: string; requireApproved: boolean; ignoreSchedule: boolean }) {
