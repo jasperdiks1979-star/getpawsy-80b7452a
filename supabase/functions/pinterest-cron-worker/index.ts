@@ -554,7 +554,12 @@ async function markPosted(sb: any, pin: any, externalId: string, verified: boole
       status: "posted",
       posted_at: now,
       pin_external_id: externalId,
+      pinterest_pin_id: externalId,
+      external_url: `https://www.pinterest.com/pin/${externalId}/`,
       error_message: null,
+      last_publish_error: null,
+      rejection_reason: null,
+      publishing_started_at: null,
     })
     .eq("id", pin.id);
 
