@@ -378,7 +378,8 @@ Deno.serve(async (req) => {
       const accessToken = await getFreshPinterestProductionToken(sb, conn);
       if (!accessToken) return json(cors, { ok: false, error: "Pinterest OAuth token is expired and refresh failed" });
 
-      return await runDirectPinterestApiTest(sb, conn, accessToken, cors);
+      const sourceLogId = typeof body.source_log_id === "string" && body.source_log_id.trim() ? body.source_log_id.trim() : null;
+      return await runDirectPinterestApiTest(sb, conn, accessToken, cors, { sourceLogId });
     }
 
     if (action === "mint_direct_test_token") {
@@ -1433,8 +1434,9 @@ async function checkPublicUrl(url: string, expectedHost: string) {
   }
 }
 
-async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>) {
+async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, opts?: { sourceLogId?: string | null }) {
   const startedAt = Date.now();
+  const replaysLogId = opts?.sourceLogId || null;
   const endpoint = `${PINTEREST_PRODUCTION_API_BASE}/pins`;
   const tokenMetadata = { prefix: accessToken.slice(0, 8), length: accessToken.length, latest_connection_id: conn.id };
   const imageCheck = await checkPublicUrl(DIRECT_TEST_IMAGE_URL, "getpawsy.pet");
@@ -1466,6 +1468,7 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     endpoint,
     token: tokenMetadata,
     required_scope: DIRECT_TEST_REQUIRED_SCOPE,
+    replays_log_id: replaysLogId,
     latest_oauth_scopes: scopeText || null,
     required_scope_present: requiredScopePresent,
     account_status_code: accountResponse.status,

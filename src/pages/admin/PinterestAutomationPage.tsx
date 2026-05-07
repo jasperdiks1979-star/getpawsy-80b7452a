@@ -552,17 +552,17 @@ function PinterestDashboard() {
     setActionLoading(null);
   };
 
-  const handleDirectApiTest = async () => {
-    setActionLoading("direct-api-test");
+  const handleDirectApiTest = async (opts?: { sourceLogId?: string }) => {
+    setActionLoading(opts?.sourceLogId ? `direct-api-test-rerun-${opts.sourceLogId}` : "direct-api-test");
     setDirectTestResult(null);
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-automation", {
-        body: { action: "direct_pinterest_api_test" },
+        body: { action: "direct_pinterest_api_test", source_log_id: opts?.sourceLogId ?? null },
       });
       if (error) throw error;
       setDirectTestResult(data);
       if (data?.pin_id && data?.external_url) {
-        toast.success(`Direct Pinterest API Test published ${data.pin_id}`);
+        toast.success(`${opts?.sourceLogId ? "Re-run" : "Direct test"} published ${data.pin_id}`);
       } else {
         throw new Error(data?.error || JSON.stringify(data?.response_body || "No Pinterest pin ID returned"));
       }
@@ -899,13 +899,27 @@ function PinterestDashboard() {
                             <DiagnosticValue label="returned pin URL" value={data.returned_pin_url} mono />
                             <DiagnosticValue label="error" value={entry.error_message} mono />
                           </div>
-                          {data.returned_pin_url && (
-                            <Button size="sm" variant="outline" asChild>
-                              <a href={data.returned_pin_url} target="_blank" rel="noreferrer">
-                                <ExternalLink className="mr-2 h-3 w-3" /> Open pin
-                              </a>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {data.returned_pin_url && (
+                              <Button size="sm" variant="outline" asChild>
+                                <a href={data.returned_pin_url} target="_blank" rel="noreferrer">
+                                  <ExternalLink className="mr-2 h-3 w-3" /> Open pin
+                                </a>
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={actionLoading === `direct-api-test-rerun-${entry.id}` || actionLoading === "direct-api-test"}
+                              onClick={() => void handleDirectApiTest({ sourceLogId: entry.id })}
+                            >
+                              <RefreshCw className="mr-2 h-3 w-3" />
+                              {actionLoading === `direct-api-test-rerun-${entry.id}` ? "Re-running…" : "Re-run this test"}
                             </Button>
-                          )}
+                            {data.replays_log_id && (
+                              <span className="text-[11px] text-muted-foreground">replay of {String(data.replays_log_id).slice(0, 8)}…</span>
+                            )}
+                          </div>
                           <pre className="max-h-72 overflow-auto rounded bg-muted p-3 text-[11px] text-muted-foreground">
                             {JSON.stringify(data, null, 2)}
                           </pre>
