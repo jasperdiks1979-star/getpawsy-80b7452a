@@ -533,14 +533,14 @@ function tplViral(input: TemplateInput): TemplateOutput {
 
   const preset = LAYOUT_PRESETS.center_focus;
   const fitted = autoFitHeadline(input.top, {
-    widthPx: 980,
+    widthPx: 880,
     maxLines: 3,
-    sizes: [120, 104, 92, 80, 70, 60],
+    sizes: [110, 96, 84, 74, 66, 58],
     avgCharWidth: 0.52,
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
-    "co_rgb:FFFFFF", "w_980", "c_fit",
+    "co_rgb:FFFFFF", "w_880", "c_fit",
     "g_north", "y_220",
   ];
 
