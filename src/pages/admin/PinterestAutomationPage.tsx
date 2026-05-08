@@ -1088,6 +1088,20 @@ function PinterestDashboard() {
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 shrink-0"
+                      asChild
+                    >
+                      <a
+                        href={appDiagnostic.reconnect_auth_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" /> Test in nieuw tabblad
+                      </a>
+                    </Button>
                   </div>
                 </div>
               )}
