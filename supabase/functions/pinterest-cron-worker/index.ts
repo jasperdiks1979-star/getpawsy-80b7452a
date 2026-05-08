@@ -231,6 +231,34 @@ Deno.serve(async (req) => {
   }> = [];
   const boardIdCache = new Map<string, string>();
 
+  // Load admin-pinned active board (overrides per-pin board_name routing)
+  let activeBoardOverride: { id: string; name: string | null } | null = null;
+  try {
+    const { data: settings } = await sb
+      .from("pinterest_runtime_settings")
+      .select("active_board_id, active_board_name")
+      .eq("id", 1)
+      .maybeSingle();
+    if (settings?.active_board_id) {
+      activeBoardOverride = { id: String(settings.active_board_id), name: settings.active_board_name || null };
+      console.log(`[cron] using active_board_id override: ${activeBoardOverride.id} (${activeBoardOverride.name})`);
+    }
+  } catch (e) {
+    console.warn("[cron] failed to load active_board_id override:", e);
+  }
+
+  // Load board blacklist
+  const blacklistedBoardIds = new Set<string>();
+  try {
+    const { data: blacklisted } = await sb
+      .from("pinterest_boards")
+      .select("id")
+      .or("is_blacklisted.eq.true,is_sandbox.eq.true");
+    for (const r of blacklisted || []) blacklistedBoardIds.add(String(r.id));
+  } catch (e) {
+    console.warn("[cron] failed to load board blacklist:", e);
+  }
+
   try {
     // ── 1. Fetch due pins ──
     const { data: pins, error } = await sb
