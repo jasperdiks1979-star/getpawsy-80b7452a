@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, ExternalLink, Loader2, Download } from 'lucide-react';
+import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { toast } from '@/hooks/use-toast';
 
 type PinRow = {
   id: string;
@@ -27,6 +28,9 @@ type PinRow = {
   pinterest_pin_id: string | null;
   external_url: string | null;
   hook_group: string | null;
+  pin_image_url: string | null;
+  destination_link: string | null;
+  board_id: string | null;
   created_at: string;
 };
 
@@ -54,13 +58,16 @@ function fmt(ts: string | null) {
 export default function PinterestPinStatusPage() {
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [logs, setLogs] = useState<Record<string, any>>({});
+  const [retrying, setRetrying] = useState<Record<string, boolean>>({});
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['pinterest-pin-status', filter],
     queryFn: async () => {
       let q = supabase
         .from('pinterest_pin_queue')
-        .select('id, product_slug, pin_title, pin_variant, status, scheduled_at, posted_at, publishing_started_at, publish_attempts, last_publish_error, error_message, rejection_reason, pinterest_pin_id, external_url, hook_group, created_at')
+        .select('id, product_slug, pin_title, pin_variant, status, scheduled_at, posted_at, publishing_started_at, publish_attempts, last_publish_error, error_message, rejection_reason, pinterest_pin_id, external_url, hook_group, pin_image_url, destination_link, board_id, created_at')
         .order('scheduled_at', { ascending: false, nullsFirst: false })
         .limit(500);
       if (filter !== 'all') q = q.eq('status', filter);
@@ -123,6 +130,58 @@ export default function PinterestPinStatusPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const toggleExpand = async (row: PinRow) => {
+    const next = !expanded[row.id];
+    setExpanded((s) => ({ ...s, [row.id]: next }));
+    if (next && !logs[row.id]) {
+      const { data: log } = await supabase
+        .from('pinterest_publish_logs')
+        .select('attempt, status, error_message, response_payload, request_payload, duration_ms, created_at')
+        .eq('pin_queue_id', row.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setLogs((s) => ({ ...s, [row.id]: log ?? null }));
+    }
+  };
+
+  const retryPin = async (row: PinRow) => {
+    setRetrying((s) => ({ ...s, [row.id]: true }));
+    try {
+      const { data: res, error } = await supabase.functions.invoke('pinterest-publish-now', {
+        body: { mode: 'pin', pinId: row.id },
+      });
+      if (error) throw error;
+      const r = res as { ok: boolean; message?: string; pinterest_pin_id?: string; stage?: string };
+      if (r?.ok) {
+        toast({ title: 'Published', description: r.pinterest_pin_id ? `Pin ${r.pinterest_pin_id}` : 'Success' });
+      } else {
+        toast({
+          title: `Failed at ${r?.stage || 'publish'}`,
+          description: r?.message || 'Unknown error',
+          variant: 'destructive',
+        });
+      }
+      // refresh log + table row
+      setLogs((s) => ({ ...s, [row.id]: undefined as any }));
+      await refetch();
+      if (expanded[row.id]) {
+        const { data: log } = await supabase
+          .from('pinterest_publish_logs')
+          .select('attempt, status, error_message, response_payload, request_payload, duration_ms, created_at')
+          .eq('pin_queue_id', row.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setLogs((s) => ({ ...s, [row.id]: log ?? null }));
+      }
+    } catch (e) {
+      toast({ title: 'Retry error', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setRetrying((s) => ({ ...s, [row.id]: false }));
+    }
   };
 
   return (
@@ -195,12 +254,35 @@ export default function PinterestPinStatusPage() {
                 <TableBody>
                   {filtered.map((r) => {
                     const err = r.last_publish_error ?? r.error_message ?? r.rejection_reason ?? '';
+                    const isOpen = !!expanded[r.id];
+                    const log = logs[r.id];
+                    const canRetry = ['failed', 'rejected', 'queued', 'draft'].includes(r.status);
                     return (
-                      <TableRow key={r.id}>
+                      <Fragment key={r.id}>
+                      <TableRow>
                         <TableCell>
+                          <div className="flex items-start gap-2">
+                            <button
+                              onClick={() => toggleExpand(r)}
+                              className="mt-0.5 text-muted-foreground hover:text-foreground"
+                              aria-label="Toggle details"
+                            >
+                              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </button>
+                            {r.pin_image_url ? (
+                              <img
+                                src={r.pin_image_url}
+                                alt=""
+                                className="h-12 w-9 object-cover rounded border bg-muted shrink-0"
+                                loading="lazy"
+                              />
+                            ) : null}
+                            <div className="min-w-0">
                           <div className="font-medium line-clamp-1">{r.pin_title || '(untitled)'}</div>
                           <div className="text-xs text-muted-foreground line-clamp-1">
                             {r.product_slug} · {r.hook_group || r.pin_variant}
+                          </div>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -217,6 +299,7 @@ export default function PinterestPinStatusPage() {
                           </span>
                         </TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-2">
                           {r.external_url ? (
                             <a href={r.external_url} target="_blank" rel="noopener noreferrer"
                                className="inline-flex items-center text-primary hover:underline text-xs">
@@ -225,8 +308,82 @@ export default function PinterestPinStatusPage() {
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
+                            {canRetry && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2"
+                                onClick={() => retryPin(r)}
+                                disabled={!!retrying[r.id]}
+                              >
+                                {retrying[r.id]
+                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  : <RotateCcw className="h-3 w-3" />}
+                                <span className="ml-1 text-xs">Retry</span>
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
+                      {isOpen && (
+                        <TableRow className="bg-muted/30">
+                          <TableCell colSpan={7} className="p-4">
+                            <div className="grid gap-3 md:grid-cols-2 text-xs">
+                              <div className="space-y-1">
+                                <div className="font-semibold flex items-center gap-1"><Bug className="h-3 w-3" /> Pin metadata</div>
+                                <div><span className="text-muted-foreground">Pin id:</span> {r.id}</div>
+                                <div><span className="text-muted-foreground">Board id:</span> {r.board_id || '—'}</div>
+                                <div><span className="text-muted-foreground">Pinterest id:</span> {r.pinterest_pin_id || '—'}</div>
+                                <div className="break-all"><span className="text-muted-foreground">Image:</span>{' '}
+                                  {r.pin_image_url
+                                    ? <a href={r.pin_image_url} target="_blank" rel="noopener noreferrer" className="underline">open</a>
+                                    : '—'}
+                                </div>
+                                <div className="break-all"><span className="text-muted-foreground">Destination:</span>{' '}
+                                  {r.destination_link
+                                    ? <a href={r.destination_link} target="_blank" rel="noopener noreferrer" className="underline">{r.destination_link}</a>
+                                    : '—'}
+                                </div>
+                                <div className="text-destructive whitespace-pre-wrap break-words pt-1">
+                                  {err || 'No error recorded.'}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="font-semibold">Last publish log</div>
+                                {log === undefined ? (
+                                  <div className="text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin inline mr-1" /> loading…</div>
+                                ) : log === null ? (
+                                  <div className="text-muted-foreground">No log entry yet.</div>
+                                ) : (
+                                  <>
+                                    <div>
+                                      <span className="text-muted-foreground">Attempt:</span> {log.attempt} ·{' '}
+                                      <span className="text-muted-foreground">status:</span> {log.status} ·{' '}
+                                      <span className="text-muted-foreground">duration:</span> {log.duration_ms}ms
+                                    </div>
+                                    {log.error_message && (
+                                      <div className="text-destructive break-words">{log.error_message}</div>
+                                    )}
+                                    <details className="mt-1">
+                                      <summary className="cursor-pointer text-muted-foreground">Pinterest response</summary>
+                                      <pre className="mt-1 max-h-48 overflow-auto rounded bg-background p-2 text-[10px]">
+{JSON.stringify(log.response_payload, null, 2)}
+                                      </pre>
+                                    </details>
+                                    <details>
+                                      <summary className="cursor-pointer text-muted-foreground">Request payload</summary>
+                                      <pre className="mt-1 max-h-48 overflow-auto rounded bg-background p-2 text-[10px]">
+{JSON.stringify(log.request_payload, null, 2)}
+                                      </pre>
+                                    </details>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </TableBody>
