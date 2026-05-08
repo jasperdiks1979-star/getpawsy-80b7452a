@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw } from 'lucide-react';
+import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -61,6 +61,8 @@ export default function PinterestPinStatusPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [logs, setLogs] = useState<Record<string, any>>({});
   const [retrying, setRetrying] = useState<Record<string, boolean>>({});
+  const [maintLoading, setMaintLoading] = useState<string | null>(null);
+  const [health, setHealth] = useState<any>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['pinterest-pin-status', filter],
@@ -184,6 +186,85 @@ export default function PinterestPinStatusPage() {
     }
   };
 
+  const runAutomation = async (action: string, body: Record<string, unknown> = {}) => {
+    setMaintLoading(action);
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-automation', { body: { action, ...body } });
+      if (error) throw error;
+      const r = data as any;
+      if (r?.ok === false) throw new Error(r?.error || `${action} failed`);
+      return r;
+    } finally {
+      setMaintLoading(null);
+    }
+  };
+
+  const handleGenerateDrafts = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-viral-batch', {
+        body: { productSlug: 'automatic-self-cleaning-cat-litter-box', maxPins: 5, requireApproval: true },
+      });
+      if (error) throw error;
+      toast({ title: 'Generation kicked off', description: `Drafts: ${(data as any)?.queued ?? '?'}` });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Generate failed', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const handleQueueDrafts = async () => {
+    const drafts = (data ?? []).filter((r) => r.status === 'draft').slice(0, 10);
+    if (!drafts.length) return toast({ title: 'No drafts to queue' });
+    try {
+      const r = await runAutomation('bulk_approve', { pinIds: drafts.map((d) => d.id) });
+      toast({ title: 'Queued', description: `Approved ${r?.approved ?? 0} (failed ${r?.failures?.length ?? 0})` });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Queue failed', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const handlePublishNext = async () => {
+    setMaintLoading('publish-next');
+    try {
+      const { data: res, error } = await supabase.functions.invoke('pinterest-publish-now', { body: { mode: 'next' } });
+      if (error) throw error;
+      const r = res as any;
+      if (r?.ok) toast({ title: 'Published', description: r.pinterest_pin_id || 'OK' });
+      else toast({ title: `Failed at ${r?.stage}`, description: r?.message, variant: 'destructive' });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Publish failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setMaintLoading(null);
+    }
+  };
+
+  const handleMaintenance = async () => {
+    try {
+      const r = await runAutomation('queue_maintenance');
+      setHealth(r);
+      toast({
+        title: 'Maintenance complete',
+        description: `Validated ${r.validated} · Marked invalid ${r.invalid_marked_rejected} · Stuck cleared ${r.cleared_stuck_publishing} · Deduped ${r.deduped}`,
+      });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Maintenance failed', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteInvalidDrafts = async () => {
+    if (!confirm('Delete all invalid draft pins (broken image, missing overlay/title/destination)?')) return;
+    try {
+      const r = await runAutomation('delete_invalid_drafts');
+      toast({ title: 'Invalid drafts deleted', description: `Deleted ${r.deleted}` });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Delete failed', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -200,6 +281,57 @@ export default function PinterestPinStatusPage() {
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Pipeline controls</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" onClick={handleGenerateDrafts} disabled={!!maintLoading}>
+              <Wand2 className="h-4 w-4 mr-2" /> Generate draft pins
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleQueueDrafts} disabled={!!maintLoading}>
+              <RotateCcw className="h-4 w-4 mr-2" /> Queue drafts (top 10)
+            </Button>
+            <Button size="sm" variant="outline" onClick={handlePublishNext} disabled={!!maintLoading}>
+              {maintLoading === 'publish-next' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              Publish next pin now
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleMaintenance} disabled={!!maintLoading}>
+              {maintLoading === 'queue_maintenance' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wrench className="h-4 w-4 mr-2" />}
+              Run queue maintenance
+            </Button>
+            <Button size="sm" variant="destructive" onClick={handleDeleteInvalidDrafts} disabled={!!maintLoading}>
+              {maintLoading === 'delete_invalid_drafts' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Delete invalid drafts
+            </Button>
+          </div>
+          {health && (
+            <div className="rounded border p-3 space-y-2 text-xs bg-muted/30">
+              <div className="font-semibold">Queue health</div>
+              <div className="flex gap-2 flex-wrap">
+                {Object.entries(health.counts_by_status || {}).map(([k, v]) => (
+                  <Badge key={k} variant="outline" className={statusVariant[k] ?? ''}>{k}: {String(v)}</Badge>
+                ))}
+              </div>
+              <div className="text-muted-foreground">
+                Validated {health.validated} · valid {health.valid} · marked invalid {health.invalid_marked_rejected} ·
+                stuck cleared {health.cleared_stuck_publishing} · orphans recovered {health.recovered_orphaned_queued} ·
+                deduped {health.deduped}
+              </div>
+              {!!health.invalid_sample?.length && (
+                <details>
+                  <summary className="cursor-pointer text-muted-foreground">Invalid sample ({health.invalid_sample.length})</summary>
+                  <pre className="mt-1 max-h-48 overflow-auto rounded bg-background p-2 text-[10px]">
+                    {JSON.stringify(health.invalid_sample, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-3">

@@ -1599,6 +1599,141 @@ Deno.serve(async (req) => {
       return json(cors, { ok: true, active_board_id: picked.id, active_board_name: picked.name });
     }
 
+    if (action === "queue_maintenance" || action === "delete_invalid_drafts") {
+      // Shared validator: HEAD-probe image, sanity-check title/desc/overlay/destination.
+      const MAX_TITLE = 100;
+      const MAX_DESC = 800;
+      const MAX_IMAGE_BYTES = 32 * 1024 * 1024;
+      const probeImage = async (url: string): Promise<{ ok: boolean; reason?: string }> => {
+        if (!url || !/^https?:\/\//i.test(url)) return { ok: false, reason: "image_invalid_url" };
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 6000);
+          let res = await fetch(url, { method: "HEAD", signal: ctrl.signal }).catch(() => null);
+          clearTimeout(t);
+          if (!res || res.status === 405 || res.status === 403) {
+            const c2 = new AbortController();
+            const t2 = setTimeout(() => c2.abort(), 8000);
+            res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-1023" }, signal: c2.signal }).catch(() => null);
+            clearTimeout(t2);
+            try { await res?.body?.cancel(); } catch { /* ignore */ }
+          }
+          if (!res) return { ok: false, reason: "image_unreachable" };
+          if (res.status >= 400) return { ok: false, reason: `image_http_${res.status}` };
+          const ct = res.headers.get("content-type") || "";
+          const cl = Number(res.headers.get("content-length") || "0");
+          if (ct && !/^image\//i.test(ct) && !/octet-stream/i.test(ct)) return { ok: false, reason: `image_bad_ct_${ct.split(";")[0]}` };
+          if (cl && cl > MAX_IMAGE_BYTES) return { ok: false, reason: "image_too_large" };
+          return { ok: true };
+        } catch (e) {
+          return { ok: false, reason: `image_probe_err_${(e as Error).message.slice(0, 40)}` };
+        }
+      };
+      const validateRow = async (r: any): Promise<string[]> => {
+        const reasons: string[] = [];
+        const title = String(r.pin_title ?? "");
+        const desc = String(r.pin_description ?? "");
+        const overlay = String(r.overlay_text ?? "");
+        const link = String(r.destination_link ?? "");
+        if (!title.trim()) reasons.push("title_empty");
+        else if (title.length > MAX_TITLE) reasons.push("title_too_long");
+        if (desc.length > MAX_DESC) reasons.push("desc_too_long");
+        if (!overlay.trim()) reasons.push("overlay_empty");
+        if (!link || !/^https?:\/\//i.test(link)) reasons.push("destination_invalid");
+        const probe = await probeImage(String(r.pin_image_url ?? ""));
+        if (!probe.ok) reasons.push(probe.reason || "image_invalid");
+        return reasons;
+      };
+
+      const targetStatuses = action === "delete_invalid_drafts" ? ["draft"] : ["draft", "queued"];
+      const { data: candidates } = await sb
+        .from("pinterest_pin_queue")
+        .select("id, status, pin_title, pin_description, pin_image_url, destination_link, overlay_text")
+        .in("status", targetStatuses)
+        .limit(500);
+
+      // Validate (limit concurrency to avoid hammering CDNs)
+      const invalid: { id: string; reasons: string[] }[] = [];
+      const valid: string[] = [];
+      const list = candidates || [];
+      for (let i = 0; i < list.length; i += 8) {
+        const slice = list.slice(i, i + 8);
+        const results = await Promise.all(slice.map(async (r: any) => ({ id: r.id, reasons: await validateRow(r) })));
+        for (const res of results) {
+          if (res.reasons.length) invalid.push(res);
+          else valid.push(res.id);
+        }
+      }
+
+      if (action === "delete_invalid_drafts") {
+        const ids = invalid.map((x) => x.id);
+        if (ids.length) await sb.from("pinterest_pin_queue").delete().in("id", ids);
+        return json(cors, { ok: true, deleted: ids.length, sample: invalid.slice(0, 10) });
+      }
+
+      // queue_maintenance: also clear stuck publishing + recover orphaned queued + dedupe + mark invalid as rejected
+      const cutoff = new Date(Date.now() - 15 * 60_000).toISOString();
+      const [{ count: cleared }, { count: recovered }] = await Promise.all([
+        sb.from("pinterest_pin_queue")
+          .update({ status: "queued", publishing_started_at: null, error_message: "Auto-recovered: stuck in publishing" }, { count: "exact" })
+          .eq("status", "publishing").lt("publishing_started_at", cutoff),
+        sb.from("pinterest_pin_queue")
+          .update({ status: "draft", error_message: "Auto-recovered: queued without approval" }, { count: "exact" })
+          .eq("status", "queued").is("approved_at", null),
+      ]);
+
+      let markedInvalid = 0;
+      if (invalid.length) {
+        const batch = invalid.slice(0, 200);
+        for (const inv of batch) {
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            rejection_reason: `queue_maintenance: ${inv.reasons.join(",")}`,
+            qa_reasons: inv.reasons,
+            error_message: `Invalid: ${inv.reasons.join(",")}`,
+            approved_at: null,
+          }).eq("id", inv.id);
+        }
+        markedInvalid = batch.length;
+      }
+
+      // Dedupe drafts/queued by (product_id, pin_variant) — keep oldest
+      const { data: dupRows } = await sb
+        .from("pinterest_pin_queue")
+        .select("id, product_id, pin_variant, created_at")
+        .in("status", ["draft", "queued"])
+        .order("created_at", { ascending: true })
+        .limit(1000);
+      const seen = new Set<string>();
+      const dupIds: string[] = [];
+      for (const r of dupRows || []) {
+        const key = `${(r as any).product_id}::${(r as any).pin_variant}`;
+        if (seen.has(key)) dupIds.push((r as any).id);
+        else seen.add(key);
+      }
+      if (dupIds.length) await sb.from("pinterest_pin_queue").delete().in("id", dupIds);
+
+      // Health snapshot
+      const statuses = ["draft", "queued", "publishing", "posted", "failed", "rejected", "skipped"];
+      const counts: Record<string, number> = {};
+      await Promise.all(statuses.map(async (s) => {
+        const { count } = await sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", s);
+        counts[s] = count || 0;
+      }));
+
+      return json(cors, {
+        ok: true,
+        validated: list.length,
+        valid: valid.length,
+        invalid_marked_rejected: markedInvalid,
+        cleared_stuck_publishing: cleared || 0,
+        recovered_orphaned_queued: recovered || 0,
+        deduped: dupIds.length,
+        counts_by_status: counts,
+        invalid_sample: invalid.slice(0, 10),
+      });
+    }
+
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
     console.error("pinterest-automation error:", e);
