@@ -301,7 +301,7 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   // Base = BEFORE photo on top half, desaturated to feel "problematic".
   const base = [
     "w_" + W, "h_" + H, "c_fill", "g_auto",
-    "e_saturation:-55", "e_brightness:-10", "e_contrast:5",
+    "e_saturation:-35", "e_brightness:-6", "e_contrast:4",
     "q_auto", "f_jpg",
   ];
 
@@ -309,34 +309,35 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   const afterCover = [
     "l_fetch:" + fetchB64(afterBg),
     "w_" + W, "h_1180", "c_fill", "g_south", "y_0",
-    "e_brightness:5", "e_saturation:25", "e_contrast:8",
+    "e_brightness:6", "e_saturation:18", "e_contrast:6",
   ];
 
-  // Soft cream divider band — emulates a fold instead of a hard line.
+  // Hairline divider — feels like a magazine fold, not a banner.
   const fold = [
     "l_text:Arial_120_bold:%20",
     "b_rgb:FAF6F0", "co_rgb:00000000",
-    "w_" + W, "h_24", "c_fit",
+    "w_" + W, "h_2", "c_fit",
     "g_center", "y_-20", "o_90",
   ];
 
+  const productShadow = shadowPlate({
+    width: 760, height: 110, gravity: "south", y: 220, opacity: 36,
+  });
   // Product hero composited into the AFTER half.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_720", "h_720", "c_fit", "g_south", "y_280", "r_28",
-    "bo_4px_solid_rgb:FFFFFF",
+    "w_700", "h_700", "c_fit", "g_south", "y_280", "r_32",
+    "bo_2px_solid_rgb:FFFFFF",
   ];
 
-  // Premium pill labels — Before (ink) / After (orange).
+  // Editorial labels — small caps, no pill, just elegant tags with underline.
   const beforeLabel = [
-    "l_text:Arial_42_bold:" + escapeText("Before"),
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_240", "c_fit",
-    "g_north_west", "x_70", "y_140",
+    "l_text:Arial_34:" + escapeText("BEFORE"),
+    "co_rgb:FFFFFF", "g_north_west", "x_84", "y_160", "o_85",
   ];
   const afterLabel = [
-    "l_text:Arial_42_bold:" + escapeText("After"),
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_240", "c_fit",
-    "g_south_west", "x_70", "y_180",
+    "l_text:Arial_34:" + escapeText("AFTER"),
+    "co_rgb:1A1410", "g_south_west", "x_84", "y_960", "o_90",
   ];
 
   // Headline sits inside a small center band so it doesn't cover either scene.
@@ -344,24 +345,28 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   const fitted = autoFitHeadline(input.top, {
     widthPx: 880,
     maxLines: 2,
-    sizes: [72, 64, 56, 50, 44],
+    sizes: [82, 72, 64, 56, 48],
   });
-  const headlineScrim = scrimBand({ gravity: "center", height: 220, y: 0, opacity: 78 });
+  // Soft narrow gradient scrim — much lighter than before, just enough
+  // contrast for the headline without dominating the composition.
+  const headlineScrim = scrimBand({ gravity: "center", height: 280, y: 0, opacity: 42 });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_920", "c_fit", "g_center", "y_0",
   ];
 
-  // Bottom CTA pill on the AFTER half.
+  // Editorial underline CTA — sits on the AFTER half whitespace.
   const cta = [
-    "l_text:Arial_44_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_540", "c_fit",
-    "g_south", "y_110",
+    "l_text:Arial_38:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:1A1410", "g_south", "y_140",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 220, gravity: "south", y: 120, color: "1A1410", opacity: 80,
+  });
 
   return {
-    url: build([base, afterCover, fold, product, beforeLabel, afterLabel, headlineScrim, headline, cta], beforeBg),
-    layoutSignature: "before_after|premium_split",
+    url: build([base, afterCover, fold, productShadow, product, beforeLabel, afterLabel, headlineScrim, headline, ctaUnderline, cta], beforeBg),
+    layoutSignature: "before_after|polish_split",
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
