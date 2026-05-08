@@ -404,28 +404,77 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── 3b. Performance Mode daily cap (3/day until scale_unlocked) ──
+    // ── 3b. Warm-up + Performance Mode daily cap, min-gap, US score threshold ──
     const { data: rtSettings } = await sb
       .from("pinterest_runtime_settings")
-      .select("scale_unlocked")
+      .select("scale_unlocked, daily_pin_cap, min_gap_minutes, warmup_until, us_score_threshold")
       .limit(1)
       .maybeSingle();
     const scaleUnlocked = !!rtSettings?.scale_unlocked;
-    if (!scaleUnlocked) {
+    const warmupActive = rtSettings?.warmup_until
+      ? new Date(rtSettings.warmup_until).getTime() > Date.now()
+      : false;
+    const dailyCap: number = warmupActive
+      ? Number(rtSettings?.daily_pin_cap ?? 4)
+      : (scaleUnlocked ? MAX_PINS_PER_HOUR * 24 : HERO_DAILY_CAP);
+    const minGapMinutes: number = warmupActive ? Number(rtSettings?.min_gap_minutes ?? 90) : 0;
+    const usScoreThreshold: number = Number(rtSettings?.us_score_threshold ?? 0.55);
+
+    // Daily cap (warm-up uses configurable cap; otherwise legacy Performance Mode)
+    if (warmupActive || !scaleUnlocked) {
       const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
       const { count: postedToday } = await sb
         .from("pinterest_pin_queue")
         .select("*", { count: "exact", head: true })
         .eq("status", "posted")
         .gte("posted_at", oneDayAgo);
-      if ((postedToday || 0) >= HERO_DAILY_CAP) {
-        console.log(`[cron] Performance Mode cap reached: ${postedToday}/${HERO_DAILY_CAP} pins in last 24h`);
+      if ((postedToday || 0) >= dailyCap) {
+        console.log(`[cron] Daily cap reached (warmup=${warmupActive}): ${postedToday}/${dailyCap}`);
         return new Response(
-          JSON.stringify({ ok: true, message: `Daily cap (${HERO_DAILY_CAP}) reached`, results: [] }),
+          JSON.stringify({ ok: true, message: `Daily cap (${dailyCap}) reached`, results: [] }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
+
+    // Min-gap spacing — during warm-up we space pins ≥ minGapMinutes apart.
+    if (minGapMinutes > 0) {
+      const { data: lastPosted } = await sb
+        .from("pinterest_pin_queue")
+        .select("posted_at")
+        .eq("status", "posted")
+        .order("posted_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const lastTs = lastPosted?.posted_at ? new Date(lastPosted.posted_at).getTime() : 0;
+      if (lastTs && Date.now() - lastTs < minGapMinutes * 60_000) {
+        const waitMin = Math.ceil((minGapMinutes * 60_000 - (Date.now() - lastTs)) / 60_000);
+        console.log(`[cron] Warm-up gap: last pin ${Math.round((Date.now() - lastTs) / 60000)}m ago, waiting ${waitMin}m more`);
+        return new Response(
+          JSON.stringify({ ok: true, message: `Warm-up spacing: wait ${waitMin}m`, results: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // US-audience score filter — drop pins below threshold (compute on the fly
+    // for legacy rows that never got scored at insert time).
+    const beforeFilter = pins.length;
+    for (const p of pins as any[]) {
+      if (p.us_audience_score == null) {
+        p.us_audience_score = computeUsAudienceScore(p);
+      }
+    }
+    const filteredPins = (pins as any[]).filter((p) => Number(p.us_audience_score) >= usScoreThreshold);
+    if (filteredPins.length === 0 && beforeFilter > 0) {
+      console.log(`[cron] All ${beforeFilter} due pins below US score threshold ${usScoreThreshold}; skipping batch.`);
+      return new Response(
+        JSON.stringify({ ok: true, message: `No pins above US score ${usScoreThreshold}`, results: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    pins.length = 0;
+    pins.push(...filteredPins);
 
     // ── 4. Publish each pin with human-like delay ──
     for (let i = 0; i < pins.length; i++) {
