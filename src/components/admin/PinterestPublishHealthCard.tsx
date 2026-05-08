@@ -13,6 +13,16 @@ type Health = {
   recent_successes: number;
   avg_publish_ms: number;
   last_cron_run_at: string | null;
+  last_cron_status?: string | null;
+  last_cron_success?: boolean | null;
+  last_cron_duration_ms?: number | null;
+  last_cron_processed?: number | null;
+  last_cron_failed?: number | null;
+  last_cron_error?: string | null;
+  last_cron_message?: string | null;
+  last_success_at?: string | null;
+  cron_runs_24h?: number;
+  cron_success_24h?: number;
 };
 
 type Connection = {
@@ -138,12 +148,40 @@ export function PinterestPublishHealthCard() {
   const successRate = health && health.recent_attempts > 0
     ? Math.round((health.recent_successes / health.recent_attempts) * 100)
     : null;
+  const lastSuccess = health?.last_success_at ? new Date(health.last_success_at) : null;
+  const lastSuccessMin = lastSuccess ? Math.round((Date.now() - lastSuccess.getTime()) / 60000) : null;
+  // Cron schedule is */5 (every 5 minutes); compute next tick from last run
+  const CRON_INTERVAL_MIN = 5;
+  const nextRun = lastRun
+    ? new Date(lastRun.getTime() + CRON_INTERVAL_MIN * 60_000)
+    : null;
+  const nextRunMin = nextRun ? Math.max(0, Math.round((nextRun.getTime() - Date.now()) / 60000)) : null;
+  // Health verdict — green if cron ran in last 10m AND last run succeeded
+  // (or no error AND queue is draining); yellow if delayed (>15m); red if
+  // never or last run errored.
+  const cronHealth: "healthy" | "delayed" | "failed" | "unknown" =
+    !lastRun
+      ? "unknown"
+      : health?.last_cron_status === "failed" || health?.last_cron_success === false
+        ? "failed"
+        : (lastRunMin ?? 999) > 15
+          ? "delayed"
+          : "healthy";
+  const healthBadge =
+    cronHealth === "healthy"
+      ? <Badge className="bg-green-500/15 text-green-600 gap-1"><CheckCircle2 className="h-3 w-3" /> Healthy</Badge>
+      : cronHealth === "delayed"
+        ? <Badge className="bg-yellow-500/15 text-yellow-700 gap-1"><AlertCircle className="h-3 w-3" /> Delayed</Badge>
+        : cronHealth === "failed"
+          ? <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Failed</Badge>
+          : <Badge variant="outline" className="gap-1"><AlertCircle className="h-3 w-3" /> Unknown</Badge>;
 
   return (
     <Card className="border-primary/30">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Activity className="h-4 w-4 text-primary" /> Publish Health & Recovery
+          {healthBadge}
           <Button
             variant="ghost"
             size="sm"
@@ -229,24 +267,92 @@ export function PinterestPublishHealthCard() {
         {/* Health summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <div className="rounded border p-2">
-            <div className="text-muted-foreground">Last cron</div>
+            <div className="text-muted-foreground">Last cron run</div>
             <div className="font-medium">
               {lastRunMin !== null ? `${lastRunMin}m ago` : "never"}
             </div>
+            {health?.last_cron_message && (
+              <div className="text-[10px] text-muted-foreground truncate" title={health.last_cron_message}>
+                {health.last_cron_message}
+              </div>
+            )}
           </div>
           <div className="rounded border p-2">
-            <div className="text-muted-foreground">Success rate (50)</div>
-            <div className="font-medium">{successRate !== null ? `${successRate}%` : "—"}</div>
+            <div className="text-muted-foreground">Last success</div>
+            <div className="font-medium">
+              {lastSuccessMin !== null ? `${lastSuccessMin}m ago` : "never"}
+            </div>
           </div>
           <div className="rounded border p-2">
-            <div className="text-muted-foreground">Avg publish</div>
+            <div className="text-muted-foreground">Next run (~)</div>
+            <div className="font-medium">
+              {nextRunMin !== null ? (nextRunMin === 0 ? "any moment" : `in ${nextRunMin}m`) : "—"}
+            </div>
+          </div>
+          <div className="rounded border p-2">
+            <div className="text-muted-foreground">Last duration</div>
+            <div className="font-medium">
+              {health?.last_cron_duration_ms != null ? `${health.last_cron_duration_ms}ms` : "—"}
+            </div>
+          </div>
+          <div className="rounded border p-2">
+            <div className="text-muted-foreground">Last processed / failed</div>
+            <div className="font-medium">
+              {(health?.last_cron_processed ?? 0)} / {(health?.last_cron_failed ?? 0)}
+            </div>
+          </div>
+          <div className="rounded border p-2">
+            <div className="text-muted-foreground">Runs (24h)</div>
+            <div className="font-medium">
+              {health?.cron_runs_24h ?? 0}
+              {(health?.cron_runs_24h ?? 0) > 0 && (
+                <span className="text-muted-foreground"> · {Math.round(((health?.cron_success_24h ?? 0) / (health?.cron_runs_24h ?? 1)) * 100)}% ok</span>
+              )}
+            </div>
+          </div>
+          <div className="rounded border p-2">
+            <div className="text-muted-foreground">Avg publish (50)</div>
             <div className="font-medium">{health?.avg_publish_ms ? `${health.avg_publish_ms}ms` : "—"}</div>
           </div>
           <div className="rounded border p-2">
-            <div className="text-muted-foreground">Recent attempts</div>
-            <div className="font-medium">{health?.recent_attempts ?? 0}</div>
+            <div className="text-muted-foreground">Publish success rate</div>
+            <div className="font-medium">{successRate !== null ? `${successRate}%` : "—"}</div>
           </div>
         </div>
+
+        {cronHealth === "failed" && (
+          <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs flex items-start gap-2">
+            <XCircle className="h-4 w-4 text-destructive mt-0.5" />
+            <div>
+              <div className="font-medium">Cron failed on last run</div>
+              <div className="text-muted-foreground">
+                {health?.last_cron_error || health?.last_cron_message || "Check edge function logs for pinterest-cron-worker."}
+              </div>
+            </div>
+          </div>
+        )}
+        {cronHealth === "delayed" && (
+          <div className="rounded border border-yellow-500/40 bg-yellow-500/10 p-2 text-xs flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+            <div>
+              <div className="font-medium">Cron delayed</div>
+              <div className="text-muted-foreground">
+                Last tick was {lastRunMin}m ago. Expected every {CRON_INTERVAL_MIN}m.
+              </div>
+            </div>
+          </div>
+        )}
+        {cronHealth === "unknown" && (
+          <div className="rounded border border-yellow-500/40 bg-yellow-500/10 p-2 text-xs flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+            <div>
+              <div className="font-medium">No cron telemetry yet</div>
+              <div className="text-muted-foreground">
+                Waiting for the first scheduled tick (runs every {CRON_INTERVAL_MIN} minutes).
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Auto-approve toggle */}
         <div className="flex items-center justify-between rounded-md border p-3">

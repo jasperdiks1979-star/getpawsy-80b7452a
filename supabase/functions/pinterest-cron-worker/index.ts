@@ -223,6 +223,66 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // ── Cron execution telemetry ──
+  // Every tick writes a row to cron_job_logs so the admin dashboard can show
+  // last run, duration, items processed, and success/failure counts.
+  const cronStartedAt = Date.now();
+  let cronLogId: string | null = null;
+  try {
+    const { data: cl } = await sb
+      .from("cron_job_logs")
+      .insert({
+        job_name: "pinterest-cron-publish",
+        started_at: new Date(cronStartedAt).toISOString(),
+        status: "running",
+      })
+      .select("id")
+      .single();
+    cronLogId = (cl as any)?.id ?? null;
+  } catch (e) {
+    console.warn("[cron] failed to insert cron_job_logs row:", e);
+  }
+  const respond = async (
+    payload: Record<string, unknown>,
+    opts: {
+      httpStatus?: number;
+      success?: boolean;
+      logStatus?: string;
+      processed?: number;
+      failed?: number;
+      error?: string | null;
+      details?: Record<string, unknown>;
+    } = {},
+  ): Promise<Response> => {
+    const success = opts.success ?? (payload.ok === true);
+    if (cronLogId) {
+      try {
+        await sb
+          .from("cron_job_logs")
+          .update({
+            completed_at: new Date().toISOString(),
+            status: opts.logStatus ?? (success ? "completed" : "skipped"),
+            success,
+            items_processed: opts.processed ?? 0,
+            items_failed: opts.failed ?? 0,
+            error_message: opts.error ?? null,
+            details: {
+              ...(opts.details ?? {}),
+              duration_ms: Date.now() - cronStartedAt,
+              message: payload.message ?? null,
+            },
+          })
+          .eq("id", cronLogId);
+      } catch (e) {
+        console.warn("[cron] failed to update cron_job_logs row:", e);
+      }
+    }
+    return new Response(JSON.stringify(payload), {
+      status: opts.httpStatus ?? 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  };
+
   const results: Array<{
     pinId: string;
     status: string;
@@ -321,9 +381,9 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
     if (!pins || pins.length === 0) {
-      return new Response(
-        JSON.stringify({ ok: true, message: "No pins due", results: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      return await respond(
+        { ok: true, message: "No pins due", results: [] },
+        { logStatus: "completed", success: true, processed: 0 },
       );
     }
 
@@ -336,14 +396,14 @@ Deno.serve(async (req) => {
         status: "skipped",
         error_message: "Pinterest not connected",
       });
-      return new Response(
-        JSON.stringify({
+      return await respond(
+        {
           ok: false,
           error: "Pinterest not connected. Connect Pinterest first.",
           reauthRequired: true,
           results: [],
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        },
+        { logStatus: "skipped", success: false, error: "Pinterest not connected" },
       );
     }
 
@@ -366,15 +426,9 @@ Deno.serve(async (req) => {
             error_message:
               "Token expired and refresh failed — skipping this run",
           });
-          return new Response(
-            JSON.stringify({
-              ok: false,
-              error: "Token refresh failed",
-              results: [],
-            }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
+          return await respond(
+            { ok: false, error: "Token refresh failed", results: [] },
+            { logStatus: "skipped", success: false, error: "Token refresh failed" },
           );
         }
       }
@@ -396,9 +450,9 @@ Deno.serve(async (req) => {
           board_count: authCheck.boardCount,
         },
       });
-      return new Response(
-        JSON.stringify({ ok: false, error: authCheck.error, code: "PINTEREST_AUTH_FAILURE", publishing_disabled: true, results: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      return await respond(
+        { ok: false, error: authCheck.error, code: "PINTEREST_AUTH_FAILURE", publishing_disabled: true, results: [] },
+        { logStatus: "skipped", success: false, error: String(authCheck.error || "auth failure") },
       );
     }
 
@@ -426,9 +480,9 @@ Deno.serve(async (req) => {
         error_message: reason,
         response_data: { code: "PINTEREST_PRODUCTION_GUARD", approved_client_id: APPROVED_PINTEREST_CLIENT_ID, verified_client_id_prefix: verifiedPrefix, current_client_id_prefix: currentPrefix },
       });
-      return new Response(
-        JSON.stringify({ ok: false, error: reason, code: "PINTEREST_PRODUCTION_GUARD", publishing_disabled: true, results: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      return await respond(
+        { ok: false, error: reason, code: "PINTEREST_PRODUCTION_GUARD", publishing_disabled: true, results: [] },
+        { logStatus: "skipped", success: false, error: reason },
       );
     }
 
@@ -442,9 +496,9 @@ Deno.serve(async (req) => {
     
     if ((recentPostCount || 0) >= MAX_PINS_PER_HOUR) {
       console.log(`[cron] Rate limit: ${recentPostCount} pins posted in last hour, skipping`);
-      return new Response(
-        JSON.stringify({ ok: true, message: "Hourly rate limit reached", results: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      return await respond(
+        { ok: true, message: "Hourly rate limit reached", results: [] },
+        { logStatus: "skipped", success: true },
       );
     }
 
@@ -474,9 +528,9 @@ Deno.serve(async (req) => {
         .gte("posted_at", oneDayAgo);
       if ((postedToday || 0) >= dailyCap) {
         console.log(`[cron] Daily cap reached (warmup=${warmupActive}): ${postedToday}/${dailyCap}`);
-        return new Response(
-          JSON.stringify({ ok: true, message: `Daily cap (${dailyCap}) reached`, results: [] }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        return await respond(
+          { ok: true, message: `Daily cap (${dailyCap}) reached`, results: [] },
+          { logStatus: "skipped", success: true },
         );
       }
     }
@@ -494,9 +548,9 @@ Deno.serve(async (req) => {
       if (lastTs && Date.now() - lastTs < minGapMinutes * 60_000) {
         const waitMin = Math.ceil((minGapMinutes * 60_000 - (Date.now() - lastTs)) / 60_000);
         console.log(`[cron] Warm-up gap: last pin ${Math.round((Date.now() - lastTs) / 60000)}m ago, waiting ${waitMin}m more`);
-        return new Response(
-          JSON.stringify({ ok: true, message: `Warm-up spacing: wait ${waitMin}m`, results: [] }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        return await respond(
+          { ok: true, message: `Warm-up spacing: wait ${waitMin}m`, results: [] },
+          { logStatus: "skipped", success: true },
         );
       }
     }
@@ -512,9 +566,9 @@ Deno.serve(async (req) => {
     const filteredPins = (pins as any[]).filter((p) => Number(p.us_audience_score) >= usScoreThreshold);
     if (filteredPins.length === 0 && beforeFilter > 0) {
       console.log(`[cron] All ${beforeFilter} due pins below US score threshold ${usScoreThreshold}; skipping batch.`);
-      return new Response(
-        JSON.stringify({ ok: true, message: `No pins above US score ${usScoreThreshold}`, results: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      return await respond(
+        { ok: true, message: `No pins above US score ${usScoreThreshold}`, results: [] },
+        { logStatus: "skipped", success: true },
       );
     }
     pins.length = 0;
@@ -903,10 +957,20 @@ Deno.serve(async (req) => {
         .eq("id", conn.id);
     }
 
-    return new Response(
-      JSON.stringify({ ok: true, processed: results.length, results }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    {
+      const failedCount = results.filter((r) => r.status !== "posted").length;
+      const postedCount = results.filter((r) => r.status === "posted").length;
+      return await respond(
+        { ok: true, processed: results.length, results },
+        {
+          logStatus: "completed",
+          success: failedCount === 0,
+          processed: postedCount,
+          failed: failedCount,
+          details: { results },
+        },
+      );
+    }
   } catch (e) {
     console.error("pinterest-cron-worker error:", e);
     const errMsg = e instanceof Error ? e.message : "Unknown error";
@@ -919,10 +983,10 @@ Deno.serve(async (req) => {
       // Ignore logging failures so the function can still return a structured error.
     }
 
-    return new Response(JSON.stringify({ ok: false, error: errMsg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return await respond(
+      { ok: false, error: errMsg },
+      { httpStatus: 500, logStatus: "failed", success: false, error: errMsg },
+    );
   }
 });
 
