@@ -579,6 +579,42 @@ Deno.serve(async (req) => {
             });
           }
 
+          // Detect sandbox-board error (code 15) → blacklist board, drop pin to draft
+          const isSandboxBoard = pinRes.status === 400 && typeof parsedErrBody?.code === "number" && parsedErrBody.code === 15;
+          if (isSandboxBoard) {
+            const nowIso = new Date().toISOString();
+            await sb.from("pinterest_boards").upsert({
+              id: String(boardId),
+              name: activeBoardOverride?.name || pin.board_name || "(sandbox)",
+              is_blacklisted: true,
+              is_sandbox: true,
+              blacklist_reason: `code 15: ${parsedErrBody?.message || "sandbox board"}`,
+              last_validated_at: nowIso,
+              last_validation_status: 400,
+              last_validation_error: errBody.slice(0, 500),
+              updated_at: nowIso,
+            }, { onConflict: "id" });
+            blacklistedBoardIds.add(String(boardId));
+            // If this was the active override, clear it so admin must re-pick
+            if (activeBoardOverride && activeBoardOverride.id === String(boardId)) {
+              await sb.from("pinterest_runtime_settings").update({
+                active_board_id: null,
+                active_board_name: null,
+                last_pin_publish_error: `Active board ${boardId} is sandbox — blacklisted. Pick a new active board in admin.`,
+                last_pin_publish_at: nowIso,
+                updated_at: nowIso,
+              }).eq("id", 1);
+              activeBoardOverride = null;
+            }
+            // Reset pin to draft so it doesn't burn retries
+            await sb.from("pinterest_pin_queue").update({
+              status: "draft",
+              error_message: `Board ${boardId} blacklisted (sandbox). Pick new active board.`,
+            }).eq("id", pin.id);
+            results.push({ pinId: pin.id, status: "skipped", error: "sandbox_board_blacklisted" });
+            continue;
+          }
+
           // Auto-fallback on 403 from production
           if (pinRes.status === 403 && mode === "production") {
             await sb.from("pinterest_post_logs").insert({
