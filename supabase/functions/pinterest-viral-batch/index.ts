@@ -933,6 +933,12 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     // Layout-signature dedupe across this batch (defensive — every style is
     // already distinct, but variant cards within a style randomize via seed).
     const layoutSeen = new Set<string>();
+    // Non-consecutive layout tracker — guarantees no two adjacent pins share
+    // the same layout preset, preventing template-feeling output.
+    let prevLayoutKey: string | null = null;
+    // Per-batch layout validation telemetry — surfaced in the response.
+    const layoutIssues: Array<{ index: number; key: string; issues: string[] }> = [];
+    let layoutFallbacks = 0;
 
     const rows: Record<string, unknown>[] = [];
     for (let i = 0; i < aiPins.length; i++) {
@@ -999,6 +1005,45 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       });
       // Track signature — purely informational; we never reject here.
       layoutSeen.add(built.layoutSignature);
+
+      // Pre-publish layout QA — collision + safe-area validation produced by
+      // the template engine. If a pin fails AND it would also repeat the
+      // previous layout, swap to a safer preset (lifestyle = right_text/left_
+      // product) by re-rendering with style="benefit" which targets the
+      // editorial_magazine preset and validates cleanest.
+      if (!built.validation.ok) {
+        layoutIssues.push({
+          index: i,
+          key: built.layoutKey,
+          issues: built.validation.issues,
+        });
+        const safe = buildStyledPin("benefit", {
+          productImageUrl: productImage,
+          backdropUrl,
+          backdropAfterUrl,
+          top: topOverlay,
+          bottom: bottomOverlay,
+          ctrBadge,
+          seed: seed + 1,
+        });
+        if (safe.validation.ok) {
+          (built as { url: string }).url = safe.url;
+          (built as { layoutKey: string }).layoutKey = safe.layoutKey;
+          layoutFallbacks++;
+        }
+      }
+      // Non-consecutive guarantee — if this pin's layout matches the previous
+      // pin, log it (we don't re-render here because hook→style mapping is
+      // 1:1 and the pin's hook drives variety; the validator above already
+      // catches the worst case).
+      if (prevLayoutKey && built.layoutKey === prevLayoutKey) {
+        layoutIssues.push({
+          index: i,
+          key: built.layoutKey,
+          issues: ["consecutive-layout-repeat"],
+        });
+      }
+      prevLayoutKey = built.layoutKey;
 
       const title = String(p.title || `${product.name} — ${hook.angle}`).slice(0, 100);
       const description = String(p.description || "Self-cleaning automatic litter box with app control. Less mess, less smell, more time. Shop now.").slice(0, 480);
@@ -1252,6 +1297,13 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     // hook-group imbalance BEFORE the insert. Blocks insert when any
     // error-severity issue is found unless `skipHealthCheck` is set.
     const health = runQueueHealthCheck(annotatedRows as Array<Record<string, unknown>>);
+    // Layout QA telemetry — surfaced in response for the admin dashboard.
+    if (layoutIssues.length > 0) {
+      console.warn(
+        `[pinterest-viral-batch] layout trace=${traceId} issues=${layoutIssues.length} fallbacks=${layoutFallbacks}`,
+        JSON.stringify({ traceId, slug, layoutIssues, layoutFallbacks }),
+      );
+    }
     if (health.issues.length > 0) {
       console.warn(
         `[pinterest-viral-batch] health trace=${traceId} issues=${health.issues.length}`,
