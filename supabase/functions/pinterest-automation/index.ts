@@ -34,6 +34,7 @@ const DIRECT_TEST_TITLE = "Self-Cleaning Cat Litter Box";
 const DIRECT_TEST_DESCRIPTION = "A smart automatic litter box for busy cat owners.";
 const DIRECT_TEST_REQUIRED_SCOPE = "pins:write";
 const DIRECT_TEST_ADMIN_EMAILS = new Set(["jasperdiks@hotmail.com"]);
+const APPROVED_PINTEREST_CLIENT_ID = "1567611";
 
 function tokenPrefix(token: string | null | undefined) {
   return token ? token.slice(0, 12) : null;
@@ -41,8 +42,14 @@ function tokenPrefix(token: string | null | undefined) {
 
 function clientIdPrefix(clientId: string | null | undefined) {
   if (!clientId) return null;
-  if (clientId.length <= 8) return clientId;
-  return `${clientId.slice(0, 4)}…${clientId.slice(-3)}`;
+  const confirmationDigits = clientId.slice(0, APPROVED_PINTEREST_CLIENT_ID.length);
+  return clientId.length > APPROVED_PINTEREST_CLIENT_ID.length
+    ? `${confirmationDigits}…${clientId.slice(-3)}`
+    : confirmationDigits;
+}
+
+function activeClientIdMatchesApproved() {
+  return Deno.env.get("PINTEREST_CLIENT_ID") === APPROVED_PINTEREST_CLIENT_ID;
 }
 
 /**
@@ -475,6 +482,18 @@ Deno.serve(async (req) => {
     if (action === "direct_pinterest_api_test") {
       const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      if (!activeClientIdMatchesApproved()) {
+        const error = "Direct POST /v5/pins blocked: active PINTEREST_CLIENT_ID does not exactly match approved Standard Access app 1567611.";
+        await setProductionTrialDetected(sb, error);
+        return json(cors, {
+          ok: false,
+          error,
+          code: "PINTEREST_WRONG_CLIENT_ID",
+          approved_client_id: APPROVED_PINTEREST_CLIENT_ID,
+          active_client_id: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
+          publishing_disabled: true,
+        });
+      }
 
       const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
       if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected: no latest OAuth access token found" });
@@ -504,28 +523,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "set_sandbox_token") {
-      const envToken = Deno.env.get("PINTEREST_ACCESS_TOKEN");
-      if (!envToken) return json(cors, { ok: false, error: "PINTEREST_ACCESS_TOKEN secret not set" });
-
-      const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
-      const payload = {
-        account_name: "Sandbox Account",
-        account_id: "sandbox",
-        access_token: envToken,
-        refresh_token: null,
-        token_expires_at: expiresAt,
-        status: "connected",
-        last_error: null,
-        updated_at: new Date().toISOString(),
-      };
-
-      const existing = await getLatestPinterestConnection(sb, { requireConnected: false });
-      const { error: dbErr } = existing?.id
-        ? await sb.from("pinterest_connection").update(payload).eq("id", existing.id)
-        : await sb.from("pinterest_connection").insert(payload);
-
-      if (dbErr) return json(cors, { ok: false, error: dbErr.message });
-      return json(cors, { ok: true, message: "Sandbox token activated" });
+      return json(cors, {
+        ok: false,
+        error: "Manual Pinterest developer tokens are disabled. Use OAuth reconnect with approved App ID 1567611 only.",
+        code: "PINTEREST_OAUTH_ONLY",
+      });
     }
 
     if (action === "get_dashboard") {
@@ -1311,6 +1313,8 @@ Deno.serve(async (req) => {
         `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-oauth-callback`;
       return json(cors, {
         ok: true,
+        approved_client_id: APPROVED_PINTEREST_CLIENT_ID,
+        client_id_exact_match: activeClientIdMatchesApproved(),
         client_id_prefix: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
         client_id_present: Boolean(Deno.env.get("PINTEREST_CLIENT_ID")),
         client_secret_present: Boolean(Deno.env.get("PINTEREST_CLIENT_SECRET")),
@@ -1339,11 +1343,13 @@ Deno.serve(async (req) => {
           current_client_id_prefix: guard.current_client_id_prefix,
           client_id_matches_verified: guard.client_id_matches,
         },
-        publishing_allowed: guard.verified && !guard.trial_detected,
-        not_standard_message: guard.trial_detected
+        publishing_allowed: activeClientIdMatchesApproved() && guard.verified && !guard.trial_detected,
+        not_standard_message: !activeClientIdMatchesApproved() || guard.trial_detected
           ? "Wrong Pinterest app credentials or approval not applied to this client_id."
           : null,
-        next_step: guard.verified && !guard.trial_detected
+        next_step: !activeClientIdMatchesApproved()
+          ? "Active PINTEREST_CLIENT_ID does not exactly match approved Standard Access App ID 1567611. Update the Pinterest secrets, then reconnect OAuth."
+          : guard.verified && !guard.trial_detected
           ? "Production publishing is unlocked."
           : guard.trial_detected
             ? "Pinterest reported Trial access. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app, then run a fresh OAuth reconnect and Direct Pin Test."
@@ -2066,8 +2072,10 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
   // PINTEREST_CLIENT_ID. This prevents trial-app credentials from ever
   // being used to publish.
   const guard = await getProductionGuardState(sb);
-  if (!guard.verified || guard.trial_detected) {
-    const blockMsg = guard.trial_detected
+  if (!activeClientIdMatchesApproved() || !guard.verified || guard.trial_detected) {
+    const blockMsg = !activeClientIdMatchesApproved()
+      ? "Active PINTEREST_CLIENT_ID does not exactly match approved Standard Access App ID 1567611. Publishing remains blocked."
+      : guard.trial_detected
       ? "Wrong Pinterest app credentials or approval not applied to this client_id."
       : "Production publishing is locked until the Direct Pin Test succeeds against api.pinterest.com.";
     await sb.from("pinterest_pin_queue").update({

@@ -8,6 +8,15 @@ const ALLOWED_ORIGINS = [
 ];
 
 const DEFAULT_FRONTEND_BASE = Deno.env.get("APP_BASE_URL") || ALLOWED_ORIGINS[0];
+const APPROVED_PINTEREST_CLIENT_ID = "1567611";
+
+function maskPinterestClientId(clientId: string | null | undefined) {
+  if (!clientId) return null;
+  const confirmationDigits = clientId.slice(0, APPROVED_PINTEREST_CLIENT_ID.length);
+  return clientId.length > APPROVED_PINTEREST_CLIENT_ID.length
+    ? `${confirmationDigits}…${clientId.slice(-3)}`
+    : confirmationDigits;
+}
 
 function resolveFrontendBase(req: Request) {
   const origin = req.headers.get("origin") || "";
@@ -41,6 +50,18 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ error: "PINTEREST_CLIENT_ID not configured" }),
       { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+    );
+  }
+
+  if (clientId !== APPROVED_PINTEREST_CLIENT_ID) {
+    return new Response(
+      JSON.stringify({
+        error: "PINTEREST_CLIENT_ID does not match approved Standard Access app",
+        approved_client_id: APPROVED_PINTEREST_CLIENT_ID,
+        active_client_id: maskPinterestClientId(clientId),
+        reconnect_blocked: true,
+      }),
+      { status: 409, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 

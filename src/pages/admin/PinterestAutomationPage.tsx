@@ -832,25 +832,23 @@ function PinterestDashboard() {
             <p className="text-xs text-muted-foreground">Loading credential diagnostic…</p>
           ) : (
             <>
-              {appDiagnostic.production_guard?.trial_detected && (
+              {(!appDiagnostic.client_id_exact_match || appDiagnostic.production_guard?.trial_detected) && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs">
                   <p className="font-semibold text-destructive">
                     ⚠ Wrong Pinterest app credentials or approval not applied to this client_id.
                   </p>
                   <p className="mt-1 text-muted-foreground">
-                    Pinterest rejected POST /v5/pins with code 29 (Trial access). The active
-                    PINTEREST_CLIENT_ID is not the Standard-Access app. Update the secrets to the
-                    approved app's client_id + client_secret, then run a fresh OAuth reconnect and
-                    Direct Pin Test to unlock production publishing.
+                    Approved App ID is {appDiagnostic.approved_client_id}. Active client_id is {appDiagnostic.client_id_prefix || "not configured"}.
+                    Update the Pinterest client_id + client_secret to the approved app, then run a fresh OAuth reconnect and Direct Pin Test.
                   </p>
                 </div>
               )}
-              {!appDiagnostic.production_guard?.trial_detected && appDiagnostic.publishing_allowed && (
+              {appDiagnostic.client_id_exact_match && !appDiagnostic.production_guard?.trial_detected && appDiagnostic.publishing_allowed && (
                 <div className="rounded-md border border-emerald-500/40 bg-emerald-500/5 p-3 text-xs text-foreground">
                   ✅ Production Ready — Direct Pin Test succeeded. Cron + queue publishing enabled.
                 </div>
               )}
-              {!appDiagnostic.production_guard?.trial_detected && !appDiagnostic.publishing_allowed && (
+              {appDiagnostic.client_id_exact_match && !appDiagnostic.production_guard?.trial_detected && !appDiagnostic.publishing_allowed && (
                 <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground">
                   Production publishing locked. Run the Direct Pinterest API Test once to verify the
                   active client_id is Standard-Access approved.
@@ -858,6 +856,8 @@ function PinterestDashboard() {
               )}
               <div className="grid gap-3 md:grid-cols-2">
                 <DiagnosticValue label="active client_id" value={appDiagnostic.client_id_prefix} mono />
+                <DiagnosticValue label="approved app id" value={appDiagnostic.approved_client_id} mono />
+                <DiagnosticValue label="client_id exact match" value={appDiagnostic.client_id_exact_match ? "yes" : "NO"} />
                 <DiagnosticValue label="client_secret present" value={appDiagnostic.client_secret_present ? "yes" : "no"} />
                 <DiagnosticValue label="redirect_uri" value={appDiagnostic.redirect_uri} mono />
                 <DiagnosticValue label="api_base" value={appDiagnostic.api_base} mono />
