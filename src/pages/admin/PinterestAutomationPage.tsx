@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   Wrench,
   ExternalLink,
+  Copy,
 } from "lucide-react";
 
 type PinterestConnection = {
@@ -848,6 +849,30 @@ function PinterestDashboard() {
                   <span className="font-mono">{appDiagnostic.api_base || "—"}</span>
                   <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{appDiagnostic.mode || "—"}</span>
                 </div>
+              </div>
+              <div className="mt-2 flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    const text = [
+                      `client_id: ${appDiagnostic.client_id_prefix || "—"}`,
+                      `approved_app_id: ${appDiagnostic.approved_client_id || "—"}`,
+                      `client_id_exact_match: ${appDiagnostic.client_id_exact_match ? "yes" : "NO"}`,
+                      `api_base: ${appDiagnostic.api_base || "—"}`,
+                      `mode: ${appDiagnostic.mode || "—"}`,
+                      `captured_at: ${new Date().toISOString()}`,
+                    ].join("\n");
+                    try {
+                      await navigator.clipboard.writeText(text);
+                      toast.success("Diagnose gekopieerd naar klembord");
+                    } catch {
+                      toast.error("Kopiëren mislukt");
+                    }
+                  }}
+                >
+                  <Copy className="mr-2 h-3 w-3" /> Kopieer diagnose
+                </Button>
               </div>
             </div>
           )}
