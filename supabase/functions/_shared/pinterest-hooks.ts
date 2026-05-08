@@ -14,7 +14,8 @@ export type HookCategory =
   | "time_saving"
   | "transformation"
   | "social_proof"
-  | "curiosity";
+  | "curiosity"
+  | "infographic";
 
 export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
   pain: [
@@ -22,26 +23,52 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "Cat litter smell taking over?",
     "Daily scooping gets old fast",
     "Your cat deserves better",
+    "Hate scooping every day?",
+    "Cat smell taking over your home?",
+    "Tired of cat tree wobble?",
+    "Cluttered apartment cat setup?",
   ],
   time_saving: [
     "Clean litter in seconds",
     "Save 30+ minutes every week",
     "One tap cleanup",
+    "Save 20 minutes daily",
+    "Cleaner home in seconds",
+    "Set it and forget it",
   ],
   transformation: [
     "From messy to self-cleaning",
     "Upgrade your cat setup",
     "Small apartment cat hack",
+    "Before vs after cat setup",
+    "From cluttered to calm",
+    "Apartment cat owner upgrade",
+    "From messy to modern",
   ],
   social_proof: [
     "Thousands of cat owners switched",
     "Cat parents are obsessed with this",
     "Viral cat owner upgrade",
+    "Smart pet parents love this",
+    "Cat owners can't stop buying this",
+    "10,000+ cat parents agree",
   ],
   curiosity: [
     "I wish I bought this sooner",
     "Why are cat owners switching?",
     "This changed my cat routine",
+    "Wait until you see this",
+    "Why is nobody talking about this?",
+    "Cat owners are obsessed",
+    "The viral cat gadget of 2026",
+  ],
+  infographic: [
+    "3 reasons cat owners switch",
+    "Why self-cleaning litter goes viral",
+    "5 must-have cat parent essentials",
+    "Apartment cat setup checklist",
+    "Top 3 smart pet upgrades",
+    "What every modern cat parent needs",
   ],
 };
 
@@ -52,26 +79,105 @@ export const APPROVED_CTAS: string[] = [
   "Learn more",
   "End the scoop",
   "Save hours weekly",
+  "Discover more",
+  "See it in action",
+  "Shop now",
+  "Explore the setup",
+  "See the transformation",
 ];
 
-/** Boards allowed for the hero (cat litter) product. */
+/** Boards approved for organic publishing across all GetPawsy categories. */
 export const APPROVED_BOARDS = new Set<string>([
   "Cat Essentials",
   "Smart Cat Products",
   "Smart Pet Gadgets",
   "Cat Care Essentials",
+  "Modern Cat Home",
+  "Cat Trees for Large Cats",
+  "Automatic Litter Solutions",
+  "Pet Parent Hacks",
+  "Cat Owner Essentials",
+  "GetPawsy Products",
 ]);
 
-/** SEO target keywords — at least one must appear in title OR description. */
-export const TARGET_KEYWORDS: string[] = [
-  "self cleaning litter box",
-  "automatic litter box",
-  "cat owner hacks",
-  "cat apartment essentials",
-  "smart cat products",
-  "odor free litter box",
-  "cat cleaning solution",
-];
+/**
+ * SEO target keywords per product category. At least one keyword from the
+ * matched category (or `default` fallback) must appear in title OR description.
+ */
+export const TARGET_KEYWORDS_BY_CATEGORY: Record<string, string[]> = {
+  "cat-litter": [
+    "self cleaning litter box",
+    "automatic litter box",
+    "smart litter box",
+    "odor free litter box",
+    "cat hygiene",
+    "app controlled litter box",
+  ],
+  "cat-tree": [
+    "cat tree",
+    "large cat tree",
+    "modern cat tree",
+    "indoor cat setup",
+    "apartment cat furniture",
+    "cat climbing tower",
+  ],
+  "cat-furniture": [
+    "hidden litter box furniture",
+    "modern cat furniture",
+    "apartment cat essentials",
+    "cat home decor",
+  ],
+  "smart-pet-gadget": [
+    "smart pet gadget",
+    "automatic pet feeder",
+    "modern pet tech",
+    "smart home pet setup",
+  ],
+  "dog-bed": [
+    "orthopedic dog bed",
+    "memory foam dog bed",
+    "calming dog bed",
+    "large dog bed",
+  ],
+  default: [
+    "cat owner essentials",
+    "smart pet products",
+    "modern pet parent",
+    "pet parent hacks",
+  ],
+};
+
+/** Back-compat alias — older callers expect a flat list. */
+export const TARGET_KEYWORDS: string[] = Array.from(
+  new Set(Object.values(TARGET_KEYWORDS_BY_CATEGORY).flat()),
+);
+
+/**
+ * Map a free-form product category/slug to one of our keyword buckets.
+ * Unknown categories fall through to `default`.
+ */
+export function resolveCategoryKey(
+  raw: string | null | undefined,
+  slug?: string | null,
+): keyof typeof TARGET_KEYWORDS_BY_CATEGORY {
+  const c = `${raw || ""} ${slug || ""}`.toLowerCase();
+  if (/litter\s*box|self[-\s]?cleaning/.test(c)) return "cat-litter";
+  if (/cat\s*tree|cat\s*tower|cat\s*condo|climbing/.test(c)) return "cat-tree";
+  if (/(hidden|enclosure|cabinet).*(litter|cat)|cat\s*furniture/.test(c)) return "cat-furniture";
+  if (/feeder|fountain|smart\s*pet|gadget/.test(c)) return "smart-pet-gadget";
+  if (/dog\s*bed|orthopedic|memory\s*foam/.test(c)) return "dog-bed";
+  return "default";
+}
+
+/** Style → preferred Pinterest board fallbacks (used when board affinity table is empty). */
+export const STYLE_TO_BOARD_FALLBACK: Record<string, string[]> = {
+  pain:           ["Pet Parent Hacks", "Cat Care Essentials", "Smart Pet Gadgets"],
+  time_saving:   ["Smart Pet Gadgets", "Automatic Litter Solutions", "Pet Parent Hacks"],
+  transformation: ["Modern Cat Home", "Cat Owner Essentials", "Smart Pet Gadgets"],
+  social_proof:   ["Smart Pet Gadgets", "Cat Care Essentials", "GetPawsy Products"],
+  curiosity:      ["Smart Pet Gadgets", "Pet Parent Hacks", "GetPawsy Products"],
+  infographic:    ["Cat Care Essentials", "Pet Parent Hacks", "Modern Cat Home"],
+};
 
 function normalize(s: string): string {
   return (s || "").toLowerCase().replace(/[\s\p{P}]+/gu, " ").trim();
@@ -119,6 +225,16 @@ export function isApprovedCta(text: string | null | undefined): boolean {
 export function containsTargetKeyword(...fields: Array<string | null | undefined>): boolean {
   const corpus = fields.map((f) => (f || "").toLowerCase()).join(" ");
   return TARGET_KEYWORDS.some((k) => corpus.includes(k));
+}
+
+/** True if any keyword from the resolved category bucket is present. */
+export function containsCategoryKeyword(
+  categoryKey: keyof typeof TARGET_KEYWORDS_BY_CATEGORY,
+  ...fields: Array<string | null | undefined>
+): boolean {
+  const corpus = fields.map((f) => (f || "").toLowerCase()).join(" ");
+  const bucket = TARGET_KEYWORDS_BY_CATEGORY[categoryKey] || TARGET_KEYWORDS_BY_CATEGORY.default;
+  return bucket.some((k) => corpus.includes(k));
 }
 
 /** Stable hash of an image URL — used for duplicate-asset detection. */
