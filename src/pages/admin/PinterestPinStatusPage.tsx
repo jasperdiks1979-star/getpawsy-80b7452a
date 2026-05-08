@@ -1,0 +1,195 @@
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RefreshCw, ExternalLink, Loader2 } from 'lucide-react';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+
+type PinRow = {
+  id: string;
+  product_slug: string | null;
+  pin_title: string | null;
+  pin_variant: string | null;
+  status: string;
+  scheduled_at: string | null;
+  posted_at: string | null;
+  publishing_started_at: string | null;
+  publish_attempts: number | null;
+  last_publish_error: string | null;
+  error_message: string | null;
+  rejection_reason: string | null;
+  pinterest_pin_id: string | null;
+  external_url: string | null;
+  hook_group: string | null;
+  created_at: string;
+};
+
+const STATUS_FILTERS = ['all', 'queued', 'publishing', 'posted', 'failed', 'draft', 'rejected', 'skipped'] as const;
+type StatusFilter = typeof STATUS_FILTERS[number];
+
+const statusVariant: Record<string, string> = {
+  posted: 'bg-emerald-500/15 text-emerald-700 border-emerald-200',
+  queued: 'bg-blue-500/15 text-blue-700 border-blue-200',
+  publishing: 'bg-amber-500/15 text-amber-700 border-amber-200',
+  failed: 'bg-red-500/15 text-red-700 border-red-200',
+  draft: 'bg-slate-500/15 text-slate-700 border-slate-200',
+  rejected: 'bg-rose-500/15 text-rose-700 border-rose-200',
+  skipped: 'bg-zinc-500/15 text-zinc-700 border-zinc-200',
+};
+
+function fmt(ts: string | null) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+export default function PinterestPinStatusPage() {
+  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [search, setSearch] = useState('');
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['pinterest-pin-status', filter],
+    queryFn: async () => {
+      let q = supabase
+        .from('pinterest_pin_queue')
+        .select('id, product_slug, pin_title, pin_variant, status, scheduled_at, posted_at, publishing_started_at, publish_attempts, last_publish_error, error_message, rejection_reason, pinterest_pin_id, external_url, hook_group, created_at')
+        .order('scheduled_at', { ascending: false, nullsFirst: false })
+        .limit(500);
+      if (filter !== 'all') q = q.eq('status', filter);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as PinRow[];
+    },
+    refetchInterval: 30_000,
+  });
+
+  const counts = useMemo(() => {
+    const by: Record<string, number> = {};
+    (data ?? []).forEach((r) => { by[r.status] = (by[r.status] ?? 0) + 1; });
+    return by;
+  }, [data]);
+
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return data ?? [];
+    return (data ?? []).filter((r) =>
+      [r.pin_title, r.product_slug, r.pin_variant, r.last_publish_error, r.error_message, r.rejection_reason]
+        .filter(Boolean).some((v) => (v as string).toLowerCase().includes(s)));
+  }, [data, search]);
+
+  return (
+    <div className="container mx-auto p-6 space-y-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Pinterest Pin Status</h1>
+          <p className="text-sm text-muted-foreground">Live publish status, schedule, and error reasons for every pin in the queue.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Filter</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
+            <TabsList className="flex flex-wrap h-auto">
+              {STATUS_FILTERS.map((s) => (
+                <TabsTrigger key={s} value={s} className="capitalize">
+                  {s}
+                  {filter === s && data && <span className="ml-2 text-xs opacity-70">({filtered.length})</span>}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <Input
+            placeholder="Search title, slug, variant, error…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <div className="flex gap-2 flex-wrap text-xs text-muted-foreground">
+            {Object.entries(counts).map(([k, v]) => (
+              <Badge key={k} variant="outline" className={statusVariant[k] ?? ''}>{k}: {v}</Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading pins…
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground text-sm">No pins match the current filter.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[260px]">Pin</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Scheduled</TableHead>
+                    <TableHead>Posted</TableHead>
+                    <TableHead className="text-right">Attempts</TableHead>
+                    <TableHead className="min-w-[260px]">Last Error / Reason</TableHead>
+                    <TableHead>Link</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r) => {
+                    const err = r.last_publish_error ?? r.error_message ?? r.rejection_reason ?? '';
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell>
+                          <div className="font-medium line-clamp-1">{r.pin_title || '(untitled)'}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">
+                            {r.product_slug} · {r.hook_group || r.pin_variant}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`capitalize ${statusVariant[r.status] ?? ''}`}>
+                            {r.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">{fmt(r.scheduled_at)}</TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">{fmt(r.posted_at)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{r.publish_attempts ?? 0}</TableCell>
+                        <TableCell>
+                          <span className="text-xs text-muted-foreground line-clamp-2" title={err}>
+                            {err || '—'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {r.external_url ? (
+                            <a href={r.external_url} target="_blank" rel="noopener noreferrer"
+                               className="inline-flex items-center text-primary hover:underline text-xs">
+                              Open <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
