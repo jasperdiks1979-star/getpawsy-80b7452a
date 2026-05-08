@@ -235,11 +235,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 2. Resolve access token (with refresh if needed) ──
-    const { data: conn } = await sb
-      .from("pinterest_connection")
-      .select("*")
-      .limit(1)
-      .maybeSingle();
+    const conn = await getLatestPinterestConnection(sb);
 
     if (!conn || conn.status !== "connected" || !conn.access_token) {
       await sb.from("pinterest_post_logs").insert({
