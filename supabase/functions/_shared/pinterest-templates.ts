@@ -71,6 +71,52 @@ const H = 1920;
  * then pad to 1080×1920 with the canvas bg color. */
 const BLANK_BASE = "https://placehold.co/8x8/FAF6F0/FAF6F0.jpg";
 
+// ── Polish primitives ──────────────────────────────────────────────────────
+// Soft drop shadow plate placed behind a product to ground it in the scene.
+// Renders as a slightly larger, blurred, low-opacity dark ellipse offset
+// downward — gives the product realistic contact shadow + ambient lift
+// instead of looking pasted onto the backdrop.
+function shadowPlate(opts: {
+  width: number;
+  height: number;
+  gravity: string;
+  x?: number;
+  y?: number;
+  opacity?: number;
+}): string[] {
+  return [
+    "l_text:Arial_120_bold:%20",
+    "b_rgb:1A1410", "co_rgb:00000000",
+    "w_" + opts.width, "h_" + opts.height, "c_fit",
+    "g_" + opts.gravity,
+    ...(opts.x != null ? ["x_" + opts.x] : []),
+    ...(opts.y != null ? ["y_" + opts.y] : []),
+    "r_max", "e_blur:2000",
+    "o_" + (opts.opacity ?? 32),
+  ];
+}
+
+// Underline accent for editorial CTAs — a thin white bar drawn beneath
+// a CTA text. Premium, never a hard pill.
+function underlineAccent(opts: {
+  width: number;
+  gravity: string;
+  x?: number;
+  y?: number;
+  color?: string;
+  opacity?: number;
+}): string[] {
+  return [
+    "l_text:Arial_120_bold:%20",
+    "b_rgb:" + (opts.color ?? "FFFFFF"), "co_rgb:00000000",
+    "w_" + opts.width, "h_3", "c_fit",
+    "g_" + opts.gravity,
+    ...(opts.x != null ? ["x_" + opts.x] : []),
+    ...(opts.y != null ? ["y_" + opts.y] : []),
+    "o_" + (opts.opacity ?? 75),
+  ];
+}
+
 // Cloudinary text supports %0A for newlines. We use it to soft-wrap headlines
 // so they never overflow the safe area. Word-aware to avoid breaking mid-word.
 function wrapHeadline(s: string, charsPerLine: number, maxLines = 3): string {
@@ -177,19 +223,23 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   const backdrop = input.backdropUrl || input.productImageUrl;
   const base = [
     "w_" + W, "h_" + H, "c_fill", "g_auto",
-    "e_brightness:-15", "e_saturation:-5", "e_contrast:10",
+    "e_brightness:-8", "e_saturation:-2", "e_contrast:6",
     "q_auto", "f_jpg",
   ];
-  // Bottom scrim — guarantees text legibility regardless of photo content.
-  const bottomScrim = scrimBand({ gravity: "south", height: 720, y: 0, opacity: 70 });
-  // Top scrim — softer, supports the badge row.
-  const topScrim = scrimBand({ gravity: "north", height: 240, y: 0, opacity: 45 });
+  // Subtle bottom gradient — much softer than a black bar, just enough to
+  // anchor editorial typography in the lower-third whitespace.
+  const bottomScrim = scrimBand({ gravity: "south", height: 900, y: 0, opacity: 38 });
+  // Top is left fully open — no scrim — so the photo breathes.
 
-  // Product floating bottom-right — soft white card, generous shadow feel via border.
+  // Soft contact shadow grounds the product in the scene.
+  const productShadow = shadowPlate({
+    width: 500, height: 90, gravity: "south_east", x: 90, y: 130, opacity: 38,
+  });
+  // Product floating bottom-right — soft white card with a hairline border.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_460", "h_460", "c_fit", "g_south_east", "x_70", "y_180", "r_28",
-    "bo_3px_solid_rgb:FFFFFF",
+    "w_440", "h_440", "c_fit", "g_south_east", "x_80", "y_200", "r_32",
+    "bo_2px_solid_rgb:FFFFFF",
   ];
 
   // Headline — wrapped serif, max 3 lines. Auto-fit so it never overflows
@@ -198,39 +248,40 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   const fitted = autoFitHeadline(input.top, {
     widthPx: 640,
     maxLines: 3,
-    sizes: [76, 68, 60, 54, 48],
+    sizes: [88, 78, 70, 62, 54],
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
-    "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_360",
+    "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_420",
   ];
 
-  // Premium CTA pill — centered along the south edge so the rounded pill
-  // never gets clipped by the canvas left edge regardless of text length.
+  // Editorial underline CTA — small caps, white text + arrow, thin underline.
+  // No pill, no orange block — feels like organic Pinterest typography.
   const cta = [
-    "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_560", "c_fit",
-    "g_south", "y_220",
+    "l_text:Arial_36:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "g_south_west", "x_92", "y_320",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 280, gravity: "south_west", x: 92, y: 300, opacity: 70,
+  });
 
   const ctrBadge = input.ctrBadge
     ? [
         "l_text:Arial_34_bold:" + escapeText(input.ctrBadge),
-        "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_460", "c_fit",
-        "g_north_west", "x_60", "y_90",
+        "co_rgb:FFFFFF", "g_north_west", "x_72", "y_120", "o_85",
       ]
     : null;
 
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_north_east", "x_60", "y_110", "o_85",
+    "co_rgb:FFFFFF", "g_north_east", "x_72", "y_120", "o_75",
   ];
 
-  const layers: string[][] = [base, topScrim, bottomScrim, product, headline, cta, brand];
+  const layers: string[][] = [base, bottomScrim, productShadow, product, headline, ctaUnderline, cta, brand];
   if (ctrBadge) layers.push(ctrBadge);
   return {
     url: build(layers, backdrop),
-    layoutSignature: `problem|premium|badge${ctrBadge ? 1 : 0}`,
+    layoutSignature: `problem|polish|badge${ctrBadge ? 1 : 0}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
