@@ -20,6 +20,19 @@ export type NicheKey =
   | "interactive_toy"
   | "grooming"
   | "feeder"
+  | "cat_carrier"
+  | "dog_carrier"
+  | "dog_collar"
+  | "dog_training"
+  | "outdoor_house"
+  | "bowl_station"
+  | "dog_clothing"
+  | "treats"
+  | "cat_scratcher"
+  | "cat_bed"
+  | "potty_training"
+  | "pet_camera"
+  | "dental_care"
   | "generic_pet";
 
 export interface StyleDNA {
@@ -286,6 +299,243 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     cta_bank: ["Shop the feeder", "See schedule", "Feed smarter"],
   },
 
+  cat_carrier: {
+    niche_key: "cat_carrier",
+    label: "Cat Carrier / Travel",
+    environment:
+      "soft-lit US apartment entryway or sunny car interior, neutral linens, tote-style carrier on a styled bench",
+    light: "warm soft daylight, gentle shadows",
+    mood: "calm, safe, travel-ready, bonded",
+    typography: "serif refined",
+    hook_bank: [
+      "stress-free trips, every time",
+      "the carrier she actually walks into",
+      "vet visits, finally easy",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["calm cat sitting inside a modern soft-sided carrier, curious gaze"],
+    compositions: ["entryway editorial with carrier on bench", "passenger-seat shot, soft window light"],
+    cta_bank: ["Shop the carrier", "See sizes", "Travel ready"],
+  },
+
+  dog_carrier: {
+    niche_key: "dog_carrier",
+    label: "Dog Stroller / Bike Trailer / Carrier",
+    environment:
+      "tree-lined US suburban sidewalk or park path, soft greenery, warm pavement, golden afternoon light",
+    light: "warm late-afternoon sun, dappled tree light",
+    mood: "active, gentle, joyful outing",
+    typography: "serif bold",
+    hook_bank: [
+      "every walk, his ride",
+      "small dog, big adventures",
+      "the smoothest ride in the park",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["happy small dog sitting up in a stroller or bike trailer on a park path"],
+    compositions: ["wide park-path shot, owner pushing stroller", "low-angle action with motion blur on the path"],
+    cta_bank: ["Shop the stroller", "See it roll", "Take them along"],
+  },
+
+  dog_collar: {
+    niche_key: "dog_collar",
+    label: "Dog Collar / Leash / GPS",
+    environment:
+      "neighborhood walk at golden hour, leafy sidewalk, warm brick, gentle bokeh; or open trail with soft grass",
+    light: "golden hour, low warm sun behind",
+    mood: "confident, in-control, daily-walk love",
+    typography: "condensed sans",
+    hook_bank: [
+      "the walk, upgraded",
+      "always knows where he is",
+      "comfort that lasts every mile",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["mid-size dog walking on leash, collar clearly visible at neckline"],
+    compositions: ["close detail of collar with dog blurred behind", "wide walking shot at golden hour"],
+    cta_bank: ["Shop the collar", "See colors", "Walk smarter"],
+  },
+
+  dog_training: {
+    niche_key: "dog_training",
+    label: "Dog Training / Containment",
+    environment: "open backyard with green lawn, picket fence, soft morning light, US suburban setting",
+    light: "fresh morning light, dewy grass",
+    mood: "calm authority, well-behaved companion",
+    typography: "condensed sans",
+    hook_bank: [
+      "calmer walks, better days",
+      "the routine that finally clicks",
+      "freedom for him, peace for you",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["focused dog responding to a calm owner in a backyard scene"],
+    compositions: ["wide backyard editorial", "intimate eye-contact moment between owner and dog"],
+    cta_bank: ["Shop training", "See how", "Train calmly"],
+  },
+
+  outdoor_house: {
+    niche_key: "outdoor_house",
+    label: "Outdoor Pet House / Kennel / Enclosure",
+    environment: "shaded backyard, natural wood deck, soft greenery, cedar fence, warm late-day light",
+    light: "warm dappled afternoon light through trees",
+    mood: "secure, sheltered, weather-ready",
+    typography: "serif bold",
+    hook_bank: [
+      "his own place outside",
+      "weatherproof, year-round",
+      "the backyard upgrade he deserves",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["dog or cat resting inside a wooden outdoor house in a styled backyard"],
+    compositions: ["wide backyard editorial with house as anchor", "intimate doorway shot of pet looking out"],
+    cta_bank: ["Shop the house", "See sizes", "Build outside"],
+  },
+
+  bowl_station: {
+    niche_key: "bowl_station",
+    label: "Bowl / Manual Feeding Station",
+    environment: "clean kitchen corner, oak floors, neutral ceramics, plant, styled feeding nook",
+    light: "soft morning daylight",
+    mood: "tidy, daily-routine, quietly premium",
+    typography: "serif refined",
+    hook_bank: [
+      "mealtime, finally tidy",
+      "the feeding station that fits the kitchen",
+      "every meal, in its place",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["pet eating from an elevated bowl in a styled kitchen corner"],
+    compositions: ["styled kitchen-corner editorial", "top-down on bowls with neutral floor"],
+    cta_bank: ["Shop the bowls", "See sizes", "Feed in style"],
+  },
+
+  dog_clothing: {
+    niche_key: "dog_clothing",
+    label: "Dog Clothing / Jacket / Raincoat",
+    environment: "rainy city sidewalk or autumn park path, wet leaves, warm street lamps, moody weather",
+    light: "soft overcast or rain-light, glistening surfaces",
+    mood: "stylish, weather-ready, cozy",
+    typography: "serif elegant",
+    hook_bank: [
+      "rain or shine, ready",
+      "a coat he actually wears",
+      "warm, dry, walking",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["small or mid dog wearing a fitted jacket or raincoat on a wet sidewalk"],
+    compositions: ["wide rainy-street editorial", "low-angle of dog mid-walk in coat"],
+    cta_bank: ["Shop the coat", "See sizes", "Stay dry"],
+  },
+
+  treats: {
+    niche_key: "treats",
+    label: "Treats / Food",
+    environment: "neutral kitchen styled flatlay or cozy living-room corner, light wood, linen napkin",
+    light: "bright soft daylight",
+    mood: "wholesome, premium, treat-time joy",
+    typography: "serif elegant",
+    hook_bank: [
+      "the treat they earn first",
+      "small bites, big tail wags",
+      "treat time, upgraded",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["pet eagerly waiting for a treat from owner's hand (hands only)"],
+    compositions: ["styled flatlay with treats and bowl", "intimate hand-and-pet treat moment"],
+    cta_bank: ["Shop treats", "See flavors", "Treat them"],
+  },
+
+  cat_scratcher: {
+    niche_key: "cat_scratcher",
+    label: "Cat Scratcher / Post",
+    environment: "Scandinavian living room corner, oak floor, linen throw, monstera plant, warm window light",
+    light: "bright diffused window daylight",
+    mood: "calm decor, nail-care made beautiful",
+    typography: "serif refined",
+    hook_bank: [
+      "the scratcher she chooses over the couch",
+      "design-forward nail care",
+      "save the sofa, finally",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["cat mid-stretch on a sisal scratching post in a styled living-room corner"],
+    compositions: ["wide interiors-magazine framing", "side-profile of cat scratching with motion in claws"],
+    cta_bank: ["Shop the scratcher", "See styles", "Save the couch"],
+  },
+
+  cat_bed: {
+    niche_key: "cat_bed",
+    label: "Cat Bed",
+    environment: "sunlit window nook with linen curtain, oak floor, knit throw, warm cream palette",
+    light: "soft sunbeam falling on the bed",
+    mood: "cozy, sun-warmed, deeply restful",
+    typography: "serif soft",
+    hook_bank: [
+      "her favorite sunbeam, upgraded",
+      "the nap spot she'll claim instantly",
+      "cozy, every afternoon",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["cat curled in a soft round bed in a sunlit window nook"],
+    compositions: ["wide window-nook editorial", "tight intimate framing of cat in bed"],
+    cta_bank: ["Shop the bed", "See sizes", "Nap upgrade"],
+  },
+
+  potty_training: {
+    niche_key: "potty_training",
+    label: "Potty / Toilet Training Pad",
+    environment: "clean modern entryway or balcony with grass pad, neutral tile, plant nearby",
+    light: "bright clean daylight",
+    mood: "practical, fresh, apartment-friendly",
+    typography: "condensed sans",
+    hook_bank: [
+      "indoor potty, finally solved",
+      "balcony-ready, mess-free",
+      "the apartment dog upgrade",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["small dog standing on a tidy artificial-grass pad in a clean entryway or balcony"],
+    compositions: ["wide entryway editorial", "top-down on the pad with the dog walking onto it"],
+    cta_bank: ["Shop the pad", "See it", "Train indoors"],
+  },
+
+  pet_camera: {
+    niche_key: "pet_camera",
+    label: "Pet Camera / Smart Monitor",
+    environment: "modern living room shelf or kitchen counter, smart-home aesthetic, soft daylight",
+    light: "clean diffused daylight",
+    mood: "connected, reassuring, smart-home calm",
+    typography: "condensed sans",
+    hook_bank: [
+      "see them anywhere",
+      "home, always with you",
+      "peace of mind, on tap",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["pet napping in soft focus while a small modern camera sits sharply in foreground"],
+    compositions: ["styled shelf with camera in foreground, pet behind", "phone-in-hand mockup viewing the camera feed"],
+    cta_bank: ["Shop the cam", "See features", "Watch live"],
+  },
+
+  dental_care: {
+    niche_key: "dental_care",
+    label: "Dental / Toothbrush / Oral Care",
+    environment: "clean bathroom counter or styled grooming nook, neutral tile, soft towel",
+    light: "bright clean window light",
+    mood: "fresh, healthy, daily-routine",
+    typography: "serif elegant",
+    hook_bank: [
+      "fresher breath, fewer vet bills",
+      "the daily routine they tolerate",
+      "clean teeth, happy mouth",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: ["calm dog or cat being gently brushed by owner's hands (hands only)"],
+    compositions: ["close hands-and-pet detail", "styled bathroom-counter scene with the brush"],
+    cta_bank: ["Shop dental", "See it work", "Brush easy"],
+  },
+
   generic_pet: {
     niche_key: "generic_pet",
     label: "Generic Pet Lifestyle",
@@ -319,6 +569,77 @@ export function detectNiche(input: {
 
   const has = (...words: string[]) => words.some((w) => hay.includes(w));
 
+  // ── Specific / high-priority signals first ────────────────────────────────
+  if (has("toothbrush", "dental", "tooth brush", "oral care", "teeth cleaning"))
+    return "dental_care";
+
+  if (has("pet camera", "pet cam", "dog camera", "cat camera", "pet monitor", "pet feeder camera"))
+    return "pet_camera";
+
+  if (has("potty pad", "pee pad", "puppy pad", "potty training", "grass pad", "toilet trainer", "litter mat"))
+    return "potty_training";
+
+  if (has("raincoat", "rain coat", "dog jacket", "dog coat", "dog sweater", "dog hoodie", "dog clothing", "dog clothes", "dog shirt", "winter coat") )
+    return "dog_clothing";
+
+  if (has("treat", "jerky", "biscuit", "kibble", "supplement", "probiotic", "vitamin", "digestive"))
+    return "treats";
+  if (has("chew") && !has("toy", "chew toy", "chew-resistant", "chew resistant")) return "treats";
+
+  if (has("scratcher", "scratching post", "sisal post", "cardboard scratcher")) return "cat_scratcher";
+
+  if (has("stroller", "bike trailer", "pet wagon", "pet carrier") && has("dog", "pet")) return "dog_carrier";
+  if (has("carrier", "tote") && has("cat", "kitten")) return "cat_carrier";
+  if (has("backpack carrier", "sling carrier")) return "dog_carrier";
+
+  if (has("kennel", "outdoor house", "dog house", "cat house", "pet enclosure", "outdoor enclosure", "outdoor cat enclosure", "catio", "playpen", "crate", "cage", "gate", "barrier") )
+    return "outdoor_house";
+
+  if (has("gps", "tracker", "wireless fence", "shock collar", "training collar", "bark collar", "remote trainer") )
+    return "dog_training";
+  if (has("agility", "training rope", "training tray", "recall")) return "dog_training";
+
+  if (has("collar", "leash", "harness leash", "bandana") && has("dog", "puppy", "pet"))
+    return "dog_collar";
+  if (has("scarf") && has("dog", "pet")) return "dog_clothing";
+
+  if (has("elevated bowl", "elevated dog bowl", "elevated cat bowl", "elevated pet", "feeding station", "double bowl", "double dish", "stainless bowl", "stainless steel bowl", "ceramic bowl", "raised bowl", "raised stand", "slow feeder bowl", "tilted pet food", "pet food bowl", "dog bowl", "cat bowl", "travel bowl", "water bottle") )
+    return "bowl_station";
+
+  if (has("cat bed", "kitten bed", "cat cushion", "cat nap")) return "cat_bed";
+
+  if (has("waste bag", "poop bag", "poop scoop", "dog dropper")) return "potty_training";
+
+  if (has("wipes", "hair remover", "hair removal", "lint roller")) return "grooming";
+
+  if (has("water dispenser", "water fountain") && has("dog", "pet")) return "cat_fountain"; // shared fountain niche
+  if (has("automatic feeder", "auto feeder", "smart feeder", "food dispenser", "pet feeder")) return "feeder";
+
+  if (has("pet sofa", "dog sofa", "dog couch", "pet bed", "pet napping")) return "dog_bed";
+
+  if (has("chew toy", "squeaky", "squeak", "rubber toy", "tug toy", "fetch", "tumbler", "teaser", "fish toy", "mouse toy", "teething stick"))
+    return "interactive_toy";
+  if (has("ball launcher", "laser pointer", "electric plush", "mouse turntable", "mouse", "puzzle bowl", "enrichment mat"))
+    return "interactive_toy";
+
+  if (has("paw balm", "waterless", "comb", "trimmer", "goggles", "sunglasses", "eyewear", "body care"))
+    return "grooming";
+
+  if (has("poop bag", "poop bin", "poop trash", "waste bin", "litter scoop")) return "potty_training";
+  if (has("poo bag", "poop", "potty mat", "training pad")) return "potty_training";
+
+  if (has("repellent", "deterrent spray", "scratch-proof spray")) return "grooming";
+
+  if (has("cat shelf", "cat shelves", "wall mounted cat", "wall-mounted cat", "jumping board")) return "cat_tree";
+
+  if (has("dog clothing", "pet clothing", "polyester clothing", "fleece dog", "transformation clothing"))
+    return "dog_clothing";
+
+  if (has("pet stairs", "dog stairs", "dog ramp", "pet ramp", "dog steps")) return "dog_bed";
+
+  if (has("silicone pet bowl", "silicone bowl", "ceramic pet bowl", "tilted pet")) return "bowl_station";
+
+  // ── Existing rules (unchanged behavior) ───────────────────────────────────
   if (has("litter box", "litter-box", "litter") && has("cat", "kitten") && has("auto", "self", "smart"))
     return "cat_litter";
   if (has("litter") && has("cat")) return "cat_litter";
