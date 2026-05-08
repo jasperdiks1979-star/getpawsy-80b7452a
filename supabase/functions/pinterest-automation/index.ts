@@ -39,6 +39,72 @@ function tokenPrefix(token: string | null | undefined) {
   return token ? token.slice(0, 12) : null;
 }
 
+function clientIdPrefix(clientId: string | null | undefined) {
+  if (!clientId) return null;
+  if (clientId.length <= 8) return clientId;
+  return `${clientId.slice(0, 4)}…${clientId.slice(-3)}`;
+}
+
+/**
+ * Pinterest returns this exact error envelope when a Trial-Access app tries to
+ * publish to api.pinterest.com:
+ *   { code: 29, message: "Apps with Trial access may not create Pins in production..." }
+ * Detect either the numeric code or the literal "Trial access" phrase to be safe.
+ */
+function isPinterestTrialAccessError(statusCode: number | null, body: any, rawText?: string | null): boolean {
+  if (statusCode === 403) {
+    const code = typeof body?.code === "number" ? body.code : null;
+    const message = String(body?.message || rawText || "");
+    if (code === 29) return true;
+    if (/trial access/i.test(message)) return true;
+  }
+  return false;
+}
+
+async function setProductionTrialDetected(sb: any, errorMessage: string) {
+  await sb.from("pinterest_runtime_settings").update({
+    production_trial_detected: true,
+    production_publish_verified: false,
+    production_publish_verified_at: null,
+    last_pin_publish_error: errorMessage,
+    last_pin_publish_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq("id", 1);
+}
+
+async function setProductionPublishVerified(sb: any) {
+  await sb.from("pinterest_runtime_settings").update({
+    production_publish_verified: true,
+    production_publish_verified_at: new Date().toISOString(),
+    production_trial_detected: false,
+    last_pin_publish_error: null,
+    last_pin_publish_at: new Date().toISOString(),
+    verified_client_id_prefix: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
+    updated_at: new Date().toISOString(),
+  }).eq("id", 1);
+}
+
+async function getProductionGuardState(sb: any) {
+  const { data } = await sb
+    .from("pinterest_runtime_settings")
+    .select("production_publish_verified, production_publish_verified_at, production_trial_detected, last_pin_publish_error, verified_client_id_prefix")
+    .eq("id", 1)
+    .maybeSingle();
+  const currentClientPrefix = clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID"));
+  const verifiedPrefix = data?.verified_client_id_prefix || null;
+  // If the active client_id changed since verification, force re-verify.
+  const clientIdMatches = !verifiedPrefix || verifiedPrefix === currentClientPrefix;
+  return {
+    verified: Boolean(data?.production_publish_verified) && clientIdMatches,
+    verified_at: data?.production_publish_verified_at || null,
+    trial_detected: Boolean(data?.production_trial_detected),
+    last_pin_publish_error: data?.last_pin_publish_error || null,
+    verified_client_id_prefix: verifiedPrefix,
+    current_client_id_prefix: currentClientPrefix,
+    client_id_matches: clientIdMatches,
+  };
+}
+
 function requiredScopesPresent(scopeText: string | null | undefined) {
   const scopes = String(scopeText || "").split(/[\s,]+/).filter(Boolean);
   return ["boards:read", "boards:write", "pins:read", "pins:write"].every((scope) => scopes.includes(scope));
@@ -1230,6 +1296,75 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "pinterest_app_diagnostic") {
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
+      const guard = await getProductionGuardState(sb);
+      const { data: settings } = await sb
+        .from("pinterest_runtime_settings")
+        .select("mode, active_pinterest_connection_id, production_publish_verified, production_publish_verified_at, production_trial_detected, last_pin_publish_error, last_pin_publish_at, verified_client_id_prefix, updated_at")
+        .eq("id", 1)
+        .maybeSingle();
+      const apiBase = settings?.mode === "sandbox"
+        ? "https://api-sandbox.pinterest.com/v5"
+        : PINTEREST_PRODUCTION_API_BASE;
+      const redirectUri = Deno.env.get("PINTEREST_REDIRECT_URI") ||
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-oauth-callback`;
+      return json(cors, {
+        ok: true,
+        client_id_prefix: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
+        client_id_present: Boolean(Deno.env.get("PINTEREST_CLIENT_ID")),
+        client_secret_present: Boolean(Deno.env.get("PINTEREST_CLIENT_SECRET")),
+        redirect_uri: redirectUri,
+        api_base: apiBase,
+        mode: settings?.mode || "sandbox",
+        token: conn ? {
+          prefix: conn.token_prefix || tokenPrefix(conn.access_token),
+          token_created_at: conn.token_created_at || null,
+          token_expires_at: conn.token_expires_at || null,
+          scopes: conn.scopes || null,
+          status: conn.status,
+          account_name: conn.account_name || null,
+          board_count: conn.board_count ?? null,
+          last_account_status: conn.last_account_status ?? null,
+          last_boards_status: conn.last_boards_status ?? null,
+          last_error: conn.last_error || null,
+          connection_id: conn.id,
+        } : null,
+        production_guard: {
+          verified: guard.verified,
+          verified_at: guard.verified_at,
+          trial_detected: guard.trial_detected,
+          last_pin_publish_error: guard.last_pin_publish_error,
+          verified_client_id_prefix: guard.verified_client_id_prefix,
+          current_client_id_prefix: guard.current_client_id_prefix,
+          client_id_matches_verified: guard.client_id_matches,
+        },
+        publishing_allowed: guard.verified && !guard.trial_detected,
+        not_standard_message: guard.trial_detected
+          ? "Wrong Pinterest app credentials or approval not applied to this client_id."
+          : null,
+        next_step: guard.verified && !guard.trial_detected
+          ? "Production publishing is unlocked."
+          : guard.trial_detected
+            ? "Pinterest reported Trial access. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app, then run a fresh OAuth reconnect and Direct Pin Test."
+            : "Run Direct Pin Test once after reconnect to unlock production publishing.",
+      });
+    }
+
+    if (action === "reset_production_guard") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      await sb.from("pinterest_runtime_settings").update({
+        production_publish_verified: false,
+        production_publish_verified_at: null,
+        production_trial_detected: false,
+        last_pin_publish_error: null,
+        verified_client_id_prefix: null,
+        updated_at: new Date().toISOString(),
+      }).eq("id", 1);
+      return json(cors, { ok: true, message: "Production guard reset; run Direct Pin Test to unlock publishing." });
+    }
+
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
     console.error("pinterest-automation error:", e);
@@ -1731,6 +1866,18 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
   const externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
   const success = response.ok && Boolean(pinId && externalUrl);
   const errorMessage = success ? null : `Pinterest API ${response.status}: ${responseText}`;
+  const trialDetected = isPinterestTrialAccessError(response.status, responseBody, responseText);
+  if (success) {
+    await setProductionPublishVerified(sb);
+  } else if (trialDetected) {
+    await setProductionTrialDetected(sb, errorMessage || "Pinterest trial access detected");
+  } else {
+    await sb.from("pinterest_runtime_settings").update({
+      last_pin_publish_error: errorMessage,
+      last_pin_publish_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+  }
   const hint = success ? null : translatePinterestFailure({
     stage: "publish",
     statusCode: response.status,
@@ -1786,6 +1933,12 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     ok: success,
     error: errorMessage,
     hint,
+    trial_access_detected: trialDetected,
+    production_publish_verified: success,
+    publishing_disabled: trialDetected || !success,
+    not_standard_message: trialDetected
+      ? "Wrong Pinterest app credentials or approval not applied to this client_id."
+      : null,
     request_endpoint: endpoint,
     board_id: requestPayload.board_id,
     image_url: DIRECT_TEST_IMAGE_URL,
@@ -1908,6 +2061,31 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
   const authCheck = await validatePinterestAuth(sb, conn, accessToken);
   if (!authCheck.auth_valid) return json(cors, { ...authCheck.failure_response, selected_pin: compactPinForDiagnostics(pin) });
 
+  // HARD GUARD: production publishing is blocked until a single direct
+  // POST /v5/pins succeeds against api.pinterest.com with the active
+  // PINTEREST_CLIENT_ID. This prevents trial-app credentials from ever
+  // being used to publish.
+  const guard = await getProductionGuardState(sb);
+  if (!guard.verified || guard.trial_detected) {
+    const blockMsg = guard.trial_detected
+      ? "Wrong Pinterest app credentials or approval not applied to this client_id."
+      : "Production publishing is locked until the Direct Pin Test succeeds against api.pinterest.com.";
+    await sb.from("pinterest_pin_queue").update({
+      status: "queued",
+      publishing_started_at: null,
+      error_message: blockMsg,
+      last_publish_error: blockMsg,
+    }).eq("id", pin.id);
+    return json(cors, {
+      ok: false,
+      error: blockMsg,
+      code: "PINTEREST_PRODUCTION_GUARD",
+      publishing_disabled: true,
+      production_guard: guard,
+      selected_pin: compactPinForDiagnostics(pin),
+    });
+  }
+
   let boardId: string | null = null;
   try {
     boardId = await resolvePinterestBoardId(accessToken, pin.board_name || "", PINTEREST_PRODUCTION_API_BASE);
@@ -1964,6 +2142,9 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     console.log("[pinterest-publish] Pinterest API response status/body", { status: response.status, body: responseJson });
 
     if (!response.ok) {
+      if (isPinterestTrialAccessError(response.status, responseJson, responseText)) {
+        await setProductionTrialDetected(sb, `Pinterest trial access detected during publish: ${responseText.slice(0, 400)}`);
+      }
       throw new Error(`Pinterest API ${response.status}: ${responseText}`);
     }
 

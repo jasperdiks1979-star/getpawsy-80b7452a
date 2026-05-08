@@ -316,6 +316,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 🔒 HARD GUARD: do not publish anything from cron until a Direct Pin Test
+    // has succeeded against api.pinterest.com with the active client_id.
+    const { data: guardSettings } = await sb
+      .from("pinterest_runtime_settings")
+      .select("production_publish_verified, production_trial_detected, verified_client_id_prefix")
+      .eq("id", 1)
+      .maybeSingle();
+    const currentClientId = Deno.env.get("PINTEREST_CLIENT_ID") || "";
+    const currentPrefix = currentClientId.length > 8
+      ? `${currentClientId.slice(0, 4)}…${currentClientId.slice(-3)}`
+      : currentClientId;
+    const verifiedPrefix = guardSettings?.verified_client_id_prefix || null;
+    const clientIdMatches = !verifiedPrefix || verifiedPrefix === currentPrefix;
+    const guardOk = Boolean(guardSettings?.production_publish_verified) && !guardSettings?.production_trial_detected && clientIdMatches;
+    if (!guardOk) {
+      const reason = guardSettings?.production_trial_detected
+        ? "Pinterest trial-access detected — cron publishing blocked. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app and reconnect."
+        : "Production publishing locked — run Direct Pin Test once before cron can publish.";
+      await sb.from("pinterest_post_logs").insert({
+        action: "cron_tick",
+        status: "skipped",
+        error_message: reason,
+        response_data: { code: "PINTEREST_PRODUCTION_GUARD", verified_client_id_prefix: verifiedPrefix, current_client_id_prefix: currentPrefix },
+      });
+      return new Response(
+        JSON.stringify({ ok: false, error: reason, code: "PINTEREST_PRODUCTION_GUARD", publishing_disabled: true, results: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // ── 3. Check hourly rate limit ──
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     const { count: recentPostCount } = await sb
@@ -473,6 +503,29 @@ Deno.serve(async (req) => {
         if (!pinRes.ok) {
           const errBody = await pinRes.text();
           console.log("[pinterest] response", { status: pinRes.status, mode, api_base: apiBase });
+          // Detect Pinterest Trial-Access publish rejection (code 29 / 403)
+          let parsedErrBody: any = null;
+          try { parsedErrBody = JSON.parse(errBody); } catch { parsedErrBody = null; }
+          const isTrial = pinRes.status === 403 && (
+            (typeof parsedErrBody?.code === "number" && parsedErrBody.code === 29) ||
+            /trial access/i.test(String(parsedErrBody?.message || errBody || ""))
+          );
+          if (isTrial) {
+            await sb.from("pinterest_runtime_settings").update({
+              production_trial_detected: true,
+              production_publish_verified: false,
+              production_publish_verified_at: null,
+              last_pin_publish_error: `Pinterest trial access detected (cron): ${errBody.slice(0, 400)}`,
+              last_pin_publish_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }).eq("id", 1);
+            await sb.from("pinterest_post_logs").insert({
+              action: "cron_tick",
+              status: "failed",
+              error_message: "Pinterest trial-access detected during cron publish — production publishing locked.",
+              response_data: { code: "PINTEREST_TRIAL_ACCESS", body: parsedErrBody },
+            });
+          }
 
           // Auto-fallback on 403 from production
           if (pinRes.status === 403 && mode === "production") {
