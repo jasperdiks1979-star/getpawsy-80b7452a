@@ -420,6 +420,10 @@ function PinterestDashboard() {
 
   useEffect(() => { void fetchAppDiagnostic(); }, [fetchAppDiagnostic]);
 
+  useEffect(() => {
+    try { localStorage.setItem("pinterest_expected_redirect_uri", expectedRedirectUri); } catch {}
+  }, [expectedRedirectUri]);
+
   const fetchDirectTestHistory = useCallback(async () => {
     const { data, error } = await supabase
       .from("pinterest_post_logs")
