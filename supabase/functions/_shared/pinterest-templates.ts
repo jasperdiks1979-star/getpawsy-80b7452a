@@ -609,6 +609,9 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
     "g_north_west", "x_80", "y_120",
   ];
 
+  const productShadow = shadowPlate({
+    width: 460, height: 100, gravity: "south_west", x: 80, y: 180, opacity: 30,
+  });
   // Product hero on the left, contained within bottom 65% so cards fit right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
@@ -620,32 +623,33 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
     pick(["Tap to clean", "Pair the app", "Set a schedule"], input.seed + 1),
     pick(["Save 30 min/week", "Done in seconds", "Quiet & odor-free"], input.seed + 2),
   ];
-  // Cards stacked right, tight vertical rhythm.
+  // Editorial cards — hairline outlined, restrained palette.
   const card = (n: number, label: string, y: number, fill: string, ink: string) => [
-    "l_text:Arial_38_bold:" + escapeText(`${n}.  ${label}`),
-    "co_rgb:" + ink, "b_rgb:" + fill, "bo_2px_solid_rgb:1A1410",
-    "r_28", "w_440", "c_fit",
+    "l_text:Georgia_32:" + escapeText(`${n}   ${label}`),
+    "co_rgb:" + ink, "b_rgb:" + fill, "bo_1px_solid_rgb:1A1410",
+    "r_36", "w_440", "c_fit",
     "g_east", "x_60", `y_${y}`,
   ];
   const c1 = card(1, stepLabels[0], 80, "FFFFFF", "1A1410");
-  const c2 = card(2, stepLabels[1], -80, "FAE4D2", "1A1410");
-  const c3 = card(3, stepLabels[2], -240, "FF6A1A", "FFFFFF");
+  const c2 = card(2, stepLabels[1], -80, "FFFFFF", "1A1410");
+  const c3 = card(3, stepLabels[2], -240, "FFFFFF", "1A1410");
 
   const saveBadge = [
-    "l_text:Arial_32_bold:" + escapeText(input.ctrBadge || "Save this") + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_320", "c_fit",
-    "g_north_east", "x_60", "y_140",
+    "l_text:Arial_28:" + escapeText(input.ctrBadge || "Save this") + ARROW,
+    "co_rgb:1A1410", "g_north_east", "x_84", "y_160", "o_85",
   ];
 
   const cta = [
-    "l_text:Arial_44_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_640", "c_fit",
-    "g_south", "y_100",
+    "l_text:Georgia_42:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:1A1410", "g_south", "y_140",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 320, gravity: "south", y: 120, color: "1A1410", opacity: 80,
+  });
 
   return {
-    url: build([base, title, product, c1, c2, c3, saveBadge, cta], BLANK_BASE),
-    layoutSignature: `infographic|premium|s=${stepLabels.join("/")}`,
+    url: build([base, title, productShadow, product, c1, c2, c3, saveBadge, ctaUnderline, cta], BLANK_BASE),
+    layoutSignature: `infographic|polish|s=${stepLabels.join("/")}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
