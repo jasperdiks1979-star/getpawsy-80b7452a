@@ -9,6 +9,7 @@ const ALLOWED_FRONTEND_BASES = [
 
 const DEFAULT_FRONTEND_BASE = Deno.env.get("APP_BASE_URL") || "https://getpawsy.pet";
 const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
+const APPROVED_PINTEREST_CLIENT_ID = "1567611";
 
 async function sha256Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
@@ -17,6 +18,14 @@ async function sha256Hex(input: string): Promise<string> {
 
 function tokenPrefix(token: string | null | undefined) {
   return token ? token.slice(0, 12) : null;
+}
+
+function maskPinterestClientId(clientId: string | null | undefined) {
+  if (!clientId) return null;
+  const confirmationDigits = clientId.slice(0, APPROVED_PINTEREST_CLIENT_ID.length);
+  return clientId.length > APPROVED_PINTEREST_CLIENT_ID.length
+    ? `${confirmationDigits}…${clientId.slice(-3)}`
+    : confirmationDigits;
 }
 
 async function fetchPinterestJson(url: string, accessToken: string) {
@@ -93,6 +102,19 @@ Deno.serve(async (req) => {
 
   if (!clientId || !clientSecret) {
     return Response.redirect(`${adminUrl}?oauth_error=missing_client_credentials`, 302);
+  }
+
+  if (clientId !== APPROVED_PINTEREST_CLIENT_ID) {
+    await sb.from("pinterest_post_logs").insert({
+      action: "oauth_connect",
+      status: "failed",
+      error_message: "OAuth blocked: active PINTEREST_CLIENT_ID does not match approved Standard Access app 1567611.",
+      response_data: {
+        approved_client_id: APPROVED_PINTEREST_CLIENT_ID,
+        active_client_id: maskPinterestClientId(clientId),
+      },
+    });
+    return Response.redirect(`${adminUrl}?oauth_error=wrong_pinterest_client_id`, 302);
   }
 
   try {
