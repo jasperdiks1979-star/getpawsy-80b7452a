@@ -39,6 +39,72 @@ function tokenPrefix(token: string | null | undefined) {
   return token ? token.slice(0, 12) : null;
 }
 
+function clientIdPrefix(clientId: string | null | undefined) {
+  if (!clientId) return null;
+  if (clientId.length <= 8) return clientId;
+  return `${clientId.slice(0, 4)}…${clientId.slice(-3)}`;
+}
+
+/**
+ * Pinterest returns this exact error envelope when a Trial-Access app tries to
+ * publish to api.pinterest.com:
+ *   { code: 29, message: "Apps with Trial access may not create Pins in production..." }
+ * Detect either the numeric code or the literal "Trial access" phrase to be safe.
+ */
+function isPinterestTrialAccessError(statusCode: number | null, body: any, rawText?: string | null): boolean {
+  if (statusCode === 403) {
+    const code = typeof body?.code === "number" ? body.code : null;
+    const message = String(body?.message || rawText || "");
+    if (code === 29) return true;
+    if (/trial access/i.test(message)) return true;
+  }
+  return false;
+}
+
+async function setProductionTrialDetected(sb: any, errorMessage: string) {
+  await sb.from("pinterest_runtime_settings").update({
+    production_trial_detected: true,
+    production_publish_verified: false,
+    production_publish_verified_at: null,
+    last_pin_publish_error: errorMessage,
+    last_pin_publish_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq("id", 1);
+}
+
+async function setProductionPublishVerified(sb: any) {
+  await sb.from("pinterest_runtime_settings").update({
+    production_publish_verified: true,
+    production_publish_verified_at: new Date().toISOString(),
+    production_trial_detected: false,
+    last_pin_publish_error: null,
+    last_pin_publish_at: new Date().toISOString(),
+    verified_client_id_prefix: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
+    updated_at: new Date().toISOString(),
+  }).eq("id", 1);
+}
+
+async function getProductionGuardState(sb: any) {
+  const { data } = await sb
+    .from("pinterest_runtime_settings")
+    .select("production_publish_verified, production_publish_verified_at, production_trial_detected, last_pin_publish_error, verified_client_id_prefix")
+    .eq("id", 1)
+    .maybeSingle();
+  const currentClientPrefix = clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID"));
+  const verifiedPrefix = data?.verified_client_id_prefix || null;
+  // If the active client_id changed since verification, force re-verify.
+  const clientIdMatches = !verifiedPrefix || verifiedPrefix === currentClientPrefix;
+  return {
+    verified: Boolean(data?.production_publish_verified) && clientIdMatches,
+    verified_at: data?.production_publish_verified_at || null,
+    trial_detected: Boolean(data?.production_trial_detected),
+    last_pin_publish_error: data?.last_pin_publish_error || null,
+    verified_client_id_prefix: verifiedPrefix,
+    current_client_id_prefix: currentClientPrefix,
+    client_id_matches: clientIdMatches,
+  };
+}
+
 function requiredScopesPresent(scopeText: string | null | undefined) {
   const scopes = String(scopeText || "").split(/[\s,]+/).filter(Boolean);
   return ["boards:read", "boards:write", "pins:read", "pins:write"].every((scope) => scopes.includes(scope));
