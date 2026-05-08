@@ -130,6 +130,28 @@ async function pickBestProductionBoard(sb: any, boards: any[]): Promise<any | nu
   return candidates[0];
 }
 
+async function pickAllEligibleBoards(sb: any, boards: any[], excludeId: string | null): Promise<any[]> {
+  const ids = boards.map((b) => String(b.id));
+  const { data: dbRows } = await sb
+    .from("pinterest_boards")
+    .select("id, is_blacklisted, is_sandbox")
+    .in("id", ids);
+  const flags = new Map<string, { blacklisted: boolean; sandbox: boolean }>();
+  for (const r of dbRows || []) {
+    flags.set(String(r.id), { blacklisted: Boolean(r.is_blacklisted), sandbox: Boolean(r.is_sandbox) });
+  }
+  return boards.filter((b) => {
+    const id = String(b.id);
+    if (excludeId && id === excludeId) return false;
+    const f = flags.get(id);
+    if (f?.blacklisted) return false;
+    if (f?.sandbox) return false;
+    if (detectSandboxBoardName(b.name)) return false;
+    if (typeof b.privacy === "string" && b.privacy.toUpperCase() !== "PUBLIC") return false;
+    return true;
+  });
+}
+
 async function blacklistBoard(sb: any, boardId: string, reason: string, isSandbox = false): Promise<void> {
   const now = new Date().toISOString();
   await sb.from("pinterest_boards").upsert({
