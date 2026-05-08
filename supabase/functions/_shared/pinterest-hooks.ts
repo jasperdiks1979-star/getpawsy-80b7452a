@@ -27,6 +27,9 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "Cat smell taking over your home?",
     "Tired of cat tree wobble?",
     "Cluttered apartment cat setup?",
+    "My apartment finally stopped smelling",
+    "The scoop routine had to go",
+    "Litter dust everywhere — done",
   ],
   time_saving: [
     "Clean litter in seconds",
@@ -35,6 +38,8 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "Save 20 minutes daily",
     "Cleaner home in seconds",
     "Set it and forget it",
+    "This changed our daily routine",
+    "Hands-free for the first time",
   ],
   transformation: [
     "From messy to self-cleaning",
@@ -44,6 +49,8 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "From cluttered to calm",
     "Apartment cat owner upgrade",
     "From messy to modern",
+    "Our apartment looks calmer already",
+    "From dust storm to fresh air",
   ],
   social_proof: [
     "Thousands of cat owners switched",
@@ -52,6 +59,8 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "Smart pet parents love this",
     "Cat owners can't stop buying this",
     "10,000+ cat parents agree",
+    "Cat owners are obsessed with this",
+    "Why is every cat parent buying this?",
   ],
   curiosity: [
     "I wish I bought this sooner",
@@ -61,6 +70,9 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "Why is nobody talking about this?",
     "Cat owners are obsessed",
     "The viral cat gadget of 2026",
+    "The litter upgrade nobody talks about",
+    "Cat owners are quietly upgrading",
+    "The pet hack going around",
   ],
   infographic: [
     "3 reasons cat owners switch",
@@ -69,6 +81,8 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "Apartment cat setup checklist",
     "Top 3 smart pet upgrades",
     "What every modern cat parent needs",
+    "3 signs you need a litter upgrade",
+    "5 things calm cat parents own",
   ],
 };
 
@@ -84,6 +98,10 @@ export const APPROVED_CTAS: string[] = [
   "Shop now",
   "Explore the setup",
   "See the transformation",
+  "Discover why",
+  "See the setup",
+  "Explore the trend",
+  "Shop the viral find",
 ];
 
 /** Boards approved for organic publishing across all GetPawsy categories. */
