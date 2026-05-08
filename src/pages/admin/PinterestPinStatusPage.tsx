@@ -668,13 +668,27 @@ export default function PinterestPinStatusPage() {
                           {(() => {
                             const p = patternLabel(r.hook_group);
                             return p ? (
-                              <Badge
-                                variant="outline"
-                                className="mt-1 mr-1 text-[10px] uppercase tracking-wide bg-violet-500/10 text-violet-700 border-violet-200"
-                                title={`Pattern: ${p.id}`}
-                              >
-                                {p.label}
-                              </Badge>
+                              <div className="mt-1 flex flex-wrap items-center gap-1">
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] uppercase tracking-wide bg-violet-500/10 text-violet-700 border-violet-200"
+                                  title={`Pattern: ${p.id}`}
+                                >
+                                  {p.label}
+                                </Badge>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard?.writeText(p.id);
+                                    toast({ title: 'Pattern ID copied', description: p.id });
+                                  }}
+                                  title="Click to copy pattern_id"
+                                  className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-violet-200 bg-violet-500/5 text-violet-700 hover:bg-violet-500/15 transition"
+                                >
+                                  {p.id}
+                                </button>
+                              </div>
                             ) : null;
                           })()}
                           <div className="text-xs text-muted-foreground line-clamp-1">
