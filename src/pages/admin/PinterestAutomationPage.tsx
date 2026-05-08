@@ -850,6 +850,10 @@ function PinterestDashboard() {
                   <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{appDiagnostic.mode || "—"}</span>
                 </div>
               </div>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-muted-foreground">ACTIVE_REDIRECT_URI:</span>
+                <span className="font-mono break-all">{appDiagnostic.redirect_uri || "—"}</span>
+              </div>
               <div className="mt-2 flex flex-wrap justify-end gap-2">
                 <Button
                   size="sm"
