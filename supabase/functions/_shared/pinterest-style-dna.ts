@@ -582,7 +582,7 @@ export function detectNiche(input: {
   if (has("raincoat", "rain coat", "dog jacket", "dog coat", "dog sweater", "dog hoodie", "dog clothing", "dog clothes", "dog shirt", "winter coat") )
     return "dog_clothing";
 
-  if (has("treat", "jerky", "biscuit", "kibble", "supplement", "probiotic", "vitamin") && !has("dispenser", "puzzle", "feeder", "toy"))
+  if (has("treat", "jerky", "biscuit", "kibble", "supplement", "probiotic", "vitamin", "digestive"))
     return "treats";
   if (has("chew") && !has("toy", "chew toy", "chew-resistant", "chew resistant")) return "treats";
 
@@ -626,6 +626,9 @@ export function detectNiche(input: {
     return "grooming";
 
   if (has("poop bag", "poop bin", "poop trash", "waste bin", "litter scoop")) return "potty_training";
+  if (has("poo bag", "poop", "potty mat", "training pad")) return "potty_training";
+
+  if (has("repellent", "deterrent spray", "scratch-proof spray")) return "grooming";
 
   if (has("cat shelf", "cat shelves", "wall mounted cat", "wall-mounted cat", "jumping board")) return "cat_tree";
 
