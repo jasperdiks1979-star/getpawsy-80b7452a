@@ -23,7 +23,9 @@ export type PinQaReason =
   | "malformed_url"
   | "spam_payload"
   | "duplicate_asset"
-  | "weak_hook";
+  | "weak_hook"
+  | "supplier_image"
+  | "white_background";
 
 /** During QA stabilization ONLY this product slug may publish to Pinterest. */
 export const PINTEREST_ALLOWED_SLUGS: ReadonlySet<string> = new Set([
@@ -147,6 +149,29 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
 
   // Duplicate asset (passed in by caller after DB lookup)
   if (pin.duplicate_image) reasons.add("duplicate_asset");
+
+  // 4b. Supplier-hosted images are banned (CJ / AliExpress / Dsers / etc.).
+  // Pinterest distribution downgrades these and they look like dropshipping.
+  if (img) {
+    try {
+      const host = new URL(img).hostname.toLowerCase();
+      if (
+        /\b(cjdropshipping|aliexpress|alicdn|dsers|chinabrands|spocket|oberlo)\b/.test(host) ||
+        /\b(supplier|dropship)\b/.test(host)
+      ) {
+        reasons.add("supplier_image");
+      }
+    } catch {
+      // ignore — bad_crop / malformed_url already cover invalid URLs
+    }
+  }
+
+  // 4c. White-background detection (URL heuristic — we can't fetch pixels in
+  // QA). Block Cloudinary URLs that explicitly composite onto solid white,
+  // and block obvious supplier "white background" path fragments.
+  if (img && /(?:[?&_]b(?:g)?_(?:white|fff|ffffff)|background=(?:white|fff|ffffff)|\/whitebg\/|_whitebg_)/i.test(img)) {
+    reasons.add("white_background");
+  }
 
   // 5. Overlay readability — must exist and be reasonable length
   const overlayRaw = pin.overlay_text || "";
