@@ -1000,7 +1000,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         (r as Record<string, unknown>).approved_at = new Date(now + 2 * 60_000).toISOString();
         (r as Record<string, unknown>).scheduled_at = new Date(now + (i + 1) * 5 * 60_000).toISOString();
       } else {
-        (r as Record<string, unknown>).priority = "normal";
+        (r as Record<string, unknown>).priority = "medium";
         // Push non-winners further out (60-min stagger starting after top 3).
         (r as Record<string, unknown>).scheduled_at = new Date(now + (i + 4) * 60 * 60_000).toISOString();
       }
