@@ -596,29 +596,78 @@ Deno.serve(async (req) => {
 
     if (action === "render_pins" || action === "run_full") {
       const { dna, product, niche } = await loadOrBuildProfile(supabase, resolvedId, force);
-      const briefs = await generateBriefs(product, dna, count);
+      const weights = await loadLearningWeights(supabase, niche);
+      let briefs = await generateBriefs(product, dna, count, undefined, weights);
 
       const drafts: any[] = [];
       const rejected: any[] = [];
 
-      for (const brief of briefs) {
-        try {
-          const bytes = await renderScene(brief, dna);
-          const qc = qualityCheck(brief, bytes, dna);
-          if (!qc.ok) {
-            rejected.push({ brief, reasons: qc.reasons });
-            continue;
+      // Per-brief retry: render → score → if fail, regen JUST that brief with
+      // the failure reasons appended, up to MAX_RETRIES extra attempts.
+      for (let i = 0; i < briefs.length; i++) {
+        let brief = briefs[i];
+        let accepted = false;
+        let lastReasons: string[] = [];
+        let lastScores: Record<string, number> = {};
+
+        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+          try {
+            const bytes = await renderScene(brief, dna);
+            const qc = await qualityCheck(brief, bytes, dna);
+            lastReasons = qc.reasons;
+            lastScores = qc.scores as unknown as Record<string, number>;
+
+            await logRenderAttempt(supabase, {
+              pin_queue_id: null,
+              product_slug: product.slug,
+              niche_key: niche,
+              brief,
+              attempt_no: attempt,
+              scores: lastScores,
+              total_score: qc.scores.total,
+              rejected: !qc.ok,
+              reasons: qc.reasons,
+            });
+
+            if (!qc.ok) {
+              if (attempt > MAX_RETRIES) break;
+              // Regenerate THIS brief with rejection reasons appended.
+              const single = await generateBriefs(
+                product,
+                dna,
+                1,
+                [brief.pattern_id!] as PatternId[],
+                weights,
+                { 0: qc.reasons },
+              );
+              brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+              continue;
+            }
+
+            const inserted = await uploadAndInsertDraft(
+              supabase,
+              { id: product.id, slug: product.slug, name: product.name },
+              niche,
+              brief,
+              bytes,
+              {
+                scores: lastScores,
+                attempt_count: attempt,
+                hook_category: brief.hook_category,
+                rationale: brief.strategy_rationale,
+              },
+            );
+            drafts.push({ ...inserted, brief, scores: lastScores, attempts: attempt });
+            accepted = true;
+            break;
+          } catch (e) {
+            lastReasons = [(e as Error).message];
+            if (attempt > MAX_RETRIES) break;
           }
-          const inserted = await uploadAndInsertDraft(
-            supabase,
-            { id: product.id, slug: product.slug, name: product.name },
-            niche,
-            brief,
-            bytes,
-          );
-          drafts.push({ ...inserted, brief });
-        } catch (e) {
-          rejected.push({ brief, reasons: [(e as Error).message] });
+        }
+
+        if (!accepted) {
+          rejected.push({ brief, reasons: lastReasons, scores: lastScores });
         }
       }
 
@@ -627,6 +676,7 @@ Deno.serve(async (req) => {
         message: `Generated ${drafts.length}/${briefs.length} pins (${rejected.length} rejected)`,
         niche,
         approved_required: true,
+        threshold: QUALITY_THRESHOLD,
         drafts,
         rejected,
       });
