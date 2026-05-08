@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { PinterestUsAudienceCard } from "@/components/admin/PinterestUsAudienceCard";
 import {
   CheckCircle2,
   Link2,
@@ -823,6 +824,8 @@ function PinterestDashboard() {
         onQueueDrafts={handleQueueDrafts}
         onPublishNow={handlePublishNow}
       />
+
+      <PinterestUsAudienceCard />
 
       <Card className="border-primary/40 bg-primary/5">
         <CardHeader className="pb-2">
