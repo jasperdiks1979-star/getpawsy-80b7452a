@@ -191,7 +191,7 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   const cta = [
     "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
     "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_560", "c_fit",
-    "g_south", "x_-160", "y_220",
+    "g_south", "y_220",
   ];
 
   const ctrBadge = input.ctrBadge
