@@ -20,6 +20,14 @@ import {
   type NicheKey,
   type StyleDNA,
 } from "../_shared/pinterest-style-dna.ts";
+import {
+  PATTERN_LIBRARY,
+  getPattern,
+  selectPatternsForNiche,
+  patternQualityReasons,
+  type PatternId,
+  type PinterestPattern,
+} from "../_shared/pinterest-patterns.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,6 +108,7 @@ interface SceneBrief {
   cta: string; // ≤ 18 chars
   /** Free-form prompt the image model receives. */
   full_prompt: string;
+  pattern_id?: PatternId;
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
@@ -156,8 +165,14 @@ async function generateBriefs(
   product: { name: string; description?: string | null },
   dna: StyleDNA,
   count: number,
+  patternIds?: PatternId[],
 ): Promise<SceneBrief[]> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+
+  const patterns = (patternIds && patternIds.length === count
+    ? patternIds
+    : selectPatternsForNiche(dna.niche_key as any, count)
+  ).map((id) => getPattern(id));
 
   const sys = [
     "You are a Creative Director for a premium US pet brand running Pinterest ads.",
@@ -165,6 +180,7 @@ async function generateBriefs(
     "Style: editorial DTC photography. NEVER floating product cards, NEVER collage,",
     "NEVER giant CTA bars, NEVER text overlays in the brief itself (text is added later).",
     "Each brief must be a fully-composed real lifestyle scene with the product naturally placed.",
+    "Each brief is locked to ONE provided Pinterest winning pattern — your composition, mood, and headline MUST embody that pattern.",
   ].join(" ");
 
   const user = {
@@ -180,12 +196,26 @@ async function generateBriefs(
     compositions: dna.compositions,
     cta_bank: dna.cta_bank,
     banned_terms: dna.banned_terms,
+    /** Locked pattern per brief, in order. The model MUST follow the i-th pattern for the i-th brief. */
+    patterns: patterns.map((p, i) => ({
+      index: i,
+      id: p.id,
+      label: p.label,
+      psychology: p.psychology,
+      composition_rule: p.composition_rule,
+      hook_angle: p.hook_angle,
+      whitespace: p.whitespace,
+      must_have: p.must_have,
+      must_avoid: p.must_avoid,
+    })),
     rules: {
       headline_max_chars: 42,
       cta_max_chars: 18,
       headline_count: 1,
       cta_count: 1,
       no_text_in_image_prompt: true,
+      pattern_lock:
+        "For each brief at index i, embody patterns[i] — composition_rule defines the scene, hook_angle defines the headline emotion, must_have terms must appear in environment_summary or full_prompt, must_avoid terms must never appear.",
     },
   };
 
@@ -281,6 +311,7 @@ async function generateBriefs(
     headline: safeText(String(b.headline || ""), 42),
     cta: safeText(String(b.cta || ""), 18),
     full_prompt: String(b.full_prompt || ""),
+    pattern_id: patterns[i]?.id,
   }));
 }
 
@@ -289,6 +320,13 @@ async function generateBriefs(
 async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
+  const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
+  const patternDirective = pattern
+    ? `\nPattern lock — ${pattern.label}: ${pattern.composition_rule} ` +
+      `Whitespace budget: ${pattern.whitespace}. ` +
+      `Negative directives — strictly avoid: ${pattern.must_avoid.join(", ")}.`
+    : "";
+
   const styleSuffix =
     `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
     `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
@@ -296,7 +334,7 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     `(do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself). ` +
     `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars.`;
 
-  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffix}`;
+  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffix}${patternDirective}`;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -342,6 +380,19 @@ function qualityCheck(
     const hit = containsBanned(field, banned);
     if (hit) reasons.push(`banned term: "${hit}"`);
   }
+  if (brief.pattern_id) {
+    const pattern = getPattern(brief.pattern_id);
+    // Only enforce must_avoid strictly; must_have is a soft signal (warning not reject)
+    // because the AI often uses synonyms.
+    const blob = `${brief.full_prompt}\n${brief.environment_summary}`.toLowerCase();
+    const headline = `${brief.headline} ${brief.cta}`.toLowerCase();
+    for (const term of pattern.must_avoid) {
+      const t = term.toLowerCase();
+      if (blob.includes(t) || headline.includes(t)) {
+        reasons.push(`pattern[${pattern.id}] forbids: "${term}"`);
+      }
+    }
+  }
   return { ok: reasons.length === 0, reasons };
 }
 
@@ -369,7 +420,8 @@ async function uploadAndInsertDraft(
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const imageUrl = pub.publicUrl;
 
-  const variant = `cd_${niche}_${stamp}_${brief.id.slice(-6)}`;
+  const patternTag = brief.pattern_id ? `_${brief.pattern_id.slice(0, 12)}` : "";
+  const variant = `cd_${niche}${patternTag}_${stamp}_${brief.id.slice(-6)}`;
   const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${encodeURIComponent(
     brief.emotional_hook.slice(0, 40),
   )}`;
@@ -386,7 +438,7 @@ async function uploadAndInsertDraft(
     priority: "high" as const,
     status: "draft" as const,
     scheduled_at: new Date().toISOString(),
-    hook_group: niche,
+    hook_group: brief.pattern_id || niche,
     category_key: niche,
     overlay_text: `${brief.headline} • ${brief.cta}`,
   };
