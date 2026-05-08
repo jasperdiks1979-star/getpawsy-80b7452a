@@ -813,6 +813,71 @@ function PinterestDashboard() {
         onPublishNow={handlePublishNow}
       />
 
+      <Card className={appDiagnostic?.production_guard?.trial_detected ? "border-destructive/50" : appDiagnostic?.publishing_allowed ? "border-emerald-500/40" : "border-amber-500/40"}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" />
+              Pinterest App Credential Diagnostic
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => void fetchAppDiagnostic()}>
+              <RefreshCw className="mr-1 h-3 w-3" /> Refresh
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!appDiagnostic ? (
+            <p className="text-xs text-muted-foreground">Loading credential diagnostic…</p>
+          ) : (
+            <>
+              {appDiagnostic.production_guard?.trial_detected && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs">
+                  <p className="font-semibold text-destructive">
+                    ⚠ Wrong Pinterest app credentials or approval not applied to this client_id.
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    Pinterest rejected POST /v5/pins with code 29 (Trial access). The active
+                    PINTEREST_CLIENT_ID is not the Standard-Access app. Update the secrets to the
+                    approved app's client_id + client_secret, then run a fresh OAuth reconnect and
+                    Direct Pin Test to unlock production publishing.
+                  </p>
+                </div>
+              )}
+              {!appDiagnostic.production_guard?.trial_detected && appDiagnostic.publishing_allowed && (
+                <div className="rounded-md border border-emerald-500/40 bg-emerald-500/5 p-3 text-xs text-foreground">
+                  ✅ Production Ready — Direct Pin Test succeeded. Cron + queue publishing enabled.
+                </div>
+              )}
+              {!appDiagnostic.production_guard?.trial_detected && !appDiagnostic.publishing_allowed && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground">
+                  Production publishing locked. Run the Direct Pinterest API Test once to verify the
+                  active client_id is Standard-Access approved.
+                </div>
+              )}
+              <div className="grid gap-3 md:grid-cols-2">
+                <DiagnosticValue label="active client_id" value={appDiagnostic.client_id_prefix} mono />
+                <DiagnosticValue label="client_secret present" value={appDiagnostic.client_secret_present ? "yes" : "no"} />
+                <DiagnosticValue label="redirect_uri" value={appDiagnostic.redirect_uri} mono />
+                <DiagnosticValue label="api_base" value={appDiagnostic.api_base} mono />
+                <DiagnosticValue label="mode" value={appDiagnostic.mode} />
+                <DiagnosticValue label="account" value={appDiagnostic.token?.account_name} />
+                <DiagnosticValue label="token created" value={appDiagnostic.token?.token_created_at} mono />
+                <DiagnosticValue label="token scopes" value={appDiagnostic.token?.scopes} mono />
+                <DiagnosticValue label="board count" value={appDiagnostic.token?.board_count} />
+                <DiagnosticValue label="last /boards status" value={appDiagnostic.token?.last_boards_status} />
+                <DiagnosticValue label="last /user_account status" value={appDiagnostic.token?.last_account_status} />
+                <DiagnosticValue label="production verified" value={appDiagnostic.production_guard?.verified ? "yes" : "no"} />
+                <DiagnosticValue label="verified at" value={appDiagnostic.production_guard?.verified_at} mono />
+                <DiagnosticValue label="verified client_id" value={appDiagnostic.production_guard?.verified_client_id_prefix || "—"} mono />
+                <DiagnosticValue label="trial detected" value={appDiagnostic.production_guard?.trial_detected ? "YES" : "no"} />
+                <DiagnosticValue label="last publish error" value={appDiagnostic.production_guard?.last_pin_publish_error || "—"} mono />
+              </div>
+              <p className="text-xs text-muted-foreground">{appDiagnostic.next_step}</p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="border-destructive/30">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
