@@ -420,7 +420,8 @@ async function uploadAndInsertDraft(
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const imageUrl = pub.publicUrl;
 
-  const variant = `cd_${niche}_${stamp}_${brief.id.slice(-6)}`;
+  const patternTag = brief.pattern_id ? `_${brief.pattern_id.slice(0, 12)}` : "";
+  const variant = `cd_${niche}${patternTag}_${stamp}_${brief.id.slice(-6)}`;
   const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${encodeURIComponent(
     brief.emotional_hook.slice(0, 40),
   )}`;
@@ -437,7 +438,7 @@ async function uploadAndInsertDraft(
     priority: "high" as const,
     status: "draft" as const,
     scheduled_at: new Date().toISOString(),
-    hook_group: niche,
+    hook_group: brief.pattern_id || niche,
     category_key: niche,
     overlay_text: `${brief.headline} • ${brief.cta}`,
   };
