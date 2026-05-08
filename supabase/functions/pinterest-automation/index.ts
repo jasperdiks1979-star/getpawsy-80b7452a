@@ -1873,8 +1873,10 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
   const success = response.ok && Boolean(pinId && externalUrl);
   const errorMessage = success ? null : `Pinterest API ${response.status}: ${responseText}`;
   const trialDetected = isPinterestTrialAccessError(response.status, responseBody, responseText);
+  let guardUnlocked = false;
   if (success) {
     await setProductionPublishVerified(sb);
+    guardUnlocked = true;
   } else if (trialDetected) {
     await setProductionTrialDetected(sb, errorMessage || "Pinterest trial access detected");
   } else {
@@ -1942,6 +1944,7 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     trial_access_detected: trialDetected,
     production_publish_verified: success,
     publishing_disabled: trialDetected || !success,
+    guard_unlocked: guardUnlocked,
     not_standard_message: trialDetected
       ? "Wrong Pinterest app credentials or approval not applied to this client_id."
       : null,
