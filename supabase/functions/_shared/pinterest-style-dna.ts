@@ -582,8 +582,9 @@ export function detectNiche(input: {
   if (has("raincoat", "rain coat", "dog jacket", "dog coat", "dog sweater", "dog hoodie", "dog clothing", "dog clothes", "dog shirt", "winter coat") )
     return "dog_clothing";
 
-  if (has("treat", "jerky", "biscuit", "chew", "kibble") && !has("dispenser", "puzzle", "feeder", "toy"))
+  if (has("treat", "jerky", "biscuit", "kibble", "supplement", "probiotic", "vitamin") && !has("dispenser", "puzzle", "feeder", "toy"))
     return "treats";
+  if (has("chew") && !has("toy", "chew toy", "chew-resistant", "chew resistant")) return "treats";
 
   if (has("scratcher", "scratching post", "sisal post", "cardboard scratcher")) return "cat_scratcher";
 
@@ -591,19 +592,33 @@ export function detectNiche(input: {
   if (has("carrier", "tote") && has("cat", "kitten")) return "cat_carrier";
   if (has("backpack carrier", "sling carrier")) return "dog_carrier";
 
-  if (has("kennel", "outdoor house", "dog house", "cat house", "pet enclosure", "outdoor enclosure", "catio", "playpen") )
+  if (has("kennel", "outdoor house", "dog house", "cat house", "pet enclosure", "outdoor enclosure", "outdoor cat enclosure", "catio", "playpen", "crate", "cage", "gate", "barrier") )
     return "outdoor_house";
 
   if (has("gps", "tracker", "wireless fence", "shock collar", "training collar", "bark collar", "remote trainer") )
     return "dog_training";
+  if (has("agility", "training rope", "training tray", "recall")) return "dog_training";
 
   if (has("collar", "leash", "harness leash", "bandana") && has("dog", "puppy", "pet"))
     return "dog_collar";
+  if (has("scarf") && has("dog", "pet")) return "dog_clothing";
 
-  if (has("elevated bowl", "feeding station", "double bowl", "stainless bowl", "ceramic bowl", "raised bowl", "slow feeder bowl") )
+  if (has("elevated bowl", "elevated dog bowl", "elevated cat bowl", "elevated pet", "feeding station", "double bowl", "double dish", "stainless bowl", "stainless steel bowl", "ceramic bowl", "raised bowl", "raised stand", "slow feeder bowl", "tilted pet food", "pet food bowl", "dog bowl", "cat bowl", "travel bowl", "water bottle") )
     return "bowl_station";
 
   if (has("cat bed", "kitten bed", "cat cushion", "cat nap")) return "cat_bed";
+
+  if (has("waste bag", "poop bag", "poop scoop", "dog dropper")) return "potty_training";
+
+  if (has("wipes", "hair remover", "hair removal", "lint roller")) return "grooming";
+
+  if (has("water dispenser", "water fountain") && has("dog", "pet")) return "cat_fountain"; // shared fountain niche
+  if (has("automatic feeder", "auto feeder", "smart feeder", "food dispenser", "pet feeder")) return "feeder";
+
+  if (has("pet sofa", "dog sofa", "dog couch", "pet bed", "pet napping")) return "dog_bed";
+
+  if (has("chew toy", "squeaky", "squeak", "rubber toy", "tug toy", "fetch", "tumbler", "teaser", "fish toy", "mouse toy", "teething stick"))
+    return "interactive_toy";
 
   // ── Existing rules (unchanged behavior) ───────────────────────────────────
   if (has("litter box", "litter-box", "litter") && has("cat", "kitten") && has("auto", "self", "smart"))
