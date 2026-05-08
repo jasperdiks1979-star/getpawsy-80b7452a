@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send, ShieldCheck, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
