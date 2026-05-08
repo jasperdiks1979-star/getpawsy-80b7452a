@@ -261,16 +261,60 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ── 0. Reaper: any row stuck in 'publishing' for >10 min is reset to 'queued'
+    //    (or 'failed' if attempts exhausted). Prevents zombie locks from stalling cron.
+    try {
+      const tenMinAgo = new Date(Date.now() - 10 * 60_000).toISOString();
+      const { data: stuck } = await sb
+        .from("pinterest_pin_queue")
+        .select("id, publish_attempts")
+        .eq("status", "publishing")
+        .lt("publishing_started_at", tenMinAgo);
+      for (const row of stuck || []) {
+        const attempts = (row as any).publish_attempts || 0;
+        const next = attempts >= MAX_RETRIES ? "failed" : "queued";
+        await sb.from("pinterest_pin_queue").update({
+          status: next,
+          publishing_started_at: null,
+          last_publish_error: "reaped: publishing stuck >10m",
+        }).eq("id", (row as any).id);
+        console.log(`[cron][reaper] ${row.id} → ${next}`);
+      }
+    } catch (e) {
+      console.warn("[cron][reaper] failed (non-fatal):", e);
+    }
+
+    // Read auto-approve / domination flags so we can relax the eligibility
+    // filter when the admin opted in (otherwise the strict gate stays).
+    let autoApproveQueue = false;
+    let dominationActive = false;
+    try {
+      const { data: rt } = await sb
+        .from("pinterest_runtime_settings")
+        .select("auto_approve_queue, domination_mode")
+        .eq("id", 1)
+        .maybeSingle();
+      autoApproveQueue = !!(rt as any)?.auto_approve_queue;
+      dominationActive = !!(rt as any)?.domination_mode;
+    } catch (e) {
+      console.warn("[cron] failed to read runtime flags:", e);
+    }
+
     // ── 1. Fetch due pins ──
-    const { data: pins, error } = await sb
+    let q = sb
       .from("pinterest_pin_queue")
       .select("*")
       .eq("status", "queued")
       .or("profit_state.is.null,profit_state.neq.kill")
       .lte("scheduled_at", new Date().toISOString())
-      .lt("retries", MAX_RETRIES)
-      .not("approved_at", "is", null)
-      .in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS))
+      .lt("retries", MAX_RETRIES);
+    if (!autoApproveQueue) {
+      q = q.not("approved_at", "is", null);
+    }
+    if (!dominationActive) {
+      q = q.in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS));
+    }
+    const { data: pins, error } = await q
       .order("priority", { ascending: true })
       .order("scheduled_at", { ascending: true })
       .limit(BATCH_SIZE);
