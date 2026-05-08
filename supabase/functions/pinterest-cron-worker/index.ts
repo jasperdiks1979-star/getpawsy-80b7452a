@@ -494,13 +494,24 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const boardRef = pin.board_name || "";
-        const boardId = boardIdCache.has(boardRef)
-          ? boardIdCache.get(boardRef)!
-          : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
-
-        if (!boardIdCache.has(boardRef)) {
-          boardIdCache.set(boardRef, boardId);
+        let boardId: string;
+        if (activeBoardOverride) {
+          boardId = activeBoardOverride.id;
+        } else {
+          const boardRef = pin.board_name || "";
+          boardId = boardIdCache.has(boardRef)
+            ? boardIdCache.get(boardRef)!
+            : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
+          if (!boardIdCache.has(boardRef)) boardIdCache.set(boardRef, boardId);
+        }
+        if (blacklistedBoardIds.has(boardId)) {
+          console.warn(`[cron] board ${boardId} is blacklisted, skipping pin ${pin.id}`);
+          await sb.from("pinterest_pin_queue").update({
+            status: "failed",
+            error_message: `Board ${boardId} is blacklisted (sandbox or invalid). Pick a new active board in admin.`,
+          }).eq("id", pin.id);
+          results.push({ pinId: pin.id, status: "failed", error: "board_blacklisted" });
+          continue;
         }
 
         // 🔒 Claim this row — only proceed if still queued (race-safe).
