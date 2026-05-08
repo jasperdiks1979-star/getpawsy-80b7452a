@@ -123,6 +123,15 @@ Deno.serve(async (req) => {
     const tokenData = await tokenRes.json();
     const tokenCreatedAt = new Date().toISOString();
     const accessToken = String(tokenData.access_token || "");
+    if (!accessToken) {
+      await sb.from("pinterest_post_logs").insert({
+        action: "oauth_connect",
+        status: "failed",
+        error_message: "Pinterest token exchange returned no access_token",
+        response_data: { api_base: PINTEREST_PRODUCTION_API_BASE, token_response_keys: Object.keys(tokenData || {}) },
+      });
+      return Response.redirect(`${adminUrl}?oauth_error=missing_access_token`, 302);
+    }
     const accessTokenSha256 = accessToken ? await sha256Hex(accessToken) : null;
     console.log("[pinterest-oauth-callback] Token exchange successful", {
       scopes: tokenData.scope,
@@ -133,7 +142,7 @@ Deno.serve(async (req) => {
       api_base: PINTEREST_PRODUCTION_API_BASE,
     });
 
-    // Fetch user account info
+    // Fetch user account info (diagnostic only; /boards is the publish-capability signal)
     let accountName = "Pinterest Account";
     let accountId = "";
     try {
@@ -150,27 +159,12 @@ Deno.serve(async (req) => {
       console.warn("[pinterest-oauth-callback] Could not fetch user info:", e);
     }
 
-    const accountApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
-    const boardsApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
-    const boardCount = Array.isArray(boardsApi.body?.items) ? boardsApi.body.items.length : 0;
-    // /user_account may 401 for Standard Access apps. Trust /boards as capability signal.
-    const REQUIRED_USERNAME = "getpawsyshop";
-    const apiUsername = typeof accountApi.body?.username === "string" ? accountApi.body.username : null;
-    const wrongAccount = accountApi.ok && apiUsername && apiUsername !== REQUIRED_USERNAME;
-    const authValid = boardsApi.ok && boardCount > 0 && !wrongAccount;
-    if (apiUsername) {
-      accountName = apiUsername;
-      accountId = apiUsername;
-    }
-
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000).toISOString();
-
-    const { data: existingConnection } = await sb
-      .from("pinterest_connection")
-      .select("id")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    await sb.from("pinterest_runtime_settings").update({
+      active_pinterest_connection_id: null,
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+    await sb.from("pinterest_connection").delete().not("id", "is", null);
 
     const connectionPayload = {
       account_name: accountName,
@@ -182,26 +176,19 @@ Deno.serve(async (req) => {
       scopes: tokenData.scope || null,
       token_prefix: tokenPrefix(accessToken),
       token_sha256: accessTokenSha256,
-      last_account_status: accountApi.status,
-      last_boards_status: boardsApi.status,
-      board_count: boardCount,
-      status: authValid ? "connected" : "auth_failed",
-      last_error: authValid
-        ? null
-        : wrongAccount
-          ? `AUTH FAILURE: connected username "${apiUsername}" does not match required "${REQUIRED_USERNAME}".`
-          : `AUTH FAILURE: /boards=${boardsApi.status}, board_count=${boardCount} (account=${accountApi.status})`,
+      last_account_status: null,
+      last_boards_status: null,
+      board_count: 0,
+      status: "validating",
+      last_error: null,
       updated_at: new Date().toISOString(),
     };
 
-    const { error: dbError } = existingConnection?.id
-      ? await sb
-        .from("pinterest_connection")
-        .update(connectionPayload)
-        .eq("id", existingConnection.id)
-      : await sb
-        .from("pinterest_connection")
-        .insert(connectionPayload);
+    const { data: insertedConnection, error: dbError } = await sb
+      .from("pinterest_connection")
+      .insert(connectionPayload)
+      .select("id, access_token")
+      .single();
 
     if (dbError) {
       console.error("[pinterest-oauth-callback] DB error:", dbError);
@@ -213,11 +200,53 @@ Deno.serve(async (req) => {
       return Response.redirect(`${adminUrl}?oauth_error=db_save_failed`, 302);
     }
 
-    // Log success
+    const savedToken = String(insertedConnection?.access_token || "");
+    const tokenSavedExactly = savedToken === accessToken;
+    const accountApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, savedToken);
+    const boardsApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, savedToken);
+    const boardItems = Array.isArray(boardsApi.body?.items) ? boardsApi.body.items : [];
+    const boardCount = boardItems.length;
+    const REQUIRED_USERNAME = "getpawsyshop";
+    const apiUsername = typeof accountApi.body?.username === "string" ? accountApi.body.username : null;
+    const wrongAccount = accountApi.ok && apiUsername && apiUsername !== REQUIRED_USERNAME;
+    const authValid = tokenSavedExactly && boardsApi.ok && boardCount > 0 && !wrongAccount;
+    if (apiUsername) {
+      accountName = apiUsername;
+      accountId = apiUsername;
+    }
+
+    await sb.from("pinterest_connection").update({
+      account_name: accountName,
+      account_id: accountId,
+      last_account_status: accountApi.status,
+      last_boards_status: boardsApi.status,
+      board_count: boardCount,
+      status: authValid ? "connected" : "auth_failed",
+      last_error: authValid
+        ? null
+        : !tokenSavedExactly
+          ? "AUTH FAILURE: saved Pinterest access_token differs from OAuth response."
+          : wrongAccount
+            ? `AUTH FAILURE: connected username "${apiUsername}" does not match required "${REQUIRED_USERNAME}".`
+            : `AUTH FAILURE: /boards=${boardsApi.status}, board_count=${boardCount} (account=${accountApi.status})`,
+      updated_at: new Date().toISOString(),
+    }).eq("id", insertedConnection.id);
+
+    if (authValid) {
+      await sb.from("pinterest_runtime_settings").update({
+        active_pinterest_connection_id: insertedConnection.id,
+        mode: "production",
+        updated_at: new Date().toISOString(),
+      }).eq("id", 1);
+    }
+
+    // Log final reconnect result with raw validation metadata for diagnostics.
     await sb.from("pinterest_post_logs").insert({
       action: "oauth_connect",
-      status: "success",
+      status: authValid ? "success" : "failed",
+      error_message: authValid ? null : `Pinterest reconnect validation failed: /boards=${boardsApi.status}, board_count=${boardCount}`,
       response_data: {
+        connection_id: insertedConnection.id,
         account: accountName,
         scopes: tokenData.scope,
         expires_at: expiresAt,
@@ -226,8 +255,12 @@ Deno.serve(async (req) => {
         token_sha256: accessTokenSha256,
         api_base: PINTEREST_PRODUCTION_API_BASE,
         user_account_status: accountApi.status,
+        user_account_response_body: accountApi.body,
         boards_status: boardsApi.status,
+        boards_response_body: boardsApi.body,
         board_count: boardCount,
+        active_connection_saved: authValid,
+        token_saved_exactly: tokenSavedExactly,
         auth_valid: authValid,
       },
     });

@@ -396,12 +396,7 @@ Deno.serve(async (req) => {
       const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
 
-      const { data: conn } = await sb
-        .from("pinterest_connection")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
       if (!conn?.access_token) return json(cors, { ok: false, error: "No latest Pinterest OAuth access token found" });
 
       const accessToken = await getFreshPinterestProductionToken(sb, conn);
@@ -415,12 +410,7 @@ Deno.serve(async (req) => {
       const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
 
-      const { data: conn } = await sb
-        .from("pinterest_connection")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
       if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected: no latest OAuth access token found" });
 
       const accessToken = await getFreshPinterestProductionToken(sb, conn);
@@ -443,7 +433,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "get_connection") {
-      const { data } = await sb.from("pinterest_connection").select("*").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      const data = await getLatestPinterestConnection(sb, { requireConnected: false });
       return json(cors, { ok: true, connection: sanitizePinterestConnection(data) });
     }
 
@@ -463,7 +453,7 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       };
 
-      const { data: existing } = await sb.from("pinterest_connection").select("id").limit(1).maybeSingle();
+      const existing = await getLatestPinterestConnection(sb, { requireConnected: false });
       const { error: dbErr } = existing?.id
         ? await sb.from("pinterest_connection").update(payload).eq("id", existing.id)
         : await sb.from("pinterest_connection").insert(payload);
@@ -488,7 +478,7 @@ Deno.serve(async (req) => {
         sb.from("pinterest_pin_queue").select("*", { count: "exact", head: true }).eq("status", "failed"),
         sb.from("pinterest_board_mappings").select("*").order("priority"),
       ]);
-      const { data: connection } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
+      const connection = await getLatestPinterestConnection(sb, { requireConnected: false });
 
       return json(cors, {
         ok: true,
@@ -749,7 +739,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "publish_next") {
-      const { data: conn } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: true });
       if (!conn || conn.status !== "connected" || !conn.access_token) {
         return json(cors, { ok: false, error: "Pinterest not connected" });
       }
@@ -845,7 +835,7 @@ Deno.serve(async (req) => {
 
     if (action === "test_publish_sandbox") {
       // Create 3 real test pins against the active API base (sandbox by default).
-      const { data: conn } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: true });
       if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected" });
 
       const { data: products } = await sb
@@ -1087,7 +1077,7 @@ Deno.serve(async (req) => {
       const [{ data: stuck }, { data: lastCron }, { data: conn }] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id, publishing_started_at").eq("status", "publishing").lt("publishing_started_at", new Date(Date.now() - 15 * 60_000).toISOString()),
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
-        sb.from("pinterest_connection").select("status, last_error, last_publish_at, token_created_at, token_prefix, token_sha256, scopes, last_account_status, last_boards_status, board_count, updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+        getLatestPinterestConnection(sb, { requireConnected: false }).then((data) => ({ data })),
       ]);
       const [draftCount, queuedCount, publishingCount, postedCount, failedCount, skippedCount] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "draft"),
@@ -1142,14 +1132,14 @@ Deno.serve(async (req) => {
       const nextEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
       const nextPublishNowEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: true, allowed, maxRetries: 2 });
 
-      const authValid = conn?.status === "connected" && conn?.last_account_status === 200 && conn?.last_boards_status === 200 && (conn?.board_count || 0) > 0;
+      const authValid = conn?.status === "connected" && conn?.last_boards_status === 200 && (conn?.board_count || 0) > 0;
       return json(cors, {
         ok: true,
         api_status: conn?.status || "disconnected",
         api_last_error: conn?.last_error || null,
         auth_valid: authValid,
         auth_failure_warning: authValid ? null : "AUTH FAILURE: publishing is disabled until /boards returns at least one real board owned by getpawsyshop.",
-        token: conn ? { prefix: conn.token_prefix, token_created_at: conn.token_created_at, token_sha256: conn.token_sha256, scopes: conn.scopes, connection_updated_at: conn.updated_at } : null,
+        token: conn ? { prefix: conn.token_prefix, token_created_at: conn.token_created_at, token_sha256: conn.token_sha256, scopes: conn.scopes, connection_id: conn.id, connection_updated_at: conn.updated_at } : null,
         account_status_code: conn?.last_account_status ?? null,
         boards_status_code: conn?.last_boards_status ?? null,
         board_count: conn?.board_count ?? null,
@@ -1224,7 +1214,7 @@ Deno.serve(async (req) => {
     if (action === "force_publish" || action === "test_publish_now") {
       const pinId = body.pinId;
       if (!pinId) return json(cors, { ok: false, error: "pinId required" });
-      const { data: conn } = await sb.from("pinterest_connection").select("*").limit(1).maybeSingle();
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: true });
       if (!conn || conn.status !== "connected" || !conn.access_token) {
         return json(cors, { ok: false, error: "Pinterest not connected" });
       }
@@ -1430,6 +1420,35 @@ async function consumeDirectTestDebugToken(
   return { ok: true };
 }
 
+async function getLatestPinterestConnection(sb: any, opts: { requireConnected?: boolean } = {}) {
+  const { data: settings } = await sb
+    .from("pinterest_runtime_settings")
+    .select("active_pinterest_connection_id")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (settings?.active_pinterest_connection_id) {
+    let activeQuery = sb
+      .from("pinterest_connection")
+      .select("*")
+      .eq("id", settings.active_pinterest_connection_id)
+      .limit(1);
+    if (opts.requireConnected) activeQuery = activeQuery.eq("status", "connected");
+    const { data: active } = await activeQuery.maybeSingle();
+    if (active?.access_token) return active;
+  }
+
+  let query = sb
+    .from("pinterest_connection")
+    .select("*")
+    .order("token_created_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  if (opts.requireConnected) query = query.eq("status", "connected");
+  const { data } = await query.maybeSingle();
+  return data || null;
+}
+
 async function getFreshPinterestProductionToken(sb: any, conn: any): Promise<string | null> {
   const expiresAt = conn.token_expires_at ? new Date(conn.token_expires_at).getTime() : 0;
   if (!expiresAt || Date.now() < expiresAt - 5 * 60_000) return conn.access_token;
@@ -1530,6 +1549,14 @@ async function validatePinterestAuth(sb: any, conn: any, accessToken: string) {
     board_count: boards.length,
     updated_at: new Date().toISOString(),
   }).eq("id", conn.id);
+
+  if (authValid) {
+    await sb.from("pinterest_runtime_settings").update({
+      active_pinterest_connection_id: conn.id,
+      mode: "production",
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+  }
 
   const diagnostics = {
     api_base: PINTEREST_PRODUCTION_API_BASE,

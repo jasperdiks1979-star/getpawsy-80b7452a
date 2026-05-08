@@ -53,6 +53,10 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  // Force a clean OAuth attempt: never let a stale cached state participate
+  // in a reconnect after a token/auth failure.
+  await sb.from("pinterest_oauth_states").delete().neq("state", state);
+
   // Store state temporarily (we'll verify it during callback)
   await sb.from("pinterest_oauth_states").upsert({
     state,

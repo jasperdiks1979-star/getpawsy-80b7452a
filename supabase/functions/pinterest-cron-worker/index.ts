@@ -156,7 +156,43 @@ async function validatePinterestAuthForCron(sb: any, conn: any, accessToken: str
     board_count: boardCount,
     updated_at: new Date().toISOString(),
   }).eq("id", conn.id);
+  if (ok) {
+    await sb.from("pinterest_runtime_settings").update({
+      active_pinterest_connection_id: conn.id,
+      mode: "production",
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+  }
   return { ok, error, account, boards, boardCount };
+}
+
+async function getLatestPinterestConnection(sb: any) {
+  const { data: settings } = await sb
+    .from("pinterest_runtime_settings")
+    .select("active_pinterest_connection_id")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (settings?.active_pinterest_connection_id) {
+    const { data: active } = await sb
+      .from("pinterest_connection")
+      .select("*")
+      .eq("id", settings.active_pinterest_connection_id)
+      .eq("status", "connected")
+      .limit(1)
+      .maybeSingle();
+    if (active?.access_token) return active;
+  }
+
+  const { data } = await sb
+    .from("pinterest_connection")
+    .select("*")
+    .eq("status", "connected")
+    .order("token_created_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data || null;
 }
 
 Deno.serve(async (req) => {
@@ -206,11 +242,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 2. Resolve access token (with refresh if needed) ──
-    const { data: conn } = await sb
-      .from("pinterest_connection")
-      .select("*")
-      .limit(1)
-      .maybeSingle();
+    const conn = await getLatestPinterestConnection(sb);
 
     if (!conn || conn.status !== "connected" || !conn.access_token) {
       await sb.from("pinterest_post_logs").insert({
