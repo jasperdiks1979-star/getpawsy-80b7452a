@@ -2,13 +2,24 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { PATTERNS, ALL_NICHES, type PatternSummary } from '@/lib/pinterest-patterns-client';
-import { Sparkles, Check, X, RefreshCw, Loader2 } from 'lucide-react';
+import { Sparkles, Check, X, RefreshCw, Loader2, Search } from 'lucide-react';
 
 export default function PinterestPatternsPage() {
   const [nicheFilter, setNicheFilter] = useState<string>('all');
+  const [query, setQuery] = useState('');
+  const [typoFilter, setTypoFilter] = useState<string>('all');
+  const [avoidFilter, setAvoidFilter] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [versions, setVersions] = useState<
     Array<{ pattern_id: string; version: number; source: string; created_at: string }>
@@ -51,11 +62,42 @@ export default function PinterestPatternsPage() {
   }
 
   const sorted = useMemo(() => {
-    if (nicheFilter === 'all') return PATTERNS;
-    return [...PATTERNS].sort(
-      (a, b) => (b.niche_affinity[nicheFilter] ?? 0) - (a.niche_affinity[nicheFilter] ?? 0),
-    );
-  }, [nicheFilter]);
+    const q = query.trim().toLowerCase();
+    let list = PATTERNS.filter((p) => {
+      if (typoFilter !== 'all' && p.typography_preference !== typoFilter) return false;
+      if (avoidFilter !== 'all' && !p.must_avoid.includes(avoidFilter)) return false;
+      if (!q) return true;
+      const hay = [
+        p.id,
+        p.label,
+        p.psychology,
+        p.composition_rule,
+        p.typography_preference,
+        ...p.must_have,
+        ...p.must_avoid,
+      ]
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+    if (nicheFilter !== 'all') {
+      list = [...list].sort(
+        (a, b) => (b.niche_affinity[nicheFilter] ?? 0) - (a.niche_affinity[nicheFilter] ?? 0),
+      );
+    }
+    return list;
+  }, [nicheFilter, query, typoFilter, avoidFilter]);
+
+  const typoOptions = useMemo(
+    () => Array.from(new Set(PATTERNS.map((p) => p.typography_preference))).sort(),
+    [],
+  );
+  const avoidOptions = useMemo(
+    () => Array.from(new Set(PATTERNS.flatMap((p) => p.must_avoid))).sort(),
+    [],
+  );
+
+  const filtersActive = query !== '' || typoFilter !== 'all' || avoidFilter !== 'all' || nicheFilter !== 'all';
 
   return (
     <div className="container mx-auto p-6 space-y-4">
@@ -74,6 +116,57 @@ export default function PinterestPatternsPage() {
           {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
           Refresh from research
         </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search label, psychology, composition, tags…"
+            className="pl-8 h-9"
+          />
+        </div>
+        <Select value={typoFilter} onValueChange={setTypoFilter}>
+          <SelectTrigger className="h-9 w-[200px]">
+            <SelectValue placeholder="Typography style" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All typography</SelectItem>
+            {typoOptions.map((t) => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={avoidFilter} onValueChange={setAvoidFilter}>
+          <SelectTrigger className="h-9 w-[220px]">
+            <SelectValue placeholder="Must-avoid contains" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any must-avoid</SelectItem>
+            {avoidOptions.map((t) => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {filtersActive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setQuery('');
+              setTypoFilter('all');
+              setAvoidFilter('all');
+              setNicheFilter('all');
+            }}
+          >
+            Clear
+          </Button>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {sorted.length} of {PATTERNS.length} patterns
+        </span>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -98,6 +191,11 @@ export default function PinterestPatternsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {sorted.length === 0 && (
+          <p className="text-sm text-muted-foreground col-span-full">
+            No patterns match the current filters.
+          </p>
+        )}
         {sorted.map((p) => (
           <PatternCard key={p.id} pattern={p} highlightNiche={nicheFilter !== 'all' ? nicheFilter : undefined} />
         ))}
