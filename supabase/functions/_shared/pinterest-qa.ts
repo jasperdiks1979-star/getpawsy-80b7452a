@@ -48,6 +48,8 @@ export interface PinQaInput {
   image_hash?: string | null;
   /** Pre-computed: true if image_hash collides with another posted pin in the last 14 days. */
   duplicate_image?: boolean;
+  /** When true the single-product allowlist is bypassed (Domination Mode). */
+  domination_mode?: boolean;
 }
 
 const CAT_PATTERNS = /\b(cat|kitten|kitty|litter\s*box|feline)\b/i;
@@ -89,7 +91,7 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
     ENCODED_BLOB.test(s);
 
   // 1. Allowlist (during QA stabilization)
-  if (!PINTEREST_ALLOWED_SLUGS.has(slug)) {
+  if (!pin.domination_mode && !PINTEREST_ALLOWED_SLUGS.has(slug)) {
     reasons.add("allowlist_disabled");
   }
 
@@ -198,22 +200,35 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   // We intentionally re-import here (dynamic) so this file stays sync.
   // The bank is small (~16 strings); an inline copy would be just as good.
   const APPROVED_TOP = [
-    "tired of litter box chores",
-    "cat litter smell taking over",
-    "daily scooping gets old fast",
-    "your cat deserves better",
-    "clean litter in seconds",
-    "save 30+ minutes every week",
-    "one tap cleanup",
-    "from messy to self-cleaning",
-    "upgrade your cat setup",
-    "small apartment cat hack",
-    "thousands of cat owners switched",
-    "cat parents are obsessed with this",
-    "viral cat owner upgrade",
-    "i wish i bought this sooner",
-    "why are cat owners switching",
-    "this changed my cat routine",
+    // pain
+    "tired of litter box chores", "cat litter smell taking over",
+    "daily scooping gets old fast", "your cat deserves better",
+    "hate scooping every day", "cat smell taking over your home",
+    "tired of cat tree wobble", "cluttered apartment cat setup",
+    // time_saving
+    "clean litter in seconds", "save 30 minutes every week",
+    "save 30+ minutes every week", "one tap cleanup",
+    "save 20 minutes daily", "cleaner home in seconds", "set it and forget it",
+    // transformation
+    "from messy to self-cleaning", "upgrade your cat setup",
+    "small apartment cat hack", "before vs after cat setup",
+    "from cluttered to calm", "apartment cat owner upgrade", "from messy to modern",
+    // social_proof
+    "thousands of cat owners switched", "cat parents are obsessed with this",
+    "viral cat owner upgrade", "smart pet parents love this",
+    "cat owners can t stop buying this", "10 000 cat parents agree",
+    "10000 cat parents agree",
+    // curiosity
+    "i wish i bought this sooner", "why are cat owners switching",
+    "this changed my cat routine", "wait until you see this",
+    "why is nobody talking about this", "cat owners are obsessed",
+    "the viral cat gadget of 2026",
+    // infographic
+    "3 reasons cat owners switch", "why self-cleaning litter goes viral",
+    "why self cleaning litter goes viral",
+    "5 must-have cat parent essentials", "5 must have cat parent essentials",
+    "apartment cat setup checklist", "top 3 smart pet upgrades",
+    "what every modern cat parent needs",
   ];
   const top = (parts[0] || overlayRaw).toLowerCase().replace(/[^\w\s]/g, "").trim();
   const matchesApproved = APPROVED_TOP.some((h) => top.startsWith(h) || h.startsWith(top));
