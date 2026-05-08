@@ -569,6 +569,43 @@ export function detectNiche(input: {
 
   const has = (...words: string[]) => words.some((w) => hay.includes(w));
 
+  // ── Specific / high-priority signals first ────────────────────────────────
+  if (has("toothbrush", "dental", "tooth brush", "oral care", "teeth cleaning"))
+    return "dental_care";
+
+  if (has("pet camera", "pet cam", "dog camera", "cat camera", "pet monitor", "pet feeder camera"))
+    return "pet_camera";
+
+  if (has("potty pad", "pee pad", "puppy pad", "potty training", "grass pad", "toilet trainer", "litter mat"))
+    return "potty_training";
+
+  if (has("raincoat", "rain coat", "dog jacket", "dog coat", "dog sweater", "dog hoodie", "dog clothing", "dog clothes", "dog shirt", "winter coat") )
+    return "dog_clothing";
+
+  if (has("treat", "jerky", "biscuit", "chew", "kibble") && !has("dispenser", "puzzle", "feeder", "toy"))
+    return "treats";
+
+  if (has("scratcher", "scratching post", "sisal post", "cardboard scratcher")) return "cat_scratcher";
+
+  if (has("stroller", "bike trailer", "pet wagon", "pet carrier") && has("dog", "pet")) return "dog_carrier";
+  if (has("carrier", "tote") && has("cat", "kitten")) return "cat_carrier";
+  if (has("backpack carrier", "sling carrier")) return "dog_carrier";
+
+  if (has("kennel", "outdoor house", "dog house", "cat house", "pet enclosure", "outdoor enclosure", "catio", "playpen") )
+    return "outdoor_house";
+
+  if (has("gps", "tracker", "wireless fence", "shock collar", "training collar", "bark collar", "remote trainer") )
+    return "dog_training";
+
+  if (has("collar", "leash", "harness leash", "bandana") && has("dog", "puppy", "pet"))
+    return "dog_collar";
+
+  if (has("elevated bowl", "feeding station", "double bowl", "stainless bowl", "ceramic bowl", "raised bowl", "slow feeder bowl") )
+    return "bowl_station";
+
+  if (has("cat bed", "kitten bed", "cat cushion", "cat nap")) return "cat_bed";
+
+  // ── Existing rules (unchanged behavior) ───────────────────────────────────
   if (has("litter box", "litter-box", "litter") && has("cat", "kitten") && has("auto", "self", "smart"))
     return "cat_litter";
   if (has("litter") && has("cat")) return "cat_litter";
