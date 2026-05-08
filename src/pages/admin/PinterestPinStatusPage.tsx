@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -258,8 +258,8 @@ export default function PinterestPinStatusPage() {
                     const log = logs[r.id];
                     const canRetry = ['failed', 'rejected', 'queued', 'draft'].includes(r.status);
                     return (
-                      <>
-                      <TableRow key={r.id}>
+                      <Fragment key={r.id}>
+                      <TableRow>
                         <TableCell>
                           <div className="flex items-start gap-2">
                             <button
@@ -326,7 +326,7 @@ export default function PinterestPinStatusPage() {
                         </TableCell>
                       </TableRow>
                       {isOpen && (
-                        <TableRow key={`${r.id}-debug`} className="bg-muted/30">
+                        <TableRow className="bg-muted/30">
                           <TableCell colSpan={7} className="p-4">
                             <div className="grid gap-3 md:grid-cols-2 text-xs">
                               <div className="space-y-1">
@@ -383,7 +383,7 @@ export default function PinterestPinStatusPage() {
                           </TableCell>
                         </TableRow>
                       )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </TableBody>
