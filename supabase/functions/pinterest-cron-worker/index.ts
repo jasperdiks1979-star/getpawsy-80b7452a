@@ -156,6 +156,13 @@ async function validatePinterestAuthForCron(sb: any, conn: any, accessToken: str
     board_count: boardCount,
     updated_at: new Date().toISOString(),
   }).eq("id", conn.id);
+  if (ok) {
+    await sb.from("pinterest_runtime_settings").update({
+      active_pinterest_connection_id: conn.id,
+      mode: "production",
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+  }
   return { ok, error, account, boards, boardCount };
 }
 
