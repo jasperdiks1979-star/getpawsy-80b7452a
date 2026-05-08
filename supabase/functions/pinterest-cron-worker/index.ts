@@ -223,6 +223,66 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // ── Cron execution telemetry ──
+  // Every tick writes a row to cron_job_logs so the admin dashboard can show
+  // last run, duration, items processed, and success/failure counts.
+  const cronStartedAt = Date.now();
+  let cronLogId: string | null = null;
+  try {
+    const { data: cl } = await sb
+      .from("cron_job_logs")
+      .insert({
+        job_name: "pinterest-cron-publish",
+        started_at: new Date(cronStartedAt).toISOString(),
+        status: "running",
+      })
+      .select("id")
+      .single();
+    cronLogId = (cl as any)?.id ?? null;
+  } catch (e) {
+    console.warn("[cron] failed to insert cron_job_logs row:", e);
+  }
+  const respond = async (
+    payload: Record<string, unknown>,
+    opts: {
+      httpStatus?: number;
+      success?: boolean;
+      logStatus?: string;
+      processed?: number;
+      failed?: number;
+      error?: string | null;
+      details?: Record<string, unknown>;
+    } = {},
+  ): Promise<Response> => {
+    const success = opts.success ?? (payload.ok === true);
+    if (cronLogId) {
+      try {
+        await sb
+          .from("cron_job_logs")
+          .update({
+            completed_at: new Date().toISOString(),
+            status: opts.logStatus ?? (success ? "completed" : "skipped"),
+            success,
+            items_processed: opts.processed ?? 0,
+            items_failed: opts.failed ?? 0,
+            error_message: opts.error ?? null,
+            details: {
+              ...(opts.details ?? {}),
+              duration_ms: Date.now() - cronStartedAt,
+              message: payload.message ?? null,
+            },
+          })
+          .eq("id", cronLogId);
+      } catch (e) {
+        console.warn("[cron] failed to update cron_job_logs row:", e);
+      }
+    }
+    return new Response(JSON.stringify(payload), {
+      status: opts.httpStatus ?? 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  };
+
   const results: Array<{
     pinId: string;
     status: string;
