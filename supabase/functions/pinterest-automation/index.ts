@@ -34,6 +34,7 @@ const DIRECT_TEST_TITLE = "Self-Cleaning Cat Litter Box";
 const DIRECT_TEST_DESCRIPTION = "A smart automatic litter box for busy cat owners.";
 const DIRECT_TEST_REQUIRED_SCOPE = "pins:write";
 const DIRECT_TEST_ADMIN_EMAILS = new Set(["jasperdiks@hotmail.com"]);
+const APPROVED_PINTEREST_CLIENT_ID = "1567611";
 
 function tokenPrefix(token: string | null | undefined) {
   return token ? token.slice(0, 12) : null;
@@ -41,8 +42,14 @@ function tokenPrefix(token: string | null | undefined) {
 
 function clientIdPrefix(clientId: string | null | undefined) {
   if (!clientId) return null;
-  if (clientId.length <= 8) return clientId;
-  return `${clientId.slice(0, 4)}…${clientId.slice(-3)}`;
+  const confirmationDigits = clientId.slice(0, APPROVED_PINTEREST_CLIENT_ID.length);
+  return clientId.length > APPROVED_PINTEREST_CLIENT_ID.length
+    ? `${confirmationDigits}…${clientId.slice(-3)}`
+    : confirmationDigits;
+}
+
+function activeClientIdMatchesApproved() {
+  return Deno.env.get("PINTEREST_CLIENT_ID") === APPROVED_PINTEREST_CLIENT_ID;
 }
 
 /**
