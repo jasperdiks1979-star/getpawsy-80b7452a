@@ -28,6 +28,9 @@ export type PinQaReason =
 /** During QA stabilization ONLY this product slug may publish to Pinterest. */
 export const PINTEREST_ALLOWED_SLUGS: ReadonlySet<string> = new Set([
   "automatic-cat-litter-box-self-cleaning-app-control",
+  // Phase 1 — Controlled Launch (3 premium pins, 24h warm-up)
+  "cactus-cat-climbing-tree-all-in-one-condo",
+  "hidden-cat-litter-box-furniture-enclosure",
 ]);
 
 export interface PinQaInput {
