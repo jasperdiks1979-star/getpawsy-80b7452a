@@ -120,7 +120,7 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
     if (DOG_PATTERNS.test(corpus) || FISH_PATTERNS.test(corpus) || BIRD_PATTERNS.test(corpus)) {
       reasons.add("product_mismatch");
     }
-    if (board && !/cat|litter|smart\s*pet/i.test(board)) {
+    if (board && !/cat|litter|smart\s*pet|pet\s*parent|modern\s*cat|automatic|getpawsy/i.test(board)) {
       reasons.add("category_mismatch");
     }
   }
