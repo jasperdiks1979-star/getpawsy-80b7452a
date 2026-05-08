@@ -14,7 +14,14 @@ import type {
 } from "../_shared/pinterest-queue-types.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 import { sanitizeUrl, quarantineEvent } from "../_shared/event-sanitizer.ts";
-import { hashImageUrl, containsTargetKeyword } from "../_shared/pinterest-hooks.ts";
+import {
+  hashImageUrl,
+  containsTargetKeyword,
+  containsCategoryKeyword,
+  resolveCategoryKey,
+  TARGET_KEYWORDS_BY_CATEGORY,
+  STYLE_TO_BOARD_FALLBACK,
+} from "../_shared/pinterest-hooks.ts";
 
 export type {
   PinterestQueueInsert,
@@ -359,15 +366,17 @@ const HOOK_GROUPS = [
   { key: "time_saving",     angle: "Time-saving",      cta: "Save Hours Weekly" },
   { key: "social_proof",    angle: "Social proof",     cta: "Join 10,000+ Owners" },
   { key: "transformation",  angle: "Transformation",   cta: "Shop the Upgrade" },
+  { key: "infographic",     angle: "Infographic",      cta: "See the Checklist" },
 ] as const;
 
-/** Map our 5 hooks → the 4 PDP intent slots (problem/solution/comparison/transformation). */
+/** Map our 6 hooks → the 4 PDP intent slots (problem/solution/comparison/transformation). */
 const HOOK_TO_INTENT: Record<string, string> = {
   pain: "problem",
   curiosity: "solution",
   time_saving: "solution",
   social_proof: "comparison",
   transformation: "transformation",
+  infographic: "solution",
 };
 
 function escapeOverlay(s: string): string {
