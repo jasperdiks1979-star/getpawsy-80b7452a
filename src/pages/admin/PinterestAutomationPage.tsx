@@ -3,6 +3,7 @@ import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -404,6 +405,9 @@ function PinterestDashboard() {
   const [debugToken, setDebugToken] = useState<{ token: string; expires_at: string; ttl_minutes: number; label: string | null } | null>(null);
   const [debugTokenTtl, setDebugTokenTtl] = useState<number>(10);
   const [appDiagnostic, setAppDiagnostic] = useState<any | null>(null);
+  const [expectedRedirectUri, setExpectedRedirectUri] = useState<string>(() => {
+    try { return localStorage.getItem("pinterest_expected_redirect_uri") || ""; } catch { return ""; }
+  });
 
   const fetchAppDiagnostic = useCallback(async () => {
     try {
@@ -415,6 +419,10 @@ function PinterestDashboard() {
   }, []);
 
   useEffect(() => { void fetchAppDiagnostic(); }, [fetchAppDiagnostic]);
+
+  useEffect(() => {
+    try { localStorage.setItem("pinterest_expected_redirect_uri", expectedRedirectUri); } catch {}
+  }, [expectedRedirectUri]);
 
   const fetchDirectTestHistory = useCallback(async () => {
     const { data, error } = await supabase
@@ -1083,6 +1091,31 @@ function PinterestDashboard() {
                   </div>
                 </div>
               )}
+              <div className="mt-2 rounded-md border border-border bg-background/60 p-2 space-y-2">
+                <p className="text-[11px] uppercase text-muted-foreground">Pinterest Developer Console redirect_uri validatie</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Plak hier de redirect_uri uit Pinterest Developer Console..."
+                    value={expectedRedirectUri}
+                    onChange={(e) => setExpectedRedirectUri(e.target.value)}
+                    className="h-7 text-xs font-mono flex-1"
+                  />
+                  {expectedRedirectUri && (
+                    <Badge
+                      variant={appDiagnostic?.redirect_uri === expectedRedirectUri ? "default" : "destructive"}
+                      className="shrink-0"
+                    >
+                      {appDiagnostic?.redirect_uri === expectedRedirectUri ? "✓ Exact match" : "✗ Mismatch"}
+                    </Badge>
+                  )}
+                </div>
+                {expectedRedirectUri && appDiagnostic?.redirect_uri !== expectedRedirectUri && (
+                  <p className="text-[11px] text-destructive">
+                    De ACTIVE_REDIRECT_URI komt niet overeen met wat je in Pinterest hebt ingevuld. Update de PINTEREST_REDIRECT_URI environment variable of pas de Pinterest app aan.
+                  </p>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{appDiagnostic.next_step}</p>
             </>
           )}
