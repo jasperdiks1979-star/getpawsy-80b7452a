@@ -1060,6 +1060,29 @@ function PinterestDashboard() {
                 <DiagnosticValue label="trial detected" value={appDiagnostic.production_guard?.trial_detected ? "YES" : "no"} />
                 <DiagnosticValue label="last publish error" value={appDiagnostic.production_guard?.last_pin_publish_error || "—"} mono />
               </div>
+              {appDiagnostic.reconnect_auth_url && (
+                <div className="mt-2 rounded-md border border-border bg-background/60 p-2">
+                  <p className="text-[11px] uppercase text-muted-foreground mb-1">Reconnect Authorization URL</p>
+                  <div className="flex items-start gap-2">
+                    <p className="font-mono break-all text-xs font-medium text-foreground flex-1">{appDiagnostic.reconnect_auth_url}</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 shrink-0"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(appDiagnostic.reconnect_auth_url || "");
+                          toast.success("Authorization URL gekopieerd");
+                        } catch {
+                          toast.error("Kopiëren mislukt");
+                        }
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">{appDiagnostic.next_step}</p>
             </>
           )}
