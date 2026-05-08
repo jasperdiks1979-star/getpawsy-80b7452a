@@ -1296,6 +1296,75 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "pinterest_app_diagnostic") {
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
+      const guard = await getProductionGuardState(sb);
+      const { data: settings } = await sb
+        .from("pinterest_runtime_settings")
+        .select("mode, active_pinterest_connection_id, production_publish_verified, production_publish_verified_at, production_trial_detected, last_pin_publish_error, last_pin_publish_at, verified_client_id_prefix, updated_at")
+        .eq("id", 1)
+        .maybeSingle();
+      const apiBase = settings?.mode === "sandbox"
+        ? "https://api-sandbox.pinterest.com/v5"
+        : PINTEREST_PRODUCTION_API_BASE;
+      const redirectUri = Deno.env.get("PINTEREST_REDIRECT_URI") ||
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-oauth-callback`;
+      return json(cors, {
+        ok: true,
+        client_id_prefix: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
+        client_id_present: Boolean(Deno.env.get("PINTEREST_CLIENT_ID")),
+        client_secret_present: Boolean(Deno.env.get("PINTEREST_CLIENT_SECRET")),
+        redirect_uri: redirectUri,
+        api_base: apiBase,
+        mode: settings?.mode || "sandbox",
+        token: conn ? {
+          prefix: conn.token_prefix || tokenPrefix(conn.access_token),
+          token_created_at: conn.token_created_at || null,
+          token_expires_at: conn.token_expires_at || null,
+          scopes: conn.scopes || null,
+          status: conn.status,
+          account_name: conn.account_name || null,
+          board_count: conn.board_count ?? null,
+          last_account_status: conn.last_account_status ?? null,
+          last_boards_status: conn.last_boards_status ?? null,
+          last_error: conn.last_error || null,
+          connection_id: conn.id,
+        } : null,
+        production_guard: {
+          verified: guard.verified,
+          verified_at: guard.verified_at,
+          trial_detected: guard.trial_detected,
+          last_pin_publish_error: guard.last_pin_publish_error,
+          verified_client_id_prefix: guard.verified_client_id_prefix,
+          current_client_id_prefix: guard.current_client_id_prefix,
+          client_id_matches_verified: guard.client_id_matches,
+        },
+        publishing_allowed: guard.verified && !guard.trial_detected,
+        not_standard_message: guard.trial_detected
+          ? "Wrong Pinterest app credentials or approval not applied to this client_id."
+          : null,
+        next_step: guard.verified && !guard.trial_detected
+          ? "Production publishing is unlocked."
+          : guard.trial_detected
+            ? "Pinterest reported Trial access. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app, then run a fresh OAuth reconnect and Direct Pin Test."
+            : "Run Direct Pin Test once after reconnect to unlock production publishing.",
+      });
+    }
+
+    if (action === "reset_production_guard") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      await sb.from("pinterest_runtime_settings").update({
+        production_publish_verified: false,
+        production_publish_verified_at: null,
+        production_trial_detected: false,
+        last_pin_publish_error: null,
+        verified_client_id_prefix: null,
+        updated_at: new Date().toISOString(),
+      }).eq("id", 1);
+      return json(cors, { ok: true, message: "Production guard reset; run Direct Pin Test to unlock publishing." });
+    }
+
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
     console.error("pinterest-automation error:", e);
