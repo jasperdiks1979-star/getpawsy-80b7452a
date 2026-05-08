@@ -405,6 +405,9 @@ function PinterestDashboard() {
   const [debugToken, setDebugToken] = useState<{ token: string; expires_at: string; ttl_minutes: number; label: string | null } | null>(null);
   const [debugTokenTtl, setDebugTokenTtl] = useState<number>(10);
   const [appDiagnostic, setAppDiagnostic] = useState<any | null>(null);
+  const [expectedRedirectUri, setExpectedRedirectUri] = useState<string>(() => {
+    try { return localStorage.getItem("pinterest_expected_redirect_uri") || ""; } catch { return ""; }
+  });
 
   const fetchAppDiagnostic = useCallback(async () => {
     try {
