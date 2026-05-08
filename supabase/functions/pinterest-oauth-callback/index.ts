@@ -123,6 +123,15 @@ Deno.serve(async (req) => {
     const tokenData = await tokenRes.json();
     const tokenCreatedAt = new Date().toISOString();
     const accessToken = String(tokenData.access_token || "");
+    if (!accessToken) {
+      await sb.from("pinterest_post_logs").insert({
+        action: "oauth_connect",
+        status: "failed",
+        error_message: "Pinterest token exchange returned no access_token",
+        response_data: { api_base: PINTEREST_PRODUCTION_API_BASE, token_response_keys: Object.keys(tokenData || {}) },
+      });
+      return Response.redirect(`${adminUrl}?oauth_error=missing_access_token`, 302);
+    }
     const accessTokenSha256 = accessToken ? await sha256Hex(accessToken) : null;
     console.log("[pinterest-oauth-callback] Token exchange successful", {
       scopes: tokenData.scope,
@@ -231,11 +240,13 @@ Deno.serve(async (req) => {
       }).eq("id", 1);
     }
 
-    // Log success
+    // Log final reconnect result with raw validation metadata for diagnostics.
     await sb.from("pinterest_post_logs").insert({
       action: "oauth_connect",
-      status: "success",
+      status: authValid ? "success" : "failed",
+      error_message: authValid ? null : `Pinterest reconnect validation failed: /boards=${boardsApi.status}, board_count=${boardCount}`,
       response_data: {
+        connection_id: insertedConnection.id,
         account: accountName,
         scopes: tokenData.scope,
         expires_at: expiresAt,
@@ -244,8 +255,12 @@ Deno.serve(async (req) => {
         token_sha256: accessTokenSha256,
         api_base: PINTEREST_PRODUCTION_API_BASE,
         user_account_status: accountApi.status,
+        user_account_response_body: accountApi.body,
         boards_status: boardsApi.status,
+        boards_response_body: boardsApi.body,
         board_count: boardCount,
+        active_connection_saved: authValid,
+        token_saved_exactly: tokenSavedExactly,
         auth_valid: authValid,
       },
     });
