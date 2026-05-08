@@ -32,7 +32,28 @@ import {
   LAYOUT_PRESETS,
   type LayoutKey,
   type LayoutValidation,
+  checkCtaProductOverlap,
+  type PlacedLayer,
 } from "./pinterest-layout.ts";
+
+// Merge a CTA↔product overlap check into a base layout validation. Any new
+// issue is appended; `ok` flips false on any collision or safe-area breach.
+function mergeOverlap(base: LayoutValidation, cta: PlacedLayer, product: PlacedLayer): LayoutValidation {
+  const ov = checkCtaProductOverlap(cta, product);
+  if (ov.ok) return base;
+  return {
+    ok: false,
+    issues: [...base.issues, ...ov.issues],
+    collisions: ov.issues.some((i) => i.startsWith("cta_overlaps_product"))
+      ? [...base.collisions, ["cta", "product"] as [string, string]]
+      : base.collisions,
+    unsafe: [
+      ...base.unsafe,
+      ...(ov.ctaUnsafe ? ["cta"] : []),
+      ...(ov.productUnsafe ? ["product"] : []),
+    ],
+  };
+}
 
 export interface TemplateInput {
   productImageUrl: string;
