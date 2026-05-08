@@ -11,6 +11,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
+import { PATTERNS, type PatternId } from '@/lib/pinterest-patterns-client';
+
+const PATTERN_LABELS: Record<string, string> = Object.fromEntries(
+  PATTERNS.map((p) => [p.id as string, p.label]),
+);
+function patternLabel(hookGroup: string | null): { id: PatternId; label: string } | null {
+  if (!hookGroup) return null;
+  const label = PATTERN_LABELS[hookGroup];
+  return label ? { id: hookGroup as PatternId, label } : null;
+}
 
 type PinRow = {
   id: string;
@@ -655,6 +665,18 @@ export default function PinterestPinStatusPage() {
                             ) : null}
                             <div className="min-w-0">
                           <div className="font-medium line-clamp-1">{r.pin_title || '(untitled)'}</div>
+                          {(() => {
+                            const p = patternLabel(r.hook_group);
+                            return p ? (
+                              <Badge
+                                variant="outline"
+                                className="mt-1 mr-1 text-[10px] uppercase tracking-wide bg-violet-500/10 text-violet-700 border-violet-200"
+                                title={`Pattern: ${p.id}`}
+                              >
+                                {p.label}
+                              </Badge>
+                            ) : null;
+                          })()}
                           <div className="text-xs text-muted-foreground line-clamp-1">
                             {r.product_slug} · {r.hook_group || r.pin_variant}
                           </div>

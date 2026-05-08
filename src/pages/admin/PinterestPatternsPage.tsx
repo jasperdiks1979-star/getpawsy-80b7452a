@@ -1,11 +1,54 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { PATTERNS, ALL_NICHES, type PatternSummary } from '@/lib/pinterest-patterns-client';
-import { Sparkles, Check, X } from 'lucide-react';
+import { Sparkles, Check, X, RefreshCw, Loader2 } from 'lucide-react';
 
 export default function PinterestPatternsPage() {
   const [nicheFilter, setNicheFilter] = useState<string>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const [versions, setVersions] = useState<
+    Array<{ pattern_id: string; version: number; source: string; created_at: string }>
+  >([]);
+
+  async function loadVersions() {
+    const { data } = await supabase
+      .from('pinterest_pattern_versions')
+      .select('pattern_id, version, source, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setVersions(data ?? []);
+  }
+
+  useEffect(() => { loadVersions(); }, []);
+
+  async function refreshFromResearch() {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-pattern-research', {
+        body: {},
+      });
+      if (error) throw error;
+      const r = data as { ok: boolean; message?: string; accepted?: unknown[]; skipped?: string[] };
+      if (!r?.ok) throw new Error(r?.message || 'research failed');
+      toast({
+        title: 'Patterns refreshed',
+        description: `${r.accepted?.length ?? 0} updated · ${r.skipped?.length ?? 0} skipped`,
+      });
+      await loadVersions();
+    } catch (e) {
+      toast({
+        title: 'Research refresh failed',
+        description: (e as Error).message,
+        variant: 'destructive',
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const sorted = useMemo(() => {
     if (nicheFilter === 'all') return PATTERNS;
@@ -16,15 +59,21 @@ export default function PinterestPatternsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-fuchsia-600" /> Pinterest Pattern Library
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Codified winning visual patterns of high-performing US pet Pinterest pins. Each pattern is a
-          fingerprint the AI Creative Director uses to constrain scene briefs, render directives, and
-          quality scoring. No competitor assets are referenced or copied.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-fuchsia-600" /> Pinterest Pattern Library
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Codified winning visual patterns of high-performing US pet Pinterest pins. Each pattern is a
+            fingerprint the AI Creative Director uses to constrain scene briefs, render directives, and
+            quality scoring. No competitor assets are referenced or copied.
+          </p>
+        </div>
+        <Button onClick={refreshFromResearch} disabled={refreshing} size="sm" variant="outline">
+          {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          Refresh from research
+        </Button>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -53,6 +102,28 @@ export default function PinterestPatternsPage() {
           <PatternCard key={p.id} pattern={p} highlightNiche={nicheFilter !== 'all' ? nicheFilter : undefined} />
         ))}
       </div>
+
+      {versions.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Recent pattern versions</CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs">
+            <ul className="space-y-1">
+              {versions.map((v, i) => (
+                <li key={i} className="flex items-center gap-2 font-mono">
+                  <Badge variant="outline" className="text-[10px]">v{v.version}</Badge>
+                  <span>{v.pattern_id}</span>
+                  <span className="text-muted-foreground">· {v.source}</span>
+                  <span className="text-muted-foreground ml-auto">
+                    {new Date(v.created_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
