@@ -5117,6 +5117,62 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_creative_winners: {
+        Row: {
+          composite_score: number
+          cta_phrase: string | null
+          ga4_engaged_sessions: number
+          ga4_sessions: number
+          hook_category: string | null
+          last_recomputed_at: string
+          niche_key: string | null
+          pattern_id: string | null
+          pin_queue_id: string
+          pinterest_impressions: number
+          pinterest_outbound_clicks: number
+          pinterest_saves: number
+          profit_verdict: string | null
+        }
+        Insert: {
+          composite_score?: number
+          cta_phrase?: string | null
+          ga4_engaged_sessions?: number
+          ga4_sessions?: number
+          hook_category?: string | null
+          last_recomputed_at?: string
+          niche_key?: string | null
+          pattern_id?: string | null
+          pin_queue_id: string
+          pinterest_impressions?: number
+          pinterest_outbound_clicks?: number
+          pinterest_saves?: number
+          profit_verdict?: string | null
+        }
+        Update: {
+          composite_score?: number
+          cta_phrase?: string | null
+          ga4_engaged_sessions?: number
+          ga4_sessions?: number
+          hook_category?: string | null
+          last_recomputed_at?: string
+          niche_key?: string | null
+          pattern_id?: string | null
+          pin_queue_id?: string
+          pinterest_impressions?: number
+          pinterest_outbound_clicks?: number
+          pinterest_saves?: number
+          profit_verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_creative_winners_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_debug_tokens: {
         Row: {
           created_at: string
@@ -5234,6 +5290,33 @@ export type Database = {
           pattern_id?: string
           source?: string
           version?: number
+        }
+        Relationships: []
+      }
+      pinterest_pattern_weights: {
+        Row: {
+          composite_score: number
+          hook_category: string
+          niche_key: string
+          pattern_id: string
+          sample_size: number
+          updated_at: string
+        }
+        Insert: {
+          composite_score?: number
+          hook_category: string
+          niche_key: string
+          pattern_id: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Update: {
+          composite_score?: number
+          hook_category?: string
+          niche_key?: string
+          pattern_id?: string
+          sample_size?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -5630,6 +5713,62 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      pinterest_render_attempts: {
+        Row: {
+          attempt_no: number
+          brief: Json | null
+          created_at: string
+          hook_category: string | null
+          id: string
+          niche_key: string | null
+          pattern_id: string | null
+          pin_queue_id: string | null
+          product_slug: string | null
+          reasons: string[]
+          rejected: boolean
+          scores: Json
+          total_score: number | null
+        }
+        Insert: {
+          attempt_no?: number
+          brief?: Json | null
+          created_at?: string
+          hook_category?: string | null
+          id?: string
+          niche_key?: string | null
+          pattern_id?: string | null
+          pin_queue_id?: string | null
+          product_slug?: string | null
+          reasons?: string[]
+          rejected?: boolean
+          scores?: Json
+          total_score?: number | null
+        }
+        Update: {
+          attempt_no?: number
+          brief?: Json | null
+          created_at?: string
+          hook_category?: string | null
+          id?: string
+          niche_key?: string | null
+          pattern_id?: string | null
+          pin_queue_id?: string | null
+          product_slug?: string | null
+          reasons?: string[]
+          rejected?: boolean
+          scores?: Json
+          total_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_render_attempts_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_runtime_settings: {
         Row: {
