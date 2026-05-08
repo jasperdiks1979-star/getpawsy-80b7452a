@@ -28,6 +28,9 @@ export interface TemplateInput {
   productImageUrl: string;
   /** Optional lifestyle backdrop. Required by `problem`, `before_after`, `lifestyle`. */
   backdropUrl?: string | null;
+  /** Optional second backdrop — used by `before_after` for the AFTER scene.
+   *  When omitted the AFTER half falls back to a brighter recolor of `backdropUrl`. */
+  backdropAfterUrl?: string | null;
   /** Headline text — required by all styles. */
   top: string;
   /** CTA text — used by all styles except `problem`. */
@@ -53,6 +56,24 @@ const H = 1920;
  * `l_fetch` of the same image, duplicating it on the pin. */
 const BLANK_BASE = "https://getpawsy.pet/placeholder.svg";
 
+// Cloudinary text supports %0A for newlines. We use it to soft-wrap headlines
+// so they never overflow the safe area. Word-aware to avoid breaking mid-word.
+function wrapHeadline(s: string, charsPerLine: number, maxLines = 3): string {
+  const words = (s || "").trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    if (!cur) { cur = w; continue; }
+    if ((cur + " " + w).length <= charsPerLine) cur += " " + w;
+    else { lines.push(cur); cur = w; if (lines.length >= maxLines) break; }
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  return lines.slice(0, maxLines).join("%0A");
+}
+
+// Right-arrow glyph for premium CTAs — URL-encoded UTF-8.
+const ARROW = "%20%E2%86%92"; // "  →"
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function escapeText(s: string): string {
@@ -64,6 +85,17 @@ function escapeText(s: string): string {
       .trim()
       .slice(0, 60),
   );
+}
+
+// Like escapeText but PRESERVES injected %0A line breaks produced by wrapHeadline.
+function escapeWrapped(s: string): string {
+  // s is already URL-segment-friendly except for spaces/commas which we must clean.
+  return s
+    .replace(/[,/]/g, " ")
+    .replace(/[“”‘’]/g, "'")
+    .split("%0A")
+    .map((line) => encodeURIComponent(line.trim().slice(0, 28)))
+    .join("%0A");
 }
 
 function fetchB64(url: string): string {
@@ -93,288 +125,381 @@ function darkCanvas(extra: string[] = []): string[] {
   return ["w_" + W, "h_" + H, "c_pad", "b_rgb:121212", "q_auto", "f_jpg", ...extra];
 }
 
+/** Full-bleed dark scrim band — gives photo backdrops a guaranteed legible
+ *  zone for headlines. Renders a semi-transparent black rectangle anchored
+ *  to a gravity, sized to the headline plate. */
+function scrimBand(opts: { gravity: "north" | "south" | "center"; height: number; y: number; opacity?: number }): string[] {
+  return [
+    "l_text:Arial_120_bold:%20",
+    "b_rgb:000000",
+    "co_rgb:00000000",
+    "w_" + W, "h_" + opts.height, "c_fit",
+    "g_" + opts.gravity, "y_" + opts.y,
+    "o_" + (opts.opacity ?? 65),
+  ];
+}
+
 // ── Per-style templates ────────────────────────────────────────────────────
 
 /**
- * PROBLEM — emotional poster.
- * Backdrop photo, dark gradient overlay, large headline lower-left, no CTA pill
- * (CTA is delivered via a small CTR badge top-right).
+ * PROBLEM — emotional editorial poster.
+ * Full-bleed photo, soft top vignette + bottom scrim for legibility,
+ * 3-line wrapped serif headline anchored bottom-left, premium pill CTA above it,
+ * tiny brand mark + CTR badge top-right. NO empty cream zones.
  */
 function tplProblem(input: TemplateInput): TemplateOutput {
   const backdrop = input.backdropUrl || input.productImageUrl;
-  const yJitter = 80 + (Math.abs(input.seed) % 60);
-  const base = ["w_" + W, "h_" + H, "c_fill", "g_auto", "e_brightness:-45", "e_saturation:-15", "e_blur:50", "q_auto", "f_jpg"];
+  const base = [
+    "w_" + W, "h_" + H, "c_fill", "g_auto",
+    "e_brightness:-15", "e_saturation:-5", "e_contrast:10",
+    "q_auto", "f_jpg",
+  ];
+  // Bottom scrim — guarantees text legibility regardless of photo content.
+  const bottomScrim = scrimBand({ gravity: "south", height: 720, y: 0, opacity: 70 });
+  // Top scrim — softer, supports the badge row.
+  const topScrim = scrimBand({ gravity: "north", height: 240, y: 0, opacity: 45 });
 
-  const productMini = [
+  // Product floating bottom-right — soft white card, generous shadow feel via border.
+  const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_440", "h_440", "c_fit", "g_north_east", "x_60", "y_120", "r_max",
-    "bo_6px_solid_rgb:FFFFFF",
+    "w_460", "h_460", "c_fit", "g_south_east", "x_70", "y_180", "r_28",
+    "bo_3px_solid_rgb:FFFFFF",
   ];
 
+  // Headline — wrapped serif, max 3 lines, anchored bottom-left.
+  const wrapped = wrapHeadline(input.top, 18, 3);
   const headline = [
-    "l_text:Georgia_96_bold:" + escapeText(input.top),
-    "co_rgb:FFFFFF", "w_900", "c_fit", "g_south_west", "x_70", "y_" + (200 + yJitter),
+    "l_text:Georgia_88_bold:" + escapeWrapped(wrapped),
+    "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_360",
   ];
+
+  // Premium CTA pill anchored above the product.
+  const ctaText = input.bottom + ARROW;
+  const cta = [
+    "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_460", "c_fit",
+    "g_south_west", "x_80", "y_220",
+  ];
+  void ctaText;
 
   const ctrBadge = input.ctrBadge
     ? [
-        "l_text:Arial_36_bold:" + escapeText(input.ctrBadge),
-        "co_rgb:121212", "b_rgb:FFFFFF", "r_max", "w_500", "c_fit",
-        "g_north_west", "x_60", "y_120",
+        "l_text:Arial_34_bold:" + escapeText(input.ctrBadge),
+        "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_460", "c_fit",
+        "g_north_west", "x_60", "y_90",
       ]
     : null;
 
-  const layers: string[][] = [base, productMini, headline];
+  const brand = [
+    "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
+    "co_rgb:FFFFFF", "g_north_east", "x_60", "y_110", "o_85",
+  ];
+
+  const layers: string[][] = [base, topScrim, bottomScrim, product, headline, cta, brand];
   if (ctrBadge) layers.push(ctrBadge);
   return {
     url: build(layers, backdrop),
-    layoutSignature: `problem|y${yJitter}|badge${ctrBadge ? 1 : 0}`,
+    layoutSignature: `problem|premium|badge${ctrBadge ? 1 : 0}`,
   };
 }
 
 /**
- * BEFORE / AFTER — vertical 50/50 split frame.
- * Top half = product on muted cream ("Before"), bottom half = product on
- * warm lifestyle backdrop ("After"). Thin orange divider.
+ * BEFORE / AFTER — true split with TWO different scenes.
+ * Top half = "Before" backdrop (messy/cluttered, desaturated).
+ * Bottom half = "After" backdrop (clean/aesthetic, vibrant) with the product
+ * composited as the hero. Diagonal divider, premium labels, headline as a
+ * narrow center band so neither scene is hidden.
  */
 function tplBeforeAfter(input: TemplateInput): TemplateOutput {
-  const backdrop = input.backdropUrl || input.productImageUrl;
-  // Top half base — desaturated cream
-  const base = ["w_" + W, "h_" + H, "c_pad", "b_rgb:E6DED2", "q_auto", "f_jpg"];
+  const beforeBg = input.backdropUrl || input.productImageUrl;
+  const afterBg = input.backdropAfterUrl || input.backdropUrl || input.productImageUrl;
 
-  // Bottom-half: warm backdrop overlay (covers lower 960px)
-  const bottomBackdrop = [
-    "l_fetch:" + fetchB64(backdrop),
-    "w_" + W, "h_960", "c_fill", "g_south", "y_0",
-    "e_brightness:-10", "e_saturation:25",
+  // Base = BEFORE photo on top half, desaturated to feel "problematic".
+  const base = [
+    "w_" + W, "h_" + H, "c_fill", "g_auto",
+    "e_saturation:-55", "e_brightness:-10", "e_contrast:5",
+    "q_auto", "f_jpg",
   ];
 
-  // Product image — top half (greyish "Before")
-  const productTop = [
+  // AFTER backdrop covers the lower 60% with a warmer, vibrant look.
+  const afterCover = [
+    "l_fetch:" + fetchB64(afterBg),
+    "w_" + W, "h_1180", "c_fill", "g_south", "y_0",
+    "e_brightness:5", "e_saturation:25", "e_contrast:8",
+  ];
+
+  // Soft cream divider band — emulates a fold instead of a hard line.
+  const fold = [
+    "l_text:Arial_120_bold:%20",
+    "b_rgb:FAF6F0", "co_rgb:00000000",
+    "w_" + W, "h_24", "c_fit",
+    "g_center", "y_-20", "o_90",
+  ];
+
+  // Product hero composited into the AFTER half.
+  const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_700", "h_700", "c_fit", "g_north", "y_240",
-    "e_saturation:-50", "e_brightness:-5",
+    "w_720", "h_720", "c_fit", "g_south", "y_280", "r_28",
+    "bo_4px_solid_rgb:FFFFFF",
   ];
 
-  // Product image — bottom half ("After", saturated)
-  const productBot = [
-    "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_700", "h_700", "c_fit", "g_south", "y_220",
-    "e_saturation:25", "r_24", "bo_4px_solid_rgb:FFFFFF",
-  ];
-
-  // Orange divider strip at midline
-  const divider = [
-    "l_text:Arial_28_bold:%E2%80%94",
-    "co_rgb:FF6A1A", "b_rgb:FF6A1A", "w_" + W, "h_8", "c_fit",
-    "g_center", "y_0",
-  ];
-
+  // Premium pill labels — Before (ink) / After (orange).
   const beforeLabel = [
-    "l_text:Arial_44_bold:" + escapeText("Before"),
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_220", "c_fit",
-    "g_north_west", "x_60", "y_120",
+    "l_text:Arial_42_bold:" + escapeText("Before"),
+    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_240", "c_fit",
+    "g_north_west", "x_70", "y_140",
   ];
-
   const afterLabel = [
-    "l_text:Arial_44_bold:" + escapeText("After"),
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_220", "c_fit",
-    "g_south_west", "x_60", "y_120",
+    "l_text:Arial_42_bold:" + escapeText("After"),
+    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_240", "c_fit",
+    "g_south_west", "x_70", "y_180",
   ];
 
+  // Headline sits inside a small center band so it doesn't cover either scene.
+  const wrapped = wrapHeadline(input.top, 24, 2);
+  const headlineScrim = scrimBand({ gravity: "center", height: 220, y: 0, opacity: 78 });
   const headline = [
-    "l_text:Arial_56_bold:" + escapeText(input.top),
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "w_900", "c_fit",
-    "r_24", "g_center", "y_0",
+    "l_text:Georgia_60_bold:" + escapeWrapped(wrapped),
+    "co_rgb:FFFFFF", "w_920", "c_fit", "g_center", "y_0",
+  ];
+
+  // Bottom CTA pill on the AFTER half.
+  const cta = [
+    "l_text:Arial_44_bold:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_540", "c_fit",
+    "g_south", "y_110",
   ];
 
   return {
-    url: build([base, bottomBackdrop, productTop, productBot, divider, beforeLabel, afterLabel, headline], backdrop),
-    layoutSignature: "before_after|split50",
+    url: build([base, afterCover, fold, product, beforeLabel, afterLabel, headlineScrim, headline, cta], beforeBg),
+    layoutSignature: "before_after|premium_split",
   };
 }
 
 /**
- * BENEFIT — clean infographic-lite.
- * Cream canvas, product centered, 3 small rounded "feature badges" floated
- * around it, slim header strip top.
+ * BENEFIT — premium editorial card.
+ * Warm cream canvas, large product hero with soft shadow plate, headline
+ * in serif at top, 3 stat-style chips inline below product, premium CTA
+ * with arrow. Dense composition, no empty zones.
  */
 function tplBenefit(input: TemplateInput): TemplateOutput {
-  const base = creamCanvas();
+  // Warm cream with a soft accent corner — adds depth vs flat fill.
+  const base = ["w_" + W, "h_" + H, "c_pad", "b_rgb:F5EBDD", "q_auto", "f_jpg"];
+  const accentCorner = [
+    "l_text:Arial_400_bold:%20",
+    "b_rgb:FF6A1A", "co_rgb:00000000",
+    "w_900", "h_900", "c_fit",
+    "g_north_east", "x_-200", "y_-200", "o_18",
+  ];
+
+  // Editorial headline (serif, wrapped, anchored top-left).
+  const wrapped = wrapHeadline(input.top, 16, 3);
+  const headline = [
+    "l_text:Georgia_84_bold:" + escapeWrapped(wrapped),
+    "co_rgb:1A1410", "w_920", "c_fit", "g_north_west", "x_80", "y_140",
+  ];
+
+  // Soft plate behind the product for depth.
+  const plate = [
+    "l_text:Arial_400_bold:%20",
+    "b_rgb:FFFFFF", "co_rgb:00000000",
+    "w_860", "h_900", "c_fit",
+    "g_center", "y_60", "o_85", "r_36",
+  ];
 
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_780", "h_900", "c_fit", "g_center", "y_60", "r_28",
+    "w_760", "h_840", "c_fit", "g_center", "y_60", "r_24",
   ];
 
-  // Top header strip
-  const header = [
-    "l_text:Arial_56_bold:" + escapeText(input.top),
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "w_" + W, "h_180", "c_fit",
-    "g_north", "y_0",
+  // Three stat chips inline at the bottom of the plate.
+  const stats: [string, string, string] = [
+    pick(["No scoop", "Self-clean", "App-control"], input.seed),
+    pick(["Odor-free", "Quiet motor", "Quick setup"], input.seed + 1),
+    pick(["Save hours", "Cat-loved", "Built to last"], input.seed + 2),
   ];
-
-  // 3 feature badges — left middle / right top / right bottom
-  const badges = [
-    pick(["No mess", "Quiet motor", "App control"], input.seed),
-    pick(["Fast clean", "Odor-free", "5-min setup"], input.seed + 1),
-    pick(["Saves time", "Cat-tested", "Built to last"], input.seed + 2),
+  const chip = (label: string, x: number) => [
+    "l_text:Arial_34_bold:" + escapeText(label),
+    "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_2px_solid_rgb:FF6A1A",
+    "r_max", "w_300", "c_fit",
+    "g_south", "x_" + x, "y_280",
   ];
-  const b1 = [
-    "l_text:Arial_38_bold:" + escapeText(badges[0]),
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_360", "c_fit",
-    "g_west", "x_60", "y_-100",
-  ];
-  const b2 = [
-    "l_text:Arial_38_bold:" + escapeText(badges[1]),
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_3px_solid_rgb:FF6A1A",
-    "r_max", "w_360", "c_fit",
-    "g_east", "x_60", "y_-200",
-  ];
-  const b3 = [
-    "l_text:Arial_38_bold:" + escapeText(badges[2]),
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_3px_solid_rgb:1A1410",
-    "r_max", "w_360", "c_fit",
-    "g_east", "x_60", "y_200",
-  ];
+  const c1 = chip(stats[0], -340);
+  const c2 = chip(stats[1], 0);
+  const c3 = chip(stats[2], 340);
 
   const cta = [
-    "l_text:Arial_48_bold:" + escapeText(input.bottom),
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_24", "w_700", "c_fit",
+    "l_text:Arial_50_bold:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_640", "c_fit",
     "g_south", "y_120",
   ];
 
   return {
-    url: build([base, product, header, b1, b2, b3, cta], BLANK_BASE),
-    layoutSignature: `benefit|b1=${badges[0]}|b2=${badges[1]}|b3=${badges[2]}`,
+    url: build([base, accentCorner, plate, product, headline, c1, c2, c3, cta], BLANK_BASE),
+    layoutSignature: `benefit|premium|s=${stats.join("/")}`,
   };
 }
 
 /**
- * LIFESTYLE — full-bleed cozy interior, product composited subtly.
- * Minimal text: small bottom-left brand mark + soft CTA badge top-right.
+ * LIFESTYLE — full-bleed cozy interior, product composited as a soft hero.
+ * Editorial wrapped headline top-left over a top scrim; pill CTA + brand mark
+ * bottom row. Photo is the star.
  */
 function tplLifestyle(input: TemplateInput): TemplateOutput {
   const backdrop = input.backdropUrl || input.productImageUrl;
-  const base = ["w_" + W, "h_" + H, "c_fill", "g_auto", "e_brightness:-5", "e_saturation:10", "q_auto", "f_jpg"];
+  const base = [
+    "w_" + W, "h_" + H, "c_fill", "g_auto",
+    "e_brightness:-5", "e_saturation:15", "e_contrast:6",
+    "q_auto", "f_jpg",
+  ];
+  const topScrim = scrimBand({ gravity: "north", height: 520, y: 0, opacity: 55 });
+  const bottomScrim = scrimBand({ gravity: "south", height: 280, y: 0, opacity: 55 });
 
+  // Product hero — soft white card bottom-right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_640", "h_780", "c_fit", "g_south_east", "x_60", "y_220", "r_24",
+    "w_560", "h_700", "c_fit", "g_south_east", "x_70", "y_240", "r_24",
     "bo_4px_solid_rgb:FFFFFF",
   ];
 
-  // Tiny brand mark bottom-left
-  const brand = [
-    "l_text:Georgia_36_bold:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_south_west", "x_80", "y_100",
-  ];
-
-  // Soft CTA badge top-right
-  const cta = [
-    "l_text:Arial_40_bold:" + escapeText(input.bottom),
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_520", "c_fit",
-    "g_north_east", "x_60", "y_120",
-  ];
-
-  // Large but light editorial headline top-left
+  // Editorial wrapped headline.
+  const wrapped = wrapHeadline(input.top, 18, 3);
   const headline = [
-    "l_text:Georgia_64_bold:" + escapeText(input.top),
-    "co_rgb:FFFFFF", "w_700", "c_fit",
-    "g_north_west", "x_80", "y_280",
+    "l_text:Georgia_76_bold:" + escapeWrapped(wrapped),
+    "co_rgb:FFFFFF", "w_840", "c_fit",
+    "g_north_west", "x_80", "y_180",
+  ];
+
+  // Premium pill CTA + brand mark on the bottom scrim.
+  const cta = [
+    "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_520", "c_fit",
+    "g_south_west", "x_80", "y_110",
+  ];
+  const brand = [
+    "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
+    "co_rgb:FFFFFF", "g_south_east", "x_80", "y_130", "o_85",
   ];
 
   return {
-    url: build([base, product, brand, cta, headline], backdrop),
-    layoutSignature: "lifestyle|fullbleed",
+    url: build([base, topScrim, bottomScrim, product, headline, cta, brand], backdrop),
+    layoutSignature: "lifestyle|premium",
   };
 }
 
 /**
- * VIRAL — TikTok-style hook poster.
- * Black canvas, neon-orange diagonal block, large screaming headline top,
- * product mid, curiosity CTA pill bottom.
+ * VIRAL — TikTok energy with breathing room.
+ * Charcoal canvas, slightly rotated orange splash, screaming wrapped headline,
+ * product mid with neon outline, premium curiosity CTA bottom.
  */
 function tplViral(input: TemplateInput): TemplateOutput {
   const base = darkCanvas();
 
-  // Orange "splash" — large rotated text-as-block in the upper third
+  // Slight rotation jitter for organic feel.
+  const angle = -4 - (Math.abs(input.seed) % 5);
   const splash = [
     "l_text:Arial_400_bold:%20",
     "b_rgb:FF6A1A", "co_rgb:00000000",
-    "w_1400", "h_540", "c_fit",
-    "g_north", "y_-80", "a_-6", "o_90",
+    "w_1500", "h_620", "c_fit",
+    "g_north", "y_-100", "a_" + angle, "o_92",
   ];
 
+  const wrapped = wrapHeadline(input.top, 14, 3);
   const headline = [
-    "l_text:Impact_104_bold:" + escapeText(input.top),
+    "l_text:Impact_96_bold:" + escapeWrapped(wrapped),
     "co_rgb:FFFFFF", "w_980", "c_fit",
-    "g_north", "y_220",
+    "g_north", "y_200",
   ];
 
+  // Product card with white inner border for depth.
+  const productPlate = [
+    "l_text:Arial_400_bold:%20",
+    "b_rgb:FFFFFF", "co_rgb:00000000",
+    "w_840", "h_840", "c_fit",
+    "g_center", "y_60", "r_36", "o_100",
+  ];
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
     "w_780", "h_780", "c_fit", "g_center", "y_60", "r_24",
-    "bo_6px_solid_rgb:FF6A1A",
   ];
 
   const cta = [
-    "l_text:Arial_56_bold:" + escapeText(input.bottom),
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_780", "c_fit",
+    "l_text:Arial_56_bold:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:121212", "b_rgb:FFFFFF", "r_max", "w_760", "c_fit",
     "g_south", "y_140",
   ];
 
+  // Tiny CTR badge below CTA for save-prompts.
+  const ctrBadge = input.ctrBadge
+    ? [
+        "l_text:Arial_30_bold:" + escapeText(input.ctrBadge),
+        "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_360", "c_fit",
+        "g_south", "y_60",
+      ]
+    : null;
+
+  const layers: string[][] = [base, splash, headline, productPlate, product, cta];
+  if (ctrBadge) layers.push(ctrBadge);
   return {
-    url: build([base, splash, headline, product, cta], BLANK_BASE),
-    layoutSignature: "viral|tiktok",
+    url: build(layers, BLANK_BASE),
+    layoutSignature: `viral|premium|a${angle}`,
   };
 }
 
 /**
- * INFOGRAPHIC — numbered 3-step strip down the right side.
- * Cream canvas, product hero left, header band top, "Save this" badge top-right.
+ * INFOGRAPHIC — save-worthy numbered checklist.
+ * Warm cream canvas, serif title block top, product hero left,
+ * 3 numbered cards stacked right with tight spacing, premium "Save" badge,
+ * CTA bar bottom.
  */
 function tplInfographic(input: TemplateInput): TemplateOutput {
-  const base = creamCanvas();
+  const base = ["w_" + W, "h_" + H, "c_pad", "b_rgb:F5EBDD", "q_auto", "f_jpg"];
 
-  const header = [
-    "l_text:Arial_56_bold:" + escapeText(input.top),
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "w_" + W, "h_180", "c_fit",
-    "g_north", "y_0",
+  // Wrapped serif title up top.
+  const wrappedTitle = wrapHeadline(input.top, 18, 2);
+  const title = [
+    "l_text:Georgia_72_bold:" + escapeWrapped(wrappedTitle),
+    "co_rgb:1A1410", "w_920", "c_fit",
+    "g_north_west", "x_80", "y_120",
   ];
 
+  // Product hero on the left, contained within bottom 65% so cards fit right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_540", "h_960", "c_fit", "g_west", "x_40", "y_-20", "r_24",
+    "w_500", "h_900", "c_fit", "g_south_west", "x_60", "y_220", "r_24",
   ];
 
-  // 3 numbered cards on the right side
   const stepLabels = [
     pick(["Plug it in", "Open the box", "Place anywhere"], input.seed),
     pick(["Tap to clean", "Pair the app", "Set a schedule"], input.seed + 1),
-    pick(["Enjoy quiet days", "Done in seconds", "Save hours weekly"], input.seed + 2),
+    pick(["Save 30 min/week", "Done in seconds", "Quiet & odor-free"], input.seed + 2),
   ];
-  const card = (n: number, label: string, y: number, color: string) => [
-    "l_text:Arial_44_bold:" + escapeText(`${n}. ${label}`),
-    "co_rgb:1A1410", `b_rgb:${color}`, "bo_2px_solid_rgb:1A1410",
-    "r_24", "w_460", "c_fit",
-    "g_east", "x_40", `y_${y}`,
+  // Cards stacked right, tight vertical rhythm.
+  const card = (n: number, label: string, y: number, fill: string, ink: string) => [
+    "l_text:Arial_38_bold:" + escapeText(`${n}.  ${label}`),
+    "co_rgb:" + ink, "b_rgb:" + fill, "bo_2px_solid_rgb:1A1410",
+    "r_28", "w_440", "c_fit",
+    "g_east", "x_60", `y_${y}`,
   ];
-  const c1 = card(1, stepLabels[0], -180, "FFFFFF");
-  const c2 = card(2, stepLabels[1], 0, "FAE4D2");
-  const c3 = card(3, stepLabels[2], 180, "FF6A1A").map((s) =>
-    s.replace("co_rgb:1A1410", "co_rgb:FFFFFF"),
-  );
+  const c1 = card(1, stepLabels[0], 80, "FFFFFF", "1A1410");
+  const c2 = card(2, stepLabels[1], -80, "FAE4D2", "1A1410");
+  const c3 = card(3, stepLabels[2], -240, "FF6A1A", "FFFFFF");
 
   const saveBadge = [
-    "l_text:Arial_36_bold:" + escapeText(input.ctrBadge || "Save this"),
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_360", "c_fit",
-    "g_north_east", "x_40", "y_200",
+    "l_text:Arial_32_bold:" + escapeText(input.ctrBadge || "Save this") + ARROW,
+    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_320", "c_fit",
+    "g_north_east", "x_60", "y_140",
+  ];
+
+  const cta = [
+    "l_text:Arial_44_bold:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_640", "c_fit",
+    "g_south", "y_100",
   ];
 
   return {
-    url: build([base, header, product, c1, c2, c3, saveBadge], BLANK_BASE),
-    layoutSignature: `infographic|s1=${stepLabels[0]}|s2=${stepLabels[1]}|s3=${stepLabels[2]}`,
+    url: build([base, title, product, c1, c2, c3, saveBadge, cta], BLANK_BASE),
+    layoutSignature: `infographic|premium|s=${stepLabels.join("/")}`,
   };
 }
 
@@ -405,21 +530,21 @@ export const HOOK_TO_STYLE: Record<string, PinStyleKey> = {
 
 /** Soft Pinterest-native CTAs — rotated by seed across pins. */
 export const SOFT_CTAS: string[] = [
-  "Discover more",
+  "Discover why",
+  "See the setup",
+  "Explore the trend",
+  "Shop the viral find",
   "See it in action",
   "Shop the upgrade",
-  "Explore the setup",
-  "See the transformation",
-  "See why",
 ];
 
 /** CTR badges — natural rotation. */
 export const CTR_BADGES: string[] = [
-  "Save this",
-  "Trending now",
+  "Save for later",
+  "Trending with cat parents",
   "Cat owners love this",
-  "Viral pet find",
-  "Must-have for cat parents",
+  "Viral cat-parent find",
+  "Must-have setup",
 ];
 
 export function pickSoftCta(seed: number): string {
