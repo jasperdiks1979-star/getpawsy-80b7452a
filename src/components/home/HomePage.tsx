@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/home/HeroSection";
 import { useCanonical } from "@/components/seo/CanonicalTag";
 import { BenefitsSection } from "@/components/home/BenefitsSection";
 import { HeroTrustStrip } from "@/components/home/HeroTrustStrip";
+import { UsOnlyTrustStrip } from "@/components/home/UsOnlyTrustStrip";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +64,9 @@ const HomePage = () => {
 
       {/* 1b. Trust strip — recent reviews + ship-time badges directly under hero */}
       <HeroTrustStrip />
+
+      {/* 1c. US-only trust strip — shown to non-EU visitors (Pinterest US traffic) */}
+      <UsOnlyTrustStrip />
 
       {/* 2. Benefits */}
       <BenefitsSection />
