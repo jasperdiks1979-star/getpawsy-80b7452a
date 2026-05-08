@@ -482,6 +482,18 @@ Deno.serve(async (req) => {
     if (action === "direct_pinterest_api_test") {
       const adminCheck = await authorizeDirectTest(sb, req, body);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      if (!activeClientIdMatchesApproved()) {
+        const error = "Direct POST /v5/pins blocked: active PINTEREST_CLIENT_ID does not exactly match approved Standard Access app 1567611.";
+        await setProductionTrialDetected(sb, error);
+        return json(cors, {
+          ok: false,
+          error,
+          code: "PINTEREST_WRONG_CLIENT_ID",
+          approved_client_id: APPROVED_PINTEREST_CLIENT_ID,
+          active_client_id: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
+          publishing_disabled: true,
+        });
+      }
 
       const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
       if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected: no latest OAuth access token found" });
