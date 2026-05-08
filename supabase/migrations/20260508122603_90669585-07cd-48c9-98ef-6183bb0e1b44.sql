@@ -1,0 +1,1 @@
+DELETE FROM pinterest_pin_queue WHERE pin_image_url ILIKE '%Vet-loved%' AND status IN ('draft','queued');
