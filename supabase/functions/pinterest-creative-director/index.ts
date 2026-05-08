@@ -399,39 +399,77 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
   return bytes;
 }
 
-// ── 4. quality filter ──────────────────────────────────────────────────────
+// ── 4. quality filter (delegates to multi-axis scorer) ─────────────────────
 
-function qualityCheck(
+async function qualityCheck(
   brief: SceneBrief,
   bytes: Uint8Array,
   dna: StyleDNA,
-): { ok: boolean; reasons: string[] } {
-  const reasons: string[] = [];
-  if (!bytes || bytes.length < 80 * 1024) reasons.push("image too small (<80KB)");
-  if (bytes && bytes.length > 8 * 1024 * 1024) reasons.push("image too large (>8MB)");
-  if (!brief.headline) reasons.push("missing headline");
-  if (brief.headline.length > 42) reasons.push("headline >42 chars");
-  if (!brief.cta) reasons.push("missing cta");
-  if (brief.cta.length > 18) reasons.push("cta >18 chars");
-  const banned = [...dna.banned_terms];
-  for (const field of [brief.headline, brief.cta, brief.full_prompt]) {
-    const hit = containsBanned(field, banned);
-    if (hit) reasons.push(`banned term: "${hit}"`);
+) {
+  const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
+  return await scorePin({
+    bytes,
+    headline: brief.headline,
+    cta: brief.cta,
+    full_prompt: brief.full_prompt,
+    environment_summary: brief.environment_summary,
+    dna,
+    pattern,
+  });
+}
+
+// ── 4b. learning weights loader ────────────────────────────────────────────
+
+async function loadLearningWeights(
+  supabase: ReturnType<typeof createClient>,
+  niche: NicheKey,
+): Promise<LearningWeight[]> {
+  const { data } = await supabase
+    .from("pinterest_pattern_weights")
+    .select("pattern_id, hook_category, niche_key, composite_score, sample_size")
+    .eq("niche_key", niche)
+    .order("composite_score", { ascending: false })
+    .limit(50);
+  return (data ?? []) as LearningWeight[];
+}
+
+async function logRenderAttempt(
+  supabase: ReturnType<typeof createClient>,
+  args: {
+    pin_queue_id: string | null;
+    product_slug: string;
+    niche_key: string;
+    brief: SceneBrief;
+    attempt_no: number;
+    scores: Record<string, number>;
+    total_score: number;
+    rejected: boolean;
+    reasons: string[];
+  },
+) {
+  try {
+    await supabase.from("pinterest_render_attempts").insert({
+      pin_queue_id: args.pin_queue_id,
+      product_slug: args.product_slug,
+      niche_key: args.niche_key,
+      pattern_id: args.brief.pattern_id ?? null,
+      hook_category: args.brief.hook_category ?? null,
+      attempt_no: args.attempt_no,
+      scores: args.scores,
+      total_score: args.total_score,
+      rejected: args.rejected,
+      reasons: args.reasons,
+      brief: {
+        headline: args.brief.headline,
+        cta: args.brief.cta,
+        composition: args.brief.composition,
+        environment_summary: args.brief.environment_summary,
+        emotional_hook: args.brief.emotional_hook,
+      },
+    });
+  } catch (e) {
+    console.warn("[creative-director] logRenderAttempt failed", (e as Error).message);
   }
-  if (brief.pattern_id) {
-    const pattern = getPattern(brief.pattern_id);
-    // Only enforce must_avoid strictly; must_have is a soft signal (warning not reject)
-    // because the AI often uses synonyms.
-    const blob = `${brief.full_prompt}\n${brief.environment_summary}`.toLowerCase();
-    const headline = `${brief.headline} ${brief.cta}`.toLowerCase();
-    for (const term of pattern.must_avoid) {
-      const t = term.toLowerCase();
-      if (blob.includes(t) || headline.includes(t)) {
-        reasons.push(`pattern[${pattern.id}] forbids: "${term}"`);
-      }
-    }
-  }
-  return { ok: reasons.length === 0, reasons };
 }
 
 // ── 5. upload + insert ─────────────────────────────────────────────────────
