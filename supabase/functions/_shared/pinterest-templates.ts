@@ -47,6 +47,11 @@ export interface TemplateOutput {
 const CLOUDINARY_CLOUD = "dlkqycfzn";
 const W = 1080;
 const H = 1920;
+/** Transparent 1×1 placeholder used as the Cloudinary "base" image for
+ * canvases that don't take a backdrop photo. We never want the product image
+ * to act as the base because Cloudinary then renders it AND the overlay
+ * `l_fetch` of the same image, duplicating it on the pin. */
+const BLANK_BASE = "https://getpawsy.pet/placeholder.svg";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -73,7 +78,8 @@ function pick<T>(arr: T[], seed: number): T {
 
 function build(parts: string[][], baseImage: string): string {
   const segments = parts.map((p) => p.join(",")).join("/");
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segments}/${baseImage}`;
+  // Cloudinary fetch URL must terminate with a URL-encoded source image.
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segments}/${encodeURIComponent(baseImage)}`;
 }
 
 /** Background canvas — used when no backdrop image is supplied. */
@@ -237,7 +243,7 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
   ];
 
   return {
-    url: build([base, product, header, b1, b2, b3, cta], input.productImageUrl),
+    url: build([base, product, header, b1, b2, b3, cta], BLANK_BASE),
     layoutSignature: `benefit|b1=${badges[0]}|b2=${badges[1]}|b3=${badges[2]}`,
   };
 }
@@ -317,7 +323,7 @@ function tplViral(input: TemplateInput): TemplateOutput {
   ];
 
   return {
-    url: build([base, splash, headline, product, cta], input.productImageUrl),
+    url: build([base, splash, headline, product, cta], BLANK_BASE),
     layoutSignature: "viral|tiktok",
   };
 }
@@ -365,7 +371,7 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
   ];
 
   return {
-    url: build([base, header, product, c1, c2, c3, saveBadge], input.productImageUrl),
+    url: build([base, header, product, c1, c2, c3, saveBadge], BLANK_BASE),
     layoutSignature: `infographic|s1=${stepLabels[0]}|s2=${stepLabels[1]}|s3=${stepLabels[2]}`,
   };
 }
