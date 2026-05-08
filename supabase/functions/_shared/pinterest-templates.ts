@@ -482,27 +482,27 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
   // overflowing into the product card.
   const preset = LAYOUT_PRESETS.right_text_left_product;
   const fitted = autoFitHeadline(input.top, {
-    widthPx: 840,
+    widthPx: 820,
     maxLines: 3,
     sizes: [96, 84, 74, 66, 58],
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
-    "co_rgb:FFFFFF", "w_840", "c_fit",
-    "g_north_west", "x_92", "y_220",
+    "co_rgb:FFFFFF", "w_820", "c_fit",
+    "g_north_west", "x_88", "y_220",
   ];
 
   // Editorial CTA — thin white type + arrow + hairline underline.
   const cta = [
     "l_text:Arial_38:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "g_south_west", "x_92", "y_160",
+    "co_rgb:FFFFFF", "g_south_west", "x_88", "y_160",
   ];
   const ctaUnderline = underlineAccent({
-    width: 240, gravity: "south_west", x: 92, y: 140, opacity: 75,
+    width: 220, gravity: "south_west", x: 88, y: 140, opacity: 75,
   });
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_south_east", "x_92", "y_150", "o_75",
+    "co_rgb:FFFFFF", "g_south_east", "x_88", "y_150", "o_75",
   ];
 
   return {
