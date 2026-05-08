@@ -135,10 +135,21 @@ async function validatePinterestAuthForCron(sb: any, conn: any, accessToken: str
   const account = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
   const boards = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
   const boardCount = Array.isArray(boards.body?.items) ? boards.body.items.length : 0;
-  const ok = account.ok && boards.ok && boardCount > 0;
-  const error = ok ? null : `AUTH FAILURE: /user_account=${account.status}, /boards=${boards.status}, board_count=${boardCount}`;
+  // /boards + POST /pins is the real publish capability signal.
+  // /user_account often 401s on Standard Access apps. Only block on wrong username.
+  const REQUIRED_USERNAME = "getpawsyshop";
+  const username = typeof account.body?.username === "string" ? account.body.username : null;
+  const wrongAccount = account.ok && username && username !== REQUIRED_USERNAME;
+  const ok = boards.ok && boardCount > 0 && !wrongAccount;
+  const error = ok
+    ? null
+    : wrongAccount
+      ? `AUTH FAILURE: connected username "${username}" does not match required "${REQUIRED_USERNAME}".`
+      : `AUTH FAILURE: /boards=${boards.status}, board_count=${boardCount} (account=${account.status})`;
   await sb.from("pinterest_connection").update({
     status: ok ? "connected" : "auth_failed",
+    account_name: username || conn.account_name || null,
+    account_id: username || conn.account_id || null,
     last_error: error,
     last_account_status: account.status,
     last_boards_status: boards.status,

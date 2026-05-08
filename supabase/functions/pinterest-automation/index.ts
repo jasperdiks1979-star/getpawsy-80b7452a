@@ -1148,7 +1148,7 @@ Deno.serve(async (req) => {
         api_status: conn?.status || "disconnected",
         api_last_error: conn?.last_error || null,
         auth_valid: authValid,
-        auth_failure_warning: authValid ? null : "AUTH FAILURE: publishing is disabled until /user_account returns 200 and /boards returns at least one real board.",
+        auth_failure_warning: authValid ? null : "AUTH FAILURE: publishing is disabled until /boards returns at least one real board owned by getpawsyshop.",
         token: conn ? { prefix: conn.token_prefix, token_created_at: conn.token_created_at, token_sha256: conn.token_sha256, scopes: conn.scopes, connection_updated_at: conn.updated_at } : null,
         account_status_code: conn?.last_account_status ?? null,
         boards_status_code: conn?.last_boards_status ?? null,
@@ -1503,12 +1503,26 @@ async function validatePinterestAuth(sb: any, conn: any, accessToken: string) {
   const accountResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
   const boardsResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
   const boards = Array.isArray(boardsResponse.body?.items) ? boardsResponse.body.items : [];
-  const authValid = accountResponse.ok && boardsResponse.ok && boards.length > 0;
+  // Pinterest Standard Access tokens may return 401 on /user_account while
+  // /boards + POST /pins continue to work. Treat /boards as the authoritative
+  // capability signal. Only block when account API succeeds AND the username
+  // does not match the expected business handle (`getpawsyshop`).
+  const REQUIRED_USERNAME = "getpawsyshop";
+  const accountUsername =
+    typeof accountResponse.body?.username === "string" ? accountResponse.body.username : null;
+  const wrongAccount = accountResponse.ok && accountUsername && accountUsername !== REQUIRED_USERNAME;
+  const authValid = boardsResponse.ok && boards.length > 0 && !wrongAccount;
   const nextStatus = authValid ? "connected" : "auth_failed";
-  const lastError = authValid ? null : `AUTH FAILURE: /user_account=${accountResponse.status}, /boards=${boardsResponse.status}, board_count=${boards.length}`;
+  const lastError = authValid
+    ? null
+    : wrongAccount
+      ? `AUTH FAILURE: connected username "${accountUsername}" does not match required "${REQUIRED_USERNAME}".`
+      : `AUTH FAILURE: /boards=${boardsResponse.status}, board_count=${boards.length} (account=${accountResponse.status})`;
 
   await sb.from("pinterest_connection").update({
     status: nextStatus,
+    account_name: accountUsername || conn.account_name || null,
+    account_id: accountUsername || conn.account_id || null,
     last_error: lastError,
     token_prefix: tokenMetadata.prefix,
     last_account_status: accountResponse.status,

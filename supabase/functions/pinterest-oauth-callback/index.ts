@@ -153,7 +153,15 @@ Deno.serve(async (req) => {
     const accountApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
     const boardsApi = await fetchPinterestJson(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
     const boardCount = Array.isArray(boardsApi.body?.items) ? boardsApi.body.items.length : 0;
-    const authValid = accountApi.ok && boardsApi.ok && boardCount > 0;
+    // /user_account may 401 for Standard Access apps. Trust /boards as capability signal.
+    const REQUIRED_USERNAME = "getpawsyshop";
+    const apiUsername = typeof accountApi.body?.username === "string" ? accountApi.body.username : null;
+    const wrongAccount = accountApi.ok && apiUsername && apiUsername !== REQUIRED_USERNAME;
+    const authValid = boardsApi.ok && boardCount > 0 && !wrongAccount;
+    if (apiUsername) {
+      accountName = apiUsername;
+      accountId = apiUsername;
+    }
 
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000).toISOString();
 
@@ -178,7 +186,11 @@ Deno.serve(async (req) => {
       last_boards_status: boardsApi.status,
       board_count: boardCount,
       status: authValid ? "connected" : "auth_failed",
-      last_error: authValid ? null : `AUTH FAILURE: /user_account=${accountApi.status}, /boards=${boardsApi.status}, board_count=${boardCount}`,
+      last_error: authValid
+        ? null
+        : wrongAccount
+          ? `AUTH FAILURE: connected username "${apiUsername}" does not match required "${REQUIRED_USERNAME}".`
+          : `AUTH FAILURE: /boards=${boardsApi.status}, board_count=${boardCount} (account=${accountApi.status})`,
       updated_at: new Date().toISOString(),
     };
 
