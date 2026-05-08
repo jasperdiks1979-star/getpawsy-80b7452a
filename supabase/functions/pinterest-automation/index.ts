@@ -1148,7 +1148,7 @@ Deno.serve(async (req) => {
         api_status: conn?.status || "disconnected",
         api_last_error: conn?.last_error || null,
         auth_valid: authValid,
-        auth_failure_warning: authValid ? null : "AUTH FAILURE: publishing is disabled until /user_account returns 200 and /boards returns at least one real board.",
+        auth_failure_warning: authValid ? null : "AUTH FAILURE: publishing is disabled until /boards returns at least one real board owned by getpawsyshop.",
         token: conn ? { prefix: conn.token_prefix, token_created_at: conn.token_created_at, token_sha256: conn.token_sha256, scopes: conn.scopes, connection_updated_at: conn.updated_at } : null,
         account_status_code: conn?.last_account_status ?? null,
         boards_status_code: conn?.last_boards_status ?? null,
