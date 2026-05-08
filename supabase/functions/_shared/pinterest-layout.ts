@@ -301,6 +301,92 @@ export const LAYOUT_PRESETS: Record<LayoutKey, LayoutPreset> = {
 
 export const LAYOUT_KEYS: LayoutKey[] = Object.keys(LAYOUT_PRESETS) as LayoutKey[];
 
+// ── Rendered-geometry overlap detection ───────────────────────────────────
+// Cloudinary positions overlays via gravity + x/y offsets. To detect real
+// CTA/product overlap (independent of the abstract preset zones), templates
+// can pass each layer's actual placement and we resolve it to an absolute
+// 1080×1920 box. Used by `checkCtaProductOverlap` below.
+
+export type Gravity =
+  | "north" | "south" | "east" | "west" | "center"
+  | "north_east" | "north_west" | "south_east" | "south_west";
+
+export interface PlacedLayer {
+  role: string;
+  /** rendered width in px (Cloudinary `w_`). */
+  w: number;
+  /** rendered height in px (Cloudinary `h_`). */
+  h: number;
+  gravity: Gravity;
+  /** Cloudinary `x_` offset (positive pushes inward from the gravity edge). */
+  x?: number;
+  /** Cloudinary `y_` offset (positive pushes inward from the gravity edge). */
+  y?: number;
+}
+
+export function boxFromPlacement(p: PlacedLayer, canvasW = CANVAS.w, canvasH = CANVAS.h): Box {
+  const x = p.x ?? 0;
+  const y = p.y ?? 0;
+  let bx = 0; let by = 0;
+  switch (p.gravity) {
+    case "north_west": bx = x; by = y; break;
+    case "north":      bx = (canvasW - p.w) / 2; by = y; break;
+    case "north_east": bx = canvasW - p.w - x; by = y; break;
+    case "west":       bx = x; by = (canvasH - p.h) / 2; break;
+    case "center":     bx = (canvasW - p.w) / 2 + x; by = (canvasH - p.h) / 2 + y; break;
+    case "east":       bx = canvasW - p.w - x; by = (canvasH - p.h) / 2 + y; break;
+    case "south_west": bx = x; by = canvasH - p.h - y; break;
+    case "south":      bx = (canvasW - p.w) / 2 + x; by = canvasH - p.h - y; break;
+    case "south_east": bx = canvasW - p.w - x; by = canvasH - p.h - y; break;
+  }
+  return { role: p.role, x: Math.round(bx), y: Math.round(by), w: p.w, h: p.h };
+}
+
+export interface OverlapCheck {
+  ok: boolean;
+  issues: string[];
+  cta: Box;
+  product: Box;
+  /** Margin in px between cta and product (positive = clear, negative = overlap depth). */
+  margin: number;
+  /** Whether either box also exceeds the safe area. */
+  ctaUnsafe: boolean;
+  productUnsafe: boolean;
+}
+
+/**
+ * Detect real CTA ↔ product intersection on the rendered canvas. Templates
+ * call this with the actual Cloudinary placements they're about to emit.
+ * `padding` (default 24px) treats near-touches as overlaps so CTA text never
+ * crowds the product card.
+ */
+export function checkCtaProductOverlap(
+  cta: PlacedLayer,
+  product: PlacedLayer,
+  padding = 24,
+): OverlapCheck {
+  const cBox = boxFromPlacement(cta);
+  const pBox = boxFromPlacement(product);
+  const padded = { ...cBox, x: cBox.x - padding, y: cBox.y - padding, w: cBox.w + 2 * padding, h: cBox.h + 2 * padding };
+  const collide = intersects(padded, pBox);
+  // Compute axis margins (negative = overlap depth on that axis).
+  const dx = Math.min(pBox.x + pBox.w - cBox.x, cBox.x + cBox.w - pBox.x);
+  const dy = Math.min(pBox.y + pBox.h - cBox.y, cBox.y + cBox.h - pBox.y);
+  const margin = collide ? -Math.min(dx, dy) : Math.min(
+    Math.abs(pBox.x + pBox.w - cBox.x),
+    Math.abs(cBox.x + cBox.w - pBox.x),
+    Math.abs(pBox.y + pBox.h - cBox.y),
+    Math.abs(cBox.y + cBox.h - pBox.y),
+  );
+  const ctaUnsafe = !insideSafe(cBox);
+  const productUnsafe = !insideSafe(pBox);
+  const issues: string[] = [];
+  if (collide) issues.push(`cta_overlaps_product (depth ${Math.abs(margin)}px)`);
+  if (ctaUnsafe) issues.push("cta exceeds safe area");
+  if (productUnsafe) issues.push("product exceeds safe area");
+  return { ok: issues.length === 0, issues, cta: cBox, product: pBox, margin, ctaUnsafe, productUnsafe };
+}
+
 /**
  * Deterministic non-consecutive layout picker.
  * Given a seed and the previous layout key, returns a different one.
