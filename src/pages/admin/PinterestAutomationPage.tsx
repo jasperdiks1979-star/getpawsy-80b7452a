@@ -853,6 +853,21 @@ function PinterestDashboard() {
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-muted-foreground">ACTIVE_REDIRECT_URI:</span>
                 <span className="font-mono break-all">{appDiagnostic.redirect_uri || "—"}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(appDiagnostic.redirect_uri || "");
+                      toast.success("ACTIVE_REDIRECT_URI gekopieerd");
+                    } catch {
+                      toast.error("Kopiëren mislukt");
+                    }
+                  }}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
               </div>
               <div className="mt-2 flex flex-wrap justify-end gap-2">
                 <Button
