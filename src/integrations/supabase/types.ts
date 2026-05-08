@@ -5495,6 +5495,7 @@ export type Database = {
       }
       pinterest_runtime_settings: {
         Row: {
+          active_pinterest_connection_id: string | null
           id: number
           mode: string
           scale_unlocked: boolean
@@ -5502,6 +5503,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          active_pinterest_connection_id?: string | null
           id?: number
           mode?: string
           scale_unlocked?: boolean
@@ -5509,13 +5511,22 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          active_pinterest_connection_id?: string | null
           id?: number
           mode?: string
           scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_runtime_settings_active_pinterest_connection_id_fkey"
+            columns: ["active_pinterest_connection_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_connection"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_bundles: {
         Row: {
