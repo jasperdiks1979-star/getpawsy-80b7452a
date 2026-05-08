@@ -5255,6 +5255,7 @@ export type Database = {
           hashtags: string[] | null
           hook_group: string | null
           id: string
+          idempotency_key: string | null
           image_hash: string | null
           last_publish_error: string | null
           overlay_text: string | null
@@ -5297,6 +5298,7 @@ export type Database = {
           hashtags?: string[] | null
           hook_group?: string | null
           id?: string
+          idempotency_key?: string | null
           image_hash?: string | null
           last_publish_error?: string | null
           overlay_text?: string | null
@@ -5339,6 +5341,7 @@ export type Database = {
           hashtags?: string[] | null
           hook_group?: string | null
           id?: string
+          idempotency_key?: string | null
           image_hash?: string | null
           last_publish_error?: string | null
           overlay_text?: string | null
@@ -5573,6 +5576,7 @@ export type Database = {
           active_board_id: string | null
           active_board_name: string | null
           active_pinterest_connection_id: string | null
+          auto_approve_queue: boolean
           daily_pin_cap: number
           domination_mode: boolean
           id: number
@@ -5597,6 +5601,7 @@ export type Database = {
           active_board_id?: string | null
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
+          auto_approve_queue?: boolean
           daily_pin_cap?: number
           domination_mode?: boolean
           id?: number
@@ -5621,6 +5626,7 @@ export type Database = {
           active_board_id?: string | null
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
+          auto_approve_queue?: boolean
           daily_pin_cap?: number
           domination_mode?: boolean
           id?: number
@@ -9718,6 +9724,7 @@ export type Database = {
         }
         Returns: string
       }
+      pinterest_publish_health: { Args: never; Returns: Json }
       purge_old_monitoring_runs: { Args: never; Returns: number }
       test_tiktok_exclusion_fixtures: {
         Args: { p_prefix: string }
