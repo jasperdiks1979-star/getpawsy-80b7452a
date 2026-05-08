@@ -850,7 +850,7 @@ function PinterestDashboard() {
                   <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{appDiagnostic.mode || "—"}</span>
                 </div>
               </div>
-              <div className="mt-2 flex justify-end">
+              <div className="mt-2 flex flex-wrap justify-end gap-2">
                 <Button
                   size="sm"
                   variant="outline"
@@ -872,6 +872,40 @@ function PinterestDashboard() {
                   }}
                 >
                   <Copy className="mr-2 h-3 w-3" /> Kopieer diagnose
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    const json = JSON.stringify({ ...appDiagnostic, captured_at: new Date().toISOString() }, null, 2);
+                    try {
+                      await navigator.clipboard.writeText(json);
+                      toast.success("Diagnose JSON gekopieerd");
+                    } catch {
+                      toast.error("Kopiëren mislukt");
+                    }
+                  }}
+                >
+                  <Copy className="mr-2 h-3 w-3" /> Kopieer JSON
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const json = JSON.stringify({ ...appDiagnostic, captured_at: new Date().toISOString() }, null, 2);
+                    const blob = new Blob([json], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `pinterest-app-diagnostic-${ts}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <ExternalLink className="mr-2 h-3 w-3" /> Download JSON
                 </Button>
               </div>
             </div>
