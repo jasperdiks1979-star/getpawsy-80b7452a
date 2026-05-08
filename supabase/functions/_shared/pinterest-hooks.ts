@@ -1,275 +1,215 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Pinterest Performance Mode — Approved Hook Bank
-//
-// Single source of truth for hook copy. The viral batch generator MUST pick
-// from these lists, and the QA gate refuses to publish any pin whose title
-// or top overlay is not a member (or a close prefix) of the bank.
-//
-// Categories are taken verbatim from the GetPawsy Pinterest Performance Mode
-// brief: PAIN / TIME-SAVING / TRANSFORMATION / SOCIAL-PROOF / CURIOSITY.
+// Pinterest Hook Strategy Engine
 // ─────────────────────────────────────────────────────────────────────────────
+// Maps a (niche, pattern, learning weights) tuple to the best emotional hook
+// category + concrete US-tone phrase. Uses Lovable AI Gateway (Gemini) for the
+// final pick so we can pass live performance data into the prompt without
+// hardcoding rules.
+
+import type { NicheKey, StyleDNA } from "./pinterest-style-dna.ts";
+import type { PatternId, PinterestPattern } from "./pinterest-patterns.ts";
 
 export type HookCategory =
   | "pain"
-  | "time_saving"
   | "transformation"
-  | "social_proof"
   | "curiosity"
-  | "infographic";
+  | "social_proof"
+  | "time_saving"
+  | "luxury"
+  | "convenience"
+  | "cleanliness"
+  | "anxiety_reduction"
+  | "pet_happiness";
 
-export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
-  pain: [
-    "Tired of litter box chores?",
-    "Cat litter smell taking over?",
-    "Daily scooping gets old fast",
-    "Your cat deserves better",
-    "Hate scooping every day?",
-    "Cat smell taking over your home?",
-    "Tired of cat tree wobble?",
-    "Cluttered apartment cat setup?",
-    "My apartment finally stopped smelling",
-    "The scoop routine had to go",
-    "Litter dust everywhere — done",
-    "Tired of scooping?",
-    "No more daily litter duty",
-    "Done with the daily scoop",
-    "The litter chore that never ends",
-  ],
-  time_saving: [
-    "Clean litter in seconds",
-    "Save 30+ minutes every week",
-    "One tap cleanup",
-    "Save 20 minutes daily",
-    "Cleaner home in seconds",
-    "Set it and forget it",
-    "This changed our daily routine",
-    "Hands-free for the first time",
-    "Cleaner home. Happier cat.",
-    "Quiet mornings, finally",
-  ],
-  transformation: [
-    "From messy to self-cleaning",
-    "Upgrade your cat setup",
-    "Small apartment cat hack",
-    "Before vs after cat setup",
-    "From cluttered to calm",
-    "Apartment cat owner upgrade",
-    "From messy to modern",
-    "Our apartment looks calmer already",
-    "From dust storm to fresh air",
-    "The upgrade cat parents love",
-    "A calmer home, overnight",
-    "Where cleanliness meets calm",
-  ],
-  social_proof: [
-    "Thousands of cat owners switched",
-    "Cat parents are obsessed with this",
-    "Viral cat owner upgrade",
-    "Smart pet parents love this",
-    "Cat owners can't stop buying this",
-    "10,000+ cat parents agree",
-    "Cat owners are obsessed with this",
-    "Why is every cat parent buying this?",
-  ],
-  curiosity: [
-    "I wish I bought this sooner",
-    "Why are cat owners switching?",
-    "This changed my cat routine",
-    "Wait until you see this",
-    "Why is nobody talking about this?",
-    "Cat owners are obsessed",
-    "The viral cat gadget of 2026",
-    "The litter upgrade nobody talks about",
-    "Cat owners are quietly upgrading",
-    "The pet hack going around",
-  ],
-  infographic: [
-    "3 reasons cat owners switch",
-    "Why self-cleaning litter goes viral",
-    "5 must-have cat parent essentials",
-    "Apartment cat setup checklist",
-    "Top 3 smart pet upgrades",
-    "What every modern cat parent needs",
-    "3 signs you need a litter upgrade",
-    "5 things calm cat parents own",
-  ],
-};
-
-/** Approved CTA bottom-overlay copy. Short, action-driven, mobile-safe. */
-export const APPROVED_CTAS: string[] = [
-  "See why",
-  "Shop the upgrade",
-  "Learn more",
-  "End the scoop",
-  "Save hours weekly",
-  "Discover more",
-  "See it in action",
-  "Shop now",
-  "Explore the setup",
-  "See the transformation",
-  "Discover why",
-  "See the setup",
-  "Explore the trend",
-  "Shop the viral find",
+export const HOOK_CATEGORIES: HookCategory[] = [
+  "pain",
+  "transformation",
+  "curiosity",
+  "social_proof",
+  "time_saving",
+  "luxury",
+  "convenience",
+  "cleanliness",
+  "anxiety_reduction",
+  "pet_happiness",
 ];
 
-/** Boards approved for organic publishing across all GetPawsy categories. */
-export const APPROVED_BOARDS = new Set<string>([
-  "Cat Essentials",
-  "Smart Cat Products",
-  "Smart Pet Gadgets",
-  "Cat Care Essentials",
-  "Modern Cat Home",
-  "Cat Trees for Large Cats",
-  "Automatic Litter Solutions",
-  "Pet Parent Hacks",
-  "Cat Owner Essentials",
-  "GetPawsy Products",
-]);
-
-/**
- * SEO target keywords per product category. At least one keyword from the
- * matched category (or `default` fallback) must appear in title OR description.
- */
-export const TARGET_KEYWORDS_BY_CATEGORY: Record<string, string[]> = {
-  "cat-litter": [
-    "self cleaning litter box",
-    "automatic litter box",
-    "smart litter box",
-    "odor free litter box",
-    "cat hygiene",
-    "app controlled litter box",
+/** Curated US-native, GMC-safe hook phrases per category. ≤42 chars each. */
+export const HOOK_BANK: Record<HookCategory, string[]> = {
+  pain: [
+    "Stop the daily mess",
+    "End the smell, finally",
+    "No more fur everywhere",
+    "Tired of the daily struggle?",
   ],
-  "cat-tree": [
-    "cat tree",
-    "large cat tree",
-    "modern cat tree",
-    "indoor cat setup",
-    "apartment cat furniture",
-    "cat climbing tower",
+  transformation: [
+    "From chaos to calm",
+    "Transform your home",
+    "Make car rides calm again",
+    "A new kind of pet life",
   ],
-  "cat-furniture": [
-    "hidden litter box furniture",
-    "modern cat furniture",
-    "apartment cat essentials",
-    "cat home decor",
+  curiosity: [
+    "The cat owner secret",
+    "Why US pet parents switched",
+    "What we wish we knew sooner",
+    "The tiny upgrade we love",
   ],
-  "smart-pet-gadget": [
-    "smart pet gadget",
-    "automatic pet feeder",
-    "modern pet tech",
-    "smart home pet setup",
+  social_proof: [
+    "US pet parents love this",
+    "What real cat owners chose",
+    "Loved by busy dog families",
+    "The one we kept buying",
   ],
-  "dog-bed": [
-    "orthopedic dog bed",
-    "memory foam dog bed",
-    "calming dog bed",
-    "large dog bed",
+  time_saving: [
+    "Skip the daily cleanup",
+    "Save 30 minutes a day",
+    "Your morning, made easier",
+    "Less work, happier pet",
   ],
-  default: [
-    "cat owner essentials",
-    "smart pet products",
-    "modern pet parent",
-    "pet parent hacks",
+  luxury: [
+    "A quietly luxurious upgrade",
+    "Premium pet living",
+    "The calm, elevated home",
+    "Designed for cozy homes",
+  ],
+  convenience: [
+    "The easiest swap we made",
+    "Set it and forget it",
+    "One simple home upgrade",
+    "Effortless every single day",
+  ],
+  cleanliness: [
+    "A cleaner home, daily",
+    "Fresh, every single day",
+    "No more mess, no smell",
+    "Bring back the fresh feeling",
+  ],
+  anxiety_reduction: [
+    "Make car rides calm again",
+    "Calm, cozy, finally still",
+    "Help anxious pets settle",
+    "Soothe the daily restlessness",
+  ],
+  pet_happiness: [
+    "What makes them happiest",
+    "A spot they actually love",
+    "Their favorite cozy corner",
+    "A small win for happy pets",
   ],
 };
 
-/** Back-compat alias — older callers expect a flat list. */
-export const TARGET_KEYWORDS: string[] = Array.from(
-  new Set(Object.values(TARGET_KEYWORDS_BY_CATEGORY).flat()),
-);
+/** CTA bank, ≤18 chars each. */
+export const CTA_BANK = [
+  "See the calm",
+  "Discover it",
+  "See why",
+  "Shop now",
+  "Make it cozy",
+  "Bring it home",
+  "See it in use",
+  "Get the look",
+];
 
-/**
- * Map a free-form product category/slug to one of our keyword buckets.
- * Unknown categories fall through to `default`.
- */
-export function resolveCategoryKey(
-  raw: string | null | undefined,
-  slug?: string | null,
-): keyof typeof TARGET_KEYWORDS_BY_CATEGORY {
-  const c = `${raw || ""} ${slug || ""}`.toLowerCase();
-  if (/litter\s*box|self[-\s]?cleaning/.test(c)) return "cat-litter";
-  if (/cat\s*tree|cat\s*tower|cat\s*condo|climbing/.test(c)) return "cat-tree";
-  if (/(hidden|enclosure|cabinet).*(litter|cat)|cat\s*furniture/.test(c)) return "cat-furniture";
-  if (/feeder|fountain|smart\s*pet|gadget/.test(c)) return "smart-pet-gadget";
-  if (/dog\s*bed|orthopedic|memory\s*foam/.test(c)) return "dog-bed";
-  return "default";
-}
-
-/** Style → preferred Pinterest board fallbacks (used when board affinity table is empty). */
-export const STYLE_TO_BOARD_FALLBACK: Record<string, string[]> = {
-  pain:           ["Pet Parent Hacks", "Cat Care Essentials", "Smart Pet Gadgets"],
-  time_saving:   ["Smart Pet Gadgets", "Automatic Litter Solutions", "Pet Parent Hacks"],
-  transformation: ["Modern Cat Home", "Cat Owner Essentials", "Smart Pet Gadgets"],
-  social_proof:   ["Smart Pet Gadgets", "Cat Care Essentials", "GetPawsy Products"],
-  curiosity:      ["Smart Pet Gadgets", "Pet Parent Hacks", "GetPawsy Products"],
-  infographic:    ["Cat Care Essentials", "Pet Parent Hacks", "Modern Cat Home"],
+/** Default niche → preferred hook categories (fallback when no learning data). */
+const NICHE_HOOK_AFFINITY: Partial<Record<NicheKey, HookCategory[]>> = {
+  cat_litter: ["cleanliness", "time_saving", "pain", "luxury"],
+  dog_car: ["anxiety_reduction", "transformation", "convenience"],
+  cat_tree: ["luxury", "pet_happiness", "social_proof"],
+  cat_bed: ["pet_happiness", "luxury", "anxiety_reduction"],
+  calming_bed: ["anxiety_reduction", "transformation", "pet_happiness"],
+  dog_bed: ["luxury", "pet_happiness", "transformation"],
+  cat_fountain: ["cleanliness", "convenience", "pet_happiness"],
+  grooming: ["cleanliness", "transformation", "social_proof"],
+  feeder: ["time_saving", "convenience", "social_proof"],
+  bowl_station: ["luxury", "convenience"],
+  dog_carrier: ["luxury", "convenience", "transformation"],
+  cat_carrier: ["anxiety_reduction", "luxury", "convenience"],
+  dog_collar: ["luxury", "social_proof"],
+  dog_training: ["transformation", "social_proof"],
+  outdoor_house: ["luxury", "transformation"],
+  dog_clothing: ["luxury", "social_proof"],
+  treats: ["pet_happiness", "social_proof"],
+  cat_scratcher: ["pet_happiness", "luxury"],
+  potty_training: ["cleanliness", "transformation"],
+  pet_camera: ["curiosity", "convenience", "anxiety_reduction"],
+  dental_care: ["cleanliness", "social_proof"],
+  interactive_toy: ["pet_happiness", "transformation"],
+  generic_pet: ["pet_happiness", "luxury", "social_proof"],
 };
 
-function normalize(s: string): string {
-  return (s || "").toLowerCase().replace(/[\s\p{P}]+/gu, " ").trim();
+export interface LearningWeight {
+  pattern_id: string;
+  hook_category: string;
+  niche_key: string;
+  composite_score: number;
+  sample_size: number;
 }
 
-const ALL_HOOK_NORMALIZED: Set<string> = new Set(
-  Object.values(APPROVED_HOOKS).flat().map(normalize),
-);
-const ALL_CTA_NORMALIZED: Set<string> = new Set(APPROVED_CTAS.map(normalize));
-
-/** Pick a deterministic hook from a category (uses index modulo). */
-export function pickHook(category: HookCategory, seed: number): string {
-  const list = APPROVED_HOOKS[category];
-  return list[Math.abs(seed) % list.length];
+export interface CreativeStrategy {
+  hook_category: HookCategory;
+  hook_phrase: string;
+  cta_phrase: string;
+  scene_directive: string;
+  exploration: boolean;
+  rationale: string;
 }
 
-/** Pick a deterministic CTA. */
-export function pickCta(seed: number): string {
-  return APPROVED_CTAS[Math.abs(seed) % APPROVED_CTAS.length];
+function pick<T>(arr: T[], rng: () => number): T {
+  return arr[Math.floor(rng() * arr.length) % arr.length];
 }
 
-/** True if `text` matches an approved hook (normalized, prefix-tolerant). */
-export function isApprovedHook(text: string | null | undefined): boolean {
-  const n = normalize(text || "");
-  if (!n) return false;
-  if (ALL_HOOK_NORMALIZED.has(n)) return true;
-  for (const h of ALL_HOOK_NORMALIZED) {
-    if (n.startsWith(h) || h.startsWith(n)) return true;
+/**
+ * Pick a hook strategy for this brief.
+ * Epsilon-greedy: 80% exploit (highest composite), 20% explore (random affinity).
+ * Falls back to NICHE_HOOK_AFFINITY when no weights are present.
+ */
+export function pickStrategy(args: {
+  niche: NicheKey;
+  dna: StyleDNA;
+  pattern: PinterestPattern;
+  weights: LearningWeight[];
+  rng?: () => number;
+}): CreativeStrategy {
+  const rng = args.rng ?? Math.random;
+  const explore = rng() < 0.2;
+
+  const candidates = args.weights.filter(
+    (w) => w.pattern_id === args.pattern.id && w.niche_key === args.niche && w.sample_size >= 2,
+  );
+
+  let chosen: HookCategory;
+  let rationale: string;
+
+  if (!explore && candidates.length > 0) {
+    candidates.sort((a, b) => b.composite_score - a.composite_score);
+    chosen = candidates[0].hook_category as HookCategory;
+    rationale = `exploit:winner(score=${candidates[0].composite_score.toFixed(1)},n=${candidates[0].sample_size})`;
+  } else {
+    const affinity =
+      NICHE_HOOK_AFFINITY[args.niche] ?? NICHE_HOOK_AFFINITY.generic_pet ?? HOOK_CATEGORIES;
+    chosen = pick(affinity, rng);
+    rationale = explore ? "explore:random_affinity" : "cold_start:niche_affinity";
   }
-  return false;
+
+  const hook_phrase = pick(HOOK_BANK[chosen], rng);
+  const cta_phrase = pick(args.dna.cta_bank.length ? args.dna.cta_bank : CTA_BANK, rng);
+
+  // Scene directive blends DNA environment with pattern composition rule.
+  const scene_directive =
+    `${args.pattern.composition_rule} ` +
+    `Pet/product naturally placed in: ${args.dna.environment}. ` +
+    `Light: ${args.dna.light}. Mood: ${args.dna.mood}.`;
+
+  return {
+    hook_category: chosen,
+    hook_phrase,
+    cta_phrase,
+    scene_directive,
+    exploration: explore || candidates.length === 0,
+    rationale,
+  };
 }
 
-/** True if `text` matches an approved CTA (normalized, prefix-tolerant). */
-export function isApprovedCta(text: string | null | undefined): boolean {
-  const n = normalize(text || "");
-  if (!n) return false;
-  if (ALL_CTA_NORMALIZED.has(n)) return true;
-  for (const c of ALL_CTA_NORMALIZED) {
-    if (n.startsWith(c) || c.startsWith(n)) return true;
-  }
-  return false;
-}
-
-/** True if title or description contains at least one target SEO keyword. */
-export function containsTargetKeyword(...fields: Array<string | null | undefined>): boolean {
-  const corpus = fields.map((f) => (f || "").toLowerCase()).join(" ");
-  return TARGET_KEYWORDS.some((k) => corpus.includes(k));
-}
-
-/** True if any keyword from the resolved category bucket is present. */
-export function containsCategoryKeyword(
-  categoryKey: keyof typeof TARGET_KEYWORDS_BY_CATEGORY,
-  ...fields: Array<string | null | undefined>
-): boolean {
-  const corpus = fields.map((f) => (f || "").toLowerCase()).join(" ");
-  const bucket = TARGET_KEYWORDS_BY_CATEGORY[categoryKey] || TARGET_KEYWORDS_BY_CATEGORY.default;
-  return bucket.some((k) => corpus.includes(k));
-}
-
-/** Stable hash of an image URL — used for duplicate-asset detection. */
-export function hashImageUrl(url: string): string {
-  let h = 0;
-  for (let i = 0; i < url.length; i++) {
-    h = ((h << 5) - h) + url.charCodeAt(i);
-    h |= 0;
-  }
-  return `img_${(h >>> 0).toString(36)}_${url.length}`;
+export function isValidHookCategory(s: string): s is HookCategory {
+  return (HOOK_CATEGORIES as readonly string[]).includes(s);
 }
