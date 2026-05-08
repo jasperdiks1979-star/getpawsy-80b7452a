@@ -1413,7 +1413,7 @@ Deno.serve(async (req) => {
       const guard = await getProductionGuardState(sb);
       const { data: settings } = await sb
         .from("pinterest_runtime_settings")
-        .select("mode, active_pinterest_connection_id, production_publish_verified, production_publish_verified_at, production_trial_detected, last_pin_publish_error, last_pin_publish_at, verified_client_id_prefix, updated_at")
+        .select("mode, active_pinterest_connection_id, production_publish_verified, production_publish_verified_at, production_trial_detected, last_pin_publish_error, last_pin_publish_at, verified_client_id_prefix, updated_at, active_board_id, active_board_name, last_pin_external_url, last_pin_external_id, last_pin_published_at")
         .eq("id", 1)
         .maybeSingle();
       const apiBase = settings?.mode === "sandbox"
