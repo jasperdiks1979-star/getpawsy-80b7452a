@@ -2142,6 +2142,9 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     console.log("[pinterest-publish] Pinterest API response status/body", { status: response.status, body: responseJson });
 
     if (!response.ok) {
+      if (isPinterestTrialAccessError(response.status, responseJson, responseText)) {
+        await setProductionTrialDetected(sb, `Pinterest trial access detected during publish: ${responseText.slice(0, 400)}`);
+      }
       throw new Error(`Pinterest API ${response.status}: ${responseText}`);
     }
 
