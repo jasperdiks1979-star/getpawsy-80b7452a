@@ -22,6 +22,13 @@ import {
   TARGET_KEYWORDS_BY_CATEGORY,
   STYLE_TO_BOARD_FALLBACK,
 } from "../_shared/pinterest-hooks.ts";
+import { scrubProductImages } from "../_shared/pinterest-image-scrub.ts";
+import {
+  buildStyledPin,
+  HOOK_TO_STYLE,
+  pickSoftCta,
+  pickCtrBadge,
+} from "../_shared/pinterest-templates.ts";
 
 export type {
   PinterestQueueInsert,
