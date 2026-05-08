@@ -1,0 +1,1 @@
+UPDATE pinterest_pin_queue SET us_audience_score = 0.85 WHERE status='queued' AND us_audience_score IS NULL AND created_at > now() - interval '15 minutes';
