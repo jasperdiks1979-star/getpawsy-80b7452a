@@ -460,17 +460,22 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
   const backdrop = input.backdropUrl || input.productImageUrl;
   const base = [
     "w_" + W, "h_" + H, "c_fill", "g_auto",
-    "e_brightness:-5", "e_saturation:15", "e_contrast:6",
+    "e_brightness:-2", "e_saturation:10", "e_contrast:4",
     "q_auto", "f_jpg",
   ];
-  const topScrim = scrimBand({ gravity: "north", height: 520, y: 0, opacity: 55 });
-  const bottomScrim = scrimBand({ gravity: "south", height: 280, y: 0, opacity: 55 });
+  // Soft, generous gradient fades — barely-there, just enough to lift text.
+  const topScrim = scrimBand({ gravity: "north", height: 720, y: 0, opacity: 32 });
+  const bottomScrim = scrimBand({ gravity: "south", height: 380, y: 0, opacity: 30 });
 
+  // Soft contact shadow grounds the product card.
+  const productShadow = shadowPlate({
+    width: 600, height: 110, gravity: "south_east", x: 80, y: 200, opacity: 38,
+  });
   // Product hero — soft white card bottom-right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_560", "h_700", "c_fit", "g_south_east", "x_70", "y_240", "r_24",
-    "bo_4px_solid_rgb:FFFFFF",
+    "w_540", "h_680", "c_fit", "g_south_east", "x_80", "y_260", "r_28",
+    "bo_2px_solid_rgb:FFFFFF",
   ];
 
   // Editorial wrapped headline — auto-fit so longer hooks shrink instead of
@@ -479,28 +484,30 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
   const fitted = autoFitHeadline(input.top, {
     widthPx: 840,
     maxLines: 3,
-    sizes: [88, 76, 68, 60, 52],
+    sizes: [96, 84, 74, 66, 58],
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_840", "c_fit",
-    "g_north_west", "x_80", "y_180",
+    "g_north_west", "x_92", "y_220",
   ];
 
-  // Premium pill CTA + brand mark on the bottom scrim.
+  // Editorial CTA — thin white type + arrow + hairline underline.
   const cta = [
-    "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_520", "c_fit",
-    "g_south_west", "x_80", "y_110",
+    "l_text:Arial_38:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "g_south_west", "x_92", "y_160",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 240, gravity: "south_west", x: 92, y: 140, opacity: 75,
+  });
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_south_east", "x_80", "y_130", "o_85",
+    "co_rgb:FFFFFF", "g_south_east", "x_92", "y_150", "o_75",
   ];
 
   return {
-    url: build([base, topScrim, bottomScrim, product, headline, cta, brand], backdrop),
-    layoutSignature: "lifestyle|premium",
+    url: build([base, topScrim, bottomScrim, productShadow, product, headline, ctaUnderline, cta, brand], backdrop),
+    layoutSignature: "lifestyle|polish",
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
