@@ -322,6 +322,10 @@ export interface PlacedLayer {
   x?: number;
   /** Cloudinary `y_` offset (positive pushes inward from the gravity edge). */
   y?: number;
+  /** Optional: rendered font size for text layers (used to scale overlap padding). */
+  fontSize?: number;
+  /** Optional: actual text content — when present, character count refines padding. */
+  text?: string;
 }
 
 export function boxFromPlacement(p: PlacedLayer, canvasW = CANVAS.w, canvasH = CANVAS.h): Box {
@@ -352,22 +356,56 @@ export interface OverlapCheck {
   /** Whether either box also exceeds the safe area. */
   ctaUnsafe: boolean;
   productUnsafe: boolean;
+  /** Padding actually applied (after dynamic computation). */
+  appliedPadding: number;
+}
+
+/** Dynamic CTA padding policy.
+ *
+ * Pinterest CTAs vary widely in font size (32–72px) and length (3–28 chars).
+ * A flat 24px padding cramps small CTAs against the product card and over-pads
+ * tiny labels. We scale on three signals:
+ *   • CTA height (proxy for font size — every text layer's `h` ≈ font size in px)
+ *   • CTA character count (longer copy needs more horizontal breathing room)
+ *   • CTA visual area (large pill-style CTAs deserve more separation)
+ *
+ * Result is clamped to [16, 72] so it never collapses or explodes.
+ */
+export function computeCtaPadding(cta: PlacedLayer): number {
+  const fontSize = cta.fontSize ?? cta.h ?? 40;
+  const charCount = cta.text ? cta.text.trim().length : Math.max(4, Math.round(cta.w / Math.max(fontSize * 0.45, 8)));
+  // Base: ~45% of font size (visual rhythm for breathing room around glyphs).
+  let padding = fontSize * 0.45;
+  // Length bonus: long CTAs (>14 chars) need more lateral clearance.
+  if (charCount > 14) padding += Math.min((charCount - 14) * 1.2, 16);
+  // Width bonus for wide pill/banner CTAs (rendered width > 480px).
+  if (cta.w > 480) padding += Math.min((cta.w - 480) * 0.04, 12);
+  return Math.round(Math.max(16, Math.min(72, padding)));
 }
 
 /**
  * Detect real CTA ↔ product intersection on the rendered canvas. Templates
  * call this with the actual Cloudinary placements they're about to emit.
- * `padding` (default 24px) treats near-touches as overlaps so CTA text never
- * crowds the product card.
+ * Padding is computed dynamically from CTA font size, character count, and
+ * rendered width via `computeCtaPadding` so small CTAs don't trigger false
+ * positives and large/long CTAs get sufficient breathing room. Pass an
+ * explicit number to override (legacy behavior).
  */
 export function checkCtaProductOverlap(
   cta: PlacedLayer,
   product: PlacedLayer,
-  padding = 24,
+  padding?: number,
 ): OverlapCheck {
+  const appliedPadding = typeof padding === "number" ? padding : computeCtaPadding(cta);
   const cBox = boxFromPlacement(cta);
   const pBox = boxFromPlacement(product);
-  const padded = { ...cBox, x: cBox.x - padding, y: cBox.y - padding, w: cBox.w + 2 * padding, h: cBox.h + 2 * padding };
+  const padded = {
+    ...cBox,
+    x: cBox.x - appliedPadding,
+    y: cBox.y - appliedPadding,
+    w: cBox.w + 2 * appliedPadding,
+    h: cBox.h + 2 * appliedPadding,
+  };
   const collide = intersects(padded, pBox);
   // Compute axis margins (negative = overlap depth on that axis).
   const dx = Math.min(pBox.x + pBox.w - cBox.x, cBox.x + cBox.w - pBox.x);
@@ -381,10 +419,10 @@ export function checkCtaProductOverlap(
   const ctaUnsafe = !insideSafe(cBox);
   const productUnsafe = !insideSafe(pBox);
   const issues: string[] = [];
-  if (collide) issues.push(`cta_overlaps_product (depth ${Math.abs(margin)}px)`);
+  if (collide) issues.push(`cta_overlaps_product (depth ${Math.abs(margin)}px, pad ${appliedPadding}px)`);
   if (ctaUnsafe) issues.push("cta exceeds safe area");
   if (productUnsafe) issues.push("product exceeds safe area");
-  return { ok: issues.length === 0, issues, cta: cBox, product: pBox, margin, ctaUnsafe, productUnsafe };
+  return { ok: issues.length === 0, issues, cta: cBox, product: pBox, margin, ctaUnsafe, productUnsafe, appliedPadding };
 }
 
 /**
