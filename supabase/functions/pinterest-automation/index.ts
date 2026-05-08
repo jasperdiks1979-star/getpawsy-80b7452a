@@ -1797,6 +1797,18 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
   const externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
   const success = response.ok && Boolean(pinId && externalUrl);
   const errorMessage = success ? null : `Pinterest API ${response.status}: ${responseText}`;
+  const trialDetected = isPinterestTrialAccessError(response.status, responseBody, responseText);
+  if (success) {
+    await setProductionPublishVerified(sb);
+  } else if (trialDetected) {
+    await setProductionTrialDetected(sb, errorMessage || "Pinterest trial access detected");
+  } else {
+    await sb.from("pinterest_runtime_settings").update({
+      last_pin_publish_error: errorMessage,
+      last_pin_publish_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+  }
   const hint = success ? null : translatePinterestFailure({
     stage: "publish",
     statusCode: response.status,
@@ -1852,6 +1864,12 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     ok: success,
     error: errorMessage,
     hint,
+    trial_access_detected: trialDetected,
+    production_publish_verified: success,
+    publishing_disabled: trialDetected || !success,
+    not_standard_message: trialDetected
+      ? "Wrong Pinterest app credentials or approval not applied to this client_id."
+      : null,
     request_endpoint: endpoint,
     board_id: requestPayload.board_id,
     image_url: DIRECT_TEST_IMAGE_URL,
