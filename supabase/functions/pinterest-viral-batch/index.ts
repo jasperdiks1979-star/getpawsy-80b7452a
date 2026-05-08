@@ -1030,6 +1030,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           (built as { url: string }).url = safe.url;
           (built as { layoutKey: string }).layoutKey = safe.layoutKey;
           layoutFallbacks++;
+        } else {
+          // Both the primary render AND the safe fallback failed safe-area /
+          // collision checks. Mark this pin for rejection so we never publish
+          // a clipped creative — the row still inserts (for diagnostics) but
+          // is held out of the publish queue.
+          (built as { __rejected?: boolean }).__rejected = true;
+          (built as { __rejectReason?: string }).__rejectReason =
+            `layout_unsafe:${(safe.validation.issues || []).slice(0, 3).join(";")}`;
         }
       }
       // Non-consecutive guarantee — if this pin's layout matches the previous
@@ -1063,12 +1071,16 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         board_name: boardForStyle(hook.key),
         hashtags: tags,
         priority: "high",
-        status: "draft",
+        status: (built as { __rejected?: boolean }).__rejected ? "rejected" : "draft",
         scheduled_at: new Date(now + i * STAGGER_MIN * 60_000).toISOString(),
         hook_group: hook.key,
         category_key: categoryKey,
         overlay_text: `${topOverlay} | ${bottomOverlay}`,
       };
+      if ((built as { __rejected?: boolean }).__rejected) {
+        row.rejection_reason = (built as { __rejectReason?: string }).__rejectReason
+          || "layout_unsafe";
+      }
       // Draft-only metadata (stripped by sanitizer before insert).
       if (backdropMeta) {
         row.backdrop_url = backdropMeta.url;

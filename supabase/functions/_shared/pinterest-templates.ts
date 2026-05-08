@@ -268,13 +268,13 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   const ctrBadge = input.ctrBadge
     ? [
         "l_text:Arial_34_bold:" + escapeText(input.ctrBadge),
-        "co_rgb:FFFFFF", "g_north_west", "x_72", "y_120", "o_85",
+        "co_rgb:FFFFFF", "g_north_west", "x_84", "y_124", "o_85",
       ]
     : null;
 
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_north_east", "x_72", "y_120", "o_75",
+    "co_rgb:FFFFFF", "g_north_east", "x_84", "y_124", "o_75",
   ];
 
   const layers: string[][] = [base, bottomScrim, productShadow, product, headline, ctaUnderline, cta, brand];
@@ -427,12 +427,12 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
   const chip = (label: string, x: number) => [
     "l_text:Arial_28:" + escapeText(label),
     "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_1px_solid_rgb:1A1410",
-    "r_max", "w_280", "c_fit",
+    "r_max", "w_240", "c_fit",
     "g_south", "x_" + x, "y_300",
   ];
-  const c1 = chip(stats[0], -340);
+  const c1 = chip(stats[0], -300);
   const c2 = chip(stats[1], 0);
-  const c3 = chip(stats[2], 340);
+  const c3 = chip(stats[2], 300);
 
   // Editorial CTA — quiet ink type with a thin underline. No pill.
   const cta = [
@@ -482,27 +482,27 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
   // overflowing into the product card.
   const preset = LAYOUT_PRESETS.right_text_left_product;
   const fitted = autoFitHeadline(input.top, {
-    widthPx: 840,
+    widthPx: 820,
     maxLines: 3,
     sizes: [96, 84, 74, 66, 58],
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
-    "co_rgb:FFFFFF", "w_840", "c_fit",
-    "g_north_west", "x_92", "y_220",
+    "co_rgb:FFFFFF", "w_820", "c_fit",
+    "g_north_west", "x_88", "y_220",
   ];
 
   // Editorial CTA — thin white type + arrow + hairline underline.
   const cta = [
     "l_text:Arial_38:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "g_south_west", "x_92", "y_160",
+    "co_rgb:FFFFFF", "g_south_west", "x_88", "y_160",
   ];
   const ctaUnderline = underlineAccent({
-    width: 240, gravity: "south_west", x: 92, y: 140, opacity: 75,
+    width: 220, gravity: "south_west", x: 88, y: 140, opacity: 75,
   });
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_south_east", "x_92", "y_150", "o_75",
+    "co_rgb:FFFFFF", "g_south_east", "x_88", "y_150", "o_75",
   ];
 
   return {
@@ -533,14 +533,14 @@ function tplViral(input: TemplateInput): TemplateOutput {
 
   const preset = LAYOUT_PRESETS.center_focus;
   const fitted = autoFitHeadline(input.top, {
-    widthPx: 980,
+    widthPx: 880,
     maxLines: 3,
-    sizes: [120, 104, 92, 80, 70, 60],
+    sizes: [110, 96, 84, 74, 66, 58],
     avgCharWidth: 0.52,
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
-    "co_rgb:FFFFFF", "w_980", "c_fit",
+    "co_rgb:FFFFFF", "w_880", "c_fit",
     "g_north", "y_220",
   ];
 
@@ -610,12 +610,12 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
   ];
 
   const productShadow = shadowPlate({
-    width: 460, height: 100, gravity: "south_west", x: 80, y: 180, opacity: 30,
+    width: 440, height: 100, gravity: "south_west", x: 88, y: 180, opacity: 30,
   });
   // Product hero on the left, contained within bottom 65% so cards fit right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_500", "h_900", "c_fit", "g_south_west", "x_60", "y_220", "r_24",
+    "w_460", "h_900", "c_fit", "g_south_west", "x_88", "y_220", "r_24",
   ];
 
   const stepLabels = [
@@ -627,8 +627,8 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
   const card = (n: number, label: string, y: number, fill: string, ink: string) => [
     "l_text:Georgia_32:" + escapeText(`${n}   ${label}`),
     "co_rgb:" + ink, "b_rgb:" + fill, "bo_1px_solid_rgb:1A1410",
-    "r_36", "w_440", "c_fit",
-    "g_east", "x_60", `y_${y}`,
+    "r_36", "w_400", "c_fit",
+    "g_east", "x_88", `y_${y}`,
   ];
   const c1 = card(1, stepLabels[0], 80, "FFFFFF", "1A1410");
   const c2 = card(2, stepLabels[1], -80, "FFFFFF", "1A1410");
@@ -636,7 +636,7 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
 
   const saveBadge = [
     "l_text:Arial_28:" + escapeText(input.ctrBadge || "Save this") + ARROW,
-    "co_rgb:1A1410", "g_north_east", "x_84", "y_160", "o_85",
+    "co_rgb:1A1410", "g_north_east", "x_88", "y_160", "o_85",
   ];
 
   const cta = [
