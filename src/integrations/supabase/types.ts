@@ -4975,6 +4975,7 @@ export type Database = {
           privacy: string | null
           production_verified: boolean
           production_verified_at: string | null
+          style_affinity: string[]
           updated_at: string
         }
         Insert: {
@@ -4996,6 +4997,7 @@ export type Database = {
           privacy?: string | null
           production_verified?: boolean
           production_verified_at?: string | null
+          style_affinity?: string[]
           updated_at?: string
         }
         Update: {
@@ -5017,6 +5019,7 @@ export type Database = {
           privacy?: string | null
           production_verified?: boolean
           production_verified_at?: string | null
+          style_affinity?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -5571,6 +5574,7 @@ export type Database = {
           active_board_name: string | null
           active_pinterest_connection_id: string | null
           daily_pin_cap: number
+          domination_mode: boolean
           id: number
           last_pin_external_id: string | null
           last_pin_external_url: string | null
@@ -5594,6 +5598,7 @@ export type Database = {
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
           daily_pin_cap?: number
+          domination_mode?: boolean
           id?: number
           last_pin_external_id?: string | null
           last_pin_external_url?: string | null
@@ -5617,6 +5622,7 @@ export type Database = {
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
           daily_pin_cap?: number
+          domination_mode?: boolean
           id?: number
           last_pin_external_id?: string | null
           last_pin_external_url?: string | null
