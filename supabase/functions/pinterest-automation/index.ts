@@ -1077,7 +1077,7 @@ Deno.serve(async (req) => {
       const [{ data: stuck }, { data: lastCron }, { data: conn }] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id, publishing_started_at").eq("status", "publishing").lt("publishing_started_at", new Date(Date.now() - 15 * 60_000).toISOString()),
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
-        getLatestPinterestConnection(sb, { requireConnected: false }),
+        getLatestPinterestConnection(sb, { requireConnected: false }).then((data) => ({ data })),
       ]);
       const [draftCount, queuedCount, publishingCount, postedCount, failedCount, skippedCount] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "draft"),
@@ -1132,7 +1132,7 @@ Deno.serve(async (req) => {
       const nextEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
       const nextPublishNowEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: true, allowed, maxRetries: 2 });
 
-      const authValid = conn?.status === "connected" && conn?.last_account_status === 200 && conn?.last_boards_status === 200 && (conn?.board_count || 0) > 0;
+      const authValid = conn?.status === "connected" && conn?.last_boards_status === 200 && (conn?.board_count || 0) > 0;
       return json(cors, {
         ok: true,
         api_status: conn?.status || "disconnected",
