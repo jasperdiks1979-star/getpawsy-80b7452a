@@ -402,6 +402,18 @@ function PinterestDashboard() {
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [debugToken, setDebugToken] = useState<{ token: string; expires_at: string; ttl_minutes: number; label: string | null } | null>(null);
   const [debugTokenTtl, setDebugTokenTtl] = useState<number>(10);
+  const [appDiagnostic, setAppDiagnostic] = useState<any | null>(null);
+
+  const fetchAppDiagnostic = useCallback(async () => {
+    try {
+      const data = await invokePinterestAction<any>("pinterest_app_diagnostic");
+      setAppDiagnostic(data || null);
+    } catch (e) {
+      console.warn("pinterest_app_diagnostic failed:", e);
+    }
+  }, []);
+
+  useEffect(() => { void fetchAppDiagnostic(); }, [fetchAppDiagnostic]);
 
   const fetchDirectTestHistory = useCallback(async () => {
     const { data, error } = await supabase
