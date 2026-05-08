@@ -523,28 +523,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "set_sandbox_token") {
-      const envToken = Deno.env.get("PINTEREST_ACCESS_TOKEN");
-      if (!envToken) return json(cors, { ok: false, error: "PINTEREST_ACCESS_TOKEN secret not set" });
-
-      const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
-      const payload = {
-        account_name: "Sandbox Account",
-        account_id: "sandbox",
-        access_token: envToken,
-        refresh_token: null,
-        token_expires_at: expiresAt,
-        status: "connected",
-        last_error: null,
-        updated_at: new Date().toISOString(),
-      };
-
-      const existing = await getLatestPinterestConnection(sb, { requireConnected: false });
-      const { error: dbErr } = existing?.id
-        ? await sb.from("pinterest_connection").update(payload).eq("id", existing.id)
-        : await sb.from("pinterest_connection").insert(payload);
-
-      if (dbErr) return json(cors, { ok: false, error: dbErr.message });
-      return json(cors, { ok: true, message: "Sandbox token activated" });
+      return json(cors, {
+        ok: false,
+        error: "Manual Pinterest developer tokens are disabled. Use OAuth reconnect with approved App ID 1567611 only.",
+        code: "PINTEREST_OAUTH_ONLY",
+      });
     }
 
     if (action === "get_dashboard") {
