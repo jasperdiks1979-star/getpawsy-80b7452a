@@ -606,6 +606,7 @@ function PinterestDashboard() {
       await fetchAll();
     }
     await fetchDirectTestHistory();
+    await fetchAppDiagnostic();
     setActionLoading(null);
   };
 
@@ -671,6 +672,7 @@ function PinterestDashboard() {
       toast.error(e instanceof Error ? e.message : "Token-auth test failed");
     }
     await fetchDirectTestHistory();
+    await fetchAppDiagnostic();
     setActionLoading(null);
   };
 
