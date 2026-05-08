@@ -65,6 +65,7 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "pin_title", "pin_description", "pin_image_url", "destination_link",
   "board_name", "hashtags", "priority", "status", "scheduled_at",
   "hook_group", "category_key", "overlay_text", "qa_reasons", "image_hash",
+  "approved_at",
 ]);
 
 export interface SanitizeReport {
@@ -691,12 +692,28 @@ Return STRICT JSON, no prose, matching:
   } x N ]
 }`;
 
-    // Repeat HOOK_GROUPS as needed when the caller asks for more pins than we
-    // have hook frameworks. Round-robin keeps style distribution even.
-    const ACTIVE_HOOKS: typeof HOOK_GROUPS[number][] = [];
-    for (let i = 0; i < pinLimit; i++) {
-      ACTIVE_HOOKS.push(HOOK_GROUPS[i % HOOK_GROUPS.length]);
-    }
+    // Explicit content-mix recipe (max 15) — guarantees variety of layouts,
+    // emotional triggers, and CTA placements per the Viral Design brief:
+    //   3× emotional problem  (pain → tplProblem)
+    //   3× cozy lifestyle     (social_proof → tplLifestyle)
+    //   3× before/after       (transformation → tplBeforeAfter)
+    //   2× infographic        (infographic → tplInfographic)
+    //   2× viral curiosity    (curiosity → tplViral)
+    //   2× cat-owner hack     (time_saving → tplBenefit)
+    const HOOK_BY_KEY: Record<string, typeof HOOK_GROUPS[number]> =
+      Object.fromEntries(HOOK_GROUPS.map((h) => [h.key, h])) as Record<string, typeof HOOK_GROUPS[number]>;
+    const VIRAL_RECIPE: string[] = [
+      "pain", "pain", "pain",
+      "social_proof", "social_proof", "social_proof",
+      "transformation", "transformation", "transformation",
+      "infographic", "infographic",
+      "curiosity", "curiosity",
+      "time_saving", "time_saving",
+    ];
+    const recipe = VIRAL_RECIPE.slice(0, pinLimit);
+    const ACTIVE_HOOKS: typeof HOOK_GROUPS[number][] = recipe.map(
+      (k) => HOOK_BY_KEY[k] || HOOK_GROUPS[0],
+    );
     const userPrompt = `Generate exactly ${ACTIVE_HOOKS.length} pins for this product, one per hook framework, IN THIS ORDER:
 ${ACTIVE_HOOKS.map((h, i) => `${i + 1}. ${h.key} (${h.angle})`).join("\n")}
 
@@ -889,6 +906,21 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         row.backdrop_hook_group = hook.key;
         row.backdrop_style = style;
       }
+      // Heuristic save/click score — used to auto-approve the top 3 only.
+      const lenT = topOverlay.length;
+      const lengthScore = lenT >= 14 && lenT <= 38 ? 1 : 0.4;
+      const ctaSoftBonus = /\b(see|save|discover|love|try|why|trend)/i.test(bottomOverlay) ? 0.6 : 0;
+      const hookBonus =
+        hook.key === "transformation" ? 1.0 :
+        hook.key === "pain" ? 0.85 :
+        hook.key === "social_proof" ? 0.8 :
+        hook.key === "curiosity" ? 0.7 :
+        hook.key === "infographic" ? 0.55 :
+        0.5;
+      const seedJitter = ((seed % 17) / 17) * 0.2;
+      (row as any).__score = Number(
+        (lengthScore + ctaSoftBonus + hookBonus + seedJitter).toFixed(3),
+      );
       rows.push(row);
     }
 
@@ -951,6 +983,28 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         }));
       }
     }
+
+    // Tier publishing — auto-approve only the top 3 by score, stagger the
+    // rest further out so they queue without flooding Pinterest. Top 3 get
+    // priority="high" + approved_at=now so the publish worker picks them up
+    // immediately; rest stay status="draft" without approved_at and require
+    // admin approval (or the next promote-cycle) to publish.
+    const ranked = rows
+      .map((r, idx) => ({ idx, score: (r as any).__score as number }))
+      .sort((a, b) => b.score - a.score);
+    const topIdx = new Set(ranked.slice(0, Math.min(3, ranked.length)).map((r) => r.idx));
+    rows.forEach((r, i) => {
+      delete (r as any).__score;
+      if (topIdx.has(i)) {
+        (r as Record<string, unknown>).priority = "high";
+        (r as Record<string, unknown>).approved_at = new Date(now + 2 * 60_000).toISOString();
+        (r as Record<string, unknown>).scheduled_at = new Date(now + (i + 1) * 5 * 60_000).toISOString();
+      } else {
+        (r as Record<string, unknown>).priority = "normal";
+        // Push non-winners further out (60-min stagger starting after top 3).
+        (r as Record<string, unknown>).scheduled_at = new Date(now + (i + 4) * 60 * 60_000).toISOString();
+      }
+    });
 
     if (dryRun) {
       return respond({
