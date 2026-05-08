@@ -309,6 +309,47 @@ export default function PinterestPinStatusPage() {
     }
   };
 
+  // ── AI Creative Director ──────────────────────────────────────────────
+  const [cdOpen, setCdOpen] = useState(false);
+  const [cdSlug, setCdSlug] = useState('');
+  const [cdCount, setCdCount] = useState(5);
+  const [cdForce, setCdForce] = useState(false);
+  const [cdResult, setCdResult] = useState<any | null>(null);
+  const handleCreativeDirector = async () => {
+    if (!cdSlug.trim()) {
+      toast({ title: 'Product slug required', variant: 'destructive' });
+      return;
+    }
+    setMaintLoading('creative_director');
+    setCdResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-creative-director', {
+        body: {
+          action: 'run_full',
+          productSlug: cdSlug.trim(),
+          count: cdCount,
+          force: cdForce,
+        },
+      });
+      if (error) throw error;
+      const r = data as any;
+      setCdResult(r);
+      if (r?.ok) {
+        toast({
+          title: `Creative Director: ${r.niche}`,
+          description: r.message,
+        });
+        await refetch();
+      } else {
+        toast({ title: 'Creative Director failed', description: r?.message || 'unknown', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Creative Director failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setMaintLoading(null);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
