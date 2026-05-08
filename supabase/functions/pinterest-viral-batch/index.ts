@@ -582,7 +582,11 @@ serve(async (req) => {
     const dryRun: boolean = !!body.dryRun;
     // Hard cap to prevent overload — at most 8 pins per product per run
     // (one per hook style, including the new infographic style).
-    const MAX_PINS_PER_RUN = 8;
+    // Premium Mode: up to 15 pins per product per run — when count > 6 we
+    // cycle through HOOK_GROUPS multiple times so the AI generates fresh
+    // copy variants per repeat, and the seed jitter gives each pin a distinct
+    // composition within the same style.
+    const MAX_PINS_PER_RUN = 15;
     const requestedLimit = Number.isFinite(Number(body.maxPins)) ? Number(body.maxPins) : MAX_PINS_PER_RUN;
     const pinLimit = Math.max(1, Math.min(MAX_PINS_PER_RUN, requestedLimit));
     console.log(`[pinterest-viral-batch] start trace=${traceId} slugs=${slugsRaw.join(",")} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} limit=${pinLimit} domination=${dominationMode}`);
@@ -687,7 +691,12 @@ Return STRICT JSON, no prose, matching:
   } x N ]
 }`;
 
-    const ACTIVE_HOOKS = HOOK_GROUPS.slice(0, pinLimit);
+    // Repeat HOOK_GROUPS as needed when the caller asks for more pins than we
+    // have hook frameworks. Round-robin keeps style distribution even.
+    const ACTIVE_HOOKS: typeof HOOK_GROUPS[number][] = [];
+    for (let i = 0; i < pinLimit; i++) {
+      ACTIVE_HOOKS.push(HOOK_GROUPS[i % HOOK_GROUPS.length]);
+    }
     const userPrompt = `Generate exactly ${ACTIVE_HOOKS.length} pins for this product, one per hook framework, IN THIS ORDER:
 ${ACTIVE_HOOKS.map((h, i) => `${i + 1}. ${h.key} (${h.angle})`).join("\n")}
 
@@ -756,19 +765,31 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     const STAGGER_MIN = 35; // ~one pin every 35 minutes — safe vs Pinterest limits
     const batchTag = `batch_${new Date(now).toISOString().slice(0, 16).replace(/[-:T]/g, "")}`;
 
-    // Per-hook Pexels backdrop queries — only used by styles that need a
-    // lifestyle context (problem / before_after / lifestyle).
-    const BACKDROP_QUERY_BY_HOOK: Record<string, string> = {
-      pain: "cozy living room cat",
-      transformation: "modern apartment cat",
-      social_proof: "scandinavian home cat sunlight",
-      curiosity: "cat curious window light",
-      time_saving: "minimalist modern bathroom",
-      infographic: "modern home cat",
+    // Premium-grade Pexels queries. We pair BEFORE (problem scene) with AFTER
+    // (resolved/aesthetic scene) so the before/after style renders two truly
+    // distinct photos — never the same image twice. Other styles use the
+    // single AFTER scene as a cozy lifestyle backdrop.
+    type BackdropQuery = { before: string; after: string };
+    const BACKDROP_QUERIES_BY_CATEGORY: Record<string, BackdropQuery> = {
+      "cat-litter":      { before: "messy bathroom floor",         after: "clean modern bathroom interior" },
+      "cat-tree":        { before: "cluttered apartment small",    after: "scandinavian living room cat sunlight" },
+      "cat-furniture":   { before: "cluttered hallway",            after: "minimalist modern living room" },
+      "smart-pet-gadget":{ before: "messy kitchen counter",        after: "modern kitchen cat sunlight" },
+      "dog-bed":         { before: "old worn dog bed floor",       after: "cozy bedroom dog sleeping" },
+      "default":         { before: "cluttered home interior",      after: "cozy modern apartment sunlight" },
+    };
+    const PER_HOOK_AFTER_QUERY: Record<string, string> = {
+      pain:           "cozy living room cat soft light",
+      transformation: "modern apartment cat sunlight",
+      social_proof:   "scandinavian home cat warm light",
+      curiosity:      "cat looking out window soft light",
+      time_saving:   "minimalist clean modern bathroom",
+      infographic:    "warm modern home cat",
     };
     const STYLES_NEEDING_BACKDROP: ReadonlySet<string> = new Set([
       "problem", "before_after", "lifestyle",
     ]);
+    const pair = BACKDROP_QUERIES_BY_CATEGORY[categoryKey] || BACKDROP_QUERIES_BY_CATEGORY.default;
 
     // Layout-signature dedupe across this batch (defensive — every style is
     // already distinct, but variant cards within a style randomize via seed).
@@ -791,13 +812,18 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
 
       // Fetch a lifestyle backdrop only for styles that benefit from one.
       let backdropUrl: string | null = null;
+      let backdropAfterUrl: string | null = null;
       let backdropMeta: PexelsPhoto | null = null;
       let backdropSource: "pexels" | "cloudinary_fallback" | "none" = "none";
       const wantsBackdrop = STYLES_NEEDING_BACKDROP.has(style)
         || (useLifestyleBackdrop && (!backdropByHook || backdropByHook[hook.key]));
       if (wantsBackdrop) {
-        const query = BACKDROP_QUERY_BY_HOOK[hook.key] || "cozy modern home";
-        let bd = await fetchPexelsBackdrop(query);
+        // For before_after we need TWO scenes — one problem, one aesthetic.
+        // For everything else we just need the AFTER (cozy) scene.
+        const afterQuery = style === "before_after"
+          ? pair.after
+          : (PER_HOOK_AFTER_QUERY[hook.key] || pair.after);
+        let bd = await fetchPexelsBackdrop(afterQuery);
         if (!bd) {
           bd = buildCloudinaryFallbackBackdrop(hook.key);
           backdropSource = "cloudinary_fallback";
@@ -806,11 +832,19 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         }
         backdropMeta = bd;
         backdropUrl = bd.url;
+        if (style === "before_after") {
+          // Pull a distinct BEFORE scene. Fall back to a tinted recolor of
+          // the AFTER scene if Pexels misses, so the layout still works.
+          const bb = await fetchPexelsBackdrop(pair.before);
+          backdropAfterUrl = backdropUrl;          // After = the cozy/clean scene
+          backdropUrl = (bb?.url) || backdropUrl;  // Before = the problem scene
+        }
       }
 
       const built = buildStyledPin(style, {
         productImageUrl: productImage,
         backdropUrl,
+        backdropAfterUrl,
         top: topOverlay,
         bottom: bottomOverlay,
         ctrBadge,
