@@ -224,6 +224,35 @@ export default function PinterestPinStatusPage() {
     }
   };
 
+  const handleApproveAllDrafts = async () => {
+    const drafts = (data ?? []).filter((r) => r.status === 'draft');
+    if (!drafts.length) return toast({ title: 'No drafts to approve' });
+    if (!confirm(`Promote ALL ${drafts.length} draft pins to queued? This does not publish them.`)) return;
+    setMaintLoading('bulk_approve_all');
+    try {
+      const ids = drafts.map((d) => d.id);
+      const chunkSize = 50;
+      let approved = 0;
+      const failures: any[] = [];
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const r = await runAutomation('bulk_approve', { pinIds: chunk });
+        approved += r?.approved ?? 0;
+        if (Array.isArray(r?.failures)) failures.push(...r.failures);
+      }
+      toast({
+        title: 'Bulk approve complete',
+        description: `Approved ${approved} of ${ids.length}${failures.length ? ` · failed ${failures.length}` : ''}`,
+        variant: failures.length ? 'destructive' : undefined,
+      });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Bulk approve failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setMaintLoading(null);
+    }
+  };
+
   const handlePublishNext = async () => {
     setMaintLoading('publish-next');
     try {
@@ -308,6 +337,19 @@ export default function PinterestPinStatusPage() {
             </Button>
             <Button size="sm" variant="outline" onClick={handleQueueDrafts} disabled={!!maintLoading}>
               <RotateCcw className="h-4 w-4 mr-2" /> Queue drafts (top 10)
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleApproveAllDrafts}
+              disabled={!!maintLoading}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {maintLoading === 'bulk_approve_all' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+              )}
+              Approve all drafts ({(data ?? []).filter((r) => r.status === 'draft').length})
             </Button>
             <Button size="sm" variant="outline" onClick={handlePublishNext} disabled={!!maintLoading}>
               {maintLoading === 'publish-next' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
