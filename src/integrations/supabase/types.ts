@@ -4955,6 +4955,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_boards: {
+        Row: {
+          blacklist_reason: string | null
+          board_created_at: string | null
+          created_at: string
+          follower_count: number | null
+          id: string
+          is_blacklisted: boolean
+          is_sandbox: boolean
+          last_seen_at: string
+          last_validated_at: string | null
+          last_validation_error: string | null
+          last_validation_status: number | null
+          name: string
+          owner_username: string | null
+          pin_count: number | null
+          privacy: string | null
+          production_verified: boolean
+          production_verified_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          blacklist_reason?: string | null
+          board_created_at?: string | null
+          created_at?: string
+          follower_count?: number | null
+          id: string
+          is_blacklisted?: boolean
+          is_sandbox?: boolean
+          last_seen_at?: string
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          last_validation_status?: number | null
+          name: string
+          owner_username?: string | null
+          pin_count?: number | null
+          privacy?: string | null
+          production_verified?: boolean
+          production_verified_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          blacklist_reason?: string | null
+          board_created_at?: string | null
+          created_at?: string
+          follower_count?: number | null
+          id?: string
+          is_blacklisted?: boolean
+          is_sandbox?: boolean
+          last_seen_at?: string
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          last_validation_status?: number | null
+          name?: string
+          owner_username?: string | null
+          pin_count?: number | null
+          privacy?: string | null
+          production_verified?: boolean
+          production_verified_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_connection: {
         Row: {
           access_token: string | null
@@ -5495,10 +5558,15 @@ export type Database = {
       }
       pinterest_runtime_settings: {
         Row: {
+          active_board_id: string | null
+          active_board_name: string | null
           active_pinterest_connection_id: string | null
           id: number
+          last_pin_external_id: string | null
+          last_pin_external_url: string | null
           last_pin_publish_at: string | null
           last_pin_publish_error: string | null
+          last_pin_published_at: string | null
           mode: string
           production_publish_verified: boolean
           production_publish_verified_at: string | null
@@ -5509,10 +5577,15 @@ export type Database = {
           verified_client_id_prefix: string | null
         }
         Insert: {
+          active_board_id?: string | null
+          active_board_name?: string | null
           active_pinterest_connection_id?: string | null
           id?: number
+          last_pin_external_id?: string | null
+          last_pin_external_url?: string | null
           last_pin_publish_at?: string | null
           last_pin_publish_error?: string | null
+          last_pin_published_at?: string | null
           mode?: string
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
@@ -5523,10 +5596,15 @@ export type Database = {
           verified_client_id_prefix?: string | null
         }
         Update: {
+          active_board_id?: string | null
+          active_board_name?: string | null
           active_pinterest_connection_id?: string | null
           id?: number
+          last_pin_external_id?: string | null
+          last_pin_external_url?: string | null
           last_pin_publish_at?: string | null
           last_pin_publish_error?: string | null
+          last_pin_published_at?: string | null
           mode?: string
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null

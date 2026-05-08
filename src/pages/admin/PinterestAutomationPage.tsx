@@ -1136,6 +1136,8 @@ function PinterestDashboard() {
         </CardContent>
       </Card>
 
+      <BoardPickerCard />
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
@@ -1596,5 +1598,205 @@ export default function PinterestAutomationPage() {
         <PinterestContent />
       </section>
     </PinterestPageErrorBoundary>
+  );
+}
+
+type PinterestBoardRow = {
+  id: string;
+  name: string | null;
+  privacy: string | null;
+  is_sandbox: boolean;
+  is_blacklisted: boolean;
+  blacklist_reason: string | null;
+  production_verified: boolean;
+  production_verified_at: string | null;
+  last_validated_at: string | null;
+  last_validation_status: number | null;
+  last_validation_error?: string | null;
+  owner_username?: string | null;
+  pin_count?: number | null;
+  follower_count?: number | null;
+  board_created_at?: string | null;
+};
+
+function BoardPickerCard() {
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [boards, setBoards] = useState<PinterestBoardRow[]>([]);
+  const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "list_boards" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Failed to list boards");
+      setBoards(data.boards || []);
+      setActiveBoardId(data.active_board_id || null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load boards");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "refresh_boards" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Refresh failed");
+      toast.success(`Fetched ${data.fetched} boards from Pinterest`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Refresh failed");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const autoSelect = async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "auto_select_board" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Auto-select failed");
+      toast.success(`Active board: ${data.active_board_name || data.active_board_id}`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Auto-select failed");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const useBoard = async (boardId: string) => {
+    setBusyId(boardId);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "set_active_board", board_id: boardId },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Failed");
+      toast.success("Active board updated");
+      setActiveBoardId(boardId);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleBlacklist = async (boardId: string, currentlyBlacklisted: boolean) => {
+    setBusyId(boardId);
+    try {
+      const action = currentlyBlacklisted ? "unblacklist_board" : "blacklist_board";
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action, board_id: boardId, reason: "manual admin" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Failed");
+      toast.success(currentlyBlacklisted ? "Removed from blacklist" : "Blacklisted");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4" /> Pinterest Boards (production-only)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing || loading}>
+            {refreshing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
+            Refresh from Pinterest
+          </Button>
+          <Button size="sm" onClick={autoSelect} disabled={refreshing || loading}>
+            <Sparkles className="mr-2 h-3 w-3" /> Auto-select best production board
+          </Button>
+        </div>
+
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Loading boards…</p>
+        ) : boards.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No boards in cache. Click "Refresh from Pinterest" to fetch.</p>
+        ) : (
+          <div className="space-y-2">
+            {boards.map((b) => {
+              const isActive = b.id === activeBoardId;
+              const isPublic = (b.privacy || "").toUpperCase() === "PUBLIC";
+              return (
+                <div
+                  key={b.id}
+                  className={`rounded-md border p-2 text-xs ${
+                    isActive
+                      ? "border-emerald-500/60 bg-emerald-500/5"
+                      : b.is_blacklisted || b.is_sandbox
+                      ? "border-destructive/40 bg-destructive/5"
+                      : "border-border bg-background/40"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{b.name || "(no name)"}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{b.id}</span>
+                    {isActive && <Badge className="bg-emerald-500">ACTIVE</Badge>}
+                    <Badge variant={isPublic ? "default" : "secondary"}>{b.privacy || "?"}</Badge>
+                    {b.is_sandbox && <Badge variant="destructive">SANDBOX</Badge>}
+                    {b.is_blacklisted && <Badge variant="destructive">BLACKLISTED</Badge>}
+                    {b.production_verified && <Badge className="bg-emerald-600">PROD VERIFIED</Badge>}
+                  </div>
+                  {(b.blacklist_reason || b.last_validation_error) && (
+                    <p className="mt-1 text-[11px] text-destructive break-all">
+                      {b.blacklist_reason || b.last_validation_error}
+                    </p>
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Button
+                      size="sm"
+                      variant={isActive ? "secondary" : "outline"}
+                      className="h-6 px-2 text-[11px]"
+                      disabled={busyId === b.id || isActive || b.is_blacklisted}
+                      onClick={() => useBoard(b.id)}
+                    >
+                      {isActive ? "In use" : "Use this board"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-[11px]"
+                      disabled={busyId === b.id}
+                      onClick={() => toggleBlacklist(b.id, b.is_blacklisted)}
+                    >
+                      {b.is_blacklisted ? "Un-blacklist" : "Blacklist"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="text-[11px] text-muted-foreground">
+          The active board overrides per-pin board routing in the cron worker. On a Pinterest "code 15"
+          (sandbox board) error, the board is auto-blacklisted and the pin is reset to draft.
+        </p>
+      </CardContent>
+    </Card>
   );
 }

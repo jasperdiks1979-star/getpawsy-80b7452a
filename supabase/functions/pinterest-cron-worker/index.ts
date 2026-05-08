@@ -231,6 +231,34 @@ Deno.serve(async (req) => {
   }> = [];
   const boardIdCache = new Map<string, string>();
 
+  // Load admin-pinned active board (overrides per-pin board_name routing)
+  let activeBoardOverride: { id: string; name: string | null } | null = null;
+  try {
+    const { data: settings } = await sb
+      .from("pinterest_runtime_settings")
+      .select("active_board_id, active_board_name")
+      .eq("id", 1)
+      .maybeSingle();
+    if (settings?.active_board_id) {
+      activeBoardOverride = { id: String(settings.active_board_id), name: settings.active_board_name || null };
+      console.log(`[cron] using active_board_id override: ${activeBoardOverride.id} (${activeBoardOverride.name})`);
+    }
+  } catch (e) {
+    console.warn("[cron] failed to load active_board_id override:", e);
+  }
+
+  // Load board blacklist
+  const blacklistedBoardIds = new Set<string>();
+  try {
+    const { data: blacklisted } = await sb
+      .from("pinterest_boards")
+      .select("id")
+      .or("is_blacklisted.eq.true,is_sandbox.eq.true");
+    for (const r of blacklisted || []) blacklistedBoardIds.add(String(r.id));
+  } catch (e) {
+    console.warn("[cron] failed to load board blacklist:", e);
+  }
+
   try {
     // ── 1. Fetch due pins ──
     const { data: pins, error } = await sb
@@ -466,13 +494,24 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const boardRef = pin.board_name || "";
-        const boardId = boardIdCache.has(boardRef)
-          ? boardIdCache.get(boardRef)!
-          : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
-
-        if (!boardIdCache.has(boardRef)) {
-          boardIdCache.set(boardRef, boardId);
+        let boardId: string;
+        if (activeBoardOverride) {
+          boardId = activeBoardOverride.id;
+        } else {
+          const boardRef = pin.board_name || "";
+          boardId = boardIdCache.has(boardRef)
+            ? boardIdCache.get(boardRef)!
+            : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
+          if (!boardIdCache.has(boardRef)) boardIdCache.set(boardRef, boardId);
+        }
+        if (blacklistedBoardIds.has(boardId)) {
+          console.warn(`[cron] board ${boardId} is blacklisted, skipping pin ${pin.id}`);
+          await sb.from("pinterest_pin_queue").update({
+            status: "failed",
+            error_message: `Board ${boardId} is blacklisted (sandbox or invalid). Pick a new active board in admin.`,
+          }).eq("id", pin.id);
+          results.push({ pinId: pin.id, status: "failed", error: "board_blacklisted" });
+          continue;
         }
 
         // 🔒 Claim this row — only proceed if still queued (race-safe).
@@ -538,6 +577,42 @@ Deno.serve(async (req) => {
               error_message: "Pinterest trial-access detected during cron publish — production publishing locked.",
               response_data: { code: "PINTEREST_TRIAL_ACCESS", body: parsedErrBody },
             });
+          }
+
+          // Detect sandbox-board error (code 15) → blacklist board, drop pin to draft
+          const isSandboxBoard = pinRes.status === 400 && typeof parsedErrBody?.code === "number" && parsedErrBody.code === 15;
+          if (isSandboxBoard) {
+            const nowIso = new Date().toISOString();
+            await sb.from("pinterest_boards").upsert({
+              id: String(boardId),
+              name: activeBoardOverride?.name || pin.board_name || "(sandbox)",
+              is_blacklisted: true,
+              is_sandbox: true,
+              blacklist_reason: `code 15: ${parsedErrBody?.message || "sandbox board"}`,
+              last_validated_at: nowIso,
+              last_validation_status: 400,
+              last_validation_error: errBody.slice(0, 500),
+              updated_at: nowIso,
+            }, { onConflict: "id" });
+            blacklistedBoardIds.add(String(boardId));
+            // If this was the active override, clear it so admin must re-pick
+            if (activeBoardOverride && activeBoardOverride.id === String(boardId)) {
+              await sb.from("pinterest_runtime_settings").update({
+                active_board_id: null,
+                active_board_name: null,
+                last_pin_publish_error: `Active board ${boardId} is sandbox — blacklisted. Pick a new active board in admin.`,
+                last_pin_publish_at: nowIso,
+                updated_at: nowIso,
+              }).eq("id", 1);
+              activeBoardOverride = null;
+            }
+            // Reset pin to draft so it doesn't burn retries
+            await sb.from("pinterest_pin_queue").update({
+              status: "draft",
+              error_message: `Board ${boardId} blacklisted (sandbox). Pick new active board.`,
+            }).eq("id", pin.id);
+            results.push({ pinId: pin.id, status: "skipped", error: "sandbox_board_blacklisted" });
+            continue;
           }
 
           // Auto-fallback on 403 from production
