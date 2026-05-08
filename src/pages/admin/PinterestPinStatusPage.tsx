@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, ExternalLink, Loader2 } from 'lucide-react';
+import { RefreshCw, ExternalLink, Loader2, Download } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -85,6 +85,46 @@ export default function PinterestPinStatusPage() {
         .filter(Boolean).some((v) => (v as string).toLowerCase().includes(s)));
   }, [data, search]);
 
+  const exportCsv = () => {
+    const cols: { key: keyof PinRow; label: string }[] = [
+      { key: 'id', label: 'id' },
+      { key: 'pin_title', label: 'pin_title' },
+      { key: 'product_slug', label: 'product_slug' },
+      { key: 'pin_variant', label: 'pin_variant' },
+      { key: 'hook_group', label: 'hook_group' },
+      { key: 'status', label: 'status' },
+      { key: 'scheduled_at', label: 'scheduled_at' },
+      { key: 'posted_at', label: 'posted_at' },
+      { key: 'publishing_started_at', label: 'publishing_started_at' },
+      { key: 'publish_attempts', label: 'publish_attempts' },
+      { key: 'last_publish_error', label: 'last_publish_error' },
+      { key: 'error_message', label: 'error_message' },
+      { key: 'rejection_reason', label: 'rejection_reason' },
+      { key: 'pinterest_pin_id', label: 'pinterest_pin_id' },
+      { key: 'external_url', label: 'external_url' },
+      { key: 'created_at', label: 'created_at' },
+    ];
+    const esc = (v: unknown) => {
+      if (v === null || v === undefined) return '';
+      const s = String(v).replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const lines = [
+      cols.map((c) => c.label).join(','),
+      ...filtered.map((r) => cols.map((c) => esc(r[c.key])).join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = url;
+    a.download = `pinterest-pin-status_${filter}_${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -92,9 +132,14 @@ export default function PinterestPinStatusPage() {
           <h1 className="text-2xl font-bold">Pinterest Pin Status</h1>
           <p className="text-sm text-muted-foreground">Live publish status, schedule, and error reasons for every pin in the queue.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={!filtered.length}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV ({filtered.length})
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       <Card>
