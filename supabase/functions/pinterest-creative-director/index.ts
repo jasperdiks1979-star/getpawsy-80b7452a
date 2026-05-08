@@ -20,6 +20,14 @@ import {
   type NicheKey,
   type StyleDNA,
 } from "../_shared/pinterest-style-dna.ts";
+import {
+  PATTERN_LIBRARY,
+  getPattern,
+  selectPatternsForNiche,
+  patternQualityReasons,
+  type PatternId,
+  type PinterestPattern,
+} from "../_shared/pinterest-patterns.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,6 +108,7 @@ interface SceneBrief {
   cta: string; // ≤ 18 chars
   /** Free-form prompt the image model receives. */
   full_prompt: string;
+  pattern_id?: PatternId;
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
