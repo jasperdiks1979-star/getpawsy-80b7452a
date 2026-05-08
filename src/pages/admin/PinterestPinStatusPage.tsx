@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send } from 'lucide-react';
+import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -262,6 +262,21 @@ export default function PinterestPinStatusPage() {
       await refetch();
     } catch (e) {
       toast({ title: 'Delete failed', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const [verifyReport, setVerifyReport] = useState<any | null>(null);
+  const handleVerifyDrafts = async () => {
+    setVerifyReport(null);
+    try {
+      const r = await runAutomation('verify_drafts');
+      setVerifyReport(r);
+      toast({
+        title: 'Verify complete',
+        description: `Scanned ${r.scanned} · ready ${r.ready} · warnings ${r.with_warnings} · invalid ${r.invalid}`,
+      });
+    } catch (e) {
+      toast({ title: 'Verify failed', description: (e as Error).message, variant: 'destructive' });
     }
   };
 
