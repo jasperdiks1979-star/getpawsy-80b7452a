@@ -5401,6 +5401,7 @@ export type Database = {
           idempotency_key: string | null
           image_hash: string | null
           last_publish_error: string | null
+          meta: Json | null
           overlay_text: string | null
           pin_description: string
           pin_external_id: string | null
@@ -5444,6 +5445,7 @@ export type Database = {
           idempotency_key?: string | null
           image_hash?: string | null
           last_publish_error?: string | null
+          meta?: Json | null
           overlay_text?: string | null
           pin_description: string
           pin_external_id?: string | null
@@ -5487,6 +5489,7 @@ export type Database = {
           idempotency_key?: string | null
           image_hash?: string | null
           last_publish_error?: string | null
+          meta?: Json | null
           overlay_text?: string | null
           pin_description?: string
           pin_external_id?: string | null
