@@ -28,6 +28,13 @@ import {
   type PatternId,
   type PinterestPattern,
 } from "../_shared/pinterest-patterns.ts";
+import {
+  pickStrategy,
+  type CreativeStrategy,
+  type LearningWeight,
+  type HookCategory,
+} from "../_shared/pinterest-hooks.ts";
+import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,6 +116,9 @@ interface SceneBrief {
   /** Free-form prompt the image model receives. */
   full_prompt: string;
   pattern_id?: PatternId;
+  hook_category?: HookCategory;
+  strategy_rationale?: string;
+  retry_reasons?: string[];
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
@@ -166,6 +176,8 @@ async function generateBriefs(
   dna: StyleDNA,
   count: number,
   patternIds?: PatternId[],
+  weights: LearningWeight[] = [],
+  retryReasonsByIndex: Record<number, string[]> = {},
 ): Promise<SceneBrief[]> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -174,13 +186,20 @@ async function generateBriefs(
     : selectPatternsForNiche(dna.niche_key as any, count)
   ).map((id) => getPattern(id));
 
+  // Pick a hook strategy per brief BEFORE we call the model so the AI just
+  // executes a locked plan and can't go off-brand.
+  const strategies: CreativeStrategy[] = patterns.map((p) =>
+    pickStrategy({ niche: dna.niche_key as any, dna, pattern: p, weights }),
+  );
+
   const sys = [
     "You are a Creative Director for a premium US pet brand running Pinterest ads.",
     "You write SCENE BRIEFS for an AI image model that will photograph each scene.",
     "Style: editorial DTC photography. NEVER floating product cards, NEVER collage,",
     "NEVER giant CTA bars, NEVER text overlays in the brief itself (text is added later).",
     "Each brief must be a fully-composed real lifestyle scene with the product naturally placed.",
-    "Each brief is locked to ONE provided Pinterest winning pattern — your composition, mood, and headline MUST embody that pattern.",
+    "Each brief is locked to ONE provided Pinterest winning pattern AND ONE hook strategy.",
+    "Use the provided headline and cta verbatim — they have been chosen by the strategy engine.",
   ].join(" ");
 
   const user = {
@@ -208,6 +227,17 @@ async function generateBriefs(
       must_have: p.must_have,
       must_avoid: p.must_avoid,
     })),
+    strategies: strategies.map((s, i) => ({
+      index: i,
+      hook_category: s.hook_category,
+      headline: s.hook_phrase,
+      cta: s.cta_phrase,
+      scene_directive: s.scene_directive,
+      rationale: s.rationale,
+    })),
+    /** Reasons the previous render of this brief was rejected, if any. The
+     *  model MUST address these in the next brief. */
+    previous_rejection_reasons: retryReasonsByIndex,
     rules: {
       headline_max_chars: 42,
       cta_max_chars: 18,
@@ -216,6 +246,10 @@ async function generateBriefs(
       no_text_in_image_prompt: true,
       pattern_lock:
         "For each brief at index i, embody patterns[i] — composition_rule defines the scene, hook_angle defines the headline emotion, must_have terms must appear in environment_summary or full_prompt, must_avoid terms must never appear.",
+      strategy_lock:
+        "Use strategies[i].headline as the headline VERBATIM and strategies[i].cta as the cta VERBATIM. Build the scene around strategies[i].scene_directive.",
+      retry_directive:
+        "If previous_rejection_reasons[i] is set, your new brief MUST explicitly correct each listed reason.",
     },
   };
 
@@ -308,10 +342,14 @@ async function generateBriefs(
     environment_summary: String(b.environment_summary || ""),
     subject: String(b.subject || ""),
     emotional_hook: String(b.emotional_hook || ""),
-    headline: safeText(String(b.headline || ""), 42),
-    cta: safeText(String(b.cta || ""), 18),
+    // Strategy lock: prefer the strategy-picked phrase if the model drifted.
+    headline: safeText(String(b.headline || strategies[i]?.hook_phrase || ""), 42),
+    cta: safeText(String(b.cta || strategies[i]?.cta_phrase || ""), 18),
     full_prompt: String(b.full_prompt || ""),
     pattern_id: patterns[i]?.id,
+    hook_category: strategies[i]?.hook_category,
+    strategy_rationale: strategies[i]?.rationale,
+    retry_reasons: retryReasonsByIndex[i],
   }));
 }
 
