@@ -5207,6 +5207,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pattern_versions: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          patch: Json
+          pattern_id: string
+          source: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patch: Json
+          pattern_id: string
+          source: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patch?: Json
+          pattern_id?: string
+          source?: string
+          version?: number
+        }
+        Relationships: []
+      }
       pinterest_pin_performance: {
         Row: {
           clicks: number | null
