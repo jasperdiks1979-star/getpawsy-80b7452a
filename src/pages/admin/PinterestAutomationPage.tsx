@@ -815,6 +815,85 @@ function PinterestDashboard() {
         onPublishNow={handlePublishNow}
       />
 
+      <Card className="border-primary/40 bg-primary/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" /> One-Click Direct Pin Test
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Runs <code className="font-mono">POST https://api.pinterest.com/v5/pins</code> directly against the
+            active Pinterest token and returns the real <code className="font-mono">pin_id</code> or the exact
+            error response.
+          </p>
+          <Button
+            size="lg"
+            onClick={() => void handleDirectApiTest()}
+            disabled={actionLoading === "direct-api-test"}
+          >
+            {actionLoading === "direct-api-test" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="mr-2 h-4 w-4" />
+            )}
+            Run Direct POST /v5/pins
+          </Button>
+
+          {directTestResult && (
+            <div
+              className={`rounded-md border p-3 text-xs ${
+                directTestResult.pin_id
+                  ? "border-emerald-500/40 bg-emerald-500/5"
+                  : "border-destructive/40 bg-destructive/5"
+              }`}
+            >
+              {directTestResult.pin_id ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    ✅ Pinterest accepted the pin
+                  </p>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <DiagnosticValue label="pin_id" value={directTestResult.pin_id} mono />
+                    <DiagnosticValue label="status" value={directTestResult.status_code} />
+                    <DiagnosticValue label="board_id" value={directTestResult.board_id || directTestResult.request_payload?.board_id} mono />
+                    <DiagnosticValue label="external URL" value={directTestResult.external_url} mono />
+                  </div>
+                  {directTestResult.external_url && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={directTestResult.external_url} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-3 w-3" /> Open live Pinterest pin
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-destructive">
+                    ❌ Pinterest rejected the request
+                  </p>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <DiagnosticValue label="status" value={directTestResult.status_code} />
+                    <DiagnosticValue label="error" value={directTestResult.error} mono />
+                    <DiagnosticValue label="endpoint" value={directTestResult.request_endpoint} mono />
+                    <DiagnosticValue label="board_id" value={directTestResult.board_id || directTestResult.request_payload?.board_id} mono />
+                  </div>
+                  {directTestResult.hint && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">{directTestResult.hint.title}:</span>{" "}
+                      {directTestResult.hint.action}
+                    </p>
+                  )}
+                  <pre className="max-h-60 overflow-auto rounded bg-muted p-2 font-mono text-[11px] text-muted-foreground">
+                    {JSON.stringify(directTestResult.response_body ?? directTestResult, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className={appDiagnostic?.production_guard?.trial_detected ? "border-destructive/50" : appDiagnostic?.publishing_allowed ? "border-emerald-500/40" : "border-amber-500/40"}>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center justify-between">
