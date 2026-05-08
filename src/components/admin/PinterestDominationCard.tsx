@@ -27,7 +27,7 @@ export function PinterestDominationCard() {
         .maybeSingle();
       setDomination(!!(rs as any)?.domination_mode);
 
-      const { data: pr } = await supabase
+      const { data: pr } = await (supabase as any)
         .from("products_public")
         .select("id, slug, name, category")
         .eq("active", true)
