@@ -20,6 +20,19 @@ export type NicheKey =
   | "interactive_toy"
   | "grooming"
   | "feeder"
+  | "cat_carrier"
+  | "dog_carrier"
+  | "dog_collar"
+  | "dog_training"
+  | "outdoor_house"
+  | "bowl_station"
+  | "dog_clothing"
+  | "treats"
+  | "cat_scratcher"
+  | "cat_bed"
+  | "potty_training"
+  | "pet_camera"
+  | "dental_care"
   | "generic_pet";
 
 export interface StyleDNA {
