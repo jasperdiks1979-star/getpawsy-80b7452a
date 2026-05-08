@@ -304,7 +304,11 @@ function tplProblem(input: TemplateInput): TemplateOutput {
     url: build(layers, backdrop),
     layoutSignature: `problem|polish|badge${ctrBadge ? 1 : 0}`,
     layoutKey: preset.key,
-    validation: validatePreset(preset, fitted),
+    validation: mergeOverlap(
+      validatePreset(preset, fitted),
+      { role: "cta", w: 280, h: 60, gravity: "south_west", x: 92, y: 300 },
+      { role: "product", w: 440, h: 440, gravity: "south_east", x: 80, y: 200 },
+    ),
   };
 }
 
@@ -389,7 +393,11 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
     url: build([base, afterCover, fold, productShadow, product, beforeLabel, afterLabel, headlineScrim, headline, ctaUnderline, cta], beforeBg),
     layoutSignature: "before_after|polish_split",
     layoutKey: preset.key,
-    validation: validatePreset(preset, fitted),
+    validation: mergeOverlap(
+      validatePreset(preset, fitted),
+      { role: "cta", w: 220, h: 60, gravity: "south", x: 0, y: 120 },
+      { role: "product", w: 700, h: 700, gravity: "south", x: 0, y: 280 },
+    ),
   };
 }
 
@@ -468,7 +476,11 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
     url: build([base, accentCorner, productShadow, plate, product, headline, c1, c2, c3, ctaUnderline, cta], BLANK_BASE),
     layoutSignature: `benefit|polish|s=${stats.join("/")}`,
     layoutKey: preset.key,
-    validation: validatePreset(preset, fitted),
+    validation: mergeOverlap(
+      validatePreset(preset, fitted),
+      { role: "cta", w: 320, h: 70, gravity: "south", x: 0, y: 130 },
+      { role: "product", w: 780, h: 860, gravity: "center", x: 0, y: 60 },
+    ),
   };
 }
 
@@ -530,7 +542,11 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
     url: build([base, topScrim, bottomScrim, productShadow, product, headline, ctaUnderline, cta, brand], backdrop),
     layoutSignature: "lifestyle|polish",
     layoutKey: preset.key,
-    validation: validatePreset(preset, fitted),
+    validation: mergeOverlap(
+      validatePreset(preset, fitted),
+      { role: "cta", w: 220, h: 60, gravity: "south_west", x: 88, y: 140 },
+      { role: "product", w: 540, h: 680, gravity: "south_east", x: 80, y: 260 },
+    ),
   };
 }
 
@@ -604,7 +620,11 @@ function tplViral(input: TemplateInput): TemplateOutput {
     url: build(layers, BLANK_BASE),
     layoutSignature: `viral|polish|a${angle}`,
     layoutKey: preset.key,
-    validation: validatePreset(preset, fitted),
+    validation: mergeOverlap(
+      validatePreset(preset, fitted),
+      { role: "cta", w: 280, h: 70, gravity: "south", x: 0, y: 160 },
+      { role: "product", w: 780, h: 780, gravity: "center", x: 0, y: 60 },
+    ),
   };
 }
 
@@ -672,7 +692,11 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
     url: build([base, title, productShadow, product, c1, c2, c3, saveBadge, ctaUnderline, cta], BLANK_BASE),
     layoutSignature: `infographic|polish|s=${stepLabels.join("/")}`,
     layoutKey: preset.key,
-    validation: validatePreset(preset, fitted),
+    validation: mergeOverlap(
+      validatePreset(preset, fitted),
+      { role: "cta", w: 320, h: 70, gravity: "south", x: 0, y: 120 },
+      { role: "product", w: 460, h: 900, gravity: "south_west", x: 88, y: 220 },
+    ),
   };
 }
 
