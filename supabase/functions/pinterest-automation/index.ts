@@ -1503,12 +1503,26 @@ async function validatePinterestAuth(sb: any, conn: any, accessToken: string) {
   const accountResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
   const boardsResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
   const boards = Array.isArray(boardsResponse.body?.items) ? boardsResponse.body.items : [];
-  const authValid = accountResponse.ok && boardsResponse.ok && boards.length > 0;
+  // Pinterest Standard Access tokens may return 401 on /user_account while
+  // /boards + POST /pins continue to work. Treat /boards as the authoritative
+  // capability signal. Only block when account API succeeds AND the username
+  // does not match the expected business handle (`getpawsyshop`).
+  const REQUIRED_USERNAME = "getpawsyshop";
+  const accountUsername =
+    typeof accountResponse.body?.username === "string" ? accountResponse.body.username : null;
+  const wrongAccount = accountResponse.ok && accountUsername && accountUsername !== REQUIRED_USERNAME;
+  const authValid = boardsResponse.ok && boards.length > 0 && !wrongAccount;
   const nextStatus = authValid ? "connected" : "auth_failed";
-  const lastError = authValid ? null : `AUTH FAILURE: /user_account=${accountResponse.status}, /boards=${boardsResponse.status}, board_count=${boards.length}`;
+  const lastError = authValid
+    ? null
+    : wrongAccount
+      ? `AUTH FAILURE: connected username "${accountUsername}" does not match required "${REQUIRED_USERNAME}".`
+      : `AUTH FAILURE: /boards=${boardsResponse.status}, board_count=${boards.length} (account=${accountResponse.status})`;
 
   await sb.from("pinterest_connection").update({
     status: nextStatus,
+    account_name: accountUsername || conn.account_name || null,
+    account_id: accountUsername || conn.account_id || null,
     last_error: lastError,
     token_prefix: tokenMetadata.prefix,
     last_account_status: accountResponse.status,
