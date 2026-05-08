@@ -1550,6 +1550,14 @@ async function validatePinterestAuth(sb: any, conn: any, accessToken: string) {
     updated_at: new Date().toISOString(),
   }).eq("id", conn.id);
 
+  if (authValid) {
+    await sb.from("pinterest_runtime_settings").update({
+      active_pinterest_connection_id: conn.id,
+      mode: "production",
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+  }
+
   const diagnostics = {
     api_base: PINTEREST_PRODUCTION_API_BASE,
     token: tokenMetadata,
