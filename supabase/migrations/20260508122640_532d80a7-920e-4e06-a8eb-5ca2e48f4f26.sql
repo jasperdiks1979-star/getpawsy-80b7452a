@@ -1,0 +1,1 @@
+UPDATE pinterest_pin_queue SET status='queued', approved_at = COALESCE(approved_at, now()), scheduled_at = now() WHERE status='draft' AND created_at > now() - interval '10 minutes';
