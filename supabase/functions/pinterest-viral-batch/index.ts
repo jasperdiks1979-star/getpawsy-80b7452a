@@ -884,9 +884,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         ...(r as Record<string, unknown>),
         image_hash: imgHash,
         duplicate_image: duplicateImage,
+        domination_mode: dominationMode,
       } as Parameters<typeof runPinQa>[0]);
       // SEO keyword presence — soft check, logged but not fatal.
-      const hasKw = containsTargetKeyword(
+      const hasKw = containsCategoryKeyword(
+        categoryKey,
+        (r as Record<string, unknown>).pin_title as string,
+        (r as Record<string, unknown>).pin_description as string,
+      ) || containsTargetKeyword(
         (r as Record<string, unknown>).pin_title as string,
         (r as Record<string, unknown>).pin_description as string,
       );
