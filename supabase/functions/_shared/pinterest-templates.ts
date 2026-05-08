@@ -24,6 +24,16 @@ export type PinStyleKey =
   | "viral"
   | "infographic";
 
+import {
+  autoFitHeadline,
+  CANVAS,
+  SAFE_AREA,
+  validatePreset,
+  LAYOUT_PRESETS,
+  type LayoutKey,
+  type LayoutValidation,
+} from "./pinterest-layout.ts";
+
 export interface TemplateInput {
   productImageUrl: string;
   /** Optional lifestyle backdrop. Required by `problem`, `before_after`, `lifestyle`. */
@@ -45,6 +55,10 @@ export interface TemplateOutput {
   url: string;
   /** Stable signature describing layout choices — useful for dedupe. */
   layoutSignature: string;
+  /** Layout preset that was rendered (used for non-consecutive rotation). */
+  layoutKey: LayoutKey;
+  /** Pre-publish layout validation — empty issues = safe to ship. */
+  validation: LayoutValidation;
 }
 
 const CLOUDINARY_CLOUD = "dlkqycfzn";
