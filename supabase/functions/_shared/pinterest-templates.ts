@@ -78,8 +78,10 @@ function pick<T>(arr: T[], seed: number): T {
 
 function build(parts: string[][], baseImage: string): string {
   const segments = parts.map((p) => p.join(",")).join("/");
-  // Cloudinary fetch URL must terminate with a URL-encoded source image.
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segments}/${encodeURIComponent(baseImage)}`;
+  // Cloudinary fetch URL terminates with the raw source URL — Cloudinary
+  // accepts unencoded or single-encoded; raw matches the working behavior of
+  // the legacy `buildPinImage` helper.
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segments}/${baseImage}`;
 }
 
 /** Background canvas — used when no backdrop image is supplied. */
