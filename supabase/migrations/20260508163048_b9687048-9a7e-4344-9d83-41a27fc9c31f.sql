@@ -1,0 +1,1 @@
+UPDATE pinterest_pin_queue SET approved_at = COALESCE(approved_at, now()), status = 'queued', updated_at = now() WHERE pin_variant LIKE '%batch_202605081630';
