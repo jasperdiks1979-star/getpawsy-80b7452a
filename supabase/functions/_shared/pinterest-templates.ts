@@ -192,11 +192,16 @@ function tplProblem(input: TemplateInput): TemplateOutput {
     "bo_3px_solid_rgb:FFFFFF",
   ];
 
-  // Headline — wrapped serif, max 3 lines. Smaller font + tighter wrap so
-  // long lines never overflow the 640-wide safe zone on the left half.
-  const wrapped = wrapHeadline(input.top, 13, 3);
+  // Headline — wrapped serif, max 3 lines. Auto-fit so it never overflows
+  // the 640-wide safe zone on the left half regardless of input length.
+  const preset = LAYOUT_PRESETS.left_text_right_product;
+  const fitted = autoFitHeadline(input.top, {
+    widthPx: 640,
+    maxLines: 3,
+    sizes: [76, 68, 60, 54, 48],
+  });
   const headline = [
-    "l_text:Georgia_72_bold:" + escapeWrapped(wrapped),
+    "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_360",
   ];
 
@@ -226,6 +231,8 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   return {
     url: build(layers, backdrop),
     layoutSignature: `problem|premium|badge${ctrBadge ? 1 : 0}`,
+    layoutKey: preset.key,
+    validation: validatePreset(preset, fitted),
   };
 }
 
@@ -282,10 +289,15 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   ];
 
   // Headline sits inside a small center band so it doesn't cover either scene.
-  const wrapped = wrapHeadline(input.top, 24, 2);
+  const preset = LAYOUT_PRESETS.split_screen;
+  const fitted = autoFitHeadline(input.top, {
+    widthPx: 880,
+    maxLines: 2,
+    sizes: [72, 64, 56, 50, 44],
+  });
   const headlineScrim = scrimBand({ gravity: "center", height: 220, y: 0, opacity: 78 });
   const headline = [
-    "l_text:Georgia_60_bold:" + escapeWrapped(wrapped),
+    "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_920", "c_fit", "g_center", "y_0",
   ];
 
@@ -299,6 +311,8 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   return {
     url: build([base, afterCover, fold, product, beforeLabel, afterLabel, headlineScrim, headline, cta], beforeBg),
     layoutSignature: "before_after|premium_split",
+    layoutKey: preset.key,
+    validation: validatePreset(preset, fitted),
   };
 }
 
@@ -319,9 +333,14 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
   ];
 
   // Editorial headline (serif, wrapped, anchored top-left).
-  const wrapped = wrapHeadline(input.top, 16, 3);
+  const preset = LAYOUT_PRESETS.editorial_magazine;
+  const fitted = autoFitHeadline(input.top, {
+    widthPx: 920,
+    maxLines: 3,
+    sizes: [96, 84, 72, 64, 56],
+  });
   const headline = [
-    "l_text:Georgia_84_bold:" + escapeWrapped(wrapped),
+    "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:1A1410", "w_920", "c_fit", "g_north_west", "x_80", "y_140",
   ];
 
@@ -363,6 +382,8 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
   return {
     url: build([base, accentCorner, plate, product, headline, c1, c2, c3, cta], BLANK_BASE),
     layoutSignature: `benefit|premium|s=${stats.join("/")}`,
+    layoutKey: preset.key,
+    validation: validatePreset(preset, fitted),
   };
 }
 
@@ -388,10 +409,16 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
     "bo_4px_solid_rgb:FFFFFF",
   ];
 
-  // Editorial wrapped headline.
-  const wrapped = wrapHeadline(input.top, 18, 3);
+  // Editorial wrapped headline — auto-fit so longer hooks shrink instead of
+  // overflowing into the product card.
+  const preset = LAYOUT_PRESETS.right_text_left_product;
+  const fitted = autoFitHeadline(input.top, {
+    widthPx: 840,
+    maxLines: 3,
+    sizes: [88, 76, 68, 60, 52],
+  });
   const headline = [
-    "l_text:Georgia_76_bold:" + escapeWrapped(wrapped),
+    "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_840", "c_fit",
     "g_north_west", "x_80", "y_180",
   ];
@@ -410,6 +437,8 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
   return {
     url: build([base, topScrim, bottomScrim, product, headline, cta, brand], backdrop),
     layoutSignature: "lifestyle|premium",
+    layoutKey: preset.key,
+    validation: validatePreset(preset, fitted),
   };
 }
 
@@ -431,9 +460,15 @@ function tplViral(input: TemplateInput): TemplateOutput {
     "e_gradient_fade:60",
   ];
 
-  const wrapped = wrapHeadline(input.top, 14, 3);
+  const preset = LAYOUT_PRESETS.center_focus;
+  const fitted = autoFitHeadline(input.top, {
+    widthPx: 980,
+    maxLines: 3,
+    sizes: [120, 104, 92, 80, 70, 60],
+    avgCharWidth: 0.52,
+  });
   const headline = [
-    "l_text:Impact_104_bold:" + escapeWrapped(wrapped),
+    "l_text:Impact_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_980", "c_fit",
     "g_north", "y_200",
   ];
@@ -470,6 +505,8 @@ function tplViral(input: TemplateInput): TemplateOutput {
   return {
     url: build(layers, BLANK_BASE),
     layoutSignature: `viral|premium|a${angle}`,
+    layoutKey: preset.key,
+    validation: validatePreset(preset, fitted),
   };
 }
 
@@ -483,9 +520,14 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
   const base = ["w_" + W, "h_" + H, "c_pad", "b_rgb:F5EBDD", "q_auto", "f_jpg"];
 
   // Wrapped serif title up top.
-  const wrappedTitle = wrapHeadline(input.top, 18, 2);
+  const preset = LAYOUT_PRESETS.bottom_cta_strip;
+  const fitted = autoFitHeadline(input.top, {
+    widthPx: 920,
+    maxLines: 2,
+    sizes: [88, 76, 68, 60, 54],
+  });
   const title = [
-    "l_text:Georgia_72_bold:" + escapeWrapped(wrappedTitle),
+    "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:1A1410", "w_920", "c_fit",
     "g_north_west", "x_80", "y_120",
   ];
@@ -527,6 +569,8 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
   return {
     url: build([base, title, product, c1, c2, c3, saveBadge, cta], BLANK_BASE),
     layoutSignature: `infographic|premium|s=${stepLabels.join("/")}`,
+    layoutKey: preset.key,
+    validation: validatePreset(preset, fitted),
   };
 }
 
