@@ -697,6 +697,12 @@ serve(async (req) => {
     // Dry-run mode: build pins + Pexels backdrops but DO NOT insert into queue.
     // Used by the admin preview screen to inspect lifestyle backdrops first.
     const dryRun: boolean = !!body.dryRun;
+    // Health-check controls: by default the queue health check runs and
+    // BLOCKS the insert if any "error"-severity issue is found (e.g. zero
+    // approvals). `forceHealthCheck=true` upgrades all warnings to blocking,
+    // `skipHealthCheck=true` disables it entirely (admin override).
+    const skipHealthCheck: boolean = !!body.skipHealthCheck;
+    const forceHealthCheck: boolean = !!body.forceHealthCheck;
     // Hard cap to prevent overload — at most 8 pins per product per run
     // (one per hook style, including the new infographic style).
     // Premium Mode: up to 15 pins per product per run — when count > 6 we
