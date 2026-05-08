@@ -6,7 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, ExternalLink, Search, Download } from 'lucide-react';
-import { detectNiche, type NicheKey } from '@/lib/niche-detector';
+import { detectNiche, explainNiche, type NicheKey, type DetectionTrace } from '@/lib/niche-detector';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 
 type Row = {
   id: string;
@@ -224,9 +230,102 @@ export default function PinterestGenericNichePage() {
                 </div>
               </div>
             </div>
+            <DetectorTrace row={r} />
           </Card>
         ))}
       </div>
     </div>
+  );
+}
+
+function DetectorTrace({ row }: { row: Row }) {
+  const trace: DetectionTrace = explainNiche({
+    name: row.name,
+    slug: row.slug,
+    category: row.category,
+  });
+  const nearMisses = trace.nearMisses;
+  return (
+    <Collapsible>
+      <CollapsibleTrigger
+        onClick={() => {
+          // Surface a structured trace in the console for quick debugging.
+          // eslint-disable-next-line no-console
+          console.debug('[niche-detector]', row.slug, trace);
+        }}
+        className="w-full flex items-center justify-between border-t bg-muted/40 px-3 py-1.5 text-[11px] text-muted-foreground hover:bg-muted/70 transition"
+      >
+        <span>
+          Why <code className="font-mono">generic_pet</code>?{' '}
+          {nearMisses.length > 0 ? (
+            <span className="text-amber-700">
+              {nearMisses.length} near-miss{nearMisses.length === 1 ? '' : 'es'}
+            </span>
+          ) : (
+            <span>no rule fired</span>
+          )}
+        </span>
+        <ChevronDown className="h-3 w-3" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-3 py-2 space-y-2 text-[11px] border-t bg-muted/20">
+        <div>
+          <div className="font-semibold text-muted-foreground mb-0.5">Haystack</div>
+          <code className="font-mono break-words text-[10px] block">{trace.haystack || '(empty)'}</code>
+        </div>
+        {nearMisses.length === 0 ? (
+          <div className="text-muted-foreground italic">
+            No keyword from any rule appeared. Add a name/category keyword or extend{' '}
+            <code className="font-mono">NICHE_RULES</code>.
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="font-semibold text-muted-foreground">Near-miss rules</div>
+            {nearMisses.map((nm, i) => (
+              <div
+                key={i}
+                className="rounded border border-amber-200 bg-amber-50/60 px-2 py-1.5 space-y-1"
+              >
+                <div className="font-mono text-[10px]">
+                  <span className="font-semibold">{nm.id}</span> →{' '}
+                  <span className="text-fuchsia-700">{nm.niche}</span>
+                </div>
+                {nm.matchedPrimary.length > 0 && (
+                  <div>
+                    <span className="text-emerald-700">primary hit:</span>{' '}
+                    {nm.matchedPrimary.map((w) => (
+                      <code key={w} className="font-mono mr-1">{w}</code>
+                    ))}
+                  </div>
+                )}
+                {nm.missingRequire && (
+                  <div>
+                    <span className="text-rose-700">missing requireAny:</span>{' '}
+                    {nm.missingRequire.map((w) => (
+                      <code key={w} className="font-mono mr-1">{w}</code>
+                    ))}
+                  </div>
+                )}
+                {nm.blockedByForbid && (
+                  <div>
+                    <span className="text-rose-700">blocked by forbidAll:</span>{' '}
+                    {nm.blockedByForbid.map((w) => (
+                      <code key={w} className="font-mono mr-1">{w}</code>
+                    ))}
+                  </div>
+                )}
+                {nm.missingPrimary && nm.requireMatched && (
+                  <div>
+                    <span className="text-amber-700">requireAny matched but no primary:</span>{' '}
+                    {nm.requireMatched.map((w) => (
+                      <code key={w} className="font-mono mr-1">{w}</code>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
