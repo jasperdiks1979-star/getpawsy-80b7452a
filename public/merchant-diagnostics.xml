@@ -1,16 +1,136 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-04-27T07:47:22.421Z" total_products="0">
+<merchant_diagnostics generated="2026-05-08T07:10:04.285Z" total_products="526">
   <summary>
-    <missing_gtin>0</missing_gtin>
+    <missing_gtin>67</missing_gtin>
     <missing_image>0</missing_image>
-    <overlength_title>0</overlength_title>
-    <short_title>0</short_title>
+    <overlength_title>29</overlength_title>
+    <short_title>19</short_title>
     <out_of_stock>0</out_of_stock>
-    <duplicate_titles>0</duplicate_titles>
+    <duplicate_titles>6</duplicate_titles>
     <duplicate_images>0</duplicate_images>
     <missing_compare_at_price>0</missing_compare_at_price>
   </summary>
   <issues>
-
+    <issue type="short_title" product_id="ab56a66b-dfaa-4caa-921a-de5bf544f9d8" name="Dog Chew Toy Choke-proof Food Dispenser" length="39" />
+    <issue type="missing_gtin" product_id="a582c365-35be-4cf0-97c9-cb47ec6d4045" name="Elastic Extendable Reflective Dog Leash" />
+    <issue type="short_title" product_id="a582c365-35be-4cf0-97c9-cb47ec6d4045" name="Elastic Extendable Reflective Dog Leash" length="39" />
+    <issue type="missing_gtin" product_id="14b7f5c2-88e2-42fc-b134-26227bcb601b" name="Stainless Steel Pet Water Fountain Filters Pet Water Fountain Filters 8-Pack ..." />
+    <issue type="overlength_title" product_id="14b7f5c2-88e2-42fc-b134-26227bcb601b" name="Stainless Steel Pet Water Fountain Filters Pet Water Fountain Filters 8-Pack ..." length="198" />
+    <issue type="missing_gtin" product_id="733df0c9-af99-4d53-bb87-bd3269973a15" name="Pet Foldable Canvas Rear-Seat Carrier Bag" />
+    <issue type="missing_gtin" product_id="c572e0e4-0df9-45e4-8d37-f5a821dcdef1" name="Dog Bed – Warm Plaid Cushion with PP Cotton Fill for Medium &amp; Large Dogs" />
+    <issue type="missing_gtin" product_id="6598f55b-30fe-4481-8a42-4fc1baac109b" name="Dog Flea &amp; Tick Collar – Adjustable Prevention Collar for Dogs" />
+    <issue type="missing_gtin" product_id="bc9bdea0-7285-463a-bdee-5ad48aed15b4" name="Pickup Only--Pure White Cat-Scratch Leather Living Room Square High Stool" />
+    <issue type="missing_gtin" product_id="5591787b-2d67-4916-94af-9d828b856447" name="Wall-Mounted Cat Climbing Frame – Modular DIY Cat Tree with Shelves &amp; Perches" />
+    <issue type="missing_gtin" product_id="afc9ad61-c618-4718-a3d7-228d1b728122" name="Dog Winter Hood – Adjustable Warm Fleece Cover for Cold Weather" />
+    <issue type="missing_gtin" product_id="5987be63-0e09-4d07-a6d1-2380fda9325d" name="Cat Water Fountain 4L – Stainless Steel Automatic Dispenser with LED Light" />
+    <issue type="missing_gtin" product_id="ba5771b4-10d2-4866-97f4-4176c1e210f1" name="Dog Slow Feeder Bowl – Non-Slip Licking Plate for Enrichment &amp; Anxiety Relief" />
+    <issue type="missing_gtin" product_id="24dbca64-88ba-4c15-b3a9-4b057ca5a5b7" name="Catnip Spray for Cats – Long-Lasting Interactive Enrichment Spray" />
+    <issue type="missing_gtin" product_id="d7baf590-affa-403f-ba96-58b298ba652d" name="Dog Leash – High-Density Nylon Outdoor Walking Lead for Dogs" />
+    <issue type="missing_gtin" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes – Gentle Grooming Wipes for Dogs &amp; Cats" />
+    <issue type="missing_gtin" product_id="d2482798-f8c2-4096-b568-f366365b5a2e" name="Cat Water Fountain – 304 Stainless Steel Automatic Dispenser for Cats" />
+    <issue type="missing_gtin" product_id="74e9c23c-d2d3-478a-82bd-e912e85bcc39" name="Stainless Steel Cat Litter Box – Extra Large with Flip Cover for Big Cats" />
+    <issue type="missing_gtin" product_id="06f5e022-4ce1-4d6d-bb68-b4d9b05e96c8" name="Wooden Pet House Cat Litter Box Enclosure With Drawer, Side Table, Indoor Pet..." />
+    <issue type="missing_gtin" product_id="417336ad-6576-451c-9fda-d514a759e0b5" name="PawHut Wooden Dog Agility Seesaw For Balance Training And Exercise, Platform ..." />
+    <issue type="overlength_title" product_id="417336ad-6576-451c-9fda-d514a759e0b5" name="PawHut Wooden Dog Agility Seesaw For Balance Training And Exercise, Platform ..." length="153" />
+    <issue type="missing_gtin" product_id="c23f5c47-731e-4e24-8fe6-71df2baf5117" name="Summer Cartoon Pet Ice Bib For Cats And Dogs" />
+    <issue type="missing_gtin" product_id="3be1e101-d58f-4762-8864-72e1c65327ee" name="Winter Warmth Thickened Universal Pet Bed" />
+    <issue type="missing_gtin" product_id="477c6150-c038-4d66-9aa9-b012a8d44812" name="Solid Wood Space-saving Cat Tree" />
+    <issue type="short_title" product_id="477c6150-c038-4d66-9aa9-b012a8d44812" name="Solid Wood Space-saving Cat Tree" length="32" />
+    <issue type="missing_gtin" product_id="d28d05a3-4069-4329-8a1c-941af9f21a15" name="The Same-style Dog Coat Is Durable Long-lasting And Cold-resistant" />
+    <issue type="missing_gtin" product_id="10ba8425-750b-44b7-90e3-167c6736bdac" name="Enclosed Pet Bed – Warm Sleeping Bag for Cats &amp; Small Dogs" />
+    <issue type="missing_gtin" product_id="294c6051-b66d-4c83-a2c9-e2720b64694e" name="Raised Dog Bowl Stand – Adjustable Double Feeder with Slow Eating Design" />
+    <issue type="missing_gtin" product_id="89531a44-c1ae-4c85-a7a1-65f539dbff2c" name="Cat Climbing Tree Dual-Use Solid Wood Hemp Rope" />
+    <issue type="missing_gtin" product_id="1d2d5bb1-36d5-4c76-a426-298abf0755d6" name="Automatic Pet Water Fountain – Drinking Dispenser for Cats &amp; Dogs" />
+    <issue type="missing_gtin" product_id="823a3f90-486f-4f7a-aa35-e4fdd3ede96b" name="Gloves With Double-sided Bristles For Effectively Removing Cat And Dog Hair P..." />
+    <issue type="missing_gtin" product_id="516103ad-7294-4255-b29a-7bf2dae185ef" name="Elevated Dog Bowls With Storage, Two Stainless Steel Bowls For Large Dogs, Co..." />
+    <issue type="missing_gtin" product_id="fe6903d5-da9d-465d-9b8b-4abc33fd252e" name="Cat Toy With Bell  Durable And Bite-resistant Cat Teaser Pet Supplies" />
+    <issue type="missing_gtin" product_id="faa5e3ac-308e-4f1b-b61b-f5c315f24116" name="Dog Dropper Picks Up The Bag And Goes Out" />
+    <issue type="missing_gtin" product_id="539df59c-f25d-45aa-8257-634a3e4a5743" name="Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs" />
+    <issue type="missing_gtin" product_id="685f7faf-7809-4962-b408-c2ced99dd178" name="Automatic Pet Water Fountain – Cordless Smart Dispenser for Cats &amp; Dogs" />
+    <issue type="missing_gtin" product_id="c882d898-5aaa-44eb-9d3e-d90d14f06ff0" name="Cat Litter Box – Extra Large Stainless Steel High-Sided Enclosure" />
+    <issue type="missing_gtin" product_id="abb2ba75-2f39-4c19-94a9-c51a224d9b9d" name="Cat Body Care" />
+    <issue type="short_title" product_id="abb2ba75-2f39-4c19-94a9-c51a224d9b9d" name="Cat Body Care" length="13" />
+    <issue type="missing_gtin" product_id="c77d410c-38ce-4df8-a0a7-524d5cb3d76f" name="Outdoor Cat Enclosure – Window Playground Box for Multiple Cats" />
+    <issue type="missing_gtin" product_id="51d08cc0-d431-4121-a409-6f21c57a9d03" name="Pet Wound Care Spray – Skin Moisturizer &amp; Fur Cleaner for Dogs &amp; Cats" />
+    <issue type="missing_gtin" product_id="3461fba1-3c2e-4590-b7f9-9598606b0412" name="Dog Crate Furniture – Small End Table with Lockable Doors for Dogs" />
+    <issue type="missing_gtin" product_id="a4ff6335-b654-4fd6-9c8f-65abff7ac1f2" name="Detangle And De-shed With This Foldable Pet Grooming Comb" />
+    <issue type="missing_gtin" product_id="f5e91024-1a87-47b1-bd5d-ac9547640e06" name="Double-sided All-Season Dog Bed Mat Made Of Chew-Resistant Leather For Pets" />
+    <issue type="missing_gtin" product_id="eaa8ad7b-1676-4a3b-adfd-c303ff6088d8" name="Dog Polyester Clothing For Fall And Winter Pets" />
+    <issue type="missing_gtin" product_id="eba31c66-a543-43e3-955e-9f5dfb84fc2a" name="Cat Toy With Bells Accordion-style Scratching Post For Cats" />
+    <issue type="missing_gtin" product_id="e42efe24-988c-4581-b8e0-95efc2c5250f" name="Outdoor Dog House – Portable Kennel with Roof &amp; Adjustable Bowls" />
+    <issue type="missing_gtin" product_id="908bb847-5058-4219-bebc-0d77bb2beede" name="Cat Tree Condo – 5-Level Revolving Scratcher &amp; Climbing Tower with Perch for ..." />
+    <issue type="missing_gtin" product_id="42eddd95-6d8f-438c-a8ff-c1b320ccdd76" name="Dog Paw Balm – Moisturizing Paw Pad Protector for Dry &amp; Cracked Paws" />
+    <issue type="missing_gtin" product_id="2bf9d939-bf2c-4382-a8e2-3c60c6795b72" name="Durable Dog Training Collar – Anti-Explosion Chain with Stimulation" />
+    <issue type="missing_gtin" product_id="6555456c-cb10-44c3-9a3c-0703bef6bc10" name="Dog Puzzle Bowl – Slow Feeding Enrichment Mat for Mental Stimulation" />
+    <issue type="missing_gtin" product_id="32e50b79-e2bc-4895-a7c2-5534dd9095a0" name="Enclosed Cat Litter Box – Top Entry Spaceship Design with Odor Locking" />
+    <issue type="missing_gtin" product_id="dfa1a373-d818-40f2-9639-e1b08602c84e" name="Outdoor Dog House – Weatherproof Wooden Kennel with Porch" />
+    <issue type="missing_gtin" product_id="e265e7fe-af60-4efc-b927-5c4f79fc1bf0" name="Enclosed Cat Litter Box – Dual Opening Anti-Splash Odor-Locking for Cats" />
+    <issue type="missing_gtin" product_id="dcc0a412-adfe-49b3-8f26-ad8382f3a2d9" name="Automatic Pet Water Fountain – 4.5L Cordless Rechargeable Dispenser for Dogs ..." />
+    <issue type="missing_gtin" product_id="46ad1184-55d2-452b-9d7f-9f07b12520fd" name="Professional Dog Grooming Clippers With 2.5L Cup, 3 Suction Modes, Cordless C..." />
+    <issue type="missing_gtin" product_id="7360709c-ce64-451b-a0a6-cd256fc0cd3e" name="Home-use Space-saving All-in-one Solid Wood Cat Tree For Playing And Sleeping" />
+    <issue type="missing_gtin" product_id="2b61b25d-75a2-4fec-a1fd-8b7de3b916cb" name="Portable Dog Water Bottle – Squeeze Dispenser for Travel &amp; Walks" />
+    <issue type="missing_gtin" product_id="c8838424-1b15-4193-afd5-2e8d9fe69acd" name="Outdoor Cat Enclosure – Catio Window Box with Shelves &amp; Bridges" />
+    <issue type="missing_gtin" product_id="5183cd99-f966-414a-8d18-34bc9b0152e3" name="Washable Dog Training Pad – Artificial Grass Potty Mat for Dogs" />
+    <issue type="missing_gtin" product_id="534cfdbe-cb9a-4587-954b-6619b5a038d8" name="Stainless Steel Pet Bowl – Double Macaron Feeder Dish for Pets" />
+    <issue type="missing_gtin" product_id="bb9194db-1285-4cec-9d8c-d8a41c4435af" name="Oxford Fabric Waterproof Dog Bed Color-block Dog Mat All-season Pet Nest Cool..." />
+    <issue type="missing_gtin" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
+    <issue type="missing_gtin" product_id="b3533f6f-0e40-4ff2-ad91-6b6e5019dad6" name="Dog And Cat Harnesses And Leashes For Walking" />
+    <issue type="missing_gtin" product_id="82096e25-3213-4ea0-8180-865cfed3db02" name="Pet Bed  Cat House   Dog Houseuniversal For All Seasons  Including Summer  An..." />
+    <issue type="missing_gtin" product_id="1338e81b-5de4-4e47-8f95-ad6bb69c3b4c" name="Interactive Cat Teaser Wand – Reflective Feather Toy for Indoor Play" />
+    <issue type="missing_gtin" product_id="86353f0b-8e5c-4238-86cb-fa7affa14270" name="Solid Wood Cat Tree With Integrated Scratching Post And Cozy Nest" />
+    <issue type="missing_gtin" product_id="aa35d98e-b42a-40cb-8b7a-ea73bdf71043" name="Dog Bathing Brush Soft Foaming Massage Brush For Cats" />
+    <issue type="missing_gtin" product_id="e718aa2a-77d5-462e-ac29-2736f220acf7" name="Cat Scratch-proof Spray" />
+    <issue type="short_title" product_id="e718aa2a-77d5-462e-ac29-2736f220acf7" name="Cat Scratch-proof Spray" length="23" />
+    <issue type="missing_gtin" product_id="e70dcada-05db-4b02-8eb6-9c277831af7c" name="Pet Oral Care Powder Dog Teeth-Cleaning Powder" />
+    <issue type="missing_gtin" product_id="33ad17c0-b009-4df5-8e45-265fcb78bdbc" name="GetPawsy Minimalist Dog Harness – Outdoor Adjustable Design" />
+    <issue type="missing_gtin" product_id="64b2bb00-2064-4992-9c06-bdc263421dc3" name="Dog &amp; Cat Bandana Collar – Double Layer Plaid Bib Style Collar" />
+    <issue type="missing_gtin" product_id="d5629014-78fc-437d-a4a2-b0e9daf2cf71" name="New Rabbit-fleece Pet Dog Comfort And Warmth Scarf" />
+    <issue type="short_title" product_id="1cb0c3a0-a373-4276-994d-24dbce8b97fc" name="Cat Bed with Washable Cushion for Cats" length="38" />
+    <issue type="overlength_title" product_id="f9b4abd0-91b2-42f1-8b94-98488778c519" name="Super Cute Appearance Pet Feeding And Drinking Device, Cleverly Designed With..." length="200" />
+    <issue type="overlength_title" product_id="c48e0e44-e340-45e6-851d-c7727138c1fd" name="Modern Indoor Cat Tree Wooden Cat Tower Suitable For Cats, Includes Hammock, ..." length="152" />
+    <issue type="short_title" product_id="55e15142-c8ea-4e5c-bba9-5be7d55be5be" name="Cat Shelves for Indoor Cats" length="27" />
+    <issue type="overlength_title" product_id="6d402a08-0533-4c0e-8dd4-3659998178d0" name="Mewoo Large Cat Tree Tower For Adult Cats - Multi-Level Scratching Post With ..." length="151" />
+    <issue type="short_title" product_id="4b2647e2-6604-41fb-8bf8-631273c6d3f5" name="Self-Priming Pet Paw Hair Trimmer" length="33" />
+    <issue type="short_title" product_id="41a6593b-3cac-4f1a-99b1-234e2b93ed2f" name="Waterless Dog Wash" length="18" />
+    <issue type="overlength_title" product_id="2041764d-a50a-4f49-930e-63c710c5a27a" name="Blue-Yellow Color Options -- 1Pc Dog Water Fountain Multifunctional Automatic..." length="157" />
+    <issue type="short_title" product_id="419daeff-e139-40b5-aa13-748494a20500" name="Wooden Cat House" length="16" />
+    <issue type="overlength_title" product_id="db28fd86-cd23-42d0-8c12-13d3f533c401" name="48 Wooden Dog House Outdoor With Porch, Dog Kennel With Water-Resistant Aspha..." length="154" />
+    <issue type="overlength_title" product_id="35047525-52c8-4b97-a4ed-b5001569026a" name="1Pc Large Foldable Human Size Dog Bed With Pillow Blanket Flurry Plush Nappin..." length="175" />
+    <issue type="short_title" product_id="5a20cc25-fab4-4ccd-93c7-f3b7d20b8e3c" name="Electric Orange Mouse" length="21" />
+    <issue type="overlength_title" product_id="e2c6bdb6-6400-4dec-8605-c318eb9c7ca6" name="Extra Large Red Umbrella Mushroom Cat Bed, Scratch-resistant And Wear-resista..." length="189" />
+    <issue type="overlength_title" product_id="a1a3a9a2-2f03-4339-8b53-45893753c26e" name="MEWOOFUN Donut Cat Bed For Indoor Cats - 23 Inch Round Washable Pet Bed With ..." length="153" />
+    <issue type="overlength_title" product_id="81c94a04-ac96-4c49-b49f-6be17203b04d" name="Mewoo Washable Pet Bed For Small Dogs &amp; Cats - 23x23x7 Inch Orthopedic Dog Be..." length="151" />
+    <issue type="overlength_title" product_id="84cd536c-9651-485a-aabf-cf7c388cb744" name="Mewoo Washable Pet Bed For Cats &amp; Small Dogs - 23x23x7 Inch Round Orthopedic ..." length="157" />
+    <issue type="overlength_title" product_id="2f472f5e-38ed-4b6b-9a8b-6c5c50f232fa" name="MEWOOFUN Donut Cat Bed For Indoor Cats - Round Washable Plush Pet Bed With Ja..." length="177" />
+    <issue type="short_title" product_id="175ad360-d7ee-40ad-bbdf-b714cb596635" name="Dome Covered Cat Litter Box with Lid" length="36" />
+    <issue type="short_title" product_id="f1e9acbd-e14c-4d5d-a2e7-757391465691" name="Hooded Cat Litter Box w/ Litter Mat" length="35" />
+    <issue type="short_title" product_id="7cfca0ec-5fda-46f9-a842-79e57bd7479c" name="Hooded Cat Litter Box" length="21" />
+    <issue type="short_title" product_id="6d307223-27a9-483b-aad9-40cc0ae6894c" name="Covered Cat Litter Box with Lid" length="31" />
+    <issue type="short_title" product_id="71f38863-6b7c-4f23-86a4-7f9d0dbcac8e" name="Cat Litter Box with Lid" length="23" />
+    <issue type="short_title" product_id="0e209c06-4e36-427b-8af0-a0adab96327c" name="Cat Litter Box Enclosure With Drawers" length="37" />
+    <issue type="short_title" product_id="c44d2145-2552-4a1d-81ef-36e260065638" name="Cat Litter Box Toilet with Lid" length="30" />
+    <issue type="overlength_title" product_id="b6d36d9c-ab85-4331-9069-240920b287ca" name=" Wicker Dog House Outdoor with Canopy, Rattan Dog Bed with Water-resistant Cu..." length="180" />
+    <issue type="overlength_title" product_id="45d9e415-8db8-42d8-9a5e-d6abaaf4c5ff" name=" Wicker Dog House Outdoor with Canopy, Rattan Dog Bed with Water-resistant Cu..." length="181" />
+    <issue type="overlength_title" product_id="42823f27-f3ec-4494-a081-73c7fbc029e0" name="2 In 1 Wireless Electric Dog Fence Waterproof Pet Shock Boundary Containment ..." length="160" />
+    <issue type="overlength_title" product_id="f6b8db89-d763-48dc-9dce-972b609651bd" name="Pet Carrier Backpack, Expandable Cat Dog Carrier With Front &amp; Back Extension,..." length="173" />
+    <issue type="overlength_title" product_id="54e8ae20-0a7d-47b5-8eb9-1193cacb5263" name=" Fully Enclosed Cat Litter Box with Lid &amp; Drawer Design, Covered Litter Box A..." length="193" />
+    <issue type="overlength_title" product_id="b7e7c3af-2ea9-4483-91e2-bc974b1d3b01" name=" Floor-to-Ceiling Cat Tree Cat Climbing Tower with Sisal-Covered Scratching P..." length="159" />
+    <issue type="overlength_title" product_id="8eea41d7-2e96-43fb-b7c7-da9f6f1318b6" name=" 6&quot; Height Small Puppy Dog Feeding Station for Messy Pets, Stainless Steel El..." length="161" />
+    <issue type="overlength_title" product_id="c511afe4-081e-41cc-9e61-ed9946fb56a7" name="Dog Chew Toys, Dog Toothbrush Care Cleaning Sticks, Dog Toothbrush Chew Toy S..." length="190" />
+    <issue type="overlength_title" product_id="6d5d4336-2af9-46ce-a6de-0c8884acbd4a" name="84.6 In Dark Gray Cat Tree Tower With Wide Base, 3 Large Hinding Condo, 11 Si..." length="193" />
+    <issue type="overlength_title" product_id="17c1494b-b677-4868-a3f9-bc7280755f5b" name="Extra Thick Indoor Cat Scratching Post With Hanging Ball Toy - Durable Fiberb..." length="173" />
+    <issue type="overlength_title" product_id="41d9da7b-156b-4d22-a1ce-7b8c0c90d3ac" name="59in Large Tall Christmas Tree Cat Tower With 2 Cat Condos &amp; Scratching Post,..." length="171" />
+    <issue type="overlength_title" product_id="9977601c-9de8-4beb-8aee-71cdd23b8814" name="Mushroom Cat Climbing Frame, Sisal Cat Climbing Post, Interesting Red And Whi..." length="197" />
+    <issue type="overlength_title" product_id="4b79fbbe-b07e-4530-9890-38836c534452" name="Cat Toys - Interactive Toy For Cat , Kitten Toys, Lightweight Resin Duck Shap..." length="156" />
+    <issue type="short_title" product_id="b77331a7-9057-4bab-af77-a9324b191655" name="Cat Tumbler Toy Ball" length="20" />
+    <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
+    <issue type="overlength_title" product_id="d3f8b8c6-5846-4d38-a39e-b89efe3dca7f" name="Dog Puzzle Toy, Adjustable Treat Dispensing Ball Food Dispenser Tough Slow Fe..." length="166" />
+    <issue type="overlength_title" product_id="c8a9adc6-fd11-4e5e-bac3-139982e767dc" name=" 85.5&quot; Cat Tree Height Adjustable Floor-to-Ceiling 4-Tier Kitty Climbing Acti..." length="171" />
+    <issue type="duplicate_title" product_ids="539df59c-f25d-45aa-8257-634a3e4a5743,00996613-2cdc-41ae-87a0-6e9248293d75" count="2" />
+    <issue type="duplicate_title" product_ids="3e16b666-187a-4a60-afe4-55adea8d06c4,6f44ee1c-251c-4895-b281-50f3320eb98b" count="2" />
+    <issue type="duplicate_title" product_ids="c15e7914-ab30-4b05-a8bd-2b94a056e00f,d5046917-bdb3-49fd-88ac-850e639d283c" count="2" />
+    <issue type="duplicate_title" product_ids="287e6282-0c3a-410a-84e0-e37d9536e3a8,52b04c49-287f-478a-8d35-b7b048d9a844" count="2" />
+    <issue type="duplicate_title" product_ids="d20bbcc2-007b-486d-89c3-635e0ce7cda8,dd370d50-f6a9-4d8f-b44c-06295cb7cd1a" count="2" />
+    <issue type="duplicate_title" product_ids="4cee1de1-bad2-449c-afad-94a482394545,0d81c870-510a-47f7-9407-b8b7d18a7b43" count="2" />
   </issues>
 </merchant_diagnostics>
