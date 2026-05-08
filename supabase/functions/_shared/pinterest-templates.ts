@@ -610,12 +610,12 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
   ];
 
   const productShadow = shadowPlate({
-    width: 460, height: 100, gravity: "south_west", x: 80, y: 180, opacity: 30,
+    width: 440, height: 100, gravity: "south_west", x: 88, y: 180, opacity: 30,
   });
   // Product hero on the left, contained within bottom 65% so cards fit right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_500", "h_900", "c_fit", "g_south_west", "x_60", "y_220", "r_24",
+    "w_460", "h_900", "c_fit", "g_south_west", "x_88", "y_220", "r_24",
   ];
 
   const stepLabels = [
@@ -627,8 +627,8 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
   const card = (n: number, label: string, y: number, fill: string, ink: string) => [
     "l_text:Georgia_32:" + escapeText(`${n}   ${label}`),
     "co_rgb:" + ink, "b_rgb:" + fill, "bo_1px_solid_rgb:1A1410",
-    "r_36", "w_440", "c_fit",
-    "g_east", "x_60", `y_${y}`,
+    "r_36", "w_400", "c_fit",
+    "g_east", "x_88", `y_${y}`,
   ];
   const c1 = card(1, stepLabels[0], 80, "FFFFFF", "1A1410");
   const c2 = card(2, stepLabels[1], -80, "FFFFFF", "1A1410");
@@ -636,7 +636,7 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
 
   const saveBadge = [
     "l_text:Arial_28:" + escapeText(input.ctrBadge || "Save this") + ARROW,
-    "co_rgb:1A1410", "g_north_east", "x_84", "y_160", "o_85",
+    "co_rgb:1A1410", "g_north_east", "x_88", "y_160", "o_85",
   ];
 
   const cta = [
