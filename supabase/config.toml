@@ -266,3 +266,6 @@ verify_jwt = false
 
 [functions.tiktok-oauth-smoke-test]
 verify_jwt = false
+
+[functions.pinterest-publish-now]
+verify_jwt = false
