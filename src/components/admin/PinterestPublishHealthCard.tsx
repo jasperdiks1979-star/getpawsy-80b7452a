@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Activity, Zap, RefreshCw, ShieldCheck, AlertCircle } from "lucide-react";
+import { Loader2, Activity, Zap, RefreshCw, ShieldCheck, AlertCircle, Link2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type Health = {
@@ -15,8 +15,23 @@ type Health = {
   last_cron_run_at: string | null;
 };
 
+type Connection = {
+  active_board_name: string | null;
+  active_board_id: string | null;
+  active_pinterest_connection_id: string | null;
+  production_publish_verified: boolean | null;
+  production_publish_verified_at: string | null;
+  warmup_until: string | null;
+  daily_pin_cap: number | null;
+  min_gap_minutes: number | null;
+  last_pin_published_at: string | null;
+  last_pin_external_url: string | null;
+  last_pin_publish_error: string | null;
+};
+
 export function PinterestPublishHealthCard() {
   const [health, setHealth] = useState<Health | null>(null);
+  const [conn, setConn] = useState<Connection | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [autoApprove, setAutoApprove] = useState(false);
@@ -30,10 +45,11 @@ export function PinterestPublishHealthCard() {
       setHealth(data as Health);
       const { data: rt } = await supabase
         .from("pinterest_runtime_settings")
-        .select("auto_approve_queue")
+        .select("auto_approve_queue, active_board_name, active_board_id, active_pinterest_connection_id, production_publish_verified, production_publish_verified_at, warmup_until, daily_pin_cap, min_gap_minutes, last_pin_published_at, last_pin_external_url, last_pin_publish_error")
         .eq("id", 1)
         .maybeSingle();
       setAutoApprove(!!(rt as any)?.auto_approve_queue);
+      setConn(rt as any);
     } catch (e: any) {
       toast.error(`Health load failed: ${e?.message || e}`);
     } finally {
@@ -140,6 +156,66 @@ export function PinterestPublishHealthCard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Pinterest connection status */}
+        <div className="rounded-md border p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Link2 className="h-4 w-4" />
+            Pinterest connection
+            {conn?.active_pinterest_connection_id ? (
+              <Badge variant="default" className="gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Connected
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="gap-1">
+                <XCircle className="h-3 w-3" /> Not connected
+              </Badge>
+            )}
+            {conn?.production_publish_verified && (
+              <Badge variant="secondary" className="gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Production verified
+              </Badge>
+            )}
+            {conn?.warmup_until && new Date(conn.warmup_until) > new Date() && (
+              <Badge variant="outline">Warm-up</Badge>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div>
+              <div className="text-muted-foreground">Active board</div>
+              <div className="font-medium truncate">{conn?.active_board_name || "—"}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Daily cap / gap</div>
+              <div className="font-medium">
+                {conn?.daily_pin_cap ?? "—"} / {conn?.min_gap_minutes ?? "—"}m
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Last published</div>
+              <div className="font-medium">
+                {conn?.last_pin_published_at
+                  ? `${Math.round((Date.now() - new Date(conn.last_pin_published_at).getTime()) / 60000)}m ago`
+                  : "never"}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Last pin</div>
+              <div className="font-medium truncate">
+                {conn?.last_pin_external_url ? (
+                  <a href={conn.last_pin_external_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    View on Pinterest
+                  </a>
+                ) : "—"}
+              </div>
+            </div>
+          </div>
+          {conn?.last_pin_publish_error && (
+            <div className="text-[11px] text-destructive border-l-2 border-destructive pl-2">
+              Last error: {conn.last_pin_publish_error}
+            </div>
+          )}
+        </div>
+
         {/* Queue counts */}
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {["draft", "queued", "publishing", "posted", "failed", "skipped"].map((s) => (
