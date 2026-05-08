@@ -476,6 +476,45 @@ Deno.serve(async (req) => {
     pins.length = 0;
     pins.push(...filteredPins);
 
+    // ── 3c. Style-mixed scheduling — rotate pin_style within the daily cap.
+    // We fetch the styles already posted in the last 24h and re-order the
+    // candidate batch so under-represented styles publish first. This keeps
+    // the 4 pins/day warm-up cap diverse (e.g. problem → benefit → lifestyle
+    // → infographic) instead of stacking the same style back-to-back.
+    try {
+      const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+      const { data: postedRecent } = await sb
+        .from("pinterest_pin_queue")
+        .select("pin_style")
+        .eq("status", "posted")
+        .gte("posted_at", oneDayAgo);
+      const styleCounts = new Map<string, number>();
+      for (const r of postedRecent || []) {
+        const s = (r as any).pin_style || "unknown";
+        styleCounts.set(s, (styleCounts.get(s) || 0) + 1);
+      }
+      // Stable sort: lower (today-count, original priority) wins.
+      const indexed = (pins as any[]).map((p, idx) => ({ p, idx }));
+      indexed.sort((a, b) => {
+        const ca = styleCounts.get(a.p.pin_style || "unknown") || 0;
+        const cb = styleCounts.get(b.p.pin_style || "unknown") || 0;
+        if (ca !== cb) return ca - cb;
+        const pa = Number(a.p.priority ?? 0);
+        const pb = Number(b.p.priority ?? 0);
+        if (pa !== pb) return pa - pb;
+        return a.idx - b.idx;
+      });
+      const reordered = indexed.map((x) => x.p);
+      pins.length = 0;
+      pins.push(...reordered);
+      console.log(
+        `[cron] style-mix order: ${reordered.map((p) => p.pin_style || "?").join(" → ")} ` +
+          `(today counts: ${JSON.stringify(Object.fromEntries(styleCounts))})`,
+      );
+    } catch (e) {
+      console.warn("[cron] style-mix reorder failed (non-fatal):", e);
+    }
+
     // ── 4. Publish each pin with human-like delay ──
     for (let i = 0; i < pins.length; i++) {
       const pin = pins[i];
