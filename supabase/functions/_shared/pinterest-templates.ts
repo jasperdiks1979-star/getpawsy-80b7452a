@@ -427,12 +427,12 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
   const chip = (label: string, x: number) => [
     "l_text:Arial_28:" + escapeText(label),
     "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_1px_solid_rgb:1A1410",
-    "r_max", "w_280", "c_fit",
+    "r_max", "w_240", "c_fit",
     "g_south", "x_" + x, "y_300",
   ];
-  const c1 = chip(stats[0], -340);
+  const c1 = chip(stats[0], -300);
   const c2 = chip(stats[1], 0);
-  const c3 = chip(stats[2], 340);
+  const c3 = chip(stats[2], 300);
 
   // Editorial CTA — quiet ink type with a thin underline. No pill.
   const cta = [
