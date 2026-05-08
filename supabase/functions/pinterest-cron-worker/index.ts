@@ -503,6 +503,29 @@ Deno.serve(async (req) => {
         if (!pinRes.ok) {
           const errBody = await pinRes.text();
           console.log("[pinterest] response", { status: pinRes.status, mode, api_base: apiBase });
+          // Detect Pinterest Trial-Access publish rejection (code 29 / 403)
+          let parsedErrBody: any = null;
+          try { parsedErrBody = JSON.parse(errBody); } catch { parsedErrBody = null; }
+          const isTrial = pinRes.status === 403 && (
+            (typeof parsedErrBody?.code === "number" && parsedErrBody.code === 29) ||
+            /trial access/i.test(String(parsedErrBody?.message || errBody || ""))
+          );
+          if (isTrial) {
+            await sb.from("pinterest_runtime_settings").update({
+              production_trial_detected: true,
+              production_publish_verified: false,
+              production_publish_verified_at: null,
+              last_pin_publish_error: `Pinterest trial access detected (cron): ${errBody.slice(0, 400)}`,
+              last_pin_publish_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }).eq("id", 1);
+            await sb.from("pinterest_post_logs").insert({
+              action: "cron_tick",
+              status: "failed",
+              error_message: "Pinterest trial-access detected during cron publish — production publishing locked.",
+              response_data: { code: "PINTEREST_TRIAL_ACCESS", body: parsedErrBody },
+            });
+          }
 
           // Auto-fallback on 403 from production
           if (pinRes.status === 403 && mode === "production") {
