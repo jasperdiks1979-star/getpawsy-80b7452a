@@ -29,6 +29,7 @@ import {
   pickSoftCta,
   pickCtrBadge,
 } from "../_shared/pinterest-templates.ts";
+import { fetchAiBackdrop } from "../_shared/pinterest-ai-backdrop.ts";
 
 export type {
   PinterestQueueInsert,
@@ -835,24 +836,32 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       const wantsBackdrop = STYLES_NEEDING_BACKDROP.has(style)
         || (useLifestyleBackdrop && (!backdropByHook || backdropByHook[hook.key]));
       if (wantsBackdrop) {
-        // For before_after we need TWO scenes — one problem, one aesthetic.
-        // For everything else we just need the AFTER (cozy) scene.
+        // Primary: AI-generated cozy US-apartment scene via Nano Banana 2,
+        // cached per-query in pinterest_ai_backdrops + storage so subsequent
+        // pins reuse the same hosted PNG (no per-pin generation cost after
+        // the first run for a given query).
         const afterQuery = style === "before_after"
           ? pair.after
           : (PER_HOOK_AFTER_QUERY[hook.key] || pair.after);
-        let bd = await fetchPexelsBackdrop(afterQuery);
+        let bd: PexelsPhoto | null = await fetchAiBackdrop(sb as unknown as Parameters<typeof fetchAiBackdrop>[0], afterQuery);
         if (!bd) {
-          bd = buildCloudinaryFallbackBackdrop(hook.key);
-          backdropSource = "cloudinary_fallback";
+          // Fallback path: Pexels (if a valid key exists), else flat
+          // Cloudinary palette. Both are last-resort — primary is AI.
+          bd = await fetchPexelsBackdrop(afterQuery);
+          if (!bd) {
+            bd = buildCloudinaryFallbackBackdrop(hook.key);
+            backdropSource = "cloudinary_fallback";
+          } else {
+            backdropSource = "pexels";
+          }
         } else {
-          backdropSource = "pexels";
+          backdropSource = "pexels"; // tag column is constrained — reuse safe enum value
         }
         backdropMeta = bd;
         backdropUrl = bd.url;
         if (style === "before_after") {
-          // Pull a distinct BEFORE scene. Fall back to a tinted recolor of
-          // the AFTER scene if Pexels misses, so the layout still works.
-          const bb = await fetchPexelsBackdrop(pair.before);
+          const bb = await fetchAiBackdrop(sb as unknown as Parameters<typeof fetchAiBackdrop>[0], pair.before)
+            || await fetchPexelsBackdrop(pair.before);
           backdropAfterUrl = backdropUrl;          // After = the cozy/clean scene
           backdropUrl = (bb?.url) || backdropUrl;  // Before = the problem scene
         }
