@@ -521,14 +521,14 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
 function tplViral(input: TemplateInput): TemplateOutput {
   const base = darkCanvas();
 
-  // Subtle rotation jitter — splash is a soft accent, not a banner.
-  const angle = -3 - (Math.abs(input.seed) % 4);
+  // Subtle warm glow — barely visible, just adds atmosphere top-of-frame.
+  const angle = -2 - (Math.abs(input.seed) % 3);
   const splash = [
     "l_text:Arial_400_bold:%20",
     "b_rgb:FF6A1A", "co_rgb:00000000",
-    "w_1100", "h_360", "c_fit",
-    "g_north", "y_140", "a_" + angle, "o_55",
-    "e_gradient_fade:60",
+    "w_1200", "h_500", "c_fit",
+    "g_north", "y_60", "a_" + angle, "o_22",
+    "e_gradient_fade:80",
   ];
 
   const preset = LAYOUT_PRESETS.center_focus;
@@ -539,43 +539,49 @@ function tplViral(input: TemplateInput): TemplateOutput {
     avgCharWidth: 0.52,
   });
   const headline = [
-    "l_text:Impact_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
+    "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_980", "c_fit",
-    "g_north", "y_200",
+    "g_north", "y_220",
   ];
 
-  // Product card with white inner border for depth.
+  // Soft contact shadow grounds the product within the dark canvas.
+  const productShadow = shadowPlate({
+    width: 760, height: 130, gravity: "center", y: 460, opacity: 50,
+  });
+  // Product card with subtle warm glow plate for depth.
   const productPlate = [
     "l_text:Arial_400_bold:%20",
-    "b_rgb:FFFFFF", "co_rgb:00000000",
+    "b_rgb:FAF6F0", "co_rgb:00000000",
     "w_840", "h_840", "c_fit",
-    "g_center", "y_60", "r_36", "o_100",
+    "g_center", "y_60", "r_48", "o_92",
   ];
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
     "w_780", "h_780", "c_fit", "g_center", "y_60", "r_24",
   ];
 
+  // Editorial CTA — quiet white type + arrow + hairline underline.
   const cta = [
-    "l_text:Arial_56_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:121212", "b_rgb:FFFFFF", "r_max", "w_760", "c_fit",
-    "g_south", "y_140",
+    "l_text:Georgia_42:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "g_south", "y_180",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 280, gravity: "south", y: 160, opacity: 75,
+  });
 
   // Tiny CTR badge below CTA for save-prompts.
   const ctrBadge = input.ctrBadge
     ? [
         "l_text:Arial_30_bold:" + escapeText(input.ctrBadge),
-        "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_360", "c_fit",
-        "g_south", "y_60",
+        "co_rgb:FFFFFF", "g_south", "y_100", "o_70",
       ]
     : null;
 
-  const layers: string[][] = [base, splash, headline, productPlate, product, cta];
+  const layers: string[][] = [base, splash, headline, productShadow, productPlate, product, ctaUnderline, cta];
   if (ctrBadge) layers.push(ctrBadge);
   return {
     url: build(layers, BLANK_BASE),
-    layoutSignature: `viral|premium|a${angle}`,
+    layoutSignature: `viral|polish|a${angle}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
