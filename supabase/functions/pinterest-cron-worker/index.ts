@@ -336,22 +336,22 @@ Deno.serve(async (req) => {
       .select("production_publish_verified, production_trial_detected, verified_client_id_prefix")
       .eq("id", 1)
       .maybeSingle();
-    const currentClientId = Deno.env.get("PINTEREST_CLIENT_ID") || "";
-    const currentPrefix = currentClientId.length > 8
-      ? `${currentClientId.slice(0, 4)}…${currentClientId.slice(-3)}`
-      : currentClientId;
+    const currentPrefix = clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID"));
     const verifiedPrefix = guardSettings?.verified_client_id_prefix || null;
     const clientIdMatches = !verifiedPrefix || verifiedPrefix === currentPrefix;
-    const guardOk = Boolean(guardSettings?.production_publish_verified) && !guardSettings?.production_trial_detected && clientIdMatches;
+    const approvedClientActive = activeClientIdMatchesApproved();
+    const guardOk = approvedClientActive && Boolean(guardSettings?.production_publish_verified) && !guardSettings?.production_trial_detected && clientIdMatches;
     if (!guardOk) {
-      const reason = guardSettings?.production_trial_detected
+      const reason = !approvedClientActive
+        ? "Active PINTEREST_CLIENT_ID does not exactly match approved Standard Access App ID 1567611 — cron publishing blocked."
+        : guardSettings?.production_trial_detected
         ? "Pinterest trial-access detected — cron publishing blocked. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app and reconnect."
         : "Production publishing locked — run Direct Pin Test once before cron can publish.";
       await sb.from("pinterest_post_logs").insert({
         action: "cron_tick",
         status: "skipped",
         error_message: reason,
-        response_data: { code: "PINTEREST_PRODUCTION_GUARD", verified_client_id_prefix: verifiedPrefix, current_client_id_prefix: currentPrefix },
+        response_data: { code: "PINTEREST_PRODUCTION_GUARD", approved_client_id: APPROVED_PINTEREST_CLIENT_ID, verified_client_id_prefix: verifiedPrefix, current_client_id_prefix: currentPrefix },
       });
       return new Response(
         JSON.stringify({ ok: false, error: reason, code: "PINTEREST_PRODUCTION_GUARD", publishing_disabled: true, results: [] }),
