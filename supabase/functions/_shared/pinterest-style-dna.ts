@@ -619,6 +619,22 @@ export function detectNiche(input: {
 
   if (has("chew toy", "squeaky", "squeak", "rubber toy", "tug toy", "fetch", "tumbler", "teaser", "fish toy", "mouse toy", "teething stick"))
     return "interactive_toy";
+  if (has("ball launcher", "laser pointer", "electric plush", "mouse turntable", "mouse", "puzzle bowl", "enrichment mat"))
+    return "interactive_toy";
+
+  if (has("paw balm", "waterless", "comb", "trimmer", "goggles", "sunglasses", "eyewear", "body care"))
+    return "grooming";
+
+  if (has("poop bag", "poop bin", "poop trash", "waste bin", "litter scoop")) return "potty_training";
+
+  if (has("cat shelf", "cat shelves", "wall mounted cat", "wall-mounted cat", "jumping board")) return "cat_tree";
+
+  if (has("dog clothing", "pet clothing", "polyester clothing", "fleece dog", "transformation clothing"))
+    return "dog_clothing";
+
+  if (has("pet stairs", "dog stairs", "dog ramp", "pet ramp", "dog steps")) return "dog_bed";
+
+  if (has("silicone pet bowl", "silicone bowl", "ceramic pet bowl", "tilted pet")) return "bowl_station";
 
   // ── Existing rules (unchanged behavior) ───────────────────────────────────
   if (has("litter box", "litter-box", "litter") && has("cat", "kitten") && has("auto", "self", "smart"))
