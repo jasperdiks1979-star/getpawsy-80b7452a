@@ -1454,6 +1454,15 @@ Deno.serve(async (req) => {
           client_id_matches_verified: guard.client_id_matches,
         },
         publishing_allowed: activeClientIdMatchesApproved() && guard.verified && !guard.trial_detected,
+        active_board: {
+          id: settings?.active_board_id || null,
+          name: settings?.active_board_name || null,
+        },
+        last_publish: {
+          external_url: settings?.last_pin_external_url || null,
+          external_id: settings?.last_pin_external_id || null,
+          published_at: settings?.last_pin_published_at || null,
+        },
         not_standard_message: !activeClientIdMatchesApproved() || guard.trial_detected
           ? "Wrong Pinterest app credentials or approval not applied to this client_id."
           : null,
@@ -1479,6 +1488,93 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }).eq("id", 1);
       return json(cors, { ok: true, message: "Production guard reset; run Direct Pin Test to unlock publishing." });
+    }
+
+    if (action === "refresh_boards") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
+      if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected" });
+      const accessToken = await getFreshPinterestProductionToken(sb, conn);
+      if (!accessToken) return json(cors, { ok: false, error: "Token refresh failed" });
+      const boards = await fetchAllPinterestBoards(accessToken);
+      await syncPinterestBoardsToDb(sb, boards);
+      const { data: rows } = await sb
+        .from("pinterest_boards")
+        .select("id, name, privacy, is_sandbox, is_blacklisted, blacklist_reason, production_verified, production_verified_at, last_validated_at, last_validation_status")
+        .order("production_verified", { ascending: false })
+        .order("is_sandbox", { ascending: true })
+        .order("name", { ascending: true });
+      return json(cors, { ok: true, fetched: boards.length, boards: rows || [] });
+    }
+
+    if (action === "list_boards") {
+      const { data: rows } = await sb
+        .from("pinterest_boards")
+        .select("id, name, privacy, is_sandbox, is_blacklisted, blacklist_reason, production_verified, production_verified_at, last_validated_at, last_validation_status, last_validation_error, owner_username, pin_count, follower_count, board_created_at, last_seen_at")
+        .order("production_verified", { ascending: false })
+        .order("is_sandbox", { ascending: true })
+        .order("name", { ascending: true });
+      const activeBoardId = await getActiveBoardId(sb);
+      return json(cors, { ok: true, boards: rows || [], active_board_id: activeBoardId });
+    }
+
+    if (action === "set_active_board") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const boardId = typeof body.board_id === "string" ? body.board_id.trim() : "";
+      if (!boardId) return json(cors, { ok: false, error: "board_id required" });
+      const { data: row } = await sb.from("pinterest_boards").select("id, name, is_blacklisted").eq("id", boardId).maybeSingle();
+      if (!row) return json(cors, { ok: false, error: "Board not in cache. Run Refresh Boards first." });
+      if (row.is_blacklisted) return json(cors, { ok: false, error: "Board is blacklisted" });
+      await sb.from("pinterest_runtime_settings").update({
+        active_board_id: row.id,
+        active_board_name: row.name,
+        updated_at: new Date().toISOString(),
+      }).eq("id", 1);
+      return json(cors, { ok: true, active_board_id: row.id, active_board_name: row.name });
+    }
+
+    if (action === "blacklist_board") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const boardId = typeof body.board_id === "string" ? body.board_id.trim() : "";
+      const reason = typeof body.reason === "string" ? body.reason : "manual";
+      if (!boardId) return json(cors, { ok: false, error: "board_id required" });
+      await blacklistBoard(sb, boardId, reason);
+      return json(cors, { ok: true });
+    }
+
+    if (action === "unblacklist_board") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const boardId = typeof body.board_id === "string" ? body.board_id.trim() : "";
+      if (!boardId) return json(cors, { ok: false, error: "board_id required" });
+      await sb.from("pinterest_boards").update({
+        is_blacklisted: false,
+        blacklist_reason: null,
+        updated_at: new Date().toISOString(),
+      }).eq("id", boardId);
+      return json(cors, { ok: true });
+    }
+
+    if (action === "auto_select_board") {
+      const adminCheck = await requireDirectTestAdmin(sb, req);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
+      if (!conn?.access_token) return json(cors, { ok: false, error: "Pinterest not connected" });
+      const accessToken = await getFreshPinterestProductionToken(sb, conn);
+      if (!accessToken) return json(cors, { ok: false, error: "Token refresh failed" });
+      const boards = await fetchAllPinterestBoards(accessToken);
+      await syncPinterestBoardsToDb(sb, boards);
+      const picked = await pickBestProductionBoard(sb, boards);
+      if (!picked) return json(cors, { ok: false, error: "No eligible production board found. All boards are sandbox/private/blacklisted. Create a new PUBLIC board on Pinterest." });
+      await sb.from("pinterest_runtime_settings").update({
+        active_board_id: picked.id,
+        active_board_name: picked.name,
+        updated_at: new Date().toISOString(),
+      }).eq("id", 1);
+      return json(cors, { ok: true, active_board_id: picked.id, active_board_name: picked.name });
     }
 
     throw new Error(`Unknown action: ${action}`);
