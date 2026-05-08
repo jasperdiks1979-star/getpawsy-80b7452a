@@ -5497,26 +5497,44 @@ export type Database = {
         Row: {
           active_pinterest_connection_id: string | null
           id: number
+          last_pin_publish_at: string | null
+          last_pin_publish_error: string | null
           mode: string
+          production_publish_verified: boolean
+          production_publish_verified_at: string | null
+          production_trial_detected: boolean
           scale_unlocked: boolean
           updated_at: string
           updated_by: string | null
+          verified_client_id_prefix: string | null
         }
         Insert: {
           active_pinterest_connection_id?: string | null
           id?: number
+          last_pin_publish_at?: string | null
+          last_pin_publish_error?: string | null
           mode?: string
+          production_publish_verified?: boolean
+          production_publish_verified_at?: string | null
+          production_trial_detected?: boolean
           scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
+          verified_client_id_prefix?: string | null
         }
         Update: {
           active_pinterest_connection_id?: string | null
           id?: number
+          last_pin_publish_at?: string | null
+          last_pin_publish_error?: string | null
           mode?: string
+          production_publish_verified?: boolean
+          production_publish_verified_at?: string | null
+          production_trial_detected?: boolean
           scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
+          verified_client_id_prefix?: string | null
         }
         Relationships: [
           {
