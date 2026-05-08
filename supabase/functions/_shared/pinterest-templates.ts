@@ -218,7 +218,7 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
   const badges = [
     pick(["No mess", "Quiet motor", "App control"], input.seed),
     pick(["Fast clean", "Odor-free", "5-min setup"], input.seed + 1),
-    pick(["Saves time", "Vet-loved", "USA-approved"], input.seed + 2),
+    pick(["Saves time", "Cat-tested", "Built to last"], input.seed + 2),
   ];
   const b1 = [
     "l_text:Arial_38_bold:" + escapeText(badges[0]),
