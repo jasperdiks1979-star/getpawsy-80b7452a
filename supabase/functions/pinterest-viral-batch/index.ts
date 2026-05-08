@@ -22,6 +22,13 @@ import {
   TARGET_KEYWORDS_BY_CATEGORY,
   STYLE_TO_BOARD_FALLBACK,
 } from "../_shared/pinterest-hooks.ts";
+import { scrubProductImages } from "../_shared/pinterest-image-scrub.ts";
+import {
+  buildStyledPin,
+  HOOK_TO_STYLE,
+  pickSoftCta,
+  pickCtrBadge,
+} from "../_shared/pinterest-templates.ts";
 
 export type {
   PinterestQueueInsert,
@@ -635,6 +642,25 @@ serve(async (req) => {
       return respond({ ok: false, code: "NO_PRODUCT_IMAGES", message: "Product has no images — cannot render pins" });
     }
 
+    // 🧼 Supplier-image scrub — rejects measurement/spec/AliExpress assets.
+    // If everything gets scrubbed we abort BEFORE building pins so a doomed
+    // batch never reaches AI / queue insert.
+    const scrub = scrubProductImages(allImages);
+    if (scrub.clean.length === 0) {
+      console.error(`[pinterest-viral-batch] All images scrubbed for "${slug}":`,
+        JSON.stringify(scrub.rejected.slice(0, 10)));
+      return respond({
+        ok: false,
+        code: "NO_CLEAN_IMAGE",
+        message: "All product images were rejected by the supplier-image scrubber",
+        rejected: scrub.rejected.slice(0, 20),
+      });
+    }
+    if (scrub.rejected.length > 0) {
+      console.warn(`[pinterest-viral-batch] scrubbed ${scrub.rejected.length} supplier images for "${slug}"`);
+    }
+    const cleanImages = scrub.clean;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("[pinterest-viral-batch] LOVABLE_API_KEY missing");
@@ -730,40 +756,111 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     const STAGGER_MIN = 35; // ~one pin every 35 minutes — safe vs Pinterest limits
     const batchTag = `batch_${new Date(now).toISOString().slice(0, 16).replace(/[-:T]/g, "")}`;
 
-    const rows = aiPins.map((p, i) => {
+    // Per-hook Pexels backdrop queries — only used by styles that need a
+    // lifestyle context (problem / before_after / lifestyle).
+    const BACKDROP_QUERY_BY_HOOK: Record<string, string> = {
+      pain: "cozy living room cat",
+      transformation: "modern apartment cat",
+      social_proof: "scandinavian home cat sunlight",
+      curiosity: "cat curious window light",
+      time_saving: "minimalist modern bathroom",
+      infographic: "modern home cat",
+    };
+    const STYLES_NEEDING_BACKDROP: ReadonlySet<string> = new Set([
+      "problem", "before_after", "lifestyle",
+    ]);
+
+    // Layout-signature dedupe across this batch (defensive — every style is
+    // already distinct, but variant cards within a style randomize via seed).
+    const layoutSeen = new Set<string>();
+
+    const rows: Record<string, unknown>[] = [];
+    for (let i = 0; i < aiPins.length; i++) {
+      const p = aiPins[i];
       const hook = ACTIVE_HOOKS[i];
-      const productImage = allImages[i % allImages.length];
+      // Multi-angle round-robin — gives each pin a different product crop
+      // when the catalog has more than one clean image.
+      const productImage = cleanImages[i % cleanImages.length];
+      const style = HOOK_TO_STYLE[hook.key] || "benefit";
+      const seed = (now / 60000 | 0) + i * 7 + hook.key.length;
+
       const topOverlay = String(p.topOverlay || "Stop scooping every day").slice(0, 50);
-      const bottomOverlay = String(p.bottomOverlay || hook.cta).slice(0, 30);
-      const pinImageUrl = buildPinImage(productImage, topOverlay, bottomOverlay);
+      // Soft Pinterest-native CTA — rotated by seed, falls back to AI suggestion.
+      const bottomOverlay = String(p.bottomOverlay || pickSoftCta(seed)).slice(0, 30);
+      const ctrBadge = pickCtrBadge(seed);
+
+      // Fetch a lifestyle backdrop only for styles that benefit from one.
+      let backdropUrl: string | null = null;
+      let backdropMeta: PexelsPhoto | null = null;
+      let backdropSource: "pexels" | "cloudinary_fallback" | "none" = "none";
+      const wantsBackdrop = STYLES_NEEDING_BACKDROP.has(style)
+        || (useLifestyleBackdrop && (!backdropByHook || backdropByHook[hook.key]));
+      if (wantsBackdrop) {
+        const query = BACKDROP_QUERY_BY_HOOK[hook.key] || "cozy modern home";
+        let bd = await fetchPexelsBackdrop(query);
+        if (!bd) {
+          bd = buildCloudinaryFallbackBackdrop(hook.key);
+          backdropSource = "cloudinary_fallback";
+        } else {
+          backdropSource = "pexels";
+        }
+        backdropMeta = bd;
+        backdropUrl = bd.url;
+      }
+
+      const built = buildStyledPin(style, {
+        productImageUrl: productImage,
+        backdropUrl,
+        top: topOverlay,
+        bottom: bottomOverlay,
+        ctrBadge,
+        seed,
+      });
+      // Track signature — purely informational; we never reject here.
+      layoutSeen.add(built.layoutSignature);
+
       const title = String(p.title || `${product.name} — ${hook.angle}`).slice(0, 100);
       const description = String(p.description || "Self-cleaning automatic litter box with app control. Less mess, less smell, more time. Shop now.").slice(0, 480);
-      const tags: string[] = Array.isArray(p.tags) ? p.tags.map((t: string) => String(t).toLowerCase().replace(/^#/, "").trim()).filter(Boolean).slice(0, 8) : [];
+      const tags: string[] = Array.isArray(p.tags)
+        ? p.tags.map((t: string) => String(t).toLowerCase().replace(/^#/, "").trim()).filter(Boolean).slice(0, 8)
+        : [];
 
-      return {
+      const row: Record<string, unknown> = {
         product_id: product.id,
         product_slug: product.slug,
         product_name: product.name,
-        pin_variant: `viral_${hook.key}_${batchTag}`,
+        pin_variant: `viral_${hook.key}_${style}_${batchTag}`,
         pin_title: title,
         pin_description: description,
-        pin_image_url: pinImageUrl,
+        pin_image_url: built.url,
         destination_link: buildPinUrl(product.slug, hook.key),
         board_name: boardForStyle(hook.key),
         hashtags: tags,
         priority: "high",
-        // Always insert as DRAFT — admin must approve before cron worker publishes.
         status: "draft",
         scheduled_at: new Date(now + i * STAGGER_MIN * 60_000).toISOString(),
         hook_group: hook.key,
         category_key: categoryKey,
         overlay_text: `${topOverlay} | ${bottomOverlay}`,
       };
-    });
+      // Draft-only metadata (stripped by sanitizer before insert).
+      if (backdropMeta) {
+        row.backdrop_url = backdropMeta.url;
+        row.backdrop_avg_color = backdropMeta.avgColor;
+        row.backdrop_source = backdropSource;
+        row.backdrop_width = backdropMeta.width;
+        row.backdrop_height = backdropMeta.height;
+        row.backdrop_photographer = backdropMeta.photographer;
+        row.backdrop_pexels_page = backdropMeta.pexelsPageUrl;
+        row.backdrop_hook_group = hook.key;
+        row.backdrop_style = style;
+      }
+      rows.push(row);
+    }
 
-    // Optional secondary layer: enrich SOME pins (every other one) with a
-    // Pexels lifestyle backdrop while keeping the product image dominant.
-    if (useLifestyleBackdrop) {
+    // Legacy enrichment path — kept for explicit opt-in only. The premium
+    // templates above already handle backdrops per style.
+    if (useLifestyleBackdrop && body.legacyBackdrop === true) {
       // Decide which pin indexes get a backdrop:
       // - explicit per-hook map wins (only `true` entries)
       // - else fall back to legacy "every other pin" pattern (0,2,4)
