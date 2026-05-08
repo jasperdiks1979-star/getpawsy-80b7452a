@@ -268,13 +268,13 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   const ctrBadge = input.ctrBadge
     ? [
         "l_text:Arial_34_bold:" + escapeText(input.ctrBadge),
-        "co_rgb:FFFFFF", "g_north_west", "x_72", "y_120", "o_85",
+        "co_rgb:FFFFFF", "g_north_west", "x_84", "y_124", "o_85",
       ]
     : null;
 
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_north_east", "x_72", "y_120", "o_75",
+    "co_rgb:FFFFFF", "g_north_east", "x_84", "y_124", "o_75",
   ];
 
   const layers: string[][] = [base, bottomScrim, productShadow, product, headline, ctaUnderline, cta, brand];
