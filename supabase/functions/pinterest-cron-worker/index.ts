@@ -586,12 +586,24 @@ Deno.serve(async (req) => {
         const mode = "production";
         const apiBase = PINTEREST_PRODUCTION_API_BASE;
         console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
+        // Inject board-level UTM attribution so analytics can attribute traffic
+        // to the specific Pinterest board (Phase 2 — traffic quality tracking).
+        let destinationLink = pin.destination_link as string;
+        try {
+          const u = new URL(destinationLink);
+          if (!u.searchParams.get("utm_source")) u.searchParams.set("utm_source", "pinterest");
+          if (!u.searchParams.get("utm_medium")) u.searchParams.set("utm_medium", "social");
+          u.searchParams.set("utm_content", `board_${boardId}`);
+          destinationLink = u.toString();
+        } catch {
+          // leave destination as-is if URL parsing fails — QA gate already validates
+        }
         const requestPayload = {
           title: pin.pin_title,
           description: pin.pin_description,
           board_id: boardId,
           media_source: { source_type: "image_url", url: pin.pin_image_url },
-          link: pin.destination_link,
+          link: destinationLink,
         };
         const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
