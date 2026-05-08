@@ -112,6 +112,121 @@ export function sanitizeQueueRows<T extends Record<string, unknown>>(rows: T[]):
   return sanitizeQueueRowsWithReport(rows).rows;
 }
 
+// ---------------------------------------------------------------------------
+// Queue health check
+// ---------------------------------------------------------------------------
+// Runs against the prepared rows BEFORE insert. Surfaces three classes of
+// problems that have historically caused stuck queues or low-reach batches:
+//   1. Missing approvals — no row carries `approved_at`, so the cron worker
+//      will never pick anything up (unless auto_approve_queue is on).
+//   2. Scheduling gaps — two consecutive scheduled_at values are closer than
+//      `minGapMinutes` (default 4), which risks Pinterest rate-limit / spam
+//      flags, OR there is a > 24h gap that suggests stagger math is broken.
+//   3. Hook-group imbalance — a single hook_group represents > 50% of the
+//      batch, signaling weak rotation and reduced creative diversity.
+// `blocking` is true only when ALL rows are unapproved (Phase-1 policy).
+
+export interface QueueHealthIssue {
+  code: "NO_APPROVALS" | "TIGHT_SCHEDULING_GAP" | "WIDE_SCHEDULING_GAP" | "HOOK_GROUP_IMBALANCE";
+  severity: "warn" | "error";
+  message: string;
+  detail?: Record<string, unknown>;
+}
+
+export interface QueueHealthReport {
+  ok: boolean;
+  blocking: boolean;
+  issues: QueueHealthIssue[];
+  stats: {
+    total: number;
+    approved: number;
+    hookGroupCounts: Record<string, number>;
+    minGapMinutes: number | null;
+    maxGapMinutes: number | null;
+  };
+}
+
+export function runQueueHealthCheck(
+  rows: Array<Record<string, unknown>>,
+  opts: { minGapMinutes?: number; maxGapHours?: number; imbalanceRatio?: number } = {},
+): QueueHealthReport {
+  const minGap = opts.minGapMinutes ?? 4;
+  const maxGap = (opts.maxGapHours ?? 24) * 60;
+  const imbalance = opts.imbalanceRatio ?? 0.5;
+  const issues: QueueHealthIssue[] = [];
+  const total = rows.length;
+
+  const approved = rows.filter((r) => !!r.approved_at).length;
+  if (total > 0 && approved === 0) {
+    issues.push({
+      code: "NO_APPROVALS",
+      severity: "error",
+      message: "No pin in this batch has approved_at set — cron worker will not publish any until approval.",
+      detail: { total },
+    });
+  }
+
+  const times = rows
+    .map((r) => (r.scheduled_at ? new Date(r.scheduled_at as string).getTime() : NaN))
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => a - b);
+  let minGapM: number | null = null;
+  let maxGapM: number | null = null;
+  for (let i = 1; i < times.length; i++) {
+    const gap = (times[i] - times[i - 1]) / 60_000;
+    if (minGapM === null || gap < minGapM) minGapM = gap;
+    if (maxGapM === null || gap > maxGapM) maxGapM = gap;
+  }
+  if (minGapM !== null && minGapM < minGap) {
+    issues.push({
+      code: "TIGHT_SCHEDULING_GAP",
+      severity: "warn",
+      message: `Scheduling gap as low as ${minGapM.toFixed(1)} min — risks Pinterest rate-limit (recommended ≥${minGap} min).`,
+      detail: { minGapMinutes: minGapM, threshold: minGap },
+    });
+  }
+  if (maxGapM !== null && maxGapM > maxGap) {
+    issues.push({
+      code: "WIDE_SCHEDULING_GAP",
+      severity: "warn",
+      message: `Scheduling gap as wide as ${(maxGapM / 60).toFixed(1)}h — stagger math may be wrong (threshold ${(maxGap / 60).toFixed(1)}h).`,
+      detail: { maxGapMinutes: maxGapM, thresholdMinutes: maxGap },
+    });
+  }
+
+  const hookGroupCounts: Record<string, number> = {};
+  for (const r of rows) {
+    const k = (r.hook_group as string) || "unknown";
+    hookGroupCounts[k] = (hookGroupCounts[k] ?? 0) + 1;
+  }
+  if (total >= 4) {
+    const [topGroup, topCount] = Object.entries(hookGroupCounts)
+      .sort((a, b) => b[1] - a[1])[0] ?? ["", 0];
+    if (topCount / total > imbalance) {
+      issues.push({
+        code: "HOOK_GROUP_IMBALANCE",
+        severity: "warn",
+        message: `Hook group "${topGroup}" represents ${Math.round((topCount / total) * 100)}% of the batch (>${Math.round(imbalance * 100)}%).`,
+        detail: { topGroup, topCount, total, ratio: topCount / total },
+      });
+    }
+  }
+
+  const blocking = issues.some((i) => i.severity === "error");
+  return {
+    ok: issues.length === 0,
+    blocking,
+    issues,
+    stats: {
+      total,
+      approved,
+      hookGroupCounts,
+      minGapMinutes: minGapM,
+      maxGapMinutes: maxGapM,
+    },
+  };
+}
+
 // Required columns the insert payload absolutely needs. If any of these are
 // missing from the live table the function aborts BEFORE building/inserting
 // pins so we never burn AI/Pexels credits on a doomed batch.
