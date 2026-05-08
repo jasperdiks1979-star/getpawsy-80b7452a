@@ -1091,6 +1091,31 @@ function PinterestDashboard() {
                   </div>
                 </div>
               )}
+              <div className="mt-2 rounded-md border border-border bg-background/60 p-2 space-y-2">
+                <p className="text-[11px] uppercase text-muted-foreground">Pinterest Developer Console redirect_uri validatie</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Plak hier de redirect_uri uit Pinterest Developer Console..."
+                    value={expectedRedirectUri}
+                    onChange={(e) => setExpectedRedirectUri(e.target.value)}
+                    className="h-7 text-xs font-mono flex-1"
+                  />
+                  {expectedRedirectUri && (
+                    <Badge
+                      variant={appDiagnostic?.redirect_uri === expectedRedirectUri ? "default" : "destructive"}
+                      className="shrink-0"
+                    >
+                      {appDiagnostic?.redirect_uri === expectedRedirectUri ? "✓ Exact match" : "✗ Mismatch"}
+                    </Badge>
+                  )}
+                </div>
+                {expectedRedirectUri && appDiagnostic?.redirect_uri !== expectedRedirectUri && (
+                  <p className="text-[11px] text-destructive">
+                    De ACTIVE_REDIRECT_URI komt niet overeen met wat je in Pinterest hebt ingevuld. Update de PINTEREST_REDIRECT_URI environment variable of pas de Pinterest app aan.
+                  </p>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{appDiagnostic.next_step}</p>
             </>
           )}
