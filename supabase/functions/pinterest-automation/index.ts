@@ -40,6 +40,116 @@ function tokenPrefix(token: string | null | undefined) {
   return token ? token.slice(0, 12) : null;
 }
 
+// ===== Board sandbox detection & selection =====
+
+const SANDBOX_NAME_PATTERNS = [/sandbox/i, /\btest\b/i, /\bdev\b/i, /\bdemo\b/i, /\bstaging\b/i];
+const PREFERRED_BOARD_NAME = "GetPawsy Products";
+
+function detectSandboxBoardName(name: string | null | undefined): boolean {
+  if (!name) return false;
+  return SANDBOX_NAME_PATTERNS.some((re) => re.test(name));
+}
+
+async function fetchAllPinterestBoards(accessToken: string): Promise<any[]> {
+  const collected: any[] = [];
+  let bookmark: string | null = null;
+  for (let page = 0; page < 5; page++) {
+    const url = new URL(`${PINTEREST_PRODUCTION_API_BASE}/boards`);
+    url.searchParams.set("page_size", "250");
+    url.searchParams.set("privacy", "ALL");
+    if (bookmark) url.searchParams.set("bookmark", bookmark);
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!res.ok) {
+      console.warn(`[boards] list failed ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      break;
+    }
+    const payload = await res.json().catch(() => ({} as any));
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    collected.push(...items);
+    bookmark = typeof payload?.bookmark === "string" && payload.bookmark ? payload.bookmark : null;
+    if (!bookmark) break;
+  }
+  return collected;
+}
+
+async function syncPinterestBoardsToDb(sb: any, boards: any[]): Promise<void> {
+  if (!boards.length) return;
+  const now = new Date().toISOString();
+  const rows = boards.map((b) => ({
+    id: String(b.id),
+    name: String(b.name || ""),
+    privacy: typeof b.privacy === "string" ? b.privacy : null,
+    owner_username: typeof b?.owner?.username === "string" ? b.owner.username : null,
+    pin_count: typeof b.pin_count === "number" ? b.pin_count : null,
+    follower_count: typeof b.follower_count === "number" ? b.follower_count : null,
+    board_created_at: typeof b.created_at === "string" ? b.created_at : null,
+    is_sandbox: detectSandboxBoardName(b.name),
+    last_seen_at: now,
+    updated_at: now,
+  }));
+  const { error } = await sb.from("pinterest_boards").upsert(rows, { onConflict: "id" });
+  if (error) console.warn("[boards] upsert failed:", error.message);
+}
+
+async function pickBestProductionBoard(sb: any, boards: any[]): Promise<any | null> {
+  // Load blacklist + sandbox flags from DB
+  const ids = boards.map((b) => String(b.id));
+  const { data: dbRows } = await sb
+    .from("pinterest_boards")
+    .select("id, is_blacklisted, is_sandbox, production_verified")
+    .in("id", ids);
+  const flags = new Map<string, { blacklisted: boolean; sandbox: boolean; verified: boolean }>();
+  for (const r of dbRows || []) {
+    flags.set(String(r.id), {
+      blacklisted: Boolean(r.is_blacklisted),
+      sandbox: Boolean(r.is_sandbox),
+      verified: Boolean(r.production_verified),
+    });
+  }
+  const candidates = boards.filter((b) => {
+    const f = flags.get(String(b.id));
+    if (f?.blacklisted) return false;
+    if (f?.sandbox) return false;
+    if (detectSandboxBoardName(b.name)) return false;
+    if (typeof b.privacy === "string" && b.privacy.toUpperCase() !== "PUBLIC") return false;
+    return true;
+  });
+  if (!candidates.length) return null;
+  // Prefer previously-verified, then preferred name, then newest
+  candidates.sort((a, b) => {
+    const fa = flags.get(String(a.id))?.verified ? 1 : 0;
+    const fb = flags.get(String(b.id))?.verified ? 1 : 0;
+    if (fa !== fb) return fb - fa;
+    const na = String(a.name || "").toLowerCase() === PREFERRED_BOARD_NAME.toLowerCase() ? 1 : 0;
+    const nb = String(b.name || "").toLowerCase() === PREFERRED_BOARD_NAME.toLowerCase() ? 1 : 0;
+    if (na !== nb) return nb - na;
+    const da = a.created_at ? Date.parse(a.created_at) : 0;
+    const db = b.created_at ? Date.parse(b.created_at) : 0;
+    return db - da;
+  });
+  return candidates[0];
+}
+
+async function blacklistBoard(sb: any, boardId: string, reason: string, isSandbox = false): Promise<void> {
+  const now = new Date().toISOString();
+  await sb.from("pinterest_boards").upsert({
+    id: String(boardId),
+    name: "(blacklisted)",
+    is_blacklisted: true,
+    is_sandbox: isSandbox,
+    blacklist_reason: reason.slice(0, 500),
+    last_validated_at: now,
+    last_validation_error: reason.slice(0, 500),
+    updated_at: now,
+  }, { onConflict: "id" });
+  console.warn(`[boards] blacklisted ${boardId}: ${reason}`);
+}
+
+async function getActiveBoardId(sb: any): Promise<string | null> {
+  const { data } = await sb.from("pinterest_runtime_settings").select("active_board_id").eq("id", 1).maybeSingle();
+  return data?.active_board_id ? String(data.active_board_id) : null;
+}
+
 function clientIdPrefix(clientId: string | null | undefined) {
   if (!clientId) return null;
   const confirmationDigits = clientId.slice(0, APPROVED_PINTEREST_CLIENT_ID.length);
