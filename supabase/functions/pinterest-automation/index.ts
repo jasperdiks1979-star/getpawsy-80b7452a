@@ -2005,7 +2005,19 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
   const accountResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/user_account`, accessToken);
   const boardsResponse = await fetchJsonWithText(`${PINTEREST_PRODUCTION_API_BASE}/boards?page_size=250&privacy=ALL`, accessToken);
   const boards = Array.isArray(boardsResponse.body?.items) ? boardsResponse.body.items : [];
-  const selectedBoard = boards.find((board: any) => typeof board?.id === "string" && board.id.trim()) || null;
+  // Persist boards + sandbox heuristic
+  if (boards.length) await syncPinterestBoardsToDb(sb, boards);
+
+  // Prefer admin-pinned active board, else auto-pick best production-eligible
+  const activeBoardId = await getActiveBoardId(sb);
+  let selectedBoard: any = null;
+  if (activeBoardId) {
+    selectedBoard = boards.find((b: any) => String(b?.id) === activeBoardId) || null;
+  }
+  if (!selectedBoard) selectedBoard = await pickBestProductionBoard(sb, boards);
+  if (!selectedBoard) {
+    selectedBoard = boards.find((b: any) => typeof b?.id === "string" && b.id.trim()) || null;
+  }
 
   const requestPayload = {
     title: DIRECT_TEST_TITLE,
@@ -2066,17 +2078,81 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
     return json(cors, { ok: false, error: errorMessage, hint, request_endpoint: endpoint, request_payload: requestPayload, status_code: null, response_body: responseBody, pin_id: null, external_url: null, diagnostics });
   }
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify(requestPayload),
-  });
-  const responseText = await response.text();
+  // Try posting to selected board; on code 15 (sandbox board) blacklist + retry next eligible
+  const triedBoards: { id: string; name: string | null; status: number; code: number | null; message: string | null }[] = [];
+  let response: Response;
+  let responseText = "";
   let responseBody: any = null;
-  try { responseBody = JSON.parse(responseText); } catch { responseBody = { raw: responseText }; }
-  const pinId = typeof responseBody?.id === "string" && responseBody.id.trim() ? responseBody.id.trim() : null;
-  const externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
-  const success = response.ok && Boolean(pinId && externalUrl);
+  let pinId: string | null = null;
+  let externalUrl: string | null = null;
+  let success = false;
+  let currentPayload = requestPayload;
+  // Build candidate queue starting with selectedBoard, then remaining production-eligible
+  const remaining = await pickAllEligibleBoards(sb, boards, selectedBoard?.id || null);
+  const candidates: any[] = selectedBoard ? [selectedBoard, ...remaining] : remaining;
+  for (const candidate of candidates) {
+    currentPayload = { ...requestPayload, board_id: candidate.id };
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(currentPayload),
+    });
+    responseText = await response.text();
+    try { responseBody = JSON.parse(responseText); } catch { responseBody = { raw: responseText }; }
+    pinId = typeof responseBody?.id === "string" && responseBody.id.trim() ? responseBody.id.trim() : null;
+    externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
+    success = response.ok && Boolean(pinId && externalUrl);
+    triedBoards.push({
+      id: String(candidate.id),
+      name: candidate.name || null,
+      status: response.status,
+      code: typeof responseBody?.code === "number" ? responseBody.code : null,
+      message: typeof responseBody?.message === "string" ? responseBody.message : null,
+    });
+    if (success) {
+      // Mark winning board as production-verified + persist as active
+      const nowIso = new Date().toISOString();
+      await sb.from("pinterest_boards").upsert({
+        id: String(candidate.id),
+        name: String(candidate.name || ""),
+        production_verified: true,
+        production_verified_at: nowIso,
+        last_validated_at: nowIso,
+        last_validation_status: response.status,
+        last_validation_error: null,
+        is_blacklisted: false,
+        is_sandbox: false,
+        updated_at: nowIso,
+      }, { onConflict: "id" });
+      await sb.from("pinterest_runtime_settings").update({
+        active_board_id: String(candidate.id),
+        active_board_name: String(candidate.name || ""),
+        last_pin_external_url: externalUrl,
+        last_pin_external_id: pinId,
+        last_pin_published_at: nowIso,
+        last_pin_publish_at: nowIso,
+        last_pin_publish_error: null,
+        updated_at: nowIso,
+      }).eq("id", 1);
+      break;
+    }
+    // Detect sandbox board error (code 15) → blacklist & try next
+    const isSandboxBoardError =
+      response.status === 400 &&
+      typeof responseBody?.code === "number" &&
+      responseBody.code === 15;
+    if (isSandboxBoardError) {
+      await blacklistBoard(sb, String(candidate.id), `code 15: ${responseBody?.message || "sandbox board"}`, true);
+      continue; // try next candidate
+    }
+    // Any other error: stop, don't burn rate limit
+    break;
+  }
+  if (!response!) {
+    response = new Response("", { status: 0 });
+  }
+  // Use the last attempted payload for diagnostics
+  (requestPayload as any).board_id = currentPayload.board_id;
   const errorMessage = success ? null : `Pinterest API ${response.status}: ${responseText}`;
   const trialDetected = isPinterestTrialAccessError(response.status, responseBody, responseText);
   let guardUnlocked = false;
