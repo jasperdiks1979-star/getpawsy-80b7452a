@@ -4928,6 +4928,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_ai_backdrops: {
+        Row: {
+          created_at: string
+          height: number | null
+          image_url: string
+          query: string
+          storage_path: string | null
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          image_url: string
+          query: string
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          image_url?: string
+          query?: string
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
       pinterest_board_mappings: {
         Row: {
           board_names: string[]
