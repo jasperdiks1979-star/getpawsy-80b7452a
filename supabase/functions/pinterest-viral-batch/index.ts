@@ -1137,6 +1137,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     });
 
     if (dryRun) {
+      const dryHealth = runQueueHealthCheck(rows as Array<Record<string, unknown>>);
       return respond({
           ok: true,
           dryRun: true,
@@ -1144,6 +1145,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           message: `Preview ${rows.length} pins (not queued)`,
           product: { id: product.id, slug: product.slug, name: product.name },
           batchTag,
+          health: dryHealth,
           pins: rows.map((r: any) => ({
             hook_group: r.hook_group,
             pin_variant: r.pin_variant,
