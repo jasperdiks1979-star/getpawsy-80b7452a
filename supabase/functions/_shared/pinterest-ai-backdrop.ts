@@ -67,19 +67,87 @@ async function writeCache(sb: SbLike, query: string, url: string, storagePath: s
 }
 
 /**
+ * Deterministic hash so the same query always renders the same scene variant
+ * (cache-stable), but different queries naturally rotate through different
+ * rooms, lighting, angles and moods.
+ */
+function hashStr(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+const ROOMS = [
+  "sun-drenched Brooklyn loft living room with a low linen sofa and a woven jute rug",
+  "cozy Scandinavian reading nook by a tall window, oak floors, knitted throw blanket",
+  "modern Portland studio apartment, warm white walls, mid-century walnut credenza, trailing pothos plant",
+  "soft minimalist bedroom corner, undyed linen bedding, rattan stool, morning light through sheer curtains",
+  "Brooklyn-brownstone breakfast nook, vintage oak chair, ceramic mug on a sunlit table",
+  "Austin apartment hallway with terracotta tiles, woven basket, fiddle-leaf fig in the corner",
+  "Scandi entryway with a low wooden bench, beige boucle cushion, soft afternoon light",
+  "California bungalow living room, oat-toned curtains, rattan pendant light, beech coffee table",
+  "neutral Pinterest-style home office corner, oak desk, linen curtains, warm clay vase",
+  "cozy windowsill nook with a knitted blanket, ceramic mug, dappled golden-hour light",
+];
+
+const LIGHTING = [
+  "soft golden-hour sunlight streaming sideways across the floor",
+  "diffused overcast morning light through sheer linen curtains",
+  "warm late-afternoon glow with long, gentle shadows",
+  "bright airy midday light bouncing off pale oak floors",
+  "low warm lamplight with a cozy amber tone",
+  "cool early-morning daylight with soft pastel highlights",
+];
+
+const ANGLES = [
+  "shot from a low eye-level perspective with shallow depth of field",
+  "overhead 45-degree flat-lay angle on a wooden floor",
+  "wide editorial framing with the subject slightly off-center",
+  "tight handheld iPhone-style angle, very candid feel",
+  "rule-of-thirds composition with negative space in the upper portion",
+  "slightly tilted documentary angle, lived-in and unstaged",
+];
+
+const MOODS = [
+  "calm Sunday-morning mood, lived-in and authentic",
+  "warm cozy autumn evening mood with soft textures",
+  "fresh airy spring-cleaning mood",
+  "quiet rainy-day reading mood",
+  "minimalist 'finally organized' relief mood",
+  "neutral aesthetic apartment-tour mood",
+];
+
+const TEXTURES = [
+  "linen, oak, ceramic, woven jute",
+  "boucle, walnut wood, brushed brass, terracotta",
+  "raw cotton, light beech, matte stoneware, dried pampas",
+  "cashmere throw, oat-toned upholstery, aged oak, warm clay",
+];
+
+/**
  * Build a high-fidelity prompt for a Pinterest-native cozy lifestyle scene.
- * The prompt is engineered to:
- *  - render real US-apartment interiors (warm wood, beige, soft daylight)
- *  - leave the upper third uncluttered for headline overlays
- *  - avoid product / text / logos so we don't double up on what we composite
+ * Deterministically rotates room, lighting, angle, mood and texture per query
+ * so every pin reads as a different real home, never a repeated template.
  */
 function buildPrompt(query: string): string {
+  const h = hashStr(query);
+  const room = ROOMS[h % ROOMS.length];
+  const light = LIGHTING[(h >> 3) % LIGHTING.length];
+  const angle = ANGLES[(h >> 6) % ANGLES.length];
+  const mood = MOODS[(h >> 9) % MOODS.length];
+  const texture = TEXTURES[(h >> 12) % TEXTURES.length];
+
   return [
-    `Photograph of a ${query}.`,
-    `Cozy modern American apartment interior, warm natural daylight, soft shadows, beige and wood textures, scandinavian-inspired decor.`,
-    `Editorial Pinterest aesthetic, 9:16 vertical composition, shallow depth of field, premium home photography, magazine-quality.`,
-    `Leave the top third of the frame relatively empty (wall, ceiling, sky, or out-of-focus area) so a headline can be overlaid.`,
-    `No text, no logos, no watermarks, no products in close-up, no AI artifacts, no people's faces in focus.`,
+    `Hyper-realistic lifestyle photograph featuring a ${query}, naturally placed inside a ${room}.`,
+    `Lighting: ${light}. Camera: ${angle}. Mood: ${mood}.`,
+    `Material palette: ${texture}. Warm neutral beige tones, real fabric texture, real wood grain, believable imperfections (a slightly creased blanket, a stray leaf, a worn rug edge).`,
+    `The product blends naturally into the scene — correct perspective, realistic ground-contact shadow, ambient light matching the room. It must look placed, not pasted, never floating.`,
+    `Editorial Pinterest aesthetic, 9:16 vertical, shallow depth of field, candid lifestyle photography (think saved-on-Pinterest apartment-tour pin, not e-commerce banner).`,
+    `Leave the top ~30% of the frame visually calm (wall, ceiling, soft out-of-focus area, or window light) so a headline can be overlaid cleanly.`,
+    `Strictly avoid: text, logos, watermarks, brand names, glossy CGI look, surreal AI artifacts, plastic-looking pets, distorted hands, floating objects, ecommerce backdrop, studio seamless paper, empty void backgrounds, people's faces in sharp focus.`,
   ].join(" ");
 }
 
