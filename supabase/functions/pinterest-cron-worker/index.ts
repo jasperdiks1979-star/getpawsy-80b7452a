@@ -316,6 +316,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 🔒 HARD GUARD: do not publish anything from cron until a Direct Pin Test
+    // has succeeded against api.pinterest.com with the active client_id.
+    const { data: guardSettings } = await sb
+      .from("pinterest_runtime_settings")
+      .select("production_publish_verified, production_trial_detected, verified_client_id_prefix")
+      .eq("id", 1)
+      .maybeSingle();
+    const currentClientId = Deno.env.get("PINTEREST_CLIENT_ID") || "";
+    const currentPrefix = currentClientId.length > 8
+      ? `${currentClientId.slice(0, 4)}…${currentClientId.slice(-3)}`
+      : currentClientId;
+    const verifiedPrefix = guardSettings?.verified_client_id_prefix || null;
+    const clientIdMatches = !verifiedPrefix || verifiedPrefix === currentPrefix;
+    const guardOk = Boolean(guardSettings?.production_publish_verified) && !guardSettings?.production_trial_detected && clientIdMatches;
+    if (!guardOk) {
+      const reason = guardSettings?.production_trial_detected
+        ? "Pinterest trial-access detected — cron publishing blocked. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app and reconnect."
+        : "Production publishing locked — run Direct Pin Test once before cron can publish.";
+      await sb.from("pinterest_post_logs").insert({
+        action: "cron_tick",
+        status: "skipped",
+        error_message: reason,
+        response_data: { code: "PINTEREST_PRODUCTION_GUARD", verified_client_id_prefix: verifiedPrefix, current_client_id_prefix: currentPrefix },
+      });
+      return new Response(
+        JSON.stringify({ ok: false, error: reason, code: "PINTEREST_PRODUCTION_GUARD", publishing_disabled: true, results: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // ── 3. Check hourly rate limit ──
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     const { count: recentPostCount } = await sb
