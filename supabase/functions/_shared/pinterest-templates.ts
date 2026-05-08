@@ -385,7 +385,7 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
     "l_text:Arial_400_bold:%20",
     "b_rgb:FF6A1A", "co_rgb:00000000",
     "w_900", "h_900", "c_fit",
-    "g_north_east", "x_-200", "y_-200", "o_18",
+    "g_north_east", "x_-200", "y_-200", "o_10",
   ];
 
   // Editorial headline (serif, wrapped, anchored top-left).
@@ -400,17 +400,21 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
     "co_rgb:1A1410", "w_920", "c_fit", "g_north_west", "x_80", "y_140",
   ];
 
-  // Soft plate behind the product for depth.
+  // Soft contact shadow grounds the product in the cream canvas.
+  const productShadow = shadowPlate({
+    width: 720, height: 130, gravity: "center", y: 460, opacity: 28,
+  });
+  // Subtle cream plate — softer than pure white so it blends with bg.
   const plate = [
     "l_text:Arial_400_bold:%20",
     "b_rgb:FFFFFF", "co_rgb:00000000",
     "w_860", "h_900", "c_fit",
-    "g_center", "y_60", "o_85", "r_36",
+    "g_center", "y_60", "o_55", "r_48",
   ];
 
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_760", "h_840", "c_fit", "g_center", "y_60", "r_24",
+    "w_780", "h_860", "c_fit", "g_center", "y_60", "r_24",
   ];
 
   // Three stat chips inline at the bottom of the plate.
@@ -419,25 +423,29 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
     pick(["Odor-free", "Quiet motor", "Quick setup"], input.seed + 1),
     pick(["Save hours", "Cat-loved", "Built to last"], input.seed + 2),
   ];
+  // Editorial chips — thin hairline outline, no orange fill.
   const chip = (label: string, x: number) => [
-    "l_text:Arial_34_bold:" + escapeText(label),
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_2px_solid_rgb:FF6A1A",
-    "r_max", "w_300", "c_fit",
-    "g_south", "x_" + x, "y_280",
+    "l_text:Arial_28:" + escapeText(label),
+    "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_1px_solid_rgb:1A1410",
+    "r_max", "w_280", "c_fit",
+    "g_south", "x_" + x, "y_300",
   ];
   const c1 = chip(stats[0], -340);
   const c2 = chip(stats[1], 0);
   const c3 = chip(stats[2], 340);
 
+  // Editorial CTA — quiet ink type with a thin underline. No pill.
   const cta = [
-    "l_text:Arial_50_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_640", "c_fit",
-    "g_south", "y_120",
+    "l_text:Georgia_44:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:1A1410", "g_south", "y_150",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 320, gravity: "south", y: 130, color: "1A1410", opacity: 80,
+  });
 
   return {
-    url: build([base, accentCorner, plate, product, headline, c1, c2, c3, cta], BLANK_BASE),
-    layoutSignature: `benefit|premium|s=${stats.join("/")}`,
+    url: build([base, accentCorner, productShadow, plate, product, headline, c1, c2, c3, ctaUnderline, cta], BLANK_BASE),
+    layoutSignature: `benefit|polish|s=${stats.join("/")}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
