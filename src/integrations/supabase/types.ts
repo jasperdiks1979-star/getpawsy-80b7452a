@@ -5769,6 +5769,45 @@ export type Database = {
           },
         ]
       }
+      product_creative_profiles: {
+        Row: {
+          briefs_version: number
+          niche_key: string
+          product_id: string
+          profile: Json
+          updated_at: string
+        }
+        Insert: {
+          briefs_version?: number
+          niche_key: string
+          product_id: string
+          profile: Json
+          updated_at?: string
+        }
+        Update: {
+          briefs_version?: number
+          niche_key?: string
+          product_id?: string
+          profile?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_creative_profiles_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_creative_profiles_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_image_compliance: {
         Row: {
           created_at: string

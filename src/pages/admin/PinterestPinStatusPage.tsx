@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send, ShieldCheck, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -309,6 +309,47 @@ export default function PinterestPinStatusPage() {
     }
   };
 
+  // ── AI Creative Director ──────────────────────────────────────────────
+  const [cdOpen, setCdOpen] = useState(false);
+  const [cdSlug, setCdSlug] = useState('');
+  const [cdCount, setCdCount] = useState(5);
+  const [cdForce, setCdForce] = useState(false);
+  const [cdResult, setCdResult] = useState<any | null>(null);
+  const handleCreativeDirector = async () => {
+    if (!cdSlug.trim()) {
+      toast({ title: 'Product slug required', variant: 'destructive' });
+      return;
+    }
+    setMaintLoading('creative_director');
+    setCdResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-creative-director', {
+        body: {
+          action: 'run_full',
+          productSlug: cdSlug.trim(),
+          count: cdCount,
+          force: cdForce,
+        },
+      });
+      if (error) throw error;
+      const r = data as any;
+      setCdResult(r);
+      if (r?.ok) {
+        toast({
+          title: `Creative Director: ${r.niche}`,
+          description: r.message,
+        });
+        await refetch();
+      } else {
+        toast({ title: 'Creative Director failed', description: r?.message || 'unknown', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Creative Director failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setMaintLoading(null);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -367,7 +408,119 @@ export default function PinterestPinStatusPage() {
               {maintLoading === 'delete_invalid_drafts' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
               Delete invalid drafts
             </Button>
+            <Button
+              size="sm"
+              onClick={() => setCdOpen((v) => !v)}
+              disabled={!!maintLoading}
+              className="bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-700 hover:to-violet-700 text-white"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI Creative Director
+            </Button>
           </div>
+          {cdOpen && (
+            <div className="rounded border p-3 space-y-3 bg-gradient-to-br from-fuchsia-50 to-violet-50 dark:from-fuchsia-950/20 dark:to-violet-950/20">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <Sparkles className="h-4 w-4 text-fuchsia-600" />
+                AI Creative Director — niche-aware lifestyle pins
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Detects the product niche, drafts {cdCount} unique scene briefs, renders each as a fully-composed lifestyle photo
+                (no floating product cards), runs the quality filter, and inserts approved scenes as <code>draft</code>. Approval still required.
+              </p>
+              <div className="flex gap-2 items-end flex-wrap">
+                <div className="flex flex-col gap-1 min-w-[260px] flex-1">
+                  <label className="text-xs font-medium">Product slug</label>
+                  <Input
+                    placeholder="e.g. automatic-self-cleaning-cat-litter-box"
+                    value={cdSlug}
+                    onChange={(e) => setCdSlug(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 w-24">
+                  <label className="text-xs font-medium">Count</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={8}
+                    value={cdCount}
+                    onChange={(e) => setCdCount(Math.max(1, Math.min(8, Number(e.target.value) || 5)))}
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-xs cursor-pointer pb-2">
+                  <input
+                    type="checkbox"
+                    checked={cdForce}
+                    onChange={(e) => setCdForce(e.target.checked)}
+                  />
+                  Re-detect niche
+                </label>
+                <Button
+                  size="sm"
+                  onClick={handleCreativeDirector}
+                  disabled={maintLoading === 'creative_director' || !cdSlug.trim()}
+                  className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
+                >
+                  {maintLoading === 'creative_director' ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Generate AI-directed pins
+                </Button>
+              </div>
+              {cdResult && (
+                <div className="rounded border bg-background p-3 space-y-2 text-xs">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">niche: {cdResult.niche}</Badge>
+                    <Badge variant="outline" className="border-emerald-500 text-emerald-700">
+                      drafted: {cdResult.drafts?.length ?? 0}
+                    </Badge>
+                    <Badge variant="outline" className="border-amber-500 text-amber-700">
+                      rejected: {cdResult.rejected?.length ?? 0}
+                    </Badge>
+                  </div>
+                  {!!cdResult.drafts?.length && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                      {cdResult.drafts.map((d: any) => (
+                        <a
+                          key={d.queueId}
+                          href={d.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block group rounded overflow-hidden border bg-muted"
+                        >
+                          <img
+                            src={d.imageUrl}
+                            alt={d.brief?.headline || 'pin'}
+                            className="w-full aspect-[9/16] object-cover group-hover:opacity-90"
+                            loading="lazy"
+                          />
+                          <div className="p-1.5 space-y-0.5">
+                            <div className="font-medium leading-tight line-clamp-2">{d.brief?.headline}</div>
+                            <div className="text-[10px] text-muted-foreground line-clamp-1">{d.brief?.cta}</div>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {!!cdResult.rejected?.length && (
+                    <details className="text-[11px]">
+                      <summary className="cursor-pointer text-muted-foreground">Show rejected ({cdResult.rejected.length})</summary>
+                      <ul className="mt-1 space-y-1">
+                        {cdResult.rejected.map((r: any, i: number) => (
+                          <li key={i} className="border-l-2 border-amber-500 pl-2">
+                            <span className="font-medium">{r.brief?.headline || '—'}</span>
+                            <span className="text-muted-foreground"> · {(r.reasons || []).join(', ')}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {verifyReport && (
             <div className="rounded border p-3 space-y-2 text-xs bg-muted/30">
               <div className="flex items-center gap-2 font-semibold">
