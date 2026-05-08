@@ -9,9 +9,22 @@ const MAX_DELAY_MS = 15000; // maximum 15s between posts
 const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
 const HERO_DAILY_CAP = 3;     // Performance Mode: 3 pins/day until scale_unlocked
 const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
+const APPROVED_PINTEREST_CLIENT_ID = "1567611";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function clientIdPrefix(clientId: string | null | undefined) {
+  if (!clientId) return null;
+  const confirmationDigits = clientId.slice(0, APPROVED_PINTEREST_CLIENT_ID.length);
+  return clientId.length > APPROVED_PINTEREST_CLIENT_ID.length
+    ? `${confirmationDigits}…${clientId.slice(-3)}`
+    : confirmationDigits;
+}
+
+function activeClientIdMatchesApproved() {
+  return Deno.env.get("PINTEREST_CLIENT_ID") === APPROVED_PINTEREST_CLIENT_ID;
 }
 
 /** Human-like random delay between posts */
