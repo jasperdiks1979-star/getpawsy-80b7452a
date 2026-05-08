@@ -231,8 +231,22 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
     "what every modern cat parent needs",
   ];
   const top = (parts[0] || overlayRaw).toLowerCase().replace(/[^\w\s]/g, "").trim();
+  // Strict bank match (legacy) OR fuzzy keyword match against viral patterns.
   const matchesApproved = APPROVED_TOP.some((h) => top.startsWith(h) || h.startsWith(top));
-  if (top && !matchesApproved) {
+  // Fuzzy: accept any top that contains a strong pet-owner viral keyword
+  // and is not generic spam. Lets AI-generated hooks ship without being on
+  // the literal bank list.
+  const VIRAL_KEYWORDS = [
+    "scoop", "scooping", "litter", "cat", "kitten", "pet", "parent",
+    "mess", "messy", "fresh", "clean", "smell", "odor", "wobble",
+    "transform", "upgrade", "secret", "hack", "essential", "obsessed",
+    "viral", "review", "switch", "raving", "love", "apartment",
+    "before", "after", "modern", "cozy", "calm", "pristine", "smart",
+    "reasons", "why", "what if", "tired",
+  ];
+  const hasViralKeyword = VIRAL_KEYWORDS.some((kw) => top.includes(kw));
+  const looksReasonable = top.length >= 8 && top.length <= 60 && /\s/.test(top);
+  if (top && !matchesApproved && !(hasViralKeyword && looksReasonable)) {
     reasons.add("weak_hook");
   }
 
