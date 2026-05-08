@@ -178,19 +178,20 @@ function tplProblem(input: TemplateInput): TemplateOutput {
     "bo_3px_solid_rgb:FFFFFF",
   ];
 
-  // Headline — wrapped serif, max 3 lines, anchored bottom-left.
-  const wrapped = wrapHeadline(input.top, 18, 3);
+  // Headline — wrapped serif, max 3 lines. Smaller font + tighter wrap so
+  // long lines never overflow the 640-wide safe zone on the left half.
+  const wrapped = wrapHeadline(input.top, 13, 3);
   const headline = [
-    "l_text:Georgia_88_bold:" + escapeWrapped(wrapped),
+    "l_text:Georgia_72_bold:" + escapeWrapped(wrapped),
     "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_360",
   ];
 
-  // Premium CTA pill anchored above the product. Wider w_ so longer
-  // soft-CTAs ("Discover why →", "See it in action →") never clip.
+  // Premium CTA pill — centered along the south edge so the rounded pill
+  // never gets clipped by the canvas left edge regardless of text length.
   const cta = [
     "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_620", "c_fit",
-    "g_south_west", "x_80", "y_220",
+    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_560", "c_fit",
+    "g_south", "x_-160", "y_220",
   ];
 
   const ctrBadge = input.ctrBadge
