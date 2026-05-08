@@ -853,6 +853,11 @@ function PinterestDashboard() {
                   <p className="text-sm font-semibold text-foreground">
                     ✅ Pinterest accepted the pin
                   </p>
+                  {directTestResult.guard_unlocked && (
+                    <p className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-foreground">
+                      🔓 Production publishing guard auto-unlocked — cron + queue publishing now enabled.
+                    </p>
+                  )}
                   <div className="grid gap-2 md:grid-cols-2">
                     <DiagnosticValue label="pin_id" value={directTestResult.pin_id} mono />
                     <DiagnosticValue label="status" value={directTestResult.status_code} />
