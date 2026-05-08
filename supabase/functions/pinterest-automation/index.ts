@@ -1599,6 +1599,120 @@ Deno.serve(async (req) => {
       return json(cors, { ok: true, active_board_id: picked.id, active_board_name: picked.name });
     }
 
+    if (action === "verify_drafts") {
+      // Non-mutating dry-run scan of all drafts. Re-validates render (image probe),
+      // overlays, payload limits, destination UTMs, and duplicate (product_id, pin_variant).
+      const MAX_TITLE = 100;
+      const MAX_DESC = 800;
+      const MAX_IMAGE_BYTES = 32 * 1024 * 1024;
+      const probeImage = async (url: string): Promise<{ ok: boolean; reason?: string; bytes?: number; ct?: string }> => {
+        if (!url || !/^https?:\/\//i.test(url)) return { ok: false, reason: "image_invalid_url" };
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 6000);
+          let res = await fetch(url, { method: "HEAD", signal: ctrl.signal }).catch(() => null);
+          clearTimeout(t);
+          if (!res || res.status === 405 || res.status === 403) {
+            const c2 = new AbortController();
+            const t2 = setTimeout(() => c2.abort(), 8000);
+            res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-1023" }, signal: c2.signal }).catch(() => null);
+            clearTimeout(t2);
+            try { await res?.body?.cancel(); } catch { /* ignore */ }
+          }
+          if (!res) return { ok: false, reason: "image_unreachable" };
+          if (res.status >= 400) return { ok: false, reason: `image_http_${res.status}` };
+          const ct = res.headers.get("content-type") || "";
+          const cl = Number(res.headers.get("content-length") || "0");
+          if (ct && !/^image\//i.test(ct) && !/octet-stream/i.test(ct)) return { ok: false, reason: `image_bad_ct_${ct.split(";")[0]}`, ct };
+          if (cl && cl > MAX_IMAGE_BYTES) return { ok: false, reason: "image_too_large", bytes: cl, ct };
+          return { ok: true, bytes: cl, ct };
+        } catch (e) {
+          return { ok: false, reason: `image_probe_err_${(e as Error).message.slice(0, 40)}` };
+        }
+      };
+
+      const { data: drafts } = await sb
+        .from("pinterest_pin_queue")
+        .select("id, product_id, pin_variant, pin_title, pin_description, pin_image_url, destination_link, overlay_text, board_name, hashtags, created_at")
+        .eq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      const list = drafts || [];
+
+      // Duplicate detection by (product_id, pin_variant)
+      const dupMap = new Map<string, number>();
+      for (const r of list) {
+        const key = `${(r as any).product_id}::${(r as any).pin_variant}`;
+        dupMap.set(key, (dupMap.get(key) || 0) + 1);
+      }
+
+      const report: Array<{
+        id: string;
+        pin_variant: string;
+        pin_image_url: string;
+        ok: boolean;
+        reasons: string[];
+        warnings: string[];
+        bytes?: number;
+        content_type?: string;
+      }> = [];
+
+      let okCount = 0;
+      let warnCount = 0;
+      const reasonTally: Record<string, number> = {};
+
+      for (let i = 0; i < list.length; i += 8) {
+        const slice = list.slice(i, i + 8);
+        const results = await Promise.all(slice.map(async (r: any) => {
+          const reasons: string[] = [];
+          const warnings: string[] = [];
+          const title = String(r.pin_title ?? "");
+          const desc = String(r.pin_description ?? "");
+          const overlay = String(r.overlay_text ?? "");
+          const link = String(r.destination_link ?? "");
+          if (!title.trim()) reasons.push("title_empty");
+          else if (title.length > MAX_TITLE) reasons.push("title_too_long");
+          if (desc.length > MAX_DESC) reasons.push("desc_too_long");
+          if (!overlay.trim()) reasons.push("overlay_empty");
+          if (!link || !/^https?:\/\//i.test(link)) reasons.push("destination_invalid");
+          else if (!/utm_source=pinterest/i.test(link)) warnings.push("utm_source_missing");
+          if (!Array.isArray(r.hashtags) || r.hashtags.length === 0) warnings.push("hashtags_empty");
+          const probe = await probeImage(String(r.pin_image_url ?? ""));
+          if (!probe.ok) reasons.push(probe.reason || "image_invalid");
+          const dupKey = `${r.product_id}::${r.pin_variant}`;
+          if ((dupMap.get(dupKey) || 0) > 1) warnings.push("duplicate_variant");
+          return {
+            id: r.id,
+            pin_variant: r.pin_variant,
+            pin_image_url: r.pin_image_url,
+            ok: reasons.length === 0,
+            reasons,
+            warnings,
+            bytes: probe.bytes,
+            content_type: probe.ct,
+          };
+        }));
+        for (const res of results) {
+          report.push(res);
+          if (res.ok) okCount += 1;
+          if (res.warnings.length) warnCount += 1;
+          for (const r of res.reasons) reasonTally[r] = (reasonTally[r] || 0) + 1;
+          for (const w of res.warnings) reasonTally[`warn:${w}`] = (reasonTally[`warn:${w}`] || 0) + 1;
+        }
+      }
+
+      return json(cors, {
+        ok: true,
+        scanned: list.length,
+        ready: okCount,
+        with_warnings: warnCount,
+        invalid: list.length - okCount,
+        reason_tally: reasonTally,
+        report,
+      });
+    }
+
     if (action === "queue_maintenance" || action === "delete_invalid_drafts") {
       // Shared validator: HEAD-probe image, sanity-check title/desc/overlay/destination.
       const MAX_TITLE = 100;

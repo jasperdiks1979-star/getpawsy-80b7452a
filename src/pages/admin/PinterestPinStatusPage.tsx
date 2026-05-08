@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send } from 'lucide-react';
+import { RefreshCw, ExternalLink, Loader2, Download, ChevronDown, ChevronRight, Bug, RotateCcw, Wand2, Trash2, Wrench, Send, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -265,6 +265,21 @@ export default function PinterestPinStatusPage() {
     }
   };
 
+  const [verifyReport, setVerifyReport] = useState<any | null>(null);
+  const handleVerifyDrafts = async () => {
+    setVerifyReport(null);
+    try {
+      const r = await runAutomation('verify_drafts');
+      setVerifyReport(r);
+      toast({
+        title: 'Verify complete',
+        description: `Scanned ${r.scanned} · ready ${r.ready} · warnings ${r.with_warnings} · invalid ${r.invalid}`,
+      });
+    } catch (e) {
+      toast({ title: 'Verify failed', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -302,11 +317,45 @@ export default function PinterestPinStatusPage() {
               {maintLoading === 'queue_maintenance' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wrench className="h-4 w-4 mr-2" />}
               Run queue maintenance
             </Button>
+            <Button size="sm" variant="secondary" onClick={handleVerifyDrafts} disabled={!!maintLoading}>
+              {maintLoading === 'verify_drafts' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+              Verify drafts
+            </Button>
             <Button size="sm" variant="destructive" onClick={handleDeleteInvalidDrafts} disabled={!!maintLoading}>
               {maintLoading === 'delete_invalid_drafts' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
               Delete invalid drafts
             </Button>
           </div>
+          {verifyReport && (
+            <div className="rounded border p-3 space-y-2 text-xs bg-muted/30">
+              <div className="flex items-center gap-2 font-semibold">
+                <ShieldCheck className="h-4 w-4" /> Verify report
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Badge variant="outline">scanned: {verifyReport.scanned}</Badge>
+                <Badge variant="outline" className="border-green-500 text-green-700">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> ready: {verifyReport.ready}
+                </Badge>
+                <Badge variant="outline" className="border-amber-500 text-amber-700">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> warnings: {verifyReport.with_warnings}
+                </Badge>
+                <Badge variant="outline" className="border-red-500 text-red-700">invalid: {verifyReport.invalid}</Badge>
+              </div>
+              {!!Object.keys(verifyReport.reason_tally || {}).length && (
+                <div className="flex gap-1 flex-wrap">
+                  {Object.entries(verifyReport.reason_tally as Record<string, number>).map(([k, v]) => (
+                    <Badge key={k} variant="secondary" className="text-[10px]">{k}: {v}</Badge>
+                  ))}
+                </div>
+              )}
+              <details>
+                <summary className="cursor-pointer text-muted-foreground">Per-pin report ({verifyReport.report?.length ?? 0})</summary>
+                <pre className="mt-1 max-h-72 overflow-auto rounded bg-background p-2 text-[10px]">
+                  {JSON.stringify(verifyReport.report, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
           {health && (
             <div className="rounded border p-3 space-y-2 text-xs bg-muted/30">
               <div className="font-semibold">Queue health</div>
