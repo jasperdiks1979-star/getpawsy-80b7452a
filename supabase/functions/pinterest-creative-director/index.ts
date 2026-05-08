@@ -28,6 +28,13 @@ import {
   type PatternId,
   type PinterestPattern,
 } from "../_shared/pinterest-patterns.ts";
+import {
+  pickStrategy,
+  type CreativeStrategy,
+  type LearningWeight,
+  type HookCategory,
+} from "../_shared/pinterest-hooks.ts";
+import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,6 +116,9 @@ interface SceneBrief {
   /** Free-form prompt the image model receives. */
   full_prompt: string;
   pattern_id?: PatternId;
+  hook_category?: HookCategory;
+  strategy_rationale?: string;
+  retry_reasons?: string[];
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
@@ -166,6 +176,8 @@ async function generateBriefs(
   dna: StyleDNA,
   count: number,
   patternIds?: PatternId[],
+  weights: LearningWeight[] = [],
+  retryReasonsByIndex: Record<number, string[]> = {},
 ): Promise<SceneBrief[]> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -174,13 +186,20 @@ async function generateBriefs(
     : selectPatternsForNiche(dna.niche_key as any, count)
   ).map((id) => getPattern(id));
 
+  // Pick a hook strategy per brief BEFORE we call the model so the AI just
+  // executes a locked plan and can't go off-brand.
+  const strategies: CreativeStrategy[] = patterns.map((p) =>
+    pickStrategy({ niche: dna.niche_key as any, dna, pattern: p, weights }),
+  );
+
   const sys = [
     "You are a Creative Director for a premium US pet brand running Pinterest ads.",
     "You write SCENE BRIEFS for an AI image model that will photograph each scene.",
     "Style: editorial DTC photography. NEVER floating product cards, NEVER collage,",
     "NEVER giant CTA bars, NEVER text overlays in the brief itself (text is added later).",
     "Each brief must be a fully-composed real lifestyle scene with the product naturally placed.",
-    "Each brief is locked to ONE provided Pinterest winning pattern — your composition, mood, and headline MUST embody that pattern.",
+    "Each brief is locked to ONE provided Pinterest winning pattern AND ONE hook strategy.",
+    "Use the provided headline and cta verbatim — they have been chosen by the strategy engine.",
   ].join(" ");
 
   const user = {
@@ -208,6 +227,17 @@ async function generateBriefs(
       must_have: p.must_have,
       must_avoid: p.must_avoid,
     })),
+    strategies: strategies.map((s, i) => ({
+      index: i,
+      hook_category: s.hook_category,
+      headline: s.hook_phrase,
+      cta: s.cta_phrase,
+      scene_directive: s.scene_directive,
+      rationale: s.rationale,
+    })),
+    /** Reasons the previous render of this brief was rejected, if any. The
+     *  model MUST address these in the next brief. */
+    previous_rejection_reasons: retryReasonsByIndex,
     rules: {
       headline_max_chars: 42,
       cta_max_chars: 18,
@@ -216,6 +246,10 @@ async function generateBriefs(
       no_text_in_image_prompt: true,
       pattern_lock:
         "For each brief at index i, embody patterns[i] — composition_rule defines the scene, hook_angle defines the headline emotion, must_have terms must appear in environment_summary or full_prompt, must_avoid terms must never appear.",
+      strategy_lock:
+        "Use strategies[i].headline as the headline VERBATIM and strategies[i].cta as the cta VERBATIM. Build the scene around strategies[i].scene_directive.",
+      retry_directive:
+        "If previous_rejection_reasons[i] is set, your new brief MUST explicitly correct each listed reason.",
     },
   };
 
@@ -308,10 +342,14 @@ async function generateBriefs(
     environment_summary: String(b.environment_summary || ""),
     subject: String(b.subject || ""),
     emotional_hook: String(b.emotional_hook || ""),
-    headline: safeText(String(b.headline || ""), 42),
-    cta: safeText(String(b.cta || ""), 18),
+    // Strategy lock: prefer the strategy-picked phrase if the model drifted.
+    headline: safeText(String(b.headline || strategies[i]?.hook_phrase || ""), 42),
+    cta: safeText(String(b.cta || strategies[i]?.cta_phrase || ""), 18),
     full_prompt: String(b.full_prompt || ""),
     pattern_id: patterns[i]?.id,
+    hook_category: strategies[i]?.hook_category,
+    strategy_rationale: strategies[i]?.rationale,
+    retry_reasons: retryReasonsByIndex[i],
   }));
 }
 
@@ -361,39 +399,77 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
   return bytes;
 }
 
-// ── 4. quality filter ──────────────────────────────────────────────────────
+// ── 4. quality filter (delegates to multi-axis scorer) ─────────────────────
 
-function qualityCheck(
+async function qualityCheck(
   brief: SceneBrief,
   bytes: Uint8Array,
   dna: StyleDNA,
-): { ok: boolean; reasons: string[] } {
-  const reasons: string[] = [];
-  if (!bytes || bytes.length < 80 * 1024) reasons.push("image too small (<80KB)");
-  if (bytes && bytes.length > 8 * 1024 * 1024) reasons.push("image too large (>8MB)");
-  if (!brief.headline) reasons.push("missing headline");
-  if (brief.headline.length > 42) reasons.push("headline >42 chars");
-  if (!brief.cta) reasons.push("missing cta");
-  if (brief.cta.length > 18) reasons.push("cta >18 chars");
-  const banned = [...dna.banned_terms];
-  for (const field of [brief.headline, brief.cta, brief.full_prompt]) {
-    const hit = containsBanned(field, banned);
-    if (hit) reasons.push(`banned term: "${hit}"`);
+) {
+  const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
+  return await scorePin({
+    bytes,
+    headline: brief.headline,
+    cta: brief.cta,
+    full_prompt: brief.full_prompt,
+    environment_summary: brief.environment_summary,
+    dna,
+    pattern,
+  });
+}
+
+// ── 4b. learning weights loader ────────────────────────────────────────────
+
+async function loadLearningWeights(
+  supabase: ReturnType<typeof createClient>,
+  niche: NicheKey,
+): Promise<LearningWeight[]> {
+  const { data } = await supabase
+    .from("pinterest_pattern_weights")
+    .select("pattern_id, hook_category, niche_key, composite_score, sample_size")
+    .eq("niche_key", niche)
+    .order("composite_score", { ascending: false })
+    .limit(50);
+  return (data ?? []) as LearningWeight[];
+}
+
+async function logRenderAttempt(
+  supabase: ReturnType<typeof createClient>,
+  args: {
+    pin_queue_id: string | null;
+    product_slug: string;
+    niche_key: string;
+    brief: SceneBrief;
+    attempt_no: number;
+    scores: Record<string, number>;
+    total_score: number;
+    rejected: boolean;
+    reasons: string[];
+  },
+) {
+  try {
+    await supabase.from("pinterest_render_attempts").insert({
+      pin_queue_id: args.pin_queue_id,
+      product_slug: args.product_slug,
+      niche_key: args.niche_key,
+      pattern_id: args.brief.pattern_id ?? null,
+      hook_category: args.brief.hook_category ?? null,
+      attempt_no: args.attempt_no,
+      scores: args.scores,
+      total_score: args.total_score,
+      rejected: args.rejected,
+      reasons: args.reasons,
+      brief: {
+        headline: args.brief.headline,
+        cta: args.brief.cta,
+        composition: args.brief.composition,
+        environment_summary: args.brief.environment_summary,
+        emotional_hook: args.brief.emotional_hook,
+      },
+    });
+  } catch (e) {
+    console.warn("[creative-director] logRenderAttempt failed", (e as Error).message);
   }
-  if (brief.pattern_id) {
-    const pattern = getPattern(brief.pattern_id);
-    // Only enforce must_avoid strictly; must_have is a soft signal (warning not reject)
-    // because the AI often uses synonyms.
-    const blob = `${brief.full_prompt}\n${brief.environment_summary}`.toLowerCase();
-    const headline = `${brief.headline} ${brief.cta}`.toLowerCase();
-    for (const term of pattern.must_avoid) {
-      const t = term.toLowerCase();
-      if (blob.includes(t) || headline.includes(t)) {
-        reasons.push(`pattern[${pattern.id}] forbids: "${term}"`);
-      }
-    }
-  }
-  return { ok: reasons.length === 0, reasons };
 }
 
 // ── 5. upload + insert ─────────────────────────────────────────────────────
@@ -404,6 +480,12 @@ async function uploadAndInsertDraft(
   niche: NicheKey,
   brief: SceneBrief,
   bytes: Uint8Array,
+  intelligence?: {
+    scores: Record<string, number>;
+    attempt_count: number;
+    hook_category?: string;
+    rationale?: string;
+  },
 ): Promise<{ queueId: string; imageUrl: string }> {
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
   const path = `creative-director/${product.slug}/${stamp}_${brief.id}.png`;
@@ -441,6 +523,17 @@ async function uploadAndInsertDraft(
     hook_group: brief.pattern_id || niche,
     category_key: niche,
     overlay_text: `${brief.headline} • ${brief.cta}`,
+    meta: intelligence
+      ? {
+          intelligence: {
+            scores: intelligence.scores,
+            attempt_count: intelligence.attempt_count,
+            hook_category: intelligence.hook_category ?? null,
+            pattern_id: brief.pattern_id ?? null,
+            rationale: intelligence.rationale ?? null,
+          },
+        }
+      : undefined,
   };
 
   const ins = await supabase
@@ -503,29 +596,78 @@ Deno.serve(async (req) => {
 
     if (action === "render_pins" || action === "run_full") {
       const { dna, product, niche } = await loadOrBuildProfile(supabase, resolvedId, force);
-      const briefs = await generateBriefs(product, dna, count);
+      const weights = await loadLearningWeights(supabase, niche);
+      let briefs = await generateBriefs(product, dna, count, undefined, weights);
 
       const drafts: any[] = [];
       const rejected: any[] = [];
 
-      for (const brief of briefs) {
-        try {
-          const bytes = await renderScene(brief, dna);
-          const qc = qualityCheck(brief, bytes, dna);
-          if (!qc.ok) {
-            rejected.push({ brief, reasons: qc.reasons });
-            continue;
+      // Per-brief retry: render → score → if fail, regen JUST that brief with
+      // the failure reasons appended, up to MAX_RETRIES extra attempts.
+      for (let i = 0; i < briefs.length; i++) {
+        let brief = briefs[i];
+        let accepted = false;
+        let lastReasons: string[] = [];
+        let lastScores: Record<string, number> = {};
+
+        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+          try {
+            const bytes = await renderScene(brief, dna);
+            const qc = await qualityCheck(brief, bytes, dna);
+            lastReasons = qc.reasons;
+            lastScores = qc.scores as unknown as Record<string, number>;
+
+            await logRenderAttempt(supabase, {
+              pin_queue_id: null,
+              product_slug: product.slug,
+              niche_key: niche,
+              brief,
+              attempt_no: attempt,
+              scores: lastScores,
+              total_score: qc.scores.total,
+              rejected: !qc.ok,
+              reasons: qc.reasons,
+            });
+
+            if (!qc.ok) {
+              if (attempt > MAX_RETRIES) break;
+              // Regenerate THIS brief with rejection reasons appended.
+              const single = await generateBriefs(
+                product,
+                dna,
+                1,
+                [brief.pattern_id!] as PatternId[],
+                weights,
+                { 0: qc.reasons },
+              );
+              brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+              continue;
+            }
+
+            const inserted = await uploadAndInsertDraft(
+              supabase,
+              { id: product.id, slug: product.slug, name: product.name },
+              niche,
+              brief,
+              bytes,
+              {
+                scores: lastScores,
+                attempt_count: attempt,
+                hook_category: brief.hook_category,
+                rationale: brief.strategy_rationale,
+              },
+            );
+            drafts.push({ ...inserted, brief, scores: lastScores, attempts: attempt });
+            accepted = true;
+            break;
+          } catch (e) {
+            lastReasons = [(e as Error).message];
+            if (attempt > MAX_RETRIES) break;
           }
-          const inserted = await uploadAndInsertDraft(
-            supabase,
-            { id: product.id, slug: product.slug, name: product.name },
-            niche,
-            brief,
-            bytes,
-          );
-          drafts.push({ ...inserted, brief });
-        } catch (e) {
-          rejected.push({ brief, reasons: [(e as Error).message] });
+        }
+
+        if (!accepted) {
+          rejected.push({ brief, reasons: lastReasons, scores: lastScores });
         }
       }
 
@@ -534,6 +676,7 @@ Deno.serve(async (req) => {
         message: `Generated ${drafts.length}/${briefs.length} pins (${rejected.length} rejected)`,
         niche,
         approved_required: true,
+        threshold: QUALITY_THRESHOLD,
         drafts,
         rejected,
       });
