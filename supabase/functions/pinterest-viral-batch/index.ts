@@ -1246,6 +1246,25 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         );
       });
     }
+    // 🩺 Queue health check — flag missing approvals, scheduling gaps, and
+    // hook-group imbalance BEFORE the insert. Blocks insert when any
+    // error-severity issue is found unless `skipHealthCheck` is set.
+    const health = runQueueHealthCheck(annotatedRows as Array<Record<string, unknown>>);
+    if (health.issues.length > 0) {
+      console.warn(
+        `[pinterest-viral-batch] health trace=${traceId} issues=${health.issues.length}`,
+        JSON.stringify({ traceId, slug, issues: health.issues, stats: health.stats }),
+      );
+    }
+    const healthBlocks = !skipHealthCheck && (health.blocking || (forceHealthCheck && health.issues.length > 0));
+    if (healthBlocks) {
+      return respond({
+        ok: false,
+        code: "QUEUE_HEALTH_FAILED",
+        message: `Queue health check failed (${health.issues.length} issue${health.issues.length === 1 ? "" : "s"}). Pass skipHealthCheck=true to override.`,
+        health,
+      });
+    }
     const { data: inserted, error: insErr } = await sb
       .from("pinterest_pin_queue")
       .insert(annotatedRows)
@@ -1263,6 +1282,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       product: { id: product.id, slug: product.slug, name: product.name },
       batchTag,
       pins: inserted,
+      health,
       sanitize: {
         droppedColumns: sanitized.droppedColumns,
         droppedCounts: sanitized.droppedCounts,
