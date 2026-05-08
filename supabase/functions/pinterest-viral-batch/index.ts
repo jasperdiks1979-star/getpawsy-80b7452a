@@ -521,15 +521,45 @@ serve(async (req) => {
     const qpVerbose = url.searchParams.get("verboseSanitize");
     const verboseSanitize: boolean = qpVerbose === "1" || qpVerbose === "true"
       || !!body.verboseSanitize;
-    const slug: string = body.productSlug || DEFAULT_SLUG;
-    // 🛡️ Allowlist gate — during QA stabilization only one product is allowed.
-    if (!PINTEREST_ALLOWED_SLUGS.has(slug)) {
+    // Multi-product support: accept either a single `productSlug` or an array
+    // `productSlugs` (Domination Mode). When neither is given we default to the
+    // hero product. Loop runs the existing single-product pipeline per slug.
+    const slugsRaw: string[] = Array.isArray(body.productSlugs) && body.productSlugs.length
+      ? body.productSlugs.map((s: unknown) => String(s)).filter(Boolean)
+      : [body.productSlug || DEFAULT_SLUG];
+    const sb0 = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    // Read domination_mode from runtime settings; allow body override (admin
+    // can force a one-off run without flipping the global flag).
+    let dominationMode = false;
+    try {
+      const { data: rs } = await sb0
+        .from("pinterest_runtime_settings")
+        .select("domination_mode")
+        .eq("id", 1)
+        .maybeSingle();
+      dominationMode = !!rs?.domination_mode;
+    } catch (_e) { /* fall through — defaults to false */ }
+    if (typeof body.dominationMode === "boolean") dominationMode = body.dominationMode;
+
+    // Allowlist gate — bypassed when Domination Mode is on.
+    const blockedSlugs = slugsRaw.filter(
+      (s) => !dominationMode && !PINTEREST_ALLOWED_SLUGS.has(s),
+    );
+    if (blockedSlugs.length === slugsRaw.length) {
       return respond({
         ok: false,
         code: "ALLOWLIST_DISABLED",
-        message: `Pinterest automation is restricted to: ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}. Slug "${slug}" is not allowed.`,
+        message: `Pinterest automation is restricted to: ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}. Enable Domination Mode to publish across the catalog.`,
+        blockedSlugs,
+        dominationMode,
       });
     }
+    const slug: string = slugsRaw.find(
+      (s) => dominationMode || PINTEREST_ALLOWED_SLUGS.has(s),
+    ) || slugsRaw[0];
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
     const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
@@ -543,16 +573,13 @@ serve(async (req) => {
     // Dry-run mode: build pins + Pexels backdrops but DO NOT insert into queue.
     // Used by the admin preview screen to inspect lifestyle backdrops first.
     const dryRun: boolean = !!body.dryRun;
-    // Hard cap to prevent overload — never generate more than 3 pins per run.
-    const MAX_PINS_PER_RUN = 3;
+    // Hard cap to prevent overload — at most 8 pins per product per run
+    // (one per hook style, including the new infographic style).
+    const MAX_PINS_PER_RUN = 8;
     const requestedLimit = Number.isFinite(Number(body.maxPins)) ? Number(body.maxPins) : MAX_PINS_PER_RUN;
     const pinLimit = Math.max(1, Math.min(MAX_PINS_PER_RUN, requestedLimit));
-    console.log(`[pinterest-viral-batch] start trace=${traceId} slug=${slug} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} limit=${pinLimit}`);
-
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    console.log(`[pinterest-viral-batch] start trace=${traceId} slugs=${slugsRaw.join(",")} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} limit=${pinLimit} domination=${dominationMode}`);
+    const sb = sb0;
 
     // 🛡️ Schema guard — abort BEFORE building pins / calling AI / Pexels if
     // pinterest_pin_queue is missing required columns. Cached per cold start.
@@ -577,6 +604,27 @@ serve(async (req) => {
       console.error(`[pinterest-viral-batch] Product lookup failed for "${slug}":`, pErr?.message);
       return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: `Product not found: ${slug}` });
     }
+    // Resolve category-aware SEO keyword bucket + style-board routing
+    const categoryKey = resolveCategoryKey(product.category, product.slug);
+    const seoKeywords = TARGET_KEYWORDS_BY_CATEGORY[categoryKey] || TARGET_KEYWORDS_BY_CATEGORY.default;
+    // Optionally read board affinity from DB so admins can override fallbacks.
+    const styleBoardMap: Record<string, string> = {};
+    try {
+      const { data: boards } = await sb
+        .from("pinterest_boards")
+        .select("name, style_affinity, priority")
+        .order("priority", { ascending: true });
+      const list = Array.isArray(boards) ? boards : [];
+      for (const h of HOOK_GROUPS) {
+        const match = list.find((b: any) => Array.isArray(b?.style_affinity) && b.style_affinity.includes(h.key));
+        if (match?.name) styleBoardMap[h.key] = match.name as string;
+      }
+    } catch (_e) { /* fall through to hardcoded fallbacks */ }
+    const boardForStyle = (style: string): string => {
+      if (styleBoardMap[style]) return styleBoardMap[style];
+      const fb = STYLE_TO_BOARD_FALLBACK[style];
+      return (fb && fb[0]) || "Smart Pet Gadgets";
+    };
 
     const allImages: string[] = [
       product.image_url,
@@ -599,28 +647,31 @@ RULES:
 - NO clickbait, NO ALL CAPS, NO emojis in titles, NO fake stats
 - NO words: "vet-approved", "eco-friendly", "best ever", "guaranteed"
 - Each variant uses a DIFFERENT hook framework (provided)
+- "infographic" variant uses a numbered/checklist format (e.g. "3 reasons", "5 must-haves")
 
 Return STRICT JSON, no prose, matching:
 { "pins": [
   {
-    "hookKey": "pain|curiosity|time_saving|social_proof|transformation",
+    "hookKey": "pain|curiosity|time_saving|social_proof|transformation|infographic",
     "topOverlay":   "string, max 6 words, big bold headline",
     "bottomOverlay":"string, max 4 words, CTA",
     "title":        "string, 60-100 chars, keyword-rich, US English",
-    "description":  "string, 2-3 sentences, includes keywords like 'self cleaning litter box', 'automatic litter box', ends with a soft CTA. NO URLs.",
+    "description":  "string, 2-3 sentences, includes one of the SEO keywords below, ends with a soft CTA. NO URLs.",
     "tags":         ["5-8 lowercase keyword tags, no #"]
-  } x 5 ]
+  } x N ]
 }`;
 
-    const userPrompt = `Generate exactly 5 pins for this product, one per hook framework, IN THIS ORDER:
-${HOOK_GROUPS.map((h, i) => `${i + 1}. ${h.key} (${h.angle})`).join("\n")}
+    const ACTIVE_HOOKS = HOOK_GROUPS.slice(0, pinLimit);
+    const userPrompt = `Generate exactly ${ACTIVE_HOOKS.length} pins for this product, one per hook framework, IN THIS ORDER:
+${ACTIVE_HOOKS.map((h, i) => `${i + 1}. ${h.key} (${h.angle})`).join("\n")}
 
 PRODUCT
 Name: ${product.name}
-Category: ${product.category || "Cat Litter Boxes"}
+Category: ${product.category || "Pet Products"}
+Resolved keyword bucket: ${categoryKey}
 Description: ${product.description || ""}
 
-SEO keywords to weave in naturally: self cleaning litter box, automatic litter box, smart litter box, cat hygiene, app controlled litter box.`;
+SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywords.join(", ")}.`;
 
     let parsed: any = { pins: [] };
     let aiFallback = false;
@@ -670,8 +721,6 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
     }
 
     let aiPins: any[] = Array.isArray(parsed?.pins) ? parsed.pins : [];
-    // Limit to first N hook groups (cap = pinLimit, max 3)
-    const ACTIVE_HOOKS = HOOK_GROUPS.slice(0, pinLimit);
     aiPins = ACTIVE_HOOKS.map((h, i) => {
       const found = aiPins.find((p) => String(p?.hookKey).toLowerCase() === h.key) || aiPins[i] || {};
       return { ...found, hookKey: h.key };
@@ -700,14 +749,14 @@ SEO keywords to weave in naturally: self cleaning litter box, automatic litter b
         pin_description: description,
         pin_image_url: pinImageUrl,
         destination_link: buildPinUrl(product.slug, hook.key),
-        board_name: "Smart Pet Gadgets",
+        board_name: boardForStyle(hook.key),
         hashtags: tags,
         priority: "high",
         // Always insert as DRAFT — admin must approve before cron worker publishes.
         status: "draft",
         scheduled_at: new Date(now + i * STAGGER_MIN * 60_000).toISOString(),
         hook_group: hook.key,
-        category_key: "cat-litter",
+        category_key: categoryKey,
         overlay_text: `${topOverlay} | ${bottomOverlay}`,
       };
     });
