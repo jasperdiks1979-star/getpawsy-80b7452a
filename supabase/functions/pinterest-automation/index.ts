@@ -2427,13 +2427,20 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       error_message: null,
     };
     if (!pin.approved_at) claimUpdate.approved_at = new Date().toISOString();
-    const { data: claimed } = await sb.from("pinterest_pin_queue")
+    await sb.from("pinterest_pin_queue")
       .update(claimUpdate)
       .eq("id", pin.id)
-      .in("status", ["queued", "draft"])
-      .select("id")
+      .in("status", ["queued", "draft", "publishing"]);
+    // Verify claim with a follow-up SELECT (chained .select().maybeSingle()
+    // returns null on supabase-js v2.57.2 even when the update succeeded).
+    const { data: claimed } = await sb
+      .from("pinterest_pin_queue")
+      .select("id, status")
+      .eq("id", pin.id)
       .maybeSingle();
-    if (!claimed) throw new Error("pin_already_claimed_or_not_publishable");
+    if (!claimed || claimed.status !== "publishing") {
+      throw new Error("pin_already_claimed_or_not_publishable");
+    }
 
     await sb.from("pinterest_publish_logs").insert({
       pin_queue_id: pin.id,
