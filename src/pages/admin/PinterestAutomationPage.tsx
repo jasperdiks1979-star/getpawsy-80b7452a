@@ -827,6 +827,30 @@ function PinterestDashboard() {
             active Pinterest token and returns the real <code className="font-mono">pin_id</code> or the exact
             error response.
           </p>
+          {appDiagnostic && (
+            <div className="rounded-md border border-border bg-background/60 p-2 text-[11px]">
+              <div className="grid gap-1 md:grid-cols-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">client_id:</span>
+                  <span className="font-mono">{appDiagnostic.client_id_prefix || "—"}</span>
+                  {appDiagnostic.client_id_exact_match ? (
+                    <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-semibold text-emerald-700 dark:text-emerald-400">
+                      ✓ Standard Access ({appDiagnostic.approved_client_id})
+                    </span>
+                  ) : (
+                    <span className="rounded bg-destructive/15 px-1.5 py-0.5 font-semibold text-destructive">
+                      ✗ NOT approved app (expected {appDiagnostic.approved_client_id})
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">api_base:</span>
+                  <span className="font-mono">{appDiagnostic.api_base || "—"}</span>
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{appDiagnostic.mode || "—"}</span>
+                </div>
+              </div>
+            </div>
+          )}
           <Button
             size="lg"
             onClick={() => void handleDirectApiTest()}
