@@ -1330,6 +1330,8 @@ Deno.serve(async (req) => {
         `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-oauth-callback`;
       return json(cors, {
         ok: true,
+        approved_client_id: APPROVED_PINTEREST_CLIENT_ID,
+        client_id_exact_match: activeClientIdMatchesApproved(),
         client_id_prefix: clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID")),
         client_id_present: Boolean(Deno.env.get("PINTEREST_CLIENT_ID")),
         client_secret_present: Boolean(Deno.env.get("PINTEREST_CLIENT_SECRET")),
@@ -1358,11 +1360,13 @@ Deno.serve(async (req) => {
           current_client_id_prefix: guard.current_client_id_prefix,
           client_id_matches_verified: guard.client_id_matches,
         },
-        publishing_allowed: guard.verified && !guard.trial_detected,
-        not_standard_message: guard.trial_detected
+        publishing_allowed: activeClientIdMatchesApproved() && guard.verified && !guard.trial_detected,
+        not_standard_message: !activeClientIdMatchesApproved() || guard.trial_detected
           ? "Wrong Pinterest app credentials or approval not applied to this client_id."
           : null,
-        next_step: guard.verified && !guard.trial_detected
+        next_step: !activeClientIdMatchesApproved()
+          ? "Active PINTEREST_CLIENT_ID does not exactly match approved Standard Access App ID 1567611. Update the Pinterest secrets, then reconnect OAuth."
+          : guard.verified && !guard.trial_detected
           ? "Production publishing is unlocked."
           : guard.trial_detected
             ? "Pinterest reported Trial access. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app, then run a fresh OAuth reconnect and Direct Pin Test."
