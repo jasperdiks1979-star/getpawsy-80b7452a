@@ -988,6 +988,50 @@ function PinterestDashboard() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Last Direct Test Run
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const last = directTestHistory[0];
+            if (!last) {
+              return <p className="text-xs text-muted-foreground">No direct API test runs logged yet.</p>;
+            }
+            const data = last.response_data || {};
+            const success = last.status === "success";
+            return (
+              <div className={`rounded-md border p-3 text-xs ${success ? "border-emerald-500/40 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+                <div className="flex flex-wrap items-center gap-2 pb-2">
+                  <Badge variant={success ? "default" : "destructive"}>{success ? "success" : "failed"}</Badge>
+                  {data.status_code != null && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">HTTP {data.status_code}</span>
+                  )}
+                  <span className="font-mono text-[11px] text-muted-foreground">{new Date(last.created_at).toLocaleString()}</span>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <DiagnosticValue label="pin_id" value={data.returned_pin_id || "—"} mono />
+                  <DiagnosticValue label="pin URL" value={data.returned_pin_url || "—"} mono />
+                  <DiagnosticValue label="board_id" value={data.selected_board?.id || "—"} mono />
+                  <DiagnosticValue label="error" value={last.error_message || "—"} mono />
+                </div>
+                {data.returned_pin_url && (
+                  <div className="pt-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={data.returned_pin_url} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-3 w-3" /> Open live Pinterest pin
+                      </a>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
       <Card className="border-destructive/30">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
