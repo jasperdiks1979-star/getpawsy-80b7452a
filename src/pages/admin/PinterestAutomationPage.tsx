@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { PinterestUsAudienceCard } from "@/components/admin/PinterestUsAudienceCard";
+import { PinterestDominationCard } from "@/components/admin/PinterestDominationCard";
 import {
   CheckCircle2,
   Link2,
@@ -826,6 +827,8 @@ function PinterestDashboard() {
       />
 
       <PinterestUsAudienceCard />
+
+      <PinterestDominationCard />
 
       <Card className="border-primary/40 bg-primary/5">
         <CardHeader className="pb-2">
