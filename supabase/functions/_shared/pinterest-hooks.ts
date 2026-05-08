@@ -30,6 +30,10 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "My apartment finally stopped smelling",
     "The scoop routine had to go",
     "Litter dust everywhere — done",
+    "Tired of scooping?",
+    "No more daily litter duty",
+    "Done with the daily scoop",
+    "The litter chore that never ends",
   ],
   time_saving: [
     "Clean litter in seconds",
@@ -40,6 +44,8 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "Set it and forget it",
     "This changed our daily routine",
     "Hands-free for the first time",
+    "Cleaner home. Happier cat.",
+    "Quiet mornings, finally",
   ],
   transformation: [
     "From messy to self-cleaning",
@@ -51,6 +57,9 @@ export const APPROVED_HOOKS: Record<HookCategory, string[]> = {
     "From messy to modern",
     "Our apartment looks calmer already",
     "From dust storm to fresh air",
+    "The upgrade cat parents love",
+    "A calmer home, overnight",
+    "Where cleanliness meets calm",
   ],
   social_proof: [
     "Thousands of cat owners switched",
