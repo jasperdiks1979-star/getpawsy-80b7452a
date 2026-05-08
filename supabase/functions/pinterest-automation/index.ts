@@ -2061,6 +2061,31 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
   const authCheck = await validatePinterestAuth(sb, conn, accessToken);
   if (!authCheck.auth_valid) return json(cors, { ...authCheck.failure_response, selected_pin: compactPinForDiagnostics(pin) });
 
+  // HARD GUARD: production publishing is blocked until a single direct
+  // POST /v5/pins succeeds against api.pinterest.com with the active
+  // PINTEREST_CLIENT_ID. This prevents trial-app credentials from ever
+  // being used to publish.
+  const guard = await getProductionGuardState(sb);
+  if (!guard.verified || guard.trial_detected) {
+    const blockMsg = guard.trial_detected
+      ? "Wrong Pinterest app credentials or approval not applied to this client_id."
+      : "Production publishing is locked until the Direct Pin Test succeeds against api.pinterest.com.";
+    await sb.from("pinterest_pin_queue").update({
+      status: "queued",
+      publishing_started_at: null,
+      error_message: blockMsg,
+      last_publish_error: blockMsg,
+    }).eq("id", pin.id);
+    return json(cors, {
+      ok: false,
+      error: blockMsg,
+      code: "PINTEREST_PRODUCTION_GUARD",
+      publishing_disabled: true,
+      production_guard: guard,
+      selected_pin: compactPinForDiagnostics(pin),
+    });
+  }
+
   let boardId: string | null = null;
   try {
     boardId = await resolvePinterestBoardId(accessToken, pin.board_name || "", PINTEREST_PRODUCTION_API_BASE);
