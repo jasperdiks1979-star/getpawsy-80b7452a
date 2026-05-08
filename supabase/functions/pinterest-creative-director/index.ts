@@ -480,6 +480,12 @@ async function uploadAndInsertDraft(
   niche: NicheKey,
   brief: SceneBrief,
   bytes: Uint8Array,
+  intelligence?: {
+    scores: Record<string, number>;
+    attempt_count: number;
+    hook_category?: string;
+    rationale?: string;
+  },
 ): Promise<{ queueId: string; imageUrl: string }> {
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
   const path = `creative-director/${product.slug}/${stamp}_${brief.id}.png`;
@@ -517,6 +523,17 @@ async function uploadAndInsertDraft(
     hook_group: brief.pattern_id || niche,
     category_key: niche,
     overlay_text: `${brief.headline} • ${brief.cta}`,
+    meta: intelligence
+      ? {
+          intelligence: {
+            scores: intelligence.scores,
+            attempt_count: intelligence.attempt_count,
+            hook_category: intelligence.hook_category ?? null,
+            pattern_id: brief.pattern_id ?? null,
+            rationale: intelligence.rationale ?? null,
+          },
+        }
+      : undefined,
   };
 
   const ins = await supabase
