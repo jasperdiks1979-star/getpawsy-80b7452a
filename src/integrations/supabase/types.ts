@@ -4971,6 +4971,7 @@ export type Database = {
           name: string
           owner_username: string | null
           pin_count: number | null
+          priority: number
           privacy: string | null
           production_verified: boolean
           production_verified_at: string | null
@@ -4991,6 +4992,7 @@ export type Database = {
           name: string
           owner_username?: string | null
           pin_count?: number | null
+          priority?: number
           privacy?: string | null
           production_verified?: boolean
           production_verified_at?: string | null
@@ -5011,6 +5013,7 @@ export type Database = {
           name?: string
           owner_username?: string | null
           pin_count?: number | null
+          priority?: number
           privacy?: string | null
           production_verified?: boolean
           production_verified_at?: string | null
@@ -5241,6 +5244,7 @@ export type Database = {
           board_id: string | null
           board_name: string
           category_key: string | null
+          content_type: string
           created_at: string
           destination_link: string
           error_message: string | null
@@ -5274,6 +5278,7 @@ export type Database = {
           scheduled_at: string | null
           status: string
           updated_at: string
+          us_audience_score: number | null
         }
         Insert: {
           approved_at?: string | null
@@ -5281,6 +5286,7 @@ export type Database = {
           board_id?: string | null
           board_name?: string
           category_key?: string | null
+          content_type?: string
           created_at?: string
           destination_link: string
           error_message?: string | null
@@ -5314,6 +5320,7 @@ export type Database = {
           scheduled_at?: string | null
           status?: string
           updated_at?: string
+          us_audience_score?: number | null
         }
         Update: {
           approved_at?: string | null
@@ -5321,6 +5328,7 @@ export type Database = {
           board_id?: string | null
           board_name?: string
           category_key?: string | null
+          content_type?: string
           created_at?: string
           destination_link?: string
           error_message?: string | null
@@ -5354,6 +5362,7 @@ export type Database = {
           scheduled_at?: string | null
           status?: string
           updated_at?: string
+          us_audience_score?: number | null
         }
         Relationships: []
       }
@@ -5561,12 +5570,14 @@ export type Database = {
           active_board_id: string | null
           active_board_name: string | null
           active_pinterest_connection_id: string | null
+          daily_pin_cap: number
           id: number
           last_pin_external_id: string | null
           last_pin_external_url: string | null
           last_pin_publish_at: string | null
           last_pin_publish_error: string | null
           last_pin_published_at: string | null
+          min_gap_minutes: number
           mode: string
           production_publish_verified: boolean
           production_publish_verified_at: string | null
@@ -5574,18 +5585,22 @@ export type Database = {
           scale_unlocked: boolean
           updated_at: string
           updated_by: string | null
+          us_score_threshold: number
           verified_client_id_prefix: string | null
+          warmup_until: string | null
         }
         Insert: {
           active_board_id?: string | null
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
+          daily_pin_cap?: number
           id?: number
           last_pin_external_id?: string | null
           last_pin_external_url?: string | null
           last_pin_publish_at?: string | null
           last_pin_publish_error?: string | null
           last_pin_published_at?: string | null
+          min_gap_minutes?: number
           mode?: string
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
@@ -5593,18 +5608,22 @@ export type Database = {
           scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
+          us_score_threshold?: number
           verified_client_id_prefix?: string | null
+          warmup_until?: string | null
         }
         Update: {
           active_board_id?: string | null
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
+          daily_pin_cap?: number
           id?: number
           last_pin_external_id?: string | null
           last_pin_external_url?: string | null
           last_pin_publish_at?: string | null
           last_pin_publish_error?: string | null
           last_pin_published_at?: string | null
+          min_gap_minutes?: number
           mode?: string
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
@@ -5612,7 +5631,9 @@ export type Database = {
           scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
+          us_score_threshold?: number
           verified_client_id_prefix?: string | null
+          warmup_until?: string | null
         }
         Relationships: [
           {
