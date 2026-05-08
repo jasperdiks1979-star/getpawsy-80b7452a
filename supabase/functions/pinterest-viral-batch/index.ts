@@ -1337,6 +1337,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       batchTag,
       pins: inserted,
       health,
+      layout: { issues: layoutIssues, fallbacks: layoutFallbacks },
       sanitize: {
         droppedColumns: sanitized.droppedColumns,
         droppedCounts: sanitized.droppedCounts,
