@@ -5248,6 +5248,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_niche_coverage_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          niche: string
+          pct: number
+          product_count: number
+          snapshot_date: string
+          total_products: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          niche: string
+          pct?: number
+          product_count?: number
+          snapshot_date?: string
+          total_products?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          niche?: string
+          pct?: number
+          product_count?: number
+          snapshot_date?: string
+          total_products?: number
+        }
+        Relationships: []
+      }
       pinterest_oauth_states: {
         Row: {
           created_at: string | null
