@@ -2170,6 +2170,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-patterns"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestPatternsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="rejected-spam-events"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
