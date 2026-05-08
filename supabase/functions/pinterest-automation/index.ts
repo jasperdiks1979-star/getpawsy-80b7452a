@@ -1420,6 +1420,35 @@ async function consumeDirectTestDebugToken(
   return { ok: true };
 }
 
+async function getLatestPinterestConnection(sb: any, opts: { requireConnected?: boolean } = {}) {
+  const { data: settings } = await sb
+    .from("pinterest_runtime_settings")
+    .select("active_pinterest_connection_id")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (settings?.active_pinterest_connection_id) {
+    let activeQuery = sb
+      .from("pinterest_connection")
+      .select("*")
+      .eq("id", settings.active_pinterest_connection_id)
+      .limit(1);
+    if (opts.requireConnected) activeQuery = activeQuery.eq("status", "connected");
+    const { data: active } = await activeQuery.maybeSingle();
+    if (active?.access_token) return active;
+  }
+
+  let query = sb
+    .from("pinterest_connection")
+    .select("*")
+    .order("token_created_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  if (opts.requireConnected) query = query.eq("status", "connected");
+  const { data } = await query.maybeSingle();
+  return data || null;
+}
+
 async function getFreshPinterestProductionToken(sb: any, conn: any): Promise<string | null> {
   const expiresAt = conn.token_expires_at ? new Date(conn.token_expires_at).getTime() : 0;
   if (!expiresAt || Date.now() < expiresAt - 5 * 60_000) return conn.access_token;
