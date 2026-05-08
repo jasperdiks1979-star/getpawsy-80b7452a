@@ -2089,8 +2089,10 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
   // PINTEREST_CLIENT_ID. This prevents trial-app credentials from ever
   // being used to publish.
   const guard = await getProductionGuardState(sb);
-  if (!guard.verified || guard.trial_detected) {
-    const blockMsg = guard.trial_detected
+  if (!activeClientIdMatchesApproved() || !guard.verified || guard.trial_detected) {
+    const blockMsg = !activeClientIdMatchesApproved()
+      ? "Active PINTEREST_CLIENT_ID does not exactly match approved Standard Access App ID 1567611. Publishing remains blocked."
+      : guard.trial_detected
       ? "Wrong Pinterest app credentials or approval not applied to this client_id."
       : "Production publishing is locked until the Direct Pin Test succeeds against api.pinterest.com.";
     await sb.from("pinterest_pin_queue").update({
