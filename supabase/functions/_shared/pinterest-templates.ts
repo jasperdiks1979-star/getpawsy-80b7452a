@@ -50,11 +50,12 @@ export interface TemplateOutput {
 const CLOUDINARY_CLOUD = "dlkqycfzn";
 const W = 1080;
 const H = 1920;
-/** Transparent 1×1 placeholder used as the Cloudinary "base" image for
- * canvases that don't take a backdrop photo. We never want the product image
- * to act as the base because Cloudinary then renders it AND the overlay
- * `l_fetch` of the same image, duplicating it on the pin. */
-const BLANK_BASE = "https://getpawsy.pet/placeholder.svg";
+/** Solid cream "blank" base used for canvases without a backdrop photo.
+ * Must be a real raster (JPG/PNG) — Cloudinary cannot render our local
+ * placeholder.svg cleanly and ends up showing its icon glyph through the
+ * overlays. placehold.co reliably returns a tiny solid-color JPEG that we
+ * then pad to 1080×1920 with the canvas bg color. */
+const BLANK_BASE = "https://placehold.co/8x8/FAF6F0/FAF6F0.jpg";
 
 // Cloudinary text supports %0A for newlines. We use it to soft-wrap headlines
 // so they never overflow the safe area. Word-aware to avoid breaking mid-word.
@@ -125,17 +126,28 @@ function darkCanvas(extra: string[] = []): string[] {
   return ["w_" + W, "h_" + H, "c_pad", "b_rgb:121212", "q_auto", "f_jpg", ...extra];
 }
 
-/** Full-bleed dark scrim band — gives photo backdrops a guaranteed legible
- *  zone for headlines. Renders a semi-transparent black rectangle anchored
- *  to a gravity, sized to the headline plate. */
+/** Soft gradient scrim band — gives photo backdrops a legible zone for
+ *  headlines without the harsh "black rectangle" look. Uses Cloudinary's
+ *  `e_gradient_fade` so the rectangle fades to transparent on its leading
+ *  edge (fade direction is chosen per gravity). */
 function scrimBand(opts: { gravity: "north" | "south" | "center"; height: number; y: number; opacity?: number }): string[] {
+  // Gradient direction per anchor: north scrim fades upward (top stays
+  // strong, bottom edge dissolves), south fades downward, center fades
+  // outward both directions (we approximate with symmetric fade).
+  const fadeDir =
+    opts.gravity === "north" ? "symmetric_pad" :
+    opts.gravity === "south" ? "symmetric_pad" :
+    "symmetric_pad";
+  void fadeDir;
   return [
     "l_text:Arial_120_bold:%20",
     "b_rgb:000000",
     "co_rgb:00000000",
     "w_" + W, "h_" + opts.height, "c_fit",
     "g_" + opts.gravity, "y_" + opts.y,
-    "o_" + (opts.opacity ?? 65),
+    // Soften the rectangle into a gradient: ~50% fade strength.
+    "e_gradient_fade:50",
+    "o_" + (opts.opacity ?? 55),
   ];
 }
 
@@ -173,14 +185,13 @@ function tplProblem(input: TemplateInput): TemplateOutput {
     "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_360",
   ];
 
-  // Premium CTA pill anchored above the product.
-  const ctaText = input.bottom + ARROW;
+  // Premium CTA pill anchored above the product. Wider w_ so longer
+  // soft-CTAs ("Discover why →", "See it in action →") never clip.
   const cta = [
     "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_460", "c_fit",
+    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_620", "c_fit",
     "g_south_west", "x_80", "y_220",
   ];
-  void ctaText;
 
   const ctrBadge = input.ctrBadge
     ? [
@@ -395,18 +406,19 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
 function tplViral(input: TemplateInput): TemplateOutput {
   const base = darkCanvas();
 
-  // Slight rotation jitter for organic feel.
-  const angle = -4 - (Math.abs(input.seed) % 5);
+  // Subtle rotation jitter — splash is a soft accent, not a banner.
+  const angle = -3 - (Math.abs(input.seed) % 4);
   const splash = [
     "l_text:Arial_400_bold:%20",
     "b_rgb:FF6A1A", "co_rgb:00000000",
-    "w_1500", "h_620", "c_fit",
-    "g_north", "y_-100", "a_" + angle, "o_92",
+    "w_1100", "h_360", "c_fit",
+    "g_north", "y_140", "a_" + angle, "o_55",
+    "e_gradient_fade:60",
   ];
 
   const wrapped = wrapHeadline(input.top, 14, 3);
   const headline = [
-    "l_text:Impact_96_bold:" + escapeWrapped(wrapped),
+    "l_text:Impact_104_bold:" + escapeWrapped(wrapped),
     "co_rgb:FFFFFF", "w_980", "c_fit",
     "g_north", "y_200",
   ];
