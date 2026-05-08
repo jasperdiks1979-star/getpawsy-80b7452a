@@ -71,6 +71,52 @@ const H = 1920;
  * then pad to 1080×1920 with the canvas bg color. */
 const BLANK_BASE = "https://placehold.co/8x8/FAF6F0/FAF6F0.jpg";
 
+// ── Polish primitives ──────────────────────────────────────────────────────
+// Soft drop shadow plate placed behind a product to ground it in the scene.
+// Renders as a slightly larger, blurred, low-opacity dark ellipse offset
+// downward — gives the product realistic contact shadow + ambient lift
+// instead of looking pasted onto the backdrop.
+function shadowPlate(opts: {
+  width: number;
+  height: number;
+  gravity: string;
+  x?: number;
+  y?: number;
+  opacity?: number;
+}): string[] {
+  return [
+    "l_text:Arial_120_bold:%20",
+    "b_rgb:1A1410", "co_rgb:00000000",
+    "w_" + opts.width, "h_" + opts.height, "c_fit",
+    "g_" + opts.gravity,
+    ...(opts.x != null ? ["x_" + opts.x] : []),
+    ...(opts.y != null ? ["y_" + opts.y] : []),
+    "r_max", "e_blur:2000",
+    "o_" + (opts.opacity ?? 32),
+  ];
+}
+
+// Underline accent for editorial CTAs — a thin white bar drawn beneath
+// a CTA text. Premium, never a hard pill.
+function underlineAccent(opts: {
+  width: number;
+  gravity: string;
+  x?: number;
+  y?: number;
+  color?: string;
+  opacity?: number;
+}): string[] {
+  return [
+    "l_text:Arial_120_bold:%20",
+    "b_rgb:" + (opts.color ?? "FFFFFF"), "co_rgb:00000000",
+    "w_" + opts.width, "h_3", "c_fit",
+    "g_" + opts.gravity,
+    ...(opts.x != null ? ["x_" + opts.x] : []),
+    ...(opts.y != null ? ["y_" + opts.y] : []),
+    "o_" + (opts.opacity ?? 75),
+  ];
+}
+
 // Cloudinary text supports %0A for newlines. We use it to soft-wrap headlines
 // so they never overflow the safe area. Word-aware to avoid breaking mid-word.
 function wrapHeadline(s: string, charsPerLine: number, maxLines = 3): string {
@@ -177,19 +223,23 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   const backdrop = input.backdropUrl || input.productImageUrl;
   const base = [
     "w_" + W, "h_" + H, "c_fill", "g_auto",
-    "e_brightness:-15", "e_saturation:-5", "e_contrast:10",
+    "e_brightness:-8", "e_saturation:-2", "e_contrast:6",
     "q_auto", "f_jpg",
   ];
-  // Bottom scrim — guarantees text legibility regardless of photo content.
-  const bottomScrim = scrimBand({ gravity: "south", height: 720, y: 0, opacity: 70 });
-  // Top scrim — softer, supports the badge row.
-  const topScrim = scrimBand({ gravity: "north", height: 240, y: 0, opacity: 45 });
+  // Subtle bottom gradient — much softer than a black bar, just enough to
+  // anchor editorial typography in the lower-third whitespace.
+  const bottomScrim = scrimBand({ gravity: "south", height: 900, y: 0, opacity: 38 });
+  // Top is left fully open — no scrim — so the photo breathes.
 
-  // Product floating bottom-right — soft white card, generous shadow feel via border.
+  // Soft contact shadow grounds the product in the scene.
+  const productShadow = shadowPlate({
+    width: 500, height: 90, gravity: "south_east", x: 90, y: 130, opacity: 38,
+  });
+  // Product floating bottom-right — soft white card with a hairline border.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_460", "h_460", "c_fit", "g_south_east", "x_70", "y_180", "r_28",
-    "bo_3px_solid_rgb:FFFFFF",
+    "w_440", "h_440", "c_fit", "g_south_east", "x_80", "y_200", "r_32",
+    "bo_2px_solid_rgb:FFFFFF",
   ];
 
   // Headline — wrapped serif, max 3 lines. Auto-fit so it never overflows
@@ -198,39 +248,40 @@ function tplProblem(input: TemplateInput): TemplateOutput {
   const fitted = autoFitHeadline(input.top, {
     widthPx: 640,
     maxLines: 3,
-    sizes: [76, 68, 60, 54, 48],
+    sizes: [88, 78, 70, 62, 54],
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
-    "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_360",
+    "co_rgb:FFFFFF", "w_640", "c_fit", "g_south_west", "x_80", "y_420",
   ];
 
-  // Premium CTA pill — centered along the south edge so the rounded pill
-  // never gets clipped by the canvas left edge regardless of text length.
+  // Editorial underline CTA — small caps, white text + arrow, thin underline.
+  // No pill, no orange block — feels like organic Pinterest typography.
   const cta = [
-    "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_560", "c_fit",
-    "g_south", "y_220",
+    "l_text:Arial_36:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "g_south_west", "x_92", "y_320",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 280, gravity: "south_west", x: 92, y: 300, opacity: 70,
+  });
 
   const ctrBadge = input.ctrBadge
     ? [
         "l_text:Arial_34_bold:" + escapeText(input.ctrBadge),
-        "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_460", "c_fit",
-        "g_north_west", "x_60", "y_90",
+        "co_rgb:FFFFFF", "g_north_west", "x_72", "y_120", "o_85",
       ]
     : null;
 
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_north_east", "x_60", "y_110", "o_85",
+    "co_rgb:FFFFFF", "g_north_east", "x_72", "y_120", "o_75",
   ];
 
-  const layers: string[][] = [base, topScrim, bottomScrim, product, headline, cta, brand];
+  const layers: string[][] = [base, bottomScrim, productShadow, product, headline, ctaUnderline, cta, brand];
   if (ctrBadge) layers.push(ctrBadge);
   return {
     url: build(layers, backdrop),
-    layoutSignature: `problem|premium|badge${ctrBadge ? 1 : 0}`,
+    layoutSignature: `problem|polish|badge${ctrBadge ? 1 : 0}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
@@ -250,7 +301,7 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   // Base = BEFORE photo on top half, desaturated to feel "problematic".
   const base = [
     "w_" + W, "h_" + H, "c_fill", "g_auto",
-    "e_saturation:-55", "e_brightness:-10", "e_contrast:5",
+    "e_saturation:-35", "e_brightness:-6", "e_contrast:4",
     "q_auto", "f_jpg",
   ];
 
@@ -258,34 +309,35 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   const afterCover = [
     "l_fetch:" + fetchB64(afterBg),
     "w_" + W, "h_1180", "c_fill", "g_south", "y_0",
-    "e_brightness:5", "e_saturation:25", "e_contrast:8",
+    "e_brightness:6", "e_saturation:18", "e_contrast:6",
   ];
 
-  // Soft cream divider band — emulates a fold instead of a hard line.
+  // Hairline divider — feels like a magazine fold, not a banner.
   const fold = [
     "l_text:Arial_120_bold:%20",
     "b_rgb:FAF6F0", "co_rgb:00000000",
-    "w_" + W, "h_24", "c_fit",
+    "w_" + W, "h_2", "c_fit",
     "g_center", "y_-20", "o_90",
   ];
 
+  const productShadow = shadowPlate({
+    width: 760, height: 110, gravity: "south", y: 220, opacity: 36,
+  });
   // Product hero composited into the AFTER half.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_720", "h_720", "c_fit", "g_south", "y_280", "r_28",
-    "bo_4px_solid_rgb:FFFFFF",
+    "w_700", "h_700", "c_fit", "g_south", "y_280", "r_32",
+    "bo_2px_solid_rgb:FFFFFF",
   ];
 
-  // Premium pill labels — Before (ink) / After (orange).
+  // Editorial labels — small caps, no pill, just elegant tags with underline.
   const beforeLabel = [
-    "l_text:Arial_42_bold:" + escapeText("Before"),
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_240", "c_fit",
-    "g_north_west", "x_70", "y_140",
+    "l_text:Arial_34:" + escapeText("BEFORE"),
+    "co_rgb:FFFFFF", "g_north_west", "x_84", "y_160", "o_85",
   ];
   const afterLabel = [
-    "l_text:Arial_42_bold:" + escapeText("After"),
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_240", "c_fit",
-    "g_south_west", "x_70", "y_180",
+    "l_text:Arial_34:" + escapeText("AFTER"),
+    "co_rgb:1A1410", "g_south_west", "x_84", "y_960", "o_90",
   ];
 
   // Headline sits inside a small center band so it doesn't cover either scene.
@@ -293,24 +345,28 @@ function tplBeforeAfter(input: TemplateInput): TemplateOutput {
   const fitted = autoFitHeadline(input.top, {
     widthPx: 880,
     maxLines: 2,
-    sizes: [72, 64, 56, 50, 44],
+    sizes: [82, 72, 64, 56, 48],
   });
-  const headlineScrim = scrimBand({ gravity: "center", height: 220, y: 0, opacity: 78 });
+  // Soft narrow gradient scrim — much lighter than before, just enough
+  // contrast for the headline without dominating the composition.
+  const headlineScrim = scrimBand({ gravity: "center", height: 280, y: 0, opacity: 42 });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_920", "c_fit", "g_center", "y_0",
   ];
 
-  // Bottom CTA pill on the AFTER half.
+  // Editorial underline CTA — sits on the AFTER half whitespace.
   const cta = [
-    "l_text:Arial_44_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_540", "c_fit",
-    "g_south", "y_110",
+    "l_text:Arial_38:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:1A1410", "g_south", "y_140",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 220, gravity: "south", y: 120, color: "1A1410", opacity: 80,
+  });
 
   return {
-    url: build([base, afterCover, fold, product, beforeLabel, afterLabel, headlineScrim, headline, cta], beforeBg),
-    layoutSignature: "before_after|premium_split",
+    url: build([base, afterCover, fold, productShadow, product, beforeLabel, afterLabel, headlineScrim, headline, ctaUnderline, cta], beforeBg),
+    layoutSignature: "before_after|polish_split",
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
@@ -329,7 +385,7 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
     "l_text:Arial_400_bold:%20",
     "b_rgb:FF6A1A", "co_rgb:00000000",
     "w_900", "h_900", "c_fit",
-    "g_north_east", "x_-200", "y_-200", "o_18",
+    "g_north_east", "x_-200", "y_-200", "o_10",
   ];
 
   // Editorial headline (serif, wrapped, anchored top-left).
@@ -344,17 +400,21 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
     "co_rgb:1A1410", "w_920", "c_fit", "g_north_west", "x_80", "y_140",
   ];
 
-  // Soft plate behind the product for depth.
+  // Soft contact shadow grounds the product in the cream canvas.
+  const productShadow = shadowPlate({
+    width: 720, height: 130, gravity: "center", y: 460, opacity: 28,
+  });
+  // Subtle cream plate — softer than pure white so it blends with bg.
   const plate = [
     "l_text:Arial_400_bold:%20",
     "b_rgb:FFFFFF", "co_rgb:00000000",
     "w_860", "h_900", "c_fit",
-    "g_center", "y_60", "o_85", "r_36",
+    "g_center", "y_60", "o_55", "r_48",
   ];
 
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_760", "h_840", "c_fit", "g_center", "y_60", "r_24",
+    "w_780", "h_860", "c_fit", "g_center", "y_60", "r_24",
   ];
 
   // Three stat chips inline at the bottom of the plate.
@@ -363,25 +423,29 @@ function tplBenefit(input: TemplateInput): TemplateOutput {
     pick(["Odor-free", "Quiet motor", "Quick setup"], input.seed + 1),
     pick(["Save hours", "Cat-loved", "Built to last"], input.seed + 2),
   ];
+  // Editorial chips — thin hairline outline, no orange fill.
   const chip = (label: string, x: number) => [
-    "l_text:Arial_34_bold:" + escapeText(label),
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_2px_solid_rgb:FF6A1A",
-    "r_max", "w_300", "c_fit",
-    "g_south", "x_" + x, "y_280",
+    "l_text:Arial_28:" + escapeText(label),
+    "co_rgb:1A1410", "b_rgb:FFFFFF", "bo_1px_solid_rgb:1A1410",
+    "r_max", "w_280", "c_fit",
+    "g_south", "x_" + x, "y_300",
   ];
   const c1 = chip(stats[0], -340);
   const c2 = chip(stats[1], 0);
   const c3 = chip(stats[2], 340);
 
+  // Editorial CTA — quiet ink type with a thin underline. No pill.
   const cta = [
-    "l_text:Arial_50_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_640", "c_fit",
-    "g_south", "y_120",
+    "l_text:Georgia_44:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:1A1410", "g_south", "y_150",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 320, gravity: "south", y: 130, color: "1A1410", opacity: 80,
+  });
 
   return {
-    url: build([base, accentCorner, plate, product, headline, c1, c2, c3, cta], BLANK_BASE),
-    layoutSignature: `benefit|premium|s=${stats.join("/")}`,
+    url: build([base, accentCorner, productShadow, plate, product, headline, c1, c2, c3, ctaUnderline, cta], BLANK_BASE),
+    layoutSignature: `benefit|polish|s=${stats.join("/")}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
@@ -396,17 +460,22 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
   const backdrop = input.backdropUrl || input.productImageUrl;
   const base = [
     "w_" + W, "h_" + H, "c_fill", "g_auto",
-    "e_brightness:-5", "e_saturation:15", "e_contrast:6",
+    "e_brightness:-2", "e_saturation:10", "e_contrast:4",
     "q_auto", "f_jpg",
   ];
-  const topScrim = scrimBand({ gravity: "north", height: 520, y: 0, opacity: 55 });
-  const bottomScrim = scrimBand({ gravity: "south", height: 280, y: 0, opacity: 55 });
+  // Soft, generous gradient fades — barely-there, just enough to lift text.
+  const topScrim = scrimBand({ gravity: "north", height: 720, y: 0, opacity: 32 });
+  const bottomScrim = scrimBand({ gravity: "south", height: 380, y: 0, opacity: 30 });
 
+  // Soft contact shadow grounds the product card.
+  const productShadow = shadowPlate({
+    width: 600, height: 110, gravity: "south_east", x: 80, y: 200, opacity: 38,
+  });
   // Product hero — soft white card bottom-right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
-    "w_560", "h_700", "c_fit", "g_south_east", "x_70", "y_240", "r_24",
-    "bo_4px_solid_rgb:FFFFFF",
+    "w_540", "h_680", "c_fit", "g_south_east", "x_80", "y_260", "r_28",
+    "bo_2px_solid_rgb:FFFFFF",
   ];
 
   // Editorial wrapped headline — auto-fit so longer hooks shrink instead of
@@ -415,28 +484,30 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
   const fitted = autoFitHeadline(input.top, {
     widthPx: 840,
     maxLines: 3,
-    sizes: [88, 76, 68, 60, 52],
+    sizes: [96, 84, 74, 66, 58],
   });
   const headline = [
     "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_840", "c_fit",
-    "g_north_west", "x_80", "y_180",
+    "g_north_west", "x_92", "y_220",
   ];
 
-  // Premium pill CTA + brand mark on the bottom scrim.
+  // Editorial CTA — thin white type + arrow + hairline underline.
   const cta = [
-    "l_text:Arial_42_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:1A1410", "b_rgb:FFFFFF", "r_max", "w_520", "c_fit",
-    "g_south_west", "x_80", "y_110",
+    "l_text:Arial_38:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "g_south_west", "x_92", "y_160",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 240, gravity: "south_west", x: 92, y: 140, opacity: 75,
+  });
   const brand = [
     "l_text:Georgia_30:" + escapeText("getpawsy.pet"),
-    "co_rgb:FFFFFF", "g_south_east", "x_80", "y_130", "o_85",
+    "co_rgb:FFFFFF", "g_south_east", "x_92", "y_150", "o_75",
   ];
 
   return {
-    url: build([base, topScrim, bottomScrim, product, headline, cta, brand], backdrop),
-    layoutSignature: "lifestyle|premium",
+    url: build([base, topScrim, bottomScrim, productShadow, product, headline, ctaUnderline, cta, brand], backdrop),
+    layoutSignature: "lifestyle|polish",
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
@@ -450,14 +521,14 @@ function tplLifestyle(input: TemplateInput): TemplateOutput {
 function tplViral(input: TemplateInput): TemplateOutput {
   const base = darkCanvas();
 
-  // Subtle rotation jitter — splash is a soft accent, not a banner.
-  const angle = -3 - (Math.abs(input.seed) % 4);
+  // Subtle warm glow — barely visible, just adds atmosphere top-of-frame.
+  const angle = -2 - (Math.abs(input.seed) % 3);
   const splash = [
     "l_text:Arial_400_bold:%20",
     "b_rgb:FF6A1A", "co_rgb:00000000",
-    "w_1100", "h_360", "c_fit",
-    "g_north", "y_140", "a_" + angle, "o_55",
-    "e_gradient_fade:60",
+    "w_1200", "h_500", "c_fit",
+    "g_north", "y_60", "a_" + angle, "o_22",
+    "e_gradient_fade:80",
   ];
 
   const preset = LAYOUT_PRESETS.center_focus;
@@ -468,43 +539,49 @@ function tplViral(input: TemplateInput): TemplateOutput {
     avgCharWidth: 0.52,
   });
   const headline = [
-    "l_text:Impact_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
+    "l_text:Georgia_" + fitted.fontSize + "_bold:" + escapeWrapped(fitted.wrapped),
     "co_rgb:FFFFFF", "w_980", "c_fit",
-    "g_north", "y_200",
+    "g_north", "y_220",
   ];
 
-  // Product card with white inner border for depth.
+  // Soft contact shadow grounds the product within the dark canvas.
+  const productShadow = shadowPlate({
+    width: 760, height: 130, gravity: "center", y: 460, opacity: 50,
+  });
+  // Product card with subtle warm glow plate for depth.
   const productPlate = [
     "l_text:Arial_400_bold:%20",
-    "b_rgb:FFFFFF", "co_rgb:00000000",
+    "b_rgb:FAF6F0", "co_rgb:00000000",
     "w_840", "h_840", "c_fit",
-    "g_center", "y_60", "r_36", "o_100",
+    "g_center", "y_60", "r_48", "o_92",
   ];
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
     "w_780", "h_780", "c_fit", "g_center", "y_60", "r_24",
   ];
 
+  // Editorial CTA — quiet white type + arrow + hairline underline.
   const cta = [
-    "l_text:Arial_56_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:121212", "b_rgb:FFFFFF", "r_max", "w_760", "c_fit",
-    "g_south", "y_140",
+    "l_text:Georgia_42:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:FFFFFF", "g_south", "y_180",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 280, gravity: "south", y: 160, opacity: 75,
+  });
 
   // Tiny CTR badge below CTA for save-prompts.
   const ctrBadge = input.ctrBadge
     ? [
         "l_text:Arial_30_bold:" + escapeText(input.ctrBadge),
-        "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_360", "c_fit",
-        "g_south", "y_60",
+        "co_rgb:FFFFFF", "g_south", "y_100", "o_70",
       ]
     : null;
 
-  const layers: string[][] = [base, splash, headline, productPlate, product, cta];
+  const layers: string[][] = [base, splash, headline, productShadow, productPlate, product, ctaUnderline, cta];
   if (ctrBadge) layers.push(ctrBadge);
   return {
     url: build(layers, BLANK_BASE),
-    layoutSignature: `viral|premium|a${angle}`,
+    layoutSignature: `viral|polish|a${angle}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
@@ -532,6 +609,9 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
     "g_north_west", "x_80", "y_120",
   ];
 
+  const productShadow = shadowPlate({
+    width: 460, height: 100, gravity: "south_west", x: 80, y: 180, opacity: 30,
+  });
   // Product hero on the left, contained within bottom 65% so cards fit right.
   const product = [
     "l_fetch:" + fetchB64(input.productImageUrl),
@@ -543,32 +623,33 @@ function tplInfographic(input: TemplateInput): TemplateOutput {
     pick(["Tap to clean", "Pair the app", "Set a schedule"], input.seed + 1),
     pick(["Save 30 min/week", "Done in seconds", "Quiet & odor-free"], input.seed + 2),
   ];
-  // Cards stacked right, tight vertical rhythm.
+  // Editorial cards — hairline outlined, restrained palette.
   const card = (n: number, label: string, y: number, fill: string, ink: string) => [
-    "l_text:Arial_38_bold:" + escapeText(`${n}.  ${label}`),
-    "co_rgb:" + ink, "b_rgb:" + fill, "bo_2px_solid_rgb:1A1410",
-    "r_28", "w_440", "c_fit",
+    "l_text:Georgia_32:" + escapeText(`${n}   ${label}`),
+    "co_rgb:" + ink, "b_rgb:" + fill, "bo_1px_solid_rgb:1A1410",
+    "r_36", "w_440", "c_fit",
     "g_east", "x_60", `y_${y}`,
   ];
   const c1 = card(1, stepLabels[0], 80, "FFFFFF", "1A1410");
-  const c2 = card(2, stepLabels[1], -80, "FAE4D2", "1A1410");
-  const c3 = card(3, stepLabels[2], -240, "FF6A1A", "FFFFFF");
+  const c2 = card(2, stepLabels[1], -80, "FFFFFF", "1A1410");
+  const c3 = card(3, stepLabels[2], -240, "FFFFFF", "1A1410");
 
   const saveBadge = [
-    "l_text:Arial_32_bold:" + escapeText(input.ctrBadge || "Save this") + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:1A1410", "r_max", "w_320", "c_fit",
-    "g_north_east", "x_60", "y_140",
+    "l_text:Arial_28:" + escapeText(input.ctrBadge || "Save this") + ARROW,
+    "co_rgb:1A1410", "g_north_east", "x_84", "y_160", "o_85",
   ];
 
   const cta = [
-    "l_text:Arial_44_bold:" + escapeText(input.bottom) + ARROW,
-    "co_rgb:FFFFFF", "b_rgb:FF6A1A", "r_max", "w_640", "c_fit",
-    "g_south", "y_100",
+    "l_text:Georgia_42:" + escapeText(input.bottom) + ARROW,
+    "co_rgb:1A1410", "g_south", "y_140",
   ];
+  const ctaUnderline = underlineAccent({
+    width: 320, gravity: "south", y: 120, color: "1A1410", opacity: 80,
+  });
 
   return {
-    url: build([base, title, product, c1, c2, c3, saveBadge, cta], BLANK_BASE),
-    layoutSignature: `infographic|premium|s=${stepLabels.join("/")}`,
+    url: build([base, title, productShadow, product, c1, c2, c3, saveBadge, ctaUnderline, cta], BLANK_BASE),
+    layoutSignature: `infographic|polish|s=${stepLabels.join("/")}`,
     layoutKey: preset.key,
     validation: validatePreset(preset, fitted),
   };
