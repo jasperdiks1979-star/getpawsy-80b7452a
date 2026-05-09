@@ -5278,6 +5278,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_niche_rules: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          forbid_all: string[]
+          id: string
+          niche: string
+          notes: string | null
+          primary_terms: string[]
+          priority: number
+          require_any: string[]
+          rule_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          forbid_all?: string[]
+          id?: string
+          niche: string
+          notes?: string | null
+          primary_terms?: string[]
+          priority?: number
+          require_any?: string[]
+          rule_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          forbid_all?: string[]
+          id?: string
+          niche?: string
+          notes?: string | null
+          primary_terms?: string[]
+          priority?: number
+          require_any?: string[]
+          rule_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_oauth_states: {
         Row: {
           created_at: string | null

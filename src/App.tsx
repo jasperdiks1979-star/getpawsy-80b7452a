@@ -428,6 +428,7 @@ const PinterestPinStatusPage = lazyWithRetry(() => import("./pages/admin/Pintere
 const PinterestPatternsPage = lazyWithRetry(() => import("./pages/admin/PinterestPatternsPage"));
 const PinterestGenericNichePage = lazyWithRetry(() => import("./pages/admin/PinterestGenericNichePage"));
 const PinterestNicheCoveragePage = lazyWithRetry(() => import("./pages/admin/PinterestNicheCoveragePage"));
+const PinterestNicheRulesPage = lazyWithRetry(() => import("./pages/admin/PinterestNicheRulesPage"));
 const RejectedSpamEventsPage = lazyWithRetry(() => import("./pages/admin/RejectedSpamEventsPage"));
 const PinterestBackdropPreviewPage = lazyWithRetry(() => import("./pages/admin/PinterestBackdropPreviewPage"));
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
@@ -2192,6 +2193,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestNicheCoveragePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-niche-rules"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestNicheRulesPage />
                                 </Suspense>
                               }
                             />
