@@ -2197,6 +2197,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-niche-rules"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestNicheRulesPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="rejected-spam-events"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
