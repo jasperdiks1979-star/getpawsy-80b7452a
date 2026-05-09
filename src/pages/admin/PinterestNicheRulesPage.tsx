@@ -142,7 +142,8 @@ export default function PinterestNicheRulesPage() {
     setRunning(true);
     setResult(null);
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("products")
         .select("id, slug, name, category, product_type")
         .eq("active", true)
