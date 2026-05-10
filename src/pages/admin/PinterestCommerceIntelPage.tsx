@@ -265,6 +265,78 @@ export default function PinterestCommerceIntelPage() {
     },
   });
 
+  // ===== Failure + Winner Intelligence (Commit 2 wiring on new analytics views) =====
+  const failureIntel = useQuery({
+    queryKey: ["pinterest-failure-intel"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("pinterest_failure_analytics_v")
+        .select("*")
+        .order("rejected_count", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        reason: string; hook_category: string; pattern_id: string; niche_key: string;
+        rejected_count: number; total_count: number; avg_score: number | null;
+      }>;
+    },
+  });
+
+  const scoreDist = useQuery({
+    queryKey: ["pinterest-score-distribution"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("pinterest_score_distribution_v")
+        .select("*");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        band: string; niche_key: string; hook_category: string;
+        attempts: number; avg_score: number | null; rejected_count: number;
+      }>;
+    },
+  });
+
+  const retryOutcomes = useQuery({
+    queryKey: ["pinterest-retry-outcomes"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("pinterest_retry_outcomes_v")
+        .select("*")
+        .gt("attempts_total", 1)
+        .order("score_delta", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        pin_queue_id: string; niche_key: string | null; hook_category: string | null;
+        pattern_id: string | null; attempts_total: number;
+        first_score: number | null; final_score: number | null; score_delta: number | null;
+        all_rejected: boolean; any_accepted: boolean;
+      }>;
+    },
+  });
+
+  const winnerLeaderboard = useQuery({
+    queryKey: ["pinterest-winner-leaderboard"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("pinterest_winner_leaderboard_v")
+        .select("*")
+        .order("composite_score", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        pin_queue_id: string; pattern_id: string | null; hook_category: string | null;
+        cta_phrase: string | null; niche_key: string | null;
+        pinterest_impressions: number; pinterest_saves: number; pinterest_outbound_clicks: number;
+        ga4_sessions: number; ga4_engaged_sessions: number;
+        profit_verdict: string | null; composite_score: number;
+        ctr_pct: number | null; save_rate_pct: number | null; engagement_pct: number | null;
+        product_slug: string | null; product_name: string | null;
+        pin_image_url: string | null; board_name: string | null; posted_at: string | null;
+      }>;
+    },
+  });
+
   const setDomination = useMutation({
     mutationFn: async (enabled: boolean) => {
       const { error } = await supabase
