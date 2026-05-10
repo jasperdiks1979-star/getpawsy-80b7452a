@@ -615,6 +615,7 @@ async function uploadAndInsertDraft(
             attempt_count: intelligence.attempt_count,
             hook_category: intelligence.hook_category ?? null,
             pattern_id: brief.pattern_id ?? null,
+              pin_mode: brief.pin_mode ?? null,
             rationale: intelligence.rationale ?? null,
           },
         }
@@ -641,9 +642,11 @@ async function uploadAndInsertDraft(
       cta_style: brief.cta?.slice(0, 60) ?? null,
       audience_intent: brief.hook_category ?? null,
       landing_slug: landingSlug,
+      pin_mode: brief.pin_mode ?? null,
       meta: {
         scores: intelligence?.scores ?? null,
         rationale: intelligence?.rationale ?? null,
+        pin_mode: brief.pin_mode ?? null,
       },
     });
   } catch (e) {
