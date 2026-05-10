@@ -10,6 +10,11 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { RefreshCw, Sparkles, TrendingUp, Target, Zap } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  LineChart, Line, AreaChart, Area, ScatterChart, Scatter, ZAxis,
+} from "recharts";
+import { useMemo } from "react";
 
 type StrategyState = {
   id: number;
@@ -54,6 +59,39 @@ type EvolutionLog = {
   metrics: unknown;
   created_at: string;
 };
+
+type PerfSignal = {
+  niche_key: string;
+  pin_mode: string | null;
+  hook_category: string | null;
+  cta: string | null;
+  impressions: number;
+  saves: number;
+  outbound: number;
+  sessions: number;
+  session_seconds: number;
+  add_to_cart: number;
+  purchase: number;
+  revenue: number;
+  sample_size: number;
+  last_updated: string;
+};
+
+const CHART_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(217 91% 60%)",
+  "hsl(142 71% 45%)",
+  "hsl(38 92% 50%)",
+  "hsl(330 81% 60%)",
+  "hsl(199 89% 48%)",
+  "hsl(271 91% 65%)",
+];
+
+function safePct(num: number, denom: number) {
+  if (!denom) return 0;
+  return (num / denom) * 100;
+}
 
 export default function PinterestCommerceIntelPage() {
   const qc = useQueryClient();
@@ -106,6 +144,20 @@ export default function PinterestCommerceIntelPage() {
     },
   });
 
+  const perfSignals = useQuery({
+    queryKey: ["pinterest-performance-signals"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("pinterest_performance_signals" as any)
+        .select("niche_key,pin_mode,hook_category,cta,impressions,saves,outbound,sessions,session_seconds,add_to_cart,purchase,revenue,sample_size,last_updated")
+        .gte("last_updated", since)
+        .limit(2000);
+      if (error) throw error;
+      return (data ?? []) as unknown as PerfSignal[];
+    },
+  });
+
   const refreshTrends = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke(
@@ -137,6 +189,138 @@ export default function PinterestCommerceIntelPage() {
   });
 
   const s = state.data;
+  const signals = perfSignals.data ?? [];
+
+  // ── KPI rollups ──────────────────────────────────────────────────────────
+  const kpis = useMemo(() => {
+    const sum = (k: keyof PerfSignal) =>
+      signals.reduce((a, r) => a + Number(r[k] ?? 0), 0);
+    const impressions = sum("impressions");
+    const saves = sum("saves");
+    const outbound = sum("outbound");
+    const sessions = sum("sessions");
+    const sessionSec = sum("session_seconds");
+    const atc = sum("add_to_cart");
+    const purchase = sum("purchase");
+    const revenue = sum("revenue");
+    return {
+      impressions, saves, outbound, sessions, sessionSec, atc, purchase, revenue,
+      ctr: safePct(outbound, impressions),
+      saveRate: safePct(saves, impressions),
+      atcRate: safePct(atc, sessions),
+      cvr: safePct(purchase, sessions),
+      avgDuration: sessions ? Math.round(sessionSec / sessions) : 0,
+      revenuePerSession: sessions ? revenue / sessions : 0,
+    };
+  }, [signals]);
+
+  // Per-archetype breakdown
+  const byArchetype = useMemo(() => {
+    const map = new Map<string, PerfSignal & { _key: string }>();
+    for (const r of signals) {
+      const key = r.pin_mode || "unknown";
+      const cur = map.get(key) ?? {
+        ...r, _key: key,
+        impressions: 0, saves: 0, outbound: 0, sessions: 0,
+        session_seconds: 0, add_to_cart: 0, purchase: 0, revenue: 0, sample_size: 0,
+      };
+      cur.impressions += r.impressions; cur.saves += r.saves;
+      cur.outbound += r.outbound; cur.sessions += r.sessions;
+      cur.session_seconds += r.session_seconds;
+      cur.add_to_cart += r.add_to_cart; cur.purchase += r.purchase;
+      cur.revenue += Number(r.revenue); cur.sample_size += r.sample_size;
+      map.set(key, cur);
+    }
+    return [...map.values()].map((r) => ({
+      archetype: r._key,
+      ctr: safePct(r.outbound, r.impressions),
+      saveRate: safePct(r.saves, r.impressions),
+      cvr: safePct(r.purchase, r.sessions),
+      atcRate: safePct(r.add_to_cart, r.sessions),
+      revenue: Number(r.revenue.toFixed(2)),
+      impressions: r.impressions,
+      sessions: r.sessions,
+    })).sort((a, b) => b.revenue - a.revenue);
+  }, [signals]);
+
+  // Per-hook breakdown
+  const byHook = useMemo(() => {
+    const map = new Map<string, { hook: string; impressions: number; outbound: number; saves: number; purchase: number; sessions: number; revenue: number }>();
+    for (const r of signals) {
+      const key = r.hook_category || "unknown";
+      const cur = map.get(key) ?? { hook: key, impressions: 0, outbound: 0, saves: 0, purchase: 0, sessions: 0, revenue: 0 };
+      cur.impressions += r.impressions; cur.outbound += r.outbound;
+      cur.saves += r.saves; cur.purchase += r.purchase;
+      cur.sessions += r.sessions; cur.revenue += Number(r.revenue);
+      map.set(key, cur);
+    }
+    return [...map.values()].map((r) => ({
+      hook: r.hook,
+      ctr: Number(safePct(r.outbound, r.impressions).toFixed(2)),
+      saveRate: Number(safePct(r.saves, r.impressions).toFixed(2)),
+      cvr: Number(safePct(r.purchase, r.sessions).toFixed(2)),
+      revenue: Number(r.revenue.toFixed(2)),
+    })).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+  }, [signals]);
+
+  // Per-niche breakdown
+  const byNiche = useMemo(() => {
+    const map = new Map<string, { niche: string; revenue: number; sessions: number; impressions: number; purchase: number }>();
+    for (const r of signals) {
+      const key = r.niche_key || "unknown";
+      const cur = map.get(key) ?? { niche: key, revenue: 0, sessions: 0, impressions: 0, purchase: 0 };
+      cur.revenue += Number(r.revenue);
+      cur.sessions += r.sessions;
+      cur.impressions += r.impressions;
+      cur.purchase += r.purchase;
+      map.set(key, cur);
+    }
+    return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 12);
+  }, [signals]);
+
+  // Daily trend
+  const dailyTrend = useMemo(() => {
+    const map = new Map<string, { day: string; impressions: number; outbound: number; saves: number; purchase: number; revenue: number }>();
+    for (const r of signals) {
+      const day = (r.last_updated || "").slice(0, 10);
+      if (!day) continue;
+      const cur = map.get(day) ?? { day, impressions: 0, outbound: 0, saves: 0, purchase: 0, revenue: 0 };
+      cur.impressions += r.impressions; cur.outbound += r.outbound;
+      cur.saves += r.saves; cur.purchase += r.purchase;
+      cur.revenue += Number(r.revenue);
+      map.set(day, cur);
+    }
+    return [...map.values()].sort((a, b) => a.day.localeCompare(b.day));
+  }, [signals]);
+
+  // CTR vs Save scatter (each point = archetype × hook combo)
+  const scatterData = useMemo(() => {
+    const map = new Map<string, { name: string; ctr: number; saveRate: number; revenue: number; impressions: number }>();
+    for (const r of signals) {
+      const key = `${r.pin_mode ?? "?"}/${r.hook_category ?? "?"}`;
+      const cur = map.get(key) ?? { name: key, ctr: 0, saveRate: 0, revenue: 0, impressions: 0 };
+      cur.impressions += r.impressions;
+      cur.ctr += r.outbound; cur.saveRate += r.saves; cur.revenue += Number(r.revenue);
+      map.set(key, cur);
+    }
+    return [...map.values()]
+      .filter((r) => r.impressions >= 50)
+      .map((r) => ({
+        name: r.name,
+        ctr: Number(safePct(r.ctr, r.impressions).toFixed(2)),
+        saveRate: Number(safePct(r.saveRate, r.impressions).toFixed(2)),
+        revenue: Number(r.revenue.toFixed(2)),
+      }));
+  }, [signals]);
+
+  const tooltipStyle = {
+    contentStyle: {
+      backgroundColor: "hsl(var(--popover))",
+      border: "1px solid hsl(var(--border))",
+      borderRadius: 8,
+      fontSize: 12,
+    },
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -217,11 +401,173 @@ export default function PinterestCommerceIntelPage() {
 
       <Tabs defaultValue="winners">
         <TabsList>
+          <TabsTrigger value="kpis">Performance KPIs</TabsTrigger>
           <TabsTrigger value="winners">Winners</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
           <TabsTrigger value="boosts">Boosts</TabsTrigger>
           <TabsTrigger value="evolution">Evolution Log</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="kpis" className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KpiTile label="Impressions" value={kpis.impressions.toLocaleString()} sub={`${signals.length} signals`} />
+            <KpiTile label="CTR" value={`${kpis.ctr.toFixed(2)}%`} sub={`${kpis.outbound.toLocaleString()} clicks`} />
+            <KpiTile label="Save Rate" value={`${kpis.saveRate.toFixed(2)}%`} sub={`${kpis.saves.toLocaleString()} saves`} />
+            <KpiTile label="ATC Rate" value={`${kpis.atcRate.toFixed(2)}%`} sub={`${kpis.atc.toLocaleString()} ATCs`} />
+            <KpiTile label="CVR" value={`${kpis.cvr.toFixed(2)}%`} sub={`${kpis.purchase.toLocaleString()} orders`} />
+            <KpiTile label="Revenue" value={`$${kpis.revenue.toFixed(0)}`} sub={`$${kpis.revenuePerSession.toFixed(2)}/session`} />
+            <KpiTile label="Sessions" value={kpis.sessions.toLocaleString()} sub={`avg ${kpis.avgDuration}s`} />
+            <KpiTile label="Avg Session" value={`${kpis.avgDuration}s`} sub="time on site" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Daily Performance (14d)</CardTitle>
+                <CardDescription>Impressions, clicks, saves and orders over time.</CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                {dailyTrend.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={dailyTrend}>
+                      <defs>
+                        <linearGradient id="gImp" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CHART_COLORS[0]} stopOpacity={0.5} />
+                          <stop offset="100%" stopColor={CHART_COLORS[0]} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip {...tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Area type="monotone" dataKey="impressions" stroke={CHART_COLORS[0]} fill="url(#gImp)" />
+                      <Line type="monotone" dataKey="outbound" stroke={CHART_COLORS[2]} dot={false} />
+                      <Line type="monotone" dataKey="saves" stroke={CHART_COLORS[3]} dot={false} />
+                      <Line type="monotone" dataKey="purchase" stroke={CHART_COLORS[4]} dot={false} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue by Archetype</CardTitle>
+                <CardDescription>Which pin modes are converting?</CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                {byArchetype.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={byArchetype}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="archetype" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip {...tooltipStyle} />
+                      <Bar dataKey="revenue" fill={CHART_COLORS[0]} radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>CTR vs Save Rate by Archetype</CardTitle>
+                <CardDescription>Higher = more engaging. Right = more clickable.</CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                {byArchetype.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={byArchetype}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="archetype" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+                      <YAxis tick={{ fontSize: 11 }} unit="%" />
+                      <Tooltip {...tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="ctr" name="CTR %" fill={CHART_COLORS[2]} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="saveRate" name="Save %" fill={CHART_COLORS[3]} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="cvr" name="CVR %" fill={CHART_COLORS[4]} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Hooks by Revenue</CardTitle>
+                <CardDescription>Which messaging angles drive sales.</CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                {byHook.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={byHook} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="hook" tick={{ fontSize: 11 }} width={120} />
+                      <Tooltip {...tooltipStyle} />
+                      <Bar dataKey="revenue" fill={CHART_COLORS[5]} radius={[0, 6, 6, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Niche Revenue Mix</CardTitle>
+                <CardDescription>Top 12 niches by revenue contribution.</CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                {byNiche.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={byNiche}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="niche" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip {...tooltipStyle} />
+                      <Bar dataKey="revenue" fill={CHART_COLORS[6]} radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Engagement Map</CardTitle>
+                <CardDescription>Each dot = archetype × hook combo (≥50 impressions). Bubble = revenue.</CardDescription>
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                {scatterData.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" dataKey="ctr" name="CTR" unit="%" tick={{ fontSize: 11 }} />
+                      <YAxis type="number" dataKey="saveRate" name="Save" unit="%" tick={{ fontSize: 11 }} />
+                      <ZAxis type="number" dataKey="revenue" range={[40, 400]} />
+                      <Tooltip {...tooltipStyle} cursor={{ strokeDasharray: "3 3" }} />
+                      <Scatter data={scatterData} fill={CHART_COLORS[7]} />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         <TabsContent value="winners">
           <Card>
