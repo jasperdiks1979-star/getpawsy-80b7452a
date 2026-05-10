@@ -102,6 +102,7 @@ import { PinterestLandingBanner } from "@/components/products/PinterestLandingBa
 import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
 import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
+import { PdpStickyAtc } from "@/components/products/PdpStickyAtc";
 import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
@@ -1752,6 +1753,19 @@ const ProductDetail = () => {
         {showTikTokVariant && (
           <TikTokStickyCTA
             onCtaClick={scrollToBuy}
+            inStock={inStock}
+            price={activePrice}
+          />
+        )}
+
+        {/*
+          Universal mobile sticky ATC for every other PDP visitor. Shown only
+          when the TikTok-variant sticky bar is NOT active so we never stack
+          two fixed bars on top of each other.
+        */}
+        {!showTikTokVariant && (
+          <PdpStickyAtc
+            onCtaClick={handleAddToCart}
             inStock={inStock}
             price={activePrice}
           />
