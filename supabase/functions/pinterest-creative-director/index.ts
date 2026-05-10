@@ -474,6 +474,42 @@ async function logRenderAttempt(
 
 // ── 5. upload + insert ─────────────────────────────────────────────────────
 
+/**
+ * Pick the best `/go/{slug}` landing template for a given niche + hook.
+ * Returns null if no template matches — caller falls back to PDP.
+ */
+async function pickLandingSlug(
+  supabase: ReturnType<typeof createClient>,
+  niche: string,
+  hook: string | null,
+): Promise<string | null> {
+  try {
+    // Prefer exact niche+hook match, then niche-only, then any enabled.
+    if (hook) {
+      const { data } = await supabase
+        .from("pinterest_landing_templates")
+        .select("slug")
+        .eq("enabled", true)
+        .eq("niche_key", niche)
+        .eq("hook_type", hook)
+        .limit(1)
+        .maybeSingle();
+      if (data?.slug) return data.slug as string;
+    }
+    const { data: nicheOnly } = await supabase
+      .from("pinterest_landing_templates")
+      .select("slug")
+      .eq("enabled", true)
+      .eq("niche_key", niche)
+      .limit(1)
+      .maybeSingle();
+    if (nicheOnly?.slug) return nicheOnly.slug as string;
+  } catch (e) {
+    console.warn("[creative-director] pickLandingSlug failed", (e as Error).message);
+  }
+  return null;
+}
+
 async function uploadAndInsertDraft(
   supabase: ReturnType<typeof createClient>,
   product: { id: string; slug: string; name: string },
