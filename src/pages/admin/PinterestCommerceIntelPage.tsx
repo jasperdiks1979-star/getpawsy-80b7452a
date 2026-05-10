@@ -1316,8 +1316,107 @@ export default function PinterestCommerceIntelPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="dedup" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" /> Deduplication Intelligence
+              </CardTitle>
+              <CardDescription>
+                Last 14 days of queued pins. The fingerprint engine catches near-duplicate
+                creatives (same slug · variant · hook · overlay · backdrop) even when the
+                rendered image URL differs. Duplicate-flagged pins are blocked at insert time.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {dedup.isLoading ? (
+                <div className="text-sm text-muted-foreground py-6 text-center">Loading…</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <KpiTile label="Pins (14d)" value={(dedup.data?.total ?? 0).toString()} />
+                    <KpiTile
+                      label="Duplicates blocked"
+                      value={(dedup.data?.duplicates ?? 0).toString()}
+                      sub={`${(dedup.data?.rate ?? 0).toFixed(1)}% of intake`}
+                    />
+                    <KpiTile
+                      label="Unique fingerprints"
+                      value={(dedup.data?.topFp.length ?? 0).toString()}
+                      sub="distinct collisions"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        Top colliding fingerprints
+                      </div>
+                      {!(dedup.data?.topFp.length) ? (
+                        <div className="text-xs text-muted-foreground py-4">
+                          No duplicate creatives detected — diversity is healthy.
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Fingerprint</TableHead>
+                              <TableHead className="text-right">Repeats</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {dedup.data!.topFp.map((row) => (
+                              <TableRow key={row.fingerprint}>
+                                <TableCell className="font-mono text-xs">{row.fingerprint}</TableCell>
+                                <TableCell className="text-right text-xs">{row.count}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        Hook families with most duplicate rejections
+                      </div>
+                      {!(dedup.data?.topHooks.length) ? (
+                        <div className="text-xs text-muted-foreground py-4">
+                          No hook family is over-represented in duplicates.
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Hook group</TableHead>
+                              <TableHead className="text-right">Rejections</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {dedup.data!.topHooks.map((row) => (
+                              <TableRow key={row.hook}>
+                                <TableCell className="text-xs">{row.hook}</TableCell>
+                                <TableCell className="text-right text-xs">{row.count}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground mt-4">
+                    Duplicate intake above ~15% suggests the strategy picker is over-exploiting a
+                    single hook × backdrop combination. Switch pacing to <span className="font-mono">balanced</span>
+                    {" "}or <span className="font-mono">slow</span> to force more exploration.
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="evolution">
-          {/* dedup tab inserted just above */}
           <Card>
             <CardHeader>
               <CardTitle>Auto-Evolution Journal</CardTitle>
