@@ -5117,6 +5117,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_creative_intents: {
+        Row: {
+          audience_intent: string | null
+          color_palette: Json | null
+          created_at: string
+          cta_style: string | null
+          emotional_angle: string | null
+          hook_type: string | null
+          id: string
+          landing_slug: string | null
+          lifestyle_category: string | null
+          meta: Json | null
+          niche_key: string | null
+          pin_queue_id: string | null
+          product_id: string | null
+          visual_style: string | null
+        }
+        Insert: {
+          audience_intent?: string | null
+          color_palette?: Json | null
+          created_at?: string
+          cta_style?: string | null
+          emotional_angle?: string | null
+          hook_type?: string | null
+          id?: string
+          landing_slug?: string | null
+          lifestyle_category?: string | null
+          meta?: Json | null
+          niche_key?: string | null
+          pin_queue_id?: string | null
+          product_id?: string | null
+          visual_style?: string | null
+        }
+        Update: {
+          audience_intent?: string | null
+          color_palette?: Json | null
+          created_at?: string
+          cta_style?: string | null
+          emotional_angle?: string | null
+          hook_type?: string | null
+          id?: string
+          landing_slug?: string | null
+          lifestyle_category?: string | null
+          meta?: Json | null
+          niche_key?: string | null
+          pin_queue_id?: string | null
+          product_id?: string | null
+          visual_style?: string | null
+        }
+        Relationships: []
+      }
       pinterest_creative_winners: {
         Row: {
           composite_score: number
@@ -5245,6 +5296,81 @@ export type Database = {
           total_impressions?: number | null
           total_saves?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_landing_templates: {
+        Row: {
+          body_blocks: Json | null
+          color_atmosphere: string | null
+          created_at: string
+          cta_label: string
+          cta_tone: string | null
+          emotional_angle: string | null
+          enabled: boolean
+          hero_eyebrow: string | null
+          hero_headline: string
+          hero_subhead: string | null
+          hook_type: string | null
+          id: string
+          lifestyle_image_keywords: Json | null
+          meta: Json | null
+          niche_key: string | null
+          recommended_collection_slug: string | null
+          recommended_product_slug: string | null
+          slug: string
+          transformation_after: string | null
+          transformation_before: string | null
+          trust_block_variant: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_blocks?: Json | null
+          color_atmosphere?: string | null
+          created_at?: string
+          cta_label?: string
+          cta_tone?: string | null
+          emotional_angle?: string | null
+          enabled?: boolean
+          hero_eyebrow?: string | null
+          hero_headline: string
+          hero_subhead?: string | null
+          hook_type?: string | null
+          id?: string
+          lifestyle_image_keywords?: Json | null
+          meta?: Json | null
+          niche_key?: string | null
+          recommended_collection_slug?: string | null
+          recommended_product_slug?: string | null
+          slug: string
+          transformation_after?: string | null
+          transformation_before?: string | null
+          trust_block_variant?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_blocks?: Json | null
+          color_atmosphere?: string | null
+          created_at?: string
+          cta_label?: string
+          cta_tone?: string | null
+          emotional_angle?: string | null
+          enabled?: boolean
+          hero_eyebrow?: string | null
+          hero_headline?: string
+          hero_subhead?: string | null
+          hook_type?: string | null
+          id?: string
+          lifestyle_image_keywords?: Json | null
+          meta?: Json | null
+          niche_key?: string | null
+          recommended_collection_slug?: string | null
+          recommended_product_slug?: string | null
+          slug?: string
+          transformation_after?: string | null
+          transformation_before?: string | null
+          trust_block_variant?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
