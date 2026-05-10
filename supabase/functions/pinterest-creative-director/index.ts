@@ -543,9 +543,22 @@ async function pickLandingSlug(
   supabase: ReturnType<typeof createClient>,
   niche: string,
   hook: string | null,
+  pinMode: PinModeKey | null = null,
 ): Promise<string | null> {
   try {
-    // Prefer exact niche+hook match, then niche-only, then any enabled.
+    // Phase 7 — prefer niche+pin_mode match (cozy→cozy, luxury→luxury, etc.),
+    // then niche+hook match, then niche-only, then any enabled.
+    if (pinMode) {
+      const { data } = await supabase
+        .from("pinterest_landing_templates")
+        .select("slug")
+        .eq("enabled", true)
+        .eq("niche_key", niche)
+        .eq("pin_mode", pinMode)
+        .limit(1)
+        .maybeSingle();
+      if (data?.slug) return data.slug as string;
+    }
     if (hook) {
       const { data } = await supabase
         .from("pinterest_landing_templates")
@@ -605,10 +618,16 @@ async function uploadAndInsertDraft(
   // Phase 1 congruency: route to /go/{slug} when a landing template exists
   // for this niche/hook, otherwise keep the PDP destination. The choice is
   // also recorded in `pinterest_creative_intents` for analytics.
-  const landingSlug = await pickLandingSlug(supabase, niche, brief.hook_category ?? null);
+  const landingSlug = await pickLandingSlug(
+    supabase,
+    niche,
+    brief.hook_category ?? null,
+    brief.pin_mode ?? null,
+  );
   const hookParam = encodeURIComponent(brief.emotional_hook.slice(0, 40));
+  const modeParam = brief.pin_mode ? `&pin_mode=${encodeURIComponent(brief.pin_mode)}` : "";
   const destination = landingSlug
-    ? `${BASE_URL}/go/${landingSlug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${landingSlug}&hook=${hookParam}&intent=${encodeURIComponent(brief.hook_category ?? "")}`
+    ? `${BASE_URL}/go/${landingSlug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${landingSlug}&hook=${hookParam}&intent=${encodeURIComponent(brief.hook_category ?? "")}${modeParam}`
     : `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
 
   const row = {
