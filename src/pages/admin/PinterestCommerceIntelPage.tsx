@@ -14,7 +14,10 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, AreaChart, Area, ScatterChart, Scatter, ZAxis,
 } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
 
 type StrategyState = {
   id: number;
@@ -115,6 +118,13 @@ function EmptyChart() {
 
 export default function PinterestCommerceIntelPage() {
   const qc = useQueryClient();
+
+  type Drilldown = {
+    niche_key: string;
+    pin_mode: string | null;
+    hook_category: string | null;
+  };
+  const [drill, setDrill] = useState<Drilldown | null>(null);
 
   const state = useQuery({
     queryKey: ["pinterest-strategy-state"],
@@ -360,6 +370,78 @@ export default function PinterestCommerceIntelPage() {
       fontSize: 12,
     },
   };
+
+  // ── Drilldown details (lazy) ────────────────────────────────────────────
+  const drillKey = drill ? `${drill.niche_key}|${drill.pin_mode ?? ""}|${drill.hook_category ?? ""}` : null;
+
+  const drillSignals = useQuery({
+    enabled: !!drill,
+    queryKey: ["drill-signals", drillKey],
+    queryFn: async () => {
+      let q = supabase.from("pinterest_performance_signals" as any)
+        .select("niche_key,pin_mode,hook_category,cta,product_category,impressions,saves,outbound,sessions,add_to_cart,purchase,revenue,sample_size,last_updated")
+        .eq("niche_key", drill!.niche_key);
+      if (drill!.pin_mode) q = q.eq("pin_mode", drill!.pin_mode);
+      if (drill!.hook_category) q = q.eq("hook_category", drill!.hook_category);
+      const { data, error } = await q.order("revenue", { ascending: false }).limit(50);
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        niche_key: string; pin_mode: string | null; hook_category: string | null;
+        cta: string | null; product_category: string | null;
+        impressions: number; saves: number; outbound: number; sessions: number;
+        add_to_cart: number; purchase: number; revenue: number;
+        sample_size: number; last_updated: string;
+      }>;
+    },
+  });
+
+  const drillAttempts = useQuery({
+    enabled: !!drill,
+    queryKey: ["drill-attempts", drillKey],
+    queryFn: async () => {
+      let q = supabase.from("pinterest_render_attempts" as any)
+        .select("id,product_slug,niche_key,pin_mode,pattern_id,hook_category,attempt_no,total_score,rejected,reasons,brief,created_at")
+        .eq("niche_key", drill!.niche_key);
+      if (drill!.pin_mode) q = q.eq("pin_mode", drill!.pin_mode);
+      if (drill!.hook_category) q = q.eq("hook_category", drill!.hook_category);
+      const { data, error } = await q.order("created_at", { ascending: false }).limit(25);
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        id: string; product_slug: string; niche_key: string;
+        pin_mode: string | null; pattern_id: string | null;
+        hook_category: string | null; attempt_no: number;
+        total_score: number; rejected: boolean; reasons: string[] | null;
+        brief: any; created_at: string;
+      }>;
+    },
+  });
+
+  const drillEvolution = useMemo(() => {
+    if (!drill || !evolution.data) return [];
+    const target = `${drill.niche_key}:${drill.pin_mode ?? ""}`;
+    const targetHook = `${drill.niche_key}:${drill.hook_category ?? ""}`;
+    return evolution.data.filter((e) => {
+      const blob = JSON.stringify(e.new_value ?? "") + JSON.stringify(e.old_value ?? "");
+      return e.niche_key === drill.niche_key
+        || (drill.pin_mode && blob.includes(target))
+        || (drill.hook_category && blob.includes(targetHook));
+    }).slice(0, 15);
+  }, [drill, evolution.data]);
+
+  const drillTotals = useMemo(() => {
+    const rows = drillSignals.data ?? [];
+    const sum = (k: string) => rows.reduce((a, r: any) => a + Number(r[k] ?? 0), 0);
+    const impressions = sum("impressions"), outbound = sum("outbound"),
+      saves = sum("saves"), sessions = sum("sessions"),
+      atc = sum("add_to_cart"), purchase = sum("purchase"), revenue = sum("revenue");
+    return {
+      impressions, outbound, saves, sessions, atc, purchase, revenue,
+      ctr: safePct(outbound, impressions),
+      saveRate: safePct(saves, impressions),
+      cvr: safePct(purchase, sessions),
+      atcRate: safePct(atc, sessions),
+    };
+  }, [drillSignals.data]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -629,7 +711,15 @@ export default function PinterestCommerceIntelPage() {
                 </TableHeader>
                 <TableBody>
                   {(winners.data ?? []).map((w, i) => (
-                    <TableRow key={`${w.niche_key}-${w.pin_mode}-${w.hook_category}-${i}`}>
+                    <TableRow
+                      key={`${w.niche_key}-${w.pin_mode}-${w.hook_category}-${i}`}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setDrill({
+                        niche_key: w.niche_key,
+                        pin_mode: w.pin_mode,
+                        hook_category: w.hook_category,
+                      })}
+                    >
                       <TableCell className="font-medium">{w.niche_key}</TableCell>
                       <TableCell>{w.pin_mode ?? "—"}</TableCell>
                       <TableCell>{w.hook_category ?? "—"}</TableCell>
