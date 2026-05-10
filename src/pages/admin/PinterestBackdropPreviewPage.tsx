@@ -39,6 +39,24 @@ type PreviewPin = {
 
 const DEFAULT_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
 
+function normalizeSlugInput(raw: string): string {
+  if (!raw) return raw;
+  let s = raw.trim();
+  const m = s.match(/\/products\/([^/?#]+)/i);
+  if (m) s = m[1];
+  s = s.split("?")[0].split("#")[0];
+  return s.toLowerCase().replace(/^-+|-+$/g, "");
+}
+
+type DebugInfo = {
+  fn: string;
+  productFound: "yes" | "no" | "—";
+  backdropSource: string;
+  status: number | string;
+  error: string | null;
+  resolvedSlug: string;
+};
+
 const HOOKS: Array<{ key: string; label: string }> = [
   { key: "pain", label: "Pain" },
   { key: "curiosity", label: "Curiosity" },
