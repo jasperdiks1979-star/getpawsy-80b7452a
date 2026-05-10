@@ -11,8 +11,22 @@ import type { StyleDNA } from "./pinterest-style-dna.ts";
 import type { PinterestPattern } from "./pinterest-patterns.ts";
 import type { PinModeKey } from "./pinterest-pin-modes.ts";
 
-export const QUALITY_THRESHOLD = 80;
-export const MAX_RETRIES = 2;
+// Default gating — can be overridden per-call by runtime settings
+// (`pinterest_runtime_settings.quality_threshold` / `max_render_retries`).
+// Defaults match the "Balanced" rollout: reject below 70, retry once, log
+// a score on every render.
+export const QUALITY_THRESHOLD = 70;
+export const MAX_RETRIES = 1;
+
+export type QualityBand = "elite" | "strong" | "acceptable" | "weak" | "reject";
+
+export function bandForScore(total: number): QualityBand {
+  if (total >= 88) return "elite";
+  if (total >= 78) return "strong";
+  if (total >= 70) return "acceptable";
+  if (total >= 58) return "weak";
+  return "reject";
+}
 
 const QUALITY_MODEL =
   Deno.env.get("PINTEREST_CD_QUALITY_MODEL") || "google/gemini-2.5-flash";
@@ -27,11 +41,21 @@ export interface QualityScores {
   emotional_resonance: number;
   luxury_aesthetic: number;
   conversion_potential: number;
+  /** Phase 1 — AI-rated mobile safe-zone analysis (text cutoff, CTA overlap,
+   *  focal clarity on iPhone Pinterest feed crop). 0-100. */
+  mobile_safe_zone: number;
+  /** Phase 1 — fused mobile safety: deterministic guard ⨯ AI safe-zone. */
+  mobile_safety_score: number;
+  /** Phase 2 — composite "is this Pinterest-native premium creative?" score
+   *  blended from the visual axes. 0-100. */
+  visual_quality_score: number;
   /** Derived composite signals (0-100), not separate AI calls. */
   save_probability: number;
   click_probability: number;
   commerce_probability: number;
   total: number;
+  /** Phase 2 — quality band: elite | strong | acceptable | weak | reject. */
+  quality_band: QualityBand;
 }
 
 export interface QualityResult {
@@ -136,6 +160,7 @@ async function visualScore(args: {
   emotional_resonance: number;
   luxury_aesthetic: number;
   conversion_potential: number;
+  mobile_safe_zone: number;
   notes: string;
 }> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
@@ -150,6 +175,7 @@ async function visualScore(args: {
       emotional_resonance: 70,
       luxury_aesthetic: 70,
       conversion_potential: 70,
+      mobile_safe_zone: 70,
       notes: "no_api_key",
     };
   }
@@ -167,7 +193,7 @@ async function visualScore(args: {
       type: "function",
       function: {
         name: "rate_pin",
-        description: "Rate a Pinterest pin on six visual axes for premium commerce.",
+        description: "Rate a Pinterest pin on seven visual axes for premium commerce, including iPhone mobile safe-zone analysis.",
         parameters: {
           type: "object",
           properties: {
@@ -177,6 +203,7 @@ async function visualScore(args: {
             emotional_resonance: { type: "integer", minimum: 0, maximum: 100 },
             luxury_aesthetic: { type: "integer", minimum: 0, maximum: 100 },
             conversion_potential: { type: "integer", minimum: 0, maximum: 100 },
+            mobile_safe_zone: { type: "integer", minimum: 0, maximum: 100 },
             notes: { type: "string", maxLength: 240 },
           },
           required: [
@@ -186,6 +213,7 @@ async function visualScore(args: {
             "emotional_resonance",
             "luxury_aesthetic",
             "conversion_potential",
+            "mobile_safe_zone",
             "notes",
           ],
           additionalProperties: false,
@@ -206,6 +234,7 @@ async function visualScore(args: {
     `emotional_resonance = how strongly the scene evokes the intended emotion (warmth, calm, joy, transformation) for a US pet parent on a phone. ` +
     `luxury_aesthetic = how premium / quietly upscale the image feels — refined materials, restrained palette, generous negative space. ` +
     `conversion_potential = how likely a US Pinterest user is to click through and consider buying after seeing this image — clear product visibility, trustworthy framing, no spammy cues. ` +
+    `mobile_safe_zone = simulate the iPhone Pinterest feed crop (2:3 visible area, top ~12% obscured by status/header chrome, bottom ~14% obscured by save/CTA chrome and overlay). Score 100 if the focal subject and any planned headline/CTA placements would sit cleanly inside the safe rectangle with no risk of being cropped, hidden behind UI, or competing with cluttered detail. Score below 50 if the subject is centered too low/high, the top/bottom strips already contain critical text or product detail, or there is no breathing room for the planned headline. ` +
     `Be strict. Use the rate_pin tool.`;
 
   try {
@@ -234,12 +263,20 @@ async function visualScore(args: {
     if (!resp.ok) {
       const t = await resp.text();
       console.warn("[pinterest-quality] visual scorer", resp.status, t.slice(0, 200));
-      return { visual_balance: 70, readability: 70, pinterest_native: 70, notes: `scorer_${resp.status}` };
+      return {
+        visual_balance: 70, readability: 70, pinterest_native: 70,
+        emotional_resonance: 70, luxury_aesthetic: 70, conversion_potential: 70,
+        mobile_safe_zone: 70, notes: `scorer_${resp.status}`,
+      };
     }
     const data = await resp.json();
     const call = data?.choices?.[0]?.message?.tool_calls?.[0];
     if (!call) {
-      return { visual_balance: 70, readability: 70, pinterest_native: 70, notes: "no_tool_call" };
+      return {
+        visual_balance: 70, readability: 70, pinterest_native: 70,
+        emotional_resonance: 70, luxury_aesthetic: 70, conversion_potential: 70,
+        mobile_safe_zone: 70, notes: "no_tool_call",
+      };
     }
     const parsed = JSON.parse(call.function.arguments || "{}");
     return {
@@ -249,6 +286,7 @@ async function visualScore(args: {
       emotional_resonance: clamp(parsed.emotional_resonance, 0, 100),
       luxury_aesthetic: clamp(parsed.luxury_aesthetic, 0, 100),
       conversion_potential: clamp(parsed.conversion_potential, 0, 100),
+      mobile_safe_zone: clamp(parsed.mobile_safe_zone, 0, 100),
       notes: String(parsed.notes || ""),
     };
   } catch (e) {
@@ -260,6 +298,7 @@ async function visualScore(args: {
       emotional_resonance: 70,
       luxury_aesthetic: 70,
       conversion_potential: 70,
+      mobile_safe_zone: 70,
       notes: `error:${(e as Error).message.slice(0, 60)}`,
     };
   }
@@ -283,6 +322,8 @@ export async function scorePin(args: {
   pattern?: PinterestPattern | null;
   pin_mode_label?: string;
   pin_mode_key?: PinModeKey;
+  /** Optional runtime override (defaults to QUALITY_THRESHOLD = 70). */
+  threshold?: number;
 }): Promise<QualityResult> {
   const det = deterministicChecks(args);
   const vis = await visualScore({
@@ -293,9 +334,27 @@ export async function scorePin(args: {
     pinModeLabel: args.pin_mode_label,
   });
 
+  // Phase 1 — fuse the deterministic mobile-safety guard with the AI safe-zone
+  // analysis. Both must agree the pin survives the iPhone Pinterest crop.
+  const mobile_safety_score = Math.round(
+    0.55 * det.mobile_safety + 0.45 * vis.mobile_safe_zone,
+  );
+
+  // Phase 2 — composite "is this Pinterest-native premium creative?" score.
+  // Weighted blend of the visual axes only (no deterministic guards), so it
+  // measures pure creative quality independent of headline/cta length.
+  const visual_quality_score = Math.round(
+    0.22 * vis.pinterest_native +
+      0.18 * vis.luxury_aesthetic +
+      0.18 * vis.visual_balance +
+      0.14 * vis.emotional_resonance +
+      0.14 * vis.readability +
+      0.14 * vis.conversion_potential,
+  );
+
   // 8-axis weighted total (kept on the 0-100 scale).
   const total =
-    0.14 * det.mobile_safety +
+    0.14 * mobile_safety_score +
     0.13 * vis.visual_balance +
     0.13 * vis.readability +
     0.10 * det.viral_potential +
@@ -333,9 +392,15 @@ export async function scorePin(args: {
   if (vis.emotional_resonance < 55) reasons.push(`emotional_resonance low (${vis.emotional_resonance})`);
   if (vis.conversion_potential < 55) reasons.push(`conversion_potential low (${vis.conversion_potential})`);
   if (vis.luxury_aesthetic < 50) reasons.push(`luxury_aesthetic low (${vis.luxury_aesthetic}) — feels cheap/spam`);
+  if (vis.mobile_safe_zone < 55) reasons.push(`mobile_safe_zone low (${vis.mobile_safe_zone}) — focal subject or text risks iPhone crop`);
+  if (mobile_safety_score < 55) reasons.push(`mobile_safety_score low (${mobile_safety_score})`);
+
+  const totalRounded = Math.round(total * 100) / 100;
+  const quality_band = bandForScore(totalRounded);
+  const threshold = typeof args.threshold === "number" ? args.threshold : QUALITY_THRESHOLD;
 
   return {
-    ok: total >= QUALITY_THRESHOLD && reasons.length === 0,
+    ok: totalRounded >= threshold && reasons.length === 0,
     scores: {
       mobile_safety: Math.round(det.mobile_safety),
       visual_balance: vis.visual_balance,
@@ -345,10 +410,14 @@ export async function scorePin(args: {
       emotional_resonance: vis.emotional_resonance,
       luxury_aesthetic: vis.luxury_aesthetic,
       conversion_potential: vis.conversion_potential,
+      mobile_safe_zone: vis.mobile_safe_zone,
+      mobile_safety_score,
+      visual_quality_score,
       save_probability,
       click_probability,
       commerce_probability,
-      total: Math.round(total * 100) / 100,
+      total: totalRounded,
+      quality_band,
     },
     reasons,
     notes: vis.notes,
