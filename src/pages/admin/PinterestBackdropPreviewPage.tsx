@@ -96,6 +96,8 @@ export default function PinterestBackdropPreviewPage() {
     latencyMs?: number;
     version?: string;
     pexels?: boolean;
+    envLoaded?: Record<string, boolean>;
+    raw?: unknown;
     error?: string;
     checkedAt?: string;
   }>({ status: "checking" });
@@ -124,6 +126,8 @@ export default function PinterestBackdropPreviewPage() {
           latencyMs,
           version: body?.version,
           pexels: body?.pexels_enabled,
+          envLoaded: body?.env_loaded,
+          raw: body,
           error: res.ok ? undefined : (body?.message || `HTTP ${res.status}`),
           checkedAt: new Date().toISOString(),
         });
