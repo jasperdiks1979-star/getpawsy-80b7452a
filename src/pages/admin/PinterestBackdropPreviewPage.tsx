@@ -142,7 +142,9 @@ export default function PinterestBackdropPreviewPage() {
       }
     };
     probe();
-    const id = setInterval(probe, 30000);
+    // Auto-refresh every 10s so the health block in the debug panel reflects
+    // the live runtime status without requiring a manual reload.
+    const id = setInterval(probe, 10000);
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
