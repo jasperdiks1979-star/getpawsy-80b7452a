@@ -331,7 +331,7 @@ export default function PinterestCommerceIntelPage() {
         .gte("created_at", since)
         .limit(5000);
       if (error) throw error;
-      const rows = (data ?? []) as Array<{
+      const rows = ((data ?? []) as unknown) as Array<{
         creative_fingerprint: string | null;
         hook_group: string | null;
         qa_reasons: string[] | null;
