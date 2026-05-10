@@ -322,6 +322,8 @@ export async function scorePin(args: {
   pattern?: PinterestPattern | null;
   pin_mode_label?: string;
   pin_mode_key?: PinModeKey;
+  /** Optional runtime override (defaults to QUALITY_THRESHOLD = 70). */
+  threshold?: number;
 }): Promise<QualityResult> {
   const det = deterministicChecks(args);
   const vis = await visualScore({
@@ -332,9 +334,27 @@ export async function scorePin(args: {
     pinModeLabel: args.pin_mode_label,
   });
 
+  // Phase 1 — fuse the deterministic mobile-safety guard with the AI safe-zone
+  // analysis. Both must agree the pin survives the iPhone Pinterest crop.
+  const mobile_safety_score = Math.round(
+    0.55 * det.mobile_safety + 0.45 * vis.mobile_safe_zone,
+  );
+
+  // Phase 2 — composite "is this Pinterest-native premium creative?" score.
+  // Weighted blend of the visual axes only (no deterministic guards), so it
+  // measures pure creative quality independent of headline/cta length.
+  const visual_quality_score = Math.round(
+    0.22 * vis.pinterest_native +
+      0.18 * vis.luxury_aesthetic +
+      0.18 * vis.visual_balance +
+      0.14 * vis.emotional_resonance +
+      0.14 * vis.readability +
+      0.14 * vis.conversion_potential,
+  );
+
   // 8-axis weighted total (kept on the 0-100 scale).
   const total =
-    0.14 * det.mobile_safety +
+    0.14 * mobile_safety_score +
     0.13 * vis.visual_balance +
     0.13 * vis.readability +
     0.10 * det.viral_potential +
@@ -372,9 +392,15 @@ export async function scorePin(args: {
   if (vis.emotional_resonance < 55) reasons.push(`emotional_resonance low (${vis.emotional_resonance})`);
   if (vis.conversion_potential < 55) reasons.push(`conversion_potential low (${vis.conversion_potential})`);
   if (vis.luxury_aesthetic < 50) reasons.push(`luxury_aesthetic low (${vis.luxury_aesthetic}) — feels cheap/spam`);
+  if (vis.mobile_safe_zone < 55) reasons.push(`mobile_safe_zone low (${vis.mobile_safe_zone}) — focal subject or text risks iPhone crop`);
+  if (mobile_safety_score < 55) reasons.push(`mobile_safety_score low (${mobile_safety_score})`);
+
+  const totalRounded = Math.round(total * 100) / 100;
+  const quality_band = bandForScore(totalRounded);
+  const threshold = typeof args.threshold === "number" ? args.threshold : QUALITY_THRESHOLD;
 
   return {
-    ok: total >= QUALITY_THRESHOLD && reasons.length === 0,
+    ok: totalRounded >= threshold && reasons.length === 0,
     scores: {
       mobile_safety: Math.round(det.mobile_safety),
       visual_balance: vis.visual_balance,
@@ -384,10 +410,14 @@ export async function scorePin(args: {
       emotional_resonance: vis.emotional_resonance,
       luxury_aesthetic: vis.luxury_aesthetic,
       conversion_potential: vis.conversion_potential,
+      mobile_safe_zone: vis.mobile_safe_zone,
+      mobile_safety_score,
+      visual_quality_score,
       save_probability,
       click_probability,
       commerce_probability,
-      total: Math.round(total * 100) / 100,
+      total: totalRounded,
+      quality_band,
     },
     reasons,
     notes: vis.notes,
