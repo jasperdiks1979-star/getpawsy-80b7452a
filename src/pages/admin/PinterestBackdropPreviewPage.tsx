@@ -82,6 +82,7 @@ export default function PinterestBackdropPreviewPage() {
   const [rerollingHook, setRerollingHook] = useState<string | null>(null);
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
+  const [debug, setDebug] = useState<DebugInfo | null>(null);
   // Filter/search state for the rendered preview grid.
   const [searchQuery, setSearchQuery] = useState("");
   const [hookFilter, setHookFilter] = useState<string>("all");
