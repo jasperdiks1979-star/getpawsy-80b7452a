@@ -10084,6 +10084,85 @@ export type Database = {
       }
     }
     Views: {
+      pinterest_failure_analytics_v: {
+        Row: {
+          avg_score: number | null
+          hook_category: string | null
+          niche_key: string | null
+          pattern_id: string | null
+          reason: string | null
+          rejected_count: number | null
+          total_count: number | null
+        }
+        Relationships: []
+      }
+      pinterest_retry_outcomes_v: {
+        Row: {
+          all_rejected: boolean | null
+          any_accepted: boolean | null
+          attempts_total: number | null
+          final_score: number | null
+          first_score: number | null
+          hook_category: string | null
+          niche_key: string | null
+          pattern_id: string | null
+          pin_queue_id: string | null
+          score_delta: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_render_attempts_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_score_distribution_v: {
+        Row: {
+          attempts: number | null
+          avg_score: number | null
+          band: string | null
+          hook_category: string | null
+          niche_key: string | null
+          rejected_count: number | null
+        }
+        Relationships: []
+      }
+      pinterest_winner_leaderboard_v: {
+        Row: {
+          board_name: string | null
+          composite_score: number | null
+          cta_phrase: string | null
+          ctr_pct: number | null
+          engagement_pct: number | null
+          ga4_engaged_sessions: number | null
+          ga4_sessions: number | null
+          hook_category: string | null
+          niche_key: string | null
+          pattern_id: string | null
+          pin_image_url: string | null
+          pin_queue_id: string | null
+          pinterest_impressions: number | null
+          pinterest_outbound_clicks: number | null
+          pinterest_saves: number | null
+          posted_at: string | null
+          product_name: string | null
+          product_slug: string | null
+          profit_verdict: string | null
+          save_rate_pct: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_creative_winners_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products_public: {
         Row: {
           canonical_product_id: string | null
