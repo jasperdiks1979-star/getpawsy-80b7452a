@@ -87,6 +87,61 @@ export default function PinterestBackdropPreviewPage() {
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
   const [debug, setDebug] = useState<DebugInfo | null>(null);
+  // Edge-function health probe — pings /pinterest-viral-batch/health every
+  // 30s so the admin can see at a glance whether the function is reachable
+  // before clicking "Generate preview".
+  const [health, setHealth] = useState<{
+    status: "checking" | "ok" | "down";
+    httpStatus?: number;
+    latencyMs?: number;
+    version?: string;
+    pexels?: boolean;
+    error?: string;
+    checkedAt?: string;
+  }>({ status: "checking" });
+
+  useEffect(() => {
+    let cancelled = false;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-viral-batch/health`;
+    const probe = async () => {
+      const t0 = performance.now();
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(url, {
+          method: "GET",
+          headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+          signal: ctrl.signal,
+        });
+        clearTimeout(timer);
+        const latencyMs = Math.round(performance.now() - t0);
+        let body: any = null;
+        try { body = await res.json(); } catch { /* ignore */ }
+        if (cancelled) return;
+        setHealth({
+          status: res.ok && body?.ok ? "ok" : "down",
+          httpStatus: res.status,
+          latencyMs,
+          version: body?.version,
+          pexels: body?.pexels_enabled,
+          error: res.ok ? undefined : (body?.message || `HTTP ${res.status}`),
+          checkedAt: new Date().toISOString(),
+        });
+      } catch (e: any) {
+        if (cancelled) return;
+        setHealth({
+          status: "down",
+          error: e?.name === "AbortError" ? "timeout (8s)" : (e?.message || "network error"),
+          latencyMs: Math.round(performance.now() - t0),
+          checkedAt: new Date().toISOString(),
+        });
+      }
+    };
+    probe();
+    const id = setInterval(probe, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
   // Filter/search state for the rendered preview grid.
   const [searchQuery, setSearchQuery] = useState("");
   const [hookFilter, setHookFilter] = useState<string>("all");
