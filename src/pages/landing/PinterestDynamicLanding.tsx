@@ -17,6 +17,11 @@ import { Helmet } from "react-helmet-async";
 import PinterestLandingBanner from "@/components/products/PinterestLandingBanner";
 import { TrustStack } from "@/components/products/TrustStack";
 import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
+import {
+  recordPinterestAttribution,
+  emitClarityEvent,
+  enqueueCapiEvent,
+} from "@/lib/pinterest-conversion-intel";
 
 interface ResolvedProduct {
   id: string;
@@ -230,6 +235,30 @@ export default function PinterestDynamicLanding() {
     } catch {
       /* noop */
     }
+
+    // Phase 6 — persist attribution + emit a Pinterest-native funnel event +
+    // enqueue a server-side view_content event for the CAPI relay.
+    void recordPinterestAttribution({
+      pin_id: pinId,
+      pin_mode: template.pin_mode,
+      landing_slug: template.slug,
+      niche_key: template.niche_key,
+      hook_category: template.hook_type,
+    });
+    emitClarityEvent("pinterest_landing_view", {
+      pin_mode: template.pin_mode ?? "unknown",
+      slug: template.slug,
+    });
+    void enqueueCapiEvent("view_content", {
+      product_id: primaryProduct?.id ?? null,
+      value: primaryProduct?.price ?? null,
+      currency: "USD",
+      custom_data: {
+        pin_mode: template.pin_mode,
+        landing_slug: template.slug,
+        niche_key: template.niche_key,
+      },
+    });
   }, [status, template, pinId]);
 
   const primaryProduct = products[0];
