@@ -213,3 +213,70 @@ export function pickStrategy(args: {
 export function isValidHookCategory(s: string): s is HookCategory {
   return (HOOK_CATEGORIES as readonly string[]).includes(s);
 }
+
+// ---------------------------------------------------------------------------
+// Re-introduced minimal exports required by `pinterest-viral-batch/index.ts`.
+// These were removed during a refactor and broke the function's cold boot
+// (worker boot error: missing export). Keep these as safe defaults — they
+// degrade gracefully so the preview/queue pipeline never hard-fails.
+// ---------------------------------------------------------------------------
+
+/** SEO target keywords per category bucket. `default` is always present. */
+export const TARGET_KEYWORDS_BY_CATEGORY: Record<string, string[]> = {
+  default: ["cat", "dog", "pet", "pet products", "pet supplies"],
+  "cat-trees": ["cat tree", "cat tower", "cat condo"],
+  "litter-boxes": ["litter box", "self cleaning litter box", "cat litter"],
+  "dog-beds": ["dog bed", "orthopedic dog bed", "memory foam dog bed"],
+  "dog-travel": ["dog car seat", "dog booster seat", "dog harness"],
+};
+
+/** Map a (category, slug) pair to a TARGET_KEYWORDS_BY_CATEGORY key. */
+export function resolveCategoryKey(category?: string | null, slug?: string | null): string {
+  const hay = `${category ?? ""} ${slug ?? ""}`.toLowerCase();
+  if (/litter|cat[-\s]?box/.test(hay)) return "litter-boxes";
+  if (/cat[-\s]?tree|tower|condo/.test(hay)) return "cat-trees";
+  if (/dog[-\s]?bed|orthopedic|memory[-\s]?foam/.test(hay)) return "dog-beds";
+  if (/car[-\s]?seat|booster|harness|travel/.test(hay)) return "dog-travel";
+  return "default";
+}
+
+/** Hook-style → preferred Pinterest board(s) fallback. */
+export const STYLE_TO_BOARD_FALLBACK: Record<string, string[]> = {
+  benefit: ["Smart Pet Gadgets"],
+  pain: ["Smart Pet Gadgets"],
+  curiosity: ["Smart Pet Gadgets"],
+  social_proof: ["Smart Pet Gadgets"],
+  transformation: ["Smart Pet Gadgets"],
+  time_saving: ["Smart Pet Gadgets"],
+};
+
+/** Stable, fast non-crypto hash of an image URL — used for dedup lookups. */
+export function hashImageUrl(url: string): string {
+  let h = 5381;
+  for (let i = 0; i < url.length; i++) {
+    h = ((h << 5) + h) ^ url.charCodeAt(i);
+  }
+  return `img_${(h >>> 0).toString(36)}`;
+}
+
+function _haystack(...parts: Array<string | null | undefined>): string {
+  return parts.filter(Boolean).join(" ").toLowerCase();
+}
+
+/** True when any keyword for `categoryKey` appears in the given text fields. */
+export function containsCategoryKeyword(
+  categoryKey: string,
+  ...fields: Array<string | null | undefined>
+): boolean {
+  const kws = TARGET_KEYWORDS_BY_CATEGORY[categoryKey] || TARGET_KEYWORDS_BY_CATEGORY.default;
+  const hay = _haystack(...fields);
+  return kws.some((k) => hay.includes(k.toLowerCase()));
+}
+
+/** True when ANY default target keyword appears in the given text fields. */
+export function containsTargetKeyword(
+  ...fields: Array<string | null | undefined>
+): boolean {
+  const hay = _haystack(...fields);
+  return TARGET_KEYWORDS_BY_CATEGORY.default.some((k) => hay.includes(k.toLowerCase()));
+}
