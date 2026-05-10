@@ -252,17 +252,35 @@ export default function PinterestBackdropPreviewPage() {
   async function runPreview() {
     setLoading(true);
     setPins([]);
+    const cleanSlug = normalizeSlugInput(slug);
+    if (cleanSlug && cleanSlug !== slug) setSlug(cleanSlug);
+    const sentSlug = cleanSlug || DEFAULT_SLUG;
+    setDebug({ fn: "pinterest-viral-batch", productFound: "—", backdropSource: "—", status: "pending", error: null, resolvedSlug: sentSlug });
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
         body: {
-          productSlug: slug,
+          productSlug: sentSlug,
           useLifestyleBackdrop: useBackdrop,
           backdropByHook: useBackdrop ? backdropByHook : undefined,
           dryRun: true,
         },
       });
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.message || "Preview failed");
+      if (error) {
+        setDebug((dd) => dd && { ...dd, status: "transport_error", error: error.message || "transport_error" });
+        throw error;
+      }
+      const dd: any = data || {};
+      const firstSrc = (dd.pins || []).find((p: any) => p?.backdrop_source)?.backdrop_source
+        || (dd?.product ? "product_only" : "—");
+      setDebug({
+        fn: "pinterest-viral-batch",
+        productFound: dd?.product ? "yes" : (dd?.code === "PRODUCT_NOT_FOUND" ? "no" : "—"),
+        backdropSource: firstSrc,
+        status: dd?.ok ? 200 : (dd?.code || "error"),
+        error: dd?.ok ? null : (dd?.message || "Preview failed"),
+        resolvedSlug: dd?.product?.slug || sentSlug,
+      });
+      if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
       setBatchTag(data.batchTag || null);
       // Default every hook to approved on a fresh preview.
@@ -273,7 +291,13 @@ export default function PinterestBackdropPreviewPage() {
       setApprovedByHook(fresh);
       toast.success(`Preview ready — ${data.pins?.length ?? 0} pins`);
     } catch (e: any) {
-      toast.error(e?.message || "Preview failed");
+      const msg = e?.message || "Preview failed";
+      setDebug((dd) => dd && { ...dd, status: dd.status === "pending" ? "transport_error" : dd.status, error: msg });
+      toast.error(
+        msg.includes("Failed to send a request")
+          ? "Edge Function unreachable — check the debug panel for details."
+          : msg,
+      );
     } finally {
       setLoading(false);
     }
