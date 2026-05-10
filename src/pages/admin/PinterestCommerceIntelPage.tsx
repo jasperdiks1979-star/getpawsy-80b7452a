@@ -297,6 +297,77 @@ export default function PinterestCommerceIntelPage() {
     onError: (e: any) => toast.error(e?.message ?? "Failed to update velocity"),
   });
 
+  const setPacing = useMutation({
+    mutationFn: async (mode: PacingMode) => {
+      const preset = PACING_PRESETS[mode];
+      const { error } = await supabase
+        .from("pinterest_runtime_settings" as any)
+        .update({
+          pacing_mode: mode,
+          daily_pin_cap: preset.daily_pin_cap,
+          min_gap_minutes: preset.min_gap_minutes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", 1);
+      if (error) throw error;
+      return mode;
+    },
+    onSuccess: (mode) => {
+      toast.success(`Pacing set to ${PACING_PRESETS[mode].label}`);
+      qc.invalidateQueries({ queryKey: ["pinterest-runtime-settings"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update pacing"),
+  });
+
+  // Dedup insights — count duplicate-rejected pins in the last 14d and roll up
+  // top fingerprints + hook groups responsible for collisions.
+  const dedup = useQuery({
+    queryKey: ["pinterest-dedup-insights"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("pinterest_pin_queue" as any)
+        .select("creative_fingerprint,hook_group,qa_reasons,status,created_at")
+        .gte("created_at", since)
+        .limit(5000);
+      if (error) throw error;
+      const rows = (data ?? []) as Array<{
+        creative_fingerprint: string | null;
+        hook_group: string | null;
+        qa_reasons: string[] | null;
+        status: string;
+        created_at: string;
+      }>;
+      const total = rows.length;
+      const dupRows = rows.filter((r) => (r.qa_reasons || []).includes("duplicate_asset"));
+      const fpCounts = new Map<string, number>();
+      const hookCounts = new Map<string, number>();
+      for (const r of dupRows) {
+        if (r.creative_fingerprint) {
+          fpCounts.set(r.creative_fingerprint, (fpCounts.get(r.creative_fingerprint) || 0) + 1);
+        }
+        if (r.hook_group) {
+          hookCounts.set(r.hook_group, (hookCounts.get(r.hook_group) || 0) + 1);
+        }
+      }
+      const topFp = [...fpCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([fp, n]) => ({ fingerprint: fp, count: n }));
+      const topHooks = [...hookCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([hook, n]) => ({ hook, count: n }));
+      return {
+        total,
+        duplicates: dupRows.length,
+        rate: total ? (dupRows.length / total) * 100 : 0,
+        topFp,
+        topHooks,
+      };
+    },
+  });
+
   const [capDraft, setCapDraft] = useState<string>("");
   const [gapDraft, setGapDraft] = useState<string>("");
 
