@@ -19,7 +19,22 @@ export function useTikTokLanding() {
     const utm = (searchParams.get('utm_source') || '').toLowerCase();
     const ad = (searchParams.get('ad') || '').toLowerCase();
     const src = (searchParams.get('src') || '').toLowerCase();
-    return utm.includes('tiktok') || ad === 'tt' || ad === 'tiktok' || src.includes('tiktok');
+    if (utm.includes('tiktok') || ad === 'tt' || ad === 'tiktok' || src.includes('tiktok')) {
+      return true;
+    }
+    // Organic TikTok in-app browser: referrer + UA hint.
+    if (typeof document !== 'undefined') {
+      const ref = (document.referrer || '').toLowerCase();
+      if (ref.includes('tiktok.com')) return true;
+    }
+    if (typeof navigator !== 'undefined') {
+      const ua = (navigator.userAgent || '').toLowerCase();
+      // TikTok in-app webview UA contains "musical_ly" or "bytedance"
+      if (ua.includes('musical_ly') || ua.includes('bytedance') || ua.includes('tiktok')) {
+        return true;
+      }
+    }
+    return false;
   }, [searchParams]);
 
   const scrollToBuy = useCallback(() => {
