@@ -9,7 +9,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { RefreshCw, Sparkles, TrendingUp, Target, Zap } from "lucide-react";
+import { RefreshCw, Sparkles, TrendingUp, Target, Zap, Flame, AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, AreaChart, Area, ScatterChart, Scatter, ZAxis,
@@ -78,6 +79,29 @@ type PerfSignal = {
   revenue: number;
   sample_size: number;
   last_updated: string;
+};
+
+type RenderAttempt = {
+  id: string;
+  product_slug: string | null;
+  niche_key: string | null;
+  pattern_id: string | null;
+  hook_category: string | null;
+  pin_mode: string | null;
+  attempt_no: number;
+  total_score: number | null;
+  rejected: boolean;
+  reasons: string[];
+  scores: Record<string, number> | null;
+  created_at: string;
+};
+
+type RuntimeSettings = {
+  id: number;
+  domination_mode: boolean;
+  daily_pin_cap: number;
+  min_gap_minutes: number;
+  auto_approve_queue: boolean;
 };
 
 const CHART_COLORS = [
