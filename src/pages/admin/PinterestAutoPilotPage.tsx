@@ -485,6 +485,7 @@ export default function PinterestAutoPilotPage() {
                     <TableHead>Action</TableHead>
                     <TableHead>Reason</TableHead>
                     <TableHead>When</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -515,6 +516,15 @@ export default function PinterestAutoPilotPage() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(d.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setOpenDecision(d)}
+                        >
+                          <Info className="w-3.5 h-3.5 mr-1" /> Why?
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
