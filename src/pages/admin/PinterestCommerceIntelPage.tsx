@@ -729,6 +729,45 @@ export default function PinterestCommerceIntelPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
+          <div className="border-t pt-3 pb-1">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Pacing mode
+              </Label>
+              <span className="text-[11px] text-muted-foreground">
+                Active: <span className="font-mono">{runtime.data?.pacing_mode ?? "balanced"}</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(Object.keys(PACING_PRESETS) as PacingMode[]).map((mode) => {
+                const preset = PACING_PRESETS[mode];
+                const active = (runtime.data?.pacing_mode ?? "balanced") === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    disabled={setPacing.isPending}
+                    onClick={() => setPacing.mutate(mode)}
+                    className={`text-left rounded-md border p-3 transition ${
+                      active
+                        ? "border-primary bg-primary/10 ring-1 ring-primary"
+                        : "border-border hover:border-primary/40 hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold">{preset.label}</span>
+                      <Badge variant={active ? "default" : "secondary"} className="text-[10px]">
+                        {preset.daily_pin_cap}/d · {preset.min_gap_minutes}m
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {preset.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="flex flex-wrap items-end gap-3 border-t pt-3">
             <div className="space-y-1">
               <Label htmlFor="cap" className="text-xs">Daily pin cap</Label>
