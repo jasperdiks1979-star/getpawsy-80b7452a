@@ -29,8 +29,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Play, RefreshCw, Plane, Pause, Ban, Star } from "lucide-react";
+import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Progress } from "@/components/ui/progress";
 
 type Settings = {
   id: number;
@@ -79,11 +87,66 @@ function actionBadge(action: string) {
   return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
 }
 
+/**
+ * Score factor weights — must mirror pinterest-autopilot edge function.
+ * Used to render normalized progress bars in the "Why?" panel.
+ */
+const FACTOR_MAX: Record<string, { max: number; label: string; description: string }> = {
+  image: { max: 20, label: "Image quality", description: "Number of valid HTTPS images" },
+  margin: { max: 15, label: "Margin potential", description: "Cost-vs-price spread or price tier" },
+  category_fit: { max: 10, label: "Category fit", description: "Matches preferred niche or money category" },
+  visual_appeal: { max: 10, label: "Pinterest visual appeal", description: "Cozy / lifestyle-friendly product type" },
+  shipping: { max: 10, label: "US shipping suitability", description: "Active + shippable" },
+  performance: { max: 25, label: "Historical performance", description: "CTR, saves, clicks from prior pins" },
+  forced: { max: 20, label: "Force-promote bonus", description: "Manual override boost" },
+};
+
+/** Derive safety checks from the score breakdown for human-readable explanation. */
+function deriveSafetyChecks(breakdown: Record<string, unknown>) {
+  const num = (k: string) => Number(breakdown[k] ?? 0);
+  return [
+    {
+      label: "Image quality acceptable",
+      passed: num("image") >= 8,
+      detail: `score ${num("image")}/20`,
+    },
+    {
+      label: "Active and US-shippable",
+      passed: num("shipping") > 0,
+      detail: num("shipping") > 0 ? "is_active=true" : "product disabled",
+    },
+    {
+      label: "Within weekly cap",
+      passed: num("weekly_count") < 99,
+      detail: `${num("weekly_count")} pins this week`,
+    },
+    {
+      label: "Has visual appeal for Pinterest",
+      passed: num("visual_appeal") >= 5,
+      detail: `score ${num("visual_appeal")}/10`,
+    },
+    {
+      label: "Margin viable",
+      passed: num("margin") >= 3,
+      detail: `score ${num("margin")}/15`,
+    },
+    {
+      label: "Has measured Pinterest history",
+      passed: num("impressions") > 0,
+      detail:
+        num("impressions") > 0
+          ? `${num("impressions")} imp · ${num("saves")} saves · ${num("clicks")} clicks`
+          : "cold start (no history yet)",
+    },
+  ];
+}
+
 export default function PinterestAutoPilotPage() {
   const qc = useQueryClient();
   const [overrideProductId, setOverrideProductId] = useState("");
   const [overrideAction, setOverrideAction] = useState<Override["action"]>("force_promote");
   const [overrideReason, setOverrideReason] = useState("");
+  const [openDecision, setOpenDecision] = useState<Decision | null>(null);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["autopilot-settings"],
