@@ -379,8 +379,8 @@ export default function PinterestCommerceIntelPage() {
     queryKey: ["drill-signals", drillKey],
     queryFn: async () => {
       let q = supabase.from("pinterest_performance_signals" as any)
-        .select("niche_key,pin_mode,hook_category,cta,product_category,impressions,saves,outbound,sessions,add_to_cart,purchase,revenue,sample_size,last_updated")
-        .eq("niche_key", drill!.niche_key);
+        .select("niche_key,pin_mode,hook_category,cta,product_category,impressions,saves,outbound,sessions,add_to_cart,purchase,revenue,sample_size,last_updated");
+      if (drill!.niche_key) q = q.eq("niche_key", drill!.niche_key);
       if (drill!.pin_mode) q = q.eq("pin_mode", drill!.pin_mode);
       if (drill!.hook_category) q = q.eq("hook_category", drill!.hook_category);
       const { data, error } = await q.order("revenue", { ascending: false }).limit(50);
@@ -400,8 +400,8 @@ export default function PinterestCommerceIntelPage() {
     queryKey: ["drill-attempts", drillKey],
     queryFn: async () => {
       let q = supabase.from("pinterest_render_attempts" as any)
-        .select("id,product_slug,niche_key,pin_mode,pattern_id,hook_category,attempt_no,total_score,rejected,reasons,brief,created_at")
-        .eq("niche_key", drill!.niche_key);
+        .select("id,product_slug,niche_key,pin_mode,pattern_id,hook_category,attempt_no,total_score,rejected,reasons,brief,created_at");
+      if (drill!.niche_key) q = q.eq("niche_key", drill!.niche_key);
       if (drill!.pin_mode) q = q.eq("pin_mode", drill!.pin_mode);
       if (drill!.hook_category) q = q.eq("hook_category", drill!.hook_category);
       const { data, error } = await q.order("created_at", { ascending: false }).limit(25);
