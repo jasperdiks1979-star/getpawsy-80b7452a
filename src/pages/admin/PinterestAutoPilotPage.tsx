@@ -619,6 +619,7 @@ export default function PinterestAutoPilotPage() {
             const checks = deriveSafetyChecks(breakdown);
             const niche = String(breakdown.niche ?? "—");
             const passedChecks = checks.filter((c) => c.passed).length;
+            const drivers = computeDecisiveDrivers(d.action, breakdown);
             return (
               <>
                 <SheetHeader>
@@ -645,6 +646,14 @@ export default function PinterestAutoPilotPage() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Decisive driver summary */}
+                  <div className="p-3 rounded-lg border-l-4 border-primary bg-primary/5 text-sm">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                      Most decisive
+                    </div>
+                    {drivers.summary}
                   </div>
 
                   {/* Hook + Board picks */}
@@ -679,10 +688,21 @@ export default function PinterestAutoPilotPage() {
                       {Object.entries(FACTOR_MAX).map(([key, meta]) => {
                         const raw = Number(breakdown[key] ?? 0);
                         const pct = Math.min(100, (raw / meta.max) * 100);
+                        const isDecisive = drivers.factorKeys.has(key);
                         return (
-                          <div key={key}>
+                          <div
+                            key={key}
+                            className={
+                              isDecisive
+                                ? "p-2 -mx-2 rounded-md bg-primary/5 ring-1 ring-primary/30"
+                                : ""
+                            }
+                          >
                             <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="font-medium">{meta.label}</span>
+                              <span className="font-medium flex items-center">
+                                {meta.label}
+                                {isDecisive && <DecisiveBadge />}
+                              </span>
                               <span className="font-mono text-muted-foreground">
                                 {raw}/{meta.max}
                               </span>
@@ -707,15 +727,24 @@ export default function PinterestAutoPilotPage() {
                     </h3>
                     <ul className="space-y-1.5">
                       {checks.map((c, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
+                        <li
+                          key={i}
+                          className={
+                            "flex items-start gap-2 text-sm " +
+                            (drivers.checkLabels.has(c.label)
+                              ? "p-1.5 -mx-1.5 rounded-md bg-primary/5 ring-1 ring-primary/30"
+                              : "")
+                          }
+                        >
                           {c.passed ? (
                             <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                           ) : (
                             <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                           )}
-                          <div>
-                            <div className={c.passed ? "" : "text-muted-foreground line-through"}>
+                          <div className="flex-1">
+                            <div className={"flex items-center " + (c.passed ? "" : "text-muted-foreground line-through")}>
                               {c.label}
+                              {drivers.checkLabels.has(c.label) && <DecisiveBadge />}
                             </div>
                             <div className="text-xs text-muted-foreground">{c.detail}</div>
                           </div>
