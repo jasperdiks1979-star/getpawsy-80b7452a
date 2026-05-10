@@ -93,6 +93,26 @@ function safePct(num: number, denom: number) {
   return (num / denom) * 100;
 }
 
+function KpiTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardDescription className="text-xs">{label}</CardDescription>
+        <CardTitle className="text-2xl">{value}</CardTitle>
+      </CardHeader>
+      {sub && <CardContent className="text-xs text-muted-foreground -mt-2">{sub}</CardContent>}
+    </Card>
+  );
+}
+
+function EmptyChart() {
+  return (
+    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+      No performance signals in the selected window yet.
+    </div>
+  );
+}
+
 export default function PinterestCommerceIntelPage() {
   const qc = useQueryClient();
 
