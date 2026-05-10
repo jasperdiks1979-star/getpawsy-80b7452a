@@ -180,14 +180,28 @@ export default function PinterestCommerceIntelPage() {
 
   const refreshTrends = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke(
-        "pinterest-trend-intelligence", { body: {}, method: "POST" });
-      // GET via query string equivalent
-      if (error) throw error;
-      return data;
+      // Edge function reads `action` from the query string; invoke() doesn't
+      // pass query params, so call the function URL directly.
+      const url = `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-trend-intelligence?action=refresh`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+      });
+      const json = await res.json();
+      if (!res.ok || json?.ok === false) {
+        throw new Error(json?.message ?? `HTTP ${res.status}`);
+      }
+      return json;
     },
-    onSuccess: () => {
-      toast.success("Trend signals refreshed");
+    onSuccess: (json: any) => {
+      toast.success(`Trends refreshed (${json?.upserts ?? 0} new, ${json?.considered ?? 0} active)`);
       qc.invalidateQueries({ queryKey: ["pinterest-trend-signals"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to refresh trends"),
@@ -200,10 +214,15 @@ export default function PinterestCommerceIntelPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Auto-evolution complete");
+    onSuccess: (json: any) => {
+      toast.success(
+        `Auto-evolve done — threshold ${json?.newThreshold ?? "?"}, exploit ${
+          json?.newExploit != null ? Math.round(json.newExploit * 100) + "%" : "?"
+        }, ${json?.decisions ?? 0} decisions`,
+      );
       qc.invalidateQueries({ queryKey: ["pinterest-strategy-state"] });
       qc.invalidateQueries({ queryKey: ["pinterest-evolution-log"] });
+      qc.invalidateQueries({ queryKey: ["pinterest-winner-dimensions"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Evolution failed"),
   });
