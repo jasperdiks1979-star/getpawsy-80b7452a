@@ -104,7 +104,32 @@ type RuntimeSettings = {
   daily_pin_cap: number;
   min_gap_minutes: number;
   auto_approve_queue: boolean;
+  pacing_mode: "slow" | "balanced" | "domination";
 };
+
+// Client mirror of supabase/functions/_shared/pinterest-pacing.ts.
+// Keep in sync with the edge helper — server is the source of truth.
+const PACING_PRESETS = {
+  slow: {
+    daily_pin_cap: 2,
+    min_gap_minutes: 240,
+    label: "Slow",
+    description: "Warm-up · 2/day · 4h gap. Safest for new accounts or experimental hooks.",
+  },
+  balanced: {
+    daily_pin_cap: 4,
+    min_gap_minutes: 90,
+    label: "Balanced",
+    description: "Default · 4/day · 90m gap. Pinterest-safe stable scaling.",
+  },
+  domination: {
+    daily_pin_cap: 8,
+    min_gap_minutes: 45,
+    label: "Domination",
+    description: "Scale · 8/day · 45m gap. Aggressive winner exploitation.",
+  },
+} as const;
+type PacingMode = keyof typeof PACING_PRESETS;
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
