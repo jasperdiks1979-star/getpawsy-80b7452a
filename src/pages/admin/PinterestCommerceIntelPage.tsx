@@ -908,6 +908,8 @@ export default function PinterestCommerceIntelPage() {
           <TabsTrigger value="hooks">Hooks</TabsTrigger>
           <TabsTrigger value="rejections">Rejections</TabsTrigger>
           <TabsTrigger value="dedup">Dedup</TabsTrigger>
+          <TabsTrigger value="failure-intel">Failure Intel</TabsTrigger>
+          <TabsTrigger value="winner-intel">Winner Intel</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
           <TabsTrigger value="boosts">Boosts</TabsTrigger>
           <TabsTrigger value="evolution">Evolution Log</TabsTrigger>
