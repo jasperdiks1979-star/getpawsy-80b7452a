@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
     "boards:write",
     "pins:read",
     "pins:write",
+    "user_accounts:read",
   ].join(",");
 
   const authUrl = new URL("https://www.pinterest.com/oauth/");
