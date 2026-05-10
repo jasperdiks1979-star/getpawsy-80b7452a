@@ -30,6 +30,7 @@ import {
   pickCtrBadge,
 } from "../_shared/pinterest-templates.ts";
 import { fetchAiBackdrop } from "../_shared/pinterest-ai-backdrop.ts";
+import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
 
 export type {
   PinterestQueueInsert,
@@ -66,7 +67,7 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "pin_title", "pin_description", "pin_image_url", "destination_link",
   "board_name", "hashtags", "priority", "status", "scheduled_at",
   "hook_group", "category_key", "overlay_text", "qa_reasons", "image_hash",
-  "approved_at",
+  "approved_at", "creative_fingerprint",
 ]);
 
 export interface SanitizeReport {
