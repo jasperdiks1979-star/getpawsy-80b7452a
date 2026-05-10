@@ -39,6 +39,24 @@ type PreviewPin = {
 
 const DEFAULT_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
 
+function normalizeSlugInput(raw: string): string {
+  if (!raw) return raw;
+  let s = raw.trim();
+  const m = s.match(/\/products\/([^/?#]+)/i);
+  if (m) s = m[1];
+  s = s.split("?")[0].split("#")[0];
+  return s.toLowerCase().replace(/^-+|-+$/g, "");
+}
+
+type DebugInfo = {
+  fn: string;
+  productFound: "yes" | "no" | "—";
+  backdropSource: string;
+  status: number | string;
+  error: string | null;
+  resolvedSlug: string;
+};
+
 const HOOKS: Array<{ key: string; label: string }> = [
   { key: "pain", label: "Pain" },
   { key: "curiosity", label: "Curiosity" },
@@ -64,6 +82,7 @@ export default function PinterestBackdropPreviewPage() {
   const [rerollingHook, setRerollingHook] = useState<string | null>(null);
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
+  const [debug, setDebug] = useState<DebugInfo | null>(null);
   // Filter/search state for the rendered preview grid.
   const [searchQuery, setSearchQuery] = useState("");
   const [hookFilter, setHookFilter] = useState<string>("all");
@@ -233,17 +252,35 @@ export default function PinterestBackdropPreviewPage() {
   async function runPreview() {
     setLoading(true);
     setPins([]);
+    const cleanSlug = normalizeSlugInput(slug);
+    if (cleanSlug && cleanSlug !== slug) setSlug(cleanSlug);
+    const sentSlug = cleanSlug || DEFAULT_SLUG;
+    setDebug({ fn: "pinterest-viral-batch", productFound: "—", backdropSource: "—", status: "pending", error: null, resolvedSlug: sentSlug });
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
         body: {
-          productSlug: slug,
+          productSlug: sentSlug,
           useLifestyleBackdrop: useBackdrop,
           backdropByHook: useBackdrop ? backdropByHook : undefined,
           dryRun: true,
         },
       });
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.message || "Preview failed");
+      if (error) {
+        setDebug((dd) => dd && { ...dd, status: "transport_error", error: error.message || "transport_error" });
+        throw error;
+      }
+      const dd: any = data || {};
+      const firstSrc = (dd.pins || []).find((p: any) => p?.backdrop_source)?.backdrop_source
+        || (dd?.product ? "product_only" : "—");
+      setDebug({
+        fn: "pinterest-viral-batch",
+        productFound: dd?.product ? "yes" : (dd?.code === "PRODUCT_NOT_FOUND" ? "no" : "—"),
+        backdropSource: firstSrc,
+        status: dd?.ok ? 200 : (dd?.code || "error"),
+        error: dd?.ok ? null : (dd?.message || "Preview failed"),
+        resolvedSlug: dd?.product?.slug || sentSlug,
+      });
+      if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
       setBatchTag(data.batchTag || null);
       // Default every hook to approved on a fresh preview.
@@ -254,7 +291,13 @@ export default function PinterestBackdropPreviewPage() {
       setApprovedByHook(fresh);
       toast.success(`Preview ready — ${data.pins?.length ?? 0} pins`);
     } catch (e: any) {
-      toast.error(e?.message || "Preview failed");
+      const msg = e?.message || "Preview failed";
+      setDebug((dd) => dd && { ...dd, status: dd.status === "pending" ? "transport_error" : dd.status, error: msg });
+      toast.error(
+        msg.includes("Failed to send a request")
+          ? "Edge Function unreachable — check the debug panel for details."
+          : msg,
+      );
     } finally {
       setLoading(false);
     }
@@ -399,6 +442,27 @@ export default function PinterestBackdropPreviewPage() {
                 Generate preview
               </Button>
             </div>
+
+            {debug && (
+              <div className="mt-2 rounded border bg-muted/30 px-3 py-2 text-[11px] font-mono text-muted-foreground space-y-0.5">
+                <div className="flex items-center justify-between text-foreground">
+                  <span className="font-semibold">Debug</span>
+                  <button
+                    type="button"
+                    onClick={() => setDebug(null)}
+                    className="text-[10px] underline opacity-70 hover:opacity-100"
+                  >
+                    clear
+                  </button>
+                </div>
+                <div>fn: <span className="text-foreground">{debug.fn}</span></div>
+                <div>slug: <span className="text-foreground">{debug.resolvedSlug}</span></div>
+                <div>product found: <span className="text-foreground">{debug.productFound}</span></div>
+                <div>backdrop source: <span className="text-foreground">{debug.backdropSource}</span></div>
+                <div>status: <span className="text-foreground">{String(debug.status)}</span></div>
+                {debug.error && <div className="text-destructive">error: {debug.error}</div>}
+              </div>
+            )}
 
             {useBackdrop && (
               <div className="border-t pt-3 space-y-2">

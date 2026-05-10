@@ -59,6 +59,26 @@ const CLOUDINARY_CLOUD = "dlkqycfzn";
 const BASE_URL = "https://getpawsy.pet";
 const DEFAULT_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
 
+/**
+ * Normalize a slug input from the admin UI.
+ * Accepts:
+ *   - bare slug:               "automatic-cat-litter-box-self-cleaning-"
+ *   - full product URL:        "https://getpawsy.pet/products/automatic-cat-..."
+ *   - URL with query/fragment: ".../products/foo?utm=...#x"
+ * Returns a trimmed, lowercased slug with leading/trailing hyphens removed.
+ */
+function normalizeSlugInput(raw: unknown): string {
+  if (!raw) return "";
+  let s = String(raw).trim();
+  // Pull slug out of a full URL if pasted.
+  const urlMatch = s.match(/\/products\/([^/?#]+)/i);
+  if (urlMatch) s = urlMatch[1];
+  // Strip query/fragment if any leaked through.
+  s = s.split("?")[0].split("#")[0];
+  s = s.toLowerCase().replace(/^-+|-+$/g, "").trim();
+  return s;
+}
+
 // Whitelist of columns that exist on pinterest_pin_queue. Any extra fields
 // (e.g. optional backdrop_* visual metadata) are silently dropped so the
 // queue insert can never fail because of missing columns.
@@ -650,8 +670,8 @@ serve(async (req) => {
     // `productSlugs` (Domination Mode). When neither is given we default to the
     // hero product. Loop runs the existing single-product pipeline per slug.
     const slugsRaw: string[] = Array.isArray(body.productSlugs) && body.productSlugs.length
-      ? body.productSlugs.map((s: unknown) => String(s)).filter(Boolean)
-      : [body.productSlug || DEFAULT_SLUG];
+      ? body.productSlugs.map(normalizeSlugInput).filter(Boolean)
+      : [normalizeSlugInput(body.productSlug) || DEFAULT_SLUG];
     const sb0 = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -730,14 +750,33 @@ serve(async (req) => {
       });
     }
 
-    const { data: product, error: pErr } = await sb
+    let { data: product, error: pErr } = await sb
       .from("products")
       .select("id, name, slug, description, category, image_url, images")
       .eq("slug", slug)
-      .single();
-    if (pErr || !product) {
-      console.error(`[pinterest-viral-batch] Product lookup failed for "${slug}":`, pErr?.message);
-      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: `Product not found: ${slug}` });
+      .maybeSingle();
+    // Fuzzy fallback: tolerate truncated slugs (e.g. user pasted
+    // "automatic-cat-litter-box-self-cleaning-" without the suffix).
+    if (!product && slug && slug.length >= 6) {
+      const { data: alt } = await sb
+        .from("products")
+        .select("id, name, slug, description, category, image_url, images")
+        .ilike("slug", `${slug.replace(/-+$/,"")}%`)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (alt && alt.length) {
+        product = alt[0] as typeof product;
+        console.log(`[pinterest-viral-batch] fuzzy slug match "${slug}" -> "${product!.slug}"`);
+      }
+    }
+    if (pErr && !product) {
+      console.error(`[pinterest-viral-batch] Product lookup failed for "${slug}":`, pErr.message);
+      return respond({ ok: false, code: "PRODUCT_LOOKUP_ERROR", message: pErr.message, slug });
+    }
+    if (!product) {
+      console.error(`[pinterest-viral-batch] Product not found for "${slug}"`);
+      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: `Product not found: ${slug}`, slug });
     }
     // Resolve category-aware SEO keyword bucket + style-board routing
     const categoryKey = resolveCategoryKey(product.category, product.slug);
