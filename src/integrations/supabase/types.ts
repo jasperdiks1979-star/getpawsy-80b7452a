@@ -5815,6 +5815,7 @@ export type Database = {
           category_key: string | null
           content_type: string
           created_at: string
+          creative_fingerprint: string | null
           destination_link: string
           error_message: string | null
           external_url: string | null
@@ -5859,6 +5860,7 @@ export type Database = {
           category_key?: string | null
           content_type?: string
           created_at?: string
+          creative_fingerprint?: string | null
           destination_link: string
           error_message?: string | null
           external_url?: string | null
@@ -5903,6 +5905,7 @@ export type Database = {
           category_key?: string | null
           content_type?: string
           created_at?: string
+          creative_fingerprint?: string | null
           destination_link?: string
           error_message?: string | null
           external_url?: string | null
@@ -6215,6 +6218,7 @@ export type Database = {
           last_pin_published_at: string | null
           min_gap_minutes: number
           mode: string
+          pacing_mode: string
           production_publish_verified: boolean
           production_publish_verified_at: string | null
           production_trial_detected: boolean
@@ -6240,6 +6244,7 @@ export type Database = {
           last_pin_published_at?: string | null
           min_gap_minutes?: number
           mode?: string
+          pacing_mode?: string
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
           production_trial_detected?: boolean
@@ -6265,6 +6270,7 @@ export type Database = {
           last_pin_published_at?: string | null
           min_gap_minutes?: number
           mode?: string
+          pacing_mode?: string
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
           production_trial_detected?: boolean
