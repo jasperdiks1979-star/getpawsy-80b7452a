@@ -14,7 +14,10 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, AreaChart, Area, ScatterChart, Scatter, ZAxis,
 } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
 
 type StrategyState = {
   id: number;
@@ -115,6 +118,13 @@ function EmptyChart() {
 
 export default function PinterestCommerceIntelPage() {
   const qc = useQueryClient();
+
+  type Drilldown = {
+    niche_key: string;
+    pin_mode: string | null;
+    hook_category: string | null;
+  };
+  const [drill, setDrill] = useState<Drilldown | null>(null);
 
   const state = useQuery({
     queryKey: ["pinterest-strategy-state"],
@@ -361,6 +371,78 @@ export default function PinterestCommerceIntelPage() {
     },
   };
 
+  // ── Drilldown details (lazy) ────────────────────────────────────────────
+  const drillKey = drill ? `${drill.niche_key}|${drill.pin_mode ?? ""}|${drill.hook_category ?? ""}` : null;
+
+  const drillSignals = useQuery({
+    enabled: !!drill,
+    queryKey: ["drill-signals", drillKey],
+    queryFn: async () => {
+      let q = supabase.from("pinterest_performance_signals" as any)
+        .select("niche_key,pin_mode,hook_category,cta,product_category,impressions,saves,outbound,sessions,add_to_cart,purchase,revenue,sample_size,last_updated");
+      if (drill!.niche_key) q = q.eq("niche_key", drill!.niche_key);
+      if (drill!.pin_mode) q = q.eq("pin_mode", drill!.pin_mode);
+      if (drill!.hook_category) q = q.eq("hook_category", drill!.hook_category);
+      const { data, error } = await q.order("revenue", { ascending: false }).limit(50);
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        niche_key: string; pin_mode: string | null; hook_category: string | null;
+        cta: string | null; product_category: string | null;
+        impressions: number; saves: number; outbound: number; sessions: number;
+        add_to_cart: number; purchase: number; revenue: number;
+        sample_size: number; last_updated: string;
+      }>;
+    },
+  });
+
+  const drillAttempts = useQuery({
+    enabled: !!drill,
+    queryKey: ["drill-attempts", drillKey],
+    queryFn: async () => {
+      let q = supabase.from("pinterest_render_attempts" as any)
+        .select("id,product_slug,niche_key,pin_mode,pattern_id,hook_category,attempt_no,total_score,rejected,reasons,brief,created_at");
+      if (drill!.niche_key) q = q.eq("niche_key", drill!.niche_key);
+      if (drill!.pin_mode) q = q.eq("pin_mode", drill!.pin_mode);
+      if (drill!.hook_category) q = q.eq("hook_category", drill!.hook_category);
+      const { data, error } = await q.order("created_at", { ascending: false }).limit(25);
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        id: string; product_slug: string; niche_key: string;
+        pin_mode: string | null; pattern_id: string | null;
+        hook_category: string | null; attempt_no: number;
+        total_score: number; rejected: boolean; reasons: string[] | null;
+        brief: any; created_at: string;
+      }>;
+    },
+  });
+
+  const drillEvolution = useMemo(() => {
+    if (!drill || !evolution.data) return [];
+    const target = `${drill.niche_key}:${drill.pin_mode ?? ""}`;
+    const targetHook = `${drill.niche_key}:${drill.hook_category ?? ""}`;
+    return evolution.data.filter((e) => {
+      const blob = JSON.stringify(e.new_value ?? "") + JSON.stringify(e.old_value ?? "");
+      return e.niche_key === drill.niche_key
+        || (drill.pin_mode && blob.includes(target))
+        || (drill.hook_category && blob.includes(targetHook));
+    }).slice(0, 15);
+  }, [drill, evolution.data]);
+
+  const drillTotals = useMemo(() => {
+    const rows = drillSignals.data ?? [];
+    const sum = (k: string) => rows.reduce((a, r: any) => a + Number(r[k] ?? 0), 0);
+    const impressions = sum("impressions"), outbound = sum("outbound"),
+      saves = sum("saves"), sessions = sum("sessions"),
+      atc = sum("add_to_cart"), purchase = sum("purchase"), revenue = sum("revenue");
+    return {
+      impressions, outbound, saves, sessions, atc, purchase, revenue,
+      ctr: safePct(outbound, impressions),
+      saveRate: safePct(saves, impressions),
+      cvr: safePct(purchase, sessions),
+      atcRate: safePct(atc, sessions),
+    };
+  }, [drillSignals.data]);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Helmet>
@@ -502,7 +584,13 @@ export default function PinterestCommerceIntelPage() {
                   <EmptyChart />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={byArchetype}>
+                    <BarChart data={byArchetype}
+                      onClick={(e: any) => {
+                        const a = e?.activePayload?.[0]?.payload?.archetype;
+                        if (a && a !== "unknown") setDrill({ niche_key: "", pin_mode: a, hook_category: null });
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="archetype" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
                       <YAxis tick={{ fontSize: 11 }} />
@@ -549,7 +637,13 @@ export default function PinterestCommerceIntelPage() {
                   <EmptyChart />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={byHook} layout="vertical">
+                    <BarChart data={byHook} layout="vertical"
+                      onClick={(e: any) => {
+                        const h = e?.activePayload?.[0]?.payload?.hook;
+                        if (h && h !== "unknown") setDrill({ niche_key: "", pin_mode: null, hook_category: h });
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis type="number" tick={{ fontSize: 11 }} />
                       <YAxis type="category" dataKey="hook" tick={{ fontSize: 11 }} width={120} />
@@ -629,7 +723,15 @@ export default function PinterestCommerceIntelPage() {
                 </TableHeader>
                 <TableBody>
                   {(winners.data ?? []).map((w, i) => (
-                    <TableRow key={`${w.niche_key}-${w.pin_mode}-${w.hook_category}-${i}`}>
+                    <TableRow
+                      key={`${w.niche_key}-${w.pin_mode}-${w.hook_category}-${i}`}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setDrill({
+                        niche_key: w.niche_key,
+                        pin_mode: w.pin_mode,
+                        hook_category: w.hook_category,
+                      })}
+                    >
                       <TableCell className="font-medium">{w.niche_key}</TableCell>
                       <TableCell>{w.pin_mode ?? "—"}</TableCell>
                       <TableCell>{w.hook_category ?? "—"}</TableCell>
@@ -794,6 +896,142 @@ export default function PinterestCommerceIntelPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Sheet open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
+        <SheetContent side="right" className="sm:max-w-2xl w-full overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-base">
+              Drilldown:&nbsp;
+              <span className="font-mono">
+                {drill?.niche_key || "*"} / {drill?.pin_mode || "*"} / {drill?.hook_category || "*"}
+              </span>
+            </SheetTitle>
+            <SheetDescription>
+              Performance signals, render decisions and evolution journal entries that built this recommendation.
+            </SheetDescription>
+          </SheetHeader>
+
+          {drill && (
+            <div className="mt-4 space-y-5">
+              {/* Aggregate KPIs */}
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <KpiTile label="Revenue" value={`$${drillTotals.revenue.toFixed(0)}`} sub={`${drillTotals.purchase} orders`} />
+                <KpiTile label="CTR" value={`${drillTotals.ctr.toFixed(2)}%`} sub={`${drillTotals.outbound} clicks`} />
+                <KpiTile label="Save Rate" value={`${drillTotals.saveRate.toFixed(2)}%`} sub={`${drillTotals.saves} saves`} />
+                <KpiTile label="ATC Rate" value={`${drillTotals.atcRate.toFixed(2)}%`} sub={`${drillTotals.atc} ATCs`} />
+                <KpiTile label="CVR" value={`${drillTotals.cvr.toFixed(2)}%`} sub={`${drillTotals.sessions} sessions`} />
+                <KpiTile label="Impressions" value={drillTotals.impressions.toLocaleString()} sub={`${drillSignals.data?.length ?? 0} signals`} />
+              </div>
+
+              {/* Performance signals */}
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Top contributing signals</h3>
+                <div className="rounded border max-h-[260px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Niche</TableHead>
+                        <TableHead>Mode</TableHead>
+                        <TableHead>Hook</TableHead>
+                        <TableHead>CTA</TableHead>
+                        <TableHead className="text-right">Imp</TableHead>
+                        <TableHead className="text-right">CVR</TableHead>
+                        <TableHead className="text-right">Rev</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(drillSignals.data ?? []).map((r, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs">{r.niche_key}</TableCell>
+                          <TableCell className="text-xs">{r.pin_mode ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{r.hook_category ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{r.cta ?? "—"}</TableCell>
+                          <TableCell className="text-right text-xs">{r.impressions}</TableCell>
+                          <TableCell className="text-right text-xs">{safePct(r.purchase, r.sessions).toFixed(1)}%</TableCell>
+                          <TableCell className="text-right text-xs">${Number(r.revenue).toFixed(0)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {drillSignals.isLoading && (
+                        <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4">Loading…</TableCell></TableRow>
+                      )}
+                      {!drillSignals.isLoading && !drillSignals.data?.length && (
+                        <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4">No matching signals.</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
+
+              {/* Render decisions */}
+              <section>
+                <h3 className="text-sm font-semibold mb-2">
+                  Recent pin_mode / intent decisions ({drillAttempts.data?.length ?? 0})
+                </h3>
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                  {(drillAttempts.data ?? []).map((a) => {
+                    const intent = (a.brief?.emotional_intent ?? a.brief?.intent ?? "—") as string;
+                    const archetype = (a.brief?.commerce_archetype ?? "—") as string;
+                    const headline = (a.brief?.headline ?? a.brief?.title ?? "") as string;
+                    return (
+                      <div key={a.id} className="border rounded p-2 text-xs space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge variant={a.rejected ? "destructive" : "default"}>
+                            {a.rejected ? "rejected" : "accepted"}
+                          </Badge>
+                          <Badge variant="outline">{a.pin_mode ?? "—"}</Badge>
+                          <Badge variant="outline">{a.hook_category ?? "—"}</Badge>
+                          <Badge variant="outline">{a.pattern_id ?? "—"}</Badge>
+                          <span className="ml-auto text-muted-foreground">
+                            score {Number(a.total_score).toFixed(1)} · attempt {a.attempt_no}
+                          </span>
+                        </div>
+                        <div className="text-foreground">{headline || <span className="text-muted-foreground">(no headline)</span>}</div>
+                        <div className="text-muted-foreground">
+                          intent: <code>{intent}</code> · archetype: <code>{archetype}</code> · {a.product_slug}
+                        </div>
+                        {a.rejected && a.reasons?.length ? (
+                          <div className="text-destructive">✗ {a.reasons.join(" · ")}</div>
+                        ) : null}
+                        <div className="text-muted-foreground text-[10px]">
+                          {new Date(a.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {drillAttempts.isLoading && (
+                    <p className="text-xs text-muted-foreground">Loading…</p>
+                  )}
+                  {!drillAttempts.isLoading && !drillAttempts.data?.length && (
+                    <p className="text-xs text-muted-foreground">No render attempts logged for this combination.</p>
+                  )}
+                </div>
+              </section>
+
+              {/* Related evolution log */}
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Related auto-evolution decisions</h3>
+                {drillEvolution.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No related auto-evolution entries.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {drillEvolution.map((e) => (
+                      <div key={e.id} className="border rounded p-2 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline">{e.decision_type}</Badge>
+                          <span className="text-muted-foreground ml-auto">
+                            {new Date(e.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-muted-foreground">{e.rationale}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
