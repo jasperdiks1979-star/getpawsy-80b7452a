@@ -584,7 +584,13 @@ export default function PinterestCommerceIntelPage() {
                   <EmptyChart />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={byArchetype}>
+                    <BarChart data={byArchetype}
+                      onClick={(e: any) => {
+                        const a = e?.activePayload?.[0]?.payload?.archetype;
+                        if (a && a !== "unknown") setDrill({ niche_key: "", pin_mode: a, hook_category: null });
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="archetype" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
                       <YAxis tick={{ fontSize: 11 }} />
@@ -631,7 +637,13 @@ export default function PinterestCommerceIntelPage() {
                   <EmptyChart />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={byHook} layout="vertical">
+                    <BarChart data={byHook} layout="vertical"
+                      onClick={(e: any) => {
+                        const h = e?.activePayload?.[0]?.payload?.hook;
+                        if (h && h !== "unknown") setDrill({ niche_key: "", pin_mode: null, hook_category: h });
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis type="number" tick={{ fontSize: 11 }} />
                       <YAxis type="category" dataKey="hook" tick={{ fontSize: 11 }} width={120} />
