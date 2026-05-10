@@ -37,6 +37,7 @@ import {
 import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
 import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
+import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -405,6 +406,13 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
       `Strictly avoid: ${mode.must_avoid.join(", ")}.`
     : "";
 
+  const collageDirective = mode
+    ? buildCollagePromptSuffix(mode, dna, {
+        subject: brief.subject,
+        environment_summary: brief.environment_summary,
+      })
+    : "";
+
   const styleSuffix =
     `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
     `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
@@ -412,7 +420,17 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     `(do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself). ` +
     `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars.`;
 
-  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffix}${patternDirective}${modeDirective}`;
+  // For collage modes, replace the anti-collage clause with the explicit
+  // collage contract so the image model isn't given contradictory directives.
+  const styleSuffixForMode = mode?.is_collage
+    ? `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
+      `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
+      `Vertical 9:16 composition for Pinterest. ` +
+      `Do NOT render any text, captions, watermarks, logos, prices, or graphic overlays in the image itself. ` +
+      `No floating product cutouts, no Canva-template look, no CTA bars.`
+    : styleSuffix;
+
+  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -525,9 +543,22 @@ async function pickLandingSlug(
   supabase: ReturnType<typeof createClient>,
   niche: string,
   hook: string | null,
+  pinMode: PinModeKey | null = null,
 ): Promise<string | null> {
   try {
-    // Prefer exact niche+hook match, then niche-only, then any enabled.
+    // Phase 7 — prefer niche+pin_mode match (cozy→cozy, luxury→luxury, etc.),
+    // then niche+hook match, then niche-only, then any enabled.
+    if (pinMode) {
+      const { data } = await supabase
+        .from("pinterest_landing_templates")
+        .select("slug")
+        .eq("enabled", true)
+        .eq("niche_key", niche)
+        .eq("pin_mode", pinMode)
+        .limit(1)
+        .maybeSingle();
+      if (data?.slug) return data.slug as string;
+    }
     if (hook) {
       const { data } = await supabase
         .from("pinterest_landing_templates")
@@ -587,10 +618,16 @@ async function uploadAndInsertDraft(
   // Phase 1 congruency: route to /go/{slug} when a landing template exists
   // for this niche/hook, otherwise keep the PDP destination. The choice is
   // also recorded in `pinterest_creative_intents` for analytics.
-  const landingSlug = await pickLandingSlug(supabase, niche, brief.hook_category ?? null);
+  const landingSlug = await pickLandingSlug(
+    supabase,
+    niche,
+    brief.hook_category ?? null,
+    brief.pin_mode ?? null,
+  );
   const hookParam = encodeURIComponent(brief.emotional_hook.slice(0, 40));
+  const modeParam = brief.pin_mode ? `&pin_mode=${encodeURIComponent(brief.pin_mode)}` : "";
   const destination = landingSlug
-    ? `${BASE_URL}/go/${landingSlug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${landingSlug}&hook=${hookParam}&intent=${encodeURIComponent(brief.hook_category ?? "")}`
+    ? `${BASE_URL}/go/${landingSlug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${landingSlug}&hook=${hookParam}&intent=${encodeURIComponent(brief.hook_category ?? "")}${modeParam}`
     : `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
 
   const row = {

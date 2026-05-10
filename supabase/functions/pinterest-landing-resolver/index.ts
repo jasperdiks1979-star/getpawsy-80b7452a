@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
     const slug = (url.searchParams.get("slug") ?? "").trim().toLowerCase();
     const hookOverride = url.searchParams.get("hook")?.trim() || null;
     const intentOverride = url.searchParams.get("intent")?.trim() || null;
+    const pinModeOverride = url.searchParams.get("pin_mode")?.trim() || null;
 
     if (!slug || !/^[a-z0-9-]{2,64}$/.test(slug)) {
       return json({ ok: false, traceId: tid, message: "invalid_slug" }, 400);
@@ -97,6 +98,7 @@ Deno.serve(async (req) => {
           // Allow pin-level override of hook/intent so copy can flex.
           hook_type: hookOverride || tmpl.hook_type,
           emotional_angle: intentOverride || tmpl.emotional_angle,
+          pin_mode: pinModeOverride || tmpl.pin_mode,
         },
         products: products.slice(0, 6),
       },
