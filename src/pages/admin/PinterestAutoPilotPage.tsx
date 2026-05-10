@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle } from "lucide-react";
+import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle, Download } from "lucide-react";
 import { useState } from "react";
 import {
   Sheet,
@@ -538,10 +538,32 @@ export default function PinterestAutoPilotPage() {
       {/* Decisions log */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent decisions</CardTitle>
-          <CardDescription>
-            Latest 50 Auto-Pilot evaluations. Score is composite (0 ≈ low, 100 ≈ elite Pinterest fit).
-          </CardDescription>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle>Recent decisions</CardTitle>
+              <CardDescription>
+                Latest 50 Auto-Pilot evaluations. Score is composite (0 ≈ low, 100 ≈ elite Pinterest fit).
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!decisions || decisions.length === 0}
+                onClick={() => exportDecisions(decisions ?? [], "csv")}
+              >
+                <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!decisions || decisions.length === 0}
+                onClick={() => exportDecisions(decisions ?? [], "json")}
+              >
+                <Download className="w-3.5 h-3.5 mr-1" /> Export JSON
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {decisions && decisions.length > 0 ? (
