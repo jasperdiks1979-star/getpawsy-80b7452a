@@ -896,6 +896,142 @@ export default function PinterestCommerceIntelPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Sheet open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
+        <SheetContent side="right" className="sm:max-w-2xl w-full overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-base">
+              Drilldown:&nbsp;
+              <span className="font-mono">
+                {drill?.niche_key || "*"} / {drill?.pin_mode || "*"} / {drill?.hook_category || "*"}
+              </span>
+            </SheetTitle>
+            <SheetDescription>
+              Performance signals, render decisions and evolution journal entries that built this recommendation.
+            </SheetDescription>
+          </SheetHeader>
+
+          {drill && (
+            <div className="mt-4 space-y-5">
+              {/* Aggregate KPIs */}
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <KpiTile label="Revenue" value={`$${drillTotals.revenue.toFixed(0)}`} sub={`${drillTotals.purchase} orders`} />
+                <KpiTile label="CTR" value={`${drillTotals.ctr.toFixed(2)}%`} sub={`${drillTotals.outbound} clicks`} />
+                <KpiTile label="Save Rate" value={`${drillTotals.saveRate.toFixed(2)}%`} sub={`${drillTotals.saves} saves`} />
+                <KpiTile label="ATC Rate" value={`${drillTotals.atcRate.toFixed(2)}%`} sub={`${drillTotals.atc} ATCs`} />
+                <KpiTile label="CVR" value={`${drillTotals.cvr.toFixed(2)}%`} sub={`${drillTotals.sessions} sessions`} />
+                <KpiTile label="Impressions" value={drillTotals.impressions.toLocaleString()} sub={`${drillSignals.data?.length ?? 0} signals`} />
+              </div>
+
+              {/* Performance signals */}
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Top contributing signals</h3>
+                <div className="rounded border max-h-[260px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Niche</TableHead>
+                        <TableHead>Mode</TableHead>
+                        <TableHead>Hook</TableHead>
+                        <TableHead>CTA</TableHead>
+                        <TableHead className="text-right">Imp</TableHead>
+                        <TableHead className="text-right">CVR</TableHead>
+                        <TableHead className="text-right">Rev</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(drillSignals.data ?? []).map((r, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs">{r.niche_key}</TableCell>
+                          <TableCell className="text-xs">{r.pin_mode ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{r.hook_category ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{r.cta ?? "—"}</TableCell>
+                          <TableCell className="text-right text-xs">{r.impressions}</TableCell>
+                          <TableCell className="text-right text-xs">{safePct(r.purchase, r.sessions).toFixed(1)}%</TableCell>
+                          <TableCell className="text-right text-xs">${Number(r.revenue).toFixed(0)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {drillSignals.isLoading && (
+                        <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4">Loading…</TableCell></TableRow>
+                      )}
+                      {!drillSignals.isLoading && !drillSignals.data?.length && (
+                        <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4">No matching signals.</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
+
+              {/* Render decisions */}
+              <section>
+                <h3 className="text-sm font-semibold mb-2">
+                  Recent pin_mode / intent decisions ({drillAttempts.data?.length ?? 0})
+                </h3>
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                  {(drillAttempts.data ?? []).map((a) => {
+                    const intent = (a.brief?.emotional_intent ?? a.brief?.intent ?? "—") as string;
+                    const archetype = (a.brief?.commerce_archetype ?? "—") as string;
+                    const headline = (a.brief?.headline ?? a.brief?.title ?? "") as string;
+                    return (
+                      <div key={a.id} className="border rounded p-2 text-xs space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge variant={a.rejected ? "destructive" : "default"}>
+                            {a.rejected ? "rejected" : "accepted"}
+                          </Badge>
+                          <Badge variant="outline">{a.pin_mode ?? "—"}</Badge>
+                          <Badge variant="outline">{a.hook_category ?? "—"}</Badge>
+                          <Badge variant="outline">{a.pattern_id ?? "—"}</Badge>
+                          <span className="ml-auto text-muted-foreground">
+                            score {Number(a.total_score).toFixed(1)} · attempt {a.attempt_no}
+                          </span>
+                        </div>
+                        <div className="text-foreground">{headline || <span className="text-muted-foreground">(no headline)</span>}</div>
+                        <div className="text-muted-foreground">
+                          intent: <code>{intent}</code> · archetype: <code>{archetype}</code> · {a.product_slug}
+                        </div>
+                        {a.rejected && a.reasons?.length ? (
+                          <div className="text-destructive">✗ {a.reasons.join(" · ")}</div>
+                        ) : null}
+                        <div className="text-muted-foreground text-[10px]">
+                          {new Date(a.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {drillAttempts.isLoading && (
+                    <p className="text-xs text-muted-foreground">Loading…</p>
+                  )}
+                  {!drillAttempts.isLoading && !drillAttempts.data?.length && (
+                    <p className="text-xs text-muted-foreground">No render attempts logged for this combination.</p>
+                  )}
+                </div>
+              </section>
+
+              {/* Related evolution log */}
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Related auto-evolution decisions</h3>
+                {drillEvolution.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No related auto-evolution entries.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {drillEvolution.map((e) => (
+                      <div key={e.id} className="border rounded p-2 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline">{e.decision_type}</Badge>
+                          <span className="text-muted-foreground ml-auto">
+                            {new Date(e.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-muted-foreground">{e.rationale}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
