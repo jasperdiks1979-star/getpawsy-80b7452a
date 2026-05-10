@@ -473,7 +473,23 @@ export default function PinterestBackdropPreviewPage() {
                   </button>
                 </div>
                 <div>fn: <span className="text-foreground">{debug.fn}</span></div>
-                <div>slug: <span className="text-foreground">{debug.resolvedSlug}</span></div>
+                {debug.inputSlug && debug.inputSlug !== debug.resolvedSlug && (
+                  <div>input: <span className="text-foreground break-all">{debug.inputSlug}</span></div>
+                )}
+                <div>slug used: <span className="text-foreground break-all">{debug.resolvedSlug}</span></div>
+                {debug.productUrl && (
+                  <div>
+                    product url:{" "}
+                    <a
+                      href={debug.productUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-foreground underline break-all"
+                    >
+                      {debug.productUrl}
+                    </a>
+                  </div>
+                )}
                 <div>product found: <span className="text-foreground">{debug.productFound}</span></div>
                 {debug.productName && (
                   <div>product name: <span className="text-foreground">{debug.productName}</span></div>
