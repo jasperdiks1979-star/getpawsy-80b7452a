@@ -32,6 +32,14 @@ import {
 import { fetchAiBackdrop } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
 
+// Top-level boot log — visible in edge function logs immediately on cold start
+// so transport-layer outages can be distinguished from runtime errors.
+console.log("[pinterest-viral-batch] boot ok", {
+  has_supabase_url: !!Deno.env.get("SUPABASE_URL"),
+  has_service_role: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+  has_pexels: !!Deno.env.get("PEXELS_API_KEY"),
+});
+
 export type {
   PinterestQueueInsert,
   PinterestPinDraft,
@@ -649,6 +657,27 @@ function buildPinUrl(slug: string, hookKey: string): string {
 serve(async (req) => {
   const headers = cors(req);
   if (req.method === "OPTIONS") return new Response(null, { headers });
+
+  // Lightweight health probe — never touches DB, never throws.
+  // Reachable at: /functions/v1/pinterest-viral-batch/health
+  if (req.method === "GET") {
+    const u = new URL(req.url);
+    if (u.pathname.endsWith("/health")) {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          version: "viral-batch-2026-05-10",
+          env_loaded: {
+            SUPABASE_URL: !!Deno.env.get("SUPABASE_URL"),
+            SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+          },
+          pexels_enabled: !!Deno.env.get("PEXELS_API_KEY"),
+        }),
+        { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
+      );
+    }
+  }
+
   const traceId = crypto.randomUUID();
   // Helper: always 200 to caller — frontend reads `ok` flag.
   const respond = (payload: Record<string, unknown>, status = 200) =>
