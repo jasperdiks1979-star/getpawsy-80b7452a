@@ -29,8 +29,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Play, RefreshCw, Plane, Pause, Ban, Star } from "lucide-react";
+import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Progress } from "@/components/ui/progress";
 
 type Settings = {
   id: number;
@@ -79,11 +87,66 @@ function actionBadge(action: string) {
   return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
 }
 
+/**
+ * Score factor weights — must mirror pinterest-autopilot edge function.
+ * Used to render normalized progress bars in the "Why?" panel.
+ */
+const FACTOR_MAX: Record<string, { max: number; label: string; description: string }> = {
+  image: { max: 20, label: "Image quality", description: "Number of valid HTTPS images" },
+  margin: { max: 15, label: "Margin potential", description: "Cost-vs-price spread or price tier" },
+  category_fit: { max: 10, label: "Category fit", description: "Matches preferred niche or money category" },
+  visual_appeal: { max: 10, label: "Pinterest visual appeal", description: "Cozy / lifestyle-friendly product type" },
+  shipping: { max: 10, label: "US shipping suitability", description: "Active + shippable" },
+  performance: { max: 25, label: "Historical performance", description: "CTR, saves, clicks from prior pins" },
+  forced: { max: 20, label: "Force-promote bonus", description: "Manual override boost" },
+};
+
+/** Derive safety checks from the score breakdown for human-readable explanation. */
+function deriveSafetyChecks(breakdown: Record<string, unknown>) {
+  const num = (k: string) => Number(breakdown[k] ?? 0);
+  return [
+    {
+      label: "Image quality acceptable",
+      passed: num("image") >= 8,
+      detail: `score ${num("image")}/20`,
+    },
+    {
+      label: "Active and US-shippable",
+      passed: num("shipping") > 0,
+      detail: num("shipping") > 0 ? "is_active=true" : "product disabled",
+    },
+    {
+      label: "Within weekly cap",
+      passed: num("weekly_count") < 99,
+      detail: `${num("weekly_count")} pins this week`,
+    },
+    {
+      label: "Has visual appeal for Pinterest",
+      passed: num("visual_appeal") >= 5,
+      detail: `score ${num("visual_appeal")}/10`,
+    },
+    {
+      label: "Margin viable",
+      passed: num("margin") >= 3,
+      detail: `score ${num("margin")}/15`,
+    },
+    {
+      label: "Has measured Pinterest history",
+      passed: num("impressions") > 0,
+      detail:
+        num("impressions") > 0
+          ? `${num("impressions")} imp · ${num("saves")} saves · ${num("clicks")} clicks`
+          : "cold start (no history yet)",
+    },
+  ];
+}
+
 export default function PinterestAutoPilotPage() {
   const qc = useQueryClient();
   const [overrideProductId, setOverrideProductId] = useState("");
   const [overrideAction, setOverrideAction] = useState<Override["action"]>("force_promote");
   const [overrideReason, setOverrideReason] = useState("");
+  const [openDecision, setOpenDecision] = useState<Decision | null>(null);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["autopilot-settings"],
@@ -422,6 +485,7 @@ export default function PinterestAutoPilotPage() {
                     <TableHead>Action</TableHead>
                     <TableHead>Reason</TableHead>
                     <TableHead>When</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -453,6 +517,15 @@ export default function PinterestAutoPilotPage() {
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(d.created_at).toLocaleString()}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setOpenDecision(d)}
+                        >
+                          <Info className="w-3.5 h-3.5 mr-1" /> Why?
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -465,6 +538,136 @@ export default function PinterestAutoPilotPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Why-was-this-chosen explanation panel */}
+      <Sheet open={!!openDecision} onOpenChange={(o) => !o && setOpenDecision(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {openDecision && (() => {
+            const d = openDecision;
+            const breakdown = (d.score_breakdown ?? {}) as Record<string, unknown>;
+            const checks = deriveSafetyChecks(breakdown);
+            const niche = String(breakdown.niche ?? "—");
+            const passedChecks = checks.filter((c) => c.passed).length;
+            return (
+              <>
+                <SheetHeader>
+                  <SheetTitle className="text-left">{d.product_name}</SheetTitle>
+                  <SheetDescription className="text-left">
+                    {d.product_category ?? "—"} · niche: <span className="font-mono">{niche}</span>
+                  </SheetDescription>
+                </SheetHeader>
+
+                {/* Verdict */}
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                    <div>
+                      <div className="text-3xl font-bold font-mono">
+                        {Number(d.total_score).toFixed(0)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">composite score</div>
+                    </div>
+                    <div className="text-right space-y-1">
+                      {actionBadge(d.action)}
+                      {d.reason && (
+                        <div className="text-xs text-muted-foreground max-w-[200px]">
+                          {d.reason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Hook + Board picks */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 border rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Hook family</div>
+                      <div className="font-medium">
+                        {d.selected_hook_category ? (
+                          <Badge variant="secondary">{d.selected_hook_category}</Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Board</div>
+                      <div className="font-medium text-sm">
+                        {d.selected_board_name ?? "—"}
+                      </div>
+                      {d.expected_fit !== null && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          expected fit {Number(d.expected_fit).toFixed(0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Score factors */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">Score factors</h3>
+                    <div className="space-y-3">
+                      {Object.entries(FACTOR_MAX).map(([key, meta]) => {
+                        const raw = Number(breakdown[key] ?? 0);
+                        const pct = Math.min(100, (raw / meta.max) * 100);
+                        return (
+                          <div key={key}>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="font-medium">{meta.label}</span>
+                              <span className="font-mono text-muted-foreground">
+                                {raw}/{meta.max}
+                              </span>
+                            </div>
+                            <Progress value={pct} className="h-2" />
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              {meta.description}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Safety checks */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">
+                      Safety checks{" "}
+                      <span className="font-normal text-xs text-muted-foreground">
+                        ({passedChecks}/{checks.length} passed)
+                      </span>
+                    </h3>
+                    <ul className="space-y-1.5">
+                      {checks.map((c, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          {c.passed ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                          )}
+                          <div>
+                            <div className={c.passed ? "" : "text-muted-foreground line-through"}>
+                              {c.label}
+                            </div>
+                            <div className="text-xs text-muted-foreground">{c.detail}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Raw breakdown for power users */}
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      Raw breakdown JSON
+                    </summary>
+                    <pre className="mt-2 p-3 bg-muted rounded-lg overflow-x-auto text-[11px]">
+                      {JSON.stringify(breakdown, null, 2)}
+                    </pre>
+                  </details>
+                </div>
+              </>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
