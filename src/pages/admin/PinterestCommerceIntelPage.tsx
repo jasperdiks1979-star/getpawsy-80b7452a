@@ -1317,6 +1317,7 @@ export default function PinterestCommerceIntelPage() {
         </TabsContent>
 
         <TabsContent value="evolution">
+          {/* dedup tab inserted just above */}
           <Card>
             <CardHeader>
               <CardTitle>Auto-Evolution Journal</CardTitle>
