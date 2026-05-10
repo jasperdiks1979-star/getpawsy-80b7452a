@@ -102,6 +102,7 @@ import { PinterestLandingBanner } from "@/components/products/PinterestLandingBa
 import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
 import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
+import { PdpStickyAtc } from "@/components/products/PdpStickyAtc";
 import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
