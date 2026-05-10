@@ -2184,6 +2184,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-autopilot"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestAutoPilotPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-pin-status"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
