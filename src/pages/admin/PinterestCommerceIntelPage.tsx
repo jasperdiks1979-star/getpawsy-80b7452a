@@ -590,6 +590,8 @@ export default function PinterestCommerceIntelPage() {
         <TabsList>
           <TabsTrigger value="kpis">Performance KPIs</TabsTrigger>
           <TabsTrigger value="winners">Winners</TabsTrigger>
+          <TabsTrigger value="hooks">Hooks</TabsTrigger>
+          <TabsTrigger value="rejections">Rejections</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
           <TabsTrigger value="boosts">Boosts</TabsTrigger>
           <TabsTrigger value="evolution">Evolution Log</TabsTrigger>
