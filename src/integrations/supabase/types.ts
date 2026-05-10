@@ -5371,6 +5371,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_evolution_log: {
+        Row: {
+          created_at: string
+          decision_type: string
+          id: string
+          metrics: Json | null
+          new_value: Json | null
+          niche_key: string | null
+          old_value: Json | null
+          rationale: string | null
+          target_dimension: string | null
+        }
+        Insert: {
+          created_at?: string
+          decision_type: string
+          id?: string
+          metrics?: Json | null
+          new_value?: Json | null
+          niche_key?: string | null
+          old_value?: Json | null
+          rationale?: string | null
+          target_dimension?: string | null
+        }
+        Update: {
+          created_at?: string
+          decision_type?: string
+          id?: string
+          metrics?: Json | null
+          new_value?: Json | null
+          niche_key?: string | null
+          old_value?: Json | null
+          rationale?: string | null
+          target_dimension?: string | null
+        }
+        Relationships: []
+      }
       pinterest_keyword_performance: {
         Row: {
           avg_ctr: number | null
@@ -6248,6 +6284,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_strategy_state: {
+        Row: {
+          archetype_boosts: Json
+          exploit_ratio: number
+          hook_boosts: Json
+          id: number
+          last_evolved_at: string | null
+          quality_threshold: number
+          trend_modifiers: Json
+          updated_at: string
+        }
+        Insert: {
+          archetype_boosts?: Json
+          exploit_ratio?: number
+          hook_boosts?: Json
+          id?: number
+          last_evolved_at?: string | null
+          quality_threshold?: number
+          trend_modifiers?: Json
+          updated_at?: string
+        }
+        Update: {
+          archetype_boosts?: Json
+          exploit_ratio?: number
+          hook_boosts?: Json
+          id?: number
+          last_evolved_at?: string | null
+          quality_threshold?: number
+          trend_modifiers?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_trend_signals: {
+        Row: {
+          aesthetic_tone: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          niche_key: string
+          pin_mode: string | null
+          rationale: string | null
+          source: string
+          starts_at: string
+          trend_label: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          aesthetic_tone?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          niche_key: string
+          pin_mode?: string | null
+          rationale?: string | null
+          source?: string
+          starts_at?: string
+          trend_label: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          aesthetic_tone?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          niche_key?: string
+          pin_mode?: string | null
+          rationale?: string | null
+          source?: string
+          starts_at?: string
+          trend_label?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
       }
       pinterest_winner_dimensions: {
         Row: {
