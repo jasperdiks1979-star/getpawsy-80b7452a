@@ -632,6 +632,66 @@ export default function PinterestCommerceIntelPage() {
             </div>
           </div>
         </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex flex-wrap items-end gap-3 border-t pt-3">
+            <div className="space-y-1">
+              <Label htmlFor="cap" className="text-xs">Daily pin cap</Label>
+              <Input
+                id="cap"
+                type="number"
+                min={1}
+                max={50}
+                className="w-24 h-9"
+                placeholder={String(runtime.data?.daily_pin_cap ?? 4)}
+                value={capDraft}
+                onChange={(e) => setCapDraft(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="gap" className="text-xs">Min gap (minutes)</Label>
+              <Input
+                id="gap"
+                type="number"
+                min={5}
+                max={1440}
+                className="w-28 h-9"
+                placeholder={String(runtime.data?.min_gap_minutes ?? 90)}
+                value={gapDraft}
+                onChange={(e) => setGapDraft(e.target.value)}
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={setVelocity.isPending || (!capDraft && !gapDraft)}
+              onClick={() => {
+                const patch: { daily_pin_cap?: number; min_gap_minutes?: number } = {};
+                if (capDraft) {
+                  const n = Number(capDraft);
+                  if (!Number.isFinite(n) || n < 1 || n > 50) {
+                    toast.error("Daily cap must be between 1 and 50"); return;
+                  }
+                  patch.daily_pin_cap = Math.round(n);
+                }
+                if (gapDraft) {
+                  const n = Number(gapDraft);
+                  if (!Number.isFinite(n) || n < 5 || n > 1440) {
+                    toast.error("Gap must be between 5 and 1440 minutes"); return;
+                  }
+                  patch.min_gap_minutes = Math.round(n);
+                }
+                setVelocity.mutate(patch, {
+                  onSuccess: () => { setCapDraft(""); setGapDraft(""); },
+                });
+              }}
+            >
+              Save velocity
+            </Button>
+            <span className="text-[11px] text-muted-foreground ml-auto">
+              Current: {runtime.data?.daily_pin_cap ?? "?"} pins/day, {runtime.data?.min_gap_minutes ?? "?"}m gap
+            </span>
+          </div>
+        </CardContent>
       </Card>
 
       <Tabs defaultValue="winners">
