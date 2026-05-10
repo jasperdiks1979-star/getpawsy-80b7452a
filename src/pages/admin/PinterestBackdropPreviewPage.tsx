@@ -464,13 +464,39 @@ export default function PinterestBackdropPreviewPage() {
               <div className="mt-2 rounded border bg-muted/30 px-3 py-2 text-[11px] font-mono text-muted-foreground space-y-0.5">
                 <div className="flex items-center justify-between text-foreground">
                   <span className="font-semibold">Debug</span>
-                  <button
-                    type="button"
-                    onClick={() => setDebug(null)}
-                    className="text-[10px] underline opacity-70 hover:opacity-100"
-                  >
-                    clear
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const json = JSON.stringify(debug, null, 2);
+                          if (navigator.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(json);
+                          } else {
+                            const ta = document.createElement("textarea");
+                            ta.value = json;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand("copy");
+                            document.body.removeChild(ta);
+                          }
+                          toast.success("Debug JSON gekopieerd");
+                        } catch {
+                          toast.error("Kon niet kopiëren");
+                        }
+                      }}
+                      className="text-[10px] underline opacity-70 hover:opacity-100"
+                    >
+                      copy JSON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDebug(null)}
+                      className="text-[10px] underline opacity-70 hover:opacity-100"
+                    >
+                      clear
+                    </button>
+                  </div>
                 </div>
                 <div>fn: <span className="text-foreground">{debug.fn}</span></div>
                 {debug.inputSlug && debug.inputSlug !== debug.resolvedSlug && (
