@@ -142,15 +142,17 @@ export async function enqueueCapiEvent(
         ? crypto.randomUUID()
         : `${event_name}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    const { error } = await supabase.from("pinterest_capi_outbox").insert({
-      event_name,
-      event_id,
-      product_id: payload.product_id ?? null,
-      value: payload.value ?? null,
-      currency: payload.currency ?? "USD",
-      user_data: { client_session: session },
-      custom_data: payload.custom_data ?? null,
-    });
+    const { error } = await supabase.from("pinterest_capi_outbox").insert([
+      {
+        event_name,
+        event_id,
+        product_id: payload.product_id ?? undefined,
+        value: payload.value ?? undefined,
+        currency: payload.currency ?? "USD",
+        user_data: { client_session: session },
+        custom_data: (payload.custom_data ?? undefined) as never,
+      },
+    ]);
     if (error) console.warn("[pin-capi] enqueue failed", error.message);
   } catch (e) {
     console.warn("[pin-capi] enqueue error", (e as Error).message);
