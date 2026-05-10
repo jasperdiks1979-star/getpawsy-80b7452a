@@ -1255,6 +1255,28 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           .gte("created_at", fourteenDaysAgo);
         duplicateImage = (dupCount || 0) > 0;
       }
+      // Creative-fingerprint dedup — catches "different image URL but same
+      // creative DNA" (same slug + variant + hook + overlay + backdrop).
+      const meta = (r as Record<string, unknown>).meta as Record<string, unknown> | undefined;
+      const intel = (meta?.intelligence ?? {}) as Record<string, unknown>;
+      const fingerprint = computeCreativeFingerprint({
+        product_slug: (r as Record<string, unknown>).product_slug as string,
+        pin_variant: (r as Record<string, unknown>).pin_variant as string,
+        hook_group: (r as Record<string, unknown>).hook_group as string,
+        category_key: (r as Record<string, unknown>).category_key as string,
+        overlay_text: (r as Record<string, unknown>).overlay_text as string,
+        backdrop_style: (intel.backdrop_style as string) ?? null,
+        pin_mode: (intel.pin_mode as string) ?? null,
+      });
+      if (!duplicateImage && fingerprint) {
+        const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+        const { count: fpCount } = await sb
+          .from("pinterest_pin_queue")
+          .select("*", { count: "exact", head: true })
+          .eq("creative_fingerprint", fingerprint)
+          .gte("created_at", fourteenDaysAgo);
+        if ((fpCount || 0) > 0) duplicateImage = true;
+      }
       const qaReasons = runPinQa({
         ...(r as Record<string, unknown>),
         image_hash: imgHash,
@@ -1281,7 +1303,12 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         });
         continue;
       }
-      annotatedRows.push({ ...r, qa_reasons: allReasons, image_hash: imgHash } as typeof r);
+      annotatedRows.push({
+        ...r,
+        qa_reasons: allReasons,
+        image_hash: imgHash,
+        creative_fingerprint: fingerprint,
+      } as typeof r);
     }
     if (annotatedRows.length === 0) {
       return respond({ ok: false, code: "ALL_ROWS_QUARANTINED", message: "All pins were rejected by URL sanitizer" });
