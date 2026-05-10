@@ -259,7 +259,16 @@ export default function PinterestBackdropPreviewPage() {
     const cleanSlug = normalizeSlugInput(slug);
     if (cleanSlug && cleanSlug !== slug) setSlug(cleanSlug);
     const sentSlug = cleanSlug || DEFAULT_SLUG;
-    setDebug({ fn: "pinterest-viral-batch", productFound: "—", backdropSource: "—", status: "pending", error: null, resolvedSlug: sentSlug });
+    setDebug({
+      fn: "pinterest-viral-batch",
+      productFound: "—",
+      backdropSource: "—",
+      status: "pending",
+      error: null,
+      resolvedSlug: sentSlug,
+      inputSlug: slug,
+      productUrl: `https://getpawsy.pet/products/${sentSlug}`,
+    });
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
         body: {
