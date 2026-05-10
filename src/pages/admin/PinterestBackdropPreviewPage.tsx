@@ -294,6 +294,8 @@ export default function PinterestBackdropPreviewPage() {
         resolvedSlug: dd?.product?.slug || sentSlug,
         productName: dd?.product?.name || null,
         productId: dd?.product?.id || null,
+        inputSlug: slug,
+        productUrl: `https://getpawsy.pet/products/${dd?.product?.slug || sentSlug}`,
       });
       if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
