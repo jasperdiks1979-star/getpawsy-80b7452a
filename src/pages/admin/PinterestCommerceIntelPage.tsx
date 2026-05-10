@@ -586,6 +586,33 @@ export default function PinterestCommerceIntelPage() {
         </Card>
       </section>
 
+      <Card className={runtime.data?.domination_mode ? "border-primary/60 bg-primary/5" : ""}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Flame className="w-4 h-4" /> Pinterest Domination Mode
+              </CardTitle>
+              <CardDescription>
+                When enabled: viral-batch prioritises winning niche × pin_mode combos,
+                generates extra variants for top performers, and biases publishing
+                toward best-converting boards. Daily cap and gap rules still apply.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground">
+                Cap {runtime.data?.daily_pin_cap ?? "?"}/day · Gap {runtime.data?.min_gap_minutes ?? "?"}m
+              </span>
+              <Switch
+                checked={!!runtime.data?.domination_mode}
+                disabled={runtime.isLoading || setDomination.isPending}
+                onCheckedChange={(v) => setDomination.mutate(v)}
+              />
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       <Tabs defaultValue="winners">
         <TabsList>
           <TabsTrigger value="kpis">Performance KPIs</TabsTrigger>
