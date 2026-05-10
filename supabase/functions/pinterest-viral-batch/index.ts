@@ -750,14 +750,33 @@ serve(async (req) => {
       });
     }
 
-    const { data: product, error: pErr } = await sb
+    let { data: product, error: pErr } = await sb
       .from("products")
       .select("id, name, slug, description, category, image_url, images")
       .eq("slug", slug)
-      .single();
-    if (pErr || !product) {
-      console.error(`[pinterest-viral-batch] Product lookup failed for "${slug}":`, pErr?.message);
-      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: `Product not found: ${slug}` });
+      .maybeSingle();
+    // Fuzzy fallback: tolerate truncated slugs (e.g. user pasted
+    // "automatic-cat-litter-box-self-cleaning-" without the suffix).
+    if (!product && slug && slug.length >= 6) {
+      const { data: alt } = await sb
+        .from("products")
+        .select("id, name, slug, description, category, image_url, images")
+        .ilike("slug", `${slug.replace(/-+$/,"")}%`)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (alt && alt.length) {
+        product = alt[0] as typeof product;
+        console.log(`[pinterest-viral-batch] fuzzy slug match "${slug}" -> "${product!.slug}"`);
+      }
+    }
+    if (pErr && !product) {
+      console.error(`[pinterest-viral-batch] Product lookup failed for "${slug}":`, pErr.message);
+      return respond({ ok: false, code: "PRODUCT_LOOKUP_ERROR", message: pErr.message, slug });
+    }
+    if (!product) {
+      console.error(`[pinterest-viral-batch] Product not found for "${slug}"`);
+      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: `Product not found: ${slug}`, slug });
     }
     // Resolve category-aware SEO keyword bucket + style-board routing
     const categoryKey = resolveCategoryKey(product.category, product.slug);
