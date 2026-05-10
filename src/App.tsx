@@ -426,6 +426,7 @@ const PinterestTrafficMachinePage = lazyWithRetry(() => import("./pages/admin/Pi
 const PinterestScaleModePage = lazyWithRetry(() => import("./pages/admin/PinterestScaleModePage"));
 const PinterestAutomationPage = lazyWithRetry(() => import("./pages/admin/PinterestAutomationPage"));
 const PinterestCommerceIntelPage = lazyWithRetry(() => import("./pages/admin/PinterestCommerceIntelPage"));
+const PinterestAutoPilotPage = lazyWithRetry(() => import("./pages/admin/PinterestAutoPilotPage"));
 const PinterestPinStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestPinStatusPage"));
 const PinterestPatternsPage = lazyWithRetry(() => import("./pages/admin/PinterestPatternsPage"));
 const PinterestGenericNichePage = lazyWithRetry(() => import("./pages/admin/PinterestGenericNichePage"));
@@ -2179,6 +2180,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestCommerceIntelPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-autopilot"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestAutoPilotPage />
                                 </Suspense>
                               }
                             />

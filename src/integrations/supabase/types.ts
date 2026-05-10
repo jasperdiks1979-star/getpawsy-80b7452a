@@ -5006,6 +5006,129 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_autopilot_decisions: {
+        Row: {
+          action: string
+          created_at: string
+          expected_fit: number | null
+          id: string
+          pin_queue_id: string | null
+          product_category: string | null
+          product_id: string
+          product_name: string | null
+          product_slug: string | null
+          reason: string | null
+          run_id: string | null
+          score_breakdown: Json
+          selected_board_id: string | null
+          selected_board_name: string | null
+          selected_hook_category: string | null
+          status: string
+          total_score: number
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          expected_fit?: number | null
+          id?: string
+          pin_queue_id?: string | null
+          product_category?: string | null
+          product_id: string
+          product_name?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          run_id?: string | null
+          score_breakdown?: Json
+          selected_board_id?: string | null
+          selected_board_name?: string | null
+          selected_hook_category?: string | null
+          status?: string
+          total_score?: number
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          expected_fit?: number | null
+          id?: string
+          pin_queue_id?: string | null
+          product_category?: string | null
+          product_id?: string
+          product_name?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          run_id?: string | null
+          score_breakdown?: Json
+          selected_board_id?: string | null
+          selected_board_name?: string | null
+          selected_hook_category?: string | null
+          status?: string
+          total_score?: number
+        }
+        Relationships: []
+      }
+      pinterest_autopilot_overrides: {
+        Row: {
+          action: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          product_id: string
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          product_id: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          product_id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_autopilot_settings: {
+        Row: {
+          enabled: boolean
+          id: number
+          max_pins_per_product_per_week: number
+          min_quality_score: number
+          mode: string
+          preferred_category: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          id?: number
+          max_pins_per_product_per_week?: number
+          min_quality_score?: number
+          mode?: string
+          preferred_category?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          id?: number
+          max_pins_per_product_per_week?: number
+          min_quality_score?: number
+          mode?: string
+          preferred_category?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pinterest_board_mappings: {
         Row: {
           board_names: string[]
