@@ -515,6 +515,46 @@ export default function PinterestBackdropPreviewPage() {
               </Button>
             </div>
 
+            <div className="mt-2 flex items-center gap-2 text-[11px] font-mono">
+              <span className="text-muted-foreground">edge fn:</span>
+              <span
+                className={
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 border " +
+                  (health.status === "ok"
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                    : health.status === "down"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : "border-muted-foreground/30 bg-muted/40 text-muted-foreground")
+                }
+                title={health.checkedAt ? `last checked ${health.checkedAt}` : undefined}
+              >
+                <span
+                  className={
+                    "h-1.5 w-1.5 rounded-full " +
+                    (health.status === "ok"
+                      ? "bg-emerald-500"
+                      : health.status === "down"
+                      ? "bg-destructive"
+                      : "bg-muted-foreground animate-pulse")
+                  }
+                />
+                {health.status === "ok"
+                  ? `healthy${health.latencyMs != null ? ` · ${health.latencyMs}ms` : ""}`
+                  : health.status === "down"
+                  ? `down${health.httpStatus ? ` · ${health.httpStatus}` : ""}`
+                  : "checking…"}
+              </span>
+              {health.version && (
+                <span className="text-muted-foreground">v: <span className="text-foreground">{health.version}</span></span>
+              )}
+              {typeof health.pexels === "boolean" && (
+                <span className="text-muted-foreground">pexels: <span className="text-foreground">{health.pexels ? "on" : "off"}</span></span>
+              )}
+              {health.status === "down" && health.error && (
+                <span className="text-destructive truncate">— {health.error}</span>
+              )}
+            </div>
+
             {debug && (
               <div className="mt-2 rounded border bg-muted/30 px-3 py-2 text-[11px] font-mono text-muted-foreground space-y-0.5">
                 <div className="flex items-center justify-between text-foreground">
