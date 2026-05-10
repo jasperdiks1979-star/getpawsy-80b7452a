@@ -55,6 +55,8 @@ type DebugInfo = {
   status: number | string;
   error: string | null;
   resolvedSlug: string;
+  productName?: string | null;
+  productId?: string | null;
 };
 
 const HOOKS: Array<{ key: string; label: string }> = [
