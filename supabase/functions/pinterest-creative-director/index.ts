@@ -522,6 +522,55 @@ async function loadWinnerPinModes(
   }
 }
 
+/**
+ * Phase 8/10 — load the live evolving strategy state and current trend bias
+ * (seasonal + admin-curated). Both are merged into `winnerModes` so the
+ * planner exploits proven archetypes AND timely trends.
+ */
+async function loadStrategyAndTrends(
+  supabase: ReturnType<typeof createClient>,
+  niche: NicheKey,
+): Promise<{
+  exploitRatio: number;
+  qualityThreshold: number | null;
+  pinModeBoost: Record<string, number>;
+}> {
+  let exploitRatio = 0.8;
+  let qualityThreshold: number | null = null;
+  const pinModeBoost: Record<string, number> = {};
+  try {
+    const [{ data: state }, { data: trends }] = await Promise.all([
+      supabase.from("pinterest_strategy_state").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("pinterest_trend_signals")
+        .select("pin_mode, weight, niche_key")
+        .eq("is_active", true)
+        .or(`niche_key.eq.${niche},niche_key.eq.global`)
+        .order("weight", { ascending: false })
+        .limit(20),
+    ]);
+    if (state) {
+      exploitRatio = Number(state.exploit_ratio ?? 0.8);
+      qualityThreshold = Number(state.quality_threshold ?? 0) || null;
+      const archetypeBoosts = (state.archetype_boosts ?? {}) as Record<string, number>;
+      for (const [k, v] of Object.entries(archetypeBoosts)) {
+        const [n, mode] = k.split(":");
+        if (n === niche && mode) pinModeBoost[mode] = Math.max(pinModeBoost[mode] ?? 0, Number(v));
+      }
+    }
+    for (const t of trends ?? []) {
+      if (t.pin_mode) {
+        pinModeBoost[t.pin_mode] = Math.max(
+          pinModeBoost[t.pin_mode] ?? 0,
+          Number(t.weight) * 0.15,
+        );
+      }
+    }
+  } catch (e) {
+    console.warn("[creative-director] loadStrategyAndTrends failed", (e as Error).message);
+  }
+  return { exploitRatio, qualityThreshold, pinModeBoost };
+}
+
 async function logRenderAttempt(
   supabase: ReturnType<typeof createClient>,
   args: {
