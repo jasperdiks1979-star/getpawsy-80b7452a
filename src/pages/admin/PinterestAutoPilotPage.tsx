@@ -101,6 +101,77 @@ const FACTOR_MAX: Record<string, { max: number; label: string; description: stri
   forced: { max: 20, label: "Force-promote bonus", description: "Manual override boost" },
 };
 
+/**
+ * Compute the 1–2 most decisive drivers behind a verdict.
+ * Returns a set of factor keys (matching FACTOR_MAX) and/or safety-check labels
+ * that the UI should highlight.
+ */
+function computeDecisiveDrivers(
+  action: string,
+  breakdown: Record<string, unknown>,
+): { factorKeys: Set<string>; checkLabels: Set<string>; summary: string } {
+  const num = (k: string) => Number(breakdown[k] ?? 0);
+  const factorKeys = new Set<string>();
+  const checkLabels = new Set<string>();
+  let summary = "";
+
+  if (action === "scale") {
+    // Performance is the trigger; the gate is saves≥10 + perf≥18.
+    factorKeys.add("performance");
+    checkLabels.add("Has measured Pinterest history");
+    summary = `Strong winner signal: ${num("saves")} saves, ${num("clicks")} clicks at ${num("impressions")} imp.`;
+  } else if (action === "pause") {
+    // Trigger: imp≥500 with saves≤1 & clicks≤1 → engagement collapse.
+    factorKeys.add("performance");
+    checkLabels.add("Has measured Pinterest history");
+    summary = `Low engagement: ${num("saves")} saves & ${num("clicks")} clicks after ${num("impressions")} impressions.`;
+  } else if (action === "skip") {
+    // Two skip paths: weekly cap, or below quality threshold.
+    if (num("weekly_count") > 0 && num("weekly_count") >= 3) {
+      checkLabels.add("Within weekly cap");
+      summary = `Hit weekly cap (${num("weekly_count")} pins this week).`;
+    } else {
+      // Find the 1–2 weakest contributing factors (lowest fill ratio).
+      const ranked = Object.entries(FACTOR_MAX)
+        .filter(([k]) => k !== "forced") // bonus factors don't drive skips
+        .map(([k, m]) => ({ k, ratio: num(k) / m.max, raw: num(k) }))
+        .sort((a, b) => a.ratio - b.ratio);
+      ranked.slice(0, 2).forEach((r) => factorKeys.add(r.k));
+      const worst = ranked[0];
+      summary = worst
+        ? `Below quality threshold — weakest: ${FACTOR_MAX[worst.k].label} (${worst.raw}/${FACTOR_MAX[worst.k].max}).`
+        : "Below quality threshold.";
+    }
+  } else {
+    // normal/selected → highlight the 1–2 strongest *non-bonus* contributors.
+    const ranked = Object.entries(FACTOR_MAX)
+      .filter(([k]) => k !== "forced")
+      .map(([k, m]) => ({ k, ratio: num(k) / m.max, raw: num(k) }))
+      .filter((r) => r.raw > 0)
+      .sort((a, b) => b.ratio - a.ratio);
+    ranked.slice(0, 2).forEach((r) => factorKeys.add(r.k));
+    if (num("forced") > 0) {
+      factorKeys.add("forced");
+      summary = "Manual force-promote override.";
+    } else {
+      const top = ranked[0];
+      summary = top
+        ? `Top driver: ${FACTOR_MAX[top.k].label} (${top.raw}/${FACTOR_MAX[top.k].max}).`
+        : "Selected on composite score.";
+    }
+  }
+
+  return { factorKeys, checkLabels, summary };
+}
+
+function DecisiveBadge() {
+  return (
+    <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">
+      decisive
+    </Badge>
+  );
+}
+
 /** Derive safety checks from the score breakdown for human-readable explanation. */
 function deriveSafetyChecks(breakdown: Record<string, unknown>) {
   const num = (k: string) => Number(breakdown[k] ?? 0);
