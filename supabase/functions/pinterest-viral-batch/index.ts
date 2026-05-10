@@ -59,6 +59,26 @@ const CLOUDINARY_CLOUD = "dlkqycfzn";
 const BASE_URL = "https://getpawsy.pet";
 const DEFAULT_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
 
+/**
+ * Normalize a slug input from the admin UI.
+ * Accepts:
+ *   - bare slug:               "automatic-cat-litter-box-self-cleaning-"
+ *   - full product URL:        "https://getpawsy.pet/products/automatic-cat-..."
+ *   - URL with query/fragment: ".../products/foo?utm=...#x"
+ * Returns a trimmed, lowercased slug with leading/trailing hyphens removed.
+ */
+function normalizeSlugInput(raw: unknown): string {
+  if (!raw) return "";
+  let s = String(raw).trim();
+  // Pull slug out of a full URL if pasted.
+  const urlMatch = s.match(/\/products\/([^/?#]+)/i);
+  if (urlMatch) s = urlMatch[1];
+  // Strip query/fragment if any leaked through.
+  s = s.split("?")[0].split("#")[0];
+  s = s.toLowerCase().replace(/^-+|-+$/g, "").trim();
+  return s;
+}
+
 // Whitelist of columns that exist on pinterest_pin_queue. Any extra fields
 // (e.g. optional backdrop_* visual metadata) are silently dropped so the
 // queue insert can never fail because of missing columns.
