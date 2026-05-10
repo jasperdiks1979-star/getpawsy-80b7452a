@@ -11,8 +11,22 @@ import type { StyleDNA } from "./pinterest-style-dna.ts";
 import type { PinterestPattern } from "./pinterest-patterns.ts";
 import type { PinModeKey } from "./pinterest-pin-modes.ts";
 
-export const QUALITY_THRESHOLD = 80;
-export const MAX_RETRIES = 2;
+// Default gating — can be overridden per-call by runtime settings
+// (`pinterest_runtime_settings.quality_threshold` / `max_render_retries`).
+// Defaults match the "Balanced" rollout: reject below 70, retry once, log
+// a score on every render.
+export const QUALITY_THRESHOLD = 70;
+export const MAX_RETRIES = 1;
+
+export type QualityBand = "elite" | "strong" | "acceptable" | "weak" | "reject";
+
+export function bandForScore(total: number): QualityBand {
+  if (total >= 88) return "elite";
+  if (total >= 78) return "strong";
+  if (total >= 70) return "acceptable";
+  if (total >= 58) return "weak";
+  return "reject";
+}
 
 const QUALITY_MODEL =
   Deno.env.get("PINTEREST_CD_QUALITY_MODEL") || "google/gemini-2.5-flash";
@@ -27,11 +41,21 @@ export interface QualityScores {
   emotional_resonance: number;
   luxury_aesthetic: number;
   conversion_potential: number;
+  /** Phase 1 — AI-rated mobile safe-zone analysis (text cutoff, CTA overlap,
+   *  focal clarity on iPhone Pinterest feed crop). 0-100. */
+  mobile_safe_zone: number;
+  /** Phase 1 — fused mobile safety: deterministic guard ⨯ AI safe-zone. */
+  mobile_safety_score: number;
+  /** Phase 2 — composite "is this Pinterest-native premium creative?" score
+   *  blended from the visual axes. 0-100. */
+  visual_quality_score: number;
   /** Derived composite signals (0-100), not separate AI calls. */
   save_probability: number;
   click_probability: number;
   commerce_probability: number;
   total: number;
+  /** Phase 2 — quality band: elite | strong | acceptable | weak | reject. */
+  quality_band: QualityBand;
 }
 
 export interface QualityResult {
