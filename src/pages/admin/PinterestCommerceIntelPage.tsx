@@ -1103,7 +1103,7 @@ export default function PinterestCommerceIntelPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="evolution-real">
+        <TabsContent value="evolution">
           <Card>
             <CardHeader>
               <CardTitle>Auto-Evolution Journal</CardTitle>
