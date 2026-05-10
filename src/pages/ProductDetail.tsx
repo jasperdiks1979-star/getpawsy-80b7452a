@@ -1758,6 +1758,19 @@ const ProductDetail = () => {
           />
         )}
 
+        {/*
+          Universal mobile sticky ATC for every other PDP visitor. Shown only
+          when the TikTok-variant sticky bar is NOT active so we never stack
+          two fixed bars on top of each other.
+        */}
+        {!showTikTokVariant && (
+          <PdpStickyAtc
+            onCtaClick={handleAddToCart}
+            inStock={inStock}
+            price={activePrice}
+          />
+        )}
+
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
           initial={{ opacity: 0, y: 40 }}
