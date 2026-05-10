@@ -37,6 +37,7 @@ import {
 import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
 import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
+import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -405,6 +406,13 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
       `Strictly avoid: ${mode.must_avoid.join(", ")}.`
     : "";
 
+  const collageDirective = mode
+    ? buildCollagePromptSuffix(mode, dna, {
+        subject: brief.subject,
+        environment_summary: brief.environment_summary,
+      })
+    : "";
+
   const styleSuffix =
     `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
     `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
@@ -412,7 +420,17 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     `(do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself). ` +
     `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars.`;
 
-  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffix}${patternDirective}${modeDirective}`;
+  // For collage modes, replace the anti-collage clause with the explicit
+  // collage contract so the image model isn't given contradictory directives.
+  const styleSuffixForMode = mode?.is_collage
+    ? `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
+      `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
+      `Vertical 9:16 composition for Pinterest. ` +
+      `Do NOT render any text, captions, watermarks, logos, prices, or graphic overlays in the image itself. ` +
+      `No floating product cutouts, no Canva-template look, no CTA bars.`
+    : styleSuffix;
+
+  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
