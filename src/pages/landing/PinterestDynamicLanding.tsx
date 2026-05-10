@@ -47,6 +47,8 @@ interface ResolvedTemplate {
   trust_block_variant?: string | null;
   recommended_product_slug?: string | null;
   recommended_collection_slug?: string | null;
+  pin_mode?: string | null;
+  aesthetic_tone?: string | null;
 }
 
 const ATMOSPHERE_BG: Record<string, string> = {
@@ -62,11 +64,100 @@ function bgFor(atmosphere?: string | null) {
   return ATMOSPHERE_BG[atmosphere ?? "cozy_neutral"] ?? ATMOSPHERE_BG.cozy_neutral;
 }
 
+// Phase 7 — per-pin-mode visual congruency. Each mode swaps the hero
+// treatment so the landing page matches the inbound pin's aesthetic.
+type PinModeTreatment = {
+  bg: string;
+  heroAlign: "center" | "left";
+  headlineSize: string;
+  eyebrowTone: string;
+  emphasizeTransformation: boolean;
+};
+const PIN_MODE_TREATMENT: Record<string, PinModeTreatment> = {
+  luxury_minimal: {
+    bg: "from-stone-50 via-amber-50/20 to-stone-100/40",
+    heroAlign: "center",
+    headlineSize: "text-3xl sm:text-4xl tracking-tight",
+    eyebrowTone: "text-stone-500",
+    emphasizeTransformation: false,
+  },
+  cozy_lifestyle: {
+    bg: "from-amber-50 via-rose-50/30 to-stone-50",
+    heroAlign: "center",
+    headlineSize: "text-3xl sm:text-4xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: false,
+  },
+  before_after: {
+    bg: "from-stone-50 via-amber-50/30 to-emerald-50/20",
+    heroAlign: "left",
+    headlineSize: "text-2xl sm:text-3xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: true,
+  },
+  transformation: {
+    bg: "from-amber-50 via-stone-50 to-emerald-50/30",
+    heroAlign: "left",
+    headlineSize: "text-3xl sm:text-4xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: true,
+  },
+  emotional_pain: {
+    bg: "from-stone-100/60 via-stone-50 to-amber-50/30",
+    heroAlign: "left",
+    headlineSize: "text-2xl sm:text-3xl",
+    eyebrowTone: "text-stone-500",
+    emphasizeTransformation: true,
+  },
+  social_proof: {
+    bg: "from-amber-50/60 via-rose-50/20 to-stone-50",
+    heroAlign: "center",
+    headlineSize: "text-2xl sm:text-3xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: false,
+  },
+  viral_curiosity: {
+    bg: "from-stone-50 via-amber-100/30 to-rose-50/30",
+    heroAlign: "center",
+    headlineSize: "text-3xl sm:text-4xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: false,
+  },
+  ugc_style: {
+    bg: "from-amber-50/50 via-stone-50 to-rose-50/20",
+    heroAlign: "left",
+    headlineSize: "text-2xl sm:text-3xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: false,
+  },
+  moodboard_collage: {
+    bg: "from-stone-50 via-amber-50/30 to-rose-50/20",
+    heroAlign: "center",
+    headlineSize: "text-3xl sm:text-4xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: false,
+  },
+  product_lifestyle_blend: {
+    bg: "from-stone-50 via-amber-50/40 to-rose-50/30",
+    heroAlign: "center",
+    headlineSize: "text-3xl sm:text-4xl",
+    eyebrowTone: "text-primary",
+    emphasizeTransformation: false,
+  },
+};
+const DEFAULT_TREATMENT: PinModeTreatment = PIN_MODE_TREATMENT.product_lifestyle_blend;
+
+function treatmentFor(pinMode?: string | null): PinModeTreatment {
+  if (!pinMode) return DEFAULT_TREATMENT;
+  return PIN_MODE_TREATMENT[pinMode] ?? DEFAULT_TREATMENT;
+}
+
 export default function PinterestDynamicLanding() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const hookParam = searchParams.get("hook");
   const intentParam = searchParams.get("intent");
+  const pinModeParam = searchParams.get("pin_mode");
   const pinId = searchParams.get("pin_id");
 
   const [template, setTemplate] = useState<ResolvedTemplate | null>(null);
@@ -94,7 +185,7 @@ export default function PinterestDynamicLanding() {
         if (data && (data as { ok?: boolean }).ok) {
           payload = data as typeof payload;
         } else {
-          const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-landing-resolver?slug=${encodeURIComponent(slug)}${hookParam ? `&hook=${encodeURIComponent(hookParam)}` : ""}${intentParam ? `&intent=${encodeURIComponent(intentParam)}` : ""}`;
+          const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-landing-resolver?slug=${encodeURIComponent(slug)}${hookParam ? `&hook=${encodeURIComponent(hookParam)}` : ""}${intentParam ? `&intent=${encodeURIComponent(intentParam)}` : ""}${pinModeParam ? `&pin_mode=${encodeURIComponent(pinModeParam)}` : ""}`;
           const resp = await fetch(url, {
             headers: {
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
@@ -121,7 +212,7 @@ export default function PinterestDynamicLanding() {
     return () => {
       aborted = true;
     };
-  }, [slug, hookParam, intentParam]);
+  }, [slug, hookParam, intentParam, pinModeParam]);
 
   // Fire a Clarity tag so /go heatmaps can filter by slug + hook.
   useEffect(() => {
@@ -133,6 +224,8 @@ export default function PinterestDynamicLanding() {
       w.clarity?.("set", "go_slug", template.slug);
       if (template.hook_type) w.clarity?.("set", "go_hook", template.hook_type);
       if (template.emotional_angle) w.clarity?.("set", "go_intent", template.emotional_angle);
+      if (template.pin_mode) w.clarity?.("set", "go_pin_mode", template.pin_mode);
+      if (template.aesthetic_tone) w.clarity?.("set", "go_aesthetic", template.aesthetic_tone);
       if (pinId) w.clarity?.("set", "go_pin_id", pinId);
     } catch {
       /* noop */
@@ -190,8 +283,16 @@ export default function PinterestDynamicLanding() {
     template.hero_subhead ??
     "A premium, calmer way to care for your pet — built around what actually works.";
 
+  const treatment = treatmentFor(template.pin_mode);
+  const heroBg = template.color_atmosphere ? bgFor(template.color_atmosphere) : treatment.bg;
+  const heroAlignClass = treatment.heroAlign === "left" ? "text-left" : "text-center";
+
   return (
-    <main className={`min-h-screen bg-gradient-to-b ${bgFor(template.color_atmosphere)}`}>
+    <main
+      className={`min-h-screen bg-gradient-to-b ${heroBg}`}
+      data-pin-mode={template.pin_mode ?? "default"}
+      data-aesthetic-tone={template.aesthetic_tone ?? "default"}
+    >
       <Helmet>
         <title>{title.slice(0, 60)}</title>
         <meta name="description" content={description.slice(0, 160)} />
@@ -203,14 +304,14 @@ export default function PinterestDynamicLanding() {
         <PinterestLandingBanner hook={template.hook_type} />
 
         {/* Hero */}
-        <section className="mt-6 text-center">
+        <section className={`mt-6 ${heroAlignClass}`}>
           {template.hero_eyebrow && (
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-primary">
+            <p className={`inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-3 py-1 text-[11px] font-medium uppercase tracking-wider ${treatment.eyebrowTone}`}>
               <Sparkles className="w-3 h-3" aria-hidden="true" />
               {template.hero_eyebrow}
             </p>
           )}
-          <h1 className="mt-3 text-3xl sm:text-4xl font-display font-bold text-foreground leading-tight">
+          <h1 className={`mt-3 ${treatment.headlineSize} font-display font-bold text-foreground leading-tight`}>
             {template.hero_headline}
           </h1>
           {template.hero_subhead && (
@@ -259,9 +360,9 @@ export default function PinterestDynamicLanding() {
 
         {/* Transformation narrative */}
         {(template.transformation_before || template.transformation_after) && (
-          <section className="mt-8 grid grid-cols-1 gap-3">
+          <section className={`mt-8 grid grid-cols-1 gap-3 ${treatment.emphasizeTransformation ? "scale-[1.01]" : ""}`}>
             {template.transformation_before && (
-              <div className="rounded-xl border border-border/40 bg-background/60 p-4">
+              <div className={`rounded-xl border ${treatment.emphasizeTransformation ? "border-stone-300/60" : "border-border/40"} bg-background/60 p-4`}>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Today
                 </p>
@@ -271,7 +372,7 @@ export default function PinterestDynamicLanding() {
               </div>
             )}
             {template.transformation_after && (
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+              <div className={`rounded-xl ${treatment.emphasizeTransformation ? "border-2 border-primary/40 bg-primary/10" : "border border-primary/30 bg-primary/5"} p-4`}>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
                   After
                 </p>
