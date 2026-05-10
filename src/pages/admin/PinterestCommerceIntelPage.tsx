@@ -65,7 +65,7 @@ export default function PinterestCommerceIntelPage() {
         .from("pinterest_strategy_state" as any)
         .select("*").eq("id", 1).maybeSingle();
       if (error) throw error;
-      return data as StrategyState | null;
+      return data as unknown as StrategyState | null;
     },
   });
 
@@ -79,7 +79,7 @@ export default function PinterestCommerceIntelPage() {
         .order("composite_score", { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data ?? []) as WinnerDim[];
+      return (data ?? []) as unknown as WinnerDim[];
     },
   });
 
@@ -91,7 +91,7 @@ export default function PinterestCommerceIntelPage() {
         .select("*").eq("is_active", true)
         .order("weight", { ascending: false }).limit(50);
       if (error) throw error;
-      return (data ?? []) as TrendSignal[];
+      return (data ?? []) as unknown as TrendSignal[];
     },
   });
 
@@ -102,7 +102,7 @@ export default function PinterestCommerceIntelPage() {
         .from("pinterest_evolution_log" as any)
         .select("*").order("created_at", { ascending: false }).limit(40);
       if (error) throw error;
-      return (data ?? []) as EvolutionLog[];
+      return (data ?? []) as unknown as EvolutionLog[];
     },
   });
 
