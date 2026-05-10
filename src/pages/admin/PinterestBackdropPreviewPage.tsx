@@ -96,6 +96,8 @@ export default function PinterestBackdropPreviewPage() {
     latencyMs?: number;
     version?: string;
     pexels?: boolean;
+    envLoaded?: Record<string, boolean>;
+    raw?: unknown;
     error?: string;
     checkedAt?: string;
   }>({ status: "checking" });
@@ -124,6 +126,8 @@ export default function PinterestBackdropPreviewPage() {
           latencyMs,
           version: body?.version,
           pexels: body?.pexels_enabled,
+          envLoaded: body?.env_loaded,
+          raw: body,
           error: res.ok ? undefined : (body?.message || `HTTP ${res.status}`),
           checkedAt: new Date().toISOString(),
         });
@@ -617,6 +621,34 @@ export default function PinterestBackdropPreviewPage() {
                       clear
                     </button>
                   </div>
+                </div>
+                <div className="mt-1 mb-1 rounded border border-border/60 bg-background/40 px-2 py-1.5">
+                  <div className="text-foreground font-semibold mb-0.5">health endpoint</div>
+                  <div>
+                    ok:{" "}
+                    <span className={health.status === "ok" ? "text-emerald-600" : "text-destructive"}>
+                      {health.status === "checking" ? "…" : String(health.status === "ok")}
+                    </span>
+                    {health.httpStatus != null && <> · http: <span className="text-foreground">{health.httpStatus}</span></>}
+                    {health.latencyMs != null && <> · {health.latencyMs}ms</>}
+                  </div>
+                  {health.version && <div>version: <span className="text-foreground">{health.version}</span></div>}
+                  {typeof health.pexels === "boolean" && (
+                    <div>pexels_enabled: <span className="text-foreground">{String(health.pexels)}</span></div>
+                  )}
+                  {health.envLoaded && (
+                    <div>
+                      env_loaded:{" "}
+                      {Object.entries(health.envLoaded).map(([k, v]) => (
+                        <span key={k} className="mr-2">
+                          <span className="text-foreground">{k}</span>=
+                          <span className={v ? "text-emerald-600" : "text-destructive"}>{String(v)}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {health.error && <div className="text-destructive">error: {health.error}</div>}
+                  {health.checkedAt && <div className="opacity-60">checked: {health.checkedAt}</div>}
                 </div>
                 <div>fn: <span className="text-foreground">{debug.fn}</span></div>
                 {debug.inputSlug && debug.inputSlug !== debug.resolvedSlug && (
