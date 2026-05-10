@@ -491,6 +491,31 @@ export default function PinterestBackdropPreviewPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => {
+                        try {
+                          const json = JSON.stringify(debug, null, 2);
+                          const blob = new Blob([json], { type: "application/json" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          const ts = new Date().toISOString().replace(/[:.]/g, "-");
+                          const slugPart = (debug.resolvedSlug || "preview").slice(0, 60);
+                          a.href = url;
+                          a.download = `backdrop-preview-debug-${slugPart}-${ts}.json`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                          toast.success("Debug JSON gedownload");
+                        } catch {
+                          toast.error("Download mislukt");
+                        }
+                      }}
+                      className="text-[10px] underline opacity-70 hover:opacity-100"
+                    >
+                      download JSON
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setDebug(null)}
                       className="text-[10px] underline opacity-70 hover:opacity-100"
                     >
