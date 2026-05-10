@@ -443,6 +443,27 @@ export default function PinterestBackdropPreviewPage() {
               </Button>
             </div>
 
+            {debug && (
+              <div className="mt-2 rounded border bg-muted/30 px-3 py-2 text-[11px] font-mono text-muted-foreground space-y-0.5">
+                <div className="flex items-center justify-between text-foreground">
+                  <span className="font-semibold">Debug</span>
+                  <button
+                    type="button"
+                    onClick={() => setDebug(null)}
+                    className="text-[10px] underline opacity-70 hover:opacity-100"
+                  >
+                    clear
+                  </button>
+                </div>
+                <div>fn: <span className="text-foreground">{debug.fn}</span></div>
+                <div>slug: <span className="text-foreground">{debug.resolvedSlug}</span></div>
+                <div>product found: <span className="text-foreground">{debug.productFound}</span></div>
+                <div>backdrop source: <span className="text-foreground">{debug.backdropSource}</span></div>
+                <div>status: <span className="text-foreground">{String(debug.status)}</span></div>
+                {debug.error && <div className="text-destructive">error: {debug.error}</div>}
+              </div>
+            )}
+
             {useBackdrop && (
               <div className="border-t pt-3 space-y-2">
                 <div className="flex items-center justify-between">
