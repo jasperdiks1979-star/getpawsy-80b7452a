@@ -670,8 +670,8 @@ serve(async (req) => {
     // `productSlugs` (Domination Mode). When neither is given we default to the
     // hero product. Loop runs the existing single-product pipeline per slug.
     const slugsRaw: string[] = Array.isArray(body.productSlugs) && body.productSlugs.length
-      ? body.productSlugs.map((s: unknown) => String(s)).filter(Boolean)
-      : [body.productSlug || DEFAULT_SLUG];
+      ? body.productSlugs.map(normalizeSlugInput).filter(Boolean)
+      : [normalizeSlugInput(body.productSlug) || DEFAULT_SLUG];
     const sb0 = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
