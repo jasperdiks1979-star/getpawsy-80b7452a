@@ -57,6 +57,8 @@ type DebugInfo = {
   resolvedSlug: string;
   productName?: string | null;
   productId?: string | null;
+  inputSlug?: string;
+  productUrl?: string;
 };
 
 const HOOKS: Array<{ key: string; label: string }> = [
@@ -257,7 +259,16 @@ export default function PinterestBackdropPreviewPage() {
     const cleanSlug = normalizeSlugInput(slug);
     if (cleanSlug && cleanSlug !== slug) setSlug(cleanSlug);
     const sentSlug = cleanSlug || DEFAULT_SLUG;
-    setDebug({ fn: "pinterest-viral-batch", productFound: "—", backdropSource: "—", status: "pending", error: null, resolvedSlug: sentSlug });
+    setDebug({
+      fn: "pinterest-viral-batch",
+      productFound: "—",
+      backdropSource: "—",
+      status: "pending",
+      error: null,
+      resolvedSlug: sentSlug,
+      inputSlug: slug,
+      productUrl: `https://getpawsy.pet/products/${sentSlug}`,
+    });
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-viral-batch", {
         body: {
@@ -283,6 +294,8 @@ export default function PinterestBackdropPreviewPage() {
         resolvedSlug: dd?.product?.slug || sentSlug,
         productName: dd?.product?.name || null,
         productId: dd?.product?.id || null,
+        inputSlug: slug,
+        productUrl: `https://getpawsy.pet/products/${dd?.product?.slug || sentSlug}`,
       });
       if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
@@ -460,7 +473,23 @@ export default function PinterestBackdropPreviewPage() {
                   </button>
                 </div>
                 <div>fn: <span className="text-foreground">{debug.fn}</span></div>
-                <div>slug: <span className="text-foreground">{debug.resolvedSlug}</span></div>
+                {debug.inputSlug && debug.inputSlug !== debug.resolvedSlug && (
+                  <div>input: <span className="text-foreground break-all">{debug.inputSlug}</span></div>
+                )}
+                <div>slug used: <span className="text-foreground break-all">{debug.resolvedSlug}</span></div>
+                {debug.productUrl && (
+                  <div>
+                    product url:{" "}
+                    <a
+                      href={debug.productUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-foreground underline break-all"
+                    >
+                      {debug.productUrl}
+                    </a>
+                  </div>
+                )}
                 <div>product found: <span className="text-foreground">{debug.productFound}</span></div>
                 {debug.productName && (
                   <div>product name: <span className="text-foreground">{debug.productName}</span></div>
