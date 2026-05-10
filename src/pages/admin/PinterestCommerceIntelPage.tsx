@@ -9,7 +9,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { RefreshCw, Sparkles, TrendingUp, Target, Zap } from "lucide-react";
+import { RefreshCw, Sparkles, TrendingUp, Target, Zap, Flame, AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, AreaChart, Area, ScatterChart, Scatter, ZAxis,
@@ -78,6 +79,29 @@ type PerfSignal = {
   revenue: number;
   sample_size: number;
   last_updated: string;
+};
+
+type RenderAttempt = {
+  id: string;
+  product_slug: string | null;
+  niche_key: string | null;
+  pattern_id: string | null;
+  hook_category: string | null;
+  pin_mode: string | null;
+  attempt_no: number;
+  total_score: number | null;
+  rejected: boolean;
+  reasons: string[];
+  scores: Record<string, number> | null;
+  created_at: string;
+};
+
+type RuntimeSettings = {
+  id: number;
+  domination_mode: boolean;
+  daily_pin_cap: number;
+  min_gap_minutes: number;
+  auto_approve_queue: boolean;
 };
 
 const CHART_COLORS = [
@@ -186,6 +210,48 @@ export default function PinterestCommerceIntelPage() {
       if (error) throw error;
       return (data ?? []) as unknown as PerfSignal[];
     },
+  });
+
+  const rejections = useQuery({
+    queryKey: ["pinterest-render-attempts-rejected"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pinterest_render_attempts" as any)
+        .select("id,product_slug,niche_key,pattern_id,hook_category,pin_mode,attempt_no,total_score,rejected,reasons,scores,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as unknown as RenderAttempt[];
+    },
+  });
+
+  const runtime = useQuery({
+    queryKey: ["pinterest-runtime-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pinterest_runtime_settings" as any)
+        .select("id,domination_mode,daily_pin_cap,min_gap_minutes,auto_approve_queue")
+        .eq("id", 1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as RuntimeSettings | null;
+    },
+  });
+
+  const setDomination = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from("pinterest_runtime_settings" as any)
+        .update({ domination_mode: enabled, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+      if (error) throw error;
+      return enabled;
+    },
+    onSuccess: (enabled) => {
+      toast.success(`Domination Mode ${enabled ? "enabled" : "disabled"}`);
+      qc.invalidateQueries({ queryKey: ["pinterest-runtime-settings"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update setting"),
   });
 
   const refreshTrends = useMutation({
@@ -520,10 +586,39 @@ export default function PinterestCommerceIntelPage() {
         </Card>
       </section>
 
+      <Card className={runtime.data?.domination_mode ? "border-primary/60 bg-primary/5" : ""}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Flame className="w-4 h-4" /> Pinterest Domination Mode
+              </CardTitle>
+              <CardDescription>
+                When enabled: viral-batch prioritises winning niche × pin_mode combos,
+                generates extra variants for top performers, and biases publishing
+                toward best-converting boards. Daily cap and gap rules still apply.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground">
+                Cap {runtime.data?.daily_pin_cap ?? "?"}/day · Gap {runtime.data?.min_gap_minutes ?? "?"}m
+              </span>
+              <Switch
+                checked={!!runtime.data?.domination_mode}
+                disabled={runtime.isLoading || setDomination.isPending}
+                onCheckedChange={(v) => setDomination.mutate(v)}
+              />
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       <Tabs defaultValue="winners">
         <TabsList>
           <TabsTrigger value="kpis">Performance KPIs</TabsTrigger>
           <TabsTrigger value="winners">Winners</TabsTrigger>
+          <TabsTrigger value="hooks">Hooks</TabsTrigger>
+          <TabsTrigger value="rejections">Rejections</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
           <TabsTrigger value="boosts">Boosts</TabsTrigger>
           <TabsTrigger value="evolution">Evolution Log</TabsTrigger>
@@ -839,6 +934,169 @@ export default function PinterestCommerceIntelPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="hooks" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hook Leaderboard (14d)</CardTitle>
+              <CardDescription>
+                Aggregated revenue, CTR, save-rate and CVR per hook category from
+                pinterest_performance_signals. Drives auto-evolve hook boosts.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const map = new Map<string, {
+                  hook: string; impressions: number; outbound: number;
+                  saves: number; sessions: number; purchase: number; revenue: number;
+                }>();
+                for (const r of signals) {
+                  const h = r.hook_category ?? "(unknown)";
+                  const e = map.get(h) ?? { hook: h, impressions: 0, outbound: 0, saves: 0, sessions: 0, purchase: 0, revenue: 0 };
+                  e.impressions += Number(r.impressions ?? 0);
+                  e.outbound += Number(r.outbound ?? 0);
+                  e.saves += Number(r.saves ?? 0);
+                  e.sessions += Number(r.sessions ?? 0);
+                  e.purchase += Number(r.purchase ?? 0);
+                  e.revenue += Number(r.revenue ?? 0);
+                  map.set(h, e);
+                }
+                const rows = Array.from(map.values())
+                  .map((r) => ({
+                    ...r,
+                    ctr: safePct(r.outbound, r.impressions),
+                    saveRate: safePct(r.saves, r.impressions),
+                    cvr: safePct(r.purchase, r.sessions),
+                  }))
+                  .sort((a, b) => b.revenue - a.revenue);
+                if (!rows.length) return <EmptyChart />;
+                return (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Hook</TableHead>
+                        <TableHead className="text-right">Impr.</TableHead>
+                        <TableHead className="text-right">CTR</TableHead>
+                        <TableHead className="text-right">Save</TableHead>
+                        <TableHead className="text-right">CVR</TableHead>
+                        <TableHead className="text-right">Orders</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map((r) => (
+                        <TableRow
+                          key={r.hook}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setDrill({ niche_key: "", pin_mode: null, hook_category: r.hook })}
+                        >
+                          <TableCell className="font-medium">{r.hook}</TableCell>
+                          <TableCell className="text-right">{r.impressions.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{r.ctr.toFixed(2)}%</TableCell>
+                          <TableCell className="text-right">{r.saveRate.toFixed(2)}%</TableCell>
+                          <TableCell className="text-right">{r.cvr.toFixed(2)}%</TableCell>
+                          <TableCell className="text-right">{r.purchase}</TableCell>
+                          <TableCell className="text-right font-semibold">${r.revenue.toFixed(0)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="rejections" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" /> Rejection Inspector
+              </CardTitle>
+              <CardDescription>
+                Last 100 render attempts. Rejected pins show the reasons that
+                triggered the auto-retry loop (max 2 retries per draft).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const rows = rejections.data ?? [];
+                const totals = rows.reduce(
+                  (a, r) => ({
+                    total: a.total + 1,
+                    rejected: a.rejected + (r.rejected ? 1 : 0),
+                    avgScore: a.avgScore + (r.total_score ?? 0),
+                  }),
+                  { total: 0, rejected: 0, avgScore: 0 },
+                );
+                const acceptRate = totals.total ? ((totals.total - totals.rejected) / totals.total) * 100 : 0;
+                const avg = totals.total ? totals.avgScore / totals.total : 0;
+                return (
+                  <>
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <KpiTile label="Attempts" value={totals.total.toString()} />
+                      <KpiTile label="Accept rate" value={`${acceptRate.toFixed(0)}%`} sub={`${totals.rejected} rejected`} />
+                      <KpiTile label="Avg score" value={avg.toFixed(1)} />
+                    </div>
+                    {!rows.length ? (
+                      <div className="text-sm text-muted-foreground py-6 text-center">
+                        No render attempts logged yet.
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>When</TableHead>
+                            <TableHead>Slug</TableHead>
+                            <TableHead>Niche</TableHead>
+                            <TableHead>Pin mode</TableHead>
+                            <TableHead>Hook</TableHead>
+                            <TableHead className="text-right">Score</TableHead>
+                            <TableHead className="text-right">Try</TableHead>
+                            <TableHead>Status / reasons</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rows.map((r) => (
+                            <TableRow key={r.id}>
+                              <TableCell className="text-xs whitespace-nowrap">
+                                {new Date(r.created_at).toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-xs max-w-[160px] truncate">{r.product_slug ?? "—"}</TableCell>
+                              <TableCell className="text-xs">{r.niche_key ?? "—"}</TableCell>
+                              <TableCell className="text-xs">{r.pin_mode ?? "—"}</TableCell>
+                              <TableCell className="text-xs">{r.hook_category ?? "—"}</TableCell>
+                              <TableCell className="text-right text-xs">
+                                {r.total_score != null ? Number(r.total_score).toFixed(1) : "—"}
+                              </TableCell>
+                              <TableCell className="text-right text-xs">{r.attempt_no}</TableCell>
+                              <TableCell className="text-xs">
+                                {r.rejected ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {(r.reasons ?? []).slice(0, 4).map((reason, i) => (
+                                      <Badge key={i} variant="destructive" className="text-[10px] font-normal">
+                                        {reason}
+                                      </Badge>
+                                    ))}
+                                    {(r.reasons?.length ?? 0) > 4 && (
+                                      <Badge variant="outline" className="text-[10px]">+{(r.reasons!.length - 4)}</Badge>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px]">accepted</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="evolution">
