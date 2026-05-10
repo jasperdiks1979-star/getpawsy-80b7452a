@@ -212,6 +212,48 @@ export default function PinterestCommerceIntelPage() {
     },
   });
 
+  const rejections = useQuery({
+    queryKey: ["pinterest-render-attempts-rejected"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pinterest_render_attempts" as any)
+        .select("id,product_slug,niche_key,pattern_id,hook_category,pin_mode,attempt_no,total_score,rejected,reasons,scores,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as unknown as RenderAttempt[];
+    },
+  });
+
+  const runtime = useQuery({
+    queryKey: ["pinterest-runtime-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pinterest_runtime_settings" as any)
+        .select("id,domination_mode,daily_pin_cap,min_gap_minutes,auto_approve_queue")
+        .eq("id", 1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as RuntimeSettings | null;
+    },
+  });
+
+  const setDomination = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from("pinterest_runtime_settings" as any)
+        .update({ domination_mode: enabled, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+      if (error) throw error;
+      return enabled;
+    },
+    onSuccess: (enabled) => {
+      toast.success(`Domination Mode ${enabled ? "enabled" : "disabled"}`);
+      qc.invalidateQueries({ queryKey: ["pinterest-runtime-settings"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update setting"),
+  });
+
   const refreshTrends = useMutation({
     mutationFn: async () => {
       // Edge function reads `action` from the query string; invoke() doesn't
