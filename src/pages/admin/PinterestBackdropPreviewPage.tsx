@@ -87,6 +87,61 @@ export default function PinterestBackdropPreviewPage() {
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
   const [debug, setDebug] = useState<DebugInfo | null>(null);
+  // Edge-function health probe — pings /pinterest-viral-batch/health every
+  // 30s so the admin can see at a glance whether the function is reachable
+  // before clicking "Generate preview".
+  const [health, setHealth] = useState<{
+    status: "checking" | "ok" | "down";
+    httpStatus?: number;
+    latencyMs?: number;
+    version?: string;
+    pexels?: boolean;
+    error?: string;
+    checkedAt?: string;
+  }>({ status: "checking" });
+
+  useEffect(() => {
+    let cancelled = false;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-viral-batch/health`;
+    const probe = async () => {
+      const t0 = performance.now();
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(url, {
+          method: "GET",
+          headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+          signal: ctrl.signal,
+        });
+        clearTimeout(timer);
+        const latencyMs = Math.round(performance.now() - t0);
+        let body: any = null;
+        try { body = await res.json(); } catch { /* ignore */ }
+        if (cancelled) return;
+        setHealth({
+          status: res.ok && body?.ok ? "ok" : "down",
+          httpStatus: res.status,
+          latencyMs,
+          version: body?.version,
+          pexels: body?.pexels_enabled,
+          error: res.ok ? undefined : (body?.message || `HTTP ${res.status}`),
+          checkedAt: new Date().toISOString(),
+        });
+      } catch (e: any) {
+        if (cancelled) return;
+        setHealth({
+          status: "down",
+          error: e?.name === "AbortError" ? "timeout (8s)" : (e?.message || "network error"),
+          latencyMs: Math.round(performance.now() - t0),
+          checkedAt: new Date().toISOString(),
+        });
+      }
+    };
+    probe();
+    const id = setInterval(probe, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
   // Filter/search state for the rendered preview grid.
   const [searchQuery, setSearchQuery] = useState("");
   const [hookFilter, setHookFilter] = useState<string>("all");
@@ -458,6 +513,46 @@ export default function PinterestBackdropPreviewPage() {
                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                 Generate preview
               </Button>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2 text-[11px] font-mono">
+              <span className="text-muted-foreground">edge fn:</span>
+              <span
+                className={
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 border " +
+                  (health.status === "ok"
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                    : health.status === "down"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : "border-muted-foreground/30 bg-muted/40 text-muted-foreground")
+                }
+                title={health.checkedAt ? `last checked ${health.checkedAt}` : undefined}
+              >
+                <span
+                  className={
+                    "h-1.5 w-1.5 rounded-full " +
+                    (health.status === "ok"
+                      ? "bg-emerald-500"
+                      : health.status === "down"
+                      ? "bg-destructive"
+                      : "bg-muted-foreground animate-pulse")
+                  }
+                />
+                {health.status === "ok"
+                  ? `healthy${health.latencyMs != null ? ` · ${health.latencyMs}ms` : ""}`
+                  : health.status === "down"
+                  ? `down${health.httpStatus ? ` · ${health.httpStatus}` : ""}`
+                  : "checking…"}
+              </span>
+              {health.version && (
+                <span className="text-muted-foreground">v: <span className="text-foreground">{health.version}</span></span>
+              )}
+              {typeof health.pexels === "boolean" && (
+                <span className="text-muted-foreground">pexels: <span className="text-foreground">{health.pexels ? "on" : "off"}</span></span>
+              )}
+              {health.status === "down" && health.error && (
+                <span className="text-destructive truncate">— {health.error}</span>
+              )}
             </div>
 
             {debug && (
