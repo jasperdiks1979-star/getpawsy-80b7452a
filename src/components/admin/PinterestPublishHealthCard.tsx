@@ -39,6 +39,22 @@ type Connection = {
   last_pin_publish_error: string | null;
 };
 
+type ScopeDiagnostics = {
+  scopes: string | null;
+  status: string | null;
+  last_account_status: number | null;
+  last_boards_status: number | null;
+  updated_at: string | null;
+};
+
+const REQUIRED_SCOPES = [
+  "boards:read",
+  "boards:write",
+  "pins:read",
+  "pins:write",
+  "user_accounts:read",
+];
+
 export function PinterestPublishHealthCard() {
   const [health, setHealth] = useState<Health | null>(null);
   const [conn, setConn] = useState<Connection | null>(null);
@@ -46,6 +62,8 @@ export function PinterestPublishHealthCard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [autoApprove, setAutoApprove] = useState(false);
   const [lastResponse, setLastResponse] = useState<any>(null);
+  const [scopeDiag, setScopeDiag] = useState<ScopeDiagnostics | null>(null);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -60,6 +78,13 @@ export function PinterestPublishHealthCard() {
         .maybeSingle();
       setAutoApprove(!!(rt as any)?.auto_approve_queue);
       setConn(rt as any);
+      const { data: pc } = await (supabase as any)
+        .from("pinterest_connection")
+        .select("scopes, status, last_account_status, last_boards_status, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setScopeDiag((pc as ScopeDiagnostics) ?? null);
     } catch (e: any) {
       toast.error(`Health load failed: ${e?.message || e}`);
     } finally {
@@ -141,6 +166,27 @@ export function PinterestPublishHealthCard() {
       if (error) throw error;
       return { retried: data?.length ?? 0 };
     });
+
+  const reconnectPinterest = async () => {
+    setReconnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", { body: {} });
+      if (error) throw error;
+      const url = (data as any)?.auth_url;
+      if (!url) throw new Error("No auth_url returned");
+      window.location.href = url;
+    } catch (e: any) {
+      toast.error(`Reconnect failed: ${e?.message || e}`);
+      setReconnecting(false);
+    }
+  };
+
+  const grantedScopes = (scopeDiag?.scopes || "")
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const missingScopes = REQUIRED_SCOPES.filter((s) => !grantedScopes.includes(s));
+  const reconnectRequired = !!scopeDiag && missingScopes.length > 0;
 
   const counts = health?.queue_counts || {};
   const lastRun = health?.last_cron_run_at ? new Date(health.last_cron_run_at) : null;
@@ -394,6 +440,70 @@ export function PinterestPublishHealthCard() {
             {JSON.stringify(lastResponse, null, 2)}
           </pre>
         )}
+
+        {/* Scope diagnostics */}
+        <div className="rounded-md border p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ShieldCheck className="h-4 w-4" />
+            Pinterest scope diagnostics
+            {reconnectRequired ? (
+              <Badge variant="destructive" className="gap-1">
+                <AlertCircle className="h-3 w-3" /> Reconnect required
+              </Badge>
+            ) : scopeDiag ? (
+              <Badge className="bg-green-500/15 text-green-600 gap-1">
+                <CheckCircle2 className="h-3 w-3" /> All scopes granted
+              </Badge>
+            ) : (
+              <Badge variant="outline">No connection</Badge>
+            )}
+            <Button
+              size="sm"
+              variant={reconnectRequired ? "default" : "secondary"}
+              className="ml-auto h-7"
+              onClick={reconnectPinterest}
+              disabled={reconnecting}
+            >
+              {reconnecting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Link2 className="h-3.5 w-3.5 mr-1" />}
+              Reconnect Pinterest
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div>
+              <div className="text-muted-foreground">Granted scopes</div>
+              <div className="font-medium break-words">{grantedScopes.length ? grantedScopes.join(", ") : "—"}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Missing scopes</div>
+              <div className={`font-medium break-words ${missingScopes.length ? "text-destructive" : ""}`}>
+                {missingScopes.length ? missingScopes.join(", ") : "none"}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">/user_account status</div>
+              <div className={`font-medium ${scopeDiag?.last_account_status && scopeDiag.last_account_status >= 400 ? "text-destructive" : ""}`}>
+                {scopeDiag?.last_account_status ?? "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">/boards status</div>
+              <div className={`font-medium ${scopeDiag?.last_boards_status && scopeDiag.last_boards_status >= 400 ? "text-destructive" : ""}`}>
+                {scopeDiag?.last_boards_status ?? "—"}
+              </div>
+            </div>
+          </div>
+          {scopeDiag?.updated_at && (
+            <div className="text-[11px] text-muted-foreground">
+              Last auth validation: {new Date(scopeDiag.updated_at).toLocaleString()}
+            </div>
+          )}
+          {reconnectRequired && (
+            <div className="text-[11px] text-muted-foreground border-l-2 border-destructive pl-2">
+              Publishing remains enabled while boards/pins APIs validate. Reconnect once to grant the missing
+              scope{missingScopes.length > 1 ? "s" : ""} and restore full account diagnostics.
+            </div>
+          )}
+        </div>
 
         {(counts.queued > 0 && !autoApprove && (counts.posted ?? 0) === 0) && (
           <div className="rounded border border-yellow-500/40 bg-yellow-500/10 p-2 text-xs flex items-start gap-2">
