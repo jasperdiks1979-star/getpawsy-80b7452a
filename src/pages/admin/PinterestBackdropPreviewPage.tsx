@@ -281,6 +281,8 @@ export default function PinterestBackdropPreviewPage() {
         status: dd?.ok ? 200 : (dd?.code || "error"),
         error: dd?.ok ? null : (dd?.message || "Preview failed"),
         resolvedSlug: dd?.product?.slug || sentSlug,
+        productName: dd?.product?.name || null,
+        productId: dd?.product?.id || null,
       });
       if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
