@@ -494,6 +494,34 @@ async function loadLearningWeights(
   return (data ?? []) as LearningWeight[];
 }
 
+/**
+ * Phase 5 — read learned pin-mode winners for this niche from
+ * `pinterest_winner_dimensions`. Returns ordered [{ pin_mode, score }] so the
+ * planner can prefer winning archetypes via epsilon-greedy (80% exploit).
+ */
+async function loadWinnerPinModes(
+  supabase: ReturnType<typeof createClient>,
+  niche: NicheKey,
+): Promise<Array<{ pin_mode: PinModeKey; score: number }>> {
+  try {
+    const { data } = await supabase
+      .from("pinterest_winner_dimensions")
+      .select("pin_mode, composite_score")
+      .eq("niche_key", niche)
+      .eq("is_active", true)
+      .not("pin_mode", "is", null)
+      .gte("sample_size", 2)
+      .order("composite_score", { ascending: false })
+      .limit(10);
+    return (data ?? [])
+      .map((r) => ({ pin_mode: r.pin_mode as PinModeKey, score: Number(r.composite_score ?? 0) }))
+      .filter((r) => !!r.pin_mode);
+  } catch (e) {
+    console.warn("[creative-director] loadWinnerPinModes failed", (e as Error).message);
+    return [];
+  }
+}
+
 async function logRenderAttempt(
   supabase: ReturnType<typeof createClient>,
   args: {
