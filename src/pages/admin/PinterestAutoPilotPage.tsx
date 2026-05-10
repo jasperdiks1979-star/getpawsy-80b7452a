@@ -212,6 +212,134 @@ function deriveSafetyChecks(breakdown: Record<string, unknown>) {
   ];
 }
 
+function buildExplanation(d: Decision) {
+  const breakdown = (d.score_breakdown ?? {}) as Record<string, unknown>;
+  const drivers = computeDecisiveDrivers(d.action, breakdown);
+  const checks = deriveSafetyChecks(breakdown);
+  const factors = Object.entries(FACTOR_MAX).map(([key, meta]) => {
+    const raw = Number((breakdown as Record<string, unknown>)[key] ?? 0);
+    return {
+      key,
+      label: meta.label,
+      score: raw,
+      max: meta.max,
+      decisive: drivers.factorKeys.has(key),
+    };
+  });
+  return {
+    id: d.id,
+    created_at: d.created_at,
+    product_id: d.product_id,
+    product_slug: d.product_slug,
+    product_name: d.product_name,
+    product_category: d.product_category,
+    total_score: d.total_score,
+    action: d.action,
+    status: d.status,
+    selected_hook_category: d.selected_hook_category,
+    selected_board_name: d.selected_board_name,
+    expected_fit: d.expected_fit,
+    reason: d.reason,
+    decisive_summary: drivers.summary,
+    factors,
+    safety_checks: checks.map((c) => ({
+      label: c.label,
+      passed: c.passed,
+      detail: c.detail,
+      decisive: drivers.checkLabels.has(c.label),
+    })),
+    raw_breakdown: breakdown,
+  };
+}
+
+function csvEscape(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  const s = typeof v === "string" ? v : JSON.stringify(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadBlob(content: string, mime: string, filename: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportDecisions(decisions: Decision[], format: "csv" | "json") {
+  if (!decisions.length) {
+    toast.error("No decisions to export");
+    return;
+  }
+  const rows = decisions.map(buildExplanation);
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  if (format === "json") {
+    downloadBlob(
+      JSON.stringify(rows, null, 2),
+      "application/json",
+      `pinterest-autopilot-why-${stamp}.json`,
+    );
+    toast.success(`Exported ${rows.length} decisions (JSON)`);
+    return;
+  }
+  const headers = [
+    "id",
+    "created_at",
+    "product_name",
+    "product_slug",
+    "product_category",
+    "action",
+    "status",
+    "total_score",
+    "selected_hook_category",
+    "selected_board_name",
+    "expected_fit",
+    "reason",
+    "decisive_summary",
+    ...Object.keys(FACTOR_MAX).flatMap((k) => [`factor_${k}`, `factor_${k}_decisive`]),
+    "safety_checks_passed",
+    "safety_checks_failed",
+    "safety_checks_decisive",
+  ];
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    const factorMap = new Map(r.factors.map((f) => [f.key, f]));
+    const passed = r.safety_checks.filter((c) => c.passed).map((c) => c.label);
+    const failed = r.safety_checks.filter((c) => !c.passed).map((c) => `${c.label} (${c.detail})`);
+    const decisive = r.safety_checks.filter((c) => c.decisive).map((c) => c.label);
+    const row: unknown[] = [
+      r.id,
+      r.created_at,
+      r.product_name,
+      r.product_slug,
+      r.product_category,
+      r.action,
+      r.status,
+      r.total_score,
+      r.selected_hook_category,
+      r.selected_board_name,
+      r.expected_fit,
+      r.reason,
+      r.decisive_summary,
+      ...Object.keys(FACTOR_MAX).flatMap((k) => {
+        const f = factorMap.get(k);
+        return [f ? `${f.score}/${f.max}` : "", f?.decisive ? "yes" : ""];
+      }),
+      passed.join(" | "),
+      failed.join(" | "),
+      decisive.join(" | "),
+    ];
+    lines.push(row.map(csvEscape).join(","));
+  }
+  downloadBlob(lines.join("\n"), "text/csv", `pinterest-autopilot-why-${stamp}.csv`);
+  toast.success(`Exported ${rows.length} decisions (CSV)`);
+}
+
 export default function PinterestAutoPilotPage() {
   const qc = useQueryClient();
   const [overrideProductId, setOverrideProductId] = useState("");
