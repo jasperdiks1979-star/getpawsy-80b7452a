@@ -1544,6 +1544,374 @@ export default function PinterestCommerceIntelPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="failure-intel" className="space-y-4">
+          {/* Score band distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Score band distribution (last 14d)</CardTitle>
+              <CardDescription>Where do render attempts land — elite, strong, acceptable, weak, reject?</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const rows = scoreDist.data ?? [];
+                const order = ["elite", "strong", "acceptable", "weak", "reject"];
+                const agg = order.map((band) => {
+                  const subset = rows.filter((r) => r.band === band);
+                  return {
+                    band,
+                    attempts: subset.reduce((s, r) => s + (r.attempts || 0), 0),
+                    rejected: subset.reduce((s, r) => s + (r.rejected_count || 0), 0),
+                  };
+                });
+                const total = agg.reduce((s, b) => s + b.attempts, 0);
+                if (!total) return <EmptyChart />;
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                      {agg.map((b) => (
+                        <KpiTile
+                          key={b.band}
+                          label={b.band.toUpperCase()}
+                          value={b.attempts.toLocaleString()}
+                          sub={`${total ? ((b.attempts / total) * 100).toFixed(1) : 0}%`}
+                        />
+                      ))}
+                    </div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={agg}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="band" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="attempts" fill="hsl(var(--primary))" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Top rejection causes */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Most common rejection causes</CardTitle>
+              <CardDescription>Aggregated across the last 14 days of render attempts.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const rows = failureIntel.data ?? [];
+                const byReason = new Map<string, { rejected: number; total: number }>();
+                for (const r of rows) {
+                  if (!r.reason || r.reason === "_no_reason") continue;
+                  const cur = byReason.get(r.reason) ?? { rejected: 0, total: 0 };
+                  cur.rejected += r.rejected_count || 0;
+                  cur.total += r.total_count || 0;
+                  byReason.set(r.reason, cur);
+                }
+                const top = [...byReason.entries()]
+                  .map(([reason, v]) => ({ reason, ...v, rate: v.total ? (v.rejected / v.total) * 100 : 0 }))
+                  .sort((a, b) => b.rejected - a.rejected)
+                  .slice(0, 12);
+                if (!top.length) return <EmptyChart />;
+                return (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Reason</TableHead>
+                        <TableHead className="text-right">Rejected</TableHead>
+                        <TableHead className="text-right">Attempts</TableHead>
+                        <TableHead className="text-right">Reject rate</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {top.map((r) => (
+                        <TableRow key={r.reason}>
+                          <TableCell className="font-mono text-xs">{r.reason}</TableCell>
+                          <TableCell className="text-right">{r.rejected.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{r.total.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant={r.rate > 40 ? "destructive" : r.rate > 20 ? "secondary" : "outline"}>
+                              {r.rate.toFixed(1)}%
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Weak hook families */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Weakest hook families</CardTitle>
+                <CardDescription>Highest rejection rate by hook category.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const rows = failureIntel.data ?? [];
+                  const byHook = new Map<string, { rejected: number; total: number; score: number; n: number }>();
+                  for (const r of rows) {
+                    const k = r.hook_category || "_unknown";
+                    const cur = byHook.get(k) ?? { rejected: 0, total: 0, score: 0, n: 0 };
+                    cur.rejected += r.rejected_count || 0;
+                    cur.total += r.total_count || 0;
+                    if (r.avg_score != null) { cur.score += Number(r.avg_score); cur.n += 1; }
+                    byHook.set(k, cur);
+                  }
+                  const top = [...byHook.entries()]
+                    .map(([k, v]) => ({
+                      hook: k,
+                      rejected: v.rejected,
+                      total: v.total,
+                      rate: v.total ? (v.rejected / v.total) * 100 : 0,
+                      avgScore: v.n ? v.score / v.n : null,
+                    }))
+                    .filter((r) => r.total >= 3)
+                    .sort((a, b) => b.rate - a.rate)
+                    .slice(0, 10);
+                  if (!top.length) return <EmptyChart />;
+                  return (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Hook</TableHead>
+                          <TableHead className="text-right">Reject rate</TableHead>
+                          <TableHead className="text-right">Avg score</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {top.map((r) => (
+                          <TableRow key={r.hook}>
+                            <TableCell className="font-mono text-xs">{r.hook}</TableCell>
+                            <TableCell className="text-right">{r.rate.toFixed(1)}%</TableCell>
+                            <TableCell className="text-right">{r.avgScore != null ? r.avgScore.toFixed(1) : "—"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Retry recovery insights</CardTitle>
+                <CardDescription>Which retries actually improved the score (last 30d).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const rows = retryOutcomes.data ?? [];
+                  if (!rows.length) return <EmptyChart />;
+                  const recovered = rows.filter((r) => r.any_accepted).length;
+                  const failed = rows.filter((r) => r.all_rejected).length;
+                  const avgDelta = rows.reduce((s, r) => s + (Number(r.score_delta) || 0), 0) / rows.length;
+                  const top = rows.slice(0, 8);
+                  return (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        <KpiTile label="Retried pins" value={rows.length.toString()} />
+                        <KpiTile label="Recovered" value={recovered.toString()} sub={`${((recovered / rows.length) * 100).toFixed(0)}%`} />
+                        <KpiTile label="Avg Δ score" value={avgDelta.toFixed(1)} sub={failed ? `${failed} unrecoverable` : "all recovered"} />
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Hook</TableHead>
+                            <TableHead className="text-right">First</TableHead>
+                            <TableHead className="text-right">Final</TableHead>
+                            <TableHead className="text-right">Δ</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {top.map((r) => (
+                            <TableRow key={r.pin_queue_id}>
+                              <TableCell className="font-mono text-xs">{r.hook_category || "—"}</TableCell>
+                              <TableCell className="text-right">{r.first_score?.toString() ?? "—"}</TableCell>
+                              <TableCell className="text-right">{r.final_score?.toString() ?? "—"}</TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant={(Number(r.score_delta) || 0) > 0 ? "default" : "destructive"}>
+                                  {Number(r.score_delta || 0).toFixed(1)}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="winner-intel" className="space-y-4">
+          {/* Top winners leaderboard */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Top performing pins</CardTitle>
+              <CardDescription>Ranked by composite score across saves, CTR, ATC and revenue signals.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const rows = winnerLeaderboard.data ?? [];
+                if (!rows.length) return <EmptyChart />;
+                return (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Pin</TableHead>
+                        <TableHead>Hook</TableHead>
+                        <TableHead>Niche</TableHead>
+                        <TableHead className="text-right">Imp</TableHead>
+                        <TableHead className="text-right">CTR</TableHead>
+                        <TableHead className="text-right">Save%</TableHead>
+                        <TableHead className="text-right">Score</TableHead>
+                        <TableHead>Verdict</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.slice(0, 25).map((r) => (
+                        <TableRow key={r.pin_queue_id}>
+                          <TableCell className="text-xs max-w-[180px] truncate">
+                            {r.product_name || r.product_slug || r.pin_queue_id.slice(0, 8)}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{r.hook_category || "—"}</TableCell>
+                          <TableCell className="font-mono text-xs">{r.niche_key || "—"}</TableCell>
+                          <TableCell className="text-right">{r.pinterest_impressions.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{r.ctr_pct != null ? `${r.ctr_pct}%` : "—"}</TableCell>
+                          <TableCell className="text-right">{r.save_rate_pct != null ? `${r.save_rate_pct}%` : "—"}</TableCell>
+                          <TableCell className="text-right font-semibold">{Number(r.composite_score).toFixed(1)}</TableCell>
+                          <TableCell>
+                            {r.profit_verdict ? (
+                              <Badge variant={r.profit_verdict === "scale" ? "default" : r.profit_verdict === "kill" ? "destructive" : "secondary"}>
+                                {r.profit_verdict}
+                              </Badge>
+                            ) : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Hook + niche leaderboards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Best hook categories</CardTitle>
+                <CardDescription>Average composite score by hook (min 2 winning pins).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const rows = winnerLeaderboard.data ?? [];
+                  const m = new Map<string, { score: number; saves: number; clicks: number; n: number }>();
+                  for (const r of rows) {
+                    const k = r.hook_category || "_unknown";
+                    const cur = m.get(k) ?? { score: 0, saves: 0, clicks: 0, n: 0 };
+                    cur.score += Number(r.composite_score) || 0;
+                    cur.saves += r.pinterest_saves || 0;
+                    cur.clicks += r.pinterest_outbound_clicks || 0;
+                    cur.n += 1;
+                    m.set(k, cur);
+                  }
+                  const list = [...m.entries()]
+                    .map(([k, v]) => ({ hook: k, avg: v.score / v.n, saves: v.saves, clicks: v.clicks, n: v.n }))
+                    .filter((r) => r.n >= 2)
+                    .sort((a, b) => b.avg - a.avg)
+                    .slice(0, 10);
+                  if (!list.length) return <EmptyChart />;
+                  return (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Hook</TableHead>
+                          <TableHead className="text-right">Pins</TableHead>
+                          <TableHead className="text-right">Saves</TableHead>
+                          <TableHead className="text-right">Clicks</TableHead>
+                          <TableHead className="text-right">Avg score</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {list.map((r) => (
+                          <TableRow key={r.hook}>
+                            <TableCell className="font-mono text-xs">{r.hook}</TableCell>
+                            <TableCell className="text-right">{r.n}</TableCell>
+                            <TableCell className="text-right">{r.saves.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{r.clicks.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-semibold">{r.avg.toFixed(1)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Best niches</CardTitle>
+                <CardDescription>Average composite score by niche (min 2 winning pins).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const rows = winnerLeaderboard.data ?? [];
+                  const m = new Map<string, { score: number; imp: number; clicks: number; n: number }>();
+                  for (const r of rows) {
+                    const k = r.niche_key || "_unknown";
+                    const cur = m.get(k) ?? { score: 0, imp: 0, clicks: 0, n: 0 };
+                    cur.score += Number(r.composite_score) || 0;
+                    cur.imp += r.pinterest_impressions || 0;
+                    cur.clicks += r.pinterest_outbound_clicks || 0;
+                    cur.n += 1;
+                    m.set(k, cur);
+                  }
+                  const list = [...m.entries()]
+                    .map(([k, v]) => ({ niche: k, avg: v.score / v.n, imp: v.imp, clicks: v.clicks, n: v.n }))
+                    .filter((r) => r.n >= 2)
+                    .sort((a, b) => b.avg - a.avg)
+                    .slice(0, 10);
+                  if (!list.length) return <EmptyChart />;
+                  return (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Niche</TableHead>
+                          <TableHead className="text-right">Pins</TableHead>
+                          <TableHead className="text-right">Imp</TableHead>
+                          <TableHead className="text-right">Clicks</TableHead>
+                          <TableHead className="text-right">Avg score</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {list.map((r) => (
+                          <TableRow key={r.niche}>
+                            <TableCell className="font-mono text-xs">{r.niche}</TableCell>
+                            <TableCell className="text-right">{r.n}</TableCell>
+                            <TableCell className="text-right">{r.imp.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{r.clicks.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-semibold">{r.avg.toFixed(1)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       <Sheet open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
