@@ -11,6 +11,8 @@ import {
 import { toast } from "sonner";
 import { RefreshCw, Sparkles, TrendingUp, Target, Zap, Flame, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, AreaChart, Area, ScatterChart, Scatter, ZAxis,
@@ -253,6 +255,25 @@ export default function PinterestCommerceIntelPage() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to update setting"),
   });
+
+  const setVelocity = useMutation({
+    mutationFn: async (patch: { daily_pin_cap?: number; min_gap_minutes?: number }) => {
+      const { error } = await supabase
+        .from("pinterest_runtime_settings" as any)
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+      if (error) throw error;
+      return patch;
+    },
+    onSuccess: () => {
+      toast.success("Publishing velocity updated");
+      qc.invalidateQueries({ queryKey: ["pinterest-runtime-settings"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update velocity"),
+  });
+
+  const [capDraft, setCapDraft] = useState<string>("");
+  const [gapDraft, setGapDraft] = useState<string>("");
 
   const refreshTrends = useMutation({
     mutationFn: async () => {
