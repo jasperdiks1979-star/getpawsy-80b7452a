@@ -32,6 +32,14 @@ import {
 import { fetchAiBackdrop } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
 
+// Top-level boot log — visible in edge function logs immediately on cold start
+// so transport-layer outages can be distinguished from runtime errors.
+console.log("[pinterest-viral-batch] boot ok", {
+  has_supabase_url: !!Deno.env.get("SUPABASE_URL"),
+  has_service_role: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+  has_pexels: !!Deno.env.get("PEXELS_API_KEY"),
+});
+
 export type {
   PinterestQueueInsert,
   PinterestPinDraft,
