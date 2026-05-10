@@ -104,7 +104,32 @@ type RuntimeSettings = {
   daily_pin_cap: number;
   min_gap_minutes: number;
   auto_approve_queue: boolean;
+  pacing_mode: "slow" | "balanced" | "domination";
 };
+
+// Client mirror of supabase/functions/_shared/pinterest-pacing.ts.
+// Keep in sync with the edge helper — server is the source of truth.
+const PACING_PRESETS = {
+  slow: {
+    daily_pin_cap: 2,
+    min_gap_minutes: 240,
+    label: "Slow",
+    description: "Warm-up · 2/day · 4h gap. Safest for new accounts or experimental hooks.",
+  },
+  balanced: {
+    daily_pin_cap: 4,
+    min_gap_minutes: 90,
+    label: "Balanced",
+    description: "Default · 4/day · 90m gap. Pinterest-safe stable scaling.",
+  },
+  domination: {
+    daily_pin_cap: 8,
+    min_gap_minutes: 45,
+    label: "Domination",
+    description: "Scale · 8/day · 45m gap. Aggressive winner exploitation.",
+  },
+} as const;
+type PacingMode = keyof typeof PACING_PRESETS;
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -270,6 +295,77 @@ export default function PinterestCommerceIntelPage() {
       qc.invalidateQueries({ queryKey: ["pinterest-runtime-settings"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to update velocity"),
+  });
+
+  const setPacing = useMutation({
+    mutationFn: async (mode: PacingMode) => {
+      const preset = PACING_PRESETS[mode];
+      const { error } = await supabase
+        .from("pinterest_runtime_settings" as any)
+        .update({
+          pacing_mode: mode,
+          daily_pin_cap: preset.daily_pin_cap,
+          min_gap_minutes: preset.min_gap_minutes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", 1);
+      if (error) throw error;
+      return mode;
+    },
+    onSuccess: (mode) => {
+      toast.success(`Pacing set to ${PACING_PRESETS[mode].label}`);
+      qc.invalidateQueries({ queryKey: ["pinterest-runtime-settings"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update pacing"),
+  });
+
+  // Dedup insights — count duplicate-rejected pins in the last 14d and roll up
+  // top fingerprints + hook groups responsible for collisions.
+  const dedup = useQuery({
+    queryKey: ["pinterest-dedup-insights"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("pinterest_pin_queue" as any)
+        .select("creative_fingerprint,hook_group,qa_reasons,status,created_at")
+        .gte("created_at", since)
+        .limit(5000);
+      if (error) throw error;
+      const rows = ((data ?? []) as unknown) as Array<{
+        creative_fingerprint: string | null;
+        hook_group: string | null;
+        qa_reasons: string[] | null;
+        status: string;
+        created_at: string;
+      }>;
+      const total = rows.length;
+      const dupRows = rows.filter((r) => (r.qa_reasons || []).includes("duplicate_asset"));
+      const fpCounts = new Map<string, number>();
+      const hookCounts = new Map<string, number>();
+      for (const r of dupRows) {
+        if (r.creative_fingerprint) {
+          fpCounts.set(r.creative_fingerprint, (fpCounts.get(r.creative_fingerprint) || 0) + 1);
+        }
+        if (r.hook_group) {
+          hookCounts.set(r.hook_group, (hookCounts.get(r.hook_group) || 0) + 1);
+        }
+      }
+      const topFp = [...fpCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([fp, n]) => ({ fingerprint: fp, count: n }));
+      const topHooks = [...hookCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([hook, n]) => ({ hook, count: n }));
+      return {
+        total,
+        duplicates: dupRows.length,
+        rate: total ? (dupRows.length / total) * 100 : 0,
+        topFp,
+        topHooks,
+      };
+    },
   });
 
   const [capDraft, setCapDraft] = useState<string>("");
@@ -633,6 +729,45 @@ export default function PinterestCommerceIntelPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
+          <div className="border-t pt-3 pb-1">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Pacing mode
+              </Label>
+              <span className="text-[11px] text-muted-foreground">
+                Active: <span className="font-mono">{runtime.data?.pacing_mode ?? "balanced"}</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(Object.keys(PACING_PRESETS) as PacingMode[]).map((mode) => {
+                const preset = PACING_PRESETS[mode];
+                const active = (runtime.data?.pacing_mode ?? "balanced") === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    disabled={setPacing.isPending}
+                    onClick={() => setPacing.mutate(mode)}
+                    className={`text-left rounded-md border p-3 transition ${
+                      active
+                        ? "border-primary bg-primary/10 ring-1 ring-primary"
+                        : "border-border hover:border-primary/40 hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold">{preset.label}</span>
+                      <Badge variant={active ? "default" : "secondary"} className="text-[10px]">
+                        {preset.daily_pin_cap}/d · {preset.min_gap_minutes}m
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {preset.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="flex flex-wrap items-end gap-3 border-t pt-3">
             <div className="space-y-1">
               <Label htmlFor="cap" className="text-xs">Daily pin cap</Label>
@@ -700,6 +835,7 @@ export default function PinterestCommerceIntelPage() {
           <TabsTrigger value="winners">Winners</TabsTrigger>
           <TabsTrigger value="hooks">Hooks</TabsTrigger>
           <TabsTrigger value="rejections">Rejections</TabsTrigger>
+          <TabsTrigger value="dedup">Dedup</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
           <TabsTrigger value="boosts">Boosts</TabsTrigger>
           <TabsTrigger value="evolution">Evolution Log</TabsTrigger>
@@ -1176,6 +1312,106 @@ export default function PinterestCommerceIntelPage() {
                   </>
                 );
               })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="dedup" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" /> Deduplication Intelligence
+              </CardTitle>
+              <CardDescription>
+                Last 14 days of queued pins. The fingerprint engine catches near-duplicate
+                creatives (same slug · variant · hook · overlay · backdrop) even when the
+                rendered image URL differs. Duplicate-flagged pins are blocked at insert time.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {dedup.isLoading ? (
+                <div className="text-sm text-muted-foreground py-6 text-center">Loading…</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <KpiTile label="Pins (14d)" value={(dedup.data?.total ?? 0).toString()} />
+                    <KpiTile
+                      label="Duplicates blocked"
+                      value={(dedup.data?.duplicates ?? 0).toString()}
+                      sub={`${(dedup.data?.rate ?? 0).toFixed(1)}% of intake`}
+                    />
+                    <KpiTile
+                      label="Unique fingerprints"
+                      value={(dedup.data?.topFp.length ?? 0).toString()}
+                      sub="distinct collisions"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        Top colliding fingerprints
+                      </div>
+                      {!(dedup.data?.topFp.length) ? (
+                        <div className="text-xs text-muted-foreground py-4">
+                          No duplicate creatives detected — diversity is healthy.
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Fingerprint</TableHead>
+                              <TableHead className="text-right">Repeats</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {dedup.data!.topFp.map((row) => (
+                              <TableRow key={row.fingerprint}>
+                                <TableCell className="font-mono text-xs">{row.fingerprint}</TableCell>
+                                <TableCell className="text-right text-xs">{row.count}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        Hook families with most duplicate rejections
+                      </div>
+                      {!(dedup.data?.topHooks.length) ? (
+                        <div className="text-xs text-muted-foreground py-4">
+                          No hook family is over-represented in duplicates.
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Hook group</TableHead>
+                              <TableHead className="text-right">Rejections</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {dedup.data!.topHooks.map((row) => (
+                              <TableRow key={row.hook}>
+                                <TableCell className="text-xs">{row.hook}</TableCell>
+                                <TableCell className="text-right text-xs">{row.count}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground mt-4">
+                    Duplicate intake above ~15% suggests the strategy picker is over-exploiting a
+                    single hook × backdrop combination. Switch pacing to <span className="font-mono">balanced</span>
+                    {" "}or <span className="font-mono">slow</span> to force more exploration.
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
