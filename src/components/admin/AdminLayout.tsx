@@ -52,6 +52,7 @@ const navItems = [
   { to: '/admin/integrations/stripe/apple-pay', label: 'Apple Pay Domain', icon: Apple },
   { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
   { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
+  { to: '/admin/pinterest-commerce-intel', label: 'Pinterest Commerce Intel', icon: Pin },
   { to: '/admin/pinterest-pin-status', label: 'Pinterest Pin Status', icon: Pin },
   { to: '/admin/pinterest-backdrop-preview', label: 'Pinterest Backdrops', icon: Pin },
   { to: '/admin/tiktok-automation', label: 'TikTok Auto', icon: Activity },

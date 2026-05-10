@@ -522,6 +522,55 @@ async function loadWinnerPinModes(
   }
 }
 
+/**
+ * Phase 8/10 — load the live evolving strategy state and current trend bias
+ * (seasonal + admin-curated). Both are merged into `winnerModes` so the
+ * planner exploits proven archetypes AND timely trends.
+ */
+async function loadStrategyAndTrends(
+  supabase: ReturnType<typeof createClient>,
+  niche: NicheKey,
+): Promise<{
+  exploitRatio: number;
+  qualityThreshold: number | null;
+  pinModeBoost: Record<string, number>;
+}> {
+  let exploitRatio = 0.8;
+  let qualityThreshold: number | null = null;
+  const pinModeBoost: Record<string, number> = {};
+  try {
+    const [{ data: state }, { data: trends }] = await Promise.all([
+      supabase.from("pinterest_strategy_state").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("pinterest_trend_signals")
+        .select("pin_mode, weight, niche_key")
+        .eq("is_active", true)
+        .or(`niche_key.eq.${niche},niche_key.eq.global`)
+        .order("weight", { ascending: false })
+        .limit(20),
+    ]);
+    if (state) {
+      exploitRatio = Number(state.exploit_ratio ?? 0.8);
+      qualityThreshold = Number(state.quality_threshold ?? 0) || null;
+      const archetypeBoosts = (state.archetype_boosts ?? {}) as Record<string, number>;
+      for (const [k, v] of Object.entries(archetypeBoosts)) {
+        const [n, mode] = k.split(":");
+        if (n === niche && mode) pinModeBoost[mode] = Math.max(pinModeBoost[mode] ?? 0, Number(v));
+      }
+    }
+    for (const t of trends ?? []) {
+      if (t.pin_mode) {
+        pinModeBoost[t.pin_mode] = Math.max(
+          pinModeBoost[t.pin_mode] ?? 0,
+          Number(t.weight) * 0.15,
+        );
+      }
+    }
+  } catch (e) {
+    console.warn("[creative-director] loadStrategyAndTrends failed", (e as Error).message);
+  }
+  return { exploitRatio, qualityThreshold, pinModeBoost };
+}
+
 async function logRenderAttempt(
   supabase: ReturnType<typeof createClient>,
   args: {
@@ -774,12 +823,18 @@ Deno.serve(async (req) => {
       const { dna, product, niche } = await loadOrBuildProfile(supabase, resolvedId, force);
       const weights = await loadLearningWeights(supabase, niche);
       const winnerModes = await loadWinnerPinModes(supabase, niche);
-      // Phase 5 — bias the first brief toward the highest-scoring learned
-      // pin_mode (80% exploit / 20% explore). Other briefs keep rotating for
-      // variety so the system still discovers new winners.
-      const exploitFirst = winnerModes[0]?.pin_mode;
+      const { exploitRatio, pinModeBoost } = await loadStrategyAndTrends(supabase, niche);
+      // Phase 5/8/10 — merge winner pin_modes with current trend bias and
+      // archetype boosts from pinterest_strategy_state, then exploit the top
+      // archetype with the evolved exploit ratio (default 0.8).
+      const blended = new Map<string, number>();
+      for (const w of winnerModes) blended.set(w.pin_mode, (blended.get(w.pin_mode) ?? 0) + w.score);
+      for (const [mode, boost] of Object.entries(pinModeBoost)) {
+        blended.set(mode, (blended.get(mode) ?? 0) + Number(boost) * 100);
+      }
+      const exploitFirst = [...blended.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] as PinModeKey | undefined;
       const visualPlans: VisualPlan[] = Array.from({ length: count }).map((_, i) => {
-        const useWinner = i === 0 && exploitFirst && Math.random() < 0.8;
+        const useWinner = i === 0 && exploitFirst && Math.random() < exploitRatio;
         return buildVisualPlan({
           name: product.name,
           rotateSeed: i,
