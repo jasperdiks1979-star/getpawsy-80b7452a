@@ -4958,6 +4958,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_attribution_sessions: {
+        Row: {
+          events_seen: number
+          first_seen: string
+          hook_category: string | null
+          id: string
+          landing_slug: string | null
+          last_seen: string
+          niche_key: string | null
+          pin_id: string | null
+          pin_mode: string | null
+          session_key: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          events_seen?: number
+          first_seen?: string
+          hook_category?: string | null
+          id?: string
+          landing_slug?: string | null
+          last_seen?: string
+          niche_key?: string | null
+          pin_id?: string | null
+          pin_mode?: string | null
+          session_key: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          events_seen?: number
+          first_seen?: string
+          hook_category?: string | null
+          id?: string
+          landing_slug?: string | null
+          last_seen?: string
+          niche_key?: string | null
+          pin_id?: string | null
+          pin_mode?: string | null
+          session_key?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       pinterest_board_mappings: {
         Row: {
           board_names: string[]
@@ -5051,6 +5099,66 @@ export type Database = {
           production_verified_at?: string | null
           style_affinity?: string[]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_capi_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          currency: string | null
+          custom_data: Json | null
+          event_id: string
+          event_name: string
+          event_time: string
+          id: string
+          last_error: string | null
+          niche_key: string | null
+          pin_id: string | null
+          pin_mode: string | null
+          product_id: string | null
+          sent_at: string | null
+          status: string
+          user_data: Json | null
+          value: number | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          currency?: string | null
+          custom_data?: Json | null
+          event_id: string
+          event_name: string
+          event_time?: string
+          id?: string
+          last_error?: string | null
+          niche_key?: string | null
+          pin_id?: string | null
+          pin_mode?: string | null
+          product_id?: string | null
+          sent_at?: string | null
+          status?: string
+          user_data?: Json | null
+          value?: number | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          currency?: string | null
+          custom_data?: Json | null
+          event_id?: string
+          event_name?: string
+          event_time?: string
+          id?: string
+          last_error?: string | null
+          niche_key?: string | null
+          pin_id?: string | null
+          pin_mode?: string | null
+          product_id?: string | null
+          sent_at?: string | null
+          status?: string
+          user_data?: Json | null
+          value?: number | null
         }
         Relationships: []
       }
@@ -5524,6 +5632,78 @@ export type Database = {
           pattern_id?: string
           sample_size?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_performance_signals: {
+        Row: {
+          add_to_cart: number
+          backdrop_style: string | null
+          board_id: string | null
+          checkout: number
+          created_at: string
+          cta: string | null
+          hook_category: string | null
+          id: string
+          impressions: number
+          last_updated: string
+          niche_key: string
+          outbound: number
+          pattern_id: string | null
+          pin_mode: string | null
+          product_category: string | null
+          purchase: number
+          revenue: number
+          sample_size: number
+          saves: number
+          session_seconds: number
+          sessions: number
+        }
+        Insert: {
+          add_to_cart?: number
+          backdrop_style?: string | null
+          board_id?: string | null
+          checkout?: number
+          created_at?: string
+          cta?: string | null
+          hook_category?: string | null
+          id?: string
+          impressions?: number
+          last_updated?: string
+          niche_key: string
+          outbound?: number
+          pattern_id?: string | null
+          pin_mode?: string | null
+          product_category?: string | null
+          purchase?: number
+          revenue?: number
+          sample_size?: number
+          saves?: number
+          session_seconds?: number
+          sessions?: number
+        }
+        Update: {
+          add_to_cart?: number
+          backdrop_style?: string | null
+          board_id?: string | null
+          checkout?: number
+          created_at?: string
+          cta?: string | null
+          hook_category?: string | null
+          id?: string
+          impressions?: number
+          last_updated?: string
+          niche_key?: string
+          outbound?: number
+          pattern_id?: string | null
+          pin_mode?: string | null
+          product_category?: string | null
+          purchase?: number
+          revenue?: number
+          sample_size?: number
+          saves?: number
+          session_seconds?: number
+          sessions?: number
         }
         Relationships: []
       }
@@ -6068,6 +6248,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_winner_dimensions: {
+        Row: {
+          composite_score: number
+          computed_at: string
+          conversion_rate: number | null
+          hook_category: string | null
+          id: string
+          is_active: boolean
+          niche_key: string
+          outbound_rate: number | null
+          pattern_id: string | null
+          pin_mode: string | null
+          revenue_per_impression: number | null
+          sample_size: number
+          save_rate: number | null
+        }
+        Insert: {
+          composite_score?: number
+          computed_at?: string
+          conversion_rate?: number | null
+          hook_category?: string | null
+          id?: string
+          is_active?: boolean
+          niche_key: string
+          outbound_rate?: number | null
+          pattern_id?: string | null
+          pin_mode?: string | null
+          revenue_per_impression?: number | null
+          sample_size?: number
+          save_rate?: number | null
+        }
+        Update: {
+          composite_score?: number
+          computed_at?: string
+          conversion_rate?: number | null
+          hook_category?: string | null
+          id?: string
+          is_active?: boolean
+          niche_key?: string
+          outbound_rate?: number | null
+          pattern_id?: string | null
+          pin_mode?: string | null
+          revenue_per_impression?: number | null
+          sample_size?: number
+          save_rate?: number | null
+        }
+        Relationships: []
       }
       product_bundles: {
         Row: {

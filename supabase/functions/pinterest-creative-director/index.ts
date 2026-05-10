@@ -494,6 +494,34 @@ async function loadLearningWeights(
   return (data ?? []) as LearningWeight[];
 }
 
+/**
+ * Phase 5 — read learned pin-mode winners for this niche from
+ * `pinterest_winner_dimensions`. Returns ordered [{ pin_mode, score }] so the
+ * planner can prefer winning archetypes via epsilon-greedy (80% exploit).
+ */
+async function loadWinnerPinModes(
+  supabase: ReturnType<typeof createClient>,
+  niche: NicheKey,
+): Promise<Array<{ pin_mode: PinModeKey; score: number }>> {
+  try {
+    const { data } = await supabase
+      .from("pinterest_winner_dimensions")
+      .select("pin_mode, composite_score")
+      .eq("niche_key", niche)
+      .eq("is_active", true)
+      .not("pin_mode", "is", null)
+      .gte("sample_size", 2)
+      .order("composite_score", { ascending: false })
+      .limit(10);
+    return (data ?? [])
+      .map((r) => ({ pin_mode: r.pin_mode as PinModeKey, score: Number(r.composite_score ?? 0) }))
+      .filter((r) => !!r.pin_mode);
+  } catch (e) {
+    console.warn("[creative-director] loadWinnerPinModes failed", (e as Error).message);
+    return [];
+  }
+}
+
 async function logRenderAttempt(
   supabase: ReturnType<typeof createClient>,
   args: {
@@ -745,7 +773,20 @@ Deno.serve(async (req) => {
     if (action === "render_pins" || action === "run_full") {
       const { dna, product, niche } = await loadOrBuildProfile(supabase, resolvedId, force);
       const weights = await loadLearningWeights(supabase, niche);
-      let briefs = await generateBriefs(product, dna, count, undefined, weights);
+      const winnerModes = await loadWinnerPinModes(supabase, niche);
+      // Phase 5 — bias the first brief toward the highest-scoring learned
+      // pin_mode (80% exploit / 20% explore). Other briefs keep rotating for
+      // variety so the system still discovers new winners.
+      const exploitFirst = winnerModes[0]?.pin_mode;
+      const visualPlans: VisualPlan[] = Array.from({ length: count }).map((_, i) => {
+        const useWinner = i === 0 && exploitFirst && Math.random() < 0.8;
+        return buildVisualPlan({
+          name: product.name,
+          rotateSeed: i,
+          pin_mode: useWinner ? exploitFirst : undefined,
+        });
+      });
+      let briefs = await generateBriefs(product, dna, count, undefined, weights, {}, visualPlans);
 
       const drafts: any[] = [];
       const rejected: any[] = [];
