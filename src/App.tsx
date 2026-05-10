@@ -257,6 +257,7 @@ const Install = lazyWithRetry(() => import("./pages/Install"));
 const About = lazyWithRetry(() => import("./pages/About"));
 const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
 const LinkInBio = lazyWithRetry(() => import("./pages/LinkInBio"));
+const PinterestDynamicLanding = lazyWithRetry(() => import("./pages/landing/PinterestDynamicLanding"));
 const TermsOfService = lazyWithRetry(() => import("./pages/TermsOfService"));
 const ReturnPolicy = lazyWithRetry(() => import("./pages/ReturnPolicy"));
 const CookiePolicy = lazyWithRetry(() => import("./pages/CookiePolicy"));
@@ -757,6 +758,14 @@ const App = () => {
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <LinkInBio />
+                              </Suspense>
+                            }
+                          />
+                          <Route
+                            path="/go/:slug"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <PinterestDynamicLanding />
                               </Suspense>
                             }
                           />
