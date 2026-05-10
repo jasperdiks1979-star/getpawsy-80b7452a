@@ -35,6 +35,8 @@ import {
   type HookCategory,
 } from "../_shared/pinterest-hooks.ts";
 import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
+import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
+import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -119,6 +121,7 @@ interface SceneBrief {
   hook_category?: HookCategory;
   strategy_rationale?: string;
   retry_reasons?: string[];
+  pin_mode?: PinModeKey;
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
@@ -178,6 +181,7 @@ async function generateBriefs(
   patternIds?: PatternId[],
   weights: LearningWeight[] = [],
   retryReasonsByIndex: Record<number, string[]> = {},
+  visualPlans: VisualPlan[] = [],
 ): Promise<SceneBrief[]> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -190,6 +194,12 @@ async function generateBriefs(
   // executes a locked plan and can't go off-brand.
   const strategies: CreativeStrategy[] = patterns.map((p) =>
     pickStrategy({ niche: dna.niche_key as any, dna, pattern: p, weights }),
+  );
+
+  // Pin-mode plan per brief (rotates through niche affinity for variety).
+  const plans: VisualPlan[] = patterns.map((_, i) =>
+    visualPlans[i] ??
+    buildVisualPlan({ name: product.name, rotateSeed: i }),
   );
 
   const sys = [
@@ -235,6 +245,25 @@ async function generateBriefs(
       scene_directive: s.scene_directive,
       rationale: s.rationale,
     })),
+    /** Locked Pinterest pin-mode per brief. Defines aesthetic + composition
+     *  archetype the model must respect on top of the niche pattern. */
+    pin_modes: plans.map((p, i) => {
+      const m = getPinMode(p.pin_mode);
+      return {
+        index: i,
+        key: m.key,
+        label: m.label,
+        psychology: m.psychology,
+        composition_rule: m.composition_rule,
+        palette: m.palette,
+        cta_tone: m.cta_tone,
+        must_have: m.must_have,
+        must_avoid: m.must_avoid,
+        is_collage: m.is_collage,
+        commerce_archetype: p.commerce_archetype,
+        emotional_intent: p.emotional_intent,
+      };
+    }),
     /** Reasons the previous render of this brief was rejected, if any. The
      *  model MUST address these in the next brief. */
     previous_rejection_reasons: retryReasonsByIndex,
@@ -248,6 +277,8 @@ async function generateBriefs(
         "For each brief at index i, embody patterns[i] — composition_rule defines the scene, hook_angle defines the headline emotion, must_have terms must appear in environment_summary or full_prompt, must_avoid terms must never appear.",
       strategy_lock:
         "Use strategies[i].headline as the headline VERBATIM and strategies[i].cta as the cta VERBATIM. Build the scene around strategies[i].scene_directive.",
+      pin_mode_lock:
+        "Also respect pin_modes[i]: composition_rule, palette and cta_tone shape the scene aesthetic. must_have items must appear in environment_summary or full_prompt; must_avoid items must NEVER appear. If is_collage=true, the brief MUST describe a multi-tile composition (split or moodboard) — never a single hero shot.",
       retry_directive:
         "If previous_rejection_reasons[i] is set, your new brief MUST explicitly correct each listed reason.",
     },
@@ -350,6 +381,7 @@ async function generateBriefs(
     hook_category: strategies[i]?.hook_category,
     strategy_rationale: strategies[i]?.rationale,
     retry_reasons: retryReasonsByIndex[i],
+    pin_mode: plans[i]?.pin_mode,
   }));
 }
 
@@ -365,6 +397,14 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
       `Negative directives — strictly avoid: ${pattern.must_avoid.join(", ")}.`
     : "";
 
+  const mode = brief.pin_mode ? getPinMode(brief.pin_mode) : null;
+  const modeDirective = mode
+    ? `\nPinterest pin mode — ${mode.label}: ${mode.composition_rule} ` +
+      `Palette: ${mode.palette}. ` +
+      `${mode.is_collage ? "This MUST be a tasteful multi-tile composition (split or moodboard), not a single hero shot. " : ""}` +
+      `Strictly avoid: ${mode.must_avoid.join(", ")}.`
+    : "";
+
   const styleSuffix =
     `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
     `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
@@ -372,7 +412,7 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     `(do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself). ` +
     `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars.`;
 
-  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffix}${patternDirective}`;
+  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffix}${patternDirective}${modeDirective}`;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -407,6 +447,7 @@ async function qualityCheck(
   dna: StyleDNA,
 ) {
   const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
+  const mode = brief.pin_mode ? getPinMode(brief.pin_mode) : null;
   return await scorePin({
     bytes,
     headline: brief.headline,
@@ -415,6 +456,8 @@ async function qualityCheck(
     environment_summary: brief.environment_summary,
     dna,
     pattern,
+    pin_mode_label: mode?.label,
+    pin_mode_key: mode?.key,
   });
 }
 
@@ -572,6 +615,7 @@ async function uploadAndInsertDraft(
             attempt_count: intelligence.attempt_count,
             hook_category: intelligence.hook_category ?? null,
             pattern_id: brief.pattern_id ?? null,
+              pin_mode: brief.pin_mode ?? null,
             rationale: intelligence.rationale ?? null,
           },
         }
@@ -598,9 +642,11 @@ async function uploadAndInsertDraft(
       cta_style: brief.cta?.slice(0, 60) ?? null,
       audience_intent: brief.hook_category ?? null,
       landing_slug: landingSlug,
+      pin_mode: brief.pin_mode ?? null,
       meta: {
         scores: intelligence?.scores ?? null,
         rationale: intelligence?.rationale ?? null,
+        pin_mode: brief.pin_mode ?? null,
       },
     });
   } catch (e) {

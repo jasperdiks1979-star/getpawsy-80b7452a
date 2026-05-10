@@ -5130,6 +5130,7 @@ export type Database = {
           lifestyle_category: string | null
           meta: Json | null
           niche_key: string | null
+          pin_mode: string | null
           pin_queue_id: string | null
           product_id: string | null
           visual_style: string | null
@@ -5146,6 +5147,7 @@ export type Database = {
           lifestyle_category?: string | null
           meta?: Json | null
           niche_key?: string | null
+          pin_mode?: string | null
           pin_queue_id?: string | null
           product_id?: string | null
           visual_style?: string | null
@@ -5162,6 +5164,7 @@ export type Database = {
           lifestyle_category?: string | null
           meta?: Json | null
           niche_key?: string | null
+          pin_mode?: string | null
           pin_queue_id?: string | null
           product_id?: string | null
           visual_style?: string | null
@@ -5301,6 +5304,7 @@ export type Database = {
       }
       pinterest_landing_templates: {
         Row: {
+          aesthetic_tone: string | null
           body_blocks: Json | null
           color_atmosphere: string | null
           created_at: string
@@ -5316,6 +5320,7 @@ export type Database = {
           lifestyle_image_keywords: Json | null
           meta: Json | null
           niche_key: string | null
+          pin_mode: string | null
           recommended_collection_slug: string | null
           recommended_product_slug: string | null
           slug: string
@@ -5325,6 +5330,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aesthetic_tone?: string | null
           body_blocks?: Json | null
           color_atmosphere?: string | null
           created_at?: string
@@ -5340,6 +5346,7 @@ export type Database = {
           lifestyle_image_keywords?: Json | null
           meta?: Json | null
           niche_key?: string | null
+          pin_mode?: string | null
           recommended_collection_slug?: string | null
           recommended_product_slug?: string | null
           slug: string
@@ -5349,6 +5356,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aesthetic_tone?: string | null
           body_blocks?: Json | null
           color_atmosphere?: string | null
           created_at?: string
@@ -5364,6 +5372,7 @@ export type Database = {
           lifestyle_image_keywords?: Json | null
           meta?: Json | null
           niche_key?: string | null
+          pin_mode?: string | null
           recommended_collection_slug?: string | null
           recommended_product_slug?: string | null
           slug?: string
@@ -5924,6 +5933,7 @@ export type Database = {
           id: string
           niche_key: string | null
           pattern_id: string | null
+          pin_mode: string | null
           pin_queue_id: string | null
           product_slug: string | null
           reasons: string[]
@@ -5939,6 +5949,7 @@ export type Database = {
           id?: string
           niche_key?: string | null
           pattern_id?: string | null
+          pin_mode?: string | null
           pin_queue_id?: string | null
           product_slug?: string | null
           reasons?: string[]
@@ -5954,6 +5965,7 @@ export type Database = {
           id?: string
           niche_key?: string | null
           pattern_id?: string | null
+          pin_mode?: string | null
           pin_queue_id?: string | null
           product_slug?: string | null
           reasons?: string[]
