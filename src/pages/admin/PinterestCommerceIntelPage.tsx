@@ -936,10 +936,6 @@ export default function PinterestCommerceIntelPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="evolution">
-          {/* placeholder anchor — real evolution panel below */}
-        </TabsContent>
-
         <TabsContent value="hooks" className="space-y-4">
           <Card>
             <CardHeader>
