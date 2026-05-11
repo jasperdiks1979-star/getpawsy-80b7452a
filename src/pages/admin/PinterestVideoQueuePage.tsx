@@ -931,6 +931,146 @@ export default function PinterestVideoQueuePage() {
         </div>
       </Card>
 
+      <Card className="p-3 mb-3 border-dashed">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1">
+            <Bug className="h-3.5 w-3.5" /> Debug console
+          </p>
+          {debugEvents.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDebugEvents([])}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Trash2 className="h-3 w-3" /> Clear ({debugEvents.length})
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[
+            "pinterest-video-discovery",
+            "pinterest-video-publisher",
+            "pinterest-video-metrics-sync",
+          ].map((fn) => (
+            <Button
+              key={fn}
+              size="sm"
+              variant="outline"
+              className="h-9"
+              onClick={() => runHealthCheck(fn)}
+              disabled={healthBusy === fn}
+            >
+              {healthBusy === fn
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                : <HeartPulse className="h-3.5 w-3.5 mr-1" />}
+              Health: {fn.replace(/^pinterest-video-/, "pv-")}
+            </Button>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <Input
+            placeholder="Paste public MP4 URL (https://…/file.mp4)"
+            value={manualUrl}
+            onChange={(e) => setManualUrl(e.target.value)}
+            className="h-10"
+          />
+          <Button
+            onClick={createDraftFromUrl}
+            disabled={manualBusy || !manualUrl.trim()}
+            className="h-10"
+            size="sm"
+          >
+            {manualBusy
+              ? <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              : <Sparkles className="h-4 w-4 mr-1" />}
+            Create draft from URL
+          </Button>
+        </div>
+
+        {discoveryDetail && (
+          <div className="rounded-md border bg-muted/40 p-2 mb-3 text-xs space-y-1">
+            <div className="font-semibold">Last discovery</div>
+            <div className="text-muted-foreground">
+              scanned <b>{discoveryDetail.scanned ?? 0}</b> · matched <b>{discoveryDetail.matched ?? 0}</b> · inserted <b>{discoveryDetail.inserted ?? 0}</b> · skipped (small) <b>{discoveryDetail.skipped_undersized ?? 0}</b> · skipped (big) <b>{discoveryDetail.skipped_oversized ?? 0}</b>
+            </div>
+            {(discoveryDetail.inserted ?? 0) === 0 && (
+              <div className="text-amber-600">
+                Buckets searched: <code>pinterest-ads</code>, <code>tiktok-media</code>, <code>admin-resources</code> · pattern <code>(getpawsy-tiktok-|getpawsy-litterbox-|timepain|smell|direct).*\.mp4</code>
+              </div>
+            )}
+            {Array.isArray(discoveryDetail.skipped) && discoveryDetail.skipped.length > 0 && (
+              <details>
+                <summary className="cursor-pointer">Skipped files ({discoveryDetail.skipped.length})</summary>
+                <ul className="mt-1 space-y-0.5 max-h-32 overflow-auto">
+                  {discoveryDetail.skipped.map((s: any, i: number) => (
+                    <li key={i} className="font-mono text-[10px] truncate">
+                      <span className="text-amber-600">{s.reason}</span> — {s.filename}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {Array.isArray(discoveryDetail.errors) && discoveryDetail.errors.length > 0 && (
+              <details>
+                <summary className="cursor-pointer text-destructive">Errors ({discoveryDetail.errors.length})</summary>
+                <ul className="mt-1 space-y-0.5 max-h-32 overflow-auto">
+                  {discoveryDetail.errors.map((e: string, i: number) => (
+                    <li key={i} className="font-mono text-[10px] text-destructive">{e}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
+
+        {debugEvents.length === 0 ? (
+          <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+            <Activity className="h-3 w-3" /> No debug events yet — every action will record HTTP status, payload, response and duration here.
+          </p>
+        ) : (
+          <ol className="space-y-2 max-h-96 overflow-auto">
+            {debugEvents.map((ev) => (
+              <li key={ev.id} className="rounded-md border p-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  {ev.ok
+                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                  <span className="font-mono text-[10px]">{new Date(ev.started_at).toLocaleTimeString()}</span>
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-mono">{ev.fn.replace(/^pinterest-video-/, "pv-")}</Badge>
+                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{ev.action}</Badge>
+                  <Badge
+                    variant={ev.http_status && ev.http_status < 400 ? "default" : "destructive"}
+                    className={`h-5 px-1.5 text-[10px] ${ev.http_status && ev.http_status < 400 ? "bg-emerald-500 hover:bg-emerald-500/90" : ""}`}
+                  >
+                    HTTP {ev.http_status ?? "—"}
+                  </Badge>
+                  <span className="text-muted-foreground">{ev.duration_ms}ms</span>
+                  {ev.trace_id && (
+                    <a
+                      href={`/admin/pinterest-video-logs?trace=${encodeURIComponent(ev.trace_id)}&fn=${encodeURIComponent(ev.fn)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="ml-auto inline-flex items-center gap-1 text-primary hover:underline"
+                    >
+                      Logs <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+                {ev.error && <p className="mt-1 text-destructive">{ev.error}</p>}
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-muted-foreground">Request / Response</summary>
+                  <div className="grid sm:grid-cols-2 gap-2 mt-1">
+                    <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{JSON.stringify(ev.request, null, 2)}</pre>
+                    <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{typeof ev.response === "string" ? ev.response : JSON.stringify(ev.response, null, 2)}</pre>
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Card>
+
       {stepTraces.length > 0 && (
         <Card className="p-3 mb-3 border-dashed">
           <div className="flex items-center justify-between mb-2">
