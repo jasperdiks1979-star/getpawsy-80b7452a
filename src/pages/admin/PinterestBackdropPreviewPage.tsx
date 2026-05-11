@@ -707,6 +707,46 @@ export default function PinterestBackdropPreviewPage() {
                 <div>backdrop source: <span className="text-foreground">{debug.backdropSource}</span></div>
                 <div>status: <span className="text-foreground">{String(debug.status)}</span></div>
                 {debug.error && <div className="text-destructive">error: {debug.error}</div>}
+                {diversity && (
+                  <div className="mt-2 border-t pt-2 space-y-1">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Backdrop diversity
+                    </div>
+                    <div>
+                      score:{" "}
+                      <span
+                        className={
+                          diversity.score >= 0.8
+                            ? "text-emerald-600 font-medium"
+                            : diversity.score >= 0.5
+                            ? "text-amber-600 font-medium"
+                            : "text-destructive font-medium"
+                        }
+                      >
+                        {(diversity.score * 100).toFixed(0)}%
+                      </span>{" "}
+                      ({diversity.unique_families}/{diversity.backdrops} unique families)
+                    </div>
+                    <div className="opacity-70">
+                      pool: {diversity.family_pool_size} · recent excluded: {diversity.recent_excluded}
+                    </div>
+                    {diversity.per_pin && diversity.per_pin.length > 0 && (
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-[10px] underline opacity-70">
+                          per-pin diagnostics
+                        </summary>
+                        <div className="mt-1 space-y-0.5 font-mono text-[10px]">
+                          {diversity.per_pin.map((d) => (
+                            <div key={d.index} className="break-all">
+                              #{d.index} {d.hook_group}: {d.scene_family || "—"} · {d.camera_angle || "—"} · seed={d.variant_seed} · excl={d.excluded_recent}
+                              {d.reason !== "ok" && <span className="text-amber-600"> · {d.reason}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
