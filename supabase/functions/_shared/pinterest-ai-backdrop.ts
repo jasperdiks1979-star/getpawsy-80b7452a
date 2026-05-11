@@ -363,11 +363,24 @@ export async function fetchAiBackdrop(
   query: string,
   opts: AiBackdropOptions = {},
 ): Promise<AiBackdropPhoto | null> {
+  const safeQuery = typeof query === "string" && query.trim() ? query.trim() : "pet product lifestyle";
+  let failureStage = "init";
+  try {
   const variantSeed = Math.max(0, Math.floor(opts.variantSeed ?? 0));
   const exclude = new Set<string>(opts.excludeFamilies ? Array.from(opts.excludeFamilies) : []);
-  const family = pickFamily(query, variantSeed, exclude);
-  const h = (hashStr(query) + variantSeed) >>> 0;
+  failureStage = "pick_family";
+  const family = pickFamily(safeQuery, variantSeed, exclude);
+  if (!family || typeof family.id !== "string") {
+    console.warn(`[pinterest-ai-backdrop] BACKDROP_CANDIDATE_NOT_FOUND stage=pick_family q="${safeQuery}"`);
+    return null;
+  }
+  const h = (hashStr(safeQuery) + variantSeed) >>> 0;
+  failureStage = "pick_angle";
   const angle = pickAngle(variantSeed, h);
+  if (!angle || typeof (angle as any).id !== "string") {
+    console.warn(`[pinterest-ai-backdrop] BACKDROP_CANDIDATE_NOT_FOUND stage=pick_angle q="${safeQuery}"`);
+    return null;
+  }
   const emotion = pickEmotion(opts.hookKey ?? null, h);
   const meta = { sceneFamily: family.id, cameraAngle: angle.id, emotion, variantSeed };
 
@@ -408,9 +421,15 @@ export async function fetchAiBackdrop(
     if (attempt > 0) {
       attemptSeed = variantSeed + 1000 * attempt + 17;
       exclude.add(chosenFamily.id);
-      chosenFamily = pickFamily(query, attemptSeed, exclude);
-      const h2 = (hashStr(query) + attemptSeed) >>> 0;
-      chosenAngle = pickAngle(attemptSeed, h2);
+      const nextFamily = pickFamily(safeQuery, attemptSeed, exclude);
+      const h2 = (hashStr(safeQuery) + attemptSeed) >>> 0;
+      const nextAngle = pickAngle(attemptSeed, h2);
+      if (!nextFamily || !nextFamily.id || !nextAngle || !(nextAngle as any).id) {
+        console.warn(`[pinterest-ai-backdrop] retry candidate undefined → keeping previous family/angle`);
+      } else {
+        chosenFamily = nextFamily;
+        chosenAngle = nextAngle;
+      }
       chosenEmotion = pickEmotion(opts.hookKey ?? null, h2);
     }
 
@@ -426,13 +445,13 @@ export async function fetchAiBackdrop(
       });
       if (!res.ok) {
         const t = await res.text().catch(() => "");
-        console.warn(`[pinterest-ai-backdrop] gateway ${res.status} for "${query}": ${t.slice(0, 200)}`);
+        console.warn(`[pinterest-ai-backdrop] gateway ${res.status} for "${safeQuery}": ${t.slice(0, 200)}`);
         return null;
       }
       const j = await res.json();
       const dataUrl: string | undefined = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       if (!dataUrl) {
-        console.warn(`[pinterest-ai-backdrop] no image returned for "${query}"`);
+        console.warn(`[pinterest-ai-backdrop] no image returned for "${safeQuery}"`);
         return null;
       }
       const bytes = dataUrlToBytes(dataUrl);
@@ -443,13 +462,15 @@ export async function fetchAiBackdrop(
       lastBytes = bytes;
       lastPhash = phash;
       lastSimilarity = sim.score;
-      lastPath = `ai-backdrops/${slugifyQuery(query)}-${chosenFamily.id}-v${attemptSeed % 8}-${Date.now()}.png`;
+      const safeFamilyId = chosenFamily?.id ?? "fallback_neutral";
+      const safeAngleId = (chosenAngle as any)?.id ?? "fallback_eye_level";
+      lastPath = `ai-backdrops/${slugifyQuery(safeQuery)}-${safeFamilyId}-v${attemptSeed % 8}-${Date.now()}.png`;
 
       const isDuplicate = phash && sim.score > PHASH_DUPLICATE_SIMILARITY;
       const lastAttempt = attempt === PHASH_MAX_RETRIES;
       if (isDuplicate && !lastAttempt) {
         console.warn(
-          `[pinterest-ai-backdrop] duplicate (sim=${sim.score.toFixed(3)} vs ${sim.match}) for "${query}" family=${chosenFamily.id} → retry ${attempt + 1}/${PHASH_MAX_RETRIES}`,
+          `[pinterest-ai-backdrop] duplicate (sim=${sim.score.toFixed(3)} vs ${sim.match}) for "${safeQuery}" family=${safeFamilyId} → retry ${attempt + 1}/${PHASH_MAX_RETRIES}`,
         );
         continue;
       }
@@ -476,8 +497,8 @@ export async function fetchAiBackdrop(
         photographer: null,
         pexelsPageUrl: null,
         source: "ai_generated",
-        sceneFamily: chosenFamily.id,
-        cameraAngle: chosenAngle.id,
+        sceneFamily: safeFamilyId,
+        cameraAngle: safeAngleId,
         emotion: chosenEmotion,
         variantSeed: attemptSeed,
         phash,
@@ -488,12 +509,30 @@ export async function fetchAiBackdrop(
           : "no_phash",
       };
     } catch (e) {
-      console.error(`[pinterest-ai-backdrop] threw for "${query}":`, e instanceof Error ? e.message : e);
+      console.error(`[pinterest-ai-backdrop] threw for "${safeQuery}" stage=${failureStage}:`, e instanceof Error ? e.message : e);
       return null;
     }
   }
 
   return null;
+  } catch (e) {
+    // Top-level guard — never throw out of fetchAiBackdrop. Caller falls back to product-only / cloudinary.
+    const msg = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error && e.stack ? e.stack.split("\n").slice(0, 6).join("\n") : null;
+    console.error(JSON.stringify({
+      tag: "pinterest-ai-backdrop",
+      ok: false,
+      status: "BACKDROP_CANDIDATE_NOT_FOUND",
+      error_code: "NO_BACKDROP_ID",
+      fallback: "product_only",
+      message: "No valid backdrop candidate found; returning product-only preview.",
+      failure_stage: failureStage,
+      query: safeQuery,
+      err: msg,
+      stack_preview: stack,
+    }));
+    return null;
+  }
 }
 
 /**
