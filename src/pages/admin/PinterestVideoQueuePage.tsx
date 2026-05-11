@@ -263,7 +263,7 @@ export default function PinterestVideoQueuePage() {
     const valid: File[] = [];
     for (const f of files) {
       const v = validateVideoFile(f);
-      if (!v.ok) {
+      if (v.ok === false) {
         toast({ title: v.title, description: v.message, variant: "destructive" });
         continue;
       }
