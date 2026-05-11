@@ -441,8 +441,10 @@ export default function PinterestVideoQueuePage() {
   const runDiscovery = async () => {
     setDiscovering(true);
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-discovery");
-      if (error) throw error;
+      const ev = await invokeDebug("pinterest-video-discovery", {});
+      const data: any = ev.response || {};
+      if (ev.error && !data?.traceId) throw new Error(ev.error);
+      setDiscoveryDetail(data);
       toast({ title: "Discovery complete", description: `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.` });
       if (data?.traceId) pushTrace({
         step: "Discovery",
