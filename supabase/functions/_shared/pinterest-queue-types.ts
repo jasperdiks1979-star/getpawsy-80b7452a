@@ -47,6 +47,16 @@ export interface PinterestQueueInsert {
   hook_group?: string | null;
   category_key?: string | null;
   overlay_text?: string | null;
+  /** Optional URL-derived image hash (FNV-1a). */
+  image_hash?: string | null;
+  /** Optional creative DNA fingerprint (FNV-1a). */
+  creative_fingerprint?: string | null;
+  /** Optional perceptual hash (64-bit dHash, 16-char hex) of pin_image_url. */
+  pin_image_phash?: string | null;
+  /** Optional QA reason tags. */
+  qa_reasons?: string[] | null;
+  /** Optional auto-approval timestamp. */
+  approved_at?: string | null;
 }
 
 /**
