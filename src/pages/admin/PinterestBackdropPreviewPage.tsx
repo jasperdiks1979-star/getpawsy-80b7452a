@@ -382,6 +382,7 @@ export default function PinterestBackdropPreviewPage() {
       if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
       setBatchTag(data.batchTag || null);
+      setDiversity(dd.diversity || null);
       // Default every hook to approved on a fresh preview.
       const fresh: Record<string, boolean> = {};
       for (const p of (data.pins || []) as PreviewPin[]) {
