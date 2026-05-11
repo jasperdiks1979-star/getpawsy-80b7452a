@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2 } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
 import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
 
@@ -259,6 +259,18 @@ export default function PinterestVideoQueuePage() {
   const [publishingBatch, setPublishingBatch] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [prepareStep, setPrepareStep] = useState<string>("");
+  type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
+  const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
+
+  const pushTrace = useCallback((t: StepTrace) => {
+    setStepTraces((prev) => [...prev, t]);
+  }, []);
+  const copyTrace = (id: string) => {
+    navigator.clipboard?.writeText(id).then(
+      () => toast({ title: "Trace ID copied", description: id }),
+      () => toast({ title: "Copy failed", variant: "destructive" }),
+    );
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -278,6 +290,13 @@ export default function PinterestVideoQueuePage() {
       const { data, error } = await supabase.functions.invoke("pinterest-video-discovery");
       if (error) throw error;
       toast({ title: "Discovery complete", description: `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.` });
+      if (data?.traceId) pushTrace({
+        step: "Discovery",
+        fn: "pinterest-video-discovery",
+        traceId: data.traceId,
+        ok: !!data?.ok,
+        message: `scanned ${data?.scanned ?? 0} · inserted ${data?.inserted ?? 0}`,
+      });
       await load();
       return data;
     } catch (e: any) {
@@ -405,6 +424,7 @@ export default function PinterestVideoQueuePage() {
   // One-click: discover → queue drafts for all → readiness report.
   const runPrepareAll = useCallback(async () => {
     setPreparing(true);
+    setStepTraces([]);
     try {
       setPrepareStep("Discovering videos…");
       try { await runDiscovery(); } catch { /* toast already shown */ }
@@ -415,6 +435,15 @@ export default function PinterestVideoQueuePage() {
           body: { action: "queue_all_drafts" },
         });
         if (error) throw error;
+        if (data?.traceId) pushTrace({
+          step: "Generate drafts",
+          fn: "pinterest-video-publisher",
+          traceId: data.traceId,
+          ok: !!data?.ok,
+          message: data?.ok
+            ? `created ${data?.created_count ?? 0}`
+            : (data?.code || data?.message || "failed"),
+        });
         if (!data?.ok) {
           toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
         }
@@ -461,7 +490,7 @@ export default function PinterestVideoQueuePage() {
       setPreparing(false);
       setPrepareStep("");
     }
-  }, []);
+  }, [pushTrace]);
 
   const publishSelected = useCallback(async () => {
     if (selectedIds.size === 0) return;
@@ -472,6 +501,13 @@ export default function PinterestVideoQueuePage() {
         try {
           const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
             body: { action: "publish", queue_id: qid },
+          });
+          if (data?.traceId) pushTrace({
+            step: `Publish ${qid.slice(0, 6)}…`,
+            fn: "pinterest-video-publisher",
+            traceId: data.traceId,
+            ok: !error && !!data?.ok,
+            message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
           });
           if (error || !data?.ok) failCount++; else okCount++;
         } catch { failCount++; }
@@ -486,7 +522,7 @@ export default function PinterestVideoQueuePage() {
     } finally {
       setPublishingBatch(false);
     }
-  }, [selectedIds, load]);
+  }, [selectedIds, load, pushTrace]);
 
   const hookOptions = useMemo(() => {
     const set = new Set<string>(["all"]);
@@ -552,6 +588,52 @@ export default function PinterestVideoQueuePage() {
       <p className="text-xs text-muted-foreground mb-3">
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
       </p>
+
+      {stepTraces.length > 0 && (
+        <Card className="p-3 mb-3 border-dashed">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Pipeline trace IDs
+            </p>
+            <button
+              type="button"
+              onClick={() => setStepTraces([])}
+              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Clear
+            </button>
+          </div>
+          <ol className="space-y-1.5">
+            {stepTraces.map((t, i) => (
+              <li key={`${t.traceId}-${i}`} className="flex items-center gap-2 text-xs">
+                {t.ok
+                  ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                  : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                <span className="font-medium shrink-0">{t.step}</span>
+                {t.message && <span className="text-muted-foreground truncate">· {t.message}</span>}
+                <button
+                  type="button"
+                  onClick={() => copyTrace(t.traceId)}
+                  className="ml-auto inline-flex items-center gap-1 font-mono text-muted-foreground hover:text-foreground shrink-0"
+                  aria-label="Copy trace ID"
+                  title={t.traceId}
+                >
+                  {t.traceId.slice(0, 8)}…
+                  <Copy className="h-3 w-3" />
+                </button>
+                <a
+                  href={`/admin/pinterest-video-logs?trace=${encodeURIComponent(t.traceId)}&fn=${encodeURIComponent(t.fn)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                >
+                  Logs <ExternalLink className="h-3 w-3" />
+                </a>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
 
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
         {STATUS_FILTERS.map((s) => (
