@@ -660,11 +660,20 @@ export default function PinterestVideoQueuePage() {
           </div>
           <ol className="space-y-1.5">
             {stepTraces.map((t, i) => (
-              <li key={`${t.traceId}-${i}`} className="flex items-center gap-2 text-xs">
+              <li key={`${t.traceId}-${i}`} className="flex items-center gap-2 text-xs flex-wrap">
                 {t.ok
                   ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                   : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
                 <span className="font-medium shrink-0">{t.step}</span>
+                <Badge
+                  variant={t.ok ? "default" : "destructive"}
+                  className={`h-5 px-1.5 text-[10px] uppercase tracking-wide shrink-0 ${t.ok ? "bg-emerald-500 hover:bg-emerald-500/90" : ""}`}
+                >
+                  {t.ok ? "ok" : "failed"}
+                </Badge>
+                <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-mono shrink-0" title={t.fn}>
+                  {t.fn.replace(/^pinterest-video-/, "pv-")}
+                </Badge>
                 {t.message && <span className="text-muted-foreground truncate">· {t.message}</span>}
                 <button
                   type="button"
