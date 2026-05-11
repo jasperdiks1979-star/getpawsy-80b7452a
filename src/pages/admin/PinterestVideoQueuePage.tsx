@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
 import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
@@ -265,6 +266,19 @@ export default function PinterestVideoQueuePage() {
 
   const pushTrace = useCallback((t: StepTrace) => {
     setStepTraces((prev) => [...prev, t]);
+    // Fire a toast with a direct, pre-filtered Logs link for this exact step
+    // so the user never has to refresh or scroll to find diagnostics.
+    const url = `/admin/pinterest-video-logs?trace=${encodeURIComponent(t.traceId)}&fn=${encodeURIComponent(t.fn)}`;
+    toast({
+      title: `${t.ok ? "✓" : "✗"} ${t.step}`,
+      description: `${t.fn} · ${t.message || (t.ok ? "ok" : "failed")} · trace ${t.traceId.slice(0, 8)}…`,
+      variant: t.ok ? "default" : "destructive",
+      action: (
+        <ToastAction altText="View logs" onClick={() => window.open(url, "_blank", "noopener")}>
+          View logs
+        </ToastAction>
+      ),
+    });
   }, []);
   const copyTrace = (id: string) => {
     navigator.clipboard?.writeText(id).then(
