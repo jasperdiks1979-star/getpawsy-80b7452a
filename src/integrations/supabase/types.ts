@@ -6594,6 +6594,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_video_function_logs: {
+        Row: {
+          asset_id: string | null
+          created_at: string
+          function_name: string
+          id: string
+          level: string
+          message: string
+          payload: Json | null
+          queue_id: string | null
+          trace_id: string
+        }
+        Insert: {
+          asset_id?: string | null
+          created_at?: string
+          function_name: string
+          id?: string
+          level?: string
+          message: string
+          payload?: Json | null
+          queue_id?: string | null
+          trace_id: string
+        }
+        Update: {
+          asset_id?: string | null
+          created_at?: string
+          function_name?: string
+          id?: string
+          level?: string
+          message?: string
+          payload?: Json | null
+          queue_id?: string | null
+          trace_id?: string
+        }
+        Relationships: []
+      }
       pinterest_video_metrics: {
         Row: {
           asset_id: string | null
@@ -11017,6 +11053,7 @@ export type Database = {
         Returns: string
       }
       pinterest_publish_health: { Args: never; Returns: Json }
+      prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_old_monitoring_runs: { Args: never; Returns: number }
       test_tiktok_exclusion_fixtures: {
         Args: { p_prefix: string }
