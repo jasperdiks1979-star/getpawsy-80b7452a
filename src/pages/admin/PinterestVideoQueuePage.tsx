@@ -742,6 +742,58 @@ export default function PinterestVideoQueuePage() {
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
       </p>
 
+      <Card className="p-3 mb-3 border-dashed">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Rerun a single step (same input)
+          </p>
+          <span className="text-[10px] text-muted-foreground">
+            Last publish set: {lastPublishIds.length > 0 ? `${lastPublishIds.length} pin${lastPublishIds.length === 1 ? "" : "s"}` : "—"}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={rerunDiscovery}
+            disabled={rerunningStep !== null || discovering}
+          >
+            {rerunningStep === "discovery"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+              : <RotateCw className="h-3.5 w-3.5 mr-1" />}
+            Rerun discovery
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={rerunDraftGeneration}
+            disabled={rerunningStep !== null}
+          >
+            {rerunningStep === "drafts"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+              : <RotateCw className="h-3.5 w-3.5 mr-1" />}
+            Rerun draft generation
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={rerunPublish}
+            disabled={rerunningStep !== null || (lastPublishIds.length === 0 && selectedIds.size === 0)}
+            title={lastPublishIds.length > 0
+              ? `Republish the last ${lastPublishIds.length} pin(s)`
+              : (selectedIds.size > 0 ? `Publish ${selectedIds.size} selected` : "No pins to republish yet")}
+          >
+            {rerunningStep === "publish"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+              : <RotateCw className="h-3.5 w-3.5 mr-1" />}
+            Rerun publish ({lastPublishIds.length || selectedIds.size})
+          </Button>
+        </div>
+      </Card>
+
       {stepTraces.length > 0 && (
         <Card className="p-3 mb-3 border-dashed">
           <div className="flex items-center justify-between mb-2">
