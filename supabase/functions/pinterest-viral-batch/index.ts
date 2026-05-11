@@ -31,6 +31,11 @@ import {
 } from "../_shared/pinterest-templates.ts";
 import { fetchAiBackdrop, loadRecentSceneFamilies, SCENE_FAMILIES } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
+import {
+  computePhashFromUrl,
+  maxSimilarity,
+  PHASH_DUPLICATE_SIMILARITY,
+} from "../_shared/pinterest-phash.ts";
 
 // Top-level boot log — visible in edge function logs immediately on cold start
 // so transport-layer outages can be distinguished from runtime errors.
@@ -1409,12 +1414,47 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     // destination_link is non-getpawsy or contains corrupted/encoded payloads
     // is diverted to analytics_quarantine instead of being inserted.
     const annotatedRows: typeof sanitizedRows = [];
+    // ─── Queue protection: visual duplicate guard ─────────────────────────
+    // Pull the perceptual hash of the last 100 queued pins ONCE so every
+    // candidate row in this batch can be compared against the live queue.
+    // Any row whose final pin image scores > PHASH_DUPLICATE_SIMILARITY
+    // (default 0.70) against this set OR against an earlier row in the
+    // SAME batch is hard-blocked (quarantined) instead of inserted.
+    const queuePhashHistory: string[] = [];
+    try {
+      const { data: histRows } = await sb
+        .from("pinterest_pin_queue")
+        .select("pin_image_phash")
+        .not("pin_image_phash", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      for (const r of histRows || []) {
+        const v = String((r as { pin_image_phash?: string }).pin_image_phash || "");
+        if (v.length === 16) queuePhashHistory.push(v);
+      }
+    } catch (e) {
+      console.warn("[pinterest-viral-batch] queue phash history load failed:", e instanceof Error ? e.message : e);
+    }
+    const inBatchPhashes = new Set<string>();
+    let queueDuplicatesBlocked = 0;
     for (const r of sanitizedRows) {
       const destCheck = sanitizeUrl((r as Record<string, unknown>).destination_link as string | undefined);
       const imgCheck = sanitizeUrl((r as Record<string, unknown>).pin_image_url as string | undefined, { allowExternalReferrer: true });
       const urlReasons = [...destCheck.reasons, ...imgCheck.reasons];
       const imgUrl = (r as Record<string, unknown>).pin_image_url as string;
       const imgHash = imgUrl ? hashImageUrl(imgUrl) : null;
+      // Pixel-level perceptual hash of the final pin image (post-collage).
+      const pinPhash = imgUrl ? await computePhashFromUrl(imgUrl) : null;
+      let visualDuplicate = false;
+      let visualSimilarity: number | null = null;
+      let visualMatch: string | null = null;
+      if (pinPhash) {
+        const known = [...queuePhashHistory, ...inBatchPhashes];
+        const sim = maxSimilarity(pinPhash, known);
+        visualSimilarity = sim.score;
+        visualMatch = sim.match;
+        visualDuplicate = sim.score > PHASH_DUPLICATE_SIMILARITY;
+      }
       let duplicateImage = false;
       if (imgHash) {
         const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
@@ -1473,11 +1513,26 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         });
         continue;
       }
+      if (visualDuplicate) {
+        queueDuplicatesBlocked++;
+        const reason = `visual_duplicate(sim=${(visualSimilarity ?? 0).toFixed(3)},match=${visualMatch ?? "?"})`;
+        console.warn(
+          `[pinterest-viral-batch] queue protection blocked pin variant=${(r as Record<string, unknown>).pin_variant} ${reason}`,
+        );
+        await quarantineEvent(sb, {
+          source: "pinterest_pin_queue",
+          reasons: [reason, ...allReasons],
+          payload: { ...(r as Record<string, unknown>), pin_image_phash: pinPhash },
+        });
+        continue;
+      }
+      if (pinPhash) inBatchPhashes.add(pinPhash);
       annotatedRows.push({
         ...r,
         qa_reasons: allReasons,
         image_hash: imgHash,
         creative_fingerprint: fingerprint,
+        pin_image_phash: pinPhash,
       } as typeof r);
     }
     if (annotatedRows.length === 0) {
