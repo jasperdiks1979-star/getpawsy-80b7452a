@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import { classifyHook } from "../_shared/pinterest-video-hooks.ts";
 import { MIN_VIDEO_BYTES, MAX_VIDEO_BYTES, formatBytes } from "../_shared/pinterest-video-limits.ts";
+import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,26 +51,30 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    const log = createPvLogger(sb, "pinterest-video-discovery", traceId);
+    await log.info("entered handler");
     // Auth: require admin
     const authHeader = req.headers.get("Authorization") || "";
     const sbUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await sbUser.auth.getUser();
-    if (!user) return ok({ ok: false, code: "UNAUTHENTICATED", traceId });
+    if (!user) { await log.warn("unauthenticated"); return ok({ ok: false, code: "UNAUTHENTICATED", traceId }); }
     const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) return ok({ ok: false, code: "FORBIDDEN", traceId });
+    if (!roleRow) { await log.warn("forbidden", { user_id: user.id }); return ok({ ok: false, code: "FORBIDDEN", traceId }); }
 
     let scanned = 0, matched = 0, inserted = 0, skipped_oversized = 0, skipped_undersized = 0;
     const errors: string[] = [];
     const skipped: Array<{ filename: string; reason: string }> = [];
     for (const bucket of TARGET_BUCKETS) {
-      console.log(`[pvd ${traceId}] scanning bucket=${bucket}`);
+      await log.info("scanning bucket", { bucket });
       let files: Array<{ path: string; size: number; updated_at: string }> = [];
       try {
         files = await listBucketRecursive(sb, bucket);
       } catch (e) {
-        errors.push(`${bucket}: ${(e as Error).message}`);
+        const msg = `${bucket}: ${(e as Error).message}`;
+        errors.push(msg);
+        await log.error("bucket scan failed", { bucket, message: (e as Error).message });
         continue;
       }
       scanned += files.length;
@@ -79,12 +84,13 @@ serve(async (req) => {
         if (f.size && f.size < MIN_VIDEO_BYTES) {
           skipped_undersized++;
           skipped.push({ filename, reason: `too small (${formatBytes(f.size)})` });
+          await log.warn("skip undersized", { filename, size: f.size });
           continue;
         }
         if (f.size && f.size > MAX_VIDEO_BYTES) {
           skipped_oversized++;
           skipped.push({ filename, reason: `too large (${formatBytes(f.size)} > ${formatBytes(MAX_VIDEO_BYTES)})` });
-          console.warn(`[pvd ${traceId}] skip oversized ${bucket}/${f.path} size=${f.size}`);
+          await log.warn("skip oversized", { bucket, path: f.path, size: f.size, max: MAX_VIDEO_BYTES });
           continue;
         }
         matched++;
@@ -100,14 +106,23 @@ serve(async (req) => {
           hook_type,
           content_hash,
         }, { onConflict: "content_hash", ignoreDuplicates: true });
-        if (insErr) errors.push(`insert ${filename}: ${insErr.message}`);
-        else inserted++;
+        if (insErr) {
+          errors.push(`insert ${filename}: ${insErr.message}`);
+          await log.error("insert failed", { filename, message: insErr.message });
+        } else inserted++;
       }
     }
-    console.log(`[pvd ${traceId}] done scanned=${scanned} matched=${matched} inserted=${inserted} oversized=${skipped_oversized} undersized=${skipped_undersized} errors=${errors.length}`);
+    await log.info("done", { scanned, matched, inserted, skipped_oversized, skipped_undersized, errors: errors.length });
     return ok({ ok: true, traceId, scanned, matched, inserted, skipped_oversized, skipped_undersized, skipped, errors });
   } catch (e) {
     console.error(`[pvd ${traceId}] fatal`, e);
+    try {
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await sb.from("pinterest_video_function_logs").insert({
+        function_name: "pinterest-video-discovery", trace_id: traceId, level: "error",
+        message: "fatal", payload: { message: (e as Error)?.message, stack: (e as Error)?.stack?.slice(0, 800) },
+      });
+    } catch (_) { /* ignore */ }
     return ok({ ok: false, code: "UNEXPECTED_ERROR", traceId, message: (e as Error)?.message });
   }
 });

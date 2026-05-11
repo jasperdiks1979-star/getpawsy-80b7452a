@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import { getPinterestApiBase } from "../_shared/pinterest-config.ts";
 import { generateVideoMeta, DEFAULT_DESTINATION_URL } from "../_shared/pinterest-video-meta.ts";
 import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
+import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -128,13 +129,17 @@ async function publishVideoPin(opts: {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const trace_id = crypto.randomUUID();
+  const sbBoot = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const log = createPvLogger(sbBoot, "pinterest-video-publisher", trace_id);
   try {
+    await log.info("entered handler");
     const { sb, isAdmin } = await getAdminClient(req);
-    if (!isAdmin) return ok({ ok: false, code: "FORBIDDEN", traceId: trace_id });
+    if (!isAdmin) { await log.warn("forbidden"); return ok({ ok: false, code: "FORBIDDEN", traceId: trace_id }); }
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action || "queue_draft") as
       | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry";
+    await log.info("action received", { action, queue_id: body.queue_id ?? null }, { queue_id: body.queue_id ?? null });
 
     // ── queue_draft / queue_all_drafts ──────────────────────────────
     if (action === "queue_draft" || action === "queue_all_drafts") {
@@ -228,11 +233,13 @@ serve(async (req) => {
           last_publish_at: new Date().toISOString(),
           publish_count: (asset.publish_count || 0) + 1,
         }).eq("id", asset.id);
+        await log.info("retry published", { pin_id: result.pin_id }, { queue_id, asset_id: asset.id });
         return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, external_url: result.external_url });
       }
       await sb.from("pinterest_video_queue").update({
         status: "failed", error_message: `${result.code}: ${result.message}`,
       }).eq("id", queue_id);
+      await log.error("retry failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
       return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
     }
 
@@ -270,12 +277,14 @@ serve(async (req) => {
           last_publish_at: new Date().toISOString(),
           publish_count: (asset.publish_count || 0) + 1,
         }).eq("id", asset.id);
+        await log.info("published", { pin_id: result.pin_id }, { queue_id, asset_id: asset.id });
         return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, external_url: result.external_url });
       } else {
         await sb.from("pinterest_video_queue").update({
           status: "failed",
           error_message: `${result.code}: ${result.message}`,
         }).eq("id", queue_id);
+        await log.error("publish failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
         return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
       }
     }
@@ -283,6 +292,7 @@ serve(async (req) => {
     return ok({ ok: false, code: "UNKNOWN_ACTION", traceId: trace_id });
   } catch (e) {
     console.error(`[pvp ${trace_id}] fatal`, e);
+    try { await log.error("fatal", { message: (e as Error)?.message, stack: (e as Error)?.stack?.slice(0, 800) }); } catch (_) {}
     return ok({ ok: false, code: "UNEXPECTED_ERROR", traceId: trace_id, message: (e as Error)?.message, stack: (e as Error)?.stack?.slice(0, 800) });
   }
 });
