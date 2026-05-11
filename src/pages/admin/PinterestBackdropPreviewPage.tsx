@@ -34,6 +34,10 @@ type PreviewPin = {
   backdrop_style?: "dark" | "subtle" | "accent" | null;
   backdrop_score?: number | null;
   backdrop_variants?: Array<{ style: string; score: number; url: string }> | null;
+  backdrop_scene_family?: string | null;
+  backdrop_camera_angle?: string | null;
+  backdrop_emotion?: string | null;
+  backdrop_variant_seed?: number | null;
   uses_lifestyle_backdrop: boolean;
 };
 
