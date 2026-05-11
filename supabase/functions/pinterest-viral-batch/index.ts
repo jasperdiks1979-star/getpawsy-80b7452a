@@ -95,7 +95,7 @@ export const ALLOWED_QUEUE_COLUMNS = new Set<string>([
   "pin_title", "pin_description", "pin_image_url", "destination_link",
   "board_name", "hashtags", "priority", "status", "scheduled_at",
   "hook_group", "category_key", "overlay_text", "qa_reasons", "image_hash",
-  "approved_at", "creative_fingerprint",
+  "approved_at", "creative_fingerprint", "pin_image_phash",
 ]);
 
 export interface SanitizeReport {
