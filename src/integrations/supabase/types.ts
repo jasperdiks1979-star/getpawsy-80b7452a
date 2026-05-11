@@ -6507,6 +6507,263 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_video_assets: {
+        Row: {
+          aspect_ratio: string | null
+          content_hash: string
+          created_at: string
+          duration_seconds: number | null
+          filename: string
+          filesize_bytes: number | null
+          hook_type: string
+          id: string
+          is_active: boolean
+          last_publish_at: string | null
+          product_slug: string
+          public_url: string
+          publish_count: number
+          storage_bucket: string
+          storage_path: string
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          content_hash: string
+          created_at?: string
+          duration_seconds?: number | null
+          filename: string
+          filesize_bytes?: number | null
+          hook_type?: string
+          id?: string
+          is_active?: boolean
+          last_publish_at?: string | null
+          product_slug?: string
+          public_url: string
+          publish_count?: number
+          storage_bucket: string
+          storage_path: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aspect_ratio?: string | null
+          content_hash?: string
+          created_at?: string
+          duration_seconds?: number | null
+          filename?: string
+          filesize_bytes?: number | null
+          hook_type?: string
+          id?: string
+          is_active?: boolean
+          last_publish_at?: string | null
+          product_slug?: string
+          public_url?: string
+          publish_count?: number
+          storage_bucket?: string
+          storage_path?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_video_autopilot_settings: {
+        Row: {
+          enabled: boolean
+          id: number
+          max_per_day: number
+          mode: string
+          preferred_hook_types: string[]
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: number
+          max_per_day?: number
+          mode?: string
+          preferred_hook_types?: string[]
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: number
+          max_per_day?: number
+          mode?: string
+          preferred_hook_types?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_video_metrics: {
+        Row: {
+          asset_id: string | null
+          ctr: number | null
+          day: string
+          engagement_rate: number | null
+          fetched_at: string
+          id: string
+          impressions: number
+          outbound_clicks: number
+          pin_id: string
+          saves: number
+        }
+        Insert: {
+          asset_id?: string | null
+          ctr?: number | null
+          day?: string
+          engagement_rate?: number | null
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_id: string
+          saves?: number
+        }
+        Update: {
+          asset_id?: string | null
+          ctr?: number | null
+          day?: string
+          engagement_rate?: number | null
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_id?: string
+          saves?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_video_metrics_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_video_metrics_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_winners"
+            referencedColumns: ["asset_id"]
+          },
+        ]
+      }
+      pinterest_video_publish_log: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json | null
+          queue_id: string | null
+          stage: string
+          status: string
+          trace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          queue_id?: string | null
+          stage: string
+          status: string
+          trace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          queue_id?: string | null
+          stage?: string
+          status?: string
+          trace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_video_publish_log_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_video_queue: {
+        Row: {
+          asset_id: string
+          attempt_count: number
+          board_id: string | null
+          cover_frame_seconds: number | null
+          created_at: string
+          cta_text: string | null
+          description: string
+          destination_url: string
+          error_message: string | null
+          external_url: string | null
+          hashtags: string[]
+          id: string
+          pin_id: string | null
+          scheduled_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          variation_hash: string
+        }
+        Insert: {
+          asset_id: string
+          attempt_count?: number
+          board_id?: string | null
+          cover_frame_seconds?: number | null
+          created_at?: string
+          cta_text?: string | null
+          description: string
+          destination_url: string
+          error_message?: string | null
+          external_url?: string | null
+          hashtags?: string[]
+          id?: string
+          pin_id?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          variation_hash: string
+        }
+        Update: {
+          asset_id?: string
+          attempt_count?: number
+          board_id?: string | null
+          cover_frame_seconds?: number | null
+          created_at?: string
+          cta_text?: string | null
+          description?: string
+          destination_url?: string
+          error_message?: string | null
+          external_url?: string | null
+          hashtags?: string[]
+          id?: string
+          pin_id?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          variation_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_video_queue_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_video_queue_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_winners"
+            referencedColumns: ["asset_id"]
+          },
+        ]
+      }
       pinterest_winner_dimensions: {
         Row: {
           composite_score: number
@@ -10256,6 +10513,19 @@ export type Database = {
           hook_category: string | null
           niche_key: string | null
           rejected_count: number | null
+        }
+        Relationships: []
+      }
+      pinterest_video_winners: {
+        Row: {
+          asset_id: string | null
+          ctr_pct: number | null
+          duration_seconds: number | null
+          filename: string | null
+          hook_type: string | null
+          impressions: number | null
+          outbound_clicks: number | null
+          saves: number | null
         }
         Relationships: []
       }
