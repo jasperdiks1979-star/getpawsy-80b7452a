@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History } from "lucide-react";
 
 type VideoAsset = {
   id: string;
@@ -27,6 +27,16 @@ type QueueRow = {
   external_url: string | null;
   error_message: string | null;
   attempt_count: number;
+  max_retries: number;
+  last_retry_at: string | null;
+  created_at: string;
+};
+type HistoryEntry = {
+  id: string;
+  queue_id: string | null;
+  stage: string;
+  status: string;
+  payload: any;
   created_at: string;
 };
 
@@ -42,12 +52,54 @@ const HOOK_BADGE_COLORS: Record<string, string> = {
   unknown: "bg-muted text-muted-foreground",
 };
 
+const STATUS_DOT: Record<string, string> = {
+  draft: "bg-slate-400",
+  queued: "bg-blue-500",
+  publishing: "bg-amber-500",
+  retried: "bg-purple-500",
+  published: "bg-emerald-500",
+  failed: "bg-red-500",
+};
+
+function StatusHistory({ entries }: { entries: HistoryEntry[] }) {
+  if (!entries.length) return <p className="text-xs text-muted-foreground">No history yet.</p>;
+  return (
+    <ol className="space-y-1.5 text-xs">
+      {entries.map((e) => {
+        const ts = new Date(e.created_at).toLocaleString();
+        const from = e.payload?.from;
+        const to = e.payload?.to ?? e.status;
+        const attempt = e.payload?.attempt;
+        const err = e.payload?.error;
+        return (
+          <li key={e.id} className="flex gap-2 items-start">
+            <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${STATUS_DOT[to] || "bg-muted-foreground"}`} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-medium">{from ? `${from} → ${to}` : to}</span>
+                {attempt != null && <span className="text-muted-foreground">attempt {attempt}</span>}
+                <span className="text-muted-foreground">{ts}</span>
+              </div>
+              {err && <p className="text-destructive line-clamp-2">{err}</p>}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function VideoCard({
   asset,
   queue,
   onPublish,
   onReroll,
   onQueueDraft,
+  onRetry,
+  historyByQueue,
+  loadingHistoryId,
+  onToggleHistory,
+  openHistoryId,
   busyId,
 }: {
   asset: VideoAsset;
@@ -55,6 +107,11 @@ function VideoCard({
   onPublish: (id: string) => void;
   onReroll: (id: string) => void;
   onQueueDraft: (asset_id: string) => void;
+  onRetry: (id: string) => void;
+  historyByQueue: Record<string, HistoryEntry[]>;
+  loadingHistoryId: string | null;
+  onToggleHistory: (id: string) => void;
+  openHistoryId: string | null;
   busyId: string | null;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -105,7 +162,11 @@ function VideoCard({
                 <Badge variant={q.status === "published" ? "default" : q.status === "failed" ? "destructive" : "outline"}>
                   {q.status}
                 </Badge>
-                {q.attempt_count > 0 && <span className="text-xs text-muted-foreground">attempt {q.attempt_count}</span>}
+                {q.attempt_count > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {q.attempt_count}/{q.max_retries ?? 3} attempts
+                  </span>
+                )}
               </div>
               <p className="text-sm font-semibold leading-snug">{q.title}</p>
               <p className="text-xs text-muted-foreground line-clamp-2">{q.description}</p>
@@ -115,14 +176,35 @@ function VideoCard({
                   View on Pinterest →
                 </a>
               )}
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1 h-10" onClick={() => onReroll(q.id)} disabled={busyId === q.id || q.status === "published"}>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" className="flex-1 min-w-[88px] h-10" onClick={() => onReroll(q.id)} disabled={busyId === q.id || q.status === "published"}>
                   <Shuffle className="h-4 w-4 mr-1" /> Reroll
                 </Button>
-                <Button size="sm" className="flex-1 h-10" onClick={() => onPublish(q.id)} disabled={busyId === q.id || q.status === "published"}>
-                  {busyId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-1" /> Publish</>}
+                {q.status === "failed" ? (
+                  <Button
+                    size="sm"
+                    className="flex-1 min-w-[88px] h-10"
+                    onClick={() => onRetry(q.id)}
+                    disabled={busyId === q.id || (q.attempt_count >= (q.max_retries ?? 3))}
+                  >
+                    {busyId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RotateCw className="h-4 w-4 mr-1" /> Retry</>}
+                  </Button>
+                ) : (
+                  <Button size="sm" className="flex-1 min-w-[88px] h-10" onClick={() => onPublish(q.id)} disabled={busyId === q.id || q.status === "published"}>
+                    {busyId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-1" /> Publish</>}
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" className="h-10" onClick={() => onToggleHistory(q.id)} aria-label="Toggle history">
+                  <History className="h-4 w-4" />
                 </Button>
               </div>
+              {openHistoryId === q.id && (
+                <div className="rounded-md bg-muted/50 p-2 mt-2">
+                  {loadingHistoryId === q.id
+                    ? <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Loading history…</div>
+                    : <StatusHistory entries={historyByQueue[q.id] || []} />}
+                </div>
+              )}
             </div>
           ))
         )}
@@ -139,6 +221,9 @@ export default function PinterestVideoQueuePage() {
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>("all");
   const [hookFilter, setHookFilter] = useState<string>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [historyByQueue, setHistoryByQueue] = useState<Record<string, HistoryEntry[]>>({});
+  const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+  const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -176,6 +261,20 @@ export default function PinterestVideoQueuePage() {
       toast({ title: "Request failed", description: e?.message || "Unknown error", variant: "destructive" });
     } finally { setBusyId(null); }
   };
+
+  const toggleHistory = useCallback(async (queue_id: string) => {
+    if (openHistoryId === queue_id) { setOpenHistoryId(null); return; }
+    setOpenHistoryId(queue_id);
+    if (historyByQueue[queue_id]) return;
+    setLoadingHistoryId(queue_id);
+    const { data } = await supabase
+      .from("pinterest_video_publish_log")
+      .select("*")
+      .eq("queue_id", queue_id)
+      .order("created_at", { ascending: true });
+    setHistoryByQueue((prev) => ({ ...prev, [queue_id]: (data as HistoryEntry[]) || [] }));
+    setLoadingHistoryId(null);
+  }, [openHistoryId, historyByQueue]);
 
   const queueByAsset = useMemo(() => {
     const m = new Map<string, QueueRow[]>();
@@ -254,6 +353,11 @@ export default function PinterestVideoQueuePage() {
               onQueueDraft={(id) => callPublisher("queue_draft", { asset_id: id }, id)}
               onPublish={(id) => callPublisher("publish", { queue_id: id }, id)}
               onReroll={(id) => callPublisher("reroll", { queue_id: id }, id)}
+              onRetry={(id) => callPublisher("retry", { queue_id: id }, id)}
+              historyByQueue={historyByQueue}
+              loadingHistoryId={loadingHistoryId}
+              onToggleHistory={toggleHistory}
+              openHistoryId={openHistoryId}
             />
           ))}
         </div>

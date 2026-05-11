@@ -134,7 +134,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action || "queue_draft") as
-      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts";
+      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry";
 
     // ── queue_draft / queue_all_drafts ──────────────────────────────
     if (action === "queue_draft" || action === "queue_all_drafts") {
@@ -185,6 +185,55 @@ serve(async (req) => {
         if (!error) return ok({ ok: true, traceId: trace_id, ...meta });
       }
       return ok({ ok: false, code: "REROLL_EXHAUSTED", traceId: trace_id });
+    }
+
+    // ── retry ──────────────────────────────────────────────────────
+    // Resets a failed item, increments attempt, and re-runs publish.
+    // Respects max_retries (default 3) and writes a `retried` status entry
+    // so the per-item history shows the retry transition.
+    if (action === "retry") {
+      const queue_id = body.queue_id;
+      if (!queue_id) return ok({ ok: false, code: "MISSING_QUEUE_ID", traceId: trace_id });
+      const { data: row } = await sb.from("pinterest_video_queue").select("*").eq("id", queue_id).maybeSingle();
+      if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
+      if (row.status === "published") return ok({ ok: true, traceId: trace_id, message: "already_published" });
+      const max = row.max_retries ?? 3;
+      if ((row.attempt_count || 0) >= max) {
+        return ok({ ok: false, code: "MAX_RETRIES_EXCEEDED", traceId: trace_id, message: `cap=${max}` });
+      }
+      // Mark a transient `retried` state so history shows the retry click.
+      await sb.from("pinterest_video_queue").update({
+        status: "retried",
+        last_retry_at: new Date().toISOString(),
+        error_message: null,
+      }).eq("id", queue_id);
+      // Recursively reuse the publish branch by re-fetching with cleared state.
+      const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", row.asset_id).maybeSingle();
+      if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
+      const token = await getPinterestToken(sb);
+      if (!token) return ok({ ok: false, code: "PINTEREST_NOT_CONNECTED", traceId: trace_id });
+      const board_id = row.board_id || await resolveBoardId(sb, token);
+      if (!board_id) return ok({ ok: false, code: "NO_BOARD", traceId: trace_id });
+      await sb.from("pinterest_video_queue").update({
+        status: "publishing",
+        board_id,
+        attempt_count: (row.attempt_count || 0) + 1,
+      }).eq("id", queue_id);
+      const result = await publishVideoPin({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
+      if (result.ok) {
+        await sb.from("pinterest_video_queue").update({
+          status: "published", pin_id: result.pin_id, external_url: result.external_url, error_message: null,
+        }).eq("id", queue_id);
+        await sb.from("pinterest_video_assets").update({
+          last_publish_at: new Date().toISOString(),
+          publish_count: (asset.publish_count || 0) + 1,
+        }).eq("id", asset.id);
+        return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, external_url: result.external_url });
+      }
+      await sb.from("pinterest_video_queue").update({
+        status: "failed", error_message: `${result.code}: ${result.message}`,
+      }).eq("id", queue_id);
+      return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
     }
 
     // ── publish ─────────────────────────────────────────────────────
