@@ -269,6 +269,141 @@ export default function PinterestVideoQueuePage() {
   const [lastPublishIds, setLastPublishIds] = useState<string[]>([]);
   const [rerunningStep, setRerunningStep] = useState<null | "discovery" | "drafts" | "publish">(null);
 
+  // ── Debug Console state ─────────────────────────────────────────────
+  type DebugEvent = {
+    id: string;
+    started_at: string;
+    duration_ms: number;
+    fn: string;
+    action: string;
+    http_status: number | null;
+    ok: boolean;
+    request: unknown;
+    response: unknown;
+    error: string | null;
+    trace_id: string | null;
+  };
+  const [debugEvents, setDebugEvents] = useState<DebugEvent[]>([]);
+  const [discoveryDetail, setDiscoveryDetail] = useState<any | null>(null);
+  const [manualUrl, setManualUrl] = useState("");
+  const [manualBusy, setManualBusy] = useState(false);
+  const [healthBusy, setHealthBusy] = useState<string | null>(null);
+
+  // Direct fetch wrapper so we capture HTTP status, raw response and timing.
+  // Falls back to a clear "Admin auth required" message on 401/403.
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+  const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+  const invokeDebug = useCallback(async (fn: string, body: Record<string, unknown>): Promise<DebugEvent> => {
+    const started = performance.now();
+    const startedIso = new Date().toISOString();
+    let http_status: number | null = null;
+    let response: unknown = null;
+    let error: string | null = null;
+    let ok = false;
+    let trace_id: string | null = null;
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON,
+          Authorization: `Bearer ${token || SUPABASE_ANON}`,
+        },
+        body: JSON.stringify(body),
+      });
+      http_status = res.status;
+      const text = await res.text();
+      try { response = text ? JSON.parse(text) : null; } catch { response = text; }
+      const r: any = response;
+      trace_id = r?.traceId || r?.trace_id || null;
+      ok = res.ok && (r?.ok ?? true);
+      if (res.status === 401) error = "Admin auth required (401 Unauthorized)";
+      else if (res.status === 403) error = "Admin auth required (403 Forbidden)";
+      else if (!res.ok) error = `HTTP ${res.status}`;
+      else if (r && r.ok === false) error = `${r.code || "ERROR"}: ${r.message || ""}`;
+    } catch (e: any) {
+      error = e?.message || "Network error";
+    }
+    const ev: DebugEvent = {
+      id: crypto.randomUUID(),
+      started_at: startedIso,
+      duration_ms: Math.round(performance.now() - started),
+      fn,
+      action: String(body.action || "—"),
+      http_status,
+      ok,
+      request: body,
+      response,
+      error,
+      trace_id,
+    };
+    setDebugEvents((prev) => [ev, ...prev].slice(0, 50));
+    if (!ok) {
+      toast({
+        title: `${fn} failed`,
+        description: error || "See Debug Console",
+        variant: "destructive",
+      });
+    }
+    return ev;
+  }, [SUPABASE_URL, SUPABASE_ANON]);
+
+  const runHealthCheck = useCallback(async (fn: string) => {
+    setHealthBusy(fn);
+    try {
+      // Sentinel action: every function returns a JSON body even for unknown
+      // actions, so reachability + auth state can be inferred from the result.
+      await invokeDebug(fn, { action: "__health_check__" });
+    } finally {
+      setHealthBusy(null);
+    }
+  }, [invokeDebug]);
+
+  const createDraftFromUrl = useCallback(async () => {
+    const url = manualUrl.trim();
+    if (!url) { toast({ title: "Paste a public MP4 URL first", variant: "destructive" }); return; }
+    if (!/\.mp4(\?|$)/i.test(url)) {
+      toast({ title: "Not an .mp4 URL", description: "URL must end in .mp4", variant: "destructive" });
+      return;
+    }
+    setManualBusy(true);
+    try {
+      const filename = decodeURIComponent(url.split("/").pop() || `manual-${Date.now()}.mp4`);
+      // Best-effort parse of bucket/path from a Supabase public URL.
+      const m = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+      const storage_bucket = m?.[1] || "external";
+      const storage_path = m?.[2] || url;
+      const content_hash = `manual-${url}`;
+      const { data: asset, error: insErr } = await supabase
+        .from("pinterest_video_assets")
+        .upsert({
+          filename,
+          storage_bucket,
+          storage_path,
+          public_url: url,
+          hook_type: "direct",
+          content_hash,
+          is_active: true,
+        }, { onConflict: "content_hash" })
+        .select("id")
+        .maybeSingle();
+      if (insErr || !asset?.id) {
+        toast({ title: "Insert failed", description: insErr?.message || "no id", variant: "destructive" });
+        return;
+      }
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "queue_draft", asset_id: asset.id });
+      if (ev.ok) {
+        toast({ title: "Draft created from URL", description: `asset ${asset.id.slice(0, 8)}…` });
+        await load();
+      }
+    } finally {
+      setManualBusy(false);
+    }
+  }, [manualUrl, invokeDebug, load]);
+
   const pushTrace = useCallback((t: StepTrace) => {
     setStepTraces((prev) => [...prev, t]);
     // Fire a toast with a direct, pre-filtered Logs link for this exact step
