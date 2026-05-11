@@ -1090,19 +1090,21 @@ export default function PinterestVideoQueuePage() {
             {debugEvents.map((ev) => (
               <li key={ev.id} className="rounded-md border p-2 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
-                  {ev.ok
-                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                  {ev.pending
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+                    : ev.ok
+                      ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
                   <span className="font-mono text-[10px]">{new Date(ev.started_at).toLocaleTimeString()}</span>
                   <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-mono">{ev.fn.replace(/^pinterest-video-/, "pv-")}</Badge>
                   <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{ev.action}</Badge>
                   <Badge
-                    variant={ev.http_status && ev.http_status < 400 ? "default" : "destructive"}
-                    className={`h-5 px-1.5 text-[10px] ${ev.http_status && ev.http_status < 400 ? "bg-emerald-500 hover:bg-emerald-500/90" : ""}`}
+                    variant={ev.pending ? "outline" : ev.http_status && ev.http_status < 400 ? "default" : "destructive"}
+                    className={`h-5 px-1.5 text-[10px] ${!ev.pending && ev.http_status && ev.http_status < 400 ? "bg-emerald-500 hover:bg-emerald-500/90" : ""}`}
                   >
-                    HTTP {ev.http_status ?? "—"}
+                    {ev.pending ? "started" : `HTTP ${ev.http_status ?? "—"}`}
                   </Badge>
-                  <span className="text-muted-foreground">{ev.duration_ms}ms</span>
+                  <span className="text-muted-foreground">{ev.duration_ms == null ? "running…" : `${ev.duration_ms}ms`}</span>
                   {ev.trace_id && (
                     <a
                       href={`/admin/pinterest-video-logs?trace=${encodeURIComponent(ev.trace_id)}&fn=${encodeURIComponent(ev.fn)}`}
