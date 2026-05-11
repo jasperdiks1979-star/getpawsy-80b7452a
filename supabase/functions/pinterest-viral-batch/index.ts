@@ -1536,7 +1536,18 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       } as typeof r);
     }
     if (annotatedRows.length === 0) {
-      return respond({ ok: false, code: "ALL_ROWS_QUARANTINED", message: "All pins were rejected by URL sanitizer" });
+      return respond({
+        ok: false,
+        code: "ALL_ROWS_QUARANTINED",
+        message: queueDuplicatesBlocked > 0
+          ? `All ${queueDuplicatesBlocked} pins blocked as visual duplicates of recently queued pins`
+          : "All pins were rejected by URL sanitizer",
+        queueProtection: {
+          history_size: queuePhashHistory.length,
+          threshold: PHASH_DUPLICATE_SIMILARITY,
+          blocked: queueDuplicatesBlocked,
+        },
+      });
     }
     if (sanitized.droppedColumns.length > 0) {
       // Per-batch summary
