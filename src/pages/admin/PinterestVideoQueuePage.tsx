@@ -273,11 +273,12 @@ export default function PinterestVideoQueuePage() {
   type DebugEvent = {
     id: string;
     started_at: string;
-    duration_ms: number;
+    duration_ms: number | null;
     fn: string;
     action: string;
     http_status: number | null;
     ok: boolean;
+    pending: boolean;
     request: unknown;
     response: unknown;
     error: string | null;
@@ -297,6 +298,22 @@ export default function PinterestVideoQueuePage() {
   const invokeDebug = useCallback(async (fn: string, body: Record<string, unknown>): Promise<DebugEvent> => {
     const started = performance.now();
     const startedIso = new Date().toISOString();
+    const eventId = crypto.randomUUID();
+    const startedEvent: DebugEvent = {
+      id: eventId,
+      started_at: startedIso,
+      duration_ms: null,
+      fn,
+      action: String(body.action || "—"),
+      http_status: null,
+      ok: false,
+      pending: true,
+      request: body,
+      response: null,
+      error: null,
+      trace_id: null,
+    };
+    setDebugEvents((prev) => [startedEvent, ...prev].slice(0, 50));
     let http_status: number | null = null;
     let response: unknown = null;
     let error: string | null = null;
@@ -323,24 +340,29 @@ export default function PinterestVideoQueuePage() {
       if (res.status === 401) error = "Admin auth required (401 Unauthorized)";
       else if (res.status === 403) error = "Admin auth required (403 Forbidden)";
       else if (!res.ok) error = `HTTP ${res.status}`;
-      else if (r && r.ok === false) error = `${r.code || "ERROR"}: ${r.message || ""}`;
+      else if (r && r.ok === false) {
+        error = ["FORBIDDEN", "UNAUTHENTICATED"].includes(r.code)
+          ? "Admin auth required"
+          : `${r.code || "ERROR"}: ${r.message || ""}`;
+      }
     } catch (e: any) {
       error = e?.message || "Network error";
     }
     const ev: DebugEvent = {
-      id: crypto.randomUUID(),
+      id: eventId,
       started_at: startedIso,
       duration_ms: Math.round(performance.now() - started),
       fn,
       action: String(body.action || "—"),
       http_status,
       ok,
+      pending: false,
       request: body,
       response,
       error,
       trace_id,
     };
-    setDebugEvents((prev) => [ev, ...prev].slice(0, 50));
+    setDebugEvents((prev) => prev.map((item) => item.id === eventId ? ev : item).slice(0, 50));
     if (!ok) {
       toast({
         title: `${fn} failed`,
