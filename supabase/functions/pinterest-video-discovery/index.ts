@@ -3,6 +3,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import { classifyHook } from "../_shared/pinterest-video-hooks.ts";
+import { MIN_VIDEO_BYTES, MAX_VIDEO_BYTES, formatBytes } from "../_shared/pinterest-video-limits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,8 +60,9 @@ serve(async (req) => {
     const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
     if (!roleRow) return ok({ ok: false, code: "FORBIDDEN", traceId });
 
-    let scanned = 0, matched = 0, inserted = 0;
+    let scanned = 0, matched = 0, inserted = 0, skipped_oversized = 0, skipped_undersized = 0;
     const errors: string[] = [];
+    const skipped: Array<{ filename: string; reason: string }> = [];
     for (const bucket of TARGET_BUCKETS) {
       console.log(`[pvd ${traceId}] scanning bucket=${bucket}`);
       let files: Array<{ path: string; size: number; updated_at: string }> = [];
@@ -74,7 +76,17 @@ serve(async (req) => {
       for (const f of files) {
         const filename = f.path.split("/").pop() || f.path;
         if (!PATTERN.test(filename)) continue;
-        if (f.size && f.size < 50_000) continue; // skip tiny/corrupt
+        if (f.size && f.size < MIN_VIDEO_BYTES) {
+          skipped_undersized++;
+          skipped.push({ filename, reason: `too small (${formatBytes(f.size)})` });
+          continue;
+        }
+        if (f.size && f.size > MAX_VIDEO_BYTES) {
+          skipped_oversized++;
+          skipped.push({ filename, reason: `too large (${formatBytes(f.size)} > ${formatBytes(MAX_VIDEO_BYTES)})` });
+          console.warn(`[pvd ${traceId}] skip oversized ${bucket}/${f.path} size=${f.size}`);
+          continue;
+        }
         matched++;
         const content_hash = await sha256(`${bucket}|${f.path}|${f.size}|${f.updated_at}`);
         const { data: pub } = sb.storage.from(bucket).getPublicUrl(f.path);
@@ -92,8 +104,8 @@ serve(async (req) => {
         else inserted++;
       }
     }
-    console.log(`[pvd ${traceId}] done scanned=${scanned} matched=${matched} inserted=${inserted} errors=${errors.length}`);
-    return ok({ ok: true, traceId, scanned, matched, inserted, errors });
+    console.log(`[pvd ${traceId}] done scanned=${scanned} matched=${matched} inserted=${inserted} oversized=${skipped_oversized} undersized=${skipped_undersized} errors=${errors.length}`);
+    return ok({ ok: true, traceId, scanned, matched, inserted, skipped_oversized, skipped_undersized, skipped, errors });
   } catch (e) {
     console.error(`[pvd ${traceId}] fatal`, e);
     return ok({ ok: false, code: "UNEXPECTED_ERROR", traceId, message: (e as Error)?.message });
