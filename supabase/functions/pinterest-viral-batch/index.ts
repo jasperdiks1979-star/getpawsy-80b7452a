@@ -29,7 +29,7 @@ import {
   pickSoftCta,
   pickCtrBadge,
 } from "../_shared/pinterest-templates.ts";
-import { fetchAiBackdrop } from "../_shared/pinterest-ai-backdrop.ts";
+import { fetchAiBackdrop, loadRecentSceneFamilies, SCENE_FAMILIES } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
 
 // Top-level boot log — visible in edge function logs immediately on cold start
@@ -1009,6 +1009,23 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     const layoutIssues: Array<{ index: number; key: string; issues: string[] }> = [];
     let layoutFallbacks = 0;
 
+    // ─── Backdrop diversity controls ─────────────────────────────────────
+    // Pull the last 50 cached scene-families so we never reuse the same
+    // visual recipe across batches. Combined with `usedFamilies` (in-batch)
+    // this guarantees each pin renders as a different "photo shoot".
+    const recentFamilies = await loadRecentSceneFamilies(sb, 50);
+    const usedFamilies = new Set<string>();
+    const familyDiagnostics: Array<{
+      index: number;
+      hook_group: string;
+      scene_family: string | null;
+      camera_angle: string | null;
+      emotion: string | null;
+      variant_seed: number | null;
+      excluded_recent: number;
+      reason: string;
+    }> = [];
+
     const rows: Record<string, unknown>[] = [];
     for (let i = 0; i < aiPins.length; i++) {
       const p = aiPins[i];
@@ -1039,28 +1056,64 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         const afterQuery = style === "before_after"
           ? pair.after
           : (PER_HOOK_AFTER_QUERY[hook.key] || pair.after);
-        let bd: PexelsPhoto | null = await fetchAiBackdrop(sb as unknown as Parameters<typeof fetchAiBackdrop>[0], afterQuery);
+        // Diversity: exclude recent-50 + already-used-this-batch families.
+        // variantSeed bumps per-pin so reroll forces a fresh family/angle.
+        const excludeNow = new Set<string>([...recentFamilies, ...usedFamilies]);
+        const variantSeed = (now / 60000 | 0) + i * 13 + hook.key.length * 3;
+        let bd: import("../_shared/pinterest-ai-backdrop.ts").AiBackdropPhoto | null =
+          await fetchAiBackdrop(sb as unknown as Parameters<typeof fetchAiBackdrop>[0], afterQuery, {
+            hookKey: hook.key,
+            excludeFamilies: excludeNow,
+            variantSeed,
+          });
+        let pickedFamily: string | null = bd?.sceneFamily ?? null;
+        let pickedAngle: string | null = bd?.cameraAngle ?? null;
+        let pickedEmotion: string | null = bd?.emotion ?? null;
+        let familyReason = "ok";
         if (!bd) {
           // Fallback path: Pexels (if a valid key exists), else flat
           // Cloudinary palette. Both are last-resort — primary is AI.
-          bd = await fetchPexelsBackdrop(afterQuery);
-          if (!bd) {
-            bd = buildCloudinaryFallbackBackdrop(hook.key);
+          const px = await fetchPexelsBackdrop(afterQuery);
+          if (!px) {
+            bd = buildCloudinaryFallbackBackdrop(hook.key) as unknown as typeof bd;
             backdropSource = "cloudinary_fallback";
+            familyReason = "ai_failed_cloudinary_fallback";
           } else {
+            bd = px as unknown as typeof bd;
             backdropSource = "pexels";
+            familyReason = "ai_failed_pexels_fallback";
           }
         } else {
           backdropSource = "pexels"; // tag column is constrained — reuse safe enum value
+          if (pickedFamily) usedFamilies.add(pickedFamily);
         }
-        backdropMeta = bd;
-        backdropUrl = bd.url;
+        backdropMeta = bd as unknown as PexelsPhoto;
+        backdropUrl = (bd as { url: string }).url;
         if (style === "before_after") {
-          const bb = await fetchAiBackdrop(sb as unknown as Parameters<typeof fetchAiBackdrop>[0], pair.before)
-            || await fetchPexelsBackdrop(pair.before);
+          const beforeExclude = new Set<string>([
+            ...recentFamilies,
+            ...usedFamilies,
+            ...(pickedFamily ? [pickedFamily] : []),
+          ]);
+          const bb = await fetchAiBackdrop(sb as unknown as Parameters<typeof fetchAiBackdrop>[0], pair.before, {
+            hookKey: hook.key,
+            excludeFamilies: beforeExclude,
+            variantSeed: variantSeed + 7,
+          }) || await fetchPexelsBackdrop(pair.before);
+          if ((bb as any)?.sceneFamily) usedFamilies.add((bb as any).sceneFamily as string);
           backdropAfterUrl = backdropUrl;          // After = the cozy/clean scene
-          backdropUrl = (bb?.url) || backdropUrl;  // Before = the problem scene
+          backdropUrl = ((bb as any)?.url) || backdropUrl;  // Before = the problem scene
         }
+        familyDiagnostics.push({
+          index: i,
+          hook_group: hook.key,
+          scene_family: pickedFamily,
+          camera_angle: pickedAngle,
+          emotion: pickedEmotion,
+          variant_seed: variantSeed,
+          excluded_recent: excludeNow.size,
+          reason: familyReason,
+        });
       }
 
       const built = buildStyledPin(style, {
@@ -1161,6 +1214,17 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         row.backdrop_pexels_page = backdropMeta.pexelsPageUrl;
         row.backdrop_hook_group = hook.key;
         row.backdrop_style = style;
+        // Diversity diagnostics (in-memory only; sanitizer drops these).
+        const md = backdropMeta as unknown as {
+          sceneFamily?: string;
+          cameraAngle?: string;
+          emotion?: string;
+          variantSeed?: number;
+        };
+        if (md.sceneFamily) (row as Record<string, unknown>).backdrop_scene_family = md.sceneFamily;
+        if (md.cameraAngle) (row as Record<string, unknown>).backdrop_camera_angle = md.cameraAngle;
+        if (md.emotion) (row as Record<string, unknown>).backdrop_emotion = md.emotion;
+        if (typeof md.variantSeed === "number") (row as Record<string, unknown>).backdrop_variant_seed = md.variantSeed;
       }
       // Heuristic save/click score — used to auto-approve the top 3 only.
       const lenT = topOverlay.length;
@@ -1264,6 +1328,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
 
     if (dryRun) {
       const dryHealth = runQueueHealthCheck(rows as Array<Record<string, unknown>>);
+      // Compute backdrop diversity score = unique families / pins-with-backdrop.
+      const backdropRows = (rows as any[]).filter((r) => r.backdrop_url);
+      const families = new Set(
+        backdropRows.map((r) => r.backdrop_scene_family).filter(Boolean) as string[],
+      );
+      const diversityScore = backdropRows.length > 0
+        ? Number((families.size / backdropRows.length).toFixed(2))
+        : 1;
       return respond({
           ok: true,
           dryRun: true,
@@ -1272,6 +1344,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           product: { id: product.id, slug: product.slug, name: product.name },
           batchTag,
           health: dryHealth,
+          diversity: {
+            score: diversityScore,
+            unique_families: families.size,
+            backdrops: backdropRows.length,
+            recent_excluded: recentFamilies.length,
+            family_pool_size: SCENE_FAMILIES.length,
+            per_pin: familyDiagnostics,
+          },
           pins: rows.map((r: any) => ({
             hook_group: r.hook_group,
             pin_variant: r.pin_variant,
@@ -1293,6 +1373,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
             backdrop_style: r.backdrop_style || null,
             backdrop_score: r.backdrop_score ?? null,
             backdrop_variants: r.backdrop_variants || null,
+            backdrop_scene_family: r.backdrop_scene_family ?? null,
+            backdrop_camera_angle: r.backdrop_camera_angle ?? null,
+            backdrop_emotion: r.backdrop_emotion ?? null,
+            backdrop_variant_seed: r.backdrop_variant_seed ?? null,
             uses_lifestyle_backdrop: !!r.backdrop_url,
           })),
         });

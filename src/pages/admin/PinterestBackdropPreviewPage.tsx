@@ -34,6 +34,10 @@ type PreviewPin = {
   backdrop_style?: "dark" | "subtle" | "accent" | null;
   backdrop_score?: number | null;
   backdrop_variants?: Array<{ style: string; score: number; url: string }> | null;
+  backdrop_scene_family?: string | null;
+  backdrop_camera_angle?: string | null;
+  backdrop_emotion?: string | null;
+  backdrop_variant_seed?: number | null;
   uses_lifestyle_backdrop: boolean;
 };
 
@@ -87,6 +91,23 @@ export default function PinterestBackdropPreviewPage() {
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
   const [debug, setDebug] = useState<DebugInfo | null>(null);
+  const [diversity, setDiversity] = useState<{
+    score: number;
+    unique_families: number;
+    backdrops: number;
+    recent_excluded: number;
+    family_pool_size: number;
+    per_pin?: Array<{
+      index: number;
+      hook_group: string;
+      scene_family: string | null;
+      camera_angle: string | null;
+      emotion: string | null;
+      variant_seed: number | null;
+      excluded_recent: number;
+      reason: string;
+    }>;
+  } | null>(null);
   // Edge-function health probe — pings /pinterest-viral-batch/health every
   // 30s so the admin can see at a glance whether the function is reachable
   // before clicking "Generate preview".
@@ -361,6 +382,7 @@ export default function PinterestBackdropPreviewPage() {
       if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
       setBatchTag(data.batchTag || null);
+      setDiversity(dd.diversity || null);
       // Default every hook to approved on a fresh preview.
       const fresh: Record<string, boolean> = {};
       for (const p of (data.pins || []) as PreviewPin[]) {
@@ -431,10 +453,15 @@ export default function PinterestBackdropPreviewPage() {
             backdrop_style: updated.backdrop_style,
             backdrop_score: updated.backdrop_score,
             backdrop_variants: updated.backdrop_variants,
+            backdrop_scene_family: (updated as any).backdrop_scene_family ?? null,
+            backdrop_camera_angle: (updated as any).backdrop_camera_angle ?? null,
+            backdrop_emotion: (updated as any).backdrop_emotion ?? null,
+            backdrop_variant_seed: (updated as any).backdrop_variant_seed ?? null,
             uses_lifestyle_backdrop: true,
           };
         }),
       );
+      if ((data as any)?.diversity) setDiversity((data as any).diversity);
       toast.success(hookKey ? `Re-rolled ${hookKey}` : "Re-rolled all backdrops");
     } catch (e: any) {
       toast.error(e?.message || "Reroll failed");
@@ -680,6 +707,46 @@ export default function PinterestBackdropPreviewPage() {
                 <div>backdrop source: <span className="text-foreground">{debug.backdropSource}</span></div>
                 <div>status: <span className="text-foreground">{String(debug.status)}</span></div>
                 {debug.error && <div className="text-destructive">error: {debug.error}</div>}
+                {diversity && (
+                  <div className="mt-2 border-t pt-2 space-y-1">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Backdrop diversity
+                    </div>
+                    <div>
+                      score:{" "}
+                      <span
+                        className={
+                          diversity.score >= 0.8
+                            ? "text-emerald-600 font-medium"
+                            : diversity.score >= 0.5
+                            ? "text-amber-600 font-medium"
+                            : "text-destructive font-medium"
+                        }
+                      >
+                        {(diversity.score * 100).toFixed(0)}%
+                      </span>{" "}
+                      ({diversity.unique_families}/{diversity.backdrops} unique families)
+                    </div>
+                    <div className="opacity-70">
+                      pool: {diversity.family_pool_size} · recent excluded: {diversity.recent_excluded}
+                    </div>
+                    {diversity.per_pin && diversity.per_pin.length > 0 && (
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-[10px] underline opacity-70">
+                          per-pin diagnostics
+                        </summary>
+                        <div className="mt-1 space-y-0.5 font-mono text-[10px]">
+                          {diversity.per_pin.map((d) => (
+                            <div key={d.index} className="break-all">
+                              #{d.index} {d.hook_group}: {d.scene_family || "—"} · {d.camera_angle || "—"} · seed={d.variant_seed} · excl={d.excluded_recent}
+                              {d.reason !== "ok" && <span className="text-amber-600"> · {d.reason}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1144,6 +1211,34 @@ export default function PinterestBackdropPreviewPage() {
                           <span className="font-medium capitalize text-foreground">
                             {pin.backdrop_hook_group.replace("_", " ")}
                           </span>
+                        </div>
+                      )}
+                      {pin.backdrop_scene_family && (
+                        <div>
+                          Scene:{" "}
+                          <span className="font-medium text-foreground">
+                            {pin.backdrop_scene_family.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                      )}
+                      {pin.backdrop_camera_angle && (
+                        <div>
+                          Camera:{" "}
+                          <span className="font-mono text-foreground">
+                            {pin.backdrop_camera_angle.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                      )}
+                      {pin.backdrop_emotion && (
+                        <div className="line-clamp-2">
+                          Tone:{" "}
+                          <span className="text-foreground">{pin.backdrop_emotion}</span>
+                        </div>
+                      )}
+                      {typeof pin.backdrop_variant_seed === "number" && (
+                        <div>
+                          Seed:{" "}
+                          <span className="font-mono text-foreground">{pin.backdrop_variant_seed}</span>
                         </div>
                       )}
                       {pin.backdrop_width && pin.backdrop_height && (
