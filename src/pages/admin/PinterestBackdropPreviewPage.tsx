@@ -1213,6 +1213,34 @@ export default function PinterestBackdropPreviewPage() {
                           </span>
                         </div>
                       )}
+                      {pin.backdrop_scene_family && (
+                        <div>
+                          Scene:{" "}
+                          <span className="font-medium text-foreground">
+                            {pin.backdrop_scene_family.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                      )}
+                      {pin.backdrop_camera_angle && (
+                        <div>
+                          Camera:{" "}
+                          <span className="font-mono text-foreground">
+                            {pin.backdrop_camera_angle.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                      )}
+                      {pin.backdrop_emotion && (
+                        <div className="line-clamp-2">
+                          Tone:{" "}
+                          <span className="text-foreground">{pin.backdrop_emotion}</span>
+                        </div>
+                      )}
+                      {typeof pin.backdrop_variant_seed === "number" && (
+                        <div>
+                          Seed:{" "}
+                          <span className="font-mono text-foreground">{pin.backdrop_variant_seed}</span>
+                        </div>
+                      )}
                       {pin.backdrop_width && pin.backdrop_height && (
                         <div>
                           Resolution:{" "}
