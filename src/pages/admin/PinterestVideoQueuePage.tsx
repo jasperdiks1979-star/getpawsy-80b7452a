@@ -463,11 +463,18 @@ export default function PinterestVideoQueuePage() {
   const runDiscovery = async () => {
     setDiscovering(true);
     try {
-      const ev = await invokeDebug("pinterest-video-discovery", {});
+      toast({ title: "Discovery started", description: "Calling pinterest-video-discovery…" });
+      const ev = await invokeDebug("pinterest-video-discovery", { action: "discover" });
       const data: any = ev.response || {};
       if (ev.error && !data?.traceId) throw new Error(ev.error);
       setDiscoveryDetail(data);
-      toast({ title: "Discovery complete", description: `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.` });
+      toast({
+        title: data?.ok ? "Discovery complete" : "Discovery blocked",
+        description: data?.ok
+          ? `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.`
+          : (ev.error || data?.code || "See Debug Console"),
+        variant: data?.ok ? "default" : "destructive",
+      });
       if (data?.traceId) pushTrace({
         step: "Discovery",
         fn: "pinterest-video-discovery",
@@ -529,10 +536,19 @@ export default function PinterestVideoQueuePage() {
   const callPublisher = async (action: string, payload: Record<string, unknown>, busy: string) => {
     setBusyId(busy);
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", { body: { action, ...payload } });
-      if (error) throw error;
+      toast({ title: `${action.replace(/_/g, " ")} started`, description: "Calling pinterest-video-publisher…" });
+      const ev = await invokeDebug("pinterest-video-publisher", { action, ...payload });
+      const data: any = ev.response || {};
+      const error = ev.error ? new Error(ev.error) : null;
       if (data?.ok) toast({ title: action.replace("_", " "), description: data?.message || "Done" });
       else toast({ title: "Failed", description: `${data?.code}: ${data?.message || ""}`, variant: "destructive" });
+      if (data?.traceId) pushTrace({
+        step: action.replace(/_/g, " "),
+        fn: "pinterest-video-publisher",
+        traceId: data.traceId,
+        ok: !error && !!data?.ok,
+        message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
+      });
       await load();
     } catch (e: any) {
       toast({ title: "Request failed", description: e?.message || "Unknown error", variant: "destructive" });
