@@ -849,7 +849,20 @@ export default function PinterestVideoQueuePage() {
           className="hidden"
           onChange={onFilesSelected}
         />
-        <Button variant="outline" onClick={load} disabled={loading} className="h-11" size="sm">
+        <Button
+          variant="outline"
+          onClick={async () => {
+            // Refresh = reload queue/assets AND ping metrics-sync so the
+            // Debug Console shows reachability + full request/response.
+            await Promise.all([
+              load(),
+              invokeDebug("pinterest-video-metrics-sync", { action: "refresh_status" }),
+            ]);
+          }}
+          disabled={loading}
+          className="h-11"
+          size="sm"
+        >
           <RefreshCw className="h-4 w-4 mr-1" /> Refresh
         </Button>
         <Button variant="secondary" onClick={() => callPublisher("queue_all_drafts", {}, "all")} disabled={busyId === "all"} className="h-11" size="sm">
