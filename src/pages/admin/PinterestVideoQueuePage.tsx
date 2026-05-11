@@ -629,6 +629,16 @@ export default function PinterestVideoQueuePage() {
         >
           <Sparkles className="h-4 w-4 mr-1" /> Auto-select best 3
         </Button>
+        <Button
+          onClick={publishOneTest}
+          disabled={publishingTest || ranked.length === 0}
+          className="h-11 bg-emerald-600 hover:bg-emerald-600/90 text-white"
+          size="sm"
+        >
+          {publishingTest
+            ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Publishing test pin…</>
+            : <><Send className="h-4 w-4 mr-1" /> Publish 1 Test Video Pin</>}
+        </Button>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
