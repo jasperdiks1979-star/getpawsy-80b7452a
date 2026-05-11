@@ -92,6 +92,162 @@ function normalizeSlugInput(raw: unknown): string {
   return s;
 }
 
+/**
+ * Multi-stage product resolver with structured diagnostics.
+ * Never throws — returns either a product row OR a not-found payload
+ * with the tables checked and a list of suggested matching slugs.
+ *
+ * Lookup order:
+ *   A) products    .slug = exact
+ *   B) products    .slug ILIKE `${slug-no-trailing-dashes}%`  (active first)
+ *   C) products    .slug ILIKE `%${slug}%`
+ *   D) products    keyword search on name (ILIKE %keyword% per token)
+ *   E) products    auto-canonical: prefer is_active + most recent updated_at
+ */
+type ResolvedProductRow = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: string | null;
+  image_url: string | null;
+  images: unknown;
+  is_active?: boolean | null;
+  updated_at?: string | null;
+};
+type ResolveDiagnostics = {
+  attempted_slug: string;
+  normalized_slug: string;
+  tables_checked: string[];
+  stages_run: string[];
+  match_count: number;
+  resolved_via: string | null;
+  resolved_id: string | null;
+  resolved_slug: string | null;
+  publish_status: boolean | null;
+  suggestions: Array<{ slug: string; name: string; score?: number }>;
+};
+const PRODUCT_FIELDS = "id, name, slug, description, category, image_url, images, is_active, updated_at";
+
+function pickCanonical(rows: ResolvedProductRow[]): ResolvedProductRow {
+  // Prefer active, then most recent updated_at, then alphabetical slug for stability.
+  return [...rows].sort((a, b) => {
+    const ax = a.is_active ? 1 : 0;
+    const bx = b.is_active ? 1 : 0;
+    if (ax !== bx) return bx - ax;
+    const at = a.updated_at ? Date.parse(a.updated_at) : 0;
+    const bt = b.updated_at ? Date.parse(b.updated_at) : 0;
+    if (at !== bt) return bt - at;
+    return (a.slug || "").localeCompare(b.slug || "");
+  })[0];
+}
+
+async function resolveProduct(
+  sb: ReturnType<typeof createClient>,
+  rawSlug: string,
+): Promise<{ product: ResolvedProductRow | null; diag: ResolveDiagnostics }> {
+  const normalized = normalizeSlugInput(rawSlug);
+  const diag: ResolveDiagnostics = {
+    attempted_slug: rawSlug,
+    normalized_slug: normalized,
+    tables_checked: [],
+    stages_run: [],
+    match_count: 0,
+    resolved_via: null,
+    resolved_id: null,
+    resolved_slug: null,
+    publish_status: null,
+    suggestions: [],
+  };
+
+  // Stage A — exact slug
+  diag.stages_run.push("A:products.slug=eq");
+  diag.tables_checked.push("products");
+  try {
+    const { data, error } = await sb
+      .from("products")
+      .select(PRODUCT_FIELDS)
+      .eq("slug", normalized)
+      .limit(2);
+    if (!error && Array.isArray(data) && data.length > 0) {
+      diag.match_count = data.length;
+      const chosen = pickCanonical(data as ResolvedProductRow[]);
+      diag.resolved_via = "exact_slug";
+      diag.resolved_id = chosen.id;
+      diag.resolved_slug = chosen.slug;
+      diag.publish_status = !!chosen.is_active;
+      return { product: chosen, diag };
+    }
+  } catch (_e) { /* keep falling through */ }
+
+  // Stage B — prefix match (handles truncated slugs)
+  if (normalized && normalized.length >= 6) {
+    diag.stages_run.push("B:products.slug=prefix");
+    try {
+      const stem = normalized.replace(/-+$/, "");
+      const { data } = await sb
+        .from("products")
+        .select(PRODUCT_FIELDS)
+        .ilike("slug", `${stem}%`)
+        .limit(10);
+      if (Array.isArray(data) && data.length > 0) {
+        diag.match_count = data.length;
+        const chosen = pickCanonical(data as ResolvedProductRow[]);
+        diag.resolved_via = "slug_prefix";
+        diag.resolved_id = chosen.id;
+        diag.resolved_slug = chosen.slug;
+        diag.publish_status = !!chosen.is_active;
+        return { product: chosen, diag };
+      }
+    } catch (_e) { /* continue */ }
+  }
+
+  // Stage C — contains match
+  if (normalized && normalized.length >= 6) {
+    diag.stages_run.push("C:products.slug=contains");
+    try {
+      const { data } = await sb
+        .from("products")
+        .select(PRODUCT_FIELDS)
+        .ilike("slug", `%${normalized}%`)
+        .limit(10);
+      if (Array.isArray(data) && data.length > 0) {
+        diag.match_count = data.length;
+        const chosen = pickCanonical(data as ResolvedProductRow[]);
+        diag.resolved_via = "slug_contains";
+        diag.resolved_id = chosen.id;
+        diag.resolved_slug = chosen.slug;
+        diag.publish_status = !!chosen.is_active;
+        return { product: chosen, diag };
+      }
+    } catch (_e) { /* continue */ }
+  }
+
+  // Stage D — keyword search across name/slug for suggestions only
+  diag.stages_run.push("D:keyword_suggest");
+  const tokens = normalized.split("-").filter((t) => t.length >= 4).slice(0, 4);
+  const seen = new Set<string>();
+  for (const tok of tokens) {
+    try {
+      const { data } = await sb
+        .from("products")
+        .select("slug, name, is_active")
+        .or(`slug.ilike.%${tok}%,name.ilike.%${tok}%`)
+        .eq("is_active", true)
+        .limit(5);
+      for (const r of (data || []) as Array<{ slug: string; name: string }>) {
+        if (r?.slug && !seen.has(r.slug)) {
+          seen.add(r.slug);
+          diag.suggestions.push({ slug: r.slug, name: r.name });
+        }
+      }
+    } catch (_e) { /* swallow */ }
+    if (diag.suggestions.length >= 8) break;
+  }
+
+  return { product: null, diag };
+}
+
 // Whitelist of columns that exist on pinterest_pin_queue. Any extra fields
 // (e.g. optional backdrop_* visual metadata) are silently dropped so the
 // queue insert can never fail because of missing columns.
