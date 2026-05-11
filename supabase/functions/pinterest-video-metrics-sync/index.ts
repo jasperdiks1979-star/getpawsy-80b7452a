@@ -17,9 +17,23 @@ serve(async (req) => {
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const log = createPvLogger(sb, "pinterest-video-metrics-sync", traceId);
     await log.info("entered handler");
+    const authHeader = req.headers.get("Authorization") || "";
+    const sbUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await sbUser.auth.getUser();
+    if (!user) { await log.warn("unauthenticated"); return ok({ ok: false, code: "UNAUTHENTICATED", traceId }); }
+    const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) { await log.warn("forbidden", { user_id: user.id }); return ok({ ok: false, code: "FORBIDDEN", traceId }); }
+    const body = await req.json().catch(() => ({}));
     const apiBase = await getPinterestApiBase(sb);
     const { data: conn } = await sb.from("pinterest_connection").select("access_token").eq("status","connected").order("updated_at",{ascending:false}).limit(1).maybeSingle();
     const token = conn?.access_token;
+    if (body?.action === "__health_check__" || body?.action === "refresh_status") {
+      const { count } = await sb.from("pinterest_video_queue").select("id", { count: "exact", head: true }).eq("status", "published").not("pin_id", "is", null);
+      await log.info("health check ok", { pinterest_connected: !!token, published_pin_count: count ?? 0 });
+      return ok({ ok: true, traceId, function: "pinterest-video-metrics-sync", admin: true, pinterest_connected: !!token, published_pin_count: count ?? 0 });
+    }
     if (!token) { await log.warn("no token"); return ok({ ok:false, code:"NO_TOKEN", traceId }); }
     const { data: rows } = await sb.from("pinterest_video_queue").select("pin_id, asset_id").eq("status","published").not("pin_id","is",null).limit(50);
     await log.info("syncing pins", { count: rows?.length || 0 });

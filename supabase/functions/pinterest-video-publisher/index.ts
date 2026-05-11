@@ -138,8 +138,13 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action || "queue_draft") as
-      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry";
+      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry" | "__health_check__";
     await log.info("action received", { action, queue_id: body.queue_id ?? null }, { queue_id: body.queue_id ?? null });
+    if (action === "__health_check__") {
+      const token = await getPinterestToken(sb);
+      const board_id = token ? await resolveBoardId(sb, token) : null;
+      return ok({ ok: true, traceId: trace_id, function: "pinterest-video-publisher", admin: true, pinterest_connected: !!token, board_id });
+    }
 
     // ── queue_draft / queue_all_drafts ──────────────────────────────
     if (action === "queue_draft" || action === "queue_all_drafts") {

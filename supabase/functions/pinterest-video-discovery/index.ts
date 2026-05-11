@@ -62,6 +62,11 @@ serve(async (req) => {
     if (!user) { await log.warn("unauthenticated"); return ok({ ok: false, code: "UNAUTHENTICATED", traceId }); }
     const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
     if (!roleRow) { await log.warn("forbidden", { user_id: user.id }); return ok({ ok: false, code: "FORBIDDEN", traceId }); }
+    const body = await req.json().catch(() => ({}));
+    if (body?.action === "__health_check__") {
+      await log.info("health check ok", { buckets: TARGET_BUCKETS, pattern: String(PATTERN) });
+      return ok({ ok: true, traceId, function: "pinterest-video-discovery", admin: true, buckets: TARGET_BUCKETS, pattern: String(PATTERN) });
+    }
 
     let scanned = 0, matched = 0, inserted = 0, skipped_oversized = 0, skipped_undersized = 0;
     const errors: string[] = [];

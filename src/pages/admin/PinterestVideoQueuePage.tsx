@@ -273,11 +273,12 @@ export default function PinterestVideoQueuePage() {
   type DebugEvent = {
     id: string;
     started_at: string;
-    duration_ms: number;
+    duration_ms: number | null;
     fn: string;
     action: string;
     http_status: number | null;
     ok: boolean;
+    pending: boolean;
     request: unknown;
     response: unknown;
     error: string | null;
@@ -297,6 +298,22 @@ export default function PinterestVideoQueuePage() {
   const invokeDebug = useCallback(async (fn: string, body: Record<string, unknown>): Promise<DebugEvent> => {
     const started = performance.now();
     const startedIso = new Date().toISOString();
+    const eventId = crypto.randomUUID();
+    const startedEvent: DebugEvent = {
+      id: eventId,
+      started_at: startedIso,
+      duration_ms: null,
+      fn,
+      action: String(body.action || "—"),
+      http_status: null,
+      ok: false,
+      pending: true,
+      request: body,
+      response: null,
+      error: null,
+      trace_id: null,
+    };
+    setDebugEvents((prev) => [startedEvent, ...prev].slice(0, 50));
     let http_status: number | null = null;
     let response: unknown = null;
     let error: string | null = null;
@@ -323,24 +340,29 @@ export default function PinterestVideoQueuePage() {
       if (res.status === 401) error = "Admin auth required (401 Unauthorized)";
       else if (res.status === 403) error = "Admin auth required (403 Forbidden)";
       else if (!res.ok) error = `HTTP ${res.status}`;
-      else if (r && r.ok === false) error = `${r.code || "ERROR"}: ${r.message || ""}`;
+      else if (r && r.ok === false) {
+        error = ["FORBIDDEN", "UNAUTHENTICATED"].includes(r.code)
+          ? "Admin auth required"
+          : `${r.code || "ERROR"}: ${r.message || ""}`;
+      }
     } catch (e: any) {
       error = e?.message || "Network error";
     }
     const ev: DebugEvent = {
-      id: crypto.randomUUID(),
+      id: eventId,
       started_at: startedIso,
       duration_ms: Math.round(performance.now() - started),
       fn,
       action: String(body.action || "—"),
       http_status,
       ok,
+      pending: false,
       request: body,
       response,
       error,
       trace_id,
     };
-    setDebugEvents((prev) => [ev, ...prev].slice(0, 50));
+    setDebugEvents((prev) => prev.map((item) => item.id === eventId ? ev : item).slice(0, 50));
     if (!ok) {
       toast({
         title: `${fn} failed`,
@@ -441,11 +463,18 @@ export default function PinterestVideoQueuePage() {
   const runDiscovery = async () => {
     setDiscovering(true);
     try {
-      const ev = await invokeDebug("pinterest-video-discovery", {});
+      toast({ title: "Discovery started", description: "Calling pinterest-video-discovery…" });
+      const ev = await invokeDebug("pinterest-video-discovery", { action: "discover" });
       const data: any = ev.response || {};
       if (ev.error && !data?.traceId) throw new Error(ev.error);
       setDiscoveryDetail(data);
-      toast({ title: "Discovery complete", description: `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.` });
+      toast({
+        title: data?.ok ? "Discovery complete" : "Discovery blocked",
+        description: data?.ok
+          ? `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.`
+          : (ev.error || data?.code || "See Debug Console"),
+        variant: data?.ok ? "default" : "destructive",
+      });
       if (data?.traceId) pushTrace({
         step: "Discovery",
         fn: "pinterest-video-discovery",
@@ -507,10 +536,19 @@ export default function PinterestVideoQueuePage() {
   const callPublisher = async (action: string, payload: Record<string, unknown>, busy: string) => {
     setBusyId(busy);
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", { body: { action, ...payload } });
-      if (error) throw error;
+      toast({ title: `${action.replace(/_/g, " ")} started`, description: "Calling pinterest-video-publisher…" });
+      const ev = await invokeDebug("pinterest-video-publisher", { action, ...payload });
+      const data: any = ev.response || {};
+      const error = ev.error ? new Error(ev.error) : null;
       if (data?.ok) toast({ title: action.replace("_", " "), description: data?.message || "Done" });
       else toast({ title: "Failed", description: `${data?.code}: ${data?.message || ""}`, variant: "destructive" });
+      if (data?.traceId) pushTrace({
+        step: action.replace(/_/g, " "),
+        fn: "pinterest-video-publisher",
+        traceId: data.traceId,
+        ok: !error && !!data?.ok,
+        message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
+      });
       await load();
     } catch (e: any) {
       toast({ title: "Request failed", description: e?.message || "Unknown error", variant: "destructive" });
@@ -587,10 +625,9 @@ export default function PinterestVideoQueuePage() {
 
       setPrepareStep("Generating drafts…");
       try {
-        const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-          body: { action: "queue_all_drafts" },
-        });
-        if (error) throw error;
+        toast({ title: "Draft generation started", description: "Calling pinterest-video-publisher…" });
+        const ev = await invokeDebug("pinterest-video-publisher", { action: "queue_all_drafts" });
+        const data: any = ev.response || {};
         if (data?.traceId) pushTrace({
           step: "Generate drafts",
           fn: "pinterest-video-publisher",
@@ -601,7 +638,7 @@ export default function PinterestVideoQueuePage() {
             : (data?.code || data?.message || "failed"),
         });
         if (!data?.ok) {
-          toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
+          toast({ title: "Draft generation failed", description: ev.error || data?.message || "Unknown error", variant: "destructive" });
         }
       } catch (e: any) {
         toast({ title: "Draft generation failed", description: e?.message || "Unknown error", variant: "destructive" });
@@ -657,9 +694,10 @@ export default function PinterestVideoQueuePage() {
     try {
       for (const qid of ids) {
         try {
-          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-            body: { action: "publish", queue_id: qid },
-          });
+          toast({ title: "Publish started", description: `Calling pinterest-video-publisher for ${qid.slice(0, 8)}…` });
+          const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: qid });
+          const data: any = ev.response || {};
+          const error = ev.error ? new Error(ev.error) : null;
           if (data?.traceId) pushTrace({
             step: `Publish ${qid.slice(0, 6)}…`,
             fn: "pinterest-video-publisher",
@@ -700,9 +738,10 @@ export default function PinterestVideoQueuePage() {
       setLastPublishIds([best.id]);
     setPublishingTest(true);
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-        body: { action: "publish", queue_id: best.id },
-      });
+      toast({ title: "Test publish started", description: `Publishing exactly 1 video pin (${best.id.slice(0, 8)}…)` });
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: best.id });
+      const data: any = ev.response || {};
+      const error = ev.error ? new Error(ev.error) : null;
       const traceId = data?.traceId;
       if (traceId) pushTrace({
         step: `Test publish ${best.id.slice(0, 6)}…`,
@@ -715,8 +754,8 @@ export default function PinterestVideoQueuePage() {
       toast({
         title: success ? "Test pin published" : "Test publish failed",
         description: success
-          ? `pin_id=${data?.pin_id || "?"} · board=${data?.board_id || "?"}`
-          : `${data?.code || error?.message || "unknown"} — open Logs for full Pinterest API response`,
+          ? `pin_id=${data?.pin_id || "?"} · pin_url=${data?.external_url || data?.pin_url || "?"}`
+          : `${data?.code || error?.message || "unknown"} — see Debug Console response JSON`,
         variant: success ? "default" : "destructive",
       });
       await load();
@@ -734,10 +773,9 @@ export default function PinterestVideoQueuePage() {
   const rerunDraftGeneration = useCallback(async () => {
     setRerunningStep("drafts");
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-        body: { action: "queue_all_drafts" },
-      });
-      if (error) throw error;
+      toast({ title: "Draft rerun started", description: "Calling pinterest-video-publisher…" });
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "queue_all_drafts" });
+      const data: any = ev.response || {};
       if (data?.traceId) pushTrace({
         step: "Generate drafts (rerun)",
         fn: "pinterest-video-publisher",
@@ -746,7 +784,7 @@ export default function PinterestVideoQueuePage() {
         message: data?.ok ? `created ${data?.created_count ?? 0}` : (data?.code || data?.message || "failed"),
       });
       if (!data?.ok) {
-        toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
+        toast({ title: "Draft generation failed", description: ev.error || data?.message || "Unknown error", variant: "destructive" });
       }
       await load();
     } catch (e: any) {
@@ -771,9 +809,10 @@ export default function PinterestVideoQueuePage() {
     try {
       for (const qid of ids) {
         try {
-          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-            body: { action: "publish", queue_id: qid },
-          });
+          toast({ title: "Publish rerun started", description: `Calling pinterest-video-publisher for ${qid.slice(0, 8)}…` });
+          const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: qid });
+          const data: any = ev.response || {};
+          const error = ev.error ? new Error(ev.error) : null;
           if (data?.traceId) pushTrace({
             step: `Publish rerun ${qid.slice(0, 6)}…`,
             fn: "pinterest-video-publisher",
@@ -960,6 +999,10 @@ export default function PinterestVideoQueuePage() {
           )}
         </div>
 
+        <p className="text-xs text-muted-foreground mb-3">
+          Records: action started, edge function called, request payload, HTTP status, response JSON, error message, and duration.
+        </p>
+
         <div className="flex flex-wrap gap-2 mb-3">
           {[
             "pinterest-video-discovery",
@@ -1047,19 +1090,21 @@ export default function PinterestVideoQueuePage() {
             {debugEvents.map((ev) => (
               <li key={ev.id} className="rounded-md border p-2 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
-                  {ev.ok
-                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                  {ev.pending
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+                    : ev.ok
+                      ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
                   <span className="font-mono text-[10px]">{new Date(ev.started_at).toLocaleTimeString()}</span>
                   <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-mono">{ev.fn.replace(/^pinterest-video-/, "pv-")}</Badge>
                   <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{ev.action}</Badge>
                   <Badge
-                    variant={ev.http_status && ev.http_status < 400 ? "default" : "destructive"}
-                    className={`h-5 px-1.5 text-[10px] ${ev.http_status && ev.http_status < 400 ? "bg-emerald-500 hover:bg-emerald-500/90" : ""}`}
+                    variant={ev.pending ? "outline" : ev.http_status && ev.http_status < 400 ? "default" : "destructive"}
+                    className={`h-5 px-1.5 text-[10px] ${!ev.pending && ev.http_status && ev.http_status < 400 ? "bg-emerald-500 hover:bg-emerald-500/90" : ""}`}
                   >
-                    HTTP {ev.http_status ?? "—"}
+                    {ev.pending ? "started" : `HTTP ${ev.http_status ?? "—"}`}
                   </Badge>
-                  <span className="text-muted-foreground">{ev.duration_ms}ms</span>
+                  <span className="text-muted-foreground">{ev.duration_ms == null ? "running…" : `${ev.duration_ms}ms`}</span>
                   {ev.trace_id && (
                     <a
                       href={`/admin/pinterest-video-logs?trace=${encodeURIComponent(ev.trace_id)}&fn=${encodeURIComponent(ev.fn)}`}
