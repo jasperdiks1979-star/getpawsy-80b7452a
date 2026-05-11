@@ -453,10 +453,15 @@ export default function PinterestBackdropPreviewPage() {
             backdrop_style: updated.backdrop_style,
             backdrop_score: updated.backdrop_score,
             backdrop_variants: updated.backdrop_variants,
+            backdrop_scene_family: (updated as any).backdrop_scene_family ?? null,
+            backdrop_camera_angle: (updated as any).backdrop_camera_angle ?? null,
+            backdrop_emotion: (updated as any).backdrop_emotion ?? null,
+            backdrop_variant_seed: (updated as any).backdrop_variant_seed ?? null,
             uses_lifestyle_backdrop: true,
           };
         }),
       );
+      if ((data as any)?.diversity) setDiversity((data as any).diversity);
       toast.success(hookKey ? `Re-rolled ${hookKey}` : "Re-rolled all backdrops");
     } catch (e: any) {
       toast.error(e?.message || "Reroll failed");
