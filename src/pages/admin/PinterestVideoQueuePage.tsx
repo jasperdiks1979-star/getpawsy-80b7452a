@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload } from "lucide-react";
+import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
 
 type VideoAsset = {
   id: string;
@@ -218,6 +219,8 @@ export default function PinterestVideoQueuePage() {
   const [queue, setQueue] = useState<QueueRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [discovering, setDiscovering] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>("all");
   const [hookFilter, setHookFilter] = useState<string>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -247,6 +250,49 @@ export default function PinterestVideoQueuePage() {
     } catch (e: any) {
       toast({ title: "Discovery failed", description: e?.message || "Unknown error", variant: "destructive" });
     } finally { setDiscovering(false); }
+  };
+
+  const onPickFiles = () => fileInputRef.current?.click();
+
+  const onFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+
+    // 1) Validate every file BEFORE any network call.
+    const valid: File[] = [];
+    for (const f of files) {
+      const v = validateVideoFile(f);
+      if (!v.ok) {
+        toast({ title: v.title, description: v.message, variant: "destructive" });
+        continue;
+      }
+      valid.push(f);
+    }
+    if (!valid.length) return;
+
+    setUploading(true);
+    let uploaded = 0;
+    try {
+      for (const f of valid) {
+        const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+        const path = `uploads/${Date.now()}-${safeName}`;
+        const { error } = await supabase.storage
+          .from("pinterest-ads")
+          .upload(path, f, { contentType: f.type || "video/mp4", upsert: false });
+        if (error) {
+          toast({ title: `Upload failed: ${f.name}`, description: error.message, variant: "destructive" });
+          continue;
+        }
+        uploaded++;
+      }
+      if (uploaded > 0) {
+        toast({ title: "Upload complete", description: `${uploaded} of ${valid.length} file(s) uploaded. Running discovery…` });
+        await runDiscovery();
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const callPublisher = async (action: string, payload: Record<string, unknown>, busy: string) => {
@@ -313,6 +359,18 @@ export default function PinterestVideoQueuePage() {
           {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
           Discover videos
         </Button>
+        <Button onClick={onPickFiles} disabled={uploading || discovering} className="h-11" size="sm" variant="outline">
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
+          Upload MP4
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={[...ALLOWED_VIDEO_EXT, "video/mp4", "video/quicktime"].join(",")}
+          className="hidden"
+          onChange={onFilesSelected}
+        />
         <Button variant="outline" onClick={load} disabled={loading} className="h-11" size="sm">
           <RefreshCw className="h-4 w-4 mr-1" /> Refresh
         </Button>
@@ -320,6 +378,9 @@ export default function PinterestVideoQueuePage() {
           <Play className="h-4 w-4 mr-1" /> Queue drafts for all
         </Button>
       </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
+      </p>
 
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
         {STATUS_FILTERS.map((s) => (
