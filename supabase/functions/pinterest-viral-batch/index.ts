@@ -1603,6 +1603,11 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       pins: inserted,
       health,
       layout: { issues: layoutIssues, fallbacks: layoutFallbacks },
+      queueProtection: {
+        history_size: queuePhashHistory.length,
+        threshold: PHASH_DUPLICATE_SIMILARITY,
+        blocked: queueDuplicatesBlocked,
+      },
       sanitize: {
         droppedColumns: sanitized.droppedColumns,
         droppedCounts: sanitized.droppedCounts,
