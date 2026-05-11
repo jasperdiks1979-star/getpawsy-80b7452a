@@ -397,12 +397,11 @@ export default function PinterestVideoQueuePage() {
       const ev = await invokeDebug("pinterest-video-publisher", { action: "queue_draft", asset_id: asset.id });
       if (ev.ok) {
         toast({ title: "Draft created from URL", description: `asset ${asset.id.slice(0, 8)}…` });
-        await load();
       }
     } finally {
       setManualBusy(false);
     }
-  }, [manualUrl, invokeDebug, load]);
+  }, [manualUrl, invokeDebug]);
 
   const pushTrace = useCallback((t: StepTrace) => {
     setStepTraces((prev) => [...prev, t]);
