@@ -2201,6 +2201,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-video-queue"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestVideoQueuePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-patterns"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
