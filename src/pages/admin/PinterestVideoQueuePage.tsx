@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star } from "lucide-react";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
+import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
 
 type VideoAsset = {
   id: string;
@@ -15,6 +16,7 @@ type VideoAsset = {
   duration_seconds: number | null;
   publish_count: number;
   is_active: boolean;
+  aspect_ratio?: string | null;
 };
 type QueueRow = {
   id: string;
@@ -102,6 +104,9 @@ function VideoCard({
   onToggleHistory,
   openHistoryId,
   busyId,
+  selectedIds,
+  onToggleSelect,
+  topPickIds,
 }: {
   asset: VideoAsset;
   queue: QueueRow[];
@@ -114,6 +119,9 @@ function VideoCard({
   onToggleHistory: (id: string) => void;
   openHistoryId: string | null;
   busyId: string | null;
+  selectedIds: Set<string>;
+  onToggleSelect: (queue_id: string) => void;
+  topPickIds: Set<string>;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -158,15 +166,34 @@ function VideoCard({
           </Button>
         ) : (
           queue.map((q) => (
-            <div key={q.id} className="space-y-2 border-t pt-2">
+            <div
+              key={q.id}
+              className={`space-y-2 border-t pt-2 ${selectedIds.has(q.id) ? "ring-2 ring-primary rounded-md -mx-1 px-2 py-2" : ""}`}
+            >
               <div className="flex items-center gap-2">
                 <Badge variant={q.status === "published" ? "default" : q.status === "failed" ? "destructive" : "outline"}>
                   {q.status}
                 </Badge>
+                {topPickIds.has(q.id) && (
+                  <Badge className="gap-1 bg-amber-500 hover:bg-amber-500/90 text-white">
+                    <Star className="h-3 w-3" /> Top pick
+                  </Badge>
+                )}
                 {q.attempt_count > 0 && (
                   <span className="text-xs text-muted-foreground">
                     {q.attempt_count}/{q.max_retries ?? 3} attempts
                   </span>
+                )}
+                {q.status !== "published" && q.status !== "publishing" && (
+                  <label className="ml-auto inline-flex items-center gap-1 text-xs cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      checked={selectedIds.has(q.id)}
+                      onChange={() => onToggleSelect(q.id)}
+                    />
+                    Select
+                  </label>
                 )}
               </div>
               <p className="text-sm font-semibold leading-snug">{q.title}</p>
@@ -227,6 +254,9 @@ export default function PinterestVideoQueuePage() {
   const [historyByQueue, setHistoryByQueue] = useState<Record<string, HistoryEntry[]>>({});
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
   const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [autoSelectedOnce, setAutoSelectedOnce] = useState(false);
+  const [publishingBatch, setPublishingBatch] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -341,6 +371,58 @@ export default function PinterestVideoQueuePage() {
     });
   }, [assets, hookFilter, statusFilter, queueByAsset]);
 
+  // Score every eligible draft once per queue/assets refresh.
+  const ranked = useMemo(() => scoreDrafts(queue as any, assets as any), [queue, assets]);
+  const topPickIds = useMemo(() => new Set(ranked.slice(0, 3).map((s) => s.draft.id)), [ranked]);
+
+  // Auto-select the top 3 the first time we see eligible drafts after load.
+  useEffect(() => {
+    if (autoSelectedOnce) return;
+    if (loading) return;
+    if (ranked.length === 0) return;
+    setSelectedIds(new Set(ranked.slice(0, 3).map((s) => s.draft.id)));
+    setAutoSelectedOnce(true);
+  }, [ranked, loading, autoSelectedOnce]);
+
+  const toggleSelect = useCallback((qid: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(qid)) next.delete(qid); else next.add(qid);
+      return next;
+    });
+  }, []);
+
+  const autoPickBest3 = useCallback(() => {
+    const ids = pickTopN(queue as any, assets as any, 3);
+    setSelectedIds(new Set(ids));
+    toast({ title: "Top 3 selected", description: `Ranked ${ranked.length} eligible drafts.` });
+  }, [queue, assets, ranked.length]);
+
+  const publishSelected = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setPublishingBatch(true);
+    let okCount = 0; let failCount = 0;
+    try {
+      for (const qid of Array.from(selectedIds)) {
+        try {
+          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+            body: { action: "publish", queue_id: qid },
+          });
+          if (error || !data?.ok) failCount++; else okCount++;
+        } catch { failCount++; }
+      }
+      toast({
+        title: "Batch publish complete",
+        description: `${okCount} published · ${failCount} failed`,
+        variant: failCount > 0 ? "destructive" : "default",
+      });
+      setSelectedIds(new Set());
+      await load();
+    } finally {
+      setPublishingBatch(false);
+    }
+  }, [selectedIds, load]);
+
   const hookOptions = useMemo(() => {
     const set = new Set<string>(["all"]);
     assets.forEach((a) => set.add(a.hook_type));
@@ -381,6 +463,15 @@ export default function PinterestVideoQueuePage() {
         </Button>
         <Button variant="secondary" onClick={() => callPublisher("queue_all_drafts", {}, "all")} disabled={busyId === "all"} className="h-11" size="sm">
           <Play className="h-4 w-4 mr-1" /> Queue drafts for all
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={autoPickBest3}
+          disabled={ranked.length === 0}
+          className="h-11"
+          size="sm"
+        >
+          <Sparkles className="h-4 w-4 mr-1" /> Auto-select best 3
         </Button>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
@@ -424,8 +515,38 @@ export default function PinterestVideoQueuePage() {
               loadingHistoryId={loadingHistoryId}
               onToggleHistory={toggleHistory}
               openHistoryId={openHistoryId}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              topPickIds={topPickIds}
             />
           ))}
+        </div>
+      )}
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]">
+          <div className="container mx-auto max-w-3xl px-3 py-3 flex items-center gap-3">
+            <div className="text-sm">
+              <span className="font-semibold">{selectedIds.size}</span> selected
+              {topPickIds.size > 0 && (
+                <span className="text-muted-foreground"> · {Array.from(selectedIds).filter((id) => topPickIds.has(id)).length} top pick(s)</span>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-10"
+              onClick={() => setSelectedIds(new Set())}
+              disabled={publishingBatch}
+            >
+              Clear
+            </Button>
+            <Button size="sm" className="h-10" onClick={publishSelected} disabled={publishingBatch}>
+              {publishingBatch
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Publishing…</>
+                : <><Send className="h-4 w-4 mr-1" /> Publish selected</>}
+            </Button>
+          </div>
         </div>
       )}
     </div>
