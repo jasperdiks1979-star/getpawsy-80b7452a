@@ -351,7 +351,12 @@ export default function PinterestVideoQueuePage() {
     <div className="container mx-auto px-3 py-4 pb-32 max-w-3xl">
       <header className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight">Pinterest Video Queue</h1>
-        <p className="text-sm text-muted-foreground">Discover MP4s and publish them as Pinterest Video Pins.</p>
+        <p className="text-sm text-muted-foreground">
+          Discover MP4s and publish them as Pinterest Video Pins. ·{" "}
+          <a href="/admin/pinterest-video-logs" className="underline underline-offset-2 hover:text-foreground">
+            View diagnostic logs
+          </a>
+        </p>
       </header>
 
       <div className="flex flex-wrap gap-2 mb-3">
