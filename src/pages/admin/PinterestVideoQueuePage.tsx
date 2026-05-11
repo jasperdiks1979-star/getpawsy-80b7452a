@@ -809,9 +809,10 @@ export default function PinterestVideoQueuePage() {
     try {
       for (const qid of ids) {
         try {
-          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-            body: { action: "publish", queue_id: qid },
-          });
+          toast({ title: "Publish rerun started", description: `Calling pinterest-video-publisher for ${qid.slice(0, 8)}…` });
+          const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: qid });
+          const data: any = ev.response || {};
+          const error = ev.error ? new Error(ev.error) : null;
           if (data?.traceId) pushTrace({
             step: `Publish rerun ${qid.slice(0, 6)}…`,
             fn: "pinterest-video-publisher",
@@ -997,6 +998,10 @@ export default function PinterestVideoQueuePage() {
             </button>
           )}
         </div>
+
+        <p className="text-xs text-muted-foreground mb-3">
+          Records: action started, edge function called, request payload, HTTP status, response JSON, error message, and duration.
+        </p>
 
         <div className="flex flex-wrap gap-2 mb-3">
           {[
