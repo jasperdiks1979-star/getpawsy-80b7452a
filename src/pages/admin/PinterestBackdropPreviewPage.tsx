@@ -91,6 +91,23 @@ export default function PinterestBackdropPreviewPage() {
   const [pins, setPins] = useState<PreviewPin[]>([]);
   const [batchTag, setBatchTag] = useState<string | null>(null);
   const [debug, setDebug] = useState<DebugInfo | null>(null);
+  const [diversity, setDiversity] = useState<{
+    score: number;
+    unique_families: number;
+    backdrops: number;
+    recent_excluded: number;
+    family_pool_size: number;
+    per_pin?: Array<{
+      index: number;
+      hook_group: string;
+      scene_family: string | null;
+      camera_angle: string | null;
+      emotion: string | null;
+      variant_seed: number | null;
+      excluded_recent: number;
+      reason: string;
+    }>;
+  } | null>(null);
   // Edge-function health probe — pings /pinterest-viral-batch/health every
   // 30s so the admin can see at a glance whether the function is reachable
   // before clicking "Generate preview".
