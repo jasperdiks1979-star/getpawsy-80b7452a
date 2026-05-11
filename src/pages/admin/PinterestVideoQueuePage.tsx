@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2 } from "lucide-react";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
 import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
 
@@ -257,6 +257,8 @@ export default function PinterestVideoQueuePage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [autoSelectedOnce, setAutoSelectedOnce] = useState(false);
   const [publishingBatch, setPublishingBatch] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [prepareStep, setPrepareStep] = useState<string>("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -277,8 +279,10 @@ export default function PinterestVideoQueuePage() {
       if (error) throw error;
       toast({ title: "Discovery complete", description: `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.` });
       await load();
+      return data;
     } catch (e: any) {
       toast({ title: "Discovery failed", description: e?.message || "Unknown error", variant: "destructive" });
+      throw e;
     } finally { setDiscovering(false); }
   };
 
@@ -398,6 +402,67 @@ export default function PinterestVideoQueuePage() {
     toast({ title: "Top 3 selected", description: `Ranked ${ranked.length} eligible drafts.` });
   }, [queue, assets, ranked.length]);
 
+  // One-click: discover → queue drafts for all → readiness report.
+  const runPrepareAll = useCallback(async () => {
+    setPreparing(true);
+    try {
+      setPrepareStep("Discovering videos…");
+      try { await runDiscovery(); } catch { /* toast already shown */ }
+
+      setPrepareStep("Generating drafts…");
+      try {
+        const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+          body: { action: "queue_all_drafts" },
+        });
+        if (error) throw error;
+        if (!data?.ok) {
+          toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
+        }
+      } catch (e: any) {
+        toast({ title: "Draft generation failed", description: e?.message || "Unknown error", variant: "destructive" });
+      }
+
+      setPrepareStep("Checking readiness…");
+      const [{ data: aData }, { data: qData }] = await Promise.all([
+        supabase.from("pinterest_video_assets").select("*").order("created_at", { ascending: false }),
+        supabase.from("pinterest_video_queue").select("*").order("created_at", { ascending: false }),
+      ]);
+      const freshAssets = (aData as VideoAsset[]) || [];
+      const freshQueue = (qData as QueueRow[]) || [];
+      setAssets(freshAssets);
+      setQueue(freshQueue);
+
+      const assetById = new Map(freshAssets.map((a) => [a.id, a]));
+      let ready = 0; let blocked = 0; let published = 0; let failed = 0;
+      const issues: string[] = [];
+      for (const q of freshQueue) {
+        if (q.status === "published") { published++; continue; }
+        if (q.status === "failed") { failed++; continue; }
+        const a = assetById.get(q.asset_id);
+        const probs: string[] = [];
+        if (!a?.public_url) probs.push("missing video URL");
+        if (!a?.is_active) probs.push("asset inactive");
+        if (!q.title?.trim()) probs.push("missing title");
+        if (!q.description?.trim()) probs.push("missing description");
+        if (probs.length) { blocked++; issues.push(`${a?.filename || q.asset_id}: ${probs.join(", ")}`); }
+        else ready++;
+      }
+
+      // Re-run auto-select against fresh data.
+      const ids = pickTopN(freshQueue as any, freshAssets as any, 3);
+      setSelectedIds(new Set(ids));
+
+      toast({
+        title: "Pipeline ready",
+        description: `${ready} ready · ${blocked} blocked · ${published} published · ${failed} failed${issues.length ? ` · first issue: ${issues[0]}` : ""}`,
+        variant: blocked > 0 && ready === 0 ? "destructive" : "default",
+      });
+    } finally {
+      setPreparing(false);
+      setPrepareStep("");
+    }
+  }, []);
+
   const publishSelected = useCallback(async () => {
     if (selectedIds.size === 0) return;
     setPublishingBatch(true);
@@ -442,6 +507,16 @@ export default function PinterestVideoQueuePage() {
       </header>
 
       <div className="flex flex-wrap gap-2 mb-3">
+        <Button
+          onClick={runPrepareAll}
+          disabled={preparing || discovering || uploading || busyId === "all"}
+          className="h-11"
+          size="sm"
+        >
+          {preparing
+            ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> {prepareStep || "Preparing…"}</>
+            : <><Wand2 className="h-4 w-4 mr-1" /> Prepare all (1-click)</>}
+        </Button>
         <Button onClick={runDiscovery} disabled={discovering} className="h-11" size="sm">
           {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
           Discover videos
