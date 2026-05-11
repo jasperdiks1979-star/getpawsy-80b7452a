@@ -513,10 +513,12 @@ export default function PinterestVideoQueuePage() {
 
   const publishSelected = useCallback(async () => {
     if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setLastPublishIds(ids);
     setPublishingBatch(true);
     let okCount = 0; let failCount = 0;
     try {
-      for (const qid of Array.from(selectedIds)) {
+      for (const qid of ids) {
         try {
           const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
             body: { action: "publish", queue_id: qid },
@@ -558,6 +560,7 @@ export default function PinterestVideoQueuePage() {
       return;
     }
     const best = eligible[0].draft;
+      setLastPublishIds([best.id]);
     setPublishingTest(true);
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
