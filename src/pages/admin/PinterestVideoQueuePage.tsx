@@ -590,6 +590,83 @@ export default function PinterestVideoQueuePage() {
     }
   }, [ranked, pushTrace, load]);
 
+  // ───────────────── Per-step rerun helpers ─────────────────
+  // Each helper repeats exactly one stage of the pipeline with the same input
+  // it would have used inside `runPrepareAll` / `publishSelected`, so the user
+  // can iterate on a single failing stage without re-running the whole flow.
+  const rerunDraftGeneration = useCallback(async () => {
+    setRerunningStep("drafts");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+        body: { action: "queue_all_drafts" },
+      });
+      if (error) throw error;
+      if (data?.traceId) pushTrace({
+        step: "Generate drafts (rerun)",
+        fn: "pinterest-video-publisher",
+        traceId: data.traceId,
+        ok: !!data?.ok,
+        message: data?.ok ? `created ${data?.created_count ?? 0}` : (data?.code || data?.message || "failed"),
+      });
+      if (!data?.ok) {
+        toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
+      }
+      await load();
+    } catch (e: any) {
+      toast({ title: "Draft rerun crashed", description: e?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setRerunningStep(null);
+    }
+  }, [pushTrace, load]);
+
+  const rerunPublish = useCallback(async () => {
+    const ids = lastPublishIds.length > 0 ? lastPublishIds : Array.from(selectedIds);
+    if (ids.length === 0) {
+      toast({
+        title: "Nothing to rerun",
+        description: "Publish at least one pin first, or select drafts to publish.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setRerunningStep("publish");
+    let okCount = 0; let failCount = 0;
+    try {
+      for (const qid of ids) {
+        try {
+          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+            body: { action: "publish", queue_id: qid },
+          });
+          if (data?.traceId) pushTrace({
+            step: `Publish rerun ${qid.slice(0, 6)}…`,
+            fn: "pinterest-video-publisher",
+            traceId: data.traceId,
+            ok: !error && !!data?.ok,
+            message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
+          });
+          if (error || !data?.ok) failCount++; else okCount++;
+        } catch { failCount++; }
+      }
+      toast({
+        title: "Publish rerun complete",
+        description: `${okCount} published · ${failCount} failed (${ids.length} pin${ids.length === 1 ? "" : "s"})`,
+        variant: failCount > 0 ? "destructive" : "default",
+      });
+      await load();
+    } finally {
+      setRerunningStep(null);
+    }
+  }, [lastPublishIds, selectedIds, pushTrace, load]);
+
+  const rerunDiscovery = useCallback(async () => {
+    setRerunningStep("discovery");
+    try {
+      await runDiscovery();
+    } finally {
+      setRerunningStep(null);
+    }
+  }, []);
+
   const hookOptions = useMemo(() => {
     const set = new Set<string>(["all"]);
     assets.forEach((a) => set.add(a.hook_type));
