@@ -46,6 +46,17 @@ export default function PinterestVideoLogsPage() {
   const [trace, setTrace] = useState<string>("");
   const [autoRefresh, setAutoRefresh] = useState(false);
 
+  // Prefill from query params (?trace=…&fn=…) so deep links from the
+  // Pinterest Video Queue's 1-click pipeline land on the right view.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const t = sp.get("trace");
+    const f = sp.get("fn");
+    if (t) setTrace(t);
+    if (f && FN_OPTIONS.some((o) => o.value === f)) setFn(f);
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     let q = supabase
