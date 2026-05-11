@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star } from "lucide-react";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
+import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
 
 type VideoAsset = {
   id: string;
@@ -15,6 +16,7 @@ type VideoAsset = {
   duration_seconds: number | null;
   publish_count: number;
   is_active: boolean;
+  aspect_ratio?: string | null;
 };
 type QueueRow = {
   id: string;
@@ -102,6 +104,9 @@ function VideoCard({
   onToggleHistory,
   openHistoryId,
   busyId,
+  selectedIds,
+  onToggleSelect,
+  topPickIds,
 }: {
   asset: VideoAsset;
   queue: QueueRow[];
@@ -114,6 +119,9 @@ function VideoCard({
   onToggleHistory: (id: string) => void;
   openHistoryId: string | null;
   busyId: string | null;
+  selectedIds: Set<string>;
+  onToggleSelect: (queue_id: string) => void;
+  topPickIds: Set<string>;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -158,15 +166,34 @@ function VideoCard({
           </Button>
         ) : (
           queue.map((q) => (
-            <div key={q.id} className="space-y-2 border-t pt-2">
+            <div
+              key={q.id}
+              className={`space-y-2 border-t pt-2 ${selectedIds.has(q.id) ? "ring-2 ring-primary rounded-md -mx-1 px-2 py-2" : ""}`}
+            >
               <div className="flex items-center gap-2">
                 <Badge variant={q.status === "published" ? "default" : q.status === "failed" ? "destructive" : "outline"}>
                   {q.status}
                 </Badge>
+                {topPickIds.has(q.id) && (
+                  <Badge className="gap-1 bg-amber-500 hover:bg-amber-500/90 text-white">
+                    <Star className="h-3 w-3" /> Top pick
+                  </Badge>
+                )}
                 {q.attempt_count > 0 && (
                   <span className="text-xs text-muted-foreground">
                     {q.attempt_count}/{q.max_retries ?? 3} attempts
                   </span>
+                )}
+                {q.status !== "published" && q.status !== "publishing" && (
+                  <label className="ml-auto inline-flex items-center gap-1 text-xs cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      checked={selectedIds.has(q.id)}
+                      onChange={() => onToggleSelect(q.id)}
+                    />
+                    Select
+                  </label>
                 )}
               </div>
               <p className="text-sm font-semibold leading-snug">{q.title}</p>
