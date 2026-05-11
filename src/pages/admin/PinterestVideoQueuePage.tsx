@@ -625,10 +625,9 @@ export default function PinterestVideoQueuePage() {
 
       setPrepareStep("Generating drafts…");
       try {
-        const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-          body: { action: "queue_all_drafts" },
-        });
-        if (error) throw error;
+        toast({ title: "Draft generation started", description: "Calling pinterest-video-publisher…" });
+        const ev = await invokeDebug("pinterest-video-publisher", { action: "queue_all_drafts" });
+        const data: any = ev.response || {};
         if (data?.traceId) pushTrace({
           step: "Generate drafts",
           fn: "pinterest-video-publisher",
@@ -639,7 +638,7 @@ export default function PinterestVideoQueuePage() {
             : (data?.code || data?.message || "failed"),
         });
         if (!data?.ok) {
-          toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
+          toast({ title: "Draft generation failed", description: ev.error || data?.message || "Unknown error", variant: "destructive" });
         }
       } catch (e: any) {
         toast({ title: "Draft generation failed", description: e?.message || "Unknown error", variant: "destructive" });
@@ -695,9 +694,10 @@ export default function PinterestVideoQueuePage() {
     try {
       for (const qid of ids) {
         try {
-          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-            body: { action: "publish", queue_id: qid },
-          });
+          toast({ title: "Publish started", description: `Calling pinterest-video-publisher for ${qid.slice(0, 8)}…` });
+          const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: qid });
+          const data: any = ev.response || {};
+          const error = ev.error ? new Error(ev.error) : null;
           if (data?.traceId) pushTrace({
             step: `Publish ${qid.slice(0, 6)}…`,
             fn: "pinterest-video-publisher",
