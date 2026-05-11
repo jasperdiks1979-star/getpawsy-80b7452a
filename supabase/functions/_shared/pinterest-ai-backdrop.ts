@@ -292,8 +292,13 @@ function pickEmotion(hookKey: string | null | undefined, h: number): string {
 }
 
 function pickFamily(query: string, variantSeed: number, exclude: Set<string>): SceneFamily {
-  const eligible = SCENE_FAMILIES.filter((f) => !exclude.has(f.id));
-  const pool = eligible.length > 0 ? eligible : SCENE_FAMILIES;
+  const families = Array.isArray(SCENE_FAMILIES) ? SCENE_FAMILIES.filter((f) => f && typeof f.id === "string") : [];
+  const eligible = families.filter((f) => !exclude.has(f.id));
+  const pool = eligible.length > 0 ? eligible : families;
+  if (pool.length === 0) {
+    // Hard fallback — should never happen, but never let .id crash the function.
+    return { id: "fallback_neutral", scene: "neutral apartment", lighting: "soft daylight", palette: "neutral", weight: 1 } as SceneFamily;
+  }
   // Weighted pick: build cumulative weights, pick based on (hash + seed).
   const total = pool.reduce((s, f) => s + f.weight, 0);
   const h = (hashStr(query) + (variantSeed >>> 0)) >>> 0;
@@ -302,11 +307,16 @@ function pickFamily(query: string, variantSeed: number, exclude: Set<string>): S
     r -= f.weight;
     if (r <= 0) return f;
   }
-  return pool[pool.length - 1];
+  return pool[pool.length - 1] ?? pool[0];
 }
 
 function pickAngle(variantSeed: number, h: number): typeof CAMERA_ANGLES[number] {
-  return CAMERA_ANGLES[((h >> 4) + variantSeed) % CAMERA_ANGLES.length];
+  const angles = Array.isArray(CAMERA_ANGLES) ? CAMERA_ANGLES.filter((a) => a && typeof (a as any).id === "string") : [];
+  if (angles.length === 0) {
+    return { id: "fallback_eye_level", directive: "eye-level, 35mm equivalent" } as typeof CAMERA_ANGLES[number];
+  }
+  const idx = (((h >> 4) + variantSeed) % angles.length + angles.length) % angles.length;
+  return angles[idx] ?? angles[0];
 }
 
 /**
