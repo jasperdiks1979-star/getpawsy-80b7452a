@@ -1,0 +1,239 @@
+// Pinterest Video Publisher — generates metadata, queues drafts, and publishes
+// MP4s as native Pinterest Video Pins. Admin-only. Isolated from image queue.
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.49.1";
+import { getPinterestApiBase } from "../_shared/pinterest-config.ts";
+import { generateVideoMeta, DEFAULT_DESTINATION_URL } from "../_shared/pinterest-video-meta.ts";
+import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+function ok(b: unknown) {
+  return new Response(JSON.stringify(b), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+async function logStage(sb: any, queue_id: string | null, stage: string, status: string, payload: unknown, trace_id: string) {
+  try {
+    await sb.from("pinterest_video_publish_log").insert({ queue_id, stage, status, payload, trace_id });
+  } catch (e) { console.error("[pvp] log failed", e); }
+}
+
+async function getAdminClient(req: Request) {
+  const sbAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const sbUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+  });
+  const { data: { user } } = await sbUser.auth.getUser();
+  if (!user) return { sb: sbAdmin, user: null, isAdmin: false };
+  const { data: r } = await sbAdmin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+  return { sb: sbAdmin, user, isAdmin: !!r };
+}
+
+async function getPinterestToken(sb: any): Promise<string | null> {
+  const { data: settings } = await sb.from("pinterest_runtime_settings").select("active_pinterest_connection_id").eq("id", 1).maybeSingle();
+  let q = sb.from("pinterest_connection").select("access_token").eq("status", "connected");
+  if (settings?.active_pinterest_connection_id) q = q.eq("id", settings.active_pinterest_connection_id);
+  const { data } = await q.order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  return data?.access_token || null;
+}
+
+async function resolveBoardId(sb: any, _token: string): Promise<string | null> {
+  const { data: settings } = await sb.from("pinterest_runtime_settings").select("active_board_id").eq("id", 1).maybeSingle();
+  if (settings?.active_board_id) return settings.active_board_id;
+  // Prefer a "Self-Cleaning Cat Litter Box" board, else first non-blacklisted production board
+  const { data: b } = await sb.from("pinterest_boards")
+    .select("id, name, priority")
+    .eq("is_blacklisted", false)
+    .eq("is_sandbox", false)
+    .order("priority", { ascending: false })
+    .limit(25);
+  if (!b?.length) return null;
+  const preferred = b.find((x: any) => /self.?cleaning.*litter|litter.*box/i.test(x.name));
+  return (preferred || b[0])?.id || null;
+}
+
+async function publishVideoPin(opts: {
+  sb: any; queue_id: string; asset: any; queueRow: any; token: string; trace_id: string;
+}): Promise<{ ok: true; pin_id: string; external_url: string } | { ok: false; code: string; message: string }> {
+  const { sb, queue_id, asset, queueRow, token, trace_id } = opts;
+  const apiBase = await getPinterestApiBase(sb);
+
+  // Stage 1: register media
+  console.log(`[pvp ${trace_id}] stage=register_media`);
+  const reg = await fetch(`${apiBase}/media`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ media_type: "video" }),
+  });
+  const regBody = await reg.json().catch(() => ({}));
+  await logStage(sb, queue_id, "register_media", reg.ok ? "ok" : "fail", { status: reg.status, body: regBody }, trace_id);
+  if (!reg.ok || !regBody?.media_id) return { ok: false, code: "REGISTER_FAILED", message: `status ${reg.status}` };
+  const mediaId = regBody.media_id as string;
+  const uploadUrl = regBody.upload_url as string;
+  const uploadParams = (regBody.upload_parameters || {}) as Record<string, string>;
+
+  // Stage 2: stream MP4 from storage to Pinterest's S3 upload URL
+  console.log(`[pvp ${trace_id}] stage=upload media_id=${mediaId}`);
+  const { data: blob, error: dlErr } = await sb.storage.from(asset.storage_bucket).download(asset.storage_path);
+  if (dlErr || !blob) {
+    await logStage(sb, queue_id, "download", "fail", { error: dlErr?.message }, trace_id);
+    return { ok: false, code: "DOWNLOAD_FAILED", message: dlErr?.message || "no blob" };
+  }
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(uploadParams)) fd.append(k, v);
+  fd.append("file", blob, asset.filename);
+  const upRes = await fetch(uploadUrl, { method: "POST", body: fd });
+  await logStage(sb, queue_id, "upload", upRes.ok ? "ok" : "fail", { status: upRes.status }, trace_id);
+  if (!upRes.ok) return { ok: false, code: "UPLOAD_FAILED", message: `s3 status ${upRes.status}` };
+
+  // Stage 3: poll for media ready
+  console.log(`[pvp ${trace_id}] stage=poll`);
+  let ready = false;
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const st = await fetch(`${apiBase}/media/${mediaId}`, { headers: { Authorization: `Bearer ${token}` } });
+    const stBody = await st.json().catch(() => ({}));
+    if (stBody?.status === "succeeded") { ready = true; break; }
+    if (stBody?.status === "failed") {
+      await logStage(sb, queue_id, "poll", "fail", { body: stBody }, trace_id);
+      return { ok: false, code: "MEDIA_PROCESS_FAILED", message: "Pinterest rejected media" };
+    }
+  }
+  if (!ready) return { ok: false, code: "MEDIA_TIMEOUT", message: "media not ready in 60s" };
+
+  // Stage 4: create pin
+  console.log(`[pvp ${trace_id}] stage=create_pin`);
+  const pinPayload = {
+    title: queueRow.title,
+    description: queueRow.description,
+    board_id: queueRow.board_id,
+    link: queueRow.destination_url,
+    media_source: { source_type: "video_id", media_id: mediaId },
+  };
+  const pinRes = await fetch(`${apiBase}/pins`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(pinPayload),
+  });
+  const pinBody = await pinRes.json().catch(() => ({}));
+  await logStage(sb, queue_id, "create_pin", pinRes.ok ? "ok" : "fail", { status: pinRes.status, body: pinBody }, trace_id);
+  if (!pinRes.ok || !pinBody?.id) return { ok: false, code: "PIN_CREATE_FAILED", message: pinBody?.message || `status ${pinRes.status}` };
+
+  return { ok: true, pin_id: pinBody.id, external_url: `https://www.pinterest.com/pin/${pinBody.id}/` };
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const trace_id = crypto.randomUUID();
+  try {
+    const { sb, isAdmin } = await getAdminClient(req);
+    if (!isAdmin) return ok({ ok: false, code: "FORBIDDEN", traceId: trace_id });
+
+    const body = await req.json().catch(() => ({}));
+    const action = (body.action || "queue_draft") as
+      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts";
+
+    // ── queue_draft / queue_all_drafts ──────────────────────────────
+    if (action === "queue_draft" || action === "queue_all_drafts") {
+      const ids: string[] = action === "queue_all_drafts"
+        ? (await sb.from("pinterest_video_assets").select("id").eq("is_active", true)).data?.map((r: any) => r.id) || []
+        : (body.asset_ids || (body.asset_id ? [body.asset_id] : []));
+      if (!ids.length) return ok({ ok: false, code: "NO_ASSETS", traceId: trace_id });
+
+      const created: string[] = [];
+      for (const asset_id of ids) {
+        const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", asset_id).maybeSingle();
+        if (!asset) continue;
+        // try up to 5 variations to satisfy unique (asset_id, variation_hash)
+        let inserted = false;
+        for (let attempt = 0; attempt < 5 && !inserted; attempt++) {
+          const meta = generateVideoMeta({ asset_id, hook: asset.hook_type as VideoHook, attempt });
+          const { data, error } = await sb.from("pinterest_video_queue").insert({
+            asset_id,
+            status: "draft",
+            title: meta.title,
+            description: meta.description,
+            hashtags: meta.hashtags,
+            cta_text: meta.cta_text,
+            destination_url: DEFAULT_DESTINATION_URL,
+            variation_hash: meta.variation_hash,
+          }).select("id").maybeSingle();
+          if (!error && data) { created.push(data.id); inserted = true; }
+        }
+      }
+      return ok({ ok: true, traceId: trace_id, created_count: created.length, queue_ids: created });
+    }
+
+    // ── reroll ──────────────────────────────────────────────────────
+    if (action === "reroll") {
+      const queue_id = body.queue_id;
+      if (!queue_id) return ok({ ok: false, code: "MISSING_QUEUE_ID", traceId: trace_id });
+      const { data: row } = await sb.from("pinterest_video_queue").select("*").eq("id", queue_id).maybeSingle();
+      if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
+      const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", row.asset_id).maybeSingle();
+      if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
+      for (let attempt = 1; attempt < 8; attempt++) {
+        const meta = generateVideoMeta({ asset_id: row.asset_id, hook: asset.hook_type as VideoHook, attempt });
+        if (meta.variation_hash === row.variation_hash) continue;
+        const { error } = await sb.from("pinterest_video_queue").update({
+          title: meta.title, description: meta.description, hashtags: meta.hashtags,
+          cta_text: meta.cta_text, variation_hash: meta.variation_hash,
+        }).eq("id", queue_id);
+        if (!error) return ok({ ok: true, traceId: trace_id, ...meta });
+      }
+      return ok({ ok: false, code: "REROLL_EXHAUSTED", traceId: trace_id });
+    }
+
+    // ── publish ─────────────────────────────────────────────────────
+    if (action === "publish") {
+      const queue_id = body.queue_id;
+      if (!queue_id) return ok({ ok: false, code: "MISSING_QUEUE_ID", traceId: trace_id });
+      const { data: row } = await sb.from("pinterest_video_queue").select("*").eq("id", queue_id).maybeSingle();
+      if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
+      if (row.pin_id) return ok({ ok: true, traceId: trace_id, pin_id: row.pin_id, external_url: row.external_url, message: "already_published" });
+      const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", row.asset_id).maybeSingle();
+      if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
+
+      const token = await getPinterestToken(sb);
+      if (!token) return ok({ ok: false, code: "PINTEREST_NOT_CONNECTED", traceId: trace_id });
+      const board_id = row.board_id || await resolveBoardId(sb, token);
+      if (!board_id) return ok({ ok: false, code: "NO_BOARD", traceId: trace_id });
+
+      await sb.from("pinterest_video_queue").update({
+        status: "publishing",
+        board_id,
+        attempt_count: (row.attempt_count || 0) + 1,
+      }).eq("id", queue_id);
+
+      const result = await publishVideoPin({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
+
+      if (result.ok) {
+        await sb.from("pinterest_video_queue").update({
+          status: "published",
+          pin_id: result.pin_id,
+          external_url: result.external_url,
+          error_message: null,
+        }).eq("id", queue_id);
+        await sb.from("pinterest_video_assets").update({
+          last_publish_at: new Date().toISOString(),
+          publish_count: (asset.publish_count || 0) + 1,
+        }).eq("id", asset.id);
+        return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, external_url: result.external_url });
+      } else {
+        await sb.from("pinterest_video_queue").update({
+          status: "failed",
+          error_message: `${result.code}: ${result.message}`,
+        }).eq("id", queue_id);
+        return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
+      }
+    }
+
+    return ok({ ok: false, code: "UNKNOWN_ACTION", traceId: trace_id });
+  } catch (e) {
+    console.error(`[pvp ${trace_id}] fatal`, e);
+    return ok({ ok: false, code: "UNEXPECTED_ERROR", traceId: trace_id, message: (e as Error)?.message, stack: (e as Error)?.stack?.slice(0, 800) });
+  }
+});
