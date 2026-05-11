@@ -383,6 +383,11 @@ export default function PinterestBackdropPreviewPage() {
         productId: dd?.product?.id || null,
         inputSlug: slug,
         productUrl: `https://getpawsy.pet/products/${dd?.product?.slug || sentSlug}`,
+        errorCode: dd?.error_code || null,
+        stackPreview: dd?.stack_preview || null,
+        tablesChecked: Array.isArray(dd?.tables_checked) ? dd.tables_checked : null,
+        stagesRun: Array.isArray(dd?.stages_run) ? dd.stages_run : null,
+        suggestions: Array.isArray(dd?.suggestions) ? dd.suggestions : null,
       });
       if (!dd.ok) throw new Error(dd?.message || "Preview failed");
       setPins(data.pins || []);
