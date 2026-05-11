@@ -1240,7 +1240,11 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         let pickedAngle: string | null = bd?.cameraAngle ?? null;
         let pickedEmotion: string | null = bd?.emotion ?? null;
         let familyReason = "ok";
+        let fallbackUsed = false;
+        let failureStage: string | null = null;
         if (!bd) {
+          fallbackUsed = true;
+          failureStage = "ai_backdrop_null";
           // Fallback path: Pexels (if a valid key exists), else flat
           // Cloudinary palette. Both are last-resort — primary is AI.
           const px = await fetchPexelsBackdrop(afterQuery);
@@ -1261,8 +1265,8 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
             familyReason = `phash_duplicate_accepted_after_retry(sim=${(bd.phashMaxSimilarity ?? 0).toFixed(3)})`;
           }
         }
-        backdropMeta = bd as unknown as PexelsPhoto;
-        backdropUrl = (bd as { url: string }).url;
+        backdropMeta = (bd ?? null) as unknown as PexelsPhoto | null;
+        backdropUrl = ((bd as { url?: string } | null)?.url) ?? "";
         if (style === "before_after") {
           const beforeExclude = new Set<string>([
             ...recentFamilies,
@@ -1293,6 +1297,11 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           phash_max_similarity: (bd as any)?.phashMaxSimilarity ?? null,
           phash_retries: (bd as any)?.phashRetries ?? 0,
           phash_status: (bd as any)?.phashStatus ?? null,
+          candidate_count: pickedFamily ? 1 : 0,
+          selected_candidate_exists: !!bd,
+          selected_candidate_id: pickedFamily,
+          fallback_used: fallbackUsed,
+          failure_stage: failureStage,
         });
       }
 
