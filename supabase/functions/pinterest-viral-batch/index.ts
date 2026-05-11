@@ -1214,6 +1214,17 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         row.backdrop_pexels_page = backdropMeta.pexelsPageUrl;
         row.backdrop_hook_group = hook.key;
         row.backdrop_style = style;
+        // Diversity diagnostics (in-memory only; sanitizer drops these).
+        const md = backdropMeta as unknown as {
+          sceneFamily?: string;
+          cameraAngle?: string;
+          emotion?: string;
+          variantSeed?: number;
+        };
+        if (md.sceneFamily) (row as Record<string, unknown>).backdrop_scene_family = md.sceneFamily;
+        if (md.cameraAngle) (row as Record<string, unknown>).backdrop_camera_angle = md.cameraAngle;
+        if (md.emotion) (row as Record<string, unknown>).backdrop_emotion = md.emotion;
+        if (typeof md.variantSeed === "number") (row as Record<string, unknown>).backdrop_variant_seed = md.variantSeed;
       }
       // Heuristic save/click score — used to auto-approve the top 3 only.
       const lenT = topOverlay.length;
