@@ -1328,6 +1328,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
 
     if (dryRun) {
       const dryHealth = runQueueHealthCheck(rows as Array<Record<string, unknown>>);
+      // Compute backdrop diversity score = unique families / pins-with-backdrop.
+      const backdropRows = (rows as any[]).filter((r) => r.backdrop_url);
+      const families = new Set(
+        backdropRows.map((r) => r.backdrop_scene_family).filter(Boolean) as string[],
+      );
+      const diversityScore = backdropRows.length > 0
+        ? Number((families.size / backdropRows.length).toFixed(2))
+        : 1;
       return respond({
           ok: true,
           dryRun: true,
@@ -1336,6 +1344,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           product: { id: product.id, slug: product.slug, name: product.name },
           batchTag,
           health: dryHealth,
+          diversity: {
+            score: diversityScore,
+            unique_families: families.size,
+            backdrops: backdropRows.length,
+            recent_excluded: recentFamilies.length,
+            family_pool_size: SCENE_FAMILIES.length,
+            per_pin: familyDiagnostics,
+          },
           pins: rows.map((r: any) => ({
             hook_group: r.hook_group,
             pin_variant: r.pin_variant,
@@ -1357,6 +1373,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
             backdrop_style: r.backdrop_style || null,
             backdrop_score: r.backdrop_score ?? null,
             backdrop_variants: r.backdrop_variants || null,
+            backdrop_scene_family: r.backdrop_scene_family ?? null,
+            backdrop_camera_angle: r.backdrop_camera_angle ?? null,
+            backdrop_emotion: r.backdrop_emotion ?? null,
+            backdrop_variant_seed: r.backdrop_variant_seed ?? null,
             uses_lifestyle_backdrop: !!r.backdrop_url,
           })),
         });
