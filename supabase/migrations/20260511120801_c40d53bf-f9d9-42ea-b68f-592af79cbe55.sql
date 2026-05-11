@@ -1,0 +1,1 @@
+alter view public.pinterest_video_winners set (security_invoker = on);
