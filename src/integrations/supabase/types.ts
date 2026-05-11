@@ -5955,6 +5955,7 @@ export type Database = {
           overlay_text: string | null
           pin_description: string
           pin_external_id: string | null
+          pin_image_phash: string | null
           pin_image_url: string | null
           pin_title: string
           pin_variant: string
@@ -6000,6 +6001,7 @@ export type Database = {
           overlay_text?: string | null
           pin_description: string
           pin_external_id?: string | null
+          pin_image_phash?: string | null
           pin_image_url?: string | null
           pin_title: string
           pin_variant: string
@@ -6045,6 +6047,7 @@ export type Database = {
           overlay_text?: string | null
           pin_description?: string
           pin_external_id?: string | null
+          pin_image_phash?: string | null
           pin_image_url?: string | null
           pin_title?: string
           pin_variant?: string
