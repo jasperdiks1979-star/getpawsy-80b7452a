@@ -263,6 +263,10 @@ export default function PinterestVideoQueuePage() {
   const [publishingTest, setPublishingTest] = useState(false);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
+  // Snapshot of the queue IDs used in the last publish run, so the user can
+  // re-run *exactly* the same publish step even after the selection was cleared.
+  const [lastPublishIds, setLastPublishIds] = useState<string[]>([]);
+  const [rerunningStep, setRerunningStep] = useState<null | "discovery" | "drafts" | "publish">(null);
 
   const pushTrace = useCallback((t: StepTrace) => {
     setStepTraces((prev) => [...prev, t]);
