@@ -1795,6 +1795,15 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     const msg = e instanceof Error ? e.message : "Unknown error";
     const stack = e instanceof Error ? e.stack : undefined;
     console.error(`[pinterest-viral-batch] UNCAUGHT trace=${traceId}:`, msg, stack);
-    return respond({ ok: false, code: "UNEXPECTED_ERROR", message: msg, fallback: true });
+    const stackPreview = stack ? stack.split("\n").slice(0, 6).join("\n") : null;
+    return respond({
+      ok: false,
+      code: "UNEXPECTED_ERROR",
+      error_code: "UNCAUGHT_EXCEPTION",
+      message: msg,
+      stack_preview: stackPreview,
+      trace_id: traceId,
+      fallback: true,
+    });
   }
 });
