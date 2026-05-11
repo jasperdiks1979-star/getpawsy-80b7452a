@@ -63,6 +63,11 @@ type DebugInfo = {
   productId?: string | null;
   inputSlug?: string;
   productUrl?: string;
+  errorCode?: string | null;
+  stackPreview?: string | null;
+  tablesChecked?: string[] | null;
+  stagesRun?: string[] | null;
+  suggestions?: Array<{ slug: string; name: string }> | null;
 };
 
 const HOOKS: Array<{ key: string; label: string }> = [
