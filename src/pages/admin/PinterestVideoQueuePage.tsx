@@ -259,6 +259,7 @@ export default function PinterestVideoQueuePage() {
   const [publishingBatch, setPublishingBatch] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [prepareStep, setPrepareStep] = useState<string>("");
+  const [publishingTest, setPublishingTest] = useState(false);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
 
@@ -523,6 +524,50 @@ export default function PinterestVideoQueuePage() {
       setPublishingBatch(false);
     }
   }, [selectedIds, load, pushTrace]);
+
+  // Publish exactly ONE test video pin — picks the highest-ranked eligible draft
+  // (vertical, strong hook, relevance) and runs the publisher for it only.
+  const publishOneTest = useCallback(async () => {
+    const eligible = ranked.filter((s) =>
+      s.draft.status !== "published" && s.draft.status !== "publishing"
+    );
+    if (eligible.length === 0) {
+      toast({
+        title: "No eligible draft",
+        description: "Run Discover → Generate drafts first, then try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const best = eligible[0].draft;
+    setPublishingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+        body: { action: "publish", queue_id: best.id },
+      });
+      const traceId = data?.traceId;
+      if (traceId) pushTrace({
+        step: `Test publish ${best.id.slice(0, 6)}…`,
+        fn: "pinterest-video-publisher",
+        traceId,
+        ok: !error && !!data?.ok,
+        message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
+      });
+      const success = !error && !!data?.ok;
+      toast({
+        title: success ? "Test pin published" : "Test publish failed",
+        description: success
+          ? `pin_id=${data?.pin_id || "?"} · board=${data?.board_id || "?"}`
+          : `${data?.code || error?.message || "unknown"} — open Logs for full Pinterest API response`,
+        variant: success ? "default" : "destructive",
+      });
+      await load();
+    } catch (e) {
+      toast({ title: "Test publish crashed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setPublishingTest(false);
+    }
+  }, [ranked, pushTrace, load]);
 
   const hookOptions = useMemo(() => {
     const set = new Set<string>(["all"]);
