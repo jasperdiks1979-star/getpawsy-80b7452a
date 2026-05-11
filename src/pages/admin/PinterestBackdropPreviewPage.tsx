@@ -717,6 +717,45 @@ export default function PinterestBackdropPreviewPage() {
                 <div>backdrop source: <span className="text-foreground">{debug.backdropSource}</span></div>
                 <div>status: <span className="text-foreground">{String(debug.status)}</span></div>
                 {debug.error && <div className="text-destructive">error: {debug.error}</div>}
+                {debug.errorCode && (
+                  <div className="text-destructive">error_code: {debug.errorCode}</div>
+                )}
+                {(debug.tablesChecked?.length || debug.stagesRun?.length) && (
+                  <div className="opacity-70">
+                    {debug.tablesChecked?.length ? <>tables: {debug.tablesChecked.join(", ")} · </> : null}
+                    {debug.stagesRun?.length ? <>stages: {debug.stagesRun.join(" → ")}</> : null}
+                  </div>
+                )}
+                {debug.suggestions && debug.suggestions.length > 0 && (
+                  <div className="mt-2 border-t pt-2 space-y-1">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Suggested products
+                    </div>
+                    <div className="space-y-1">
+                      {debug.suggestions.slice(0, 6).map((s) => (
+                        <div key={s.slug} className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-foreground">{s.name}</div>
+                            <div className="truncate font-mono text-[10px] opacity-70">{s.slug}</div>
+                          </div>
+                          <button
+                            type="button"
+                            className="shrink-0 rounded border px-2 py-0.5 text-[10px] hover:bg-muted"
+                            onClick={() => setSlug(s.slug)}
+                          >
+                            Use
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {debug.stackPreview && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[10px] underline opacity-70">stack preview</summary>
+                    <pre className="mt-1 whitespace-pre-wrap font-mono text-[10px] opacity-80">{debug.stackPreview}</pre>
+                  </details>
+                )}
                 {diversity && (
                   <div className="mt-2 border-t pt-2 space-y-1">
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
