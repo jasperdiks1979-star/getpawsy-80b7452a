@@ -254,6 +254,9 @@ export default function PinterestVideoQueuePage() {
   const [historyByQueue, setHistoryByQueue] = useState<Record<string, HistoryEntry[]>>({});
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
   const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [autoSelectedOnce, setAutoSelectedOnce] = useState(false);
+  const [publishingBatch, setPublishingBatch] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -368,6 +371,58 @@ export default function PinterestVideoQueuePage() {
     });
   }, [assets, hookFilter, statusFilter, queueByAsset]);
 
+  // Score every eligible draft once per queue/assets refresh.
+  const ranked = useMemo(() => scoreDrafts(queue as any, assets as any), [queue, assets]);
+  const topPickIds = useMemo(() => new Set(ranked.slice(0, 3).map((s) => s.draft.id)), [ranked]);
+
+  // Auto-select the top 3 the first time we see eligible drafts after load.
+  useEffect(() => {
+    if (autoSelectedOnce) return;
+    if (loading) return;
+    if (ranked.length === 0) return;
+    setSelectedIds(new Set(ranked.slice(0, 3).map((s) => s.draft.id)));
+    setAutoSelectedOnce(true);
+  }, [ranked, loading, autoSelectedOnce]);
+
+  const toggleSelect = useCallback((qid: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(qid)) next.delete(qid); else next.add(qid);
+      return next;
+    });
+  }, []);
+
+  const autoPickBest3 = useCallback(() => {
+    const ids = pickTopN(queue as any, assets as any, 3);
+    setSelectedIds(new Set(ids));
+    toast({ title: "Top 3 selected", description: `Ranked ${ranked.length} eligible drafts.` });
+  }, [queue, assets, ranked.length]);
+
+  const publishSelected = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setPublishingBatch(true);
+    let okCount = 0; let failCount = 0;
+    try {
+      for (const qid of Array.from(selectedIds)) {
+        try {
+          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+            body: { action: "publish", queue_id: qid },
+          });
+          if (error || !data?.ok) failCount++; else okCount++;
+        } catch { failCount++; }
+      }
+      toast({
+        title: "Batch publish complete",
+        description: `${okCount} published · ${failCount} failed`,
+        variant: failCount > 0 ? "destructive" : "default",
+      });
+      setSelectedIds(new Set());
+      await load();
+    } finally {
+      setPublishingBatch(false);
+    }
+  }, [selectedIds, load]);
+
   const hookOptions = useMemo(() => {
     const set = new Set<string>(["all"]);
     assets.forEach((a) => set.add(a.hook_type));
@@ -408,6 +463,15 @@ export default function PinterestVideoQueuePage() {
         </Button>
         <Button variant="secondary" onClick={() => callPublisher("queue_all_drafts", {}, "all")} disabled={busyId === "all"} className="h-11" size="sm">
           <Play className="h-4 w-4 mr-1" /> Queue drafts for all
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={autoPickBest3}
+          disabled={ranked.length === 0}
+          className="h-11"
+          size="sm"
+        >
+          <Sparkles className="h-4 w-4 mr-1" /> Auto-select best 3
         </Button>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
@@ -451,8 +515,38 @@ export default function PinterestVideoQueuePage() {
               loadingHistoryId={loadingHistoryId}
               onToggleHistory={toggleHistory}
               openHistoryId={openHistoryId}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              topPickIds={topPickIds}
             />
           ))}
+        </div>
+      )}
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]">
+          <div className="container mx-auto max-w-3xl px-3 py-3 flex items-center gap-3">
+            <div className="text-sm">
+              <span className="font-semibold">{selectedIds.size}</span> selected
+              {topPickIds.size > 0 && (
+                <span className="text-muted-foreground"> · {Array.from(selectedIds).filter((id) => topPickIds.has(id)).length} top pick(s)</span>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-10"
+              onClick={() => setSelectedIds(new Set())}
+              disabled={publishingBatch}
+            >
+              Clear
+            </Button>
+            <Button size="sm" className="h-10" onClick={publishSelected} disabled={publishingBatch}>
+              {publishingBatch
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Publishing…</>
+                : <><Send className="h-4 w-4 mr-1" /> Publish selected</>}
+            </Button>
+          </div>
         </div>
       )}
     </div>
