@@ -682,6 +682,47 @@ export default function PinterestVideoQueuePage() {
               </button>
               <button
                 type="button"
+                onClick={() => {
+                  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                  const payload = {
+                    exported_at: new Date().toISOString(),
+                    page: "pinterest-video-queue",
+                    count: stepTraces.length,
+                    traces: stepTraces,
+                  };
+                  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = `pv-pipeline-traces-${stamp}.json`;
+                  document.body.appendChild(a); a.click(); a.remove();
+                  URL.revokeObjectURL(url);
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                JSON
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                  const esc = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
+                  const header = ["step", "function", "status", "trace_id", "message"].join(",");
+                  const body = stepTraces
+                    .map((t) => [t.step, t.fn, t.ok ? "ok" : "failed", t.traceId, t.message || ""].map(esc).join(","))
+                    .join("\n");
+                  const blob = new Blob([`${header}\n${body}\n`], { type: "text/csv;charset=utf-8" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = `pv-pipeline-traces-${stamp}.csv`;
+                  document.body.appendChild(a); a.click(); a.remove();
+                  URL.revokeObjectURL(url);
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                CSV
+              </button>
+              <button
+                type="button"
                 onClick={() => setStepTraces([])}
                 className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
               >
