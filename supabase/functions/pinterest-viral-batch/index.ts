@@ -5,8 +5,13 @@
 // no stock footage). Pins are inserted into pinterest_pin_queue with
 // staggered scheduled_at so the existing cron worker publishes them
 // progressively.
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+// IMPORTANT: use npm: specifier (not esm.sh?target=deno). The esm.sh build
+// transitively pulls https://deno.land/std@0.177.1/node/_core.ts which calls
+// Deno.core.runMicrotasks — unsupported in the current edge runtime and the
+// root cause of the "transport_error / Failed to send request" crashes.
+// See docs/edge-function-deploy-errors notes.
+import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import type {
   PinterestQueueInsert,
   PinterestPinDraft,
