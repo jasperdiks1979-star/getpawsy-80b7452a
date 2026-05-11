@@ -664,13 +664,30 @@ export default function PinterestVideoQueuePage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Pipeline trace IDs
             </p>
-            <button
-              type="button"
-              onClick={() => setStepTraces([])}
-              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-            >
-              Clear
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = stepTraces
+                    .map((t) => `${t.ok ? "ok " : "FAIL"} ${t.fn}\t${t.traceId}\t${t.step}${t.message ? ` — ${t.message}` : ""}`)
+                    .join("\n");
+                  navigator.clipboard?.writeText(text).then(
+                    () => toast({ title: "Copied all trace IDs", description: `${stepTraces.length} step(s)` }),
+                    () => toast({ title: "Copy failed", variant: "destructive" }),
+                  );
+                }}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                <Copy className="h-3 w-3" /> Copy all
+              </button>
+              <button
+                type="button"
+                onClick={() => setStepTraces([])}
+                className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                Clear
+              </button>
+            </div>
           </div>
           <ol className="space-y-1.5">
             {stepTraces.map((t, i) => (
