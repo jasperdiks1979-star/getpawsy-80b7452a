@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle, Activity, Bug, Trash2, HeartPulse } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
 import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
 
@@ -268,6 +269,140 @@ export default function PinterestVideoQueuePage() {
   const [lastPublishIds, setLastPublishIds] = useState<string[]>([]);
   const [rerunningStep, setRerunningStep] = useState<null | "discovery" | "drafts" | "publish">(null);
 
+  // ── Debug Console state ─────────────────────────────────────────────
+  type DebugEvent = {
+    id: string;
+    started_at: string;
+    duration_ms: number;
+    fn: string;
+    action: string;
+    http_status: number | null;
+    ok: boolean;
+    request: unknown;
+    response: unknown;
+    error: string | null;
+    trace_id: string | null;
+  };
+  const [debugEvents, setDebugEvents] = useState<DebugEvent[]>([]);
+  const [discoveryDetail, setDiscoveryDetail] = useState<any | null>(null);
+  const [manualUrl, setManualUrl] = useState("");
+  const [manualBusy, setManualBusy] = useState(false);
+  const [healthBusy, setHealthBusy] = useState<string | null>(null);
+
+  // Direct fetch wrapper so we capture HTTP status, raw response and timing.
+  // Falls back to a clear "Admin auth required" message on 401/403.
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+  const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+  const invokeDebug = useCallback(async (fn: string, body: Record<string, unknown>): Promise<DebugEvent> => {
+    const started = performance.now();
+    const startedIso = new Date().toISOString();
+    let http_status: number | null = null;
+    let response: unknown = null;
+    let error: string | null = null;
+    let ok = false;
+    let trace_id: string | null = null;
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON,
+          Authorization: `Bearer ${token || SUPABASE_ANON}`,
+        },
+        body: JSON.stringify(body),
+      });
+      http_status = res.status;
+      const text = await res.text();
+      try { response = text ? JSON.parse(text) : null; } catch { response = text; }
+      const r: any = response;
+      trace_id = r?.traceId || r?.trace_id || null;
+      ok = res.ok && (r?.ok ?? true);
+      if (res.status === 401) error = "Admin auth required (401 Unauthorized)";
+      else if (res.status === 403) error = "Admin auth required (403 Forbidden)";
+      else if (!res.ok) error = `HTTP ${res.status}`;
+      else if (r && r.ok === false) error = `${r.code || "ERROR"}: ${r.message || ""}`;
+    } catch (e: any) {
+      error = e?.message || "Network error";
+    }
+    const ev: DebugEvent = {
+      id: crypto.randomUUID(),
+      started_at: startedIso,
+      duration_ms: Math.round(performance.now() - started),
+      fn,
+      action: String(body.action || "—"),
+      http_status,
+      ok,
+      request: body,
+      response,
+      error,
+      trace_id,
+    };
+    setDebugEvents((prev) => [ev, ...prev].slice(0, 50));
+    if (!ok) {
+      toast({
+        title: `${fn} failed`,
+        description: error || "See Debug Console",
+        variant: "destructive",
+      });
+    }
+    return ev;
+  }, [SUPABASE_URL, SUPABASE_ANON]);
+
+  const runHealthCheck = useCallback(async (fn: string) => {
+    setHealthBusy(fn);
+    try {
+      // Sentinel action: every function returns a JSON body even for unknown
+      // actions, so reachability + auth state can be inferred from the result.
+      await invokeDebug(fn, { action: "__health_check__" });
+    } finally {
+      setHealthBusy(null);
+    }
+  }, [invokeDebug]);
+
+  const createDraftFromUrl = useCallback(async () => {
+    const url = manualUrl.trim();
+    if (!url) { toast({ title: "Paste a public MP4 URL first", variant: "destructive" }); return; }
+    if (!/\.mp4(\?|$)/i.test(url)) {
+      toast({ title: "Not an .mp4 URL", description: "URL must end in .mp4", variant: "destructive" });
+      return;
+    }
+    setManualBusy(true);
+    try {
+      const filename = decodeURIComponent(url.split("/").pop() || `manual-${Date.now()}.mp4`);
+      // Best-effort parse of bucket/path from a Supabase public URL.
+      const m = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+      const storage_bucket = m?.[1] || "external";
+      const storage_path = m?.[2] || url;
+      const content_hash = `manual-${url}`;
+      const { data: asset, error: insErr } = await supabase
+        .from("pinterest_video_assets")
+        .upsert({
+          filename,
+          storage_bucket,
+          storage_path,
+          public_url: url,
+          hook_type: "direct",
+          content_hash,
+          is_active: true,
+        }, { onConflict: "content_hash" })
+        .select("id")
+        .maybeSingle();
+      if (insErr || !asset?.id) {
+        toast({ title: "Insert failed", description: insErr?.message || "no id", variant: "destructive" });
+        return;
+      }
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "queue_draft", asset_id: asset.id });
+      if (ev.ok) {
+        toast({ title: "Draft created from URL", description: `asset ${asset.id.slice(0, 8)}…` });
+      }
+    } finally {
+      setManualBusy(false);
+    }
+  }, [manualUrl, invokeDebug]);
+
   const pushTrace = useCallback((t: StepTrace) => {
     setStepTraces((prev) => [...prev, t]);
     // Fire a toast with a direct, pre-filtered Logs link for this exact step
@@ -306,8 +441,10 @@ export default function PinterestVideoQueuePage() {
   const runDiscovery = async () => {
     setDiscovering(true);
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-discovery");
-      if (error) throw error;
+      const ev = await invokeDebug("pinterest-video-discovery", {});
+      const data: any = ev.response || {};
+      if (ev.error && !data?.traceId) throw new Error(ev.error);
+      setDiscoveryDetail(data);
       toast({ title: "Discovery complete", description: `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.` });
       if (data?.traceId) pushTrace({
         step: "Discovery",
@@ -792,6 +929,146 @@ export default function PinterestVideoQueuePage() {
             Rerun publish ({lastPublishIds.length || selectedIds.size})
           </Button>
         </div>
+      </Card>
+
+      <Card className="p-3 mb-3 border-dashed">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1">
+            <Bug className="h-3.5 w-3.5" /> Debug console
+          </p>
+          {debugEvents.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDebugEvents([])}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Trash2 className="h-3 w-3" /> Clear ({debugEvents.length})
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[
+            "pinterest-video-discovery",
+            "pinterest-video-publisher",
+            "pinterest-video-metrics-sync",
+          ].map((fn) => (
+            <Button
+              key={fn}
+              size="sm"
+              variant="outline"
+              className="h-9"
+              onClick={() => runHealthCheck(fn)}
+              disabled={healthBusy === fn}
+            >
+              {healthBusy === fn
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                : <HeartPulse className="h-3.5 w-3.5 mr-1" />}
+              Health: {fn.replace(/^pinterest-video-/, "pv-")}
+            </Button>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <Input
+            placeholder="Paste public MP4 URL (https://…/file.mp4)"
+            value={manualUrl}
+            onChange={(e) => setManualUrl(e.target.value)}
+            className="h-10"
+          />
+          <Button
+            onClick={createDraftFromUrl}
+            disabled={manualBusy || !manualUrl.trim()}
+            className="h-10"
+            size="sm"
+          >
+            {manualBusy
+              ? <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              : <Sparkles className="h-4 w-4 mr-1" />}
+            Create draft from URL
+          </Button>
+        </div>
+
+        {discoveryDetail && (
+          <div className="rounded-md border bg-muted/40 p-2 mb-3 text-xs space-y-1">
+            <div className="font-semibold">Last discovery</div>
+            <div className="text-muted-foreground">
+              scanned <b>{discoveryDetail.scanned ?? 0}</b> · matched <b>{discoveryDetail.matched ?? 0}</b> · inserted <b>{discoveryDetail.inserted ?? 0}</b> · skipped (small) <b>{discoveryDetail.skipped_undersized ?? 0}</b> · skipped (big) <b>{discoveryDetail.skipped_oversized ?? 0}</b>
+            </div>
+            {(discoveryDetail.inserted ?? 0) === 0 && (
+              <div className="text-amber-600">
+                Buckets searched: <code>pinterest-ads</code>, <code>tiktok-media</code>, <code>admin-resources</code> · pattern <code>(getpawsy-tiktok-|getpawsy-litterbox-|timepain|smell|direct).*\.mp4</code>
+              </div>
+            )}
+            {Array.isArray(discoveryDetail.skipped) && discoveryDetail.skipped.length > 0 && (
+              <details>
+                <summary className="cursor-pointer">Skipped files ({discoveryDetail.skipped.length})</summary>
+                <ul className="mt-1 space-y-0.5 max-h-32 overflow-auto">
+                  {discoveryDetail.skipped.map((s: any, i: number) => (
+                    <li key={i} className="font-mono text-[10px] truncate">
+                      <span className="text-amber-600">{s.reason}</span> — {s.filename}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {Array.isArray(discoveryDetail.errors) && discoveryDetail.errors.length > 0 && (
+              <details>
+                <summary className="cursor-pointer text-destructive">Errors ({discoveryDetail.errors.length})</summary>
+                <ul className="mt-1 space-y-0.5 max-h-32 overflow-auto">
+                  {discoveryDetail.errors.map((e: string, i: number) => (
+                    <li key={i} className="font-mono text-[10px] text-destructive">{e}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
+
+        {debugEvents.length === 0 ? (
+          <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+            <Activity className="h-3 w-3" /> No debug events yet — every action will record HTTP status, payload, response and duration here.
+          </p>
+        ) : (
+          <ol className="space-y-2 max-h-96 overflow-auto">
+            {debugEvents.map((ev) => (
+              <li key={ev.id} className="rounded-md border p-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  {ev.ok
+                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                  <span className="font-mono text-[10px]">{new Date(ev.started_at).toLocaleTimeString()}</span>
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-mono">{ev.fn.replace(/^pinterest-video-/, "pv-")}</Badge>
+                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{ev.action}</Badge>
+                  <Badge
+                    variant={ev.http_status && ev.http_status < 400 ? "default" : "destructive"}
+                    className={`h-5 px-1.5 text-[10px] ${ev.http_status && ev.http_status < 400 ? "bg-emerald-500 hover:bg-emerald-500/90" : ""}`}
+                  >
+                    HTTP {ev.http_status ?? "—"}
+                  </Badge>
+                  <span className="text-muted-foreground">{ev.duration_ms}ms</span>
+                  {ev.trace_id && (
+                    <a
+                      href={`/admin/pinterest-video-logs?trace=${encodeURIComponent(ev.trace_id)}&fn=${encodeURIComponent(ev.fn)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="ml-auto inline-flex items-center gap-1 text-primary hover:underline"
+                    >
+                      Logs <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+                {ev.error && <p className="mt-1 text-destructive">{ev.error}</p>}
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-muted-foreground">Request / Response</summary>
+                  <div className="grid sm:grid-cols-2 gap-2 mt-1">
+                    <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{JSON.stringify(ev.request, null, 2)}</pre>
+                    <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{typeof ev.response === "string" ? ev.response : JSON.stringify(ev.response, null, 2)}</pre>
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ol>
+        )}
       </Card>
 
       {stepTraces.length > 0 && (
