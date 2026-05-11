@@ -738,9 +738,10 @@ export default function PinterestVideoQueuePage() {
       setLastPublishIds([best.id]);
     setPublishingTest(true);
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-        body: { action: "publish", queue_id: best.id },
-      });
+      toast({ title: "Test publish started", description: `Publishing exactly 1 video pin (${best.id.slice(0, 8)}…)` });
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: best.id });
+      const data: any = ev.response || {};
+      const error = ev.error ? new Error(ev.error) : null;
       const traceId = data?.traceId;
       if (traceId) pushTrace({
         step: `Test publish ${best.id.slice(0, 6)}…`,
@@ -753,8 +754,8 @@ export default function PinterestVideoQueuePage() {
       toast({
         title: success ? "Test pin published" : "Test publish failed",
         description: success
-          ? `pin_id=${data?.pin_id || "?"} · board=${data?.board_id || "?"}`
-          : `${data?.code || error?.message || "unknown"} — open Logs for full Pinterest API response`,
+          ? `pin_id=${data?.pin_id || "?"} · pin_url=${data?.external_url || data?.pin_url || "?"}`
+          : `${data?.code || error?.message || "unknown"} — see Debug Console response JSON`,
         variant: success ? "default" : "destructive",
       });
       await load();
@@ -772,10 +773,9 @@ export default function PinterestVideoQueuePage() {
   const rerunDraftGeneration = useCallback(async () => {
     setRerunningStep("drafts");
     try {
-      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
-        body: { action: "queue_all_drafts" },
-      });
-      if (error) throw error;
+      toast({ title: "Draft rerun started", description: "Calling pinterest-video-publisher…" });
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "queue_all_drafts" });
+      const data: any = ev.response || {};
       if (data?.traceId) pushTrace({
         step: "Generate drafts (rerun)",
         fn: "pinterest-video-publisher",
@@ -784,7 +784,7 @@ export default function PinterestVideoQueuePage() {
         message: data?.ok ? `created ${data?.created_count ?? 0}` : (data?.code || data?.message || "failed"),
       });
       if (!data?.ok) {
-        toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
+        toast({ title: "Draft generation failed", description: ev.error || data?.message || "Unknown error", variant: "destructive" });
       }
       await load();
     } catch (e: any) {
