@@ -14,6 +14,15 @@
 const BUCKET = "pinterest-ads";
 const CACHE_TABLE = "pinterest_ai_backdrops";
 
+import {
+  computePhashFromBytes,
+  maxSimilarity,
+  PHASH_DUPLICATE_SIMILARITY,
+} from "./pinterest-phash.ts";
+
+/** Max attempts to re-render a backdrop when pHash flags it as a near-duplicate. */
+const PHASH_MAX_RETRIES = 2;
+
 export type AiBackdropPhoto = {
   url: string;
   avgColor: string | null;
@@ -30,6 +39,14 @@ export type AiBackdropPhoto = {
   emotion: string;
   /** Variant slot used for cache busting / rotation. */
   variantSeed: number;
+  /** 64-bit dHash (16-char hex) of the rendered image, when available. */
+  phash?: string | null;
+  /** Highest similarity vs recent generated backdrops (0..1), when checked. */
+  phashMaxSimilarity?: number | null;
+  /** Number of pHash-driven re-renders that occurred before acceptance. */
+  phashRetries?: number;
+  /** "accepted" | "duplicate_after_retry" | "no_phash" — for diagnostics. */
+  phashStatus?: string;
 };
 
 type SbLike = {
@@ -46,6 +63,8 @@ export interface AiBackdropOptions {
   variantSeed?: number;
   /** Skip the cache lookup and force a fresh render. */
   force?: boolean;
+  /** Already-known pHashes for in-batch duplicate suppression. */
+  knownPhashes?: Iterable<string>;
 }
 
 function slugifyQuery(q: string): string {
@@ -58,7 +77,7 @@ async function readCache(
   meta: { sceneFamily: string; cameraAngle: string; emotion: string; variantSeed: number },
 ): Promise<AiBackdropPhoto | null> {
   try {
-    const { data, error } = await sb.from(CACHE_TABLE).select("image_url, width, height").eq("query", query).maybeSingle();
+    const { data, error } = await sb.from(CACHE_TABLE).select("image_url, width, height, phash").eq("query", query).maybeSingle();
     if (error || !data?.image_url) return null;
     return {
       url: data.image_url,
@@ -69,13 +88,17 @@ async function readCache(
       pexelsPageUrl: null,
       source: "ai_cached",
       ...meta,
+      phash: (data as { phash?: string | null }).phash ?? null,
+      phashMaxSimilarity: null,
+      phashRetries: 0,
+      phashStatus: "cached",
     };
   } catch {
     return null;
   }
 }
 
-async function writeCache(sb: SbLike, query: string, url: string, storagePath: string): Promise<void> {
+async function writeCache(sb: SbLike, query: string, url: string, storagePath: string, phash: string | null): Promise<void> {
   try {
     await sb.from(CACHE_TABLE).upsert({
       query,
@@ -83,10 +106,27 @@ async function writeCache(sb: SbLike, query: string, url: string, storagePath: s
       storage_path: storagePath,
       width: 1080,
       height: 1920,
+      phash,
       updated_at: new Date().toISOString(),
     }, { onConflict: "query" });
   } catch (e) {
     console.warn(`[pinterest-ai-backdrop] cache write failed for "${query}":`, e instanceof Error ? e.message : e);
+  }
+}
+
+/** Load the most recent N pHashes from cache for cross-batch duplicate detection. */
+export async function loadRecentPhashes(sb: SbLike, limit = 100): Promise<string[]> {
+  try {
+    const { data, error } = await sb
+      .from(CACHE_TABLE)
+      .select("phash, updated_at")
+      .not("phash", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(limit);
+    if (error || !Array.isArray(data)) return [];
+    return data.map((r) => String((r as { phash?: string }).phash || "")).filter((s) => s.length === 16);
+  } catch {
+    return [];
   }
 }
 
@@ -337,58 +377,113 @@ export async function fetchAiBackdrop(
     return null;
   }
 
-  try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [{ role: "user", content: buildPrompt(query, family, angle, emotion) }],
-        modalities: ["image", "text"],
-      }),
-    });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      console.warn(`[pinterest-ai-backdrop] gateway ${res.status} for "${query}": ${t.slice(0, 200)}`);
-      return null;
-    }
-    const j = await res.json();
-    const dataUrl: string | undefined = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!dataUrl) {
-      console.warn(`[pinterest-ai-backdrop] no image returned for "${query}"`);
-      return null;
-    }
-    const bytes = dataUrlToBytes(dataUrl);
-    if (!bytes) return null;
+  // Pull cross-batch pHash history once; merge in any caller-provided in-batch hashes.
+  const recentPhashes = await loadRecentPhashes(sb, 100);
+  const known = new Set<string>(recentPhashes);
+  if (opts.knownPhashes) for (const h of opts.knownPhashes) if (h) known.add(h);
 
-    const path = `ai-backdrops/${slugifyQuery(query)}-${family.id}-v${variantSeed % 8}-${Date.now()}.png`;
-    const { error: upErr } = await sb.storage.from(BUCKET).upload(path, bytes, {
-      contentType: "image/png",
-      cacheControl: "31536000",
-      upsert: false,
-    });
-    if (upErr) {
-      console.warn(`[pinterest-ai-backdrop] upload failed: ${upErr.message}`);
+  let attemptSeed = variantSeed;
+  let lastBytes: Uint8Array | null = null;
+  let lastUrlForCache: string | null = null;
+  let lastPath: string | null = null;
+  let lastPhash: string | null = null;
+  let lastSimilarity = 0;
+  let chosenFamily = family;
+  let chosenAngle = angle;
+  let chosenEmotion = emotion;
+
+  for (let attempt = 0; attempt <= PHASH_MAX_RETRIES; attempt++) {
+    // On retries, force a fresh family + angle by bumping the seed and adding the
+    // previously-picked family to the exclusion set.
+    if (attempt > 0) {
+      attemptSeed = variantSeed + 1000 * attempt + 17;
+      exclude.add(chosenFamily.id);
+      chosenFamily = pickFamily(query, attemptSeed, exclude);
+      const h2 = (hashStr(query) + attemptSeed) >>> 0;
+      chosenAngle = pickAngle(attemptSeed, h2);
+      chosenEmotion = pickEmotion(opts.hookKey ?? null, h2);
+    }
+
+    try {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages: [{ role: "user", content: buildPrompt(query, chosenFamily, chosenAngle, chosenEmotion) }],
+          modalities: ["image", "text"],
+        }),
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        console.warn(`[pinterest-ai-backdrop] gateway ${res.status} for "${query}": ${t.slice(0, 200)}`);
+        return null;
+      }
+      const j = await res.json();
+      const dataUrl: string | undefined = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (!dataUrl) {
+        console.warn(`[pinterest-ai-backdrop] no image returned for "${query}"`);
+        return null;
+      }
+      const bytes = dataUrlToBytes(dataUrl);
+      if (!bytes) return null;
+
+      const phash = await computePhashFromBytes(bytes);
+      const sim = phash ? maxSimilarity(phash, known) : { score: 0, match: null };
+      lastBytes = bytes;
+      lastPhash = phash;
+      lastSimilarity = sim.score;
+      lastPath = `ai-backdrops/${slugifyQuery(query)}-${chosenFamily.id}-v${attemptSeed % 8}-${Date.now()}.png`;
+
+      const isDuplicate = phash && sim.score > PHASH_DUPLICATE_SIMILARITY;
+      const lastAttempt = attempt === PHASH_MAX_RETRIES;
+      if (isDuplicate && !lastAttempt) {
+        console.warn(
+          `[pinterest-ai-backdrop] duplicate (sim=${sim.score.toFixed(3)} vs ${sim.match}) for "${query}" family=${chosenFamily.id} → retry ${attempt + 1}/${PHASH_MAX_RETRIES}`,
+        );
+        continue;
+      }
+
+      // Accept (or accept-with-flag on final attempt).
+      const { error: upErr } = await sb.storage.from(BUCKET).upload(lastPath, bytes, {
+        contentType: "image/png",
+        cacheControl: "31536000",
+        upsert: false,
+      });
+      if (upErr) {
+        console.warn(`[pinterest-ai-backdrop] upload failed: ${upErr.message}`);
+        return null;
+      }
+      const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(lastPath);
+      const url: string | undefined = pub?.publicUrl;
+      if (!url) return null;
+      await writeCache(sb, cacheKey, url, lastPath, phash);
+      return {
+        url,
+        avgColor: null,
+        width: 1080,
+        height: 1920,
+        photographer: null,
+        pexelsPageUrl: null,
+        source: "ai_generated",
+        sceneFamily: chosenFamily.id,
+        cameraAngle: chosenAngle.id,
+        emotion: chosenEmotion,
+        variantSeed: attemptSeed,
+        phash,
+        phashMaxSimilarity: sim.score,
+        phashRetries: attempt,
+        phashStatus: phash
+          ? (isDuplicate ? "duplicate_after_retry" : "accepted")
+          : "no_phash",
+      };
+    } catch (e) {
+      console.error(`[pinterest-ai-backdrop] threw for "${query}":`, e instanceof Error ? e.message : e);
       return null;
     }
-    const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
-    const url: string | undefined = pub?.publicUrl;
-    if (!url) return null;
-    await writeCache(sb, cacheKey, url, path);
-    return {
-      url,
-      avgColor: null,
-      width: 1080,
-      height: 1920,
-      photographer: null,
-      pexelsPageUrl: null,
-      source: "ai_generated",
-      ...meta,
-    };
-  } catch (e) {
-    console.error(`[pinterest-ai-backdrop] threw for "${query}":`, e instanceof Error ? e.message : e);
-    return null;
   }
+
+  return null;
 }
 
 /**

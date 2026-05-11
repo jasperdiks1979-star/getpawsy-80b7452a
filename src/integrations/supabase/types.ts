@@ -4933,6 +4933,7 @@ export type Database = {
           created_at: string
           height: number | null
           image_url: string
+          phash: string | null
           query: string
           storage_path: string | null
           updated_at: string
@@ -4942,6 +4943,7 @@ export type Database = {
           created_at?: string
           height?: number | null
           image_url: string
+          phash?: string | null
           query: string
           storage_path?: string | null
           updated_at?: string
@@ -4951,6 +4953,7 @@ export type Database = {
           created_at?: string
           height?: number | null
           image_url?: string
+          phash?: string | null
           query?: string
           storage_path?: string | null
           updated_at?: string
