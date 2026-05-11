@@ -29,7 +29,7 @@ import {
   pickSoftCta,
   pickCtrBadge,
 } from "../_shared/pinterest-templates.ts";
-import { fetchAiBackdrop } from "../_shared/pinterest-ai-backdrop.ts";
+import { fetchAiBackdrop, loadRecentSceneFamilies, SCENE_FAMILIES } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
 
 // Top-level boot log — visible in edge function logs immediately on cold start
