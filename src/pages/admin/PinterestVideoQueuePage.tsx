@@ -263,6 +263,10 @@ export default function PinterestVideoQueuePage() {
   const [publishingTest, setPublishingTest] = useState(false);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
+  // Snapshot of the queue IDs used in the last publish run, so the user can
+  // re-run *exactly* the same publish step even after the selection was cleared.
+  const [lastPublishIds, setLastPublishIds] = useState<string[]>([]);
+  const [rerunningStep, setRerunningStep] = useState<null | "discovery" | "drafts" | "publish">(null);
 
   const pushTrace = useCallback((t: StepTrace) => {
     setStepTraces((prev) => [...prev, t]);
@@ -509,10 +513,12 @@ export default function PinterestVideoQueuePage() {
 
   const publishSelected = useCallback(async () => {
     if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setLastPublishIds(ids);
     setPublishingBatch(true);
     let okCount = 0; let failCount = 0;
     try {
-      for (const qid of Array.from(selectedIds)) {
+      for (const qid of ids) {
         try {
           const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
             body: { action: "publish", queue_id: qid },
@@ -554,6 +560,7 @@ export default function PinterestVideoQueuePage() {
       return;
     }
     const best = eligible[0].draft;
+      setLastPublishIds([best.id]);
     setPublishingTest(true);
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
@@ -582,6 +589,83 @@ export default function PinterestVideoQueuePage() {
       setPublishingTest(false);
     }
   }, [ranked, pushTrace, load]);
+
+  // ───────────────── Per-step rerun helpers ─────────────────
+  // Each helper repeats exactly one stage of the pipeline with the same input
+  // it would have used inside `runPrepareAll` / `publishSelected`, so the user
+  // can iterate on a single failing stage without re-running the whole flow.
+  const rerunDraftGeneration = useCallback(async () => {
+    setRerunningStep("drafts");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+        body: { action: "queue_all_drafts" },
+      });
+      if (error) throw error;
+      if (data?.traceId) pushTrace({
+        step: "Generate drafts (rerun)",
+        fn: "pinterest-video-publisher",
+        traceId: data.traceId,
+        ok: !!data?.ok,
+        message: data?.ok ? `created ${data?.created_count ?? 0}` : (data?.code || data?.message || "failed"),
+      });
+      if (!data?.ok) {
+        toast({ title: "Draft generation failed", description: data?.message || "Unknown error", variant: "destructive" });
+      }
+      await load();
+    } catch (e: any) {
+      toast({ title: "Draft rerun crashed", description: e?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setRerunningStep(null);
+    }
+  }, [pushTrace, load]);
+
+  const rerunPublish = useCallback(async () => {
+    const ids = lastPublishIds.length > 0 ? lastPublishIds : Array.from(selectedIds);
+    if (ids.length === 0) {
+      toast({
+        title: "Nothing to rerun",
+        description: "Publish at least one pin first, or select drafts to publish.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setRerunningStep("publish");
+    let okCount = 0; let failCount = 0;
+    try {
+      for (const qid of ids) {
+        try {
+          const { data, error } = await supabase.functions.invoke("pinterest-video-publisher", {
+            body: { action: "publish", queue_id: qid },
+          });
+          if (data?.traceId) pushTrace({
+            step: `Publish rerun ${qid.slice(0, 6)}…`,
+            fn: "pinterest-video-publisher",
+            traceId: data.traceId,
+            ok: !error && !!data?.ok,
+            message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
+          });
+          if (error || !data?.ok) failCount++; else okCount++;
+        } catch { failCount++; }
+      }
+      toast({
+        title: "Publish rerun complete",
+        description: `${okCount} published · ${failCount} failed (${ids.length} pin${ids.length === 1 ? "" : "s"})`,
+        variant: failCount > 0 ? "destructive" : "default",
+      });
+      await load();
+    } finally {
+      setRerunningStep(null);
+    }
+  }, [lastPublishIds, selectedIds, pushTrace, load]);
+
+  const rerunDiscovery = useCallback(async () => {
+    setRerunningStep("discovery");
+    try {
+      await runDiscovery();
+    } finally {
+      setRerunningStep(null);
+    }
+  }, []);
 
   const hookOptions = useMemo(() => {
     const set = new Set<string>(["all"]);
@@ -657,6 +741,58 @@ export default function PinterestVideoQueuePage() {
       <p className="text-xs text-muted-foreground mb-3">
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
       </p>
+
+      <Card className="p-3 mb-3 border-dashed">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Rerun a single step (same input)
+          </p>
+          <span className="text-[10px] text-muted-foreground">
+            Last publish set: {lastPublishIds.length > 0 ? `${lastPublishIds.length} pin${lastPublishIds.length === 1 ? "" : "s"}` : "—"}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={rerunDiscovery}
+            disabled={rerunningStep !== null || discovering}
+          >
+            {rerunningStep === "discovery"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+              : <RotateCw className="h-3.5 w-3.5 mr-1" />}
+            Rerun discovery
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={rerunDraftGeneration}
+            disabled={rerunningStep !== null}
+          >
+            {rerunningStep === "drafts"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+              : <RotateCw className="h-3.5 w-3.5 mr-1" />}
+            Rerun draft generation
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={rerunPublish}
+            disabled={rerunningStep !== null || (lastPublishIds.length === 0 && selectedIds.size === 0)}
+            title={lastPublishIds.length > 0
+              ? `Republish the last ${lastPublishIds.length} pin(s)`
+              : (selectedIds.size > 0 ? `Publish ${selectedIds.size} selected` : "No pins to republish yet")}
+          >
+            {rerunningStep === "publish"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+              : <RotateCw className="h-3.5 w-3.5 mr-1" />}
+            Rerun publish ({lastPublishIds.length || selectedIds.size})
+          </Button>
+        </div>
+      </Card>
 
       {stepTraces.length > 0 && (
         <Card className="p-3 mb-3 border-dashed">
