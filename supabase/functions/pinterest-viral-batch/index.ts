@@ -940,33 +940,34 @@ serve(async (req) => {
       });
     }
 
-    let { data: product, error: pErr } = await sb
-      .from("products")
-      .select("id, name, slug, description, category, image_url, images")
-      .eq("slug", slug)
-      .maybeSingle();
-    // Fuzzy fallback: tolerate truncated slugs (e.g. user pasted
-    // "automatic-cat-litter-box-self-cleaning-" without the suffix).
-    if (!product && slug && slug.length >= 6) {
-      const { data: alt } = await sb
-        .from("products")
-        .select("id, name, slug, description, category, image_url, images")
-        .ilike("slug", `${slug.replace(/-+$/,"")}%`)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (alt && alt.length) {
-        product = alt[0] as typeof product;
-        console.log(`[pinterest-viral-batch] fuzzy slug match "${slug}" -> "${product!.slug}"`);
-      }
-    }
-    if (pErr && !product) {
-      console.error(`[pinterest-viral-batch] Product lookup failed for "${slug}":`, pErr.message);
-      return respond({ ok: false, code: "PRODUCT_LOOKUP_ERROR", message: pErr.message, slug });
-    }
+    const { product, diag: lookupDiag } = await resolveProduct(sb, slug);
+    console.log(`[pinterest-viral-batch] product lookup`, JSON.stringify(lookupDiag));
     if (!product) {
-      console.error(`[pinterest-viral-batch] Product not found for "${slug}"`);
-      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: `Product not found: ${slug}`, slug });
+      return respond({
+        ok: false,
+        code: "PRODUCT_NOT_FOUND",
+        error_code: "PRODUCT_LOOKUP_FAILED",
+        message: `Product not found: ${slug}`,
+        attempted_slug: slug,
+        normalized_slug: lookupDiag.normalized_slug,
+        tables_checked: lookupDiag.tables_checked,
+        stages_run: lookupDiag.stages_run,
+        suggestions: lookupDiag.suggestions,
+        lookup: lookupDiag,
+        fallback: true,
+      });
+    }
+    // 🛡️ Hard null safety — every downstream access goes through `product`.
+    // The early return above guarantees product is non-null from this point.
+    if (!product.id || !product.slug) {
+      return respond({
+        ok: false,
+        code: "PRODUCT_INVALID",
+        error_code: "PRODUCT_MISSING_REQUIRED_FIELDS",
+        message: "Product row resolved but missing id/slug",
+        lookup: lookupDiag,
+        fallback: true,
+      });
     }
     // Resolve category-aware SEO keyword bucket + style-board routing
     const categoryKey = resolveCategoryKey(product.category, product.slug);
