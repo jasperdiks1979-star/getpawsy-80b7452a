@@ -1015,6 +1015,9 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     // this guarantees each pin renders as a different "photo shoot".
     const recentFamilies = await loadRecentSceneFamilies(sb, 50);
     const usedFamilies = new Set<string>();
+    // In-batch pHash registry — every accepted backdrop contributes to the
+    // duplicate-rejection set passed into the next fetchAiBackdrop call.
+    const usedPhashes = new Set<string>();
     const familyDiagnostics: Array<{
       index: number;
       hook_group: string;
@@ -1024,6 +1027,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       variant_seed: number | null;
       excluded_recent: number;
       reason: string;
+      phash: string | null;
+      phash_max_similarity: number | null;
+      phash_retries: number;
+      phash_status: string | null;
     }> = [];
 
     const rows: Record<string, unknown>[] = [];
@@ -1065,6 +1072,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
             hookKey: hook.key,
             excludeFamilies: excludeNow,
             variantSeed,
+            knownPhashes: usedPhashes,
           });
         let pickedFamily: string | null = bd?.sceneFamily ?? null;
         let pickedAngle: string | null = bd?.cameraAngle ?? null;
@@ -1086,6 +1094,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         } else {
           backdropSource = "pexels"; // tag column is constrained — reuse safe enum value
           if (pickedFamily) usedFamilies.add(pickedFamily);
+          if (bd.phash) usedPhashes.add(bd.phash);
+          if (bd.phashStatus === "duplicate_after_retry") {
+            familyReason = `phash_duplicate_accepted_after_retry(sim=${(bd.phashMaxSimilarity ?? 0).toFixed(3)})`;
+          }
         }
         backdropMeta = bd as unknown as PexelsPhoto;
         backdropUrl = (bd as { url: string }).url;
@@ -1099,8 +1111,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
             hookKey: hook.key,
             excludeFamilies: beforeExclude,
             variantSeed: variantSeed + 7,
+            knownPhashes: usedPhashes,
           }) || await fetchPexelsBackdrop(pair.before);
           if ((bb as any)?.sceneFamily) usedFamilies.add((bb as any).sceneFamily as string);
+          if ((bb as any)?.phash) usedPhashes.add((bb as any).phash as string);
           backdropAfterUrl = backdropUrl;          // After = the cozy/clean scene
           backdropUrl = ((bb as any)?.url) || backdropUrl;  // Before = the problem scene
         }
@@ -1113,6 +1127,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           variant_seed: variantSeed,
           excluded_recent: excludeNow.size,
           reason: familyReason,
+          phash: (bd as any)?.phash ?? null,
+          phash_max_similarity: (bd as any)?.phashMaxSimilarity ?? null,
+          phash_retries: (bd as any)?.phashRetries ?? 0,
+          phash_status: (bd as any)?.phashStatus ?? null,
         });
       }
 
