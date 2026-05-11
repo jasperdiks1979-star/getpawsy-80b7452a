@@ -6700,6 +6700,8 @@ export type Database = {
           external_url: string | null
           hashtags: string[]
           id: string
+          last_retry_at: string | null
+          max_retries: number
           pin_id: string | null
           scheduled_at: string | null
           status: string
@@ -6720,6 +6722,8 @@ export type Database = {
           external_url?: string | null
           hashtags?: string[]
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number
           pin_id?: string | null
           scheduled_at?: string | null
           status?: string
@@ -6740,6 +6744,8 @@ export type Database = {
           external_url?: string | null
           hashtags?: string[]
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number
           pin_id?: string | null
           scheduled_at?: string | null
           status?: string
