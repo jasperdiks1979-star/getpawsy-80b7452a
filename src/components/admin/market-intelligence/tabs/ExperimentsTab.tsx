@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FlaskConical, Trophy } from "lucide-react";
+import { Loader2, FlaskConical, Trophy, Sparkles, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,6 +18,8 @@ type Variant = {
 
 export function ExperimentsTab() {
   const [busy, setBusy] = useState(false);
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [ingestBusy, setIngestBusy] = useState(false);
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [variants, setVariants] = useState<Record<string, Variant[]>>({});
   const [lastResult, setLastResult] = useState<any>(null);
@@ -57,6 +59,28 @@ export function ExperimentsTab() {
     finally { setBusy(false); }
   }
 
+  async function autoCreate() {
+    setAutoBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mi-experiment-autocreate", { body: {} });
+      if (error) throw error;
+      toast.success(`Created ${data?.experiments_created ?? 0} experiments`);
+      await load();
+    } catch (e: any) { toast.error(`Auto-create failed: ${e?.message ?? e}`); }
+    finally { setAutoBusy(false); }
+  }
+
+  async function ingest() {
+    setIngestBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mi-experiment-ingest", { body: {} });
+      if (error) throw error;
+      toast.success(`Ingested ${data?.updated ?? 0} variants`);
+      await load();
+    } catch (e: any) { toast.error(`Ingest failed: ${e?.message ?? e}`); }
+    finally { setIngestBusy(false); }
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -65,6 +89,12 @@ export function ExperimentsTab() {
           <CardDescription>Bayesian Thompson sampling on per-variant CTR. Variants with ≥95% posterior win-prob auto-pause losers in the Pinterest queue.</CardDescription>
         </CardHeader>
         <CardContent className="flex gap-2 flex-wrap">
+          <Button size="sm" variant="secondary" onClick={autoCreate} disabled={autoBusy}>
+            {autoBusy ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />} Auto-create
+          </Button>
+          <Button size="sm" variant="secondary" onClick={ingest} disabled={ingestBusy}>
+            {ingestBusy ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />} Ingest analytics
+          </Button>
           <Button size="sm" variant="outline" onClick={() => run(true)} disabled={busy}>
             {busy ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null} Preview
           </Button>
