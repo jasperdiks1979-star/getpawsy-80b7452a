@@ -354,6 +354,8 @@ export default function PinterestVideoQueuePage() {
     ok?: boolean;
   }>>([]);
   const [previewRawFrames, setPreviewRawFrames] = useState<Array<{ ts: number; line: string }>>([]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
   const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
     if (!previewBusy) return;
