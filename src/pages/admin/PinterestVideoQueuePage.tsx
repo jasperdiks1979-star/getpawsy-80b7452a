@@ -1522,6 +1522,68 @@ export default function PinterestVideoQueuePage() {
             Product-only (skip backdrops)
           </label>
         </div>
+        <div className="mb-2">
+          <button
+            type="button"
+            onClick={() => setImportOpen((v) => !v)}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            {importOpen ? <X className="h-3 w-3" /> : <ClipboardPaste className="h-3 w-3" />}
+            {importOpen ? "Close import" : "Import share JSON"}
+          </button>
+          {importOpen && (
+            <div className="mt-2 rounded-md border bg-background p-2 space-y-2">
+              <Textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder='Paste a "Copy share" markdown block or raw resolver-debug JSON…'
+                className="font-mono text-[11px] min-h-[120px]"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="h-8"
+                  onClick={() => {
+                    if (importShareJson(importText)) {
+                      setImportOpen(false);
+                      setImportText("");
+                    }
+                  }}
+                >
+                  <ClipboardPaste className="h-3.5 w-3.5 mr-1" /> Import
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={async () => {
+                    try {
+                      const t = await navigator.clipboard.readText();
+                      setImportText(t);
+                      toast({ title: "Pasted from clipboard", description: `${t.length.toLocaleString()} chars` });
+                    } catch (e: any) {
+                      toast({ title: "Clipboard read failed", description: e?.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  Paste from clipboard
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8"
+                  onClick={() => setImportText("")}
+                  disabled={!importText}
+                >
+                  Clear
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Accepts the markdown block from <b>Copy share</b>, or the raw JSON downloaded via <b>Download JSON</b>. Rehydrates lookup, result, and timeline.
+              </p>
+            </div>
+          )}
+        </div>
         {previewTimeline.length > 0 && (
           <div className="rounded-md border bg-background p-2 mb-2">
             <div className="flex items-center justify-between mb-1.5">
