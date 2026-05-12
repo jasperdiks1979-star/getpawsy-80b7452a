@@ -48,7 +48,7 @@ export function useCtaCopyWinner() {
           supabase.from('cta_copy_winners').select('placement, mode, winning_label'),
           supabase
             .from('cta_copy_winners_by_hook')
-            .select('placement, mode, hook_family, winning_label'),
+            .select('placement, mode, hook_family, winning_label, guardrail_blocked'),
         ]);
         if (cancelled) return;
         if (globalRes.error || !globalRes.data) {
@@ -67,6 +67,10 @@ export function useCtaCopyWinner() {
         if (!hookRes.error && hookRes.data) {
           const nextHook: HookWinnerMap = {};
           for (const row of hookRes.data) {
+            // Phase 30 — guardrail: if a cohort is currently underperforming the
+            // global winner, skip the cohort override so the resolver falls back
+            // to the global elected winner.
+            if ((row as any).guardrail_blocked) continue;
             const p = row.placement as CtaPlacement;
             const m = row.mode as CtaCopyMode;
             const fam = row.hook_family as string;
