@@ -188,6 +188,8 @@ const Admin = () => {
   const { user, isLoading: authLoading, isAdmin } = useAuth();
   const { invokeFunction } = useAuthenticatedFetch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState<string>("");
