@@ -88,6 +88,18 @@ Deno.serve(async (req) => {
     const decayedKeys = (decayed ?? []).map(
       (r: any) => `${r.placement}/${r.mode}/${r.hook_family}`,
     );
+    if ((decayed ?? []).length > 0) {
+      await supabase.from("cohort_copy_pin_history").insert(
+        (decayed ?? []).map((r: any) => ({
+          action: "decay",
+          placement: r.placement,
+          mode: r.mode,
+          hook_family: r.hook_family,
+          actor: "system",
+          reason: `auto-unpinned after ${PIN_TTL_DAYS}d TTL`,
+        })),
+      );
+    }
 
     // Phase 26: skip still-pinned cohorts so manual overrides aren't clobbered.
     const { data: pinnedRows } = await supabase
