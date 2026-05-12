@@ -27,6 +27,7 @@ import { CrossChannelTab } from "./tabs/CrossChannelTab";
 import { GuardrailsTab } from "./tabs/GuardrailsTab";
 import { RevenueAttributionTab } from "./tabs/RevenueAttributionTab";
 import { BudgetShifterTab } from "./tabs/BudgetShifterTab";
+import { FatigueDetectorTab } from "./tabs/FatigueDetectorTab";
 
 type Counters = {
   trends: number;
@@ -132,6 +133,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="guardrails">Guardrails</TabsTrigger>
           <TabsTrigger value="revenue">Revenue ROAS</TabsTrigger>
           <TabsTrigger value="budget">Budget Shifter</TabsTrigger>
+          <TabsTrigger value="fatigue">Fatigue</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewDashboardTab /></TabsContent>
@@ -154,6 +156,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="guardrails"><GuardrailsTab /></TabsContent>
         <TabsContent value="revenue"><RevenueAttributionTab /></TabsContent>
         <TabsContent value="budget"><BudgetShifterTab /></TabsContent>
+        <TabsContent value="fatigue"><FatigueDetectorTab /></TabsContent>
       </Tabs>
     </div>
   );
