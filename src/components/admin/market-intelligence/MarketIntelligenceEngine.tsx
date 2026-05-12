@@ -16,6 +16,7 @@ import { OpportunityGapsTab } from "./tabs/OpportunityGapsTab";
 import { SeasonalForecastsTab } from "./tabs/SeasonalForecastsTab";
 import { RecommendedNextTab } from "./tabs/RecommendedNextTab";
 import { RemixEngineTab } from "./tabs/RemixEngineTab";
+import { FeedbackLoopTab } from "./tabs/FeedbackLoopTab";
 
 type Counters = {
   trends: number;
@@ -110,6 +111,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="gaps">Opportunity Gaps</TabsTrigger>
           <TabsTrigger value="seasonal">Seasonal Forecasts</TabsTrigger>
           <TabsTrigger value="next">Recommended Next</TabsTrigger>
+          <TabsTrigger value="feedback">Feedback Loop</TabsTrigger>
         </TabsList>
 
         <TabsContent value="radar"><TrendRadarTab onChange={loadCounters} /></TabsContent>
@@ -121,6 +123,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="gaps"><OpportunityGapsTab onChange={loadCounters} /></TabsContent>
         <TabsContent value="seasonal"><SeasonalForecastsTab /></TabsContent>
         <TabsContent value="next"><RecommendedNextTab onChange={loadCounters} /></TabsContent>
+        <TabsContent value="feedback"><FeedbackLoopTab /></TabsContent>
       </Tabs>
     </div>
   );
