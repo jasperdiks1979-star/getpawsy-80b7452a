@@ -33,10 +33,24 @@ interface VariantStat {
   impressions: number;
   clicks: number;
   ctr: number;
+  wilson_lb: number;
 }
 
 function traceId(): string {
   return `elec_hook_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * Wilson score lower bound (95% CI). Penalises low-volume variants so a
+ * 1/2 clicker doesn't beat a 30/300 winner. Returns value in [0, 1].
+ */
+function wilsonLowerBound(clicks: number, impressions: number, z = 1.96): number {
+  if (impressions <= 0) return 0;
+  const phat = clicks / impressions;
+  const denom = 1 + (z * z) / impressions;
+  const centre = phat + (z * z) / (2 * impressions);
+  const margin = z * Math.sqrt((phat * (1 - phat) + (z * z) / (4 * impressions)) / impressions);
+  return Math.max(0, (centre - margin) / denom);
 }
 
 Deno.serve(async (req) => {
@@ -100,7 +114,7 @@ Deno.serve(async (req) => {
       if (!entry) {
         entry = {
           placement, mode, hook_family: hookFamily, label,
-          impressions: 0, clicks: 0, ctr: 0,
+          impressions: 0, clicks: 0, ctr: 0, wilson_lb: 0,
         };
         buckets.set(key, entry);
       }
@@ -109,6 +123,7 @@ Deno.serve(async (req) => {
     }
     for (const stat of buckets.values()) {
       stat.ctr = stat.impressions > 0 ? stat.clicks / stat.impressions : 0;
+      stat.wilson_lb = wilsonLowerBound(stat.clicks, stat.impressions);
     }
 
     // Group by (placement, mode, hook_family) and elect.
@@ -124,6 +139,7 @@ Deno.serve(async (req) => {
     const elections: Array<{
       placement: Placement; mode: Mode; hook_family: string;
       winning_label: string | null; ctr_pct: number | null;
+      confidence_score: number | null;
       impressions: number; clicks: number; reason: string;
       candidates: VariantStat[];
     }> = [];
@@ -136,23 +152,25 @@ Deno.serve(async (req) => {
       if (!allHaveSample) {
         elections.push({
           placement: head.placement, mode: head.mode, hook_family: head.hook_family,
-          winning_label: null, ctr_pct: null,
+          winning_label: null, ctr_pct: null, confidence_score: null,
           impressions: totalImps, clicks: totalClicks,
           reason: `insufficient_sample (need ≥${MIN_IMPRESSIONS} per variant)`,
           candidates,
         });
         continue;
       }
+      // Phase 27: rank by Wilson lower bound, tie-break on raw CTR then clicks.
       const sorted = [...candidates].sort(
-        (a, b) => b.ctr - a.ctr || b.clicks - a.clicks,
+        (a, b) => b.wilson_lb - a.wilson_lb || b.ctr - a.ctr || b.clicks - a.clicks,
       );
       const winner = sorted[0];
       elections.push({
         placement: winner.placement, mode: winner.mode, hook_family: winner.hook_family,
         winning_label: winner.label,
         ctr_pct: Math.round(winner.ctr * 100000) / 1000,
+        confidence_score: Math.round(winner.wilson_lb * 100000) / 100000,
         impressions: winner.impressions, clicks: winner.clicks,
-        reason: "elected",
+        reason: "elected (wilson-lb)",
         candidates: sorted,
       });
     }
@@ -176,11 +194,12 @@ Deno.serve(async (req) => {
               hook_family: e.hook_family,
               winning_label: e.winning_label,
               ctr_pct: e.ctr_pct,
+              confidence_score: e.confidence_score,
               impressions: e.impressions,
               clicks: e.clicks,
               window_hours: WINDOW_HOURS,
               evaluated_at: new Date().toISOString(),
-              notes: `auto-elected (cohort); ${e.candidates.length} candidates`,
+              notes: `auto-elected (cohort, wilson-lb); ${e.candidates.length} candidates`,
             },
             { onConflict: "placement,mode,hook_family" },
           );
