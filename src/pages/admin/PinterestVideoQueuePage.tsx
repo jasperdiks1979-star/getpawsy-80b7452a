@@ -1611,6 +1611,41 @@ export default function PinterestVideoQueuePage() {
                 >
                   <ClipboardCopy className="h-3 w-3" /> Copy share
                 </button>
+                <button
+                  type="button"
+                  disabled={previewRawFrames.length === 0}
+                  onClick={() => {
+                    try {
+                      if (previewRawFrames.length === 0) {
+                        toast({ title: "No frames captured yet", variant: "destructive" });
+                        return;
+                      }
+                      const slugForName = (previewLookup?.slug ?? previewLookup?.normalized_slug ?? previewSlug ?? "preview")
+                        .toString()
+                        .replace(/[^a-z0-9-_]+/gi, "-")
+                        .slice(0, 80);
+                      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                      // Raw NDJSON exactly as received (one JSON object per line, terminating newline).
+                      const ndjson = previewRawFrames.map((f) => f.line).join("\n") + "\n";
+                      const blob = new Blob([ndjson], { type: "application/x-ndjson" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `resolver-stream_${slugForName}_${stamp}.ndjson`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      toast({ title: "Raw NDJSON downloaded", description: `${previewRawFrames.length} frame(s) · ${a.download}` });
+                    } catch (e: any) {
+                      toast({ title: "Download failed", description: e?.message, variant: "destructive" });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  title="Download raw NDJSON stream frames as received from the server"
+                >
+                  <Download className="h-3 w-3" /> Raw NDJSON ({previewRawFrames.length})
+                </button>
               </div>
             </div>
 
