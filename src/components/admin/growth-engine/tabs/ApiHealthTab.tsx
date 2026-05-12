@@ -9,9 +9,10 @@ export function ApiHealthTab() {
     pinterest: null, tableCount: null, lastRollup: null,
   });
   useEffect(() => { (async () => {
-    const { count: pCount } = await supabase.from("pinterest_accounts").select("*", { count: "exact", head: true });
-    const { count: tCount } = await supabase.from("gi_settings").select("*", { count: "exact", head: true });
-    const { data: action } = await supabase.from("gi_automation_actions")
+    const sb: any = supabase;
+    const { count: pCount } = await sb.from("pinterest_accounts").select("*", { count: "exact", head: true });
+    const { count: tCount } = await sb.from("gi_settings").select("*", { count: "exact", head: true });
+    const { data: action } = await sb.from("gi_automation_actions")
       .select("acted_at").eq("action", "rollup_internal").order("acted_at", { ascending: false }).limit(1).maybeSingle();
     setStatus({ pinterest: (pCount ?? 0) > 0, tableCount: tCount, lastRollup: (action as any)?.acted_at ?? null });
   })(); }, []);
