@@ -987,10 +987,41 @@ export default function PinterestVideoQueuePage() {
         </p>
       </header>
 
+      <Card className={`p-3 mb-3 border-dashed ${authDebug.ready && !authDebug.admin ? "border-destructive" : ""}`}>
+        <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin auth context</p>
+          <Badge variant={!authDebug.ready ? "outline" : authDebug.admin ? "default" : "destructive"}>
+            {!authDebug.ready ? "checking" : authDebug.admin ? "authenticated admin" : "Admin authorization required"}
+          </Badge>
+        </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3">
+          <span className="text-muted-foreground">current user id</span><code className="col-span-1 sm:col-span-2 truncate">{authDebug.userId || "—"}</code>
+          <span className="text-muted-foreground">email</span><code className="col-span-1 sm:col-span-2 truncate">{authDebug.email || "—"}</code>
+          <span className="text-muted-foreground">authenticated</span><span>{String(authDebug.authenticated)}</span>
+          <span className="text-muted-foreground">role</span><span className="truncate">{authDebug.role}</span>
+          <span className="text-muted-foreground">admin</span><span>{String(authDebug.admin)}</span>
+          <span className="text-muted-foreground">JWT exists</span><span>{String(authDebug.jwtExists)}</span>
+        </div>
+        {authDebug.ready && !authDebug.admin && (
+          <p className="mt-2 text-sm text-destructive font-medium">Admin authorization required</p>
+        )}
+        {authDebug.error && <p className="mt-1 text-xs text-destructive">{authDebug.error}</p>}
+      </Card>
+
+      <Card className="p-3 mb-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Pipeline counts after auth/discovery</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div><div className="text-lg font-semibold">{pipelineCounts.found}</div><div className="text-muted-foreground">total videos found</div></div>
+          <div><div className="text-lg font-semibold">{pipelineCounts.registered}</div><div className="text-muted-foreground">total registered</div></div>
+          <div><div className="text-lg font-semibold">{pipelineCounts.drafts}</div><div className="text-muted-foreground">total drafts</div></div>
+          <div><div className="text-lg font-semibold">{pipelineCounts.publishable}</div><div className="text-muted-foreground">total publishable</div></div>
+        </div>
+      </Card>
+
       <div className="flex flex-wrap gap-2 mb-3">
         <Button
           onClick={runPrepareAll}
-          disabled={preparing || discovering || uploading || busyId === "all"}
+          disabled={!authDebug.admin || preparing || discovering || uploading || busyId === "all"}
           className="h-11"
           size="sm"
         >
@@ -998,11 +1029,11 @@ export default function PinterestVideoQueuePage() {
             ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> {prepareStep || "Preparing…"}</>
             : <><Wand2 className="h-4 w-4 mr-1" /> Prepare all (1-click)</>}
         </Button>
-        <Button onClick={runDiscovery} disabled={discovering} className="h-11" size="sm">
+        <Button onClick={runDiscovery} disabled={!authDebug.admin || discovering} className="h-11" size="sm">
           {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
           Discover videos
         </Button>
-        <Button onClick={onPickFiles} disabled={uploading || discovering} className="h-11" size="sm" variant="outline">
+        <Button onClick={onPickFiles} disabled={!authDebug.admin || uploading || discovering} className="h-11" size="sm" variant="outline">
           {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
           Upload MP4
         </Button>
@@ -1024,19 +1055,19 @@ export default function PinterestVideoQueuePage() {
               invokeDebug("pinterest-video-metrics-sync", { action: "refresh_status" }),
             ]);
           }}
-          disabled={loading}
+          disabled={!authDebug.authenticated || loading}
           className="h-11"
           size="sm"
         >
           <RefreshCw className="h-4 w-4 mr-1" /> Refresh
         </Button>
-        <Button variant="secondary" onClick={() => callPublisher("queue_all_drafts", {}, "all")} disabled={busyId === "all"} className="h-11" size="sm">
+        <Button variant="secondary" onClick={() => callPublisher("queue_all_drafts", {}, "all")} disabled={!authDebug.admin || busyId === "all"} className="h-11" size="sm">
           <Play className="h-4 w-4 mr-1" /> Queue drafts for all
         </Button>
         <Button
           variant="secondary"
           onClick={autoPickBest3}
-          disabled={ranked.length === 0}
+          disabled={!authDebug.admin || ranked.length === 0}
           className="h-11"
           size="sm"
         >
@@ -1044,7 +1075,7 @@ export default function PinterestVideoQueuePage() {
         </Button>
         <Button
           onClick={publishOneTest}
-          disabled={publishingTest || ranked.length === 0}
+          disabled={!authDebug.admin || publishingTest || ranked.length === 0}
           className="h-11 bg-emerald-600 hover:bg-emerald-600/90 text-white"
           size="sm"
         >
