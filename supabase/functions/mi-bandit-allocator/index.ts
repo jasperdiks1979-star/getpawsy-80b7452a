@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const dryRun = !!body?.dry_run;
     const roasWeight = Number(body?.roas_weight ?? 1.0); // 0 disables, 1 = balanced, >1 favors ROAS
+    const cohortWeight = Number(body?.cohort_weight ?? 0.6); // boost top-arms within cohorts
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -58,6 +59,37 @@ Deno.serve(async (req) => {
       roasByHook[k] = cur;
     }
 
+    // Pull cohort top-arm shares (Phase 21 cohort-aware boost). For every
+    // (cohort, hook) winner-arm we sum its `share` so hooks that dominate
+    // multiple cohorts get a stronger boost.
+    const { data: cohortRows } = await supabase
+      .from("mi_audience_clusters")
+      .select("cohort_key, hook_family, share, conversions, revenue");
+    type CohortHit = { cohorts: Set<string>; share_sum: number; revenue: number; conversions: number };
+    const cohortByHook: Record<string, CohortHit> = {};
+    // Determine the top hook per cohort.
+    const topByCohort = new Map<string, { hook: string; share: number }>();
+    for (const r of cohortRows ?? []) {
+      const cohort = r.cohort_key as string;
+      const hook = (r.hook_family ?? "unknown") as string;
+      const share = Number(r.share ?? 0);
+      const cur = topByCohort.get(cohort);
+      if (!cur || share > cur.share) topByCohort.set(cohort, { hook, share });
+    }
+    for (const [cohort, top] of topByCohort) {
+      const hit = cohortByHook[top.hook] ?? { cohorts: new Set<string>(), share_sum: 0, revenue: 0, conversions: 0 };
+      hit.cohorts.add(cohort);
+      hit.share_sum += top.share;
+      cohortByHook[top.hook] = hit;
+    }
+    // Add aggregate revenue/conversions across cohorts for transparency.
+    for (const r of cohortRows ?? []) {
+      const hook = (r.hook_family ?? "unknown") as string;
+      if (!cohortByHook[hook]) continue;
+      cohortByHook[hook].revenue += Number(r.revenue ?? 0);
+      cohortByHook[hook].conversions += Number(r.conversions ?? 0);
+    }
+
     const byHook: Record<string, { trials: number; successes: number; samples: number[] }> = {};
     for (const m of metrics ?? []) {
       const hk = m.hook_family ?? "unknown";
@@ -68,7 +100,8 @@ Deno.serve(async (req) => {
       byHook[hk].successes += successes;
     }
 
-    // Thompson sampling: draw a sample per arm; rank arms by CTR * (1 + roas_weight*log(1+ROAS))
+    // Thompson sampling: draw a sample per arm; rank arms by
+    // CTR * (1 + roas_weight*log(1+ROAS)) * (1 + cohort_weight * share_sum)
     const arms = Object.entries(byHook).map(([hook, s]) => {
       const a = s.successes + 1;
       const b = Math.max(1, s.trials - s.successes) + 1;
@@ -76,8 +109,23 @@ Deno.serve(async (req) => {
       const expected = draws.reduce((x, y) => x + y, 0) / draws.length;
       const rev = roasByHook[hook] ?? { roas: 0, revenue: 0, conversions: 0 };
       const roasMultiplier = 1 + roasWeight * Math.log(1 + Math.max(0, rev.roas));
-      const score = expected * roasMultiplier;
-      return { hook, trials: s.trials, successes: s.successes, expected_ctr: expected, roas: rev.roas, revenue: rev.revenue, conversions: rev.conversions, score };
+      const cohortHit = cohortByHook[hook];
+      const cohortShareSum = cohortHit?.share_sum ?? 0;
+      const cohortMultiplier = 1 + cohortWeight * cohortShareSum;
+      const score = expected * roasMultiplier * cohortMultiplier;
+      return {
+        hook,
+        trials: s.trials,
+        successes: s.successes,
+        expected_ctr: expected,
+        roas: rev.roas,
+        revenue: rev.revenue,
+        conversions: rev.conversions,
+        cohort_count: cohortHit?.cohorts.size ?? 0,
+        cohort_share_sum: Number(cohortShareSum.toFixed(4)),
+        cohort_multiplier: Number(cohortMultiplier.toFixed(3)),
+        score,
+      };
     }).sort((a, b) => b.score - a.score);
 
     if (arms.length === 0) {
@@ -118,7 +166,18 @@ Deno.serve(async (req) => {
           scope: "bandit_arm",
           key: a.hook,
           value: a.score,
-          metadata: { priority: a.priority, trials: a.trials, successes: a.successes, expected_ctr: a.expected_ctr, roas: a.roas, revenue: a.revenue, conversions: a.conversions },
+          metadata: {
+            priority: a.priority,
+            trials: a.trials,
+            successes: a.successes,
+            expected_ctr: a.expected_ctr,
+            roas: a.roas,
+            revenue: a.revenue,
+            conversions: a.conversions,
+            cohort_count: a.cohort_count,
+            cohort_share_sum: a.cohort_share_sum,
+            cohort_multiplier: a.cohort_multiplier,
+          },
           updated_at: new Date().toISOString(),
         })),
         { onConflict: "scope,key" },
