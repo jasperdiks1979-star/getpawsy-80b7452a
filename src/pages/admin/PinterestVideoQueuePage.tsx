@@ -1416,36 +1416,98 @@ export default function PinterestVideoQueuePage() {
           </label>
         </div>
         {previewLookup && (
-          <div className="rounded-md border bg-background p-2 mb-2 text-xs space-y-1">
+          <div className="rounded-md border bg-background p-3 mb-2 text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold uppercase tracking-wide text-muted-foreground">Resolver debug</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">{previewLookup.elapsed_ms}ms</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(JSON.stringify(previewLookup, null, 2)).then(
+                      () => toast({ title: "Resolver JSON copied" }),
+                      () => toast({ title: "Copy failed", variant: "destructive" }),
+                    );
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                  title="Copy raw lookup JSON"
+                >
+                  <Copy className="h-3 w-3" /> Copy JSON
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">slug</span>
+                <code className="font-mono text-[11px] break-all">{previewLookup.slug ?? previewLookup.normalized_slug ?? "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">normalized</span>
+                <code className="font-mono text-[11px] break-all">{previewLookup.normalized_slug ?? "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">resolved_id</span>
+                <code className="font-mono text-[11px] break-all">{previewLookup.resolved_id ?? "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">resolved_title</span>
+                <span className="break-words">{previewLookup.resolved_title ?? "—"}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">image_count</span>
+                <span>{previewLookup.image_count ?? "—"}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">resolved_via</span>
+                <span>{previewLookup.resolved_via ?? "—"}</span>
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">tables_checked</span>
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {(previewLookup.tables_checked ?? []).map((t: string) => (
+                    <Badge key={t} variant="outline" className="h-5 px-1.5 text-[10px] font-mono">{t}</Badge>
+                  ))}
+                  {(previewLookup.tables_checked ?? []).length === 0 && <span className="text-muted-foreground">—</span>}
+                </div>
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">stages_run</span>
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {(previewLookup.stages_run ?? []).map((s: string) => (
+                    <Badge key={s} variant="secondary" className="h-5 px-1.5 text-[10px] font-mono">{s}</Badge>
+                  ))}
+                  {(previewLookup.stages_run ?? []).length === 0 && <span className="text-muted-foreground">—</span>}
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
               {previewLookup.product_found
-                ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                : <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
               <span className="font-medium">
                 {previewLookup.product_found ? "Product found" : "Product NOT found"}
               </span>
-              <span className="text-muted-foreground">
-                ({previewLookup.elapsed_ms}ms · {previewLookup.resolved_via || "—"})
-              </span>
             </div>
-            {previewLookup.product_found && (
-              <>
-                <div className="text-muted-foreground">
-                  <b>{previewLookup.product_title}</b> · {previewLookup.image_count} image{previewLookup.image_count === 1 ? "" : "s"}
-                </div>
-                {previewLookup.primary_image && (
-                  <img src={previewLookup.primary_image} alt="Primary" className="h-20 w-auto rounded border object-contain mt-1" />
-                )}
-              </>
+
+            {previewLookup.product_found && previewLookup.primary_image && (
+              <div className="flex items-center gap-2">
+                <img src={previewLookup.primary_image} alt="Primary" className="h-16 w-auto rounded border object-contain" />
+                <span className="text-[10px] text-muted-foreground">primary_image</span>
+              </div>
             )}
+
             {!previewLookup.product_found && previewLookup.suggestions && previewLookup.suggestions.length > 0 && (
               <div className="text-muted-foreground">
                 Suggestions: {previewLookup.suggestions.map((s: any) => s.slug).join(", ")}
               </div>
             )}
-            <div className="text-[10px] text-muted-foreground">
-              Tables checked: {previewLookup.tables_checked?.join(", ") || "—"} · Stages: {previewLookup.stages_run?.join(", ") || "—"}
-            </div>
+
+            <details className="group">
+              <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">Raw lookup JSON</summary>
+              <pre className="mt-1 rounded bg-muted/50 p-2 text-[10px] overflow-auto max-h-60 whitespace-pre-wrap break-all">{JSON.stringify(previewLookup, null, 2)}</pre>
+            </details>
           </div>
         )}
         {previewResult && (
