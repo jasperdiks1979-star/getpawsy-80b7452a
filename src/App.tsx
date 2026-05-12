@@ -387,6 +387,7 @@ const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/Analytics
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
 const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExecutionPage"));
 const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthIntelligencePage"));
+const MarketIntelligencePage = lazyWithRetry(() => import("./pages/admin/MarketIntelligencePage"));
 const BacklinkEnginePage = lazyWithRetry(() => import("./pages/admin/BacklinkEnginePage"));
 const AdminResourcesPage = lazyWithRetry(() => import("./pages/admin/AdminResourcesPage"));
 const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/IndexingDiagnosticsPage"));
@@ -1774,6 +1775,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <GrowthIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="market-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MarketIntelligencePage />
                                 </Suspense>
                               }
                             />

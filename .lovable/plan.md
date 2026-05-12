@@ -1,181 +1,89 @@
-## Compliance-First Growth Intelligence Engine
+# US Market Intelligence + Trend Analysis Engine
 
-Self-learning groei-systeem dat US-traffic, content, producten en conversies meet over Pinterest, TikTok, Google (GA4 + GSC + Merchant) en de webshop, en op basis daarvan compliant creatives genereert, scoort, en (afhankelijk van autopilot-modus) als draft of automatisch publiceert. **Default = DRAFT_ONLY**, US-only filter overal afgedwongen.
+Builds on the existing Growth Intelligence Engine (`gi_*` tables, `/admin/growth-intelligence`). Adds a compliant, US-only trend + competitor + creative-pattern layer that feeds the existing scoring/queue system.
 
-Bestaande systemen blijven intact en worden hergebruikt:
-- `pinterest_pin_queue` + `pinterest-creative-director` (image pins)
-- `pinterest_video_publisher` (video pins)
-- TikTok generator stack
-- `visitor_activity`, `orders`, `products` (US-attributie bron)
-- `/admin/profit-engine` (Pinterest break-even)
+## Compliance Guardrails (hardcoded, non-negotiable)
 
-Het nieuwe systeem **wraps** deze stacks via één gedeelde data-laag, scoring-engine, compliance-check en dashboard. Het vervangt niets.
+- US-only weighting (`market = 'US'` everywhere)
+- Inspiration only — no asset downloads, no 1:1 clones, no review copying
+- Respect robots.txt; only public URLs/metadata
+- Remix engine produces transformed originals (different copy, different visuals, own brand)
+- Auto-publish stays OFF; trend insights generate DRAFTS only
+- All competitor entries logged with source URL + observation date for audit
 
----
+## Phase 1 — Foundation (this turn, on approval)
 
-## Phase 1 — Foundation (start hier, na akkoord)
+### Database (new `mi_*` tables, admin-only RLS)
 
-**Doel:** schema + US-only views + admin skeleton + CSV import + interne rollups. Bouwt zonder externe API's, levert direct werkende dashboards op echte shop-data.
+- `mi_trends` — trend_type, term/topic, market, source, score, momentum, season, first_seen, last_seen
+- `mi_trend_signals` — daily raw signals (source, value, captured_at) feeding `mi_trends`
+- `mi_competitors` — name, domain, category, notes
+- `mi_competitor_observations` — competitor_id, url, platform, hook_type, cta_type, visual_style, posting_cadence, est_engagement, aesthetic_category, structure, thumbnail_pattern, trust_signals, lp_notes, observed_at
+- `mi_creative_recipes` — name, hook_family, first_3s_structure, cta_timing, overlay_style, palette_category, emotional_angle, curiosity_pattern, pain_framing, benefit_framing, social_proof_structure, pacing, scene_density, product_positioning, source_refs[]
+- `mi_remix_drafts` — recipe_id, product_id, generated_copy, generated_brief, status (draft/approved/queued/rejected), compliance_flags
+- `mi_opportunities` — type (niche_gap/weak_competitor/low_comp_topic/content_gap/viral_hook/seasonal), title, evidence, score, status
+- `mi_recommendations` — title, body, category, confidence, evidence_refs, status (new/seen/applied/dismissed)
+- `mi_seasonal_forecasts` — category, week_of_year, expected_lift, confidence
 
-### 1.1 Database (één migration)
-Nieuwe tabellen (alle met RLS, admin-only schrijven, admin-only lezen):
-- `gi_traffic_sessions` — geunificeerde sessies (source/medium/campaign/content, country, device, landing_page, session_id, is_us, is_internal, started_at)
-- `gi_attribution_events` — events per sessie (view, click, outbound, atc, checkout, purchase, revenue_cents)
-- `gi_social_content_items` — registry van pins/video's (channel, external_id, product_slug, hook_family, asset_url, fingerprint)
-- `gi_pinterest_pin_metrics` — daily snapshots per pin (impressions, saves, outbound, ctr)
-- `gi_tiktok_video_metrics` — daily snapshots per video
-- `gi_gsc_metrics` — daily query×page (impressions, clicks, ctr, position, country)
-- `gi_ga4_events` — daily aggregaten per source/medium/page
-- `gi_product_performance_daily` — per product/day (sessions_us, atc, purchases, revenue)
-- `gi_creative_performance_daily` — per content_item/day
-- `gi_channel_performance_daily` — per channel/day
-- `gi_growth_decisions` — engine outputs (target_id, decision_type, score, rationale)
-- `gi_automation_actions` — wat het systeem deed (action, target, autopilot_mode, status)
-- `gi_compliance_review_log` — wat geblokkeerd/gewaarschuwd werd + reden
-- `gi_settings` — singleton: autopilot_mode, market, allowlist countries, daily caps
+### US-only views
+- `us_mi_trends_v`, `us_mi_opportunities_v`, `us_mi_recommendations_v` (filter market='US', exclude bot/internal sources)
 
-US-only views (security_invoker, admin-readable):
-- `us_traffic_sessions_v`, `us_attribution_events_v`, `us_product_performance_daily_v`, `us_creative_performance_daily_v`, `us_channel_performance_daily_v`
+### Admin Dashboard — `/admin/market-intelligence` (8 tabs)
+1. Trend Radar (real-time `mi_trends` sorted by momentum)
+2. Competitor Intelligence (CRUD on observations, manual import)
+3. Hook Leaderboard (aggregated from observations + creatives)
+4. Winning Styles (palette/pacing/aesthetic winners)
+5. Viral Pattern Library (`mi_creative_recipes`)
+6. Opportunity Gaps (`mi_opportunities`)
+7. Seasonal Forecasts (`mi_seasonal_forecasts`)
+8. Recommended Next Creatives (`mi_recommendations` + remix drafts)
 
-Filter overal: `country IN ('US','United States') AND is_internal = false AND NOT is_bot`.
+### Manual import (Phase 1)
+- CSV upload for competitor observations
+- Manual trend entry form
+- Manual recipe entry form
 
-### 1.2 Rollup edge function
-- `gi-rollup-internal` — draait nightly via pg_cron, leest `visitor_activity` + `orders`, vult `gi_traffic_sessions/_events/_product_performance_daily/_channel_performance_daily`. US-only filter aan de bron.
+No external scraping yet — all data via internal signals + manual entry. This keeps Phase 1 100% compliant out of the gate.
 
-### 1.3 Admin dashboard skeleton
-Nieuwe route `/admin/growth-intelligence` (lazy-loaded, achter `AdminRouteGuard`). Tabs als shell met "coming soon" placeholders + counter-strip bovenaan:
-- Total sessions / US included / non-US excluded / internal excluded / unknown excluded
-- Banner als US sessions < drempel: *"Not enough US traffic yet for reliable decisions."*
+## Phase 2 — Signal Ingestion
 
-Tabs:
-1. Overview (werkt in Phase 1 — toont US shop performance)
-2. Channel Performance (werkt — toont gi_channel_performance_daily)
-3. Product Winners (werkt — toont gi_product_performance_daily)
-4. Creative Winners (Phase 2)
-5. Pinterest Intelligence (Phase 2)
-6. TikTok Intelligence (Phase 2)
-7. Google/SEO Intelligence (Phase 2)
-8. Queue (Phase 3)
-9. Compliance Review (Phase 3)
-10. Decisions Log (Phase 2)
-11. Autopilot Settings (werkt — read/write `gi_settings`, default DRAFT_ONLY)
-12. API Health (werkt — Pinterest token check, cron last-run)
-13. **Excluded Traffic** (diagnostics — non-US/internal/bot breakdown)
+- `mi-ingest-internal` edge function: pulls from existing `gi_*` data, GSC (CSV), GA4 (CSV) → writes `mi_trend_signals`
+- `mi-pinterest-trends` edge function: uses already-connected Pinterest API for our own pin performance (no scraping competitors)
+- Aggregator that rolls signals into `mi_trends` with US weighting
+- Google Trends via manual CSV import
 
-### 1.4 CSV import fallback
-- `/admin/growth-intelligence/import` — drag-drop voor:
-  - Pinterest analytics CSV → `gi_pinterest_pin_metrics`
-  - TikTok analytics CSV → `gi_tiktok_video_metrics`
-  - GSC export CSV → `gi_gsc_metrics`
-  - GA4 export CSV → `gi_ga4_events`
-- Edge function `gi-csv-import` valideert headers, dedupliceert op (date, external_id), retourneert `{ok, inserted, skipped, errors[]}`.
+## Phase 3 — Pattern Extraction & Remix
 
-**Phase 1 deliverable:** werkend dashboard met echte US shop cijfers, alle tabellen klaar voor data van andere phases, CSV import werkt, autopilot staat op DRAFT_ONLY.
+- `mi-extract-recipe` edge function (Lovable AI / Gemini): given a manually-pasted public URL or text, extracts hook family / pacing / palette category and stores a recipe — never stores assets
+- `mi-remix-draft` edge function: takes recipe + a GetPawsy product → generates ORIGINAL copy + visual brief (text-only brief, our own AI image gen runs separately) → writes `mi_remix_drafts`
+- Compliance checker: blocks drafts containing copyrighted phrasing, banned terms, or competitor brand mentions
 
----
+## Phase 4 — Opportunity & Recommendation Engine
 
-## Phase 2 — Connectors + Scoring
+- `mi-detect-opportunities` edge function: cross-joins trends × catalog × competitor coverage to surface gaps
+- `mi-generate-recommendations` edge function: turns opportunities + winning styles into plain-English recommendations
+- Hook into existing Pinterest/TikTok queues to push approved remix drafts as drafts only
 
-### 2.1 Pinterest connector (API live)
-- `gi-pinterest-sync` — gebruikt bestaande `pinterest_accounts` token, haalt pin analytics op laatste 30 dagen, schrijft naar `gi_pinterest_pin_metrics` + linkt aan `gi_social_content_items`. Rate-limit aware.
+## Phase 5 — Self-Learning Loop
 
-### 2.2 TikTok / GA4 / GSC
-- Voorlopig CSV-only (gebruiker heeft nog geen API credentials). UI maakt het 1-klik upload elke week.
+- Feedback table: every published creative → measure US performance via `gi_*` rollups → reinforce/decay recipe scores
+- Weekly `mi-learn` edge function adjusts recipe weights and prunes underperformers
+- Seasonal forecaster trained on 52-week rolling window
 
-### 2.3 Scoring engine
-- `gi-score` edge function — berekent per content_item & product:
-  - creative_score, hook_score, thumbnail_score, product_fit_score, channel_fit_score
-  - conversion_probability (logistic op US ATC/purchase rates)
-  - compliance_risk_score (zie 3.2)
-  - saturation_score, duplicate_risk_score (op fingerprint + age)
-  - traffic_quality_score (US %, returning %, bot %)
-  - revenue_potential_score, confidence_score (n + recency)
-- Schrijft naar `gi_growth_decisions` met decision_type ∈ {SCALE, REMIX, PAUSE, RETRY_WITH_NEW_HOOK, CREATE_VIDEO_VERSION, CREATE_IMAGE_PIN_VERSION, SEND_TO_MANUAL_REVIEW, DO_NOT_PUBLISH_COMPLIANCE_RISK}.
+## Safety / what this engine will NEVER do
 
-### 2.4 Dashboard tabs Pinterest/TikTok/SEO/Creative Winners/Decisions Log gaan live.
+- Download or store competitor images/videos
+- Auto-publish anything
+- Suggest copying exact text or branding
+- Use non-US data to drive US recommendations
+- Bypass robots.txt or platform ToS
+
+## Default state
+
+- All automation = `DRAFT_ONLY`
+- Market = `US` hardcoded
+- Empty dashboards on first load with clear "no data yet" states + import CTAs
 
 ---
 
-## Phase 3 — Creative generator queue + Compliance
-
-### 3.1 Generator queue
-- `gi-generator` schrijft drafts in bestaande queues:
-  - Pinterest image pin → `pinterest_pin_queue` (status='draft')
-  - Pinterest video → bestaande video publisher draft
-  - TikTok → bestaande tiktok queue
-- Nieuwe `gi_creative_drafts` tabel met: title, description, destination_url, product_slug, hook_family, cta, target_channel, asset_url, compliance_status, quality_score, mobile_safety_score, fingerprint, publish_status.
-
-### 3.2 Compliance checker
-- `gi-compliance-check` runt voor élke draft, vóór queueing:
-  - regex/word-list voor fake scarcity, fake reviews, false guarantees, banned medical claims (hergebruik `mem://compliance/high-risk-marketing-terminology-policy`)
-  - prijs/voorraad/URL-validatie tegen `products`
-  - duplicate fingerprint check
-  - mobile safe-area check (hergebruik Pinterest viral engine V2 logic)
-  - rate-limit check tegen `gi_settings.daily_cap_per_channel`
-- Output: `pass | warn | block` + `reason` + `suggested_rewrite`. Logged in `gi_compliance_review_log`.
-
----
-
-## Phase 4 — Safe scheduler + Autopilot
-
-- `gi-scheduler` cron checkt `gi_settings.autopilot_mode`:
-  - OFF → niets
-  - OBSERVE_ONLY → alleen scoren, niets queueen
-  - DRAFT_ONLY (default) → drafts klaarzetten, geen publish
-  - AUTO_QUEUE → schedule in queue tijd, nog steeds geen publish
-  - AUTO_PUBLISH_CONSERVATIVE → publiceer alleen `confidence_score > 0.85` & compliance pass
-  - AUTO_PUBLISH_BALANCED → `> 0.7`
-- Daily caps + min gap (Pinterest 90min, TikTok 4u) via `gi_settings`.
-- Alle acties → `gi_automation_actions`.
-
----
-
-## Phase 5 — Landing page feedback loop
-
-- `gi-lp-recommendations` — detecteert:
-  - hoge traffic + lage CTR
-  - hoge CTR + lage ATC
-  - ATC zonder checkout
-  - mobile drop-off
-- Output: aanbeveling-records (geen auto-edit van public pages, tenzij admin toggle aanzet).
-
----
-
-## Technische details
-
-**Edge function contract** (per `mem://infrastructure/edge-function-and-api-standards`):
-```json
-{ "ok": true, "traceId": "...", "message": "...", "data": {...} }
-```
-Geen silent fails. Errors → `{ok:false, traceId, message, code, details}`.
-
-**Security:**
-- Alle `gi_*` tabellen RLS aan, alleen `has_role(auth.uid(), 'admin')` mag SELECT/INSERT/UPDATE.
-- Edge functions valideren admin via `getClaims()` + `has_role` RPC.
-- Tokens in `pinterest_accounts` (bestaand) — nooit client-side.
-- `/admin/growth-intelligence/*` achter `AdminRouteGuard` + lazy-loaded.
-
-**US-only enforcement:**
-- View-niveau filter (single source of truth).
-- Score functies querien alléén `us_*_v` views.
-- Autopilot leest alleen US-views — non-US kan nooit een SCALE-beslissing triggeren.
-- Counters tonen exclusion-breakdown live op dashboard.
-
-**Compliance defaults:**
-- `gi_settings.autopilot_mode = 'DRAFT_ONLY'`
-- `gi_settings.market = 'US'`
-- `gi_settings.country_allowlist = ['US','United States']`
-- Pinterest daily_cap = 4 (matcht bestaande warm-up policy)
-- TikTok daily_cap = 3
-
----
-
-## Wat ik nu ga bouwen na jouw goedkeuring
-
-**Alleen Phase 1.** Daarna laat ik je het dashboard zien met echte US-cijfers, en vraag akkoord voor Phase 2.
-
-Phase 1 = 1 migration + 1 rollup edge function + 1 CSV import edge function + 1 dashboard route met 13 tabs (3 functioneel, 10 placeholders) + cron schedule.
-
-Geschatte impact: ~14 nieuwe tabellen, ~5 views, 2 edge functions, 1 admin route, 0 wijzigingen aan bestaande pagina's.
-
-Reageer met **"ga"** om Phase 1 te starten, of met aanpassingen op het plan.
+**Reageer met "ga" om Phase 1 te starten** (database schema + `/admin/market-intelligence` dashboard met 8 tabs + manual import forms).

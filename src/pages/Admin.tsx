@@ -1660,6 +1660,12 @@ const Admin = () => {
                 <span>Growth V4</span>
               </button>
             </TouchTooltip>
+            <TouchTooltip content="US Market Intelligence — trends, competitors, recipes">
+              <button onClick={() => navigate('/admin/market-intelligence')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                <span>US Intel</span>
+              </button>
+            </TouchTooltip>
             <TouchTooltip content="Backlink Domination Engine">
               <button onClick={() => navigate('/admin/backlink-engine')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
                 <Link className="w-3.5 h-3.5 shrink-0" />

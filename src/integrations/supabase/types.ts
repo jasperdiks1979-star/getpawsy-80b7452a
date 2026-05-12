@@ -4085,6 +4085,424 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_competitor_observations: {
+        Row: {
+          aesthetic_category: string | null
+          competitor_id: string | null
+          created_at: string
+          cta_type: string | null
+          est_engagement: number | null
+          hook_type: string | null
+          id: string
+          lp_notes: string | null
+          market: string
+          observed_at: string
+          platform: string | null
+          posting_cadence: string | null
+          product_category: string | null
+          structure: string | null
+          thumbnail_pattern: string | null
+          trust_signals: string | null
+          url: string
+          visual_style: string | null
+        }
+        Insert: {
+          aesthetic_category?: string | null
+          competitor_id?: string | null
+          created_at?: string
+          cta_type?: string | null
+          est_engagement?: number | null
+          hook_type?: string | null
+          id?: string
+          lp_notes?: string | null
+          market?: string
+          observed_at?: string
+          platform?: string | null
+          posting_cadence?: string | null
+          product_category?: string | null
+          structure?: string | null
+          thumbnail_pattern?: string | null
+          trust_signals?: string | null
+          url: string
+          visual_style?: string | null
+        }
+        Update: {
+          aesthetic_category?: string | null
+          competitor_id?: string | null
+          created_at?: string
+          cta_type?: string | null
+          est_engagement?: number | null
+          hook_type?: string | null
+          id?: string
+          lp_notes?: string | null
+          market?: string
+          observed_at?: string
+          platform?: string | null
+          posting_cadence?: string | null
+          product_category?: string | null
+          structure?: string | null
+          thumbnail_pattern?: string | null
+          trust_signals?: string | null
+          url?: string
+          visual_style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_competitor_observations_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "mi_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_competitors: {
+        Row: {
+          category: string | null
+          created_at: string
+          domain: string | null
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mi_creative_recipes: {
+        Row: {
+          active: boolean
+          benefit_framing: string | null
+          created_at: string
+          cta_timing: string | null
+          curiosity_pattern: string | null
+          emotional_angle: string | null
+          first_3s_structure: string | null
+          hook_family: string | null
+          id: string
+          name: string
+          overlay_style: string | null
+          pacing: string | null
+          pain_framing: string | null
+          palette_category: string | null
+          product_positioning: string | null
+          scene_density: string | null
+          score: number
+          social_proof_structure: string | null
+          source_refs: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          benefit_framing?: string | null
+          created_at?: string
+          cta_timing?: string | null
+          curiosity_pattern?: string | null
+          emotional_angle?: string | null
+          first_3s_structure?: string | null
+          hook_family?: string | null
+          id?: string
+          name: string
+          overlay_style?: string | null
+          pacing?: string | null
+          pain_framing?: string | null
+          palette_category?: string | null
+          product_positioning?: string | null
+          scene_density?: string | null
+          score?: number
+          social_proof_structure?: string | null
+          source_refs?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          benefit_framing?: string | null
+          created_at?: string
+          cta_timing?: string | null
+          curiosity_pattern?: string | null
+          emotional_angle?: string | null
+          first_3s_structure?: string | null
+          hook_family?: string | null
+          id?: string
+          name?: string
+          overlay_style?: string | null
+          pacing?: string | null
+          pain_framing?: string | null
+          palette_category?: string | null
+          product_positioning?: string | null
+          scene_density?: string | null
+          score?: number
+          social_proof_structure?: string | null
+          source_refs?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mi_opportunities: {
+        Row: {
+          created_at: string
+          evidence: Json
+          id: string
+          market: string
+          score: number
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          market?: string
+          score?: number
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          market?: string
+          score?: number
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mi_recommendations: {
+        Row: {
+          body: string
+          category: string | null
+          confidence: number
+          created_at: string
+          evidence_refs: Json
+          id: string
+          market: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          evidence_refs?: Json
+          id?: string
+          market?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          evidence_refs?: Json
+          id?: string
+          market?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mi_remix_drafts: {
+        Row: {
+          compliance_flags: Json
+          created_at: string
+          generated_brief: string | null
+          generated_copy: string | null
+          id: string
+          product_id: string | null
+          recipe_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          compliance_flags?: Json
+          created_at?: string
+          generated_brief?: string | null
+          generated_copy?: string | null
+          id?: string
+          product_id?: string | null
+          recipe_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          compliance_flags?: Json
+          created_at?: string
+          generated_brief?: string | null
+          generated_copy?: string | null
+          id?: string
+          product_id?: string | null
+          recipe_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_remix_drafts_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "mi_creative_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_seasonal_forecasts: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          expected_lift: number
+          id: string
+          market: string
+          notes: string | null
+          week_of_year: number
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          created_at?: string
+          expected_lift?: number
+          id?: string
+          market?: string
+          notes?: string | null
+          week_of_year: number
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          expected_lift?: number
+          id?: string
+          market?: string
+          notes?: string | null
+          week_of_year?: number
+        }
+        Relationships: []
+      }
+      mi_trend_signals: {
+        Row: {
+          captured_at: string
+          id: string
+          market: string
+          meta: Json
+          source: string
+          trend_id: string | null
+          value: number
+        }
+        Insert: {
+          captured_at?: string
+          id?: string
+          market?: string
+          meta?: Json
+          source: string
+          trend_id?: string | null
+          value?: number
+        }
+        Update: {
+          captured_at?: string
+          id?: string
+          market?: string
+          meta?: Json
+          source?: string
+          trend_id?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_trend_signals_trend_id_fkey"
+            columns: ["trend_id"]
+            isOneToOne: false
+            referencedRelation: "mi_trends"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mi_trend_signals_trend_id_fkey"
+            columns: ["trend_id"]
+            isOneToOne: false
+            referencedRelation: "us_mi_trends_v"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_trends: {
+        Row: {
+          category: string | null
+          created_at: string
+          first_seen: string
+          id: string
+          last_seen: string
+          market: string
+          momentum: number
+          notes: string | null
+          score: number
+          season: string | null
+          source: string
+          term: string
+          trend_type: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          first_seen?: string
+          id?: string
+          last_seen?: string
+          market?: string
+          momentum?: number
+          notes?: string | null
+          score?: number
+          season?: string | null
+          source?: string
+          term: string
+          trend_type: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          first_seen?: string
+          id?: string
+          last_seen?: string
+          market?: string
+          momentum?: number
+          notes?: string | null
+          score?: number
+          season?: string | null
+          source?: string
+          term?: string
+          trend_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       monitoring_ad_actions: {
         Row: {
           action_type: string
@@ -11478,6 +11896,132 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      us_mi_opportunities_v: {
+        Row: {
+          created_at: string | null
+          evidence: Json | null
+          id: string | null
+          market: string | null
+          score: number | null
+          status: string | null
+          title: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          evidence?: Json | null
+          id?: string | null
+          market?: string | null
+          score?: number | null
+          status?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          evidence?: Json | null
+          id?: string | null
+          market?: string | null
+          score?: number | null
+          status?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      us_mi_recommendations_v: {
+        Row: {
+          body: string | null
+          category: string | null
+          confidence: number | null
+          created_at: string | null
+          evidence_refs: Json | null
+          id: string | null
+          market: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          evidence_refs?: Json | null
+          id?: string | null
+          market?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          evidence_refs?: Json | null
+          id?: string | null
+          market?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      us_mi_trends_v: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          first_seen: string | null
+          id: string | null
+          last_seen: string | null
+          market: string | null
+          momentum: number | null
+          notes: string | null
+          score: number | null
+          season: string | null
+          source: string | null
+          term: string | null
+          trend_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          first_seen?: string | null
+          id?: string | null
+          last_seen?: string | null
+          market?: string | null
+          momentum?: number | null
+          notes?: string | null
+          score?: number | null
+          season?: string | null
+          source?: string | null
+          term?: string | null
+          trend_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          first_seen?: string | null
+          id?: string | null
+          last_seen?: string | null
+          market?: string | null
+          momentum?: number | null
+          notes?: string | null
+          score?: number | null
+          season?: string | null
+          source?: string | null
+          term?: string | null
+          trend_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       us_product_performance_daily_v: {
         Row: {
