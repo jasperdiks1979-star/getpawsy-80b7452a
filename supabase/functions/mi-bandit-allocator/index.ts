@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const dryRun = !!body?.dry_run;
+    const roasWeight = Number(body?.roas_weight ?? 1.0); // 0 disables, 1 = balanced, >1 favors ROAS
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -43,6 +44,20 @@ Deno.serve(async (req) => {
       .select("channel, hook_family, impressions, clicks, saves, views, composite_score");
     if (error) throw error;
 
+    // Pull per-arm ROAS for blended ranking
+    const { data: revenueRows } = await supabase
+      .from("mi_arm_revenue")
+      .select("hook_family, roas, revenue, conversions");
+    const roasByHook: Record<string, { roas: number; revenue: number; conversions: number }> = {};
+    for (const r of revenueRows ?? []) {
+      const k = r.hook_family ?? "unknown";
+      const cur = roasByHook[k] ?? { roas: 0, revenue: 0, conversions: 0 };
+      cur.roas = Math.max(cur.roas, Number(r.roas ?? 0));
+      cur.revenue += Number(r.revenue ?? 0);
+      cur.conversions += Number(r.conversions ?? 0);
+      roasByHook[k] = cur;
+    }
+
     const byHook: Record<string, { trials: number; successes: number; samples: number[] }> = {};
     for (const m of metrics ?? []) {
       const hk = m.hook_family ?? "unknown";
@@ -53,14 +68,17 @@ Deno.serve(async (req) => {
       byHook[hk].successes += successes;
     }
 
-    // Thompson sampling: draw a sample per arm; rank arms
+    // Thompson sampling: draw a sample per arm; rank arms by CTR * (1 + roas_weight*log(1+ROAS))
     const arms = Object.entries(byHook).map(([hook, s]) => {
       const a = s.successes + 1;
       const b = Math.max(1, s.trials - s.successes) + 1;
       const draws = Array.from({ length: 200 }, () => betaSample(a, b));
       const expected = draws.reduce((x, y) => x + y, 0) / draws.length;
-      return { hook, trials: s.trials, successes: s.successes, expected_ctr: expected };
-    }).sort((a, b) => b.expected_ctr - a.expected_ctr);
+      const rev = roasByHook[hook] ?? { roas: 0, revenue: 0, conversions: 0 };
+      const roasMultiplier = 1 + roasWeight * Math.log(1 + Math.max(0, rev.roas));
+      const score = expected * roasMultiplier;
+      return { hook, trials: s.trials, successes: s.successes, expected_ctr: expected, roas: rev.roas, revenue: rev.revenue, conversions: rev.conversions, score };
+    }).sort((a, b) => b.score - a.score);
 
     if (arms.length === 0) {
       return new Response(JSON.stringify({ ok: true, traceId, message: "no metrics yet", arms: [] }), {
@@ -99,8 +117,8 @@ Deno.serve(async (req) => {
         assignments.map((a) => ({
           scope: "bandit_arm",
           key: a.hook,
-          value: a.expected_ctr,
-          metadata: { priority: a.priority, trials: a.trials, successes: a.successes },
+          value: a.score,
+          metadata: { priority: a.priority, trials: a.trials, successes: a.successes, expected_ctr: a.expected_ctr, roas: a.roas, revenue: a.revenue, conversions: a.conversions },
           updated_at: new Date().toISOString(),
         })),
         { onConflict: "scope,key" },
