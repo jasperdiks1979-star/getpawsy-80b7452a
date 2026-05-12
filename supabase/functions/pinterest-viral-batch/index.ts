@@ -1598,7 +1598,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           dryRun: true,
           aiFallback,
           message: `Preview ${rows.length} pins (not queued)`,
-          product: { id: product.id, slug: product.slug, name: product.name },
+          product: {
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            image_count: lookupDiag.image_count,
+            primary_image: lookupDiag.primary_image,
+          },
+          lookup: lookupDiag,
           batchTag,
           health: dryHealth,
           diversity: {
