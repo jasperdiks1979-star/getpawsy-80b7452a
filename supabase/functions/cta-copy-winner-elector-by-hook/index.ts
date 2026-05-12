@@ -401,7 +401,10 @@ Deno.serve(async (req) => {
           r.placement as Placement, r.mode as Mode, r.hook_family as string,
           r.winning_label as string,
         );
-        if (!guard.blocked) {
+        const cohortTraffic =
+          cohortTrafficTally.get(`${r.placement}::${r.mode}::${r.hook_family}`) ?? 0;
+        const lowTraffic = cohortTraffic < MIN_COHORT_TRAFFIC_24H;
+        if (!guard.blocked && !lowTraffic) {
           await supabase.from("cta_copy_winners_by_hook")
             .update({
               guardrail_blocked: false,
