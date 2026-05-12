@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   resolveCohortCopy,
+  resolveCtaCopyText,
   type CtaCopyMode,
   type CtaPlacement,
 } from '@/lib/ctaCopyRegistry';
@@ -88,26 +89,25 @@ export function useCtaCopyWinner() {
 
   function pickCopy(placement: CtaPlacement, mode: CtaCopyMode) {
     const electedLabel = winners[placement]?.[mode];
-    // Phase 24 — learned cohort winner takes priority over the
-    // hardcoded HOOK_FAMILY_COPY_PREFERENCE map. We pass it in as the
-    // "elected" label slot (and let resolveCohortCopy still consult the
-    // static preference as final fallback) by overriding the elected
-    // label only when the visitor has a resolved hook_family AND we have
-    // a learned row for it.
     const hookFamily = hook?.hook_family ?? null;
+    // Priority:
+    //   1. learned cohort winner (Phase 24 — cta_copy_winners_by_hook)
+    //   2. hardcoded HOOK_FAMILY_COPY_PREFERENCE seed (Phase 23)
+    //   3. global elected winner (cta_copy_winners)
+    //   4. build-time DEFAULT_COPY_LABEL
     const learnedCohortLabel = hookFamily
       ? hookWinners[placement]?.[mode]?.[hookFamily]
       : undefined;
-    const resolved = resolveCohortCopy(
-      placement,
-      mode,
-      hookFamily,
-      learnedCohortLabel ?? electedLabel,
-    );
-    // If we used a learned cohort winner, mark source as 'cohort' so
-    // downstream events stamp the correct attribution.
-    const finalSource: 'cohort' | 'elected' | 'default' =
-      learnedCohortLabel ? 'cohort' : resolved.source;
+    let resolved: { label: string; text: string };
+    let finalSource: 'cohort' | 'elected' | 'default';
+    if (learnedCohortLabel) {
+      resolved = resolveCtaCopyText(placement, mode, learnedCohortLabel);
+      finalSource = 'cohort';
+    } else {
+      const r = resolveCohortCopy(placement, mode, hookFamily, electedLabel);
+      resolved = { label: r.label, text: r.text };
+      finalSource = r.source;
+    }
     return {
       label: resolved.label,
       text: resolved.text,
