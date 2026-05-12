@@ -4085,6 +4085,69 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_channel_metrics: {
+        Row: {
+          captured_at: string
+          channel: string
+          clicks: number
+          composite_score: number
+          conversions: number
+          created_at: string
+          ctr: number
+          external_id: string | null
+          hook_family: string | null
+          id: string
+          impressions: number
+          product_id: string | null
+          queue_id: string
+          save_rate: number
+          saves: number
+          updated_at: string
+          view_rate: number
+          views: number
+        }
+        Insert: {
+          captured_at?: string
+          channel: string
+          clicks?: number
+          composite_score?: number
+          conversions?: number
+          created_at?: string
+          ctr?: number
+          external_id?: string | null
+          hook_family?: string | null
+          id?: string
+          impressions?: number
+          product_id?: string | null
+          queue_id: string
+          save_rate?: number
+          saves?: number
+          updated_at?: string
+          view_rate?: number
+          views?: number
+        }
+        Update: {
+          captured_at?: string
+          channel?: string
+          clicks?: number
+          composite_score?: number
+          conversions?: number
+          created_at?: string
+          ctr?: number
+          external_id?: string | null
+          hook_family?: string | null
+          id?: string
+          impressions?: number
+          product_id?: string | null
+          queue_id?: string
+          save_rate?: number
+          saves?: number
+          updated_at?: string
+          view_rate?: number
+          views?: number
+        }
+        Relationships: []
+      }
       mi_competitor_observations: {
         Row: {
           aesthetic_category: string | null
