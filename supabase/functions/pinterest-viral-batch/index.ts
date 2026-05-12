@@ -904,6 +904,141 @@ serve(async (req) => {
   }
 
   const traceId = crypto.randomUUID();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Early-ack streaming layer (NDJSON). When the caller sets `?stream=1` or
+  // `{ stream: true }` in the body we:
+  //   1. Run resolveProduct() up-front and IMMEDIATELY flush a `lookup_ack`
+  //      frame so the admin UI can render product-found + diagnostics within
+  //      ~500ms (instead of waiting 60–90s for the full AI/backdrop pipeline).
+  //   2. Re-invoke this same function internally with `_internalSync=1` to
+  //      execute the full pipeline, then forward its JSON result as a
+  //      `result` frame.
+  //   3. Close the stream.
+  // The non-streaming path (default) is unchanged, so existing callers keep
+  // working.
+  // ─────────────────────────────────────────────────────────────────────────
+  if (req.method === "POST") {
+    const reqUrl = new URL(req.url);
+    let earlyBody: any = {};
+    try {
+      const cloned = req.clone();
+      earlyBody = await cloned.json();
+    } catch { /* ignore — falls through to non-stream path */ }
+    const wantsStream =
+      reqUrl.searchParams.get("stream") === "1" ||
+      reqUrl.searchParams.get("stream") === "true" ||
+      earlyBody?.stream === true;
+    const isInternalSync =
+      reqUrl.searchParams.get("_internalSync") === "1" ||
+      earlyBody?._internalSync === true;
+    if (wantsStream && !isInternalSync) {
+      const enc = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          const write = (obj: Record<string, unknown>) => {
+            try { controller.enqueue(enc.encode(JSON.stringify(obj) + "\n")); }
+            catch { /* client disconnected */ }
+          };
+          const startedAt = Date.now();
+          try {
+            // Run a quick lookup so the UI gets immediate visibility.
+            const slugInput =
+              (Array.isArray(earlyBody?.productSlugs) && earlyBody.productSlugs[0]) ||
+              earlyBody?.productSlug ||
+              "";
+            const normalized = normalizeSlugInput(String(slugInput || ""));
+            const sb = createClient(
+              Deno.env.get("SUPABASE_URL")!,
+              Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+            );
+            const { product, diag } = await resolveProduct(sb, normalized);
+            write({
+              event: "lookup_ack",
+              traceId,
+              ok: !!product,
+              slug: normalized,
+              elapsed_ms: Date.now() - startedAt,
+              product_found: !!product,
+              product_id: product?.id ?? null,
+              product_title: product?.name ?? null,
+              image_count: diag.image_count,
+              primary_image: diag.primary_image,
+              resolved_via: diag.resolved_via,
+              tables_checked: diag.tables_checked,
+              stages_run: diag.stages_run,
+              suggestions: diag.suggestions,
+              lookup: diag,
+            });
+            // Heartbeat so proxies don't buffer/close before the heavy work
+            // returns. ~25s interval is well under typical 60s idle limits.
+            const beat = setInterval(() => {
+              write({ event: "heartbeat", traceId, elapsed_ms: Date.now() - startedAt });
+            }, 25_000);
+            try {
+              // Re-invoke the same function synchronously to run the full
+              // pipeline. We build the canonical functions URL from
+              // SUPABASE_URL so we don't accidentally hit the gateway path.
+              const base = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
+              const innerUrl = new URL(
+                `${base}/functions/v1/pinterest-viral-batch?_internalSync=1`,
+              );
+              const fwdHeaders: Record<string, string> = {
+                "Content-Type": "application/json",
+              };
+              const auth = req.headers.get("authorization");
+              if (auth) fwdHeaders["Authorization"] = auth;
+              const apikey = req.headers.get("apikey");
+              if (apikey) fwdHeaders["apikey"] = apikey;
+              const innerBody = { ...earlyBody, _internalSync: true, stream: false };
+              const innerRes = await fetch(innerUrl.toString(), {
+                method: "POST",
+                headers: fwdHeaders,
+                body: JSON.stringify(innerBody),
+              });
+              const text = await innerRes.text();
+              let payload: unknown = text;
+              try { payload = JSON.parse(text); } catch { /* keep as text */ }
+              write({
+                event: "result",
+                traceId,
+                http_status: innerRes.status,
+                elapsed_ms: Date.now() - startedAt,
+                payload,
+              });
+            } catch (e) {
+              write({
+                event: "error",
+                traceId,
+                elapsed_ms: Date.now() - startedAt,
+                message: e instanceof Error ? e.message : String(e),
+              });
+            } finally {
+              clearInterval(beat);
+            }
+          } catch (e) {
+            write({
+              event: "error",
+              traceId,
+              message: e instanceof Error ? e.message : String(e),
+            });
+          } finally {
+            try { controller.close(); } catch { /* already closed */ }
+          }
+        },
+      });
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          ...headers,
+          "Content-Type": "application/x-ndjson; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "X-Accel-Buffering": "no",
+        },
+      });
+    }
+  }
+
   // Helper: always 200 to caller — frontend reads `ok` flag.
   const respond = (payload: Record<string, unknown>, status = 200) =>
     new Response(JSON.stringify({ traceId, ...payload }), {
