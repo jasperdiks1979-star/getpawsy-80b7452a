@@ -252,7 +252,7 @@ serve(async (req) => {
           publish_count: (asset.publish_count || 0) + 1,
         }).eq("id", asset.id);
         await log.info("retry published", { pin_id: result.pin_id }, { queue_id, asset_id: asset.id });
-        return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, external_url: result.external_url });
+        return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, pin_url: result.external_url, external_url: result.external_url, title: row.title, media_url: asset.public_url, board: board_id });
       }
       await sb.from("pinterest_video_queue").update({
         status: "failed", error_message: `${result.code}: ${result.message}`,
@@ -267,7 +267,7 @@ serve(async (req) => {
       if (!queue_id) return ok({ ok: false, code: "MISSING_QUEUE_ID", traceId: trace_id });
       const { data: row } = await sb.from("pinterest_video_queue").select("*").eq("id", queue_id).maybeSingle();
       if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
-      if (row.pin_id) return ok({ ok: true, traceId: trace_id, pin_id: row.pin_id, external_url: row.external_url, message: "already_published" });
+      if (row.pin_id) return ok({ ok: true, traceId: trace_id, pin_id: row.pin_id, pin_url: row.external_url, external_url: row.external_url, title: row.title, media_url: null, board: row.board_id, message: "already_published" });
       const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", row.asset_id).maybeSingle();
       if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
 
@@ -296,7 +296,7 @@ serve(async (req) => {
           publish_count: (asset.publish_count || 0) + 1,
         }).eq("id", asset.id);
         await log.info("published", { pin_id: result.pin_id }, { queue_id, asset_id: asset.id });
-        return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, external_url: result.external_url });
+        return ok({ ok: true, traceId: trace_id, pin_id: result.pin_id, pin_url: result.external_url, external_url: result.external_url, title: row.title, media_url: asset.public_url, board: board_id });
       } else {
         await sb.from("pinterest_video_queue").update({
           status: "failed",
