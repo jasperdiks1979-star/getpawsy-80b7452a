@@ -1184,6 +1184,78 @@ export default function PinterestVideoQueuePage() {
         </div>
       </Card>
 
+      <Card className="p-3 mb-3 border-emerald-500/40 bg-emerald-500/5">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Run full verification
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Auth → Discovery → Draft → Publish 1 test pin
+            </p>
+          </div>
+          <Button
+            onClick={runFullVerification}
+            disabled={verifying}
+            className="h-10 bg-emerald-600 hover:bg-emerald-600/90 text-white"
+            size="sm"
+          >
+            {verifying
+              ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Verifying…</>
+              : <><HeartPulse className="h-4 w-4 mr-1" /> Run full verification</>}
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          {([
+            ["auth", "1 · Admin auth"],
+            ["discovery", "2 · Discovery"],
+            ["drafts", "3 · Draft ready"],
+            ["publish", "4 · Test pin"],
+          ] as Array<[VerifyStepKey, string]>).map(([key, label]) => {
+            const s = verifySteps[key];
+            const tone =
+              s.status === "ok" ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+              : s.status === "fail" ? "border-red-500 bg-red-50 text-red-800"
+              : s.status === "running" ? "border-blue-500 bg-blue-50 text-blue-800"
+              : s.status === "skipped" ? "border-muted bg-muted/30 text-muted-foreground"
+              : "border-muted bg-background text-muted-foreground";
+            return (
+              <div key={key} className={`rounded-md border px-2.5 py-2 ${tone}`}>
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+                  {s.status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
+                  {s.status === "ok" && <CheckCircle2 className="h-3 w-3" />}
+                  {s.status === "fail" && <XCircle className="h-3 w-3" />}
+                  {s.status === "skipped" && <span className="h-3 w-3 inline-block rounded-full bg-muted-foreground/30" />}
+                  {s.status === "idle" && <span className="h-3 w-3 inline-block rounded-full border border-muted-foreground/40" />}
+                  <span>{label}</span>
+                </div>
+                <div className="text-xs mt-1 break-words">{s.message}</div>
+                {s.detail && (
+                  <div className="text-[10px] mt-0.5 opacity-80 break-words">{s.detail}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {verifyResult && (
+          <div className="mt-2 text-[11px]">
+            {verifyResult.ok ? (
+              <span className="text-emerald-700">
+                ✅ Pin published · queue {verifyResult.queue_id?.slice(0, 8)}…
+                {verifyResult.pin_id && <> · pin_id <code>{verifyResult.pin_id}</code></>}
+                {verifyResult.pin_url && (
+                  <> · <a href={verifyResult.pin_url} target="_blank" rel="noreferrer" className="underline">open pin</a></>
+                )}
+              </span>
+            ) : (
+              <span className="text-red-700">
+                ❌ Verification failed — see Debug Console below for full request/response.
+              </span>
+            )}
+          </div>
+        )}
+      </Card>
+
       <div className="flex flex-wrap gap-2 mb-3">
         <Button
           onClick={runPrepareAll}
