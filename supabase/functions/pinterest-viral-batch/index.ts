@@ -1421,8 +1421,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       let backdropAfterUrl: string | null = null;
       let backdropMeta: PexelsPhoto | null = null;
       let backdropSource: "pexels" | "cloudinary_fallback" | "none" = "none";
-      const wantsBackdrop = STYLES_NEEDING_BACKDROP.has(style)
-        || (useLifestyleBackdrop && (!backdropByHook || backdropByHook[hook.key]));
+      const wantsBackdrop = !productOnly && (
+        STYLES_NEEDING_BACKDROP.has(style)
+        || (useLifestyleBackdrop && (!backdropByHook || backdropByHook[hook.key]))
+      );
       if (wantsBackdrop) {
         // Primary: AI-generated cozy US-apartment scene via Nano Banana 2,
         // cached per-query in pinterest_ai_backdrops + storage so subsequent
