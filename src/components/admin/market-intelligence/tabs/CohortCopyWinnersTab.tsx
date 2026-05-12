@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, RefreshCw, Trophy, Pin, PinOff } from "lucide-react";
+import { Loader2, RefreshCw, Trophy, Pin, PinOff, History } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,6 +30,18 @@ export function CohortCopyWinnersTab() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  async function loadHistory() {
+    const { data, error } = await supabase
+      .from("cohort_copy_pin_history" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) toast.error(error.message);
+    setHistory((data ?? []) as any[]);
+  }
 
   async function load() {
     setLoading(true);
@@ -99,6 +111,18 @@ export function CohortCopyWinnersTab() {
           <Button size="sm" variant="outline" onClick={load} disabled={loading} className="gap-1">
             <RefreshCw className="h-3 w-3" /> Refresh
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const next = !showHistory;
+              setShowHistory(next);
+              if (next) await loadHistory();
+            }}
+            className="gap-1"
+          >
+            <History className="h-3 w-3" /> {showHistory ? "Hide" : "History"}
+          </Button>
           <Button size="sm" onClick={runElector} disabled={running} className="gap-1">
             {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trophy className="h-3 w-3" />}
             {running ? "Running…" : "Run elector"}
@@ -106,6 +130,57 @@ export function CohortCopyWinnersTab() {
         </div>
       </CardHeader>
       <CardContent>
+        {showHistory && (
+          <div className="mb-4 rounded border border-border bg-muted/30 p-3">
+            <div className="text-xs font-semibold mb-2 flex items-center gap-1">
+              <History className="h-3 w-3" /> Pin/Unpin/Decay audit log (last 50)
+            </div>
+            {history.length === 0 ? (
+              <div className="text-xs text-muted-foreground">No history yet.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>When</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Cohort</TableHead>
+                      <TableHead>Label</TableHead>
+                      <TableHead>Actor</TableHead>
+                      <TableHead>Reason</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {history.map((h) => (
+                      <TableRow key={h.id}>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(h.created_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              h.action === "pin" ? "default"
+                                : h.action === "unpin" ? "secondary"
+                                : "outline"
+                            }
+                          >
+                            {h.action}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {h.placement}/{h.mode}/{h.hook_family}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{h.winning_label ?? "—"}</TableCell>
+                        <TableCell className="text-xs">{h.actor ?? "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{h.reason ?? "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…
