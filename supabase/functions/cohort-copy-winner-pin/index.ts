@@ -90,12 +90,26 @@ Deno.serve(async (req) => {
           { onConflict: "placement,mode,hook_family" },
         );
       if (error) throw error;
+      await admin.from("cohort_copy_pin_history").insert({
+        action: "pin",
+        placement, mode, hook_family,
+        winning_label: winning_label ?? null,
+        actor: userData.user.email ?? userData.user.id,
+        reason: "manual pin via admin UI",
+      });
     } else {
       const { error } = await admin
         .from("cta_copy_winners_by_hook")
         .update({ pinned: false, pinned_at: null, pinned_by: null, notes: "unpinned" })
         .eq("placement", placement).eq("mode", mode).eq("hook_family", hook_family);
       if (error) throw error;
+      await admin.from("cohort_copy_pin_history").insert({
+        action: "unpin",
+        placement, mode, hook_family,
+        winning_label: winning_label ?? null,
+        actor: userData.user.email ?? userData.user.id,
+        reason: "manual unpin via admin UI",
+      });
     }
 
     return new Response(
