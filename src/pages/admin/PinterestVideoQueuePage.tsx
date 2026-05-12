@@ -1170,6 +1170,81 @@ export default function PinterestVideoQueuePage() {
     }
   }, []);
 
+  // ── Product-only preview ────────────────────────────────────────────────
+  const runProductPreview = useCallback(async () => {
+    const slug = previewSlug.trim();
+    if (!slug) {
+      toast({ title: "Enter a product slug", variant: "destructive" });
+      return;
+    }
+    setPreviewBusy(true);
+    setPreviewLookup(null);
+    setPreviewResult(null);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token;
+      if (!token) {
+        toast({ title: "Admin auth required", variant: "destructive" });
+        return;
+      }
+      const body = {
+        productSlug: slug,
+        dryRun: true,
+        useLifestyleBackdrop: false,
+        productOnly: productOnly,
+        pinLimit: 3,
+        stream: true,
+      };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-viral-batch?stream=1`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => "");
+        setPreviewResult({ ok: false, error: `HTTP ${res.status}: ${text.slice(0, 200)}` });
+        return;
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let finalPayload: any = null;
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const ev = JSON.parse(line);
+            if (ev.event === "lookup_ack") {
+              setPreviewLookup(ev);
+            } else if (ev.event === "result") {
+              finalPayload = ev.payload;
+            } else if (ev.event === "error") {
+              setPreviewResult({ ok: false, error: ev.message || "Stream error" });
+            }
+          } catch { /* ignore malformed NDJSON line */ }
+        }
+      }
+      if (finalPayload) {
+        setPreviewResult(finalPayload);
+      } else if (!previewResult) {
+        setPreviewResult({ ok: false, error: "No result received from stream" });
+      }
+    } catch (e: any) {
+      setPreviewResult({ ok: false, error: e?.message || "Network error" });
+    } finally {
+      setPreviewBusy(false);
+    }
+  }, [previewSlug, productOnly, SUPABASE_URL, SUPABASE_ANON]);
+
   const hookOptions = useMemo(() => {
     const set = new Set<string>(["all"]);
     assets.forEach((a) => set.add(a.hook_type));
