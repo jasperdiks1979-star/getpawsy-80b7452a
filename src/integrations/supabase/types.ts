@@ -1196,6 +1196,42 @@ export type Database = {
           },
         ]
       }
+      cohort_copy_pin_history: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          hook_family: string
+          id: number
+          mode: string
+          placement: string
+          reason: string | null
+          winning_label: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          hook_family: string
+          id?: number
+          mode: string
+          placement: string
+          reason?: string | null
+          winning_label?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          hook_family?: string
+          id?: number
+          mode?: string
+          placement?: string
+          reason?: string | null
+          winning_label?: string | null
+        }
+        Relationships: []
+      }
       competitor_alerts: {
         Row: {
           alert_type: string
