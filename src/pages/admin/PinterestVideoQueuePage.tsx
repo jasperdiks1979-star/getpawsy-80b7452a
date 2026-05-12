@@ -1187,6 +1187,10 @@ export default function PinterestVideoQueuePage() {
     setPreviewBusy(true);
     setPreviewLookup(null);
     setPreviewResult(null);
+    const startTs = Date.now();
+    setPreviewTimeline([{ ts: startTs, event: "start", label: `POST ?stream=1 (${slug})` }]);
+    const pushTl = (entry: { event: any; label: string; detail?: string; ok?: boolean }) =>
+      setPreviewTimeline((prev) => [...prev, { ts: Date.now(), ...entry }]);
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess?.session?.access_token;
@@ -1214,6 +1218,7 @@ export default function PinterestVideoQueuePage() {
       if (!res.ok || !res.body) {
         const text = await res.text().catch(() => "");
         setPreviewResult({ ok: false, error: `HTTP ${res.status}: ${text.slice(0, 200)}` });
+        pushTl({ event: "error", label: `HTTP ${res.status}`, detail: text.slice(0, 120), ok: false });
         return;
       }
       const reader = res.body.getReader();
@@ -1232,10 +1237,31 @@ export default function PinterestVideoQueuePage() {
             const ev = JSON.parse(line);
             if (ev.event === "lookup_ack") {
               setPreviewLookup(ev);
+              pushTl({
+                event: "lookup_ack",
+                label: ev.product_found ? "Resolver: product found" : "Resolver: NOT found",
+                detail: ev.product_found
+                  ? `${ev.resolved_via ?? "—"} · ${ev.image_count ?? 0} img · ${ev.elapsed_ms ?? "?"}ms`
+                  : `stages: ${(ev.stages_run ?? []).join(",") || "—"}`,
+                ok: !!ev.product_found,
+              });
+            } else if (ev.event === "heartbeat") {
+              pushTl({
+                event: "heartbeat",
+                label: "heartbeat",
+                detail: ev.elapsed_ms != null ? `${ev.elapsed_ms}ms` : undefined,
+              });
             } else if (ev.event === "result") {
               finalPayload = ev.payload;
+              pushTl({
+                event: "result",
+                label: "Result received",
+                detail: ev.payload?.pins ? `${ev.payload.pins.length} pin variant(s)` : undefined,
+                ok: ev.payload?.ok !== false,
+              });
             } else if (ev.event === "error") {
               setPreviewResult({ ok: false, error: ev.message || "Stream error" });
+              pushTl({ event: "error", label: "Stream error", detail: ev.message, ok: false });
             }
           } catch { /* ignore malformed NDJSON line */ }
         }
@@ -1244,9 +1270,12 @@ export default function PinterestVideoQueuePage() {
         setPreviewResult(finalPayload);
       } else if (!previewResult) {
         setPreviewResult({ ok: false, error: "No result received from stream" });
+        pushTl({ event: "error", label: "Stream closed without result", ok: false });
       }
+      pushTl({ event: "done", label: "Stream closed" });
     } catch (e: any) {
       setPreviewResult({ ok: false, error: e?.message || "Network error" });
+      pushTl({ event: "error", label: "Network error", detail: e?.message, ok: false });
     } finally {
       setPreviewBusy(false);
     }
