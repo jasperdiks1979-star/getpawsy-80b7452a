@@ -130,6 +130,9 @@ type ResolveDiagnostics = {
   resolved_id: string | null;
   resolved_slug: string | null;
   publish_status: boolean | null;
+  resolved_title: string | null;
+  image_count: number;
+  primary_image: string | null;
   suggestions: Array<{ slug: string; name: string; score?: number }>;
 };
 const PRODUCT_FIELDS = "id, name, slug, description, category, image_url, images, is_active, updated_at";
@@ -162,7 +165,25 @@ async function resolveProduct(
     resolved_id: null,
     resolved_slug: null,
     publish_status: null,
+    resolved_title: null,
+    image_count: 0,
+    primary_image: null,
     suggestions: [],
+  };
+
+  const finalize = (chosen: ResolvedProductRow, via: string) => {
+    diag.resolved_via = via;
+    diag.resolved_id = chosen.id;
+    diag.resolved_slug = chosen.slug;
+    diag.publish_status = !!chosen.is_active;
+    diag.resolved_title = chosen.name ?? null;
+    const imgs = [
+      chosen.image_url,
+      ...((Array.isArray(chosen.images) ? chosen.images : []) as Array<string | null>),
+    ].filter((u): u is string => typeof u === "string" && u.length > 0);
+    diag.image_count = imgs.length;
+    diag.primary_image = imgs[0] ?? null;
+    return { product: chosen, diag };
   };
 
   // Stage A — exact slug
@@ -177,11 +198,7 @@ async function resolveProduct(
     if (!error && Array.isArray(data) && data.length > 0) {
       diag.match_count = data.length;
       const chosen = pickCanonical(data as ResolvedProductRow[]);
-      diag.resolved_via = "exact_slug";
-      diag.resolved_id = chosen.id;
-      diag.resolved_slug = chosen.slug;
-      diag.publish_status = !!chosen.is_active;
-      return { product: chosen, diag };
+      return finalize(chosen, "exact_slug");
     }
   } catch (_e) { /* keep falling through */ }
 
@@ -198,11 +215,7 @@ async function resolveProduct(
       if (Array.isArray(data) && data.length > 0) {
         diag.match_count = data.length;
         const chosen = pickCanonical(data as ResolvedProductRow[]);
-        diag.resolved_via = "slug_prefix";
-        diag.resolved_id = chosen.id;
-        diag.resolved_slug = chosen.slug;
-        diag.publish_status = !!chosen.is_active;
-        return { product: chosen, diag };
+        return finalize(chosen, "slug_prefix");
       }
     } catch (_e) { /* continue */ }
   }
@@ -219,14 +232,60 @@ async function resolveProduct(
       if (Array.isArray(data) && data.length > 0) {
         diag.match_count = data.length;
         const chosen = pickCanonical(data as ResolvedProductRow[]);
-        diag.resolved_via = "slug_contains";
-        diag.resolved_id = chosen.id;
-        diag.resolved_slug = chosen.slug;
-        diag.publish_status = !!chosen.is_active;
-        return { product: chosen, diag };
+        return finalize(chosen, "slug_contains");
       }
     } catch (_e) { /* continue */ }
   }
+
+  // Stage C2 — products_public view (read-only fallback for anon-visible rows)
+  diag.stages_run.push("C2:products_public.slug");
+  diag.tables_checked.push("products_public");
+  try {
+    const { data } = await sb
+      .from("products_public")
+      .select(PRODUCT_FIELDS)
+      .or(`slug.eq.${normalized},slug.ilike.%${normalized}%`)
+      .limit(5);
+    if (Array.isArray(data) && data.length > 0) {
+      diag.match_count = data.length;
+      const chosen = pickCanonical(data as ResolvedProductRow[]);
+      return finalize(chosen, "products_public_slug");
+    }
+  } catch (_e) { /* continue */ }
+
+  // Stage C3 — name contains (turns slug words into a name search; resolves
+  // when slug doesn't match but the active product title does, e.g.
+  // "automatic cat litter" → "GetPawsy Automatic Cat Litter Box ...").
+  diag.stages_run.push("C3:products.name=contains");
+  try {
+    const phrase = normalized.replace(/-+/g, " ").trim();
+    if (phrase.length >= 4) {
+      const { data } = await sb
+        .from("products")
+        .select(PRODUCT_FIELDS)
+        .ilike("name", `%${phrase}%`)
+        .limit(10);
+      if (Array.isArray(data) && data.length > 0) {
+        diag.match_count = data.length;
+        const chosen = pickCanonical(data as ResolvedProductRow[]);
+        return finalize(chosen, "name_contains_full");
+      }
+      // Looser: try the first 3 word tokens joined
+      const first3 = phrase.split(/\s+/).slice(0, 3).join(" ");
+      if (first3 && first3 !== phrase) {
+        const { data: data2 } = await sb
+          .from("products")
+          .select(PRODUCT_FIELDS)
+          .ilike("name", `%${first3}%`)
+          .limit(10);
+        if (Array.isArray(data2) && data2.length > 0) {
+          diag.match_count = data2.length;
+          const chosen = pickCanonical(data2 as ResolvedProductRow[]);
+          return finalize(chosen, "name_contains_partial");
+        }
+      }
+    }
+  } catch (_e) { /* continue */ }
 
   // Stage D — keyword search across name/slug for suggestions only
   diag.stages_run.push("D:keyword_suggest");
@@ -950,14 +1009,18 @@ serve(async (req) => {
     if (!product) {
       return respond({
         ok: false,
+        status: "product_not_found",
         code: "PRODUCT_NOT_FOUND",
         error_code: "PRODUCT_LOOKUP_FAILED",
         message: `Product not found: ${slug}`,
+        slug,
         attempted_slug: slug,
         normalized_slug: lookupDiag.normalized_slug,
+        checkedTables: lookupDiag.tables_checked,
         tables_checked: lookupDiag.tables_checked,
         stages_run: lookupDiag.stages_run,
         suggestions: lookupDiag.suggestions,
+        suggestedMatches: lookupDiag.suggestions,
         lookup: lookupDiag,
         fallback: true,
       });
@@ -1535,7 +1598,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           dryRun: true,
           aiFallback,
           message: `Preview ${rows.length} pins (not queued)`,
-          product: { id: product.id, slug: product.slug, name: product.name },
+          product: {
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            image_count: lookupDiag.image_count,
+            primary_image: lookupDiag.primary_image,
+          },
+          lookup: lookupDiag,
           batchTag,
           health: dryHealth,
           diversity: {
@@ -1780,7 +1850,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       ok: true,
       aiFallback,
       message: `Queued ${inserted?.length ?? 0} viral pins`,
-      product: { id: product.id, slug: product.slug, name: product.name },
+      product: {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        image_count: lookupDiag.image_count,
+        primary_image: lookupDiag.primary_image,
+      },
+      lookup: lookupDiag,
       batchTag,
       pins: inserted,
       health,
