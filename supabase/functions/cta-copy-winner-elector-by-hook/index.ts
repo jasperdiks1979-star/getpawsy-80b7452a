@@ -19,6 +19,7 @@ const corsHeaders = {
 
 const WINDOW_HOURS = 48;
 const MIN_IMPRESSIONS = 30;
+const PIN_TTL_DAYS = 7;
 const PLACEMENTS = ["bio_primary", "bio_secondary", "bio_sticky"] as const;
 const MODES = ["calm", "urgent"] as const;
 
@@ -69,7 +70,26 @@ Deno.serve(async (req) => {
   try {
     const since = new Date(Date.now() - WINDOW_HOURS * 60 * 60 * 1000).toISOString();
 
-    // Phase 26: skip pinned cohorts so manual overrides aren't clobbered.
+    // Phase 28: auto-decay stale pins. Pins older than PIN_TTL_DAYS are
+    // released so manual overrides don't linger forever; auto-elector then
+    // re-evaluates the cohort on the next run.
+    const decayCutoff = new Date(Date.now() - PIN_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const { data: decayed } = await supabase
+      .from("cta_copy_winners_by_hook")
+      .update({
+        pinned: false,
+        pinned_at: null,
+        pinned_by: null,
+        notes: `auto-unpinned after ${PIN_TTL_DAYS}d TTL`,
+      })
+      .eq("pinned", true)
+      .lt("pinned_at", decayCutoff)
+      .select("placement, mode, hook_family");
+    const decayedKeys = (decayed ?? []).map(
+      (r: any) => `${r.placement}/${r.mode}/${r.hook_family}`,
+    );
+
+    // Phase 26: skip still-pinned cohorts so manual overrides aren't clobbered.
     const { data: pinnedRows } = await supabase
       .from("cta_copy_winners_by_hook")
       .select("placement, mode, hook_family")
@@ -216,6 +236,8 @@ Deno.serve(async (req) => {
         message: dryRun ? "dry-run" : `promoted ${promoted.length} cohort winner(s)`,
         window_hours: WINDOW_HOURS,
         min_impressions: MIN_IMPRESSIONS,
+        pin_ttl_days: PIN_TTL_DAYS,
+        auto_unpinned: decayedKeys,
         promoted,
         skipped_pinned: skippedPinned,
         elections,
