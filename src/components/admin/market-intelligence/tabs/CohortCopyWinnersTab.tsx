@@ -14,6 +14,7 @@ type Winner = {
   hook_family: string;
   winning_label: string;
   ctr_pct: number | null;
+  confidence_score: number | null;
   impressions: number;
   clicks: number;
   window_hours: number;
@@ -123,6 +124,7 @@ export function CohortCopyWinnersTab() {
                   <TableHead>Hook family</TableHead>
                   <TableHead>Winning label</TableHead>
                   <TableHead className="text-right">CTR</TableHead>
+                  <TableHead className="text-right">Confidence</TableHead>
                   <TableHead className="text-right">Impr.</TableHead>
                   <TableHead className="text-right">Clicks</TableHead>
                   <TableHead>Evaluated</TableHead>
@@ -145,6 +147,13 @@ export function CohortCopyWinnersTab() {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {r.ctr_pct != null ? `${Number(r.ctr_pct).toFixed(2)}%` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.confidence_score != null ? (
+                        <span title="Wilson 95% lower bound — higher = more confident">
+                          {(Number(r.confidence_score) * 100).toFixed(2)}%
+                        </span>
+                      ) : "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{r.impressions.toLocaleString()}</TableCell>
                     <TableCell className="text-right tabular-nums">{r.clicks.toLocaleString()}</TableCell>
