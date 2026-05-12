@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { TrendingUp, Plus } from "lucide-react";
+import { TrendingUp, Plus, RefreshCw } from "lucide-react";
 
 type Trend = {
   id: string;
@@ -33,6 +33,7 @@ const TREND_TYPES = [
 export function TrendRadarTab({ onChange }: { onChange?: () => void }) {
   const [trends, setTrends] = useState<Trend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [form, setForm] = useState({
     term: "", trend_type: "rising_product", category: "", season: "",
     score: 50, momentum: 0, source: "manual", notes: ""
@@ -68,8 +69,36 @@ export function TrendRadarTab({ onChange }: { onChange?: () => void }) {
     void load(); onChange?.();
   }
 
+  async function runSync() {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mi-ingest-internal", { body: {} });
+      if (error) throw error;
+      const stats = (data as { stats?: Record<string, number>; message?: string })?.stats;
+      toast.success((data as { message?: string })?.message ?? "Synced");
+      if (stats) console.log("[mi-ingest-internal]", stats);
+      void load(); onChange?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><RefreshCw className="h-4 w-4" /> Ingest internal US signals</CardTitle>
+          <CardDescription>Pulls last 30 days of US-only visitor activity &amp; orders, updates trend scores + momentum.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={runSync} disabled={syncing}>
+            {syncing ? "Syncing…" : "Run sync now"}
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Plus className="h-4 w-4" /> Add US trend</CardTitle>
