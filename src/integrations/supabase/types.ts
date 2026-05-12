@@ -3735,12 +3735,14 @@ export type Database = {
           created_at: string
           cta_copy_label: string | null
           cta_copy_mode: string | null
+          cta_copy_source: string | null
           cta_variant: string | null
           delta_ms: number | null
           dwell_ms: number | null
           event_name: string
           first_click_placement: string | null
           funnel: string | null
+          hook_family: string | null
           id: string
           is_first_click: boolean | null
           is_internal: boolean | null
@@ -3770,12 +3772,14 @@ export type Database = {
           created_at?: string
           cta_copy_label?: string | null
           cta_copy_mode?: string | null
+          cta_copy_source?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null
           event_name: string
           first_click_placement?: string | null
           funnel?: string | null
+          hook_family?: string | null
           id?: string
           is_first_click?: boolean | null
           is_internal?: boolean | null
@@ -3805,12 +3809,14 @@ export type Database = {
           created_at?: string
           cta_copy_label?: string | null
           cta_copy_mode?: string | null
+          cta_copy_source?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null
           event_name?: string
           first_click_placement?: string | null
           funnel?: string | null
+          hook_family?: string | null
           id?: string
           is_first_click?: boolean | null
           is_internal?: boolean | null
