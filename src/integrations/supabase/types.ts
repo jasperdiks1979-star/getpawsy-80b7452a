@@ -2340,6 +2340,638 @@ export type Database = {
         }
         Relationships: []
       }
+      gi_attribution_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          meta: Json | null
+          occurred_at: string
+          page_path: string | null
+          product_id: string | null
+          product_slug: string | null
+          quantity: number | null
+          revenue_cents: number | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          meta?: Json | null
+          occurred_at: string
+          page_path?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          quantity?: number | null
+          revenue_cents?: number | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          meta?: Json | null
+          occurred_at?: string
+          page_path?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          quantity?: number | null
+          revenue_cents?: number | null
+          session_id?: string
+        }
+        Relationships: []
+      }
+      gi_automation_actions: {
+        Row: {
+          acted_at: string
+          action: string
+          autopilot_mode: string
+          error: string | null
+          id: string
+          result: Json | null
+          status: string
+          target_id: string | null
+          target_kind: string | null
+        }
+        Insert: {
+          acted_at?: string
+          action: string
+          autopilot_mode: string
+          error?: string | null
+          id?: string
+          result?: Json | null
+          status: string
+          target_id?: string | null
+          target_kind?: string | null
+        }
+        Update: {
+          acted_at?: string
+          action?: string
+          autopilot_mode?: string
+          error?: string | null
+          id?: string
+          result?: Json | null
+          status?: string
+          target_id?: string | null
+          target_kind?: string | null
+        }
+        Relationships: []
+      }
+      gi_channel_performance_daily: {
+        Row: {
+          add_to_cart: number | null
+          channel: string
+          created_at: string
+          date: string
+          id: string
+          purchases: number | null
+          revenue_cents: number | null
+          sessions_excluded: number | null
+          sessions_us: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          channel: string
+          created_at?: string
+          date: string
+          id?: string
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_excluded?: number | null
+          sessions_us?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          channel?: string
+          created_at?: string
+          date?: string
+          id?: string
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_excluded?: number | null
+          sessions_us?: number | null
+        }
+        Relationships: []
+      }
+      gi_compliance_review_log: {
+        Row: {
+          id: string
+          outcome: string
+          payload: Json | null
+          reasons: string[] | null
+          reviewed_at: string
+          suggested_rewrite: string | null
+          target_id: string | null
+          target_kind: string
+        }
+        Insert: {
+          id?: string
+          outcome: string
+          payload?: Json | null
+          reasons?: string[] | null
+          reviewed_at?: string
+          suggested_rewrite?: string | null
+          target_id?: string | null
+          target_kind: string
+        }
+        Update: {
+          id?: string
+          outcome?: string
+          payload?: Json | null
+          reasons?: string[] | null
+          reviewed_at?: string
+          suggested_rewrite?: string | null
+          target_id?: string | null
+          target_kind?: string
+        }
+        Relationships: []
+      }
+      gi_creative_performance_daily: {
+        Row: {
+          add_to_cart: number | null
+          channel: string | null
+          clicks: number | null
+          content_item_id: string | null
+          created_at: string
+          date: string
+          id: string
+          impressions: number | null
+          outbound_clicks: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          saves: number | null
+          sessions_us: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          channel?: string | null
+          clicks?: number | null
+          content_item_id?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          impressions?: number | null
+          outbound_clicks?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          saves?: number | null
+          sessions_us?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          channel?: string | null
+          clicks?: number | null
+          content_item_id?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          impressions?: number | null
+          outbound_clicks?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          saves?: number | null
+          sessions_us?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gi_creative_performance_daily_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "gi_social_content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gi_ga4_events: {
+        Row: {
+          campaign: string | null
+          conversions: number | null
+          country: string | null
+          created_at: string
+          date: string
+          device: string | null
+          event_count: number | null
+          event_name: string | null
+          id: string
+          medium: string | null
+          page_path: string | null
+          raw: Json | null
+          revenue_cents: number | null
+          sessions: number | null
+          source: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          conversions?: number | null
+          country?: string | null
+          created_at?: string
+          date: string
+          device?: string | null
+          event_count?: number | null
+          event_name?: string | null
+          id?: string
+          medium?: string | null
+          page_path?: string | null
+          raw?: Json | null
+          revenue_cents?: number | null
+          sessions?: number | null
+          source?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          conversions?: number | null
+          country?: string | null
+          created_at?: string
+          date?: string
+          device?: string | null
+          event_count?: number | null
+          event_name?: string | null
+          id?: string
+          medium?: string | null
+          page_path?: string | null
+          raw?: Json | null
+          revenue_cents?: number | null
+          sessions?: number | null
+          source?: string | null
+        }
+        Relationships: []
+      }
+      gi_growth_decisions: {
+        Row: {
+          confidence: number | null
+          decided_at: string
+          decision_type: string
+          id: string
+          rationale: string | null
+          score: number | null
+          signals: Json | null
+          status: string
+          target_id: string
+          target_kind: string
+        }
+        Insert: {
+          confidence?: number | null
+          decided_at?: string
+          decision_type: string
+          id?: string
+          rationale?: string | null
+          score?: number | null
+          signals?: Json | null
+          status?: string
+          target_id: string
+          target_kind: string
+        }
+        Update: {
+          confidence?: number | null
+          decided_at?: string
+          decision_type?: string
+          id?: string
+          rationale?: string | null
+          score?: number | null
+          signals?: Json | null
+          status?: string
+          target_id?: string
+          target_kind?: string
+        }
+        Relationships: []
+      }
+      gi_gsc_metrics: {
+        Row: {
+          clicks: number | null
+          country: string | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          page: string | null
+          position: number | null
+          query: string | null
+          raw: Json | null
+        }
+        Insert: {
+          clicks?: number | null
+          country?: string | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          page?: string | null
+          position?: number | null
+          query?: string | null
+          raw?: Json | null
+        }
+        Update: {
+          clicks?: number | null
+          country?: string | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          page?: string | null
+          position?: number | null
+          query?: string | null
+          raw?: Json | null
+        }
+        Relationships: []
+      }
+      gi_pinterest_pin_metrics: {
+        Row: {
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          outbound_clicks: number | null
+          pin_clicks: number | null
+          pin_id: string
+          raw: Json | null
+          saves: number | null
+        }
+        Insert: {
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          outbound_clicks?: number | null
+          pin_clicks?: number | null
+          pin_id: string
+          raw?: Json | null
+          saves?: number | null
+        }
+        Update: {
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          outbound_clicks?: number | null
+          pin_clicks?: number | null
+          pin_id?: string
+          raw?: Json | null
+          saves?: number | null
+        }
+        Relationships: []
+      }
+      gi_product_performance_daily: {
+        Row: {
+          add_to_cart: number | null
+          checkouts: number | null
+          created_at: string
+          date: string
+          id: string
+          product_id: string | null
+          product_slug: string | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions_us: number | null
+          views: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          product_id?: string | null
+          product_slug?: string | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_us?: number | null
+          views?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          product_id?: string | null
+          product_slug?: string | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_us?: number | null
+          views?: number | null
+        }
+        Relationships: []
+      }
+      gi_settings: {
+        Row: {
+          autopilot_mode: string
+          country_allowlist: string[]
+          created_at: string
+          id: string
+          market: string
+          min_us_sessions_for_decisions: number
+          notes: string | null
+          pinterest_daily_cap: number
+          singleton: boolean
+          tiktok_daily_cap: number
+          updated_at: string
+        }
+        Insert: {
+          autopilot_mode?: string
+          country_allowlist?: string[]
+          created_at?: string
+          id?: string
+          market?: string
+          min_us_sessions_for_decisions?: number
+          notes?: string | null
+          pinterest_daily_cap?: number
+          singleton?: boolean
+          tiktok_daily_cap?: number
+          updated_at?: string
+        }
+        Update: {
+          autopilot_mode?: string
+          country_allowlist?: string[]
+          created_at?: string
+          id?: string
+          market?: string
+          min_us_sessions_for_decisions?: number
+          notes?: string | null
+          pinterest_daily_cap?: number
+          singleton?: boolean
+          tiktok_daily_cap?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gi_social_content_items: {
+        Row: {
+          asset_url: string | null
+          channel: string
+          created_at: string
+          description: string | null
+          destination_url: string | null
+          external_id: string | null
+          fingerprint: string | null
+          hook_family: string | null
+          id: string
+          meta: Json | null
+          product_slug: string | null
+          published_at: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_url?: string | null
+          channel: string
+          created_at?: string
+          description?: string | null
+          destination_url?: string | null
+          external_id?: string | null
+          fingerprint?: string | null
+          hook_family?: string | null
+          id?: string
+          meta?: Json | null
+          product_slug?: string | null
+          published_at?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_url?: string | null
+          channel?: string
+          created_at?: string
+          description?: string | null
+          destination_url?: string | null
+          external_id?: string | null
+          fingerprint?: string | null
+          hook_family?: string | null
+          id?: string
+          meta?: Json | null
+          product_slug?: string | null
+          published_at?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gi_tiktok_video_metrics: {
+        Row: {
+          avg_watch_seconds: number | null
+          comments: number | null
+          completion_rate: number | null
+          created_at: string
+          date: string
+          id: string
+          likes: number | null
+          profile_clicks: number | null
+          raw: Json | null
+          shares: number | null
+          video_id: string
+          views: number | null
+        }
+        Insert: {
+          avg_watch_seconds?: number | null
+          comments?: number | null
+          completion_rate?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          likes?: number | null
+          profile_clicks?: number | null
+          raw?: Json | null
+          shares?: number | null
+          video_id: string
+          views?: number | null
+        }
+        Update: {
+          avg_watch_seconds?: number | null
+          comments?: number | null
+          completion_rate?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          likes?: number | null
+          profile_clicks?: number | null
+          raw?: Json | null
+          shares?: number | null
+          video_id?: string
+          views?: number | null
+        }
+        Relationships: []
+      }
+      gi_traffic_sessions: {
+        Row: {
+          browser: string | null
+          campaign: string | null
+          city: string | null
+          content: string | null
+          country: string | null
+          created_at: string
+          device: string | null
+          id: string
+          is_bot: boolean
+          is_internal: boolean
+          is_us: boolean
+          landing_page: string | null
+          medium: string | null
+          pin_id: string | null
+          raw: Json | null
+          region: string | null
+          session_id: string
+          source: string | null
+          started_at: string
+          term: string | null
+          video_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          campaign?: string | null
+          city?: string | null
+          content?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          is_bot?: boolean
+          is_internal?: boolean
+          is_us?: boolean
+          landing_page?: string | null
+          medium?: string | null
+          pin_id?: string | null
+          raw?: Json | null
+          region?: string | null
+          session_id: string
+          source?: string | null
+          started_at: string
+          term?: string | null
+          video_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          campaign?: string | null
+          city?: string | null
+          content?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          is_bot?: boolean
+          is_internal?: boolean
+          is_us?: boolean
+          landing_page?: string | null
+          medium?: string | null
+          pin_id?: string | null
+          raw?: Json | null
+          region?: string | null
+          session_id?: string
+          source?: string | null
+          started_at?: string
+          term?: string | null
+          video_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       google_sheets_exports: {
         Row: {
           created_at: string
@@ -10736,6 +11368,231 @@ export type Database = {
           is_active?: boolean | null
           reward_type?: string | null
           reward_value?: number | null
+        }
+        Relationships: []
+      }
+      us_attribution_events_v: {
+        Row: {
+          created_at: string | null
+          event_type: string | null
+          id: string | null
+          meta: Json | null
+          occurred_at: string | null
+          page_path: string | null
+          product_id: string | null
+          product_slug: string | null
+          quantity: number | null
+          revenue_cents: number | null
+          session_id: string | null
+        }
+        Relationships: []
+      }
+      us_channel_performance_daily_v: {
+        Row: {
+          add_to_cart: number | null
+          channel: string | null
+          created_at: string | null
+          date: string | null
+          id: string | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions_excluded: number | null
+          sessions_us: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          channel?: string | null
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_excluded?: number | null
+          sessions_us?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          channel?: string | null
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_excluded?: number | null
+          sessions_us?: number | null
+        }
+        Relationships: []
+      }
+      us_creative_performance_daily_v: {
+        Row: {
+          add_to_cart: number | null
+          channel: string | null
+          clicks: number | null
+          content_item_id: string | null
+          created_at: string | null
+          date: string | null
+          id: string | null
+          impressions: number | null
+          outbound_clicks: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          saves: number | null
+          sessions_us: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          channel?: string | null
+          clicks?: number | null
+          content_item_id?: string | null
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          impressions?: number | null
+          outbound_clicks?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          saves?: number | null
+          sessions_us?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          channel?: string | null
+          clicks?: number | null
+          content_item_id?: string | null
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          impressions?: number | null
+          outbound_clicks?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          saves?: number | null
+          sessions_us?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gi_creative_performance_daily_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "gi_social_content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      us_product_performance_daily_v: {
+        Row: {
+          add_to_cart: number | null
+          checkouts: number | null
+          created_at: string | null
+          date: string | null
+          id: string | null
+          product_id: string | null
+          product_slug: string | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions_us: number | null
+          views: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_us?: number | null
+          views?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions_us?: number | null
+          views?: number | null
+        }
+        Relationships: []
+      }
+      us_traffic_sessions_v: {
+        Row: {
+          browser: string | null
+          campaign: string | null
+          city: string | null
+          content: string | null
+          country: string | null
+          created_at: string | null
+          device: string | null
+          id: string | null
+          is_bot: boolean | null
+          is_internal: boolean | null
+          is_us: boolean | null
+          landing_page: string | null
+          medium: string | null
+          pin_id: string | null
+          raw: Json | null
+          region: string | null
+          session_id: string | null
+          source: string | null
+          started_at: string | null
+          term: string | null
+          video_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          campaign?: string | null
+          city?: string | null
+          content?: string | null
+          country?: string | null
+          created_at?: string | null
+          device?: string | null
+          id?: string | null
+          is_bot?: boolean | null
+          is_internal?: boolean | null
+          is_us?: boolean | null
+          landing_page?: string | null
+          medium?: string | null
+          pin_id?: string | null
+          raw?: Json | null
+          region?: string | null
+          session_id?: string | null
+          source?: string | null
+          started_at?: string | null
+          term?: string | null
+          video_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          campaign?: string | null
+          city?: string | null
+          content?: string | null
+          country?: string | null
+          created_at?: string | null
+          device?: string | null
+          id?: string | null
+          is_bot?: boolean | null
+          is_internal?: boolean | null
+          is_us?: boolean | null
+          landing_page?: string | null
+          medium?: string | null
+          pin_id?: string | null
+          raw?: Json | null
+          region?: string | null
+          session_id?: string | null
+          source?: string | null
+          started_at?: string | null
+          term?: string | null
+          video_id?: string | null
+          visitor_id?: string | null
         }
         Relationships: []
       }
