@@ -4574,6 +4574,75 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_tuning_runs: {
+        Row: {
+          hook_multipliers: Json
+          id: string
+          notes: string | null
+          ran_at: string
+          recipes_boosted: number
+          recipes_deactivated: number
+          recipes_decayed: number
+          recipes_evaluated: number
+          threshold_after: number | null
+          threshold_before: number | null
+          window_days: number
+        }
+        Insert: {
+          hook_multipliers?: Json
+          id?: string
+          notes?: string | null
+          ran_at?: string
+          recipes_boosted?: number
+          recipes_deactivated?: number
+          recipes_decayed?: number
+          recipes_evaluated?: number
+          threshold_after?: number | null
+          threshold_before?: number | null
+          window_days?: number
+        }
+        Update: {
+          hook_multipliers?: Json
+          id?: string
+          notes?: string | null
+          ran_at?: string
+          recipes_boosted?: number
+          recipes_deactivated?: number
+          recipes_decayed?: number
+          recipes_evaluated?: number
+          threshold_after?: number | null
+          threshold_before?: number | null
+          window_days?: number
+        }
+        Relationships: []
+      }
+      mi_tuning_state: {
+        Row: {
+          id: string
+          key: string
+          metadata: Json
+          scope: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          id?: string
+          key: string
+          metadata?: Json
+          scope: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          id?: string
+          key?: string
+          metadata?: Json
+          scope?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
       monitoring_ad_actions: {
         Row: {
           action_type: string
