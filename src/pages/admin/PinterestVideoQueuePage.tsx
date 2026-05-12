@@ -548,6 +548,13 @@ export default function PinterestVideoQueuePage() {
       supabase.from("pinterest_video_assets").select("*").order("created_at", { ascending: false }),
       supabase.from("pinterest_video_queue").select("*").order("created_at", { ascending: false }),
     ]);
+    if (a.error || q.error) {
+      toast({
+        title: "Queue refresh blocked",
+        description: a.error?.message || q.error?.message || "Admin authorization required",
+        variant: "destructive",
+      });
+    }
     setAssets((a.data as VideoAsset[]) || []);
     setQueue((q.data as QueueRow[]) || []);
     setLoading(false);
@@ -956,6 +963,17 @@ export default function PinterestVideoQueuePage() {
     assets.forEach((a) => set.add(a.hook_type));
     return Array.from(set);
   }, [assets]);
+
+  const pipelineCounts = useMemo(() => {
+    const drafts = queue.filter((q) => q.status === "draft").length;
+    const publishable = queue.filter((q) => !["published", "publishing", "failed"].includes(q.status)).length;
+    return {
+      found: assets.length,
+      registered: assets.filter((a) => a.is_active).length,
+      drafts,
+      publishable,
+    };
+  }, [assets, queue]);
 
   return (
     <div className="container mx-auto px-3 py-4 pb-32 max-w-3xl">
