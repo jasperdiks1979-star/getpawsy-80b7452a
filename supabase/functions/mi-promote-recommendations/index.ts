@@ -1,6 +1,56 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
+// === Inline compliance gate (mirrored from mi-compliance-gate) ===
+const BANNED_TERMS: RegExp[] = [
+  /\bvet[-\s]?approved\b/i, /\bclinically\s+proven\b/i, /\bguaranteed\b/i,
+  /\b#\s*1\b/i, /\beco[-\s]?friendly\b/i, /\bsustainable\b/i,
+  /\bdropship(ping)?\b/i, /\bcures?\b/i,
+  /\btreats?\s+(anxiety|depression|disease)\b/i, /\bmiracle\b/i,
+  /\b100%\s+(safe|natural|organic)\b/i, /\bnext[-\s]?day\s+delivery\b/i,
+];
+function fingerprint(s: string): string {
+  return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(/\s+/).slice(0, 12).join(" ");
+}
+function bannedHits(text: string): string[] {
+  const hits: string[] = [];
+  for (const r of BANNED_TERMS) { const m = text.match(r); if (m) hits.push(m[0]); }
+  return hits;
+}
+async function checkImage(url: string | null | undefined) {
+  if (!url) return { ok: false, reason: "missing_image" };
+  try {
+    const u = new URL(url);
+    if (!/^https?:$/.test(u.protocol)) return { ok: false, reason: "invalid_protocol" };
+    const r = await fetch(url, { method: "HEAD" });
+    if (!r.ok) return { ok: false, reason: `image_status_${r.status}` };
+    const ct = r.headers.get("content-type") || "";
+    if (!ct.startsWith("image/")) return { ok: false, reason: "not_image_content_type" };
+    return { ok: true };
+  } catch (e: any) { return { ok: false, reason: `image_fetch_error` }; }
+}
+async function runGate(sb: any, input: { product: any; pin_title: string; pin_description: string; caption: string }) {
+  const reasons: string[] = [];
+  if (!input.product.active) reasons.push("product_inactive");
+  if (input.product.price == null || Number(input.product.price) <= 0) reasons.push("invalid_price");
+  const banned = bannedHits(`${input.pin_title}\n${input.pin_description}\n${input.caption}`);
+  if (banned.length) reasons.push(`banned_terms:${banned.join("|")}`);
+  if (input.pin_title.length < 8) reasons.push("title_too_short");
+  if (input.pin_description.length < 20) reasons.push("description_too_short");
+  const img = await checkImage(input.product.image_url);
+  if (!img.ok) reasons.push(img.reason || "image_invalid");
+  const pinFp = fingerprint(`${input.pin_title} ${input.pin_description}`);
+  const tkFp = fingerprint(input.caption);
+  const since = new Date(Date.now() - 14 * 86400_000).toISOString();
+  const [{ data: pinDup }, { data: tkDup }] = await Promise.all([
+    sb.from("pinterest_pin_queue").select("id,pin_title,pin_description,created_at").eq("product_id", input.product.id).gte("created_at", since).limit(50),
+    sb.from("tiktok_post_queue").select("id,caption,created_at").eq("product_id", input.product.id).gte("created_at", since).limit(50),
+  ]);
+  if ((pinDup ?? []).some((r: any) => fingerprint(`${r.pin_title} ${r.pin_description}`) === pinFp)) reasons.push("duplicate_pin_fingerprint_14d");
+  if ((tkDup ?? []).some((r: any) => fingerprint(r.caption) === tkFp)) reasons.push("duplicate_tiktok_fingerprint_14d");
+  return { pass: reasons.length === 0, reasons };
+}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -113,6 +163,26 @@ Deno.serve(async (req) => {
       readiness_score: c.score,
     };
 
+    // Compliance & QA gate (banned terms, image validity, dedup fingerprint)
+    const gate = await runGate(sb, {
+      product: c.product,
+      pin_title: pinTitle,
+      pin_description: pinDesc,
+      caption,
+    });
+    promotion.gate_pass = gate.pass;
+    promotion.gate_reasons = gate.reasons;
+
+    if (!gate.pass) {
+      if (!dryRun) {
+        await sb.from("mi_recommendations")
+          .update({ status: "blocked", evidence_refs: [...(c.rec.evidence_refs ?? []), { gate_blocked: gate.reasons }] })
+          .eq("id", c.rec.id);
+      }
+      results.push(promotion);
+      continue;
+    }
+
     if (!dryRun) {
       const { data: pin, error: pinErr } = await sb.from("pinterest_pin_queue").insert({
         product_id: c.product.id,
@@ -127,6 +197,7 @@ Deno.serve(async (req) => {
         priority: "high",
         hook_group: c.recipe.hook_family,
         category_key: c.trend?.category ?? null,
+        qa_reasons: ["mi_gate_passed"],
         meta: { source: "mi_promote", recipe_id: c.recipe.id, trend_id: c.trend?.id, recommendation_id: c.rec.id, readiness: c.score },
       }).select("id").maybeSingle();
       promotion.pinterest_pin_id = pin?.id ?? null;

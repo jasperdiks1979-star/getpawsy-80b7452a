@@ -19,6 +19,7 @@ import { RemixEngineTab } from "./tabs/RemixEngineTab";
 import { FeedbackLoopTab } from "./tabs/FeedbackLoopTab";
 import { OverviewDashboardTab } from "./tabs/OverviewDashboardTab";
 import { PublishReadinessTab } from "./tabs/PublishReadinessTab";
+import { ComplianceGateTab } from "./tabs/ComplianceGateTab";
 
 type Counters = {
   trends: number;
@@ -115,6 +116,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="seasonal">Seasonal Forecasts</TabsTrigger>
           <TabsTrigger value="next">Recommended Next</TabsTrigger>
           <TabsTrigger value="feedback">Feedback Loop</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance Gate</TabsTrigger>
           <TabsTrigger value="readiness">Publish Readiness</TabsTrigger>
         </TabsList>
 
@@ -129,6 +131,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="seasonal"><SeasonalForecastsTab /></TabsContent>
         <TabsContent value="next"><RecommendedNextTab onChange={loadCounters} /></TabsContent>
         <TabsContent value="feedback"><FeedbackLoopTab /></TabsContent>
+        <TabsContent value="compliance"><ComplianceGateTab /></TabsContent>
         <TabsContent value="readiness"><PublishReadinessTab /></TabsContent>
       </Tabs>
     </div>
