@@ -353,6 +353,12 @@ export default function PinterestVideoQueuePage() {
     detail?: string;
     ok?: boolean;
   }>>([]);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    if (!previewBusy) return;
+    const id = setInterval(() => setNowTick(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [previewBusy]);
   const [previewResult, setPreviewResult] = useState<{
     ok: boolean;
     message?: string;
