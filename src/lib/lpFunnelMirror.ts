@@ -129,6 +129,13 @@ export function mirrorLpFunnelEvent(
     // nudge, arrow, etc.) so the elector's GROUP BY skips them naturally.
     cta_copy_label: pickString(params, 'cta_copy_label'),
     cta_copy_mode: pickString(params, 'cta_copy_mode'),
+    // Phase 23/24 — cohort attribution. `hook_family` is the visitor's
+    // resolved cohort (smell_pain / time_pain / direct_buyer / …);
+    // `cta_copy_source` is 'cohort' | 'elected' | 'default' depending on
+    // whether the displayed copy came from the hook-family preference,
+    // the auto-elected winner, or the build-time fallback.
+    hook_family: pickString(params, 'hook_family'),
+    cta_copy_source: pickString(params, 'cta_copy_source'),
     is_internal: isInternal,
     // Visitor cohort — 'first_session' (cold TikTok traffic, no prior visit)
     // vs 'returning'. Lets us segment heatmaps and CTR by cohort to see

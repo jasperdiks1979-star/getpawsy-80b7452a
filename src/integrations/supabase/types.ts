@@ -1762,6 +1762,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cta_copy_winners_by_hook: {
+        Row: {
+          clicks: number
+          ctr_pct: number | null
+          evaluated_at: string
+          hook_family: string
+          id: number
+          impressions: number
+          mode: string
+          notes: string | null
+          placement: string
+          window_hours: number
+          winning_label: string
+        }
+        Insert: {
+          clicks?: number
+          ctr_pct?: number | null
+          evaluated_at?: string
+          hook_family: string
+          id?: number
+          impressions?: number
+          mode: string
+          notes?: string | null
+          placement: string
+          window_hours?: number
+          winning_label: string
+        }
+        Update: {
+          clicks?: number
+          ctr_pct?: number | null
+          evaluated_at?: string
+          hook_family?: string
+          id?: number
+          impressions?: number
+          mode?: string
+          notes?: string | null
+          placement?: string
+          window_hours?: number
+          winning_label?: string
+        }
+        Relationships: []
+      }
       cta_variant_config: {
         Row: {
           ab_test_enabled: boolean
@@ -3693,12 +3735,14 @@ export type Database = {
           created_at: string
           cta_copy_label: string | null
           cta_copy_mode: string | null
+          cta_copy_source: string | null
           cta_variant: string | null
           delta_ms: number | null
           dwell_ms: number | null
           event_name: string
           first_click_placement: string | null
           funnel: string | null
+          hook_family: string | null
           id: string
           is_first_click: boolean | null
           is_internal: boolean | null
@@ -3728,12 +3772,14 @@ export type Database = {
           created_at?: string
           cta_copy_label?: string | null
           cta_copy_mode?: string | null
+          cta_copy_source?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null
           event_name: string
           first_click_placement?: string | null
           funnel?: string | null
+          hook_family?: string | null
           id?: string
           is_first_click?: boolean | null
           is_internal?: boolean | null
@@ -3763,12 +3809,14 @@ export type Database = {
           created_at?: string
           cta_copy_label?: string | null
           cta_copy_mode?: string | null
+          cta_copy_source?: string | null
           cta_variant?: string | null
           delta_ms?: number | null
           dwell_ms?: number | null
           event_name?: string
           first_click_placement?: string | null
           funnel?: string | null
+          hook_family?: string | null
           id?: string
           is_first_click?: boolean | null
           is_internal?: boolean | null
