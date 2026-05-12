@@ -4127,6 +4127,48 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_audience_clusters: {
+        Row: {
+          channel: string
+          cohort_key: string
+          cohort_landing: string | null
+          cohort_source: string | null
+          computed_at: string
+          conversions: number
+          hook_family: string
+          id: string
+          metadata: Json
+          revenue: number
+          share: number
+        }
+        Insert: {
+          channel: string
+          cohort_key: string
+          cohort_landing?: string | null
+          cohort_source?: string | null
+          computed_at?: string
+          conversions?: number
+          hook_family: string
+          id?: string
+          metadata?: Json
+          revenue?: number
+          share?: number
+        }
+        Update: {
+          channel?: string
+          cohort_key?: string
+          cohort_landing?: string | null
+          cohort_source?: string | null
+          computed_at?: string
+          conversions?: number
+          hook_family?: string
+          id?: string
+          metadata?: Json
+          revenue?: number
+          share?: number
+        }
+        Relationships: []
+      }
       mi_channel_metrics: {
         Row: {
           captured_at: string
