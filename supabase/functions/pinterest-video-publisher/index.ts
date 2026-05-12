@@ -16,6 +16,10 @@ function ok(b: unknown) {
   return new Response(JSON.stringify(b), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+function json(b: unknown, status = 200) {
+  return new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
 async function logStage(sb: any, queue_id: string | null, stage: string, status: string, payload: unknown, trace_id: string) {
   try {
     await sb.from("pinterest_video_publish_log").insert({ queue_id, stage, status, payload, trace_id });
@@ -24,13 +28,15 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
 
 async function getAdminClient(req: Request) {
   const sbAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) return { sb: sbAdmin, user: null, isAdmin: false, authError: "MISSING_BEARER_TOKEN" };
   const sbUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+    global: { headers: { Authorization: authHeader } },
   });
-  const { data: { user } } = await sbUser.auth.getUser();
-  if (!user) return { sb: sbAdmin, user: null, isAdmin: false };
-  const { data: r } = await sbAdmin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-  return { sb: sbAdmin, user, isAdmin: !!r };
+  const { data: { user }, error } = await sbUser.auth.getUser();
+  if (error || !user) return { sb: sbAdmin, user: null, isAdmin: false, authError: error?.message || "INVALID_USER_TOKEN" };
+  const { data: r, error: roleError } = await sbAdmin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+  return { sb: sbAdmin, user, isAdmin: !!r, authError: roleError?.message || null };
 }
 
 async function getPinterestToken(sb: any): Promise<string | null> {
@@ -133,8 +139,15 @@ serve(async (req) => {
   const log = createPvLogger(sbBoot, "pinterest-video-publisher", trace_id);
   try {
     await log.info("entered handler");
-    const { sb, isAdmin } = await getAdminClient(req);
-    if (!isAdmin) { await log.warn("forbidden"); return ok({ ok: false, code: "FORBIDDEN", traceId: trace_id }); }
+    const { sb, user, isAdmin, authError } = await getAdminClient(req);
+    if (!user) {
+      await log.warn("unauthenticated", { auth_error: authError });
+      return json({ ok: false, code: "UNAUTHENTICATED", traceId: trace_id, message: authError || "Missing authenticated admin JWT" }, 401);
+    }
+    if (!isAdmin) {
+      await log.warn("forbidden", { user_id: user.id, email: user.email, auth_error: authError });
+      return json({ ok: false, code: "FORBIDDEN", traceId: trace_id, message: "Admin authorization required", user_id: user.id, email: user.email }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action || "queue_draft") as
