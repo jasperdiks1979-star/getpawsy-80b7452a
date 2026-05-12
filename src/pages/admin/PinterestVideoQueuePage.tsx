@@ -341,6 +341,28 @@ export default function PinterestVideoQueuePage() {
     queue_id?: string | null;
   } | null>(null);
 
+  // ── Product-only preview state ──────────────────────────────────────────
+  const [previewSlug, setPreviewSlug] = useState("automatic-cat-litter-box-self-cleaning-app-control");
+  const [productOnly, setProductOnly] = useState(false);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewLookup, setPreviewLookup] = useState<any | null>(null);
+  const [previewResult, setPreviewResult] = useState<{
+    ok: boolean;
+    message?: string;
+    product?: { id: string; slug: string; name: string; image_count: number; primary_image: string | null } | null;
+    lookup?: any;
+    pins?: Array<{
+      hook_group: string;
+      pin_variant: string;
+      pin_title: string;
+      pin_image_url: string;
+      backdrop_url: string | null;
+      backdrop_source: string | null;
+      uses_lifestyle_backdrop: boolean;
+    }>;
+    error?: string;
+  } | null>(null);
+
   // Direct fetch wrapper so we capture HTTP status, raw response and timing.
   // Falls back to a clear "Admin auth required" message on 401/403.
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
