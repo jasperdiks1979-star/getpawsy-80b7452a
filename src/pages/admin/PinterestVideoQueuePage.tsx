@@ -901,6 +901,153 @@ export default function PinterestVideoQueuePage() {
   }, [ranked, pushTrace, load]);
 
   // ───────────────── Per-step rerun helpers ─────────────────
+  const setStep = useCallback((key: VerifyStepKey, patch: Partial<VerifyStep>) => {
+    setVerifySteps((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  }, []);
+
+  const runFullVerification = useCallback(async () => {
+    if (verifying) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    setVerifySteps({
+      auth: { status: "running", message: "Checking admin session…" },
+      discovery: { status: "idle", message: "Waiting" },
+      drafts: { status: "idle", message: "Waiting" },
+      publish: { status: "idle", message: "Waiting" },
+    });
+    toast({ title: "Full verification started", description: "Auth → Discovery → Publish 1 test pin" });
+
+    // 1) Auth
+    const auth = await refreshAuthState();
+    if (!auth.authenticated || !auth.admin) {
+      setStep("auth", {
+        status: "fail",
+        message: auth.authenticated ? "Not an admin" : "Not signed in",
+        detail: auth.error || `role=${auth.role}, admin=${auth.admin}`,
+      });
+      setStep("discovery", { status: "skipped", message: "Skipped (auth failed)" });
+      setStep("drafts", { status: "skipped", message: "Skipped (auth failed)" });
+      setStep("publish", { status: "skipped", message: "Skipped (auth failed)" });
+      toast({ title: "Verification stopped at Auth", description: "Sign in as an admin and retry.", variant: "destructive" });
+      setVerifying(false);
+      return;
+    }
+    setStep("auth", {
+      status: "ok",
+      message: `Admin OK · ${auth.email || auth.userId?.slice(0, 8) || "user"}`,
+      detail: `role=${auth.role}, jwt=${auth.jwtExists ? "yes" : "no"}`,
+    });
+
+    // 2) Discovery
+    setStep("discovery", { status: "running", message: "Scanning storage buckets…" });
+    const discEv = await invokeDebug("pinterest-video-discovery", { action: "discover" });
+    const discData: any = discEv.response || {};
+    const discOk = !discEv.error && discData?.ok !== false;
+    if (!discOk) {
+      setStep("discovery", {
+        status: "fail",
+        message: discData?.code || discEv.error || "Discovery failed",
+        detail: typeof discData?.message === "string" ? discData.message : undefined,
+      });
+      setStep("drafts", { status: "skipped", message: "Skipped (discovery failed)" });
+      setStep("publish", { status: "skipped", message: "Skipped (discovery failed)" });
+      toast({ title: "Verification stopped at Discovery", description: discData?.message || discEv.error || "See Debug Console", variant: "destructive" });
+      setVerifying(false);
+      return;
+    }
+    const found = Number(discData?.totals?.assets ?? discData?.assets ?? discData?.found ?? 0);
+    setStep("discovery", {
+      status: "ok",
+      message: `Found ${found} video asset${found === 1 ? "" : "s"}`,
+      detail: discEv.trace_id ? `trace ${discEv.trace_id.slice(0, 8)}…` : undefined,
+    });
+
+    // Refresh queue list so we can pick a draft to publish.
+    await load();
+
+    // 3) Drafts — ensure at least one publishable draft exists
+    setStep("drafts", { status: "running", message: "Ensuring publishable draft exists…" });
+    let queueId: string | null = null;
+    try {
+      const { data: existing } = await supabase
+        .from("pinterest_video_pin_queue")
+        .select("id, status")
+        .not("status", "in", "(published,publishing)")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      queueId = existing?.[0]?.id || null;
+    } catch { /* fall through to generation */ }
+
+    if (!queueId) {
+      const draftsEv = await invokeDebug("pinterest-video-publisher", { action: "queue_all_drafts" });
+      const draftsData: any = draftsEv.response || {};
+      if (draftsEv.error || draftsData?.ok === false) {
+        setStep("drafts", {
+          status: "fail",
+          message: draftsData?.code || draftsEv.error || "Draft generation failed",
+          detail: draftsData?.message,
+        });
+        setStep("publish", { status: "skipped", message: "Skipped (no draft)" });
+        toast({ title: "Verification stopped at Drafts", description: draftsData?.message || draftsEv.error || "See Debug Console", variant: "destructive" });
+        setVerifying(false);
+        return;
+      }
+      try {
+        const { data: fresh } = await supabase
+          .from("pinterest_video_pin_queue")
+          .select("id")
+          .not("status", "in", "(published,publishing)")
+          .order("created_at", { ascending: false })
+          .limit(1);
+        queueId = fresh?.[0]?.id || null;
+      } catch { /* will fail below */ }
+    }
+
+    if (!queueId) {
+      setStep("drafts", { status: "fail", message: "No eligible draft after generation" });
+      setStep("publish", { status: "skipped", message: "Skipped (no draft)" });
+      toast({ title: "No draft available", description: "Check the Discover step output and try again.", variant: "destructive" });
+      setVerifying(false);
+      return;
+    }
+    setStep("drafts", { status: "ok", message: `Draft ready · ${queueId.slice(0, 8)}…` });
+
+    // 4) Publish 1 test pin
+    setStep("publish", { status: "running", message: "Publishing 1 test video pin…" });
+    setLastPublishIds([queueId]);
+    const pubEv = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: queueId });
+    const pubData: any = pubEv.response || {};
+    const pubOk = !pubEv.error && !!pubData?.ok;
+    if (!pubOk) {
+      setStep("publish", {
+        status: "fail",
+        message: pubData?.code || pubEv.error || "Publish failed",
+        detail: typeof pubData?.message === "string" ? pubData.message : undefined,
+      });
+      setVerifyResult({ ok: false, queue_id: queueId });
+      toast({
+        title: "Test publish failed",
+        description: pubData?.message || pubData?.code || pubEv.error || "See Debug Console",
+        variant: "destructive",
+      });
+    } else {
+      const pinId = pubData?.pin_id || pubData?.data?.id || null;
+      const pinUrl = pubData?.pin_url || pubData?.external_url || pubData?.data?.url || null;
+      setStep("publish", {
+        status: "ok",
+        message: pinId ? `Published · ${pinId}` : "Published",
+        detail: pinUrl || undefined,
+      });
+      setVerifyResult({ ok: true, pin_id: pinId, pin_url: pinUrl, queue_id: queueId });
+      toast({
+        title: "Verification passed",
+        description: pinUrl ? `Live pin: ${pinUrl}` : `pin_id=${pinId || "?"}`,
+      });
+    }
+    await load();
+    setVerifying(false);
+  }, [verifying, refreshAuthState, invokeDebug, setStep, load]);
+
   // Each helper repeats exactly one stage of the pipeline with the same input
   // it would have used inside `runPrepareAll` / `publishSelected`, so the user
   // can iterate on a single failing stage without re-running the whole flow.
