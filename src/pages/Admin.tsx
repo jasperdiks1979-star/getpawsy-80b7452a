@@ -1566,23 +1566,31 @@ const Admin = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
               <DropdownMenu>
-                <TouchTooltip content="Pinterest shortcuts">
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors"
-                      aria-label="Pinterest shortcuts"
-                    >
-                      <PinterestIcon className="w-3.5 h-3.5 shrink-0" />
-                      <span className="hidden xs:inline">Pinterest</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                </TouchTooltip>
-                <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto w-56">
-                  <DropdownMenuLabel>Pinterest</DropdownMenuLabel>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    title="Pinterest shortcuts"
+                    aria-label="Pinterest shortcuts"
+                    className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors cursor-pointer"
+                  >
+                    <PinterestIcon className="w-3.5 h-3.5 shrink-0 text-[#E60023]" />
+                    <span className="hidden xs:inline">Pinterest</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={4} className="max-h-[70vh] overflow-y-auto w-60 z-50">
+                  <DropdownMenuLabel className="flex items-center gap-2">
+                    <PinterestIcon className="w-4 h-4 text-[#E60023]" /> Pinterest
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {PINTEREST_SHORTCUTS.map((s) => (
-                    <DropdownMenuItem key={s.to} onSelect={() => navigate(s.to)}>
+                    <DropdownMenuItem
+                      key={s.to}
+                      className="cursor-pointer"
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        navigate(s.to);
+                      }}
+                    >
                       {s.label}
                     </DropdownMenuItem>
                   ))}
