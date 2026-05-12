@@ -4085,6 +4085,48 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_arm_revenue: {
+        Row: {
+          channel: string
+          computed_at: string
+          conversions: number
+          est_spend: number
+          hook_family: string
+          id: string
+          metadata: Json
+          rev_per_click: number
+          revenue: number
+          roas: number
+          window_days: number
+        }
+        Insert: {
+          channel: string
+          computed_at?: string
+          conversions?: number
+          est_spend?: number
+          hook_family: string
+          id?: string
+          metadata?: Json
+          rev_per_click?: number
+          revenue?: number
+          roas?: number
+          window_days?: number
+        }
+        Update: {
+          channel?: string
+          computed_at?: string
+          conversions?: number
+          est_spend?: number
+          hook_family?: string
+          id?: string
+          metadata?: Json
+          rev_per_click?: number
+          revenue?: number
+          roas?: number
+          window_days?: number
+        }
+        Relationships: []
+      }
       mi_channel_metrics: {
         Row: {
           captured_at: string
