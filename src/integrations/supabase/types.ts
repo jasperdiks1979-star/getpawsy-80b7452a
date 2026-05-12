@@ -1765,6 +1765,7 @@ export type Database = {
       cta_copy_winners_by_hook: {
         Row: {
           clicks: number
+          confidence_score: number | null
           ctr_pct: number | null
           evaluated_at: string
           hook_family: string
@@ -1781,6 +1782,7 @@ export type Database = {
         }
         Insert: {
           clicks?: number
+          confidence_score?: number | null
           ctr_pct?: number | null
           evaluated_at?: string
           hook_family: string
@@ -1797,6 +1799,7 @@ export type Database = {
         }
         Update: {
           clicks?: number
+          confidence_score?: number | null
           ctr_pct?: number | null
           evaluated_at?: string
           hook_family?: string
