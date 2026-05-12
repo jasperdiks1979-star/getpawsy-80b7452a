@@ -1187,6 +1187,65 @@ export default function PinterestVideoQueuePage() {
   }, []);
 
   // ── Product-only preview ────────────────────────────────────────────────
+  const importShareJson = useCallback((text: string) => {
+    const trimmed = (text ?? "").trim();
+    if (!trimmed) {
+      toast({ title: "Paste a resolver-debug block first", variant: "destructive" });
+      return false;
+    }
+    // Accept either raw JSON or a markdown share block (```json ... ```).
+    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    let jsonStr = fenceMatch ? fenceMatch[1] : trimmed;
+    // If the user pasted the share template, strip the leading **filename** line.
+    if (!fenceMatch && jsonStr.startsWith("**")) {
+      const nl = jsonStr.indexOf("\n");
+      if (nl !== -1) jsonStr = jsonStr.slice(nl + 1).trim();
+    }
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (e: any) {
+      toast({ title: "Invalid JSON", description: e?.message?.slice(0, 120), variant: "destructive" });
+      return false;
+    }
+    if (!parsed || typeof parsed !== "object") {
+      toast({ title: "Unexpected payload shape", variant: "destructive" });
+      return false;
+    }
+    if (!parsed.lookup && !parsed.timeline && !parsed.result) {
+      toast({ title: "No resolver fields found", description: "Expected lookup, result, or timeline", variant: "destructive" });
+      return false;
+    }
+    if (typeof parsed.slug_input === "string") setPreviewSlug(parsed.slug_input);
+    if (typeof parsed.product_only === "boolean") setProductOnly(parsed.product_only);
+    setPreviewLookup(parsed.lookup ?? null);
+    setPreviewResult(parsed.result ?? null);
+    const tl = Array.isArray(parsed.timeline) ? parsed.timeline : [];
+    setPreviewTimeline(
+      tl.map((t: any) => ({
+        ts: typeof t.ts === "number" ? t.ts : (t.ts_iso ? Date.parse(t.ts_iso) : Date.now()),
+        event: t.event ?? "start",
+        label: t.label ?? String(t.event ?? "event"),
+        detail: t.detail,
+        ok: t.ok,
+      })),
+    );
+    // Reconstruct synthetic raw frames from timeline so the Raw NDJSON button works.
+    setPreviewRawFrames(
+      tl
+        .filter((t: any) => t.event && t.event !== "start" && t.event !== "done")
+        .map((t: any) => ({
+          ts: typeof t.ts === "number" ? t.ts : Date.now(),
+          line: JSON.stringify({ event: t.event, label: t.label, detail: t.detail, ok: t.ok }),
+        })),
+    );
+    toast({
+      title: "Resolver debug imported",
+      description: `${tl.length} timeline event(s) · lookup: ${parsed.lookup ? "yes" : "no"} · result: ${parsed.result ? "yes" : "no"}`,
+    });
+    return true;
+  }, []);
+
   const runProductPreview = useCallback(async () => {
     const slug = previewSlug.trim();
     if (!slug) {
