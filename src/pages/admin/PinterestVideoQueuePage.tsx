@@ -1916,9 +1916,13 @@ export default function PinterestVideoQueuePage() {
             ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> {prepareStep || "Preparing…"}</>
             : <><Wand2 className="h-4 w-4 mr-1" /> Prepare all (1-click)</>}
         </Button>
-        <Button onClick={runDiscovery} disabled={discovering} className="h-11" size="sm">
+        <Button onClick={() => runDiscovery()} disabled={discovering} className="h-11" size="sm">
           {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
           Discover videos
+        </Button>
+        <Button onClick={() => runDiscovery({ force: true })} disabled={discovering} className="h-11" size="sm" variant="outline" title="Re-scan all buckets and force-register every supported video, ignoring the min-size gate.">
+          {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCw className="h-4 w-4 mr-1" />}
+          Force register existing
         </Button>
         <Button onClick={onPickFiles} disabled={!authDebug.admin || uploading || discovering} className="h-11" size="sm" variant="outline">
           {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
