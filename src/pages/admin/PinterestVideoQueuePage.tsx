@@ -543,6 +543,7 @@ export default function PinterestVideoQueuePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    await refreshAuthState();
     const [a, q] = await Promise.all([
       supabase.from("pinterest_video_assets").select("*").order("created_at", { ascending: false }),
       supabase.from("pinterest_video_queue").select("*").order("created_at", { ascending: false }),
@@ -550,8 +551,16 @@ export default function PinterestVideoQueuePage() {
     setAssets((a.data as VideoAsset[]) || []);
     setQueue((q.data as QueueRow[]) || []);
     setLoading(false);
-  }, []);
+  }, [refreshAuthState]);
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    refreshAuthState();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      setTimeout(() => refreshAuthState(), 0);
+    });
+    return () => subscription.unsubscribe();
+  }, [refreshAuthState]);
 
   const runDiscovery = async () => {
     setDiscovering(true);
@@ -582,6 +591,12 @@ export default function PinterestVideoQueuePage() {
       throw e;
     } finally { setDiscovering(false); }
   };
+
+  useEffect(() => {
+    if (!authDebug.ready || !authDebug.admin || autoDiscoveryRanRef.current || loading || discovering) return;
+    autoDiscoveryRanRef.current = true;
+    runDiscovery().catch(() => undefined);
+  }, [authDebug.ready, authDebug.admin, loading, discovering]);
 
   const onPickFiles = () => fileInputRef.current?.click();
 
