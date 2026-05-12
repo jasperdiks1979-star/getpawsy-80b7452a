@@ -57,12 +57,13 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from("lp_funnel_events")
-      .select("event_name, placement, cta_copy_label, cta_copy_mode, payload")
+      .select("event_name, placement, cta_copy_label, cta_copy_mode, hook_family")
       .gte("created_at", since)
       .in("event_name", ["lp_cta_impression", "lp_cta_click"])
       .in("placement", PLACEMENTS as readonly string[])
       .not("cta_copy_label", "is", null)
       .not("cta_copy_mode", "is", null)
+      .not("hook_family", "is", null)
       .eq("is_internal", false)
       .limit(100000);
 
@@ -82,10 +83,7 @@ Deno.serve(async (req) => {
       const placement = row.placement as Placement;
       const mode = row.cta_copy_mode as Mode;
       const label = row.cta_copy_label as string;
-      const hookFamily = (row.payload as Record<string, unknown> | null)?.hook_family as
-        | string
-        | null
-        | undefined;
+      const hookFamily = row.hook_family as string | null | undefined;
       if (!hookFamily) continue;
       if (!PLACEMENTS.includes(placement) || !MODES.includes(mode)) continue;
       const key = `${placement}::${mode}::${hookFamily}::${label}`;
