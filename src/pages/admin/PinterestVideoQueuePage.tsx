@@ -299,6 +299,7 @@ export default function PinterestVideoQueuePage() {
   const [manualUrl, setManualUrl] = useState("");
   const [manualBusy, setManualBusy] = useState(false);
   const [healthBusy, setHealthBusy] = useState<string | null>(null);
+  const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [authDebug, setAuthDebug] = useState<AuthDebugState>({
     ready: false,
     userId: null,
