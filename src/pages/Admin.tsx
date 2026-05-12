@@ -10,6 +10,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send, Target, Magnet, Wrench, History, Copy, Truck, Upload, Star, LineChart, Zap, TrendingUp, Brain, Stethoscope } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+
+// Brand glyphs (lucide doesn't ship TikTok/Pinterest icons).
+const TikTokIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+    <path d="M16.5 3a5.5 5.5 0 0 0 5.5 5.5v3a8.5 8.5 0 0 1-5-1.6v6.6a6.5 6.5 0 1 1-6.5-6.5c.34 0 .68.03 1 .08v3.1a3.5 3.5 0 1 0 2.5 3.32V3h2.5z"/>
+  </svg>
+);
+const PinterestIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+    <path d="M12 2a10 10 0 0 0-3.64 19.31c-.09-.78-.17-1.98.04-2.83.18-.74 1.16-4.7 1.16-4.7s-.3-.6-.3-1.48c0-1.39.8-2.42 1.81-2.42.85 0 1.27.64 1.27 1.41 0 .86-.55 2.15-.83 3.34-.24 1 .5 1.82 1.49 1.82 1.78 0 3.15-1.88 3.15-4.59 0-2.4-1.73-4.08-4.19-4.08-2.85 0-4.53 2.14-4.53 4.36 0 .86.33 1.79.74 2.29.08.1.09.19.07.29l-.27 1.1c-.04.18-.14.22-.33.13-1.21-.56-1.96-2.32-1.96-3.74 0-3.04 2.21-5.84 6.37-5.84 3.34 0 5.94 2.38 5.94 5.57 0 3.32-2.1 6-5.01 6-.98 0-1.9-.51-2.21-1.11l-.6 2.3c-.22.84-.81 1.89-1.2 2.53A10 10 0 1 0 12 2z"/>
+  </svg>
+);
+
+const TIKTOK_SHORTCUTS: { to: string; label: string }[] = [
+  { to: '/admin/tiktok-automation', label: 'TikTok Automation' },
+  { to: '/admin/tiktok-ads-performance', label: 'Ads Performance' },
+  { to: '/admin/tiktok-realtime-funnel', label: 'Realtime Funnel' },
+  { to: '/admin/tiktok-funnel-report', label: 'Funnel Report' },
+  { to: '/admin/tiktok-funnel-debug', label: 'Funnel Debug' },
+  { to: '/admin/tiktok-cta-ctr', label: 'CTA CTR' },
+  { to: '/admin/tiktok-excluded-sessions', label: 'Excluded Sessions' },
+  { to: '/admin/tiktok-session-decision-log', label: 'Session Decision Log' },
+  { to: '/admin/tiktok-status', label: 'Status' },
+  { to: '/admin/tiktok-config', label: 'Config' },
+  { to: '/admin/tiktok-config-checklist', label: 'Config Checklist' },
+  { to: '/admin/tiktok-credentials-status', label: 'Credentials Status' },
+  { to: '/admin/tiktok-pixel-verify', label: 'Pixel Verify' },
+  { to: '/admin/tiktok-server-events', label: 'Server Events' },
+  { to: '/admin/tiktok-test-users', label: 'Test Users' },
+];
+const PINTEREST_SHORTCUTS: { to: string; label: string }[] = [
+  { to: '/admin/pinterest-autopilot', label: 'AutoPilot' },
+  { to: '/admin/pinterest-automation', label: 'Automation' },
+  { to: '/admin/pinterest-scale', label: 'Scale Mode' },
+  { to: '/admin/pinterest-traffic', label: 'Traffic Machine' },
+  { to: '/admin/pinterest-commerce-intel', label: 'Commerce Intel' },
+  { to: '/admin/pinterest-pin-status', label: 'Pin Status' },
+  { to: '/admin/pinterest-video-queue', label: 'Video Queue' },
+  { to: '/admin/pinterest-video-logs', label: 'Video Logs' },
+  { to: '/admin/pinterest-patterns', label: 'Patterns' },
+  { to: '/admin/pinterest-generic-niche', label: 'Generic Niche' },
+  { to: '/admin/pinterest-niche-coverage', label: 'Niche Coverage' },
+  { to: '/admin/pinterest-niche-rules', label: 'Niche Rules' },
+  { to: '/admin/pinterest-backdrop-preview', label: 'Backdrop Preview' },
+];
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -1488,6 +1534,52 @@ const Admin = () => {
                   <span className="hidden xs:inline">Diagnostics</span>
                 </button>
               </TouchTooltip>
+              <DropdownMenu>
+                <TouchTooltip content="TikTok shortcuts">
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors"
+                      aria-label="TikTok shortcuts"
+                    >
+                      <TikTokIcon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="hidden xs:inline">TikTok</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                </TouchTooltip>
+                <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto w-56">
+                  <DropdownMenuLabel>TikTok</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {TIKTOK_SHORTCUTS.map((s) => (
+                    <DropdownMenuItem key={s.to} onSelect={() => navigate(s.to)}>
+                      {s.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <TouchTooltip content="Pinterest shortcuts">
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors"
+                      aria-label="Pinterest shortcuts"
+                    >
+                      <PinterestIcon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="hidden xs:inline">Pinterest</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                </TouchTooltip>
+                <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto w-56">
+                  <DropdownMenuLabel>Pinterest</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {PINTEREST_SHORTCUTS.map((s) => (
+                    <DropdownMenuItem key={s.to} onSelect={() => navigate(s.to)}>
+                      {s.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TabsList>
           </TooltipProvider>
           <Suspense fallback={null}><RunCenterCard /></Suspense>
