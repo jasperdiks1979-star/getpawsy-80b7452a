@@ -99,7 +99,8 @@ Deno.serve(async (req) => {
         assignments.map((a) => ({
           scope: "bandit_arm",
           key: a.hook,
-          value: { priority: a.priority, expected_ctr: a.expected_ctr, trials: a.trials, successes: a.successes },
+          value: a.expected_ctr,
+          metadata: { priority: a.priority, trials: a.trials, successes: a.successes },
           updated_at: new Date().toISOString(),
         })),
         { onConflict: "scope,key" },
