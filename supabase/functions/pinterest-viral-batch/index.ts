@@ -1643,7 +1643,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
 
     // Legacy enrichment path — kept for explicit opt-in only. The premium
     // templates above already handle backdrops per style.
-    if (useLifestyleBackdrop && body.legacyBackdrop === true) {
+    if (!productOnly && useLifestyleBackdrop && body.legacyBackdrop === true) {
       // Decide which pin indexes get a backdrop:
       // - explicit per-hook map wins (only `true` entries)
       // - else fall back to legacy "every other pin" pattern (0,2,4)
