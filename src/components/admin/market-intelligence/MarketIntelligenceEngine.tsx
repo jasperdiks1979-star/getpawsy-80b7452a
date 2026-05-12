@@ -21,6 +21,7 @@ import { OverviewDashboardTab } from "./tabs/OverviewDashboardTab";
 import { PublishReadinessTab } from "./tabs/PublishReadinessTab";
 import { ComplianceGateTab } from "./tabs/ComplianceGateTab";
 import { AutoTuneTab } from "./tabs/AutoTuneTab";
+import { ScalingLoopTab } from "./tabs/ScalingLoopTab";
 
 type Counters = {
   trends: number;
@@ -120,6 +121,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="compliance">Compliance Gate</TabsTrigger>
           <TabsTrigger value="readiness">Publish Readiness</TabsTrigger>
           <TabsTrigger value="autotune">Auto-Tune</TabsTrigger>
+          <TabsTrigger value="scaling">Scaling Loop</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewDashboardTab /></TabsContent>
@@ -136,6 +138,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="compliance"><ComplianceGateTab /></TabsContent>
         <TabsContent value="readiness"><PublishReadinessTab /></TabsContent>
         <TabsContent value="autotune"><AutoTuneTab /></TabsContent>
+        <TabsContent value="scaling"><ScalingLoopTab /></TabsContent>
       </Tabs>
     </div>
   );
