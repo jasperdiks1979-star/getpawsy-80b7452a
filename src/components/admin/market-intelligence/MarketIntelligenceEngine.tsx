@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldCheck, ShieldAlert } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Play, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendRadarTab } from "./tabs/TrendRadarTab";
 import { CompetitorIntelTab } from "./tabs/CompetitorIntelTab";
@@ -27,6 +29,7 @@ export function MarketIntelligenceEngine() {
   const [counters, setCounters] = useState<Counters>({
     trends: 0, observations: 0, recipes: 0, opportunities: 0, recommendations: 0,
   });
+  const [autorun, setAutorun] = useState(false);
 
   useEffect(() => {
     void loadCounters();
@@ -49,6 +52,21 @@ export function MarketIntelligenceEngine() {
     });
   }
 
+  async function runAutorun() {
+    setAutorun(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mi-autorun", { body: {} });
+      if (error) throw error;
+      toast.success("Autorun complete");
+      console.log("[mi-autorun]", data);
+      await loadCounters();
+    } catch (e: any) {
+      toast.error(`Autorun failed: ${e?.message ?? e}`);
+    } finally {
+      setAutorun(false);
+    }
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-[1400px]">
       <header className="flex items-start justify-between gap-4 flex-wrap">
@@ -63,6 +81,10 @@ export function MarketIntelligenceEngine() {
             <ShieldCheck className="h-3 w-3" /> Inspiration only · No clones
           </Badge>
           <Badge variant="outline" className="gap-1">Market: US</Badge>
+          <Button size="sm" onClick={runAutorun} disabled={autorun} className="gap-1">
+            {autorun ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+            {autorun ? "Running…" : "Run autorun"}
+          </Button>
         </div>
       </header>
 
