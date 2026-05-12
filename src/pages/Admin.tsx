@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense, useMemo } from "react";
 import { Helmet } from 'react-helmet-async';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/layout/Layout";
