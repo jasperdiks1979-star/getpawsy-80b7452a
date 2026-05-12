@@ -17,16 +17,22 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  resolveCtaCopyText,
+  resolveCohortCopy,
   type CtaCopyMode,
   type CtaPlacement,
 } from '@/lib/ctaCopyRegistry';
+import { useVisitorHook } from '@/hooks/useVisitorHook';
 
 type WinnerMap = Partial<Record<CtaPlacement, Partial<Record<CtaCopyMode, string>>>>;
 
 export function useCtaCopyWinner() {
   const [winners, setWinners] = useState<WinnerMap>({});
   const [loading, setLoading] = useState(true);
+  // Phase 23 — visitor cohort resolved from mi_audience_clusters.
+  // When present, the winning hook_family overrides the auto-elected
+  // label per placement/mode (see HOOK_FAMILY_COPY_PREFERENCE). Falls
+  // through gracefully if no cohort match exists.
+  const { hook } = useVisitorHook();
 
   useEffect(() => {
     let cancelled = false;
@@ -59,9 +65,21 @@ export function useCtaCopyWinner() {
   }, []);
 
   function pickCopy(placement: CtaPlacement, mode: CtaCopyMode) {
-    const label = winners[placement]?.[mode];
-    return resolveCtaCopyText(placement, mode, label);
+    const electedLabel = winners[placement]?.[mode];
+    const resolved = resolveCohortCopy(
+      placement,
+      mode,
+      hook?.hook_family ?? null,
+      electedLabel,
+    );
+    return {
+      label: resolved.label,
+      text: resolved.text,
+      source: resolved.source,
+      hook_family: hook?.hook_family ?? null,
+      hook_source: hook?.source ?? null,
+    };
   }
 
-  return { pickCopy, loading };
+  return { pickCopy, loading, hook };
 }

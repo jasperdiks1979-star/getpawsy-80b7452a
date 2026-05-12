@@ -94,7 +94,7 @@ export default function LinkInBio() {
   // Auto-elected winning copy per (placement, mode). Hook is called early
   // so it always runs in the same order; the actual `copyMode` resolution
   // happens AFTER `urgencyVisible` is declared below.
-  const { pickCopy } = useCtaCopyWinner();
+  const { pickCopy, hook: visitorHook } = useCtaCopyWinner();
   // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
   const showSticky = true;
   const primaryCtaRef = useRef<HTMLDivElement>(null);
@@ -404,7 +404,13 @@ export default function LinkInBio() {
               cta_variant: ctaVariant,
               cohort: getVisitorCohort(),
               ...(impressionCopy
-                ? { cta_copy_label: impressionCopy.label, cta_copy_mode: copyMode }
+                ? {
+                    cta_copy_label: impressionCopy.label,
+                    cta_copy_mode: copyMode,
+                    cta_copy_source: impressionCopy.source,
+                    hook_family: visitorHook?.hook_family ?? null,
+                    hook_source: visitorHook?.source ?? null,
+                  }
                 : {}),
               ...CTA_FEATURE_FLAGS,
               ...attribution,
@@ -590,11 +596,29 @@ export default function LinkInBio() {
       // single GROUP BY. Only the 3 button placements carry copy labels;
       // ancillary placements (video/proof/nudge/arrow) stay un-stamped.
       ...(placement === 'bio_primary'
-        ? { cta_copy_label: primaryCopy.label, cta_copy_mode: copyMode }
+        ? {
+            cta_copy_label: primaryCopy.label,
+            cta_copy_mode: copyMode,
+            cta_copy_source: primaryCopy.source,
+            hook_family: visitorHook?.hook_family ?? null,
+            hook_source: visitorHook?.source ?? null,
+          }
         : placement === 'bio_secondary'
-        ? { cta_copy_label: secondaryCopy.label, cta_copy_mode: copyMode }
+        ? {
+            cta_copy_label: secondaryCopy.label,
+            cta_copy_mode: copyMode,
+            cta_copy_source: secondaryCopy.source,
+            hook_family: visitorHook?.hook_family ?? null,
+            hook_source: visitorHook?.source ?? null,
+          }
         : placement === 'bio_sticky'
-        ? { cta_copy_label: stickyCopy.label, cta_copy_mode: copyMode }
+        ? {
+            cta_copy_label: stickyCopy.label,
+            cta_copy_mode: copyMode,
+            cta_copy_source: stickyCopy.source,
+            hook_family: visitorHook?.hook_family ?? null,
+            hook_source: visitorHook?.source ?? null,
+          }
         : {}),
       ...CTA_FEATURE_FLAGS,
       ...flags,
