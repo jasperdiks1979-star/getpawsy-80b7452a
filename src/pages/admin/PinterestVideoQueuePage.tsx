@@ -346,6 +346,13 @@ export default function PinterestVideoQueuePage() {
   const [productOnly, setProductOnly] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewLookup, setPreviewLookup] = useState<any | null>(null);
+  const [previewTimeline, setPreviewTimeline] = useState<Array<{
+    ts: number;
+    event: "start" | "lookup_ack" | "heartbeat" | "result" | "error" | "done";
+    label: string;
+    detail?: string;
+    ok?: boolean;
+  }>>([]);
   const [previewResult, setPreviewResult] = useState<{
     ok: boolean;
     message?: string;
@@ -1180,6 +1187,10 @@ export default function PinterestVideoQueuePage() {
     setPreviewBusy(true);
     setPreviewLookup(null);
     setPreviewResult(null);
+    const startTs = Date.now();
+    setPreviewTimeline([{ ts: startTs, event: "start", label: `POST ?stream=1 (${slug})` }]);
+    const pushTl = (entry: { event: any; label: string; detail?: string; ok?: boolean }) =>
+      setPreviewTimeline((prev) => [...prev, { ts: Date.now(), ...entry }]);
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess?.session?.access_token;
@@ -1207,6 +1218,7 @@ export default function PinterestVideoQueuePage() {
       if (!res.ok || !res.body) {
         const text = await res.text().catch(() => "");
         setPreviewResult({ ok: false, error: `HTTP ${res.status}: ${text.slice(0, 200)}` });
+        pushTl({ event: "error", label: `HTTP ${res.status}`, detail: text.slice(0, 120), ok: false });
         return;
       }
       const reader = res.body.getReader();
@@ -1225,10 +1237,31 @@ export default function PinterestVideoQueuePage() {
             const ev = JSON.parse(line);
             if (ev.event === "lookup_ack") {
               setPreviewLookup(ev);
+              pushTl({
+                event: "lookup_ack",
+                label: ev.product_found ? "Resolver: product found" : "Resolver: NOT found",
+                detail: ev.product_found
+                  ? `${ev.resolved_via ?? "—"} · ${ev.image_count ?? 0} img · ${ev.elapsed_ms ?? "?"}ms`
+                  : `stages: ${(ev.stages_run ?? []).join(",") || "—"}`,
+                ok: !!ev.product_found,
+              });
+            } else if (ev.event === "heartbeat") {
+              pushTl({
+                event: "heartbeat",
+                label: "heartbeat",
+                detail: ev.elapsed_ms != null ? `${ev.elapsed_ms}ms` : undefined,
+              });
             } else if (ev.event === "result") {
               finalPayload = ev.payload;
+              pushTl({
+                event: "result",
+                label: "Result received",
+                detail: ev.payload?.pins ? `${ev.payload.pins.length} pin variant(s)` : undefined,
+                ok: ev.payload?.ok !== false,
+              });
             } else if (ev.event === "error") {
               setPreviewResult({ ok: false, error: ev.message || "Stream error" });
+              pushTl({ event: "error", label: "Stream error", detail: ev.message, ok: false });
             }
           } catch { /* ignore malformed NDJSON line */ }
         }
@@ -1237,9 +1270,12 @@ export default function PinterestVideoQueuePage() {
         setPreviewResult(finalPayload);
       } else if (!previewResult) {
         setPreviewResult({ ok: false, error: "No result received from stream" });
+        pushTl({ event: "error", label: "Stream closed without result", ok: false });
       }
+      pushTl({ event: "done", label: "Stream closed" });
     } catch (e: any) {
       setPreviewResult({ ok: false, error: e?.message || "Network error" });
+      pushTl({ event: "error", label: "Network error", detail: e?.message, ok: false });
     } finally {
       setPreviewBusy(false);
     }
@@ -1415,6 +1451,45 @@ export default function PinterestVideoQueuePage() {
             Product-only (skip backdrops)
           </label>
         </div>
+        {previewTimeline.length > 0 && (
+          <div className="rounded-md border bg-background p-2 mb-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1">
+                <Activity className="h-3 w-3" /> Resolver timeline
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {previewBusy ? (
+                  <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> streaming…</span>
+                ) : (
+                  `closed · ${previewTimeline.length} event${previewTimeline.length === 1 ? "" : "s"}`
+                )}
+              </span>
+            </div>
+            <ol className="space-y-1 text-[11px]">
+              {previewTimeline.map((t, i) => {
+                const elapsed = i === 0 ? 0 : t.ts - previewTimeline[0].ts;
+                const dot =
+                  t.event === "lookup_ack" ? (t.ok ? "bg-emerald-500" : "bg-destructive")
+                  : t.event === "heartbeat" ? "bg-blue-400 animate-pulse"
+                  : t.event === "result" ? (t.ok ? "bg-emerald-500" : "bg-destructive")
+                  : t.event === "error" ? "bg-destructive"
+                  : t.event === "done" ? "bg-slate-400"
+                  : "bg-primary";
+                return (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${dot}`} />
+                    <span className="font-mono text-muted-foreground tabular-nums w-14 shrink-0">+{elapsed}ms</span>
+                    <Badge variant="outline" className="h-4 px-1 text-[9px] font-mono shrink-0">{t.event}</Badge>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium">{t.label}</span>
+                      {t.detail && <span className="text-muted-foreground"> — {t.detail}</span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
         {previewLookup && (
           <div className="rounded-md border bg-background p-3 mb-2 text-xs space-y-2">
             <div className="flex items-center justify-between">
