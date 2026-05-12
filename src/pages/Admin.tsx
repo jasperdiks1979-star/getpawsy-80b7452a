@@ -1546,7 +1546,11 @@ const Admin = () => {
                     type="button"
                     title="TikTok shortcuts"
                     aria-label="TikTok shortcuts"
-                    className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors cursor-pointer"
+                    className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium whitespace-nowrap rounded transition-colors cursor-pointer ${
+                      TIKTOK_SHORTCUTS.some((s) => s.to === currentPath)
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted-foreground/20'
+                    }`}
                   >
                     <TikTokIcon className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden xs:inline">TikTok</span>
@@ -1557,18 +1561,23 @@ const Admin = () => {
                     <TikTokIcon className="w-4 h-4" /> TikTok
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {TIKTOK_SHORTCUTS.map((s) => (
-                    <DropdownMenuItem
-                      key={s.to}
-                      className="cursor-pointer"
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        navigate(s.to);
-                      }}
-                    >
-                      {s.label}
-                    </DropdownMenuItem>
-                  ))}
+                  {TIKTOK_SHORTCUTS.map((s) => {
+                    const active = currentPath === s.to;
+                    return (
+                      <DropdownMenuItem
+                        key={s.to}
+                        className={`cursor-pointer flex items-center justify-between gap-2 ${active ? 'bg-primary/10 text-primary font-semibold' : ''}`}
+                        aria-current={active ? 'page' : undefined}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          navigate(s.to);
+                        }}
+                      >
+                        <span>{s.label}</span>
+                        {active && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
               <DropdownMenu>
@@ -1577,7 +1586,11 @@ const Admin = () => {
                     type="button"
                     title="Pinterest shortcuts"
                     aria-label="Pinterest shortcuts"
-                    className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors cursor-pointer"
+                    className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium whitespace-nowrap rounded transition-colors cursor-pointer ${
+                      PINTEREST_SHORTCUTS.some((s) => s.to === currentPath)
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted-foreground/20'
+                    }`}
                   >
                     <PinterestIcon className="w-3.5 h-3.5 shrink-0 text-[#E60023]" />
                     <span className="hidden xs:inline">Pinterest</span>
@@ -1588,18 +1601,23 @@ const Admin = () => {
                     <PinterestIcon className="w-4 h-4 text-[#E60023]" /> Pinterest
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {PINTEREST_SHORTCUTS.map((s) => (
-                    <DropdownMenuItem
-                      key={s.to}
-                      className="cursor-pointer"
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        navigate(s.to);
-                      }}
-                    >
-                      {s.label}
-                    </DropdownMenuItem>
-                  ))}
+                  {PINTEREST_SHORTCUTS.map((s) => {
+                    const active = currentPath === s.to;
+                    return (
+                      <DropdownMenuItem
+                        key={s.to}
+                        className={`cursor-pointer flex items-center justify-between gap-2 ${active ? 'bg-primary/10 text-primary font-semibold' : ''}`}
+                        aria-current={active ? 'page' : undefined}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          navigate(s.to);
+                        }}
+                      >
+                        <span>{s.label}</span>
+                        {active && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
             </TabsList>
