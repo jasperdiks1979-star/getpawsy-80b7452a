@@ -1762,6 +1762,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cta_copy_winners_by_hook: {
+        Row: {
+          clicks: number
+          ctr_pct: number | null
+          evaluated_at: string
+          hook_family: string
+          id: number
+          impressions: number
+          mode: string
+          notes: string | null
+          placement: string
+          window_hours: number
+          winning_label: string
+        }
+        Insert: {
+          clicks?: number
+          ctr_pct?: number | null
+          evaluated_at?: string
+          hook_family: string
+          id?: number
+          impressions?: number
+          mode: string
+          notes?: string | null
+          placement: string
+          window_hours?: number
+          winning_label: string
+        }
+        Update: {
+          clicks?: number
+          ctr_pct?: number | null
+          evaluated_at?: string
+          hook_family?: string
+          id?: number
+          impressions?: number
+          mode?: string
+          notes?: string | null
+          placement?: string
+          window_hours?: number
+          winning_label?: string
+        }
+        Relationships: []
+      }
       cta_variant_config: {
         Row: {
           ab_test_enabled: boolean
