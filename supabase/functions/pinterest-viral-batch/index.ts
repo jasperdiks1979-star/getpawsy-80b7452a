@@ -1009,14 +1009,18 @@ serve(async (req) => {
     if (!product) {
       return respond({
         ok: false,
+        status: "product_not_found",
         code: "PRODUCT_NOT_FOUND",
         error_code: "PRODUCT_LOOKUP_FAILED",
         message: `Product not found: ${slug}`,
+        slug,
         attempted_slug: slug,
         normalized_slug: lookupDiag.normalized_slug,
+        checkedTables: lookupDiag.tables_checked,
         tables_checked: lookupDiag.tables_checked,
         stages_run: lookupDiag.stages_run,
         suggestions: lookupDiag.suggestions,
+        suggestedMatches: lookupDiag.suggestions,
         lookup: lookupDiag,
         fallback: true,
       });
