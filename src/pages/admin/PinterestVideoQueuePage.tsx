@@ -1196,6 +1196,7 @@ export default function PinterestVideoQueuePage() {
     setPreviewResult(null);
     const startTs = Date.now();
     setPreviewTimeline([{ ts: startTs, event: "start", label: `POST ?stream=1 (${slug})` }]);
+    setPreviewRawFrames([]);
     const pushTl = (entry: { event: any; label: string; detail?: string; ok?: boolean }) =>
       setPreviewTimeline((prev) => [...prev, { ts: Date.now(), ...entry }]);
     try {
@@ -1240,6 +1241,7 @@ export default function PinterestVideoQueuePage() {
         buf = lines.pop() ?? "";
         for (const line of lines) {
           if (!line.trim()) continue;
+          setPreviewRawFrames((prev) => [...prev, { ts: Date.now(), line }]);
           try {
             const ev = JSON.parse(line);
             if (ev.event === "lookup_ack") {
