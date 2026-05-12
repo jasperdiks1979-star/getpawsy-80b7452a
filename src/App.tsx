@@ -1788,6 +1788,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="market-intelligence/changelog"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MarketIntelligenceChangelogPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="backlink-engine"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
