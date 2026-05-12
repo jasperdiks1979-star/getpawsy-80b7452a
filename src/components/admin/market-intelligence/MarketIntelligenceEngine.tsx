@@ -17,6 +17,7 @@ import { SeasonalForecastsTab } from "./tabs/SeasonalForecastsTab";
 import { RecommendedNextTab } from "./tabs/RecommendedNextTab";
 import { RemixEngineTab } from "./tabs/RemixEngineTab";
 import { FeedbackLoopTab } from "./tabs/FeedbackLoopTab";
+import { OverviewDashboardTab } from "./tabs/OverviewDashboardTab";
 
 type Counters = {
   trends: number;
@@ -100,8 +101,9 @@ export function MarketIntelligenceEngine() {
 
       <CounterStrip counters={counters} />
 
-      <Tabs defaultValue="radar" className="w-full">
+      <Tabs defaultValue="overview" className="w-full">
         <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="radar">Trend Radar</TabsTrigger>
           <TabsTrigger value="competitors">Competitor Intel</TabsTrigger>
           <TabsTrigger value="hooks">Hook Leaderboard</TabsTrigger>
@@ -114,6 +116,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="feedback">Feedback Loop</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="overview"><OverviewDashboardTab /></TabsContent>
         <TabsContent value="radar"><TrendRadarTab onChange={loadCounters} /></TabsContent>
         <TabsContent value="competitors"><CompetitorIntelTab onChange={loadCounters} /></TabsContent>
         <TabsContent value="hooks"><HookLeaderboardTab /></TabsContent>
