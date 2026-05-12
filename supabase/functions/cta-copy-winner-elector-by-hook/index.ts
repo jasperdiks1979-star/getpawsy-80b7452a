@@ -58,6 +58,16 @@ function wilsonLowerBound(clicks: number, impressions: number, z = 1.96): number
   return Math.max(0, (centre - margin) / denom);
 }
 
+/** Wilson score upper bound (95% CI). Mirror of the lower bound. */
+function wilsonUpperBound(clicks: number, impressions: number, z = 1.96): number {
+  if (impressions <= 0) return 1;
+  const phat = clicks / impressions;
+  const denom = 1 + (z * z) / impressions;
+  const centre = phat + (z * z) / (2 * impressions);
+  const margin = z * Math.sqrt((phat * (1 - phat) + (z * z) / (4 * impressions)) / impressions);
+  return Math.min(1, (centre + margin) / denom);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -203,6 +213,24 @@ Deno.serve(async (req) => {
         (a, b) => b.wilson_lb - a.wilson_lb || b.ctr - a.ctr || b.clicks - a.clicks,
       );
       const winner = sorted[0];
+      const runnerUp = sorted[1];
+      // Phase 31 — significance gate: require winner LB ≥ runner-up UB so
+      // overlapping confidence intervals don't trigger flip-flops between
+      // statistically-tied variants. With a single candidate the gate passes
+      // automatically.
+      if (runnerUp) {
+        const runnerUpUB = wilsonUpperBound(runnerUp.clicks, runnerUp.impressions);
+        if (winner.wilson_lb < runnerUpUB) {
+          elections.push({
+            placement: winner.placement, mode: winner.mode, hook_family: winner.hook_family,
+            winning_label: null, ctr_pct: null, confidence_score: null,
+            impressions: totalImps, clicks: totalClicks,
+            reason: `not_significant (winner LB ${(winner.wilson_lb * 100).toFixed(2)}% < runner-up UB ${(runnerUpUB * 100).toFixed(2)}%)`,
+            candidates: sorted,
+          });
+          continue;
+        }
+      }
       elections.push({
         placement: winner.placement, mode: winner.mode, hook_family: winner.hook_family,
         winning_label: winner.label,
