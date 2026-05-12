@@ -4291,6 +4291,62 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_recipe_performance: {
+        Row: {
+          avg_ctr: number
+          avg_engagement_rate: number
+          composite_score: number
+          computed_at: string
+          drafts_count: number
+          id: string
+          pins_count: number
+          recipe_id: string
+          total_clicks: number
+          total_engagements: number
+          total_impressions: number
+          videos_count: number
+          window_days: number
+        }
+        Insert: {
+          avg_ctr?: number
+          avg_engagement_rate?: number
+          composite_score?: number
+          computed_at?: string
+          drafts_count?: number
+          id?: string
+          pins_count?: number
+          recipe_id: string
+          total_clicks?: number
+          total_engagements?: number
+          total_impressions?: number
+          videos_count?: number
+          window_days: number
+        }
+        Update: {
+          avg_ctr?: number
+          avg_engagement_rate?: number
+          composite_score?: number
+          computed_at?: string
+          drafts_count?: number
+          id?: string
+          pins_count?: number
+          recipe_id?: string
+          total_clicks?: number
+          total_engagements?: number
+          total_impressions?: number
+          videos_count?: number
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_recipe_performance_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "mi_creative_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mi_recommendations: {
         Row: {
           body: string
@@ -4337,7 +4393,12 @@ export type Database = {
           generated_brief: string | null
           generated_copy: string | null
           id: string
+          last_scored_at: string | null
+          performance_score: number
           product_id: string | null
+          published_at: string | null
+          published_pin_id: string | null
+          published_video_id: string | null
           recipe_id: string | null
           status: string
           updated_at: string
@@ -4348,7 +4409,12 @@ export type Database = {
           generated_brief?: string | null
           generated_copy?: string | null
           id?: string
+          last_scored_at?: string | null
+          performance_score?: number
           product_id?: string | null
+          published_at?: string | null
+          published_pin_id?: string | null
+          published_video_id?: string | null
           recipe_id?: string | null
           status?: string
           updated_at?: string
@@ -4359,7 +4425,12 @@ export type Database = {
           generated_brief?: string | null
           generated_copy?: string | null
           id?: string
+          last_scored_at?: string | null
+          performance_score?: number
           product_id?: string | null
+          published_at?: string | null
+          published_pin_id?: string | null
+          published_video_id?: string | null
           recipe_id?: string | null
           status?: string
           updated_at?: string
