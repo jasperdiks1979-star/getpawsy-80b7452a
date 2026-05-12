@@ -311,6 +311,25 @@ export default function PinterestVideoQueuePage() {
   });
   const autoDiscoveryRanRef = useRef(false);
 
+  // ───────── Full verification flow (auth → discovery → publish) ─────────
+  type VerifyStepStatus = "idle" | "running" | "ok" | "fail" | "skipped";
+  type VerifyStepKey = "auth" | "discovery" | "drafts" | "publish";
+  type VerifyStep = { status: VerifyStepStatus; message: string; detail?: string };
+  const initialVerify: Record<VerifyStepKey, VerifyStep> = {
+    auth: { status: "idle", message: "Not run" },
+    discovery: { status: "idle", message: "Not run" },
+    drafts: { status: "idle", message: "Not run" },
+    publish: { status: "idle", message: "Not run" },
+  };
+  const [verifySteps, setVerifySteps] = useState<Record<VerifyStepKey, VerifyStep>>(initialVerify);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<{
+    ok: boolean;
+    pin_id?: string | null;
+    pin_url?: string | null;
+    queue_id?: string | null;
+  } | null>(null);
+
   // Direct fetch wrapper so we capture HTTP status, raw response and timing.
   // Falls back to a clear "Admin auth required" message on 401/403.
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
