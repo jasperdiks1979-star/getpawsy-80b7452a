@@ -20,6 +20,10 @@ const corsHeaders = {
 const WINDOW_HOURS = 48;
 const MIN_IMPRESSIONS = 30;
 const PIN_TTL_DAYS = 7;
+/** Phase 30 — guardrail window + threshold. */
+const GUARDRAIL_WINDOW_HOURS = 24;
+const GUARDRAIL_MIN_IMPRESSIONS = 60; // ~2× per-variant min, summed
+const GUARDRAIL_RATIO = 0.7;          // cohort CTR < 70% of global → block
 const PLACEMENTS = ["bio_primary", "bio_secondary", "bio_sticky"] as const;
 const MODES = ["calm", "urgent"] as const;
 
@@ -69,6 +73,9 @@ Deno.serve(async (req) => {
 
   try {
     const since = new Date(Date.now() - WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+    const guardrailSince = new Date(
+      Date.now() - GUARDRAIL_WINDOW_HOURS * 60 * 60 * 1000,
+    ).toISOString();
 
     // Phase 28: auto-decay stale pins. Pins older than PIN_TTL_DAYS are
     // released so manual overrides don't linger forever; auto-elector then
@@ -209,6 +216,72 @@ Deno.serve(async (req) => {
 
     const promoted: string[] = [];
     const skippedPinned: string[] = [];
+    const guardrailBlocked: string[] = [];
+    const guardrailCleared: string[] = [];
+
+    // Phase 30 — compute global CTR per (placement, mode) over the guardrail
+    // window. We compare each cohort's elected winner CTR (last 24h slice) to
+    // the global CTR for that placement+mode. If the cohort underperforms the
+    // global by ≥30%, block the cohort override so the runtime resolver falls
+    // back to the global elected winner.
+    const { data: guardrailRows } = await supabase
+      .from("lp_funnel_events")
+      .select("event_name, placement, cta_copy_mode, cta_copy_label, hook_family")
+      .gte("created_at", guardrailSince)
+      .in("event_name", ["lp_cta_impression", "lp_cta_click"])
+      .in("placement", PLACEMENTS as readonly string[])
+      .not("cta_copy_mode", "is", null)
+      .eq("is_internal", false)
+      .limit(100000);
+
+    type Tally = { imps: number; clicks: number };
+    const globalTally = new Map<string, Tally>(); // key: placement::mode
+    const cohortWinnerTally = new Map<string, Tally>(); // key: placement::mode::hook_family::label
+    for (const row of guardrailRows ?? []) {
+      const placement = row.placement as Placement;
+      const mode = row.cta_copy_mode as Mode;
+      if (!PLACEMENTS.includes(placement) || !MODES.includes(mode)) continue;
+      const gKey = `${placement}::${mode}`;
+      const g = globalTally.get(gKey) ?? { imps: 0, clicks: 0 };
+      if (row.event_name === "lp_cta_impression") g.imps += 1;
+      else if (row.event_name === "lp_cta_click") g.clicks += 1;
+      globalTally.set(gKey, g);
+      const hookFamily = row.hook_family as string | null | undefined;
+      const label = row.cta_copy_label as string | null | undefined;
+      if (hookFamily && label) {
+        const cKey = `${placement}::${mode}::${hookFamily}::${label}`;
+        const c = cohortWinnerTally.get(cKey) ?? { imps: 0, clicks: 0 };
+        if (row.event_name === "lp_cta_impression") c.imps += 1;
+        else if (row.event_name === "lp_cta_click") c.clicks += 1;
+        cohortWinnerTally.set(cKey, c);
+      }
+    }
+
+    function evaluateGuardrail(
+      placement: Placement, mode: Mode, hook_family: string, winning_label: string,
+    ): { blocked: boolean; reason: string | null; cohort_ctr: number; global_ctr: number } {
+      const g = globalTally.get(`${placement}::${mode}`) ?? { imps: 0, clicks: 0 };
+      const c = cohortWinnerTally.get(`${placement}::${mode}::${hook_family}::${winning_label}`)
+        ?? { imps: 0, clicks: 0 };
+      const globalCtr = g.imps > 0 ? g.clicks / g.imps : 0;
+      const cohortCtr = c.imps > 0 ? c.clicks / c.imps : 0;
+      if (c.imps < GUARDRAIL_MIN_IMPRESSIONS) {
+        return { blocked: false, reason: null, cohort_ctr: cohortCtr, global_ctr: globalCtr };
+      }
+      if (globalCtr <= 0) {
+        return { blocked: false, reason: null, cohort_ctr: cohortCtr, global_ctr: globalCtr };
+      }
+      if (cohortCtr < GUARDRAIL_RATIO * globalCtr) {
+        return {
+          blocked: true,
+          reason: `cohort CTR ${(cohortCtr * 100).toFixed(2)}% < ${(GUARDRAIL_RATIO * 100).toFixed(0)}% of global ${(globalCtr * 100).toFixed(2)}% (24h)`,
+          cohort_ctr: cohortCtr,
+          global_ctr: globalCtr,
+        };
+      }
+      return { blocked: false, reason: null, cohort_ctr: cohortCtr, global_ctr: globalCtr };
+    }
+
     if (!dryRun) {
       for (const e of elections) {
         if (!e.winning_label) continue;
@@ -217,6 +290,7 @@ Deno.serve(async (req) => {
           skippedPinned.push(cohortKey);
           continue;
         }
+        const guard = evaluateGuardrail(e.placement, e.mode, e.hook_family, e.winning_label);
         const { error: upErr } = await supabase
           .from("cta_copy_winners_by_hook")
           .upsert(
@@ -232,11 +306,56 @@ Deno.serve(async (req) => {
               window_hours: WINDOW_HOURS,
               evaluated_at: new Date().toISOString(),
               notes: `auto-elected (cohort, wilson-lb); ${e.candidates.length} candidates`,
+              guardrail_blocked: guard.blocked,
+              guardrail_reason: guard.reason,
+              guardrail_evaluated_at: new Date().toISOString(),
             },
             { onConflict: "placement,mode,hook_family" },
           );
         if (!upErr) {
           promoted.push(`${e.placement}/${e.mode}/${e.hook_family}=${e.winning_label}`);
+          if (guard.blocked) {
+            guardrailBlocked.push(`${e.placement}/${e.mode}/${e.hook_family}`);
+            await supabase.from("cohort_copy_pin_history").insert({
+              action: "guardrail",
+              placement: e.placement,
+              mode: e.mode,
+              hook_family: e.hook_family,
+              winning_label: e.winning_label,
+              actor: "system",
+              reason: guard.reason,
+            });
+          }
+        }
+      }
+
+      // Clear guardrail on cohorts that have recovered (no longer underperforming).
+      const { data: blockedRows } = await supabase
+        .from("cta_copy_winners_by_hook")
+        .select("placement, mode, hook_family, winning_label")
+        .eq("guardrail_blocked", true);
+      for (const r of blockedRows ?? []) {
+        const key = `${r.placement}/${r.mode}/${r.hook_family}`;
+        if (guardrailBlocked.includes(key)) continue; // re-blocked this run
+        const guard = evaluateGuardrail(
+          r.placement as Placement, r.mode as Mode, r.hook_family as string,
+          r.winning_label as string,
+        );
+        if (!guard.blocked) {
+          await supabase.from("cta_copy_winners_by_hook")
+            .update({
+              guardrail_blocked: false,
+              guardrail_reason: null,
+              guardrail_evaluated_at: new Date().toISOString(),
+            })
+            .eq("placement", r.placement).eq("mode", r.mode).eq("hook_family", r.hook_family);
+          guardrailCleared.push(key);
+          await supabase.from("cohort_copy_pin_history").insert({
+            action: "guardrail_clear",
+            placement: r.placement, mode: r.mode, hook_family: r.hook_family,
+            winning_label: r.winning_label, actor: "system",
+            reason: `cohort CTR recovered (${(guard.cohort_ctr * 100).toFixed(2)}% vs global ${(guard.global_ctr * 100).toFixed(2)}%, 24h)`,
+          });
         }
       }
     }
@@ -252,6 +371,10 @@ Deno.serve(async (req) => {
         auto_unpinned: decayedKeys,
         promoted,
         skipped_pinned: skippedPinned,
+        guardrail_blocked: guardrailBlocked,
+        guardrail_cleared: guardrailCleared,
+        guardrail_window_hours: GUARDRAIL_WINDOW_HOURS,
+        guardrail_ratio: GUARDRAIL_RATIO,
         elections,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
