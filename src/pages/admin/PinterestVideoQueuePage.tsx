@@ -970,12 +970,12 @@ export default function PinterestVideoQueuePage() {
     let queueId: string | null = null;
     try {
       const { data: existing } = await supabase
-        .from("pinterest_video_pin_queue")
+        .from("pinterest_video_queue")
         .select("id, status")
         .not("status", "in", "(published,publishing)")
         .order("created_at", { ascending: false })
         .limit(1);
-      queueId = existing?.[0]?.id || null;
+      queueId = (existing as Array<{ id: string }> | null)?.[0]?.id || null;
     } catch { /* fall through to generation */ }
 
     if (!queueId) {
@@ -994,12 +994,12 @@ export default function PinterestVideoQueuePage() {
       }
       try {
         const { data: fresh } = await supabase
-          .from("pinterest_video_pin_queue")
+          .from("pinterest_video_queue")
           .select("id")
           .not("status", "in", "(published,publishing)")
           .order("created_at", { ascending: false })
           .limit(1);
-        queueId = fresh?.[0]?.id || null;
+        queueId = (fresh as Array<{ id: string }> | null)?.[0]?.id || null;
       } catch { /* will fail below */ }
     }
 
