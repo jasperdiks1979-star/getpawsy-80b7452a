@@ -6,6 +6,9 @@
  */
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 type Phase = {
   n: number;
@@ -136,14 +139,103 @@ const GROUP_COLORS: Record<Phase['group'], string> = {
 
 export default function MarketIntelligenceChangelogPage() {
   const groups = Array.from(new Set(PHASES.map((p) => p.group))) as Phase['group'][];
+
+  function exportPdf() {
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const maxW = pageW - margin * 2;
+    let y = margin;
+
+    const ensure = (need: number) => {
+      if (y + need > pageH - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(30, 39, 97);
+    doc.text('33 Aanpassingen — Market Intelligence Engine', margin, y);
+    y += 22;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(90);
+    doc.text(
+      'Volledig overzicht van het epic. Per fase: wat er veranderde en waarom.',
+      margin,
+      y,
+    );
+    y += 24;
+
+    groups.forEach((g) => {
+      ensure(40);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(30, 39, 97);
+      doc.text(g, margin, y);
+      y += 6;
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageW - margin, y);
+      y += 14;
+
+      PHASES.filter((p) => p.group === g).forEach((p) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(20);
+        const title = `${p.n}. ${p.title}`;
+        const titleLines = doc.splitTextToSize(title, maxW);
+        ensure(titleLines.length * 14 + 40);
+        doc.text(titleLines, margin, y);
+        y += titleLines.length * 14 + 2;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(40);
+        const whatLines = doc.splitTextToSize(`Wat: ${p.what}`, maxW);
+        ensure(whatLines.length * 12 + 4);
+        doc.text(whatLines, margin, y);
+        y += whatLines.length * 12 + 2;
+
+        doc.setTextColor(110);
+        const whyLines = doc.splitTextToSize(`Waarom: ${p.why}`, maxW);
+        ensure(whyLines.length * 12 + 10);
+        doc.text(whyLines, margin, y);
+        y += whyLines.length * 12 + 12;
+      });
+      y += 6;
+    });
+
+    const total = doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`GetPawsy — Changelog · pagina ${i}/${total}`, margin, pageH - 20);
+    }
+
+    doc.save('GetPawsy_Changelog_33_Fases.pdf');
+  }
+
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8 space-y-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">33 Aanpassingen — Market Intelligence Engine</h1>
-        <p className="text-muted-foreground">
-          Volledig overzicht van het epic dat in deze sessie is opgeleverd. Per fase: wat er
-          veranderde, en waarom dat nodig was.
-        </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">33 Aanpassingen — Market Intelligence Engine</h1>
+            <p className="text-muted-foreground">
+              Volledig overzicht van het epic dat in deze sessie is opgeleverd. Per fase: wat er
+              veranderde, en waarom dat nodig was.
+            </p>
+          </div>
+          <Button onClick={exportPdf} className="shrink-0">
+            <Download className="mr-2 h-4 w-4" />
+            Exporteer als PDF
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2 pt-2">
           {groups.map((g) => (
             <Badge key={g} variant="secondary" className={GROUP_COLORS[g]}>
