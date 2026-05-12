@@ -42,14 +42,18 @@ const TIKTOK_SHORTCUTS: { to: string; label: string }[] = [
   { to: '/admin/tiktok-test-users', label: 'Test Users' },
 ];
 const PINTEREST_SHORTCUTS: { to: string; label: string }[] = [
+  // Core dashboards
   { to: '/admin/pinterest-autopilot', label: 'AutoPilot' },
   { to: '/admin/pinterest-automation', label: 'Automation' },
   { to: '/admin/pinterest-scale', label: 'Scale Mode' },
   { to: '/admin/pinterest-traffic', label: 'Traffic Machine' },
   { to: '/admin/pinterest-commerce-intel', label: 'Commerce Intel' },
+  { to: '/admin/profit-engine', label: 'Profit Engine' },
+  // Pin lifecycle
   { to: '/admin/pinterest-pin-status', label: 'Pin Status' },
   { to: '/admin/pinterest-video-queue', label: 'Video Queue' },
   { to: '/admin/pinterest-video-logs', label: 'Video Logs' },
+  // Creative & niche
   { to: '/admin/pinterest-patterns', label: 'Patterns' },
   { to: '/admin/pinterest-generic-niche', label: 'Generic Niche' },
   { to: '/admin/pinterest-niche-coverage', label: 'Niche Coverage' },
