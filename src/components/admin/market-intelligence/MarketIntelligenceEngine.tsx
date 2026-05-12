@@ -24,6 +24,7 @@ import { AutoTuneTab } from "./tabs/AutoTuneTab";
 import { ScalingLoopTab } from "./tabs/ScalingLoopTab";
 import { ExperimentsTab } from "./tabs/ExperimentsTab";
 import { CrossChannelTab } from "./tabs/CrossChannelTab";
+import { GuardrailsTab } from "./tabs/GuardrailsTab";
 
 type Counters = {
   trends: number;
@@ -126,6 +127,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="scaling">Scaling Loop</TabsTrigger>
           <TabsTrigger value="experiments">Experiments</TabsTrigger>
           <TabsTrigger value="crosschannel">Cross-Channel</TabsTrigger>
+          <TabsTrigger value="guardrails">Guardrails</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewDashboardTab /></TabsContent>
@@ -145,6 +147,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="scaling"><ScalingLoopTab /></TabsContent>
         <TabsContent value="experiments"><ExperimentsTab /></TabsContent>
         <TabsContent value="crosschannel"><CrossChannelTab /></TabsContent>
+        <TabsContent value="guardrails"><GuardrailsTab /></TabsContent>
       </Tabs>
     </div>
   );

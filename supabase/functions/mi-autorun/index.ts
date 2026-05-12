@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
   const traceId = crypto.randomUUID();
   const base = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const steps = ["mi-ingest-internal", "mi-detect-opportunities", "mi-forecast-seasonal", "mi-feedback-loop", "mi-rank-next-creatives", "mi-auto-tune", "mi-bulk-variants", "mi-compliance-gate", "mi-promote-recommendations", "mi-budget-allocator", "mi-experiment-autocreate", "mi-experiment-ingest", "mi-experiment-tracker", "mi-tiktok-ingest", "mi-bandit-allocator"];
+  const steps = ["mi-ingest-internal", "mi-detect-opportunities", "mi-forecast-seasonal", "mi-feedback-loop", "mi-rank-next-creatives", "mi-auto-tune", "mi-bulk-variants", "mi-compliance-gate", "mi-promote-recommendations", "mi-budget-allocator", "mi-experiment-autocreate", "mi-experiment-ingest", "mi-experiment-tracker", "mi-tiktok-ingest", "mi-bandit-allocator", "mi-arm-guardrails"];
   const results: Record<string, any> = {};
 
   for (const fn of steps) {
