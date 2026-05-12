@@ -21,6 +21,7 @@ import {
   resolveCtaCopyText,
   type CtaCopyMode,
   type CtaPlacement,
+  copyLabelsFor,
 } from '@/lib/ctaCopyRegistry';
 import { useVisitorHook } from '@/hooks/useVisitorHook';
 
@@ -29,6 +30,64 @@ type WinnerMap = Partial<Record<CtaPlacement, Partial<Record<CtaCopyMode, string
 type HookWinnerMap = Partial<
   Record<CtaPlacement, Partial<Record<CtaCopyMode, Record<string, string>>>>
 >;
+
+/**
+ * Phase 32 — per-cohort exploration budget.
+ *
+ * EXPLORATION_RATE of sessions, per (placement, mode), get a *random
+ * non-winner* label so we never lock into a local optimum. The decision
+ * is sticky per session (sessionStorage) so the visible CTA never flips
+ * mid-page. Exploration impressions/clicks still flow into
+ * lp_funnel_events tagged with `cta_copy_source = 'exploration'`, which
+ * the elector consumes — so the next election cycle gets fresh signal
+ * for the alternate variants.
+ */
+const EXPLORATION_RATE = 0.1;
+const EXPLORATION_KEY = 'gp_cta_exploration_v1';
+
+type ExplorationState = Partial<
+  Record<string, { explore: boolean; label: string | null }>
+>;
+
+function readExploration(): ExplorationState {
+  try {
+    const raw = sessionStorage.getItem(EXPLORATION_KEY);
+    return raw ? (JSON.parse(raw) as ExplorationState) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeExploration(state: ExplorationState) {
+  try {
+    sessionStorage.setItem(EXPLORATION_KEY, JSON.stringify(state));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function decideExploration(
+  placement: CtaPlacement,
+  mode: CtaCopyMode,
+  winnerLabel: string,
+): string | null {
+  if (typeof window === 'undefined') return null;
+  const state = readExploration();
+  const key = `${placement}::${mode}`;
+  const existing = state[key];
+  if (existing) return existing.explore ? existing.label : null;
+  const explore = Math.random() < EXPLORATION_RATE;
+  let pick: string | null = null;
+  if (explore) {
+    const others = copyLabelsFor(placement, mode).filter((l) => l !== winnerLabel);
+    if (others.length > 0) {
+      pick = others[Math.floor(Math.random() * others.length)];
+    }
+  }
+  state[key] = { explore: explore && !!pick, label: pick };
+  writeExploration(state);
+  return pick;
+}
 
 export function useCtaCopyWinner() {
   const [winners, setWinners] = useState<WinnerMap>({});
@@ -103,7 +162,7 @@ export function useCtaCopyWinner() {
       ? hookWinners[placement]?.[mode]?.[hookFamily]
       : undefined;
     let resolved: { label: string; text: string };
-    let finalSource: 'cohort' | 'elected' | 'default';
+    let finalSource: 'cohort' | 'elected' | 'default' | 'exploration';
     if (learnedCohortLabel) {
       resolved = resolveCtaCopyText(placement, mode, learnedCohortLabel);
       finalSource = 'cohort';
@@ -111,6 +170,14 @@ export function useCtaCopyWinner() {
       const r = resolveCohortCopy(placement, mode, hookFamily, electedLabel);
       resolved = { label: r.label, text: r.text };
       finalSource = r.source;
+    }
+    // Phase 32 — exploration budget. Override the resolved winner with a
+    // random non-winner for ~10% of sessions so the elector keeps getting
+    // fresh signal for under-served variants. Sticky per session.
+    const explored = decideExploration(placement, mode, resolved.label);
+    if (explored) {
+      resolved = resolveCtaCopyText(placement, mode, explored);
+      finalSource = 'exploration';
     }
     return {
       label: resolved.label,
