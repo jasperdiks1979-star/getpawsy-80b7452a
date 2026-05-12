@@ -1097,6 +1097,9 @@ serve(async (req) => {
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
     const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
+    // Product-only mode: skip ALL backdrops (even styles that "need" one).
+    // Use this for fast preview generation and product-lookup isolation.
+    const productOnly: boolean = !!body.productOnly;
     // Per-hook override: { pain: true, curiosity: false, ... }
     // When provided it FULLY replaces the default "every other pin" pattern
     // and only the explicitly enabled hooks get a backdrop.
