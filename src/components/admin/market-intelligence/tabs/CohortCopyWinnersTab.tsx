@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, RefreshCw, Trophy, Pin, PinOff, History } from "lucide-react";
+import { Loader2, RefreshCw, Trophy, Pin, PinOff, History, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +23,8 @@ type Winner = {
   pinned: boolean;
   pinned_at: string | null;
   pinned_by: string | null;
+  guardrail_blocked: boolean | null;
+  guardrail_reason: string | null;
 };
 
 export function CohortCopyWinnersTab() {
@@ -225,6 +227,15 @@ export function CohortCopyWinnersTab() {
                           }
                         >
                           <Pin className="h-3 w-3" /> pinned · 7d TTL
+                        </Badge>
+                      )}
+                      {r.guardrail_blocked && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-2 gap-1 align-middle"
+                          title={r.guardrail_reason ?? "guardrail blocked"}
+                        >
+                          <ShieldAlert className="h-3 w-3" /> guardrail · using global
                         </Badge>
                       )}
                     </TableCell>
