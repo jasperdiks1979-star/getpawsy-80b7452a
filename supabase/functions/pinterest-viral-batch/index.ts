@@ -1097,6 +1097,9 @@ serve(async (req) => {
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
     const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
+    // Product-only mode: skip ALL backdrops (even styles that "need" one).
+    // Use this for fast preview generation and product-lookup isolation.
+    const productOnly: boolean = !!body.productOnly;
     // Per-hook override: { pain: true, curiosity: false, ... }
     // When provided it FULLY replaces the default "every other pin" pattern
     // and only the explicitly enabled hooks get a backdrop.
@@ -1122,7 +1125,7 @@ serve(async (req) => {
     const MAX_PINS_PER_RUN = 15;
     const requestedLimit = Number.isFinite(Number(body.maxPins)) ? Number(body.maxPins) : MAX_PINS_PER_RUN;
     const pinLimit = Math.max(1, Math.min(MAX_PINS_PER_RUN, requestedLimit));
-    console.log(`[pinterest-viral-batch] start trace=${traceId} slugs=${slugsRaw.join(",")} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} limit=${pinLimit} domination=${dominationMode}`);
+    console.log(`[pinterest-viral-batch] start trace=${traceId} slugs=${slugsRaw.join(",")} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} productOnly=${productOnly} limit=${pinLimit} domination=${dominationMode}`);
     const sb = sb0;
 
     // 🛡️ Schema guard — abort BEFORE building pins / calling AI / Pexels if
@@ -1418,8 +1421,10 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       let backdropAfterUrl: string | null = null;
       let backdropMeta: PexelsPhoto | null = null;
       let backdropSource: "pexels" | "cloudinary_fallback" | "none" = "none";
-      const wantsBackdrop = STYLES_NEEDING_BACKDROP.has(style)
-        || (useLifestyleBackdrop && (!backdropByHook || backdropByHook[hook.key]));
+      const wantsBackdrop = !productOnly && (
+        STYLES_NEEDING_BACKDROP.has(style)
+        || (useLifestyleBackdrop && (!backdropByHook || backdropByHook[hook.key]))
+      );
       if (wantsBackdrop) {
         // Primary: AI-generated cozy US-apartment scene via Nano Banana 2,
         // cached per-query in pinterest_ai_backdrops + storage so subsequent
@@ -1638,7 +1643,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
 
     // Legacy enrichment path — kept for explicit opt-in only. The premium
     // templates above already handle backdrops per style.
-    if (useLifestyleBackdrop && body.legacyBackdrop === true) {
+    if (!productOnly && useLifestyleBackdrop && body.legacyBackdrop === true) {
       // Decide which pin indexes get a backdrop:
       // - explicit per-hook map wins (only `true` entries)
       // - else fall back to legacy "every other pin" pattern (0,2,4)
