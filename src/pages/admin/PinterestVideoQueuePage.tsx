@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle, Activity, Bug, Trash2, HeartPulse, Image, Download, ClipboardCopy } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle, Activity, Bug, Trash2, HeartPulse, Image, Download, ClipboardCopy, ClipboardPaste, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
 import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
@@ -354,6 +355,8 @@ export default function PinterestVideoQueuePage() {
     ok?: boolean;
   }>>([]);
   const [previewRawFrames, setPreviewRawFrames] = useState<Array<{ ts: number; line: string }>>([]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
   const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
     if (!previewBusy) return;
@@ -1185,6 +1188,65 @@ export default function PinterestVideoQueuePage() {
   }, []);
 
   // ── Product-only preview ────────────────────────────────────────────────
+  const importShareJson = useCallback((text: string) => {
+    const trimmed = (text ?? "").trim();
+    if (!trimmed) {
+      toast({ title: "Paste a resolver-debug block first", variant: "destructive" });
+      return false;
+    }
+    // Accept either raw JSON or a markdown share block (```json ... ```).
+    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    let jsonStr = fenceMatch ? fenceMatch[1] : trimmed;
+    // If the user pasted the share template, strip the leading **filename** line.
+    if (!fenceMatch && jsonStr.startsWith("**")) {
+      const nl = jsonStr.indexOf("\n");
+      if (nl !== -1) jsonStr = jsonStr.slice(nl + 1).trim();
+    }
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (e: any) {
+      toast({ title: "Invalid JSON", description: e?.message?.slice(0, 120), variant: "destructive" });
+      return false;
+    }
+    if (!parsed || typeof parsed !== "object") {
+      toast({ title: "Unexpected payload shape", variant: "destructive" });
+      return false;
+    }
+    if (!parsed.lookup && !parsed.timeline && !parsed.result) {
+      toast({ title: "No resolver fields found", description: "Expected lookup, result, or timeline", variant: "destructive" });
+      return false;
+    }
+    if (typeof parsed.slug_input === "string") setPreviewSlug(parsed.slug_input);
+    if (typeof parsed.product_only === "boolean") setProductOnly(parsed.product_only);
+    setPreviewLookup(parsed.lookup ?? null);
+    setPreviewResult(parsed.result ?? null);
+    const tl = Array.isArray(parsed.timeline) ? parsed.timeline : [];
+    setPreviewTimeline(
+      tl.map((t: any) => ({
+        ts: typeof t.ts === "number" ? t.ts : (t.ts_iso ? Date.parse(t.ts_iso) : Date.now()),
+        event: t.event ?? "start",
+        label: t.label ?? String(t.event ?? "event"),
+        detail: t.detail,
+        ok: t.ok,
+      })),
+    );
+    // Reconstruct synthetic raw frames from timeline so the Raw NDJSON button works.
+    setPreviewRawFrames(
+      tl
+        .filter((t: any) => t.event && t.event !== "start" && t.event !== "done")
+        .map((t: any) => ({
+          ts: typeof t.ts === "number" ? t.ts : Date.now(),
+          line: JSON.stringify({ event: t.event, label: t.label, detail: t.detail, ok: t.ok }),
+        })),
+    );
+    toast({
+      title: "Resolver debug imported",
+      description: `${tl.length} timeline event(s) · lookup: ${parsed.lookup ? "yes" : "no"} · result: ${parsed.result ? "yes" : "no"}`,
+    });
+    return true;
+  }, []);
+
   const runProductPreview = useCallback(async () => {
     const slug = previewSlug.trim();
     if (!slug) {
@@ -1459,6 +1521,68 @@ export default function PinterestVideoQueuePage() {
             />
             Product-only (skip backdrops)
           </label>
+        </div>
+        <div className="mb-2">
+          <button
+            type="button"
+            onClick={() => setImportOpen((v) => !v)}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            {importOpen ? <X className="h-3 w-3" /> : <ClipboardPaste className="h-3 w-3" />}
+            {importOpen ? "Close import" : "Import share JSON"}
+          </button>
+          {importOpen && (
+            <div className="mt-2 rounded-md border bg-background p-2 space-y-2">
+              <Textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder='Paste a "Copy share" markdown block or raw resolver-debug JSON…'
+                className="font-mono text-[11px] min-h-[120px]"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="h-8"
+                  onClick={() => {
+                    if (importShareJson(importText)) {
+                      setImportOpen(false);
+                      setImportText("");
+                    }
+                  }}
+                >
+                  <ClipboardPaste className="h-3.5 w-3.5 mr-1" /> Import
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={async () => {
+                    try {
+                      const t = await navigator.clipboard.readText();
+                      setImportText(t);
+                      toast({ title: "Pasted from clipboard", description: `${t.length.toLocaleString()} chars` });
+                    } catch (e: any) {
+                      toast({ title: "Clipboard read failed", description: e?.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  Paste from clipboard
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8"
+                  onClick={() => setImportText("")}
+                  disabled={!importText}
+                >
+                  Clear
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Accepts the markdown block from <b>Copy share</b>, or the raw JSON downloaded via <b>Download JSON</b>. Rehydrates lookup, result, and timeline.
+              </p>
+            </div>
+          )}
         </div>
         {previewTimeline.length > 0 && (
           <div className="rounded-md border bg-background p-2 mb-2">
