@@ -1350,6 +1350,62 @@ export default function PinterestVideoQueuePage() {
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
       </p>
 
+      {testPinResult && (
+        <Card className={`p-3 mb-3 ${testPinResult.ok ? "border-emerald-500/40 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+          <div className="flex items-center justify-between mb-2">
+            <p className={`text-xs font-semibold uppercase tracking-wide ${testPinResult.ok ? "text-emerald-700" : "text-destructive"}`}>
+              {testPinResult.ok ? "✅ Test pin published" : "❌ Test publish failed"}
+            </p>
+            <button
+              type="button"
+              onClick={() => setTestPinResult(null)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Dismiss
+            </button>
+          </div>
+          {testPinResult.ok ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">pin_id</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.pin_id || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">title</span>
+                <span className="break-words">{testPinResult.title || "—"}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">media_url</span>
+                <a href={testPinResult.media_url || "#"} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] truncate">
+                  {testPinResult.media_url || "—"}
+                </a>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">board</span>
+                <span className="break-words">{testPinResult.board || "—"}</span>
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">Pinterest URL</span>
+                {testPinResult.pin_url ? (
+                  <a href={testPinResult.pin_url} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] break-all">
+                    {testPinResult.pin_url}
+                  </a>
+                ) : (
+                  <span className="font-mono text-[11px]">—</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-destructive">
+              <p>{testPinResult.error || "Unknown error"}</p>
+              {testPinResult.queue_id && (
+                <p className="text-muted-foreground mt-1">queue_id: <code className="font-mono">{testPinResult.queue_id}</code></p>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
+
       <Card className="p-3 mb-3 border-dashed">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
