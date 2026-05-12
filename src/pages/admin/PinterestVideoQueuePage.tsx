@@ -262,6 +262,16 @@ export default function PinterestVideoQueuePage() {
   const [preparing, setPreparing] = useState(false);
   const [prepareStep, setPrepareStep] = useState<string>("");
   const [publishingTest, setPublishingTest] = useState(false);
+  const [testPinResult, setTestPinResult] = useState<{
+    ok: boolean;
+    pin_id?: string | null;
+    title?: string | null;
+    media_url?: string | null;
+    board?: string | null;
+    pin_url?: string | null;
+    error?: string | null;
+    queue_id?: string | null;
+  } | null>(null);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
@@ -870,8 +880,9 @@ export default function PinterestVideoQueuePage() {
       return;
     }
     const best = eligible[0].draft;
-      setLastPublishIds([best.id]);
+    setLastPublishIds([best.id]);
     setPublishingTest(true);
+    setTestPinResult(null);
     try {
       toast({ title: "Test publish started", description: `Publishing exactly 1 video pin (${best.id.slice(0, 8)}…)` });
       const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: best.id });
@@ -886,15 +897,27 @@ export default function PinterestVideoQueuePage() {
         message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
       });
       const success = !error && !!data?.ok;
+      const result = {
+        ok: success,
+        pin_id: data?.pin_id || data?.data?.id || null,
+        title: data?.title || data?.data?.title || null,
+        media_url: data?.media_url || data?.data?.media_source?.url || data?.data?.media_url || null,
+        board: data?.board || data?.data?.board_id || null,
+        pin_url: data?.pin_url || data?.external_url || data?.data?.url || null,
+        error: success ? null : (data?.code || error?.message || ev.error || "unknown"),
+        queue_id: best.id,
+      };
+      setTestPinResult(result);
       toast({
         title: success ? "Test pin published" : "Test publish failed",
         description: success
-          ? `pin_id=${data?.pin_id || "?"} · pin_url=${data?.external_url || data?.pin_url || "?"}`
-          : `${data?.code || error?.message || "unknown"} — see Debug Console response JSON`,
+          ? `pin_id=${result.pin_id || "?"} · pin_url=${result.pin_url || "?"}`
+          : `${result.error} — see Debug Console response JSON`,
         variant: success ? "default" : "destructive",
       });
       await load();
     } catch (e) {
+      setTestPinResult({ ok: false, error: (e as Error).message, queue_id: best.id });
       toast({ title: "Test publish crashed", description: (e as Error).message, variant: "destructive" });
     } finally {
       setPublishingTest(false);
@@ -1326,6 +1349,62 @@ export default function PinterestVideoQueuePage() {
       <p className="text-xs text-muted-foreground mb-3">
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
       </p>
+
+      {testPinResult && (
+        <Card className={`p-3 mb-3 ${testPinResult.ok ? "border-emerald-500/40 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+          <div className="flex items-center justify-between mb-2">
+            <p className={`text-xs font-semibold uppercase tracking-wide ${testPinResult.ok ? "text-emerald-700" : "text-destructive"}`}>
+              {testPinResult.ok ? "✅ Test pin published" : "❌ Test publish failed"}
+            </p>
+            <button
+              type="button"
+              onClick={() => setTestPinResult(null)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Dismiss
+            </button>
+          </div>
+          {testPinResult.ok ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">pin_id</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.pin_id || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">title</span>
+                <span className="break-words">{testPinResult.title || "—"}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">media_url</span>
+                <a href={testPinResult.media_url || "#"} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] truncate">
+                  {testPinResult.media_url || "—"}
+                </a>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">board</span>
+                <span className="break-words">{testPinResult.board || "—"}</span>
+              </div>
+              <div className="flex flex-col sm:col-span-2">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">Pinterest URL</span>
+                {testPinResult.pin_url ? (
+                  <a href={testPinResult.pin_url} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] break-all">
+                    {testPinResult.pin_url}
+                  </a>
+                ) : (
+                  <span className="font-mono text-[11px]">—</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-destructive">
+              <p>{testPinResult.error || "Unknown error"}</p>
+              {testPinResult.queue_id && (
+                <p className="text-muted-foreground mt-1">queue_id: <code className="font-mono">{testPinResult.queue_id}</code></p>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
 
       <Card className="p-3 mb-3 border-dashed">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
