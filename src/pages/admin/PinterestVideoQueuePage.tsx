@@ -1451,6 +1451,45 @@ export default function PinterestVideoQueuePage() {
             Product-only (skip backdrops)
           </label>
         </div>
+        {previewTimeline.length > 0 && (
+          <div className="rounded-md border bg-background p-2 mb-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1">
+                <Activity className="h-3 w-3" /> Resolver timeline
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {previewBusy ? (
+                  <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> streaming…</span>
+                ) : (
+                  `closed · ${previewTimeline.length} event${previewTimeline.length === 1 ? "" : "s"}`
+                )}
+              </span>
+            </div>
+            <ol className="space-y-1 text-[11px]">
+              {previewTimeline.map((t, i) => {
+                const elapsed = i === 0 ? 0 : t.ts - previewTimeline[0].ts;
+                const dot =
+                  t.event === "lookup_ack" ? (t.ok ? "bg-emerald-500" : "bg-destructive")
+                  : t.event === "heartbeat" ? "bg-blue-400 animate-pulse"
+                  : t.event === "result" ? (t.ok ? "bg-emerald-500" : "bg-destructive")
+                  : t.event === "error" ? "bg-destructive"
+                  : t.event === "done" ? "bg-slate-400"
+                  : "bg-primary";
+                return (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${dot}`} />
+                    <span className="font-mono text-muted-foreground tabular-nums w-14 shrink-0">+{elapsed}ms</span>
+                    <Badge variant="outline" className="h-4 px-1 text-[9px] font-mono shrink-0">{t.event}</Badge>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium">{t.label}</span>
+                      {t.detail && <span className="text-muted-foreground"> — {t.detail}</span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
         {previewLookup && (
           <div className="rounded-md border bg-background p-3 mb-2 text-xs space-y-2">
             <div className="flex items-center justify-between">
