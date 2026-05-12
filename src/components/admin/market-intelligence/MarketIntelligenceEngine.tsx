@@ -13,6 +13,7 @@ import { ViralPatternLibraryTab } from "./tabs/ViralPatternLibraryTab";
 import { OpportunityGapsTab } from "./tabs/OpportunityGapsTab";
 import { SeasonalForecastsTab } from "./tabs/SeasonalForecastsTab";
 import { RecommendedNextTab } from "./tabs/RecommendedNextTab";
+import { RemixEngineTab } from "./tabs/RemixEngineTab";
 
 type Counters = {
   trends: number;
@@ -83,6 +84,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="hooks">Hook Leaderboard</TabsTrigger>
           <TabsTrigger value="styles">Winning Styles</TabsTrigger>
           <TabsTrigger value="patterns">Viral Pattern Library</TabsTrigger>
+          <TabsTrigger value="remix">Remix Engine</TabsTrigger>
           <TabsTrigger value="gaps">Opportunity Gaps</TabsTrigger>
           <TabsTrigger value="seasonal">Seasonal Forecasts</TabsTrigger>
           <TabsTrigger value="next">Recommended Next</TabsTrigger>
@@ -93,6 +95,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="hooks"><HookLeaderboardTab /></TabsContent>
         <TabsContent value="styles"><WinningStylesTab /></TabsContent>
         <TabsContent value="patterns"><ViralPatternLibraryTab onChange={loadCounters} /></TabsContent>
+        <TabsContent value="remix"><RemixEngineTab /></TabsContent>
         <TabsContent value="gaps"><OpportunityGapsTab onChange={loadCounters} /></TabsContent>
         <TabsContent value="seasonal"><SeasonalForecastsTab /></TabsContent>
         <TabsContent value="next"><RecommendedNextTab onChange={loadCounters} /></TabsContent>
