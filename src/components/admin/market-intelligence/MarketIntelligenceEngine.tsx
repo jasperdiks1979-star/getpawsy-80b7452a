@@ -29,6 +29,7 @@ import { RevenueAttributionTab } from "./tabs/RevenueAttributionTab";
 import { BudgetShifterTab } from "./tabs/BudgetShifterTab";
 import { FatigueDetectorTab } from "./tabs/FatigueDetectorTab";
 import { AudienceClusterTab } from "./tabs/AudienceClusterTab";
+import { VisitorPersonalizationTab } from "./tabs/VisitorPersonalizationTab";
 
 type Counters = {
   trends: number;
@@ -136,6 +137,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="budget">Budget Shifter</TabsTrigger>
           <TabsTrigger value="fatigue">Fatigue</TabsTrigger>
           <TabsTrigger value="audience">Audience</TabsTrigger>
+          <TabsTrigger value="visitor">Visitor Personalization</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewDashboardTab /></TabsContent>
@@ -160,6 +162,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="budget"><BudgetShifterTab /></TabsContent>
         <TabsContent value="fatigue"><FatigueDetectorTab /></TabsContent>
         <TabsContent value="audience"><AudienceClusterTab /></TabsContent>
+        <TabsContent value="visitor"><VisitorPersonalizationTab /></TabsContent>
       </Tabs>
     </div>
   );
