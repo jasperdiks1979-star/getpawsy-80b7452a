@@ -1021,7 +1021,7 @@ export default function PinterestVideoQueuePage() {
       <div className="flex flex-wrap gap-2 mb-3">
         <Button
           onClick={runPrepareAll}
-          disabled={!authDebug.admin || preparing || discovering || uploading || busyId === "all"}
+          disabled={preparing || discovering || uploading || busyId === "all"}
           className="h-11"
           size="sm"
         >
@@ -1029,7 +1029,7 @@ export default function PinterestVideoQueuePage() {
             ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> {prepareStep || "Preparing…"}</>
             : <><Wand2 className="h-4 w-4 mr-1" /> Prepare all (1-click)</>}
         </Button>
-        <Button onClick={runDiscovery} disabled={!authDebug.admin || discovering} className="h-11" size="sm">
+        <Button onClick={runDiscovery} disabled={discovering} className="h-11" size="sm">
           {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
           Discover videos
         </Button>
@@ -1055,19 +1055,19 @@ export default function PinterestVideoQueuePage() {
               invokeDebug("pinterest-video-metrics-sync", { action: "refresh_status" }),
             ]);
           }}
-          disabled={!authDebug.authenticated || loading}
+          disabled={loading}
           className="h-11"
           size="sm"
         >
           <RefreshCw className="h-4 w-4 mr-1" /> Refresh
         </Button>
-        <Button variant="secondary" onClick={() => callPublisher("queue_all_drafts", {}, "all")} disabled={!authDebug.admin || busyId === "all"} className="h-11" size="sm">
+        <Button variant="secondary" onClick={() => callPublisher("queue_all_drafts", {}, "all")} disabled={busyId === "all"} className="h-11" size="sm">
           <Play className="h-4 w-4 mr-1" /> Queue drafts for all
         </Button>
         <Button
           variant="secondary"
           onClick={autoPickBest3}
-          disabled={!authDebug.admin || ranked.length === 0}
+          disabled={ranked.length === 0}
           className="h-11"
           size="sm"
         >
@@ -1075,7 +1075,7 @@ export default function PinterestVideoQueuePage() {
         </Button>
         <Button
           onClick={publishOneTest}
-          disabled={!authDebug.admin || publishingTest || ranked.length === 0}
+          disabled={publishingTest || ranked.length === 0}
           className="h-11 bg-emerald-600 hover:bg-emerald-600/90 text-white"
           size="sm"
         >
