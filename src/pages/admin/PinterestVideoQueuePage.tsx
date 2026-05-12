@@ -346,6 +346,13 @@ export default function PinterestVideoQueuePage() {
   const [productOnly, setProductOnly] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewLookup, setPreviewLookup] = useState<any | null>(null);
+  const [previewTimeline, setPreviewTimeline] = useState<Array<{
+    ts: number;
+    event: "start" | "lookup_ack" | "heartbeat" | "result" | "error" | "done";
+    label: string;
+    detail?: string;
+    ok?: boolean;
+  }>>([]);
   const [previewResult, setPreviewResult] = useState<{
     ok: boolean;
     message?: string;
