@@ -1804,6 +1804,9 @@ export type Database = {
           confidence_score: number | null
           ctr_pct: number | null
           evaluated_at: string
+          guardrail_blocked: boolean
+          guardrail_evaluated_at: string | null
+          guardrail_reason: string | null
           hook_family: string
           id: number
           impressions: number
@@ -1821,6 +1824,9 @@ export type Database = {
           confidence_score?: number | null
           ctr_pct?: number | null
           evaluated_at?: string
+          guardrail_blocked?: boolean
+          guardrail_evaluated_at?: string | null
+          guardrail_reason?: string | null
           hook_family: string
           id?: number
           impressions?: number
@@ -1838,6 +1844,9 @@ export type Database = {
           confidence_score?: number | null
           ctr_pct?: number | null
           evaluated_at?: string
+          guardrail_blocked?: boolean
+          guardrail_evaluated_at?: string | null
+          guardrail_reason?: string | null
           hook_family?: string
           id?: number
           impressions?: number
