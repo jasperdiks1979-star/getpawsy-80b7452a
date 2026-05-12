@@ -638,16 +638,17 @@ export default function PinterestVideoQueuePage() {
     return () => subscription.unsubscribe();
   }, [refreshAuthState]);
 
-  const runDiscovery = async () => {
+  const runDiscovery = async (opts?: { force?: boolean }) => {
+    const force = !!opts?.force;
     setDiscovering(true);
     try {
-      toast({ title: "Discovery started", description: "Calling pinterest-video-discovery…" });
-      const ev = await invokeDebug("pinterest-video-discovery", { action: "discover" });
+      toast({ title: force ? "Force-register started" : "Discovery started", description: "Calling pinterest-video-discovery…" });
+      const ev = await invokeDebug("pinterest-video-discovery", force ? { action: "force_register", force: true } : { action: "discover" });
       const data: any = ev.response || {};
       if (ev.error && !data?.traceId) throw new Error(ev.error);
       setDiscoveryDetail(data);
       toast({
-        title: data?.ok ? "Discovery complete" : "Discovery blocked",
+        title: data?.ok ? (force ? "Force-register complete" : "Discovery complete") : "Discovery blocked",
         description: data?.ok
           ? `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.`
           : (ev.error || data?.code || "See Debug Console"),
