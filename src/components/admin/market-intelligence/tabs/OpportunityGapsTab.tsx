@@ -32,10 +32,10 @@ export function OpportunityGapsTab({ onChange }: { onChange?: () => void }) {
     if (form.evidence.trim()) {
       try { evidence = JSON.parse(form.evidence); } catch { evidence = { note: form.evidence }; }
     }
-    const { error } = await supabase.from("mi_opportunities").insert({
+    const { error } = await supabase.from("mi_opportunities").insert([{
       type: form.type, title: form.title.trim(), market: "US",
-      score: Number(form.score) || 0, evidence, status: "open",
-    });
+      score: Number(form.score) || 0, evidence: evidence as never, status: "open",
+    }]);
     if (error) return toast.error(error.message);
     toast.success("Opportunity logged");
     setForm({ ...form, title: "", evidence: "" });
