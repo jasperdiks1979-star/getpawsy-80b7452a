@@ -7,13 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Wand2, Loader2 } from "lucide-react";
 
 type Rec = { id: string; title: string; body: string; category: string | null; confidence: number; status: string; created_at: string };
 
 export function RecommendedNextTab({ onChange }: { onChange?: () => void }) {
   const [recs, setRecs] = useState<Rec[]>([]);
   const [form, setForm] = useState({ title: "", body: "", category: "", confidence: 60 });
+  const [ranking, setRanking] = useState(false);
 
   useEffect(() => { void load(); }, []);
 
@@ -41,6 +42,20 @@ export function RecommendedNextTab({ onChange }: { onChange?: () => void }) {
     void load(); onChange?.();
   }
 
+  async function rank() {
+    setRanking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mi-rank-next-creatives", { body: {} });
+      if (error) throw error;
+      toast.success(`Ranked ${data?.inserted ?? 0} next creatives`);
+      await load(); onChange?.();
+    } catch (e: any) {
+      toast.error(`Ranking failed: ${e?.message ?? e}`);
+    } finally {
+      setRanking(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -63,7 +78,13 @@ export function RecommendedNextTab({ onChange }: { onChange?: () => void }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recommended next creatives (US)</CardTitle>
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle>Recommended next creatives (US)</CardTitle>
+            <Button size="sm" onClick={rank} disabled={ranking} className="gap-1">
+              {ranking ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+              {ranking ? "Ranking…" : "Generate ranked list"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {recs.length === 0 ? <p className="text-sm text-muted-foreground">No recommendations yet.</p> :
