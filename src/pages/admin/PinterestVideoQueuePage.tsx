@@ -311,6 +311,25 @@ export default function PinterestVideoQueuePage() {
   });
   const autoDiscoveryRanRef = useRef(false);
 
+  // ───────── Full verification flow (auth → discovery → publish) ─────────
+  type VerifyStepStatus = "idle" | "running" | "ok" | "fail" | "skipped";
+  type VerifyStepKey = "auth" | "discovery" | "drafts" | "publish";
+  type VerifyStep = { status: VerifyStepStatus; message: string; detail?: string };
+  const initialVerify: Record<VerifyStepKey, VerifyStep> = {
+    auth: { status: "idle", message: "Not run" },
+    discovery: { status: "idle", message: "Not run" },
+    drafts: { status: "idle", message: "Not run" },
+    publish: { status: "idle", message: "Not run" },
+  };
+  const [verifySteps, setVerifySteps] = useState<Record<VerifyStepKey, VerifyStep>>(initialVerify);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<{
+    ok: boolean;
+    pin_id?: string | null;
+    pin_url?: string | null;
+    queue_id?: string | null;
+  } | null>(null);
+
   // Direct fetch wrapper so we capture HTTP status, raw response and timing.
   // Falls back to a clear "Admin auth required" message on 401/403.
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -882,6 +901,153 @@ export default function PinterestVideoQueuePage() {
   }, [ranked, pushTrace, load]);
 
   // ───────────────── Per-step rerun helpers ─────────────────
+  const setStep = useCallback((key: VerifyStepKey, patch: Partial<VerifyStep>) => {
+    setVerifySteps((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  }, []);
+
+  const runFullVerification = useCallback(async () => {
+    if (verifying) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    setVerifySteps({
+      auth: { status: "running", message: "Checking admin session…" },
+      discovery: { status: "idle", message: "Waiting" },
+      drafts: { status: "idle", message: "Waiting" },
+      publish: { status: "idle", message: "Waiting" },
+    });
+    toast({ title: "Full verification started", description: "Auth → Discovery → Publish 1 test pin" });
+
+    // 1) Auth
+    const auth = await refreshAuthState();
+    if (!auth.authenticated || !auth.admin) {
+      setStep("auth", {
+        status: "fail",
+        message: auth.authenticated ? "Not an admin" : "Not signed in",
+        detail: auth.error || `role=${auth.role}, admin=${auth.admin}`,
+      });
+      setStep("discovery", { status: "skipped", message: "Skipped (auth failed)" });
+      setStep("drafts", { status: "skipped", message: "Skipped (auth failed)" });
+      setStep("publish", { status: "skipped", message: "Skipped (auth failed)" });
+      toast({ title: "Verification stopped at Auth", description: "Sign in as an admin and retry.", variant: "destructive" });
+      setVerifying(false);
+      return;
+    }
+    setStep("auth", {
+      status: "ok",
+      message: `Admin OK · ${auth.email || auth.userId?.slice(0, 8) || "user"}`,
+      detail: `role=${auth.role}, jwt=${auth.jwtExists ? "yes" : "no"}`,
+    });
+
+    // 2) Discovery
+    setStep("discovery", { status: "running", message: "Scanning storage buckets…" });
+    const discEv = await invokeDebug("pinterest-video-discovery", { action: "discover" });
+    const discData: any = discEv.response || {};
+    const discOk = !discEv.error && discData?.ok !== false;
+    if (!discOk) {
+      setStep("discovery", {
+        status: "fail",
+        message: discData?.code || discEv.error || "Discovery failed",
+        detail: typeof discData?.message === "string" ? discData.message : undefined,
+      });
+      setStep("drafts", { status: "skipped", message: "Skipped (discovery failed)" });
+      setStep("publish", { status: "skipped", message: "Skipped (discovery failed)" });
+      toast({ title: "Verification stopped at Discovery", description: discData?.message || discEv.error || "See Debug Console", variant: "destructive" });
+      setVerifying(false);
+      return;
+    }
+    const found = Number(discData?.totals?.assets ?? discData?.assets ?? discData?.found ?? 0);
+    setStep("discovery", {
+      status: "ok",
+      message: `Found ${found} video asset${found === 1 ? "" : "s"}`,
+      detail: discEv.trace_id ? `trace ${discEv.trace_id.slice(0, 8)}…` : undefined,
+    });
+
+    // Refresh queue list so we can pick a draft to publish.
+    await load();
+
+    // 3) Drafts — ensure at least one publishable draft exists
+    setStep("drafts", { status: "running", message: "Ensuring publishable draft exists…" });
+    let queueId: string | null = null;
+    try {
+      const { data: existing } = await supabase
+        .from("pinterest_video_queue")
+        .select("id, status")
+        .not("status", "in", "(published,publishing)")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      queueId = (existing as Array<{ id: string }> | null)?.[0]?.id || null;
+    } catch { /* fall through to generation */ }
+
+    if (!queueId) {
+      const draftsEv = await invokeDebug("pinterest-video-publisher", { action: "queue_all_drafts" });
+      const draftsData: any = draftsEv.response || {};
+      if (draftsEv.error || draftsData?.ok === false) {
+        setStep("drafts", {
+          status: "fail",
+          message: draftsData?.code || draftsEv.error || "Draft generation failed",
+          detail: draftsData?.message,
+        });
+        setStep("publish", { status: "skipped", message: "Skipped (no draft)" });
+        toast({ title: "Verification stopped at Drafts", description: draftsData?.message || draftsEv.error || "See Debug Console", variant: "destructive" });
+        setVerifying(false);
+        return;
+      }
+      try {
+        const { data: fresh } = await supabase
+          .from("pinterest_video_queue")
+          .select("id")
+          .not("status", "in", "(published,publishing)")
+          .order("created_at", { ascending: false })
+          .limit(1);
+        queueId = (fresh as Array<{ id: string }> | null)?.[0]?.id || null;
+      } catch { /* will fail below */ }
+    }
+
+    if (!queueId) {
+      setStep("drafts", { status: "fail", message: "No eligible draft after generation" });
+      setStep("publish", { status: "skipped", message: "Skipped (no draft)" });
+      toast({ title: "No draft available", description: "Check the Discover step output and try again.", variant: "destructive" });
+      setVerifying(false);
+      return;
+    }
+    setStep("drafts", { status: "ok", message: `Draft ready · ${queueId.slice(0, 8)}…` });
+
+    // 4) Publish 1 test pin
+    setStep("publish", { status: "running", message: "Publishing 1 test video pin…" });
+    setLastPublishIds([queueId]);
+    const pubEv = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: queueId });
+    const pubData: any = pubEv.response || {};
+    const pubOk = !pubEv.error && !!pubData?.ok;
+    if (!pubOk) {
+      setStep("publish", {
+        status: "fail",
+        message: pubData?.code || pubEv.error || "Publish failed",
+        detail: typeof pubData?.message === "string" ? pubData.message : undefined,
+      });
+      setVerifyResult({ ok: false, queue_id: queueId });
+      toast({
+        title: "Test publish failed",
+        description: pubData?.message || pubData?.code || pubEv.error || "See Debug Console",
+        variant: "destructive",
+      });
+    } else {
+      const pinId = pubData?.pin_id || pubData?.data?.id || null;
+      const pinUrl = pubData?.pin_url || pubData?.external_url || pubData?.data?.url || null;
+      setStep("publish", {
+        status: "ok",
+        message: pinId ? `Published · ${pinId}` : "Published",
+        detail: pinUrl || undefined,
+      });
+      setVerifyResult({ ok: true, pin_id: pinId, pin_url: pinUrl, queue_id: queueId });
+      toast({
+        title: "Verification passed",
+        description: pinUrl ? `Live pin: ${pinUrl}` : `pin_id=${pinId || "?"}`,
+      });
+    }
+    await load();
+    setVerifying(false);
+  }, [verifying, refreshAuthState, invokeDebug, setStep, load]);
+
   // Each helper repeats exactly one stage of the pipeline with the same input
   // it would have used inside `runPrepareAll` / `publishSelected`, so the user
   // can iterate on a single failing stage without re-running the whole flow.
@@ -1016,6 +1182,78 @@ export default function PinterestVideoQueuePage() {
           <div><div className="text-lg font-semibold">{pipelineCounts.drafts}</div><div className="text-muted-foreground">total drafts</div></div>
           <div><div className="text-lg font-semibold">{pipelineCounts.publishable}</div><div className="text-muted-foreground">total publishable</div></div>
         </div>
+      </Card>
+
+      <Card className="p-3 mb-3 border-emerald-500/40 bg-emerald-500/5">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Run full verification
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Auth → Discovery → Draft → Publish 1 test pin
+            </p>
+          </div>
+          <Button
+            onClick={runFullVerification}
+            disabled={verifying}
+            className="h-10 bg-emerald-600 hover:bg-emerald-600/90 text-white"
+            size="sm"
+          >
+            {verifying
+              ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Verifying…</>
+              : <><HeartPulse className="h-4 w-4 mr-1" /> Run full verification</>}
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          {([
+            ["auth", "1 · Admin auth"],
+            ["discovery", "2 · Discovery"],
+            ["drafts", "3 · Draft ready"],
+            ["publish", "4 · Test pin"],
+          ] as Array<[VerifyStepKey, string]>).map(([key, label]) => {
+            const s = verifySteps[key];
+            const tone =
+              s.status === "ok" ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+              : s.status === "fail" ? "border-red-500 bg-red-50 text-red-800"
+              : s.status === "running" ? "border-blue-500 bg-blue-50 text-blue-800"
+              : s.status === "skipped" ? "border-muted bg-muted/30 text-muted-foreground"
+              : "border-muted bg-background text-muted-foreground";
+            return (
+              <div key={key} className={`rounded-md border px-2.5 py-2 ${tone}`}>
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+                  {s.status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
+                  {s.status === "ok" && <CheckCircle2 className="h-3 w-3" />}
+                  {s.status === "fail" && <XCircle className="h-3 w-3" />}
+                  {s.status === "skipped" && <span className="h-3 w-3 inline-block rounded-full bg-muted-foreground/30" />}
+                  {s.status === "idle" && <span className="h-3 w-3 inline-block rounded-full border border-muted-foreground/40" />}
+                  <span>{label}</span>
+                </div>
+                <div className="text-xs mt-1 break-words">{s.message}</div>
+                {s.detail && (
+                  <div className="text-[10px] mt-0.5 opacity-80 break-words">{s.detail}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {verifyResult && (
+          <div className="mt-2 text-[11px]">
+            {verifyResult.ok ? (
+              <span className="text-emerald-700">
+                ✅ Pin published · queue {verifyResult.queue_id?.slice(0, 8)}…
+                {verifyResult.pin_id && <> · pin_id <code>{verifyResult.pin_id}</code></>}
+                {verifyResult.pin_url && (
+                  <> · <a href={verifyResult.pin_url} target="_blank" rel="noreferrer" className="underline">open pin</a></>
+                )}
+              </span>
+            ) : (
+              <span className="text-red-700">
+                ❌ Verification failed — see Debug Console below for full request/response.
+              </span>
+            )}
+          </div>
+        )}
       </Card>
 
       <div className="flex flex-wrap gap-2 mb-3">
