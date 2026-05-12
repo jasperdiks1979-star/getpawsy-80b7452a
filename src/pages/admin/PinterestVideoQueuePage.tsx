@@ -638,16 +638,17 @@ export default function PinterestVideoQueuePage() {
     return () => subscription.unsubscribe();
   }, [refreshAuthState]);
 
-  const runDiscovery = async () => {
+  const runDiscovery = async (opts?: { force?: boolean }) => {
+    const force = !!opts?.force;
     setDiscovering(true);
     try {
-      toast({ title: "Discovery started", description: "Calling pinterest-video-discovery…" });
-      const ev = await invokeDebug("pinterest-video-discovery", { action: "discover" });
+      toast({ title: force ? "Force-register started" : "Discovery started", description: "Calling pinterest-video-discovery…" });
+      const ev = await invokeDebug("pinterest-video-discovery", force ? { action: "force_register", force: true } : { action: "discover" });
       const data: any = ev.response || {};
       if (ev.error && !data?.traceId) throw new Error(ev.error);
       setDiscoveryDetail(data);
       toast({
-        title: data?.ok ? "Discovery complete" : "Discovery blocked",
+        title: data?.ok ? (force ? "Force-register complete" : "Discovery complete") : "Discovery blocked",
         description: data?.ok
           ? `Scanned ${data?.scanned ?? 0} files, inserted ${data?.inserted ?? 0}.`
           : (ev.error || data?.code || "See Debug Console"),
@@ -1412,6 +1413,47 @@ export default function PinterestVideoQueuePage() {
         </div>
       </Card>
 
+      {discoveryDetail && Array.isArray(discoveryDetail?.skipped) && discoveryDetail.skipped.length > 0 && (
+        <Card className="p-3 mb-3 border-amber-500/40 bg-amber-50/40">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+              Discovery skip log · {discoveryDetail.skipped.length} file(s) skipped
+            </p>
+            <span className="text-[11px] text-muted-foreground">
+              scanned {discoveryDetail.scanned ?? 0} · matched {discoveryDetail.matched ?? 0} · inserted {discoveryDetail.inserted ?? 0}
+              {discoveryDetail.force ? " · force mode" : ""}
+            </span>
+          </div>
+          <div className="max-h-56 overflow-auto rounded border bg-background">
+            <table className="w-full text-[11px]">
+              <thead className="bg-muted/50 sticky top-0">
+                <tr>
+                  <th className="text-left px-2 py-1 font-medium">File</th>
+                  <th className="text-left px-2 py-1 font-medium">Bucket</th>
+                  <th className="text-left px-2 py-1 font-medium">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {discoveryDetail.skipped.slice(0, 50).map((s: any, i: number) => (
+                  <tr key={`${s.path || s.filename}-${i}`} className="border-t">
+                    <td className="px-2 py-1 truncate max-w-[180px]" title={s.filename}>{s.filename}</td>
+                    <td className="px-2 py-1 text-muted-foreground">{s.bucket || "—"}</td>
+                    <td className="px-2 py-1">
+                      <Badge variant="outline" className="text-[10px] mr-1">{s.reason_code || "skip"}</Badge>
+                      <span className="text-muted-foreground">{s.reason_detail || s.reason || ""}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Reasons: <code>too_small</code>, <code>too_large</code>, <code>duplicate_hash</code>, plus unsupported MIME types are silently filtered.
+            Use <strong>Force register existing</strong> to bypass the min-size gate and re-register everything.
+          </p>
+        </Card>
+      )}
+
       <Card className="p-3 mb-3 border-emerald-500/40 bg-emerald-500/5">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <div>
@@ -1915,9 +1957,13 @@ export default function PinterestVideoQueuePage() {
             ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> {prepareStep || "Preparing…"}</>
             : <><Wand2 className="h-4 w-4 mr-1" /> Prepare all (1-click)</>}
         </Button>
-        <Button onClick={runDiscovery} disabled={discovering} className="h-11" size="sm">
+        <Button onClick={() => runDiscovery()} disabled={discovering} className="h-11" size="sm">
           {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
           Discover videos
+        </Button>
+        <Button onClick={() => runDiscovery({ force: true })} disabled={discovering} className="h-11" size="sm" variant="outline" title="Re-scan all buckets and force-register every supported video, ignoring the min-size gate.">
+          {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCw className="h-4 w-4 mr-1" />}
+          Force register existing
         </Button>
         <Button onClick={onPickFiles} disabled={!authDebug.admin || uploading || discovering} className="h-11" size="sm" variant="outline">
           {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}

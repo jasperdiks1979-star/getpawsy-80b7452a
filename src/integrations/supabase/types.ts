@@ -8081,16 +8081,23 @@ export type Database = {
       }
       pinterest_video_assets: {
         Row: {
+          ai_content_score: number | null
           aspect_ratio: string | null
           content_hash: string
+          country_target: string
           created_at: string
+          detected_platform: string | null
           duration_seconds: number | null
           filename: string
           filesize_bytes: number | null
           hook_type: string
           id: string
           is_active: boolean
+          language_target: string
           last_publish_at: string | null
+          last_skip_reason: string | null
+          mime_type: string | null
+          pet_relevance_score: number | null
           product_slug: string
           public_url: string
           publish_count: number
@@ -8098,18 +8105,26 @@ export type Database = {
           storage_path: string
           thumbnail_url: string | null
           updated_at: string
+          us_market_score: number | null
         }
         Insert: {
+          ai_content_score?: number | null
           aspect_ratio?: string | null
           content_hash: string
+          country_target?: string
           created_at?: string
+          detected_platform?: string | null
           duration_seconds?: number | null
           filename: string
           filesize_bytes?: number | null
           hook_type?: string
           id?: string
           is_active?: boolean
+          language_target?: string
           last_publish_at?: string | null
+          last_skip_reason?: string | null
+          mime_type?: string | null
+          pet_relevance_score?: number | null
           product_slug?: string
           public_url: string
           publish_count?: number
@@ -8117,18 +8132,26 @@ export type Database = {
           storage_path: string
           thumbnail_url?: string | null
           updated_at?: string
+          us_market_score?: number | null
         }
         Update: {
+          ai_content_score?: number | null
           aspect_ratio?: string | null
           content_hash?: string
+          country_target?: string
           created_at?: string
+          detected_platform?: string | null
           duration_seconds?: number | null
           filename?: string
           filesize_bytes?: number | null
           hook_type?: string
           id?: string
           is_active?: boolean
+          language_target?: string
           last_publish_at?: string | null
+          last_skip_reason?: string | null
+          mime_type?: string | null
+          pet_relevance_score?: number | null
           product_slug?: string
           public_url?: string
           publish_count?: number
@@ -8136,6 +8159,7 @@ export type Database = {
           storage_path?: string
           thumbnail_url?: string | null
           updated_at?: string
+          us_market_score?: number | null
         }
         Relationships: []
       }
@@ -8163,6 +8187,42 @@ export type Database = {
           mode?: string
           preferred_hook_types?: string[]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_video_discovery_skips: {
+        Row: {
+          bucket: string
+          created_at: string
+          filename: string
+          id: string
+          path: string
+          reason_code: string
+          reason_detail: string | null
+          size_bytes: number | null
+          trace_id: string | null
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          filename: string
+          id?: string
+          path: string
+          reason_code: string
+          reason_detail?: string | null
+          size_bytes?: number | null
+          trace_id?: string | null
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          filename?: string
+          id?: string
+          path?: string
+          reason_code?: string
+          reason_detail?: string | null
+          size_bytes?: number | null
+          trace_id?: string | null
         }
         Relationships: []
       }
