@@ -1772,6 +1772,9 @@ export type Database = {
           impressions: number
           mode: string
           notes: string | null
+          pinned: boolean
+          pinned_at: string | null
+          pinned_by: string | null
           placement: string
           window_hours: number
           winning_label: string
@@ -1785,6 +1788,9 @@ export type Database = {
           impressions?: number
           mode: string
           notes?: string | null
+          pinned?: boolean
+          pinned_at?: string | null
+          pinned_by?: string | null
           placement: string
           window_hours?: number
           winning_label: string
@@ -1798,6 +1804,9 @@ export type Database = {
           impressions?: number
           mode?: string
           notes?: string | null
+          pinned?: boolean
+          pinned_at?: string | null
+          pinned_by?: string | null
           placement?: string
           window_hours?: number
           winning_label?: string

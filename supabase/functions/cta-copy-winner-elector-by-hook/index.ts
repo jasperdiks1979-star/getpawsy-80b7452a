@@ -55,6 +55,15 @@ Deno.serve(async (req) => {
   try {
     const since = new Date(Date.now() - WINDOW_HOURS * 60 * 60 * 1000).toISOString();
 
+    // Phase 26: skip pinned cohorts so manual overrides aren't clobbered.
+    const { data: pinnedRows } = await supabase
+      .from("cta_copy_winners_by_hook")
+      .select("placement, mode, hook_family")
+      .eq("pinned", true);
+    const pinnedKeys = new Set(
+      (pinnedRows ?? []).map((r: any) => `${r.placement}::${r.mode}::${r.hook_family}`),
+    );
+
     const { data, error } = await supabase
       .from("lp_funnel_events")
       .select("event_name, placement, cta_copy_label, cta_copy_mode, hook_family")
@@ -149,9 +158,15 @@ Deno.serve(async (req) => {
     }
 
     const promoted: string[] = [];
+    const skippedPinned: string[] = [];
     if (!dryRun) {
       for (const e of elections) {
         if (!e.winning_label) continue;
+        const cohortKey = `${e.placement}::${e.mode}::${e.hook_family}`;
+        if (pinnedKeys.has(cohortKey)) {
+          skippedPinned.push(cohortKey);
+          continue;
+        }
         const { error: upErr } = await supabase
           .from("cta_copy_winners_by_hook")
           .upsert(
@@ -183,6 +198,7 @@ Deno.serve(async (req) => {
         window_hours: WINDOW_HOURS,
         min_impressions: MIN_IMPRESSIONS,
         promoted,
+        skipped_pinned: skippedPinned,
         elections,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
