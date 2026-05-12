@@ -1501,6 +1501,24 @@ export default function PinterestVideoQueuePage() {
             <div className="flex items-center justify-between">
               <span className="font-semibold uppercase tracking-wide text-muted-foreground">Resolver debug</span>
               <div className="flex items-center gap-2">
+                {previewBusy && (() => {
+                  const lastEvtTs = previewTimeline.length > 0 ? previewTimeline[previewTimeline.length - 1].ts : nowTick;
+                  const lastHbTs = [...previewTimeline].reverse().find((t) => t.event === "heartbeat")?.ts;
+                  const sinceEvt = Math.max(0, Math.floor((nowTick - lastEvtTs) / 1000));
+                  const stale = sinceEvt > 35;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        stale ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700"
+                      }`}
+                      title={lastHbTs ? `Last heartbeat ${Math.floor((nowTick - lastHbTs) / 1000)}s ago` : "Awaiting first heartbeat"}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${stale ? "bg-amber-500" : "bg-emerald-500 animate-pulse"}`} />
+                      {stale ? `stale ${sinceEvt}s` : `live · ${sinceEvt}s`}
+                      {lastHbTs && <span className="text-muted-foreground">· hb {Math.floor((nowTick - lastHbTs) / 1000)}s</span>}
+                    </span>
+                  );
+                })()}
                 <span className="text-[10px] text-muted-foreground">{previewLookup.elapsed_ms}ms</span>
                 <button
                   type="button"
