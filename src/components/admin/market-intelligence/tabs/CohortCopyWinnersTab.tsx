@@ -1,0 +1,127 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, RefreshCw, Trophy } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+type Winner = {
+  id: number;
+  placement: string;
+  mode: string;
+  hook_family: string;
+  winning_label: string;
+  ctr_pct: number | null;
+  impressions: number;
+  clicks: number;
+  window_hours: number;
+  evaluated_at: string;
+  notes: string | null;
+};
+
+export function CohortCopyWinnersTab() {
+  const [rows, setRows] = useState<Winner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("cta_copy_winners_by_hook")
+      .select("*")
+      .order("placement", { ascending: true })
+      .order("mode", { ascending: true })
+      .order("hook_family", { ascending: true });
+    if (error) toast.error(error.message);
+    setRows((data ?? []) as Winner[]);
+    setLoading(false);
+  }
+
+  useEffect(() => { void load(); }, []);
+
+  async function runElector() {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cta-copy-winner-elector-by-hook", { body: {} });
+      if (error) throw error;
+      toast.success(`Elector ran · ${data?.upserts ?? 0} winners updated`);
+      await load();
+    } catch (e: any) {
+      toast.error(`Elector failed: ${e?.message ?? e}`);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" /> Cohort Copy Winners
+          </CardTitle>
+          <CardDescription>
+            Per-cohort winning CTA copy by (placement, mode, hook_family). Auto-learned from /go funnel events.
+          </CardDescription>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading} className="gap-1">
+            <RefreshCw className="h-3 w-3" /> Refresh
+          </Button>
+          <Button size="sm" onClick={runElector} disabled={running} className="gap-1">
+            {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trophy className="h-3 w-3" />}
+            {running ? "Running…" : "Run elector"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-6 text-center">
+            No cohort winners yet. Need ≥30 impressions per (placement, mode, hook_family, label).
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Placement</TableHead>
+                  <TableHead>Mode</TableHead>
+                  <TableHead>Hook family</TableHead>
+                  <TableHead>Winning label</TableHead>
+                  <TableHead className="text-right">CTR</TableHead>
+                  <TableHead className="text-right">Impr.</TableHead>
+                  <TableHead className="text-right">Clicks</TableHead>
+                  <TableHead>Evaluated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs">{r.placement}</TableCell>
+                    <TableCell><Badge variant="outline">{r.mode}</Badge></TableCell>
+                    <TableCell><Badge variant="secondary">{r.hook_family}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs">{r.winning_label}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.ctr_pct != null ? `${Number(r.ctr_pct).toFixed(2)}%` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{r.impressions.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.clicks.toLocaleString()}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(r.evaluated_at).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

@@ -30,6 +30,7 @@ import { BudgetShifterTab } from "./tabs/BudgetShifterTab";
 import { FatigueDetectorTab } from "./tabs/FatigueDetectorTab";
 import { AudienceClusterTab } from "./tabs/AudienceClusterTab";
 import { VisitorPersonalizationTab } from "./tabs/VisitorPersonalizationTab";
+import { CohortCopyWinnersTab } from "./tabs/CohortCopyWinnersTab";
 
 type Counters = {
   trends: number;
@@ -138,6 +139,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="fatigue">Fatigue</TabsTrigger>
           <TabsTrigger value="audience">Audience</TabsTrigger>
           <TabsTrigger value="visitor">Visitor Personalization</TabsTrigger>
+          <TabsTrigger value="cohortcopy">Cohort Copy Winners</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewDashboardTab /></TabsContent>
@@ -163,6 +165,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="fatigue"><FatigueDetectorTab /></TabsContent>
         <TabsContent value="audience"><AudienceClusterTab /></TabsContent>
         <TabsContent value="visitor"><VisitorPersonalizationTab /></TabsContent>
+        <TabsContent value="cohortcopy"><CohortCopyWinnersTab /></TabsContent>
       </Tabs>
     </div>
   );
