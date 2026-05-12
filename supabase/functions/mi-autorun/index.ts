@@ -1,0 +1,30 @@
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+// Orchestrator: runs ingest -> detect -> forecast in sequence.
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const traceId = crypto.randomUUID();
+  const base = Deno.env.get("SUPABASE_URL")!;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const steps = ["mi-ingest-internal", "mi-detect-opportunities", "mi-forecast-seasonal"];
+  const results: Record<string, any> = {};
+
+  for (const fn of steps) {
+    try {
+      const r = await fetch(`${base}/functions/v1/${fn}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const j = await r.json().catch(() => ({}));
+      results[fn] = { ok: r.ok, status: r.status, ...j };
+    } catch (e: any) {
+      results[fn] = { ok: false, error: e?.message ?? String(e) };
+    }
+  }
+
+  return new Response(JSON.stringify({ ok: true, traceId, results }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+});
