@@ -24,6 +24,8 @@ const PIN_TTL_DAYS = 7;
 const GUARDRAIL_WINDOW_HOURS = 24;
 const GUARDRAIL_MIN_IMPRESSIONS = 60; // ~2× per-variant min, summed
 const GUARDRAIL_RATIO = 0.7;          // cohort CTR < 70% of global → block
+/** Phase 33 — min-traffic gate: cohorts with <X total imps in 24h fall back to global. */
+const MIN_COHORT_TRAFFIC_24H = 40;
 const PLACEMENTS = ["bio_primary", "bio_secondary", "bio_sticky"] as const;
 const MODES = ["calm", "urgent"] as const;
 
@@ -310,6 +312,24 @@ Deno.serve(async (req) => {
       return { blocked: false, reason: null, cohort_ctr: cohortCtr, global_ctr: globalCtr };
     }
 
+    /**
+     * Phase 33 — total-traffic per cohort in the guardrail window. Used to
+     * suppress micro-cohorts (e.g. <40 imps/24h across all variants combined)
+     * that would otherwise generate noisy winners; runtime falls back to the
+     * global elected winner until traffic builds up.
+     */
+    const cohortTrafficTally = new Map<string, number>(); // key: placement::mode::hook_family
+    for (const row of guardrailRows ?? []) {
+      if (row.event_name !== "lp_cta_impression") continue;
+      const placement = row.placement as Placement;
+      const mode = row.cta_copy_mode as Mode;
+      const hookFamily = row.hook_family as string | null | undefined;
+      if (!hookFamily) continue;
+      if (!PLACEMENTS.includes(placement) || !MODES.includes(mode)) continue;
+      const k = `${placement}::${mode}::${hookFamily}`;
+      cohortTrafficTally.set(k, (cohortTrafficTally.get(k) ?? 0) + 1);
+    }
+
     if (!dryRun) {
       for (const e of elections) {
         if (!e.winning_label) continue;
@@ -318,7 +338,19 @@ Deno.serve(async (req) => {
           skippedPinned.push(cohortKey);
           continue;
         }
-        const guard = evaluateGuardrail(e.placement, e.mode, e.hook_family, e.winning_label);
+        let guard = evaluateGuardrail(e.placement, e.mode, e.hook_family, e.winning_label);
+        // Phase 33 — min-traffic gate. Even if CTR looks fine, a cohort with
+        // <MIN_COHORT_TRAFFIC_24H impressions in the last 24h is too thin to
+        // trust; force a guardrail block so runtime falls back to global.
+        const cohortTraffic = cohortTrafficTally.get(cohortKey) ?? 0;
+        if (!guard.blocked && cohortTraffic < MIN_COHORT_TRAFFIC_24H) {
+          guard = {
+            blocked: true,
+            reason: `low_traffic (${cohortTraffic} imps in 24h < ${MIN_COHORT_TRAFFIC_24H} threshold)`,
+            cohort_ctr: guard.cohort_ctr,
+            global_ctr: guard.global_ctr,
+          };
+        }
         const { error: upErr } = await supabase
           .from("cta_copy_winners_by_hook")
           .upsert(
@@ -369,7 +401,10 @@ Deno.serve(async (req) => {
           r.placement as Placement, r.mode as Mode, r.hook_family as string,
           r.winning_label as string,
         );
-        if (!guard.blocked) {
+        const cohortTraffic =
+          cohortTrafficTally.get(`${r.placement}::${r.mode}::${r.hook_family}`) ?? 0;
+        const lowTraffic = cohortTraffic < MIN_COHORT_TRAFFIC_24H;
+        if (!guard.blocked && !lowTraffic) {
           await supabase.from("cta_copy_winners_by_hook")
             .update({
               guardrail_blocked: false,
@@ -403,6 +438,7 @@ Deno.serve(async (req) => {
         guardrail_cleared: guardrailCleared,
         guardrail_window_hours: GUARDRAIL_WINDOW_HOURS,
         guardrail_ratio: GUARDRAIL_RATIO,
+        min_cohort_traffic_24h: MIN_COHORT_TRAFFIC_24H,
         elections,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
