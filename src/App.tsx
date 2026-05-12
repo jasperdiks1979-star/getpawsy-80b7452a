@@ -1778,6 +1778,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="growth-intelligence/seo-forecast"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GrowthIntelligenceLegacyPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="backlink-engine"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
