@@ -977,11 +977,12 @@ serve(async (req) => {
             }, 25_000);
             try {
               // Re-invoke the same function synchronously to run the full
-              // pipeline. We strip `stream` and add `_internalSync=1` so this
-              // branch is bypassed on the inner call.
-              const innerUrl = new URL(reqUrl.toString());
-              innerUrl.searchParams.delete("stream");
-              innerUrl.searchParams.set("_internalSync", "1");
+              // pipeline. We build the canonical functions URL from
+              // SUPABASE_URL so we don't accidentally hit the gateway path.
+              const base = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
+              const innerUrl = new URL(
+                `${base}/functions/v1/pinterest-viral-batch?_internalSync=1`,
+              );
               const fwdHeaders: Record<string, string> = {
                 "Content-Type": "application/json",
               };
