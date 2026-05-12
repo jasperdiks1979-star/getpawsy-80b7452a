@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle, Activity, Bug, Trash2, HeartPulse, Image } from "lucide-react";
+import { Loader2, RefreshCw, Send, Shuffle, Search, Play, RotateCw, History, Upload, Sparkles, Star, Wand2, Copy, ExternalLink, CheckCircle2, XCircle, Activity, Bug, Trash2, HeartPulse, Image, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ALLOWED_VIDEO_EXT, MAX_VIDEO_BYTES, formatBytes, validateVideoFile } from "@/lib/pinterest-video-limits";
 import { pickTopN, scoreDrafts } from "@/lib/pinterest-video-rank";
@@ -1532,6 +1532,46 @@ export default function PinterestVideoQueuePage() {
                   title="Copy raw lookup JSON"
                 >
                   <Copy className="h-3 w-3" /> Copy JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      const slugForName = (previewLookup?.slug ?? previewLookup?.normalized_slug ?? previewSlug ?? "preview")
+                        .toString()
+                        .replace(/[^a-z0-9-_]+/gi, "-")
+                        .slice(0, 80);
+                      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                      const payload = {
+                        exported_at: new Date().toISOString(),
+                        slug_input: previewSlug,
+                        product_only: productOnly,
+                        lookup: previewLookup,
+                        result: previewResult,
+                        timeline: previewTimeline.map((t) => ({
+                          ...t,
+                          ts_iso: new Date(t.ts).toISOString(),
+                          delta_ms: previewTimeline.length ? t.ts - previewTimeline[0].ts : 0,
+                        })),
+                      };
+                      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `resolver-debug_${slugForName}_${stamp}.json`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      toast({ title: "Debug JSON downloaded", description: a.download });
+                    } catch (e: any) {
+                      toast({ title: "Download failed", description: e?.message, variant: "destructive" });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                  title="Download full resolver debug payload (lookup + result + timeline)"
+                >
+                  <Download className="h-3 w-3" /> Download JSON
                 </button>
               </div>
             </div>
