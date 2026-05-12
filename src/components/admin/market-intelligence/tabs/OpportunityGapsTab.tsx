@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Target } from "lucide-react";
+import { Target, Sparkles } from "lucide-react";
 
 type Opp = { id: string; type: string; title: string; score: number; status: string; evidence: unknown; created_at: string };
 
@@ -17,6 +17,7 @@ const TYPES = ["niche_gap","weak_competitor","low_comp_topic","content_gap","vir
 export function OpportunityGapsTab({ onChange }: { onChange?: () => void }) {
   const [opps, setOpps] = useState<Opp[]>([]);
   const [form, setForm] = useState({ type: "niche_gap", title: "", score: 50, evidence: "" });
+  const [detecting, setDetecting] = useState(false);
 
   useEffect(() => { void load(); }, []);
 
@@ -47,8 +48,29 @@ export function OpportunityGapsTab({ onChange }: { onChange?: () => void }) {
     void load(); onChange?.();
   }
 
+  async function detect() {
+    setDetecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mi-detect-opportunities", { body: {} });
+      if (error) throw error;
+      const stats = (data as { stats?: Record<string, number> })?.stats ?? {};
+      toast.success(`Detected ${stats.opportunities_inserted ?? 0} opps · ${stats.recommendations_inserted ?? 0} recs`);
+      void load(); onChange?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Detect failed");
+    } finally {
+      setDetecting(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={detect} disabled={detecting} variant="default" className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          {detecting ? "Detecting…" : "Detect opportunities"}
+        </Button>
+      </div>
       <Card>
         <CardHeader><CardTitle>Add opportunity</CardTitle></CardHeader>
         <CardContent className="grid md:grid-cols-4 gap-3">
