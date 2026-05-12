@@ -1534,6 +1534,52 @@ const Admin = () => {
                   <span className="hidden xs:inline">Diagnostics</span>
                 </button>
               </TouchTooltip>
+              <DropdownMenu>
+                <TouchTooltip content="TikTok shortcuts">
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors"
+                      aria-label="TikTok shortcuts"
+                    >
+                      <TikTokIcon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="hidden xs:inline">TikTok</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                </TouchTooltip>
+                <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto w-56">
+                  <DropdownMenuLabel>TikTok</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {TIKTOK_SHORTCUTS.map((s) => (
+                    <DropdownMenuItem key={s.to} onSelect={() => navigate(s.to)}>
+                      {s.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <TouchTooltip content="Pinterest shortcuts">
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors"
+                      aria-label="Pinterest shortcuts"
+                    >
+                      <PinterestIcon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="hidden xs:inline">Pinterest</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                </TouchTooltip>
+                <DropdownMenuContent align="end" className="max-h-[70vh] overflow-y-auto w-56">
+                  <DropdownMenuLabel>Pinterest</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {PINTEREST_SHORTCUTS.map((s) => (
+                    <DropdownMenuItem key={s.to} onSelect={() => navigate(s.to)}>
+                      {s.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TabsList>
           </TooltipProvider>
           <Suspense fallback={null}><RunCenterCard /></Suspense>
