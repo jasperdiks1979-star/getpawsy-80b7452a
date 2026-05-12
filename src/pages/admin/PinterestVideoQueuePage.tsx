@@ -880,8 +880,9 @@ export default function PinterestVideoQueuePage() {
       return;
     }
     const best = eligible[0].draft;
-      setLastPublishIds([best.id]);
+    setLastPublishIds([best.id]);
     setPublishingTest(true);
+    setTestPinResult(null);
     try {
       toast({ title: "Test publish started", description: `Publishing exactly 1 video pin (${best.id.slice(0, 8)}…)` });
       const ev = await invokeDebug("pinterest-video-publisher", { action: "publish", queue_id: best.id });
@@ -896,15 +897,27 @@ export default function PinterestVideoQueuePage() {
         message: error ? error.message : (data?.ok ? (data?.message || "ok") : (data?.code || data?.message || "failed")),
       });
       const success = !error && !!data?.ok;
+      const result = {
+        ok: success,
+        pin_id: data?.pin_id || data?.data?.id || null,
+        title: data?.title || data?.data?.title || null,
+        media_url: data?.media_url || data?.data?.media_source?.url || data?.data?.media_url || null,
+        board: data?.board || data?.data?.board_id || null,
+        pin_url: data?.pin_url || data?.external_url || data?.data?.url || null,
+        error: success ? null : (data?.code || error?.message || ev.error || "unknown"),
+        queue_id: best.id,
+      };
+      setTestPinResult(result);
       toast({
         title: success ? "Test pin published" : "Test publish failed",
         description: success
-          ? `pin_id=${data?.pin_id || "?"} · pin_url=${data?.external_url || data?.pin_url || "?"}`
-          : `${data?.code || error?.message || "unknown"} — see Debug Console response JSON`,
+          ? `pin_id=${result.pin_id || "?"} · pin_url=${result.pin_url || "?"}`
+          : `${result.error} — see Debug Console response JSON`,
         variant: success ? "default" : "destructive",
       });
       await load();
     } catch (e) {
+      setTestPinResult({ ok: false, error: (e as Error).message, queue_id: best.id });
       toast({ title: "Test publish crashed", description: (e as Error).message, variant: "destructive" });
     } finally {
       setPublishingTest(false);
