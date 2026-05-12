@@ -299,6 +299,7 @@ export default function PinterestVideoQueuePage() {
   const [manualUrl, setManualUrl] = useState("");
   const [manualBusy, setManualBusy] = useState(false);
   const [healthBusy, setHealthBusy] = useState<string | null>(null);
+  const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [authDebug, setAuthDebug] = useState<AuthDebugState>({
     ready: false,
     userId: null,
@@ -1482,7 +1483,9 @@ export default function PinterestVideoQueuePage() {
           </p>
         ) : (
           <ol className="space-y-2 max-h-96 overflow-auto">
-            {debugEvents.map((ev) => (
+            {debugEvents.map((ev) => {
+              const isOpen = openEventId === ev.id;
+              return (
               <li key={ev.id} className="rounded-md border p-2 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
                   {ev.pending
@@ -1501,25 +1504,79 @@ export default function PinterestVideoQueuePage() {
                   </Badge>
                   <span className="text-muted-foreground">{ev.duration_ms == null ? "running…" : `${ev.duration_ms}ms`}</span>
                   {ev.trace_id && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(ev.trace_id!).then(
+                          () => toast({ title: "Trace ID copied", description: ev.trace_id }),
+                          () => toast({ title: "Copy failed", variant: "destructive" }),
+                        );
+                      }}
+                      className="ml-auto inline-flex items-center gap-1 text-muted-foreground hover:text-foreground shrink-0"
+                      title={`Copy trace ID: ${ev.trace_id}`}
+                    >
+                      <Copy className="h-3 w-3" /> Copy trace
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setOpenEventId(isOpen ? null : ev.id)}
+                    className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                  >
+                    {isOpen ? "Close details" : "Open event details"} <ExternalLink className="h-3 w-3" />
+                  </button>
+                  {ev.trace_id && (
                     <a
                       href={`/admin/pinterest-video-logs?trace=${encodeURIComponent(ev.trace_id)}&fn=${encodeURIComponent(ev.fn)}`}
                       target="_blank" rel="noopener noreferrer"
-                      className="ml-auto inline-flex items-center gap-1 text-primary hover:underline"
+                      className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
                     >
                       Logs <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                 </div>
                 {ev.error && <p className="mt-1 text-destructive">{ev.error}</p>}
-                <details className="mt-1">
-                  <summary className="cursor-pointer text-muted-foreground">Request / Response</summary>
-                  <div className="grid sm:grid-cols-2 gap-2 mt-1">
-                    <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{JSON.stringify(ev.request, null, 2)}</pre>
-                    <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{typeof ev.response === "string" ? ev.response : JSON.stringify(ev.response, null, 2)}</pre>
+
+                {isOpen ? (
+                  <div className="mt-2 rounded-md border bg-muted/30 p-2 space-y-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+                      <div><span className="text-muted-foreground">event id</span><div className="font-mono break-all">{ev.id}</div></div>
+                      <div><span className="text-muted-foreground">trace id</span><div className="font-mono break-all">{ev.trace_id || "—"}</div></div>
+                      <div><span className="text-muted-foreground">started</span><div>{new Date(ev.started_at).toLocaleString()}</div></div>
+                      <div><span className="text-muted-foreground">duration</span><div>{ev.duration_ms ?? "—"} ms</div></div>
+                      <div><span className="text-muted-foreground">function</span><div className="font-mono">{ev.fn}</div></div>
+                      <div><span className="text-muted-foreground">action</span><div>{ev.action}</div></div>
+                      <div><span className="text-muted-foreground">http status</span><div>{ev.http_status ?? "—"}</div></div>
+                      <div><span className="text-muted-foreground">ok</span><div>{String(ev.ok)}</div></div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Request</div>
+                        <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-60 whitespace-pre-wrap break-all">{JSON.stringify(ev.request, null, 2)}</pre>
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Response</div>
+                        <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-60 whitespace-pre-wrap break-all">{typeof ev.response === "string" ? ev.response : JSON.stringify(ev.response, null, 2)}</pre>
+                      </div>
+                    </div>
+                    {ev.error && (
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-destructive mb-1">Error</div>
+                        <pre className="rounded bg-red-50 p-2 text-[10px] whitespace-pre-wrap break-all text-destructive">{ev.error}</pre>
+                      </div>
+                    )}
                   </div>
-                </details>
+                ) : (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-muted-foreground">Request / Response</summary>
+                    <div className="grid sm:grid-cols-2 gap-2 mt-1">
+                      <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{JSON.stringify(ev.request, null, 2)}</pre>
+                      <pre className="rounded bg-muted/60 p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-all">{typeof ev.response === "string" ? ev.response : JSON.stringify(ev.response, null, 2)}</pre>
+                    </div>
+                  </details>
+                )}
               </li>
-            ))}
+            );})}
           </ol>
         )}
       </Card>
