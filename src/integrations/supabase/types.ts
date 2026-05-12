@@ -4255,6 +4255,136 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_experiment_events: {
+        Row: {
+          event_type: string
+          id: number
+          metadata: Json
+          occurred_at: string
+          variant_id: string
+          weight: number
+        }
+        Insert: {
+          event_type: string
+          id?: number
+          metadata?: Json
+          occurred_at?: string
+          variant_id: string
+          weight?: number
+        }
+        Update: {
+          event_type?: string
+          id?: number
+          metadata?: Json
+          occurred_at?: string
+          variant_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_experiment_events_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "mi_experiment_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_experiment_variants: {
+        Row: {
+          clicks: number
+          conversions: number
+          created_at: string
+          experiment_id: string
+          id: string
+          impressions: number
+          label: string
+          pin_queue_id: string | null
+          posterior_win_prob: number
+          remix_draft_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          experiment_id: string
+          id?: string
+          impressions?: number
+          label: string
+          pin_queue_id?: string | null
+          posterior_win_prob?: number
+          remix_draft_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          experiment_id?: string
+          id?: string
+          impressions?: number
+          label?: string
+          pin_queue_id?: string | null
+          posterior_win_prob?: number
+          remix_draft_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_experiment_variants_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "mi_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_experiments: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          hook_family: string | null
+          id: string
+          metadata: Json
+          name: string
+          placement: string
+          started_at: string
+          status: string
+          updated_at: string
+          winner_variant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          hook_family?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          placement?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          winner_variant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          hook_family?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          placement?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          winner_variant_id?: string | null
+        }
+        Relationships: []
+      }
       mi_opportunities: {
         Row: {
           created_at: string
