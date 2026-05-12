@@ -140,8 +140,16 @@ export function CohortCopyWinnersTab() {
                     <TableCell className="font-mono text-xs">
                       {r.winning_label}
                       {r.pinned && (
-                        <Badge variant="default" className="ml-2 gap-1 align-middle">
-                          <Pin className="h-3 w-3" /> pinned
+                        <Badge
+                          variant="default"
+                          className="ml-2 gap-1 align-middle"
+                          title={
+                            r.pinned_at
+                              ? `Pinned ${new Date(r.pinned_at).toLocaleString()} · auto-unpins after 7 days`
+                              : "Pinned · auto-unpins after 7 days"
+                          }
+                        >
+                          <Pin className="h-3 w-3" /> pinned · 7d TTL
                         </Badge>
                       )}
                     </TableCell>
