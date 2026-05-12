@@ -1125,7 +1125,7 @@ serve(async (req) => {
     const MAX_PINS_PER_RUN = 15;
     const requestedLimit = Number.isFinite(Number(body.maxPins)) ? Number(body.maxPins) : MAX_PINS_PER_RUN;
     const pinLimit = Math.max(1, Math.min(MAX_PINS_PER_RUN, requestedLimit));
-    console.log(`[pinterest-viral-batch] start trace=${traceId} slugs=${slugsRaw.join(",")} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} limit=${pinLimit} domination=${dominationMode}`);
+    console.log(`[pinterest-viral-batch] start trace=${traceId} slugs=${slugsRaw.join(",")} dryRun=${dryRun} backdrop=${useLifestyleBackdrop} productOnly=${productOnly} limit=${pinLimit} domination=${dominationMode}`);
     const sb = sb0;
 
     // 🛡️ Schema guard — abort BEFORE building pins / calling AI / Pexels if
