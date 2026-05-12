@@ -1377,6 +1377,135 @@ export default function PinterestVideoQueuePage() {
         )}
       </Card>
 
+      <Card className="p-3 mb-3 border-blue-500/30 bg-blue-500/5">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 inline-flex items-center gap-1">
+              <Image className="h-3.5 w-3.5" /> Product preview
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Generate pin previews via pinterest-viral-batch (dry-run, no queue insert)
+            </p>
+          </div>
+          <Button
+            onClick={runProductPreview}
+            disabled={previewBusy}
+            className="h-10 bg-blue-600 hover:bg-blue-600/90 text-white"
+            size="sm"
+          >
+            {previewBusy
+              ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Generating…</>
+              : <><Image className="h-4 w-4 mr-1" /> Generate preview</>}
+          </Button>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+          <Input
+            placeholder="product-slug"
+            value={previewSlug}
+            onChange={(e) => setPreviewSlug(e.target.value)}
+            className="h-10 flex-1"
+          />
+          <label className="inline-flex items-center gap-2 text-xs cursor-pointer select-none h-10">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-primary"
+              checked={productOnly}
+              onChange={(e) => setProductOnly(e.target.checked)}
+            />
+            Product-only (skip backdrops)
+          </label>
+        </div>
+        {previewLookup && (
+          <div className="rounded-md border bg-background p-2 mb-2 text-xs space-y-1">
+            <div className="flex items-center gap-2">
+              {previewLookup.product_found
+                ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                : <XCircle className="h-3.5 w-3.5 text-destructive" />}
+              <span className="font-medium">
+                {previewLookup.product_found ? "Product found" : "Product NOT found"}
+              </span>
+              <span className="text-muted-foreground">
+                ({previewLookup.elapsed_ms}ms · {previewLookup.resolved_via || "—"})
+              </span>
+            </div>
+            {previewLookup.product_found && (
+              <>
+                <div className="text-muted-foreground">
+                  <b>{previewLookup.product_title}</b> · {previewLookup.image_count} image{previewLookup.image_count === 1 ? "" : "s"}
+                </div>
+                {previewLookup.primary_image && (
+                  <img src={previewLookup.primary_image} alt="Primary" className="h-20 w-auto rounded border object-contain mt-1" />
+                )}
+              </>
+            )}
+            {!previewLookup.product_found && previewLookup.suggestions && previewLookup.suggestions.length > 0 && (
+              <div className="text-muted-foreground">
+                Suggestions: {previewLookup.suggestions.map((s: any) => s.slug).join(", ")}
+              </div>
+            )}
+            <div className="text-[10px] text-muted-foreground">
+              Tables checked: {previewLookup.tables_checked?.join(", ") || "—"} · Stages: {previewLookup.stages_run?.join(", ") || "—"}
+            </div>
+          </div>
+        )}
+        {previewResult && (
+          <div className="rounded-md border bg-background p-2 text-xs space-y-2">
+            {previewResult.ok === false ? (
+              <div className="text-destructive">
+                <p className="font-medium">Preview failed</p>
+                <p>{previewResult.error || previewResult.message || "Unknown error"}</p>
+                {previewResult.lookup && (
+                  <pre className="mt-1 rounded bg-muted/50 p-1.5 text-[10px] overflow-auto max-h-40">{JSON.stringify(previewResult.lookup, null, 2)}</pre>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="font-medium">{previewResult.message || "Preview ready"}</span>
+                  {previewResult.product && (
+                    <span className="text-muted-foreground">
+                      · {previewResult.product.name}
+                    </span>
+                  )}
+                </div>
+                {previewResult.pins && previewResult.pins.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {previewResult.pins.map((pin, idx) => (
+                      <div key={idx} className="rounded border p-2 space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className="h-5 px-1.5 text-[10px]">{pin.hook_group}</Badge>
+                          <span className="text-[10px] text-muted-foreground">{pin.pin_variant}</span>
+                          {pin.uses_lifestyle_backdrop && (
+                            <Badge className="h-5 px-1.5 text-[10px] bg-amber-100 text-amber-700">backdrop</Badge>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-medium line-clamp-2">{pin.pin_title}</p>
+                        {pin.pin_image_url && (
+                          <a href={pin.pin_image_url} target="_blank" rel="noopener noreferrer" className="block">
+                            <img
+                              src={pin.pin_image_url}
+                              alt={pin.pin_title}
+                              className="h-28 w-auto rounded border object-contain bg-black/5"
+                              loading="lazy"
+                            />
+                          </a>
+                        )}
+                        {pin.backdrop_url && (
+                          <div className="text-[10px] text-muted-foreground">
+                            Backdrop: {pin.backdrop_source || "—"} · <a href={pin.backdrop_url} target="_blank" rel="noopener noreferrer" className="underline">open</a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </Card>
+
       <div className="flex flex-wrap gap-2 mb-3">
         <Button
           onClick={runPrepareAll}
