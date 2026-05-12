@@ -284,16 +284,89 @@ export default function PinterestVideoQueuePage() {
     error: string | null;
     trace_id: string | null;
   };
+  type AuthDebugState = {
+    ready: boolean;
+    userId: string | null;
+    email: string | null;
+    authenticated: boolean;
+    role: string;
+    admin: boolean;
+    jwtExists: boolean;
+    error: string | null;
+  };
   const [debugEvents, setDebugEvents] = useState<DebugEvent[]>([]);
   const [discoveryDetail, setDiscoveryDetail] = useState<any | null>(null);
   const [manualUrl, setManualUrl] = useState("");
   const [manualBusy, setManualBusy] = useState(false);
   const [healthBusy, setHealthBusy] = useState<string | null>(null);
+  const [authDebug, setAuthDebug] = useState<AuthDebugState>({
+    ready: false,
+    userId: null,
+    email: null,
+    authenticated: false,
+    role: "checking",
+    admin: false,
+    jwtExists: false,
+    error: null,
+  });
+  const autoDiscoveryRanRef = useRef(false);
 
   // Direct fetch wrapper so we capture HTTP status, raw response and timing.
   // Falls back to a clear "Admin auth required" message on 401/403.
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
   const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+  const refreshAuthState = useCallback(async (): Promise<AuthDebugState> => {
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
+      const jwtExists = !!session?.access_token;
+      let role = user?.role || (user ? "authenticated" : "anonymous");
+      let admin = false;
+      let error = sessionError?.message || null;
+
+      if (user && jwtExists) {
+        const { data: roles, error: roleError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+        if (roleError) {
+          error = roleError.message;
+          role = `role lookup failed: ${roleError.message}`;
+        } else {
+          const appRoles = ((roles || []) as Array<{ role: string }>).map((r) => r.role);
+          role = appRoles.length ? appRoles.join(", ") : role;
+          admin = appRoles.includes("admin");
+        }
+      }
+
+      const next: AuthDebugState = {
+        ready: true,
+        userId: user?.id ?? null,
+        email: user?.email ?? null,
+        authenticated: !!user,
+        role,
+        admin,
+        jwtExists,
+        error,
+      };
+      setAuthDebug(next);
+      return next;
+    } catch (e: any) {
+      const next: AuthDebugState = {
+        ready: true,
+        userId: null,
+        email: null,
+        authenticated: false,
+        role: "auth check failed",
+        admin: false,
+        jwtExists: false,
+        error: e?.message || "Auth check failed",
+      };
+      setAuthDebug(next);
+      return next;
+    }
+  }, []);
 
   const invokeDebug = useCallback(async (fn: string, body: Record<string, unknown>): Promise<DebugEvent> => {
     const started = performance.now();
@@ -308,7 +381,7 @@ export default function PinterestVideoQueuePage() {
       http_status: null,
       ok: false,
       pending: true,
-      request: body,
+      request: { body, auth: "checking" },
       response: null,
       error: null,
       trace_id: null,
@@ -320,14 +393,33 @@ export default function PinterestVideoQueuePage() {
     let ok = false;
     let trace_id: string | null = null;
     try {
+      const auth = await refreshAuthState();
       const { data: sess } = await supabase.auth.getSession();
       const token = sess?.session?.access_token;
+      const authSnapshot = {
+        authenticated: auth.authenticated,
+        admin: auth.admin,
+        jwt_exists: !!token,
+        user_id: auth.userId,
+        email: auth.email,
+        role: auth.role,
+      };
+      setDebugEvents((prev) => prev.map((item) => item.id === eventId ? { ...item, request: { body, auth: authSnapshot } } : item).slice(0, 50));
+      if (!token || !auth.authenticated) {
+        http_status = 401;
+        response = { ok: false, code: "UNAUTHENTICATED", message: "No authenticated session/JWT available", auth: authSnapshot };
+        error = "Admin auth required: no authenticated JWT";
+      } else if (!auth.admin) {
+        http_status = 403;
+        response = { ok: false, code: "FORBIDDEN", message: "Current user does not have admin role", auth: authSnapshot };
+        error = "Admin authorization required";
+      } else {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: SUPABASE_ANON,
-          Authorization: `Bearer ${token || SUPABASE_ANON}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
       });
@@ -345,6 +437,7 @@ export default function PinterestVideoQueuePage() {
           ? "Admin auth required"
           : `${r.code || "ERROR"}: ${r.message || ""}`;
       }
+      }
     } catch (e: any) {
       error = e?.message || "Network error";
     }
@@ -357,12 +450,12 @@ export default function PinterestVideoQueuePage() {
       http_status,
       ok,
       pending: false,
-      request: body,
+      request: startedEvent.request,
       response,
       error,
       trace_id,
     };
-    setDebugEvents((prev) => prev.map((item) => item.id === eventId ? ev : item).slice(0, 50));
+    setDebugEvents((prev) => prev.map((item) => item.id === eventId ? { ...ev, request: item.request } : item).slice(0, 50));
     if (!ok) {
       toast({
         title: `${fn} failed`,
@@ -371,7 +464,7 @@ export default function PinterestVideoQueuePage() {
       });
     }
     return ev;
-  }, [SUPABASE_URL, SUPABASE_ANON]);
+  }, [SUPABASE_URL, SUPABASE_ANON, refreshAuthState]);
 
   const runHealthCheck = useCallback(async (fn: string) => {
     setHealthBusy(fn);
@@ -450,15 +543,31 @@ export default function PinterestVideoQueuePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    await refreshAuthState();
     const [a, q] = await Promise.all([
       supabase.from("pinterest_video_assets").select("*").order("created_at", { ascending: false }),
       supabase.from("pinterest_video_queue").select("*").order("created_at", { ascending: false }),
     ]);
+    if (a.error || q.error) {
+      toast({
+        title: "Queue refresh blocked",
+        description: a.error?.message || q.error?.message || "Admin authorization required",
+        variant: "destructive",
+      });
+    }
     setAssets((a.data as VideoAsset[]) || []);
     setQueue((q.data as QueueRow[]) || []);
     setLoading(false);
-  }, []);
+  }, [refreshAuthState]);
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    refreshAuthState();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      setTimeout(() => refreshAuthState(), 0);
+    });
+    return () => subscription.unsubscribe();
+  }, [refreshAuthState]);
 
   const runDiscovery = async () => {
     setDiscovering(true);
@@ -489,6 +598,12 @@ export default function PinterestVideoQueuePage() {
       throw e;
     } finally { setDiscovering(false); }
   };
+
+  useEffect(() => {
+    if (!authDebug.ready || !authDebug.admin || autoDiscoveryRanRef.current || loading || discovering) return;
+    autoDiscoveryRanRef.current = true;
+    runDiscovery().catch(() => undefined);
+  }, [authDebug.ready, authDebug.admin, loading, discovering]);
 
   const onPickFiles = () => fileInputRef.current?.click();
 
@@ -849,6 +964,17 @@ export default function PinterestVideoQueuePage() {
     return Array.from(set);
   }, [assets]);
 
+  const pipelineCounts = useMemo(() => {
+    const drafts = queue.filter((q) => q.status === "draft").length;
+    const publishable = queue.filter((q) => !["published", "publishing", "failed"].includes(q.status)).length;
+    return {
+      found: assets.length,
+      registered: assets.filter((a) => a.is_active).length,
+      drafts,
+      publishable,
+    };
+  }, [assets, queue]);
+
   return (
     <div className="container mx-auto px-3 py-4 pb-32 max-w-3xl">
       <header className="mb-4">
@@ -860,6 +986,37 @@ export default function PinterestVideoQueuePage() {
           </a>
         </p>
       </header>
+
+      <Card className={`p-3 mb-3 border-dashed ${authDebug.ready && !authDebug.admin ? "border-destructive" : ""}`}>
+        <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin auth context</p>
+          <Badge variant={!authDebug.ready ? "outline" : authDebug.admin ? "default" : "destructive"}>
+            {!authDebug.ready ? "checking" : authDebug.admin ? "authenticated admin" : "Admin authorization required"}
+          </Badge>
+        </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3">
+          <span className="text-muted-foreground">current user id</span><code className="col-span-1 sm:col-span-2 truncate">{authDebug.userId || "—"}</code>
+          <span className="text-muted-foreground">email</span><code className="col-span-1 sm:col-span-2 truncate">{authDebug.email || "—"}</code>
+          <span className="text-muted-foreground">authenticated</span><span>{String(authDebug.authenticated)}</span>
+          <span className="text-muted-foreground">role</span><span className="truncate">{authDebug.role}</span>
+          <span className="text-muted-foreground">admin</span><span>{String(authDebug.admin)}</span>
+          <span className="text-muted-foreground">JWT exists</span><span>{String(authDebug.jwtExists)}</span>
+        </div>
+        {authDebug.ready && !authDebug.admin && (
+          <p className="mt-2 text-sm text-destructive font-medium">Admin authorization required</p>
+        )}
+        {authDebug.error && <p className="mt-1 text-xs text-destructive">{authDebug.error}</p>}
+      </Card>
+
+      <Card className="p-3 mb-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Pipeline counts after auth/discovery</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div><div className="text-lg font-semibold">{pipelineCounts.found}</div><div className="text-muted-foreground">total videos found</div></div>
+          <div><div className="text-lg font-semibold">{pipelineCounts.registered}</div><div className="text-muted-foreground">total registered</div></div>
+          <div><div className="text-lg font-semibold">{pipelineCounts.drafts}</div><div className="text-muted-foreground">total drafts</div></div>
+          <div><div className="text-lg font-semibold">{pipelineCounts.publishable}</div><div className="text-muted-foreground">total publishable</div></div>
+        </div>
+      </Card>
 
       <div className="flex flex-wrap gap-2 mb-3">
         <Button
@@ -876,7 +1033,7 @@ export default function PinterestVideoQueuePage() {
           {discovering ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
           Discover videos
         </Button>
-        <Button onClick={onPickFiles} disabled={uploading || discovering} className="h-11" size="sm" variant="outline">
+        <Button onClick={onPickFiles} disabled={!authDebug.admin || uploading || discovering} className="h-11" size="sm" variant="outline">
           {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
           Upload MP4
         </Button>

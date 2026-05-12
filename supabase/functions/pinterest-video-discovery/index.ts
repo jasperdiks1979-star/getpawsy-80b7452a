@@ -15,6 +15,7 @@ const TARGET_BUCKETS = ["pinterest-ads", "tiktok-media", "admin-resources"];
 const PATTERN = /(getpawsy-tiktok-|getpawsy-litterbox-|timepain|smell|direct).*\.mp4$/i;
 
 function ok(b: unknown) { return new Response(JSON.stringify(b), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
+function json(b: unknown, status = 200) { return new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
 
 async function listBucketRecursive(sb: any, bucket: string, prefix = ""): Promise<Array<{ path: string; size: number; updated_at: string }>> {
   const out: Array<{ path: string; size: number; updated_at: string }> = [];
@@ -55,13 +56,17 @@ serve(async (req) => {
     await log.info("entered handler");
     // Auth: require admin
     const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      await log.warn("missing bearer token");
+      return json({ ok: false, code: "UNAUTHENTICATED", traceId, message: "Missing authenticated admin JWT" }, 401);
+    }
     const sbUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user } } = await sbUser.auth.getUser();
-    if (!user) { await log.warn("unauthenticated"); return ok({ ok: false, code: "UNAUTHENTICATED", traceId }); }
-    const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) { await log.warn("forbidden", { user_id: user.id }); return ok({ ok: false, code: "FORBIDDEN", traceId }); }
+    const { data: { user }, error: userError } = await sbUser.auth.getUser();
+    if (userError || !user) { await log.warn("unauthenticated", { message: userError?.message }); return json({ ok: false, code: "UNAUTHENTICATED", traceId, message: userError?.message || "Invalid user token" }, 401); }
+    const { data: roleRow, error: roleError } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) { await log.warn("forbidden", { user_id: user.id, email: user.email, message: roleError?.message }); return json({ ok: false, code: "FORBIDDEN", traceId, message: "Admin authorization required", user_id: user.id, email: user.email }, 403); }
     const body = await req.json().catch(() => ({}));
     if (body?.action === "__health_check__") {
       await log.info("health check ok", { buckets: TARGET_BUCKETS, pattern: String(PATTERN) });
