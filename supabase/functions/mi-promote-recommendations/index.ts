@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { runGate } from "../mi-compliance-gate/index.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -113,6 +114,26 @@ Deno.serve(async (req) => {
       readiness_score: c.score,
     };
 
+    // Compliance & QA gate (banned terms, image validity, dedup fingerprint)
+    const gate = await runGate(sb, {
+      product: c.product,
+      pin_title: pinTitle,
+      pin_description: pinDesc,
+      caption,
+    });
+    promotion.gate_pass = gate.pass;
+    promotion.gate_reasons = gate.reasons;
+
+    if (!gate.pass) {
+      if (!dryRun) {
+        await sb.from("mi_recommendations")
+          .update({ status: "blocked", evidence_refs: [...(c.rec.evidence_refs ?? []), { gate_blocked: gate.reasons }] })
+          .eq("id", c.rec.id);
+      }
+      results.push(promotion);
+      continue;
+    }
+
     if (!dryRun) {
       const { data: pin, error: pinErr } = await sb.from("pinterest_pin_queue").insert({
         product_id: c.product.id,
@@ -127,6 +148,7 @@ Deno.serve(async (req) => {
         priority: "high",
         hook_group: c.recipe.hook_family,
         category_key: c.trend?.category ?? null,
+        qa_reasons: ["mi_gate_passed"],
         meta: { source: "mi_promote", recipe_id: c.recipe.id, trend_id: c.trend?.id, recommendation_id: c.rec.id, readiness: c.score },
       }).select("id").maybeSingle();
       promotion.pinterest_pin_id = pin?.id ?? null;
