@@ -262,6 +262,16 @@ export default function PinterestVideoQueuePage() {
   const [preparing, setPreparing] = useState(false);
   const [prepareStep, setPrepareStep] = useState<string>("");
   const [publishingTest, setPublishingTest] = useState(false);
+  const [testPinResult, setTestPinResult] = useState<{
+    ok: boolean;
+    pin_id?: string | null;
+    title?: string | null;
+    media_url?: string | null;
+    board?: string | null;
+    pin_url?: string | null;
+    error?: string | null;
+    queue_id?: string | null;
+  } | null>(null);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
