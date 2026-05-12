@@ -23,6 +23,7 @@ import { ComplianceGateTab } from "./tabs/ComplianceGateTab";
 import { AutoTuneTab } from "./tabs/AutoTuneTab";
 import { ScalingLoopTab } from "./tabs/ScalingLoopTab";
 import { ExperimentsTab } from "./tabs/ExperimentsTab";
+import { CrossChannelTab } from "./tabs/CrossChannelTab";
 
 type Counters = {
   trends: number;
@@ -124,6 +125,7 @@ export function MarketIntelligenceEngine() {
           <TabsTrigger value="autotune">Auto-Tune</TabsTrigger>
           <TabsTrigger value="scaling">Scaling Loop</TabsTrigger>
           <TabsTrigger value="experiments">Experiments</TabsTrigger>
+          <TabsTrigger value="crosschannel">Cross-Channel</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewDashboardTab /></TabsContent>
@@ -142,6 +144,7 @@ export function MarketIntelligenceEngine() {
         <TabsContent value="autotune"><AutoTuneTab /></TabsContent>
         <TabsContent value="scaling"><ScalingLoopTab /></TabsContent>
         <TabsContent value="experiments"><ExperimentsTab /></TabsContent>
+        <TabsContent value="crosschannel"><CrossChannelTab /></TabsContent>
       </Tabs>
     </div>
   );
