@@ -21,7 +21,7 @@ export function ChannelTab() {
       .select("date, channel, sessions_us, add_to_cart, purchases, revenue_cents")
       .order("date", { ascending: false })
       .limit(60);
-    setRows((data as Row[]) ?? []);
+    setRows(((data as unknown) as Row[]) ?? []);
     setLoading(false);
   }
 
