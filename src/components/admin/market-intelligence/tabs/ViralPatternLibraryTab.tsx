@@ -39,7 +39,7 @@ export function ViralPatternLibraryTab({ onChange }: { onChange?: () => void }) 
     if (!form.name?.trim()) return toast.error("Name required");
     const payload: Record<string, unknown> = { name: form.name.trim(), score: Number(form.score) || 0, active: true };
     for (const [k] of FIELDS) if (form[k]) payload[k] = form[k];
-    const { error } = await supabase.from("mi_creative_recipes").insert(payload);
+    const { error } = await supabase.from("mi_creative_recipes").insert([payload as never]);
     if (error) return toast.error(error.message);
     toast.success("Recipe added");
     setForm({ name: "", score: "50" });
