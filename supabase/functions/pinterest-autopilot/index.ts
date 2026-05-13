@@ -96,6 +96,17 @@ interface PerfRow {
   performance_score: number;
 }
 
+const COLD_START_DAILY_CAP = 3;
+const COLD_START_WEEKLY_CAP = 15;
+const DEFAULT_DAILY_CAP = 8;
+
+function thresholdForDecision(mode: string, coldStart: boolean, scaleCandidate: boolean): number {
+  if (coldStart) return 50;
+  if (mode === "aggressive") return 85;
+  if (scaleCandidate) return 80;
+  return 70;
+}
+
 function safeUrl(u: string | null | undefined): boolean {
   if (!u) return false;
   try {
@@ -257,6 +268,7 @@ async function handler(req: Request): Promise<Response> {
       { data: boards },
       { data: perf },
       { data: recentQueue },
+      { data: runtimeSettings },
     ] = await Promise.all([
       supabase
         .from("products")
@@ -277,12 +289,14 @@ async function handler(req: Request): Promise<Response> {
         .select("product_id,impressions,clicks,saves,ctr,performance_score"),
       supabase
         .from("pinterest_pin_queue")
-        .select("product_id,board_id,created_at")
+        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status")
+        .eq("status", "posted")
         .gte(
-          "created_at",
+          "posted_at",
           new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
         )
         .limit(1000),
+      supabase.from("pinterest_runtime_settings").select("daily_pin_cap, domination_mode").eq("id", 1).maybeSingle(),
     ]);
 
     const overrideMap = new Map<string, Override>();
@@ -309,13 +323,28 @@ async function handler(req: Request): Promise<Response> {
     // Weekly counts per product + per board
     const productWeekly: Record<string, number> = {};
     const boardWeekly: Record<string, number> = {};
+    let dailyPublished = 0;
+    let weeklyPublished = 0;
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const seenPublishedPinIds = new Set<string>();
     for (const q of (recentQueue ?? []) as Array<{
       product_id: string;
       board_id: string | null;
+      posted_at: string | null;
+      pinterest_pin_id: string | null;
+      pin_external_id: string | null;
     }>) {
+      const externalId = q.pinterest_pin_id || q.pin_external_id;
+      if (!externalId || seenPublishedPinIds.has(externalId)) continue;
+      seenPublishedPinIds.add(externalId);
       productWeekly[q.product_id] = (productWeekly[q.product_id] ?? 0) + 1;
       if (q.board_id) boardWeekly[q.board_id] = (boardWeekly[q.board_id] ?? 0) + 1;
+      weeklyPublished++;
+      if (q.posted_at && new Date(q.posted_at).getTime() >= dayStart.getTime()) dailyPublished++;
     }
+    const dailyCap = Math.max(1, Number((runtimeSettings as any)?.daily_pin_cap ?? DEFAULT_DAILY_CAP));
+    const dominationMode = Boolean((runtimeSettings as any)?.domination_mode);
 
     // Score every eligible product
     const decisions: Array<{
