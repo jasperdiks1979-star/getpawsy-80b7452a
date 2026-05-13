@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Clock, CheckCircle2, Sparkles, X } from "lucide-react";
 
 const WEEK_MS = 7 * 24 * 3600 * 1000;
@@ -94,8 +95,25 @@ export function WeeklyCapCountdown({ weeklyLimit = 15, capStatus }: { weeklyLimi
   // Hypothetical "what if I publish now" simulation
   const [simulating, setSimulating] = useState(false);
   const [simAtMs, setSimAtMs] = useState<number | null>(null);
-  const simFreesAtMs = simAtMs ? simAtMs + WEEK_MS : null;
-  const simulatedUsed = used + (simulating ? 1 : 0);
+  const [simNInput, setSimNInput] = useState<string>("3");
+  const simN = Math.max(1, Math.min(50, Number(simNInput) || 1));
+  const available = Math.max(0, effectiveLimit - used);
+  const immediateCount = Math.min(simN, available);
+  const blockedCount = Math.max(0, simN - available);
+  // Sorted existing slot free times (earliest first)
+  const sortedFreeTimes = [...slots]
+    .map((s) => s.freesAtMs)
+    .sort((a, b) => a - b);
+  // For each blocked pin (1..blockedCount), the earliest it could be published
+  // is when the (k-1)-th existing slot frees (0-indexed).
+  const blockedSchedule = Array.from({ length: blockedCount }).map((_, k) => {
+    const freesAt = sortedFreeTimes[k] ?? null;
+    return { index: immediateCount + k + 1, publishAtMs: freesAt };
+  });
+  const fullyClearedAtMs = blockedSchedule.length
+    ? blockedSchedule[blockedSchedule.length - 1].publishAtMs
+    : (simAtMs ?? now);
+  const simulatedUsed = Math.min(effectiveLimit, used + immediateCount);
   const simulatedAtCap = simulatedUsed >= effectiveLimit;
   const wouldBlock = used >= effectiveLimit && recoverySlots <= 0;
 
@@ -103,10 +121,10 @@ export function WeeklyCapCountdown({ weeklyLimit = 15, capStatus }: { weeklyLimi
     const t = Date.now();
     setSimAtMs(t);
     setSimulating(true);
-    toast.info("Simulated publish-now — see scenario card below.", {
-      description: wouldBlock
-        ? "Cap reached: real publish would be blocked right now."
-        : `Slot would free at ${formatLocal(t + WEEK_MS)}.`,
+    toast.info(`Simulated publishing ${simN} pin${simN > 1 ? "s" : ""} now`, {
+      description: blockedCount > 0
+        ? `${immediateCount} would publish, ${blockedCount} blocked by weekly cap.`
+        : `All ${simN} would publish — slots free 7d later.`,
     });
   }
   function clearSimulation() {
@@ -148,12 +166,21 @@ export function WeeklyCapCountdown({ weeklyLimit = 15, capStatus }: { weeklyLimi
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed p-3">
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed p-3 flex-wrap">
           <div className="text-xs text-muted-foreground">
-            <div className="font-semibold text-foreground">Scenario: publish 1 pin now</div>
-            <div>Simulates the cap impact and exact slot-free time.</div>
+            <div className="font-semibold text-foreground">Scenario: publish N pins now</div>
+            <div>Simulates batch cap impact, blocked pins, and when each slot frees.</div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <label className="text-xs text-muted-foreground">N =</label>
+            <Input
+              type="number"
+              min={1}
+              max={50}
+              value={simNInput}
+              onChange={(e) => setSimNInput(e.target.value)}
+              className="h-8 w-16 font-mono text-sm"
+            />
             {simulating && (
               <Button size="sm" variant="ghost" onClick={clearSimulation}>
                 <X className="h-3.5 w-3.5 mr-1" /> Clear
@@ -161,46 +188,86 @@ export function WeeklyCapCountdown({ weeklyLimit = 15, capStatus }: { weeklyLimi
             )}
             <Button size="sm" variant="secondary" onClick={runSimulation}>
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              Simulate publish now
+              Simulate
             </Button>
           </div>
         </div>
 
-        {simulating && simAtMs && simFreesAtMs && (
+        {simulating && simAtMs && (
           <div className="rounded-lg border p-4 bg-accent/30 space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">
-                Simulation result
+                Simulation result — publish {simN} pin{simN > 1 ? "s" : ""} now
               </div>
-              <Badge variant={wouldBlock ? "destructive" : simulatedAtCap ? "secondary" : "default"}>
-                {wouldBlock
-                  ? "BLOCKED — cap already full"
-                  : simulatedAtCap
-                    ? `Would hit cap (${simulatedUsed}/${effectiveLimit})`
-                    : `OK — ${simulatedUsed}/${effectiveLimit} after publish`}
+              <Badge variant={blockedCount === simN ? "destructive" : blockedCount > 0 ? "secondary" : "default"}>
+                {blockedCount === simN
+                  ? `BLOCKED — all ${simN} rejected`
+                  : blockedCount > 0
+                    ? `${immediateCount} OK · ${blockedCount} BLOCKED`
+                    : `OK — all ${simN} would publish`}
               </Badge>
             </div>
-            {!wouldBlock && (
-              <>
-                <div className="text-sm">
-                  This pin would free its slot in{" "}
-                  <span className="font-mono font-bold tabular-nums">
-                    {formatDuration(simFreesAtMs - now)}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Slot frees at <span className="font-medium text-foreground">{formatLocal(simFreesAtMs)}</span>{" "}
-                  · published at <span className="font-medium text-foreground">{formatLocal(simAtMs)}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Remaining budget after publish:{" "}
-                  <span className="font-mono">{Math.max(0, effectiveLimit - simulatedUsed)}</span> pins
-                </div>
-              </>
+            <div className="grid gap-2 sm:grid-cols-3 text-xs">
+              <div className="rounded-md bg-background border p-2">
+                <div className="text-muted-foreground">Publish immediately</div>
+                <div className="font-mono text-base font-semibold">{immediateCount}/{simN}</div>
+              </div>
+              <div className="rounded-md bg-background border p-2">
+                <div className="text-muted-foreground">Blocked by cap</div>
+                <div className="font-mono text-base font-semibold">{blockedCount}/{simN}</div>
+              </div>
+              <div className="rounded-md bg-background border p-2">
+                <div className="text-muted-foreground">Cap after publish</div>
+                <div className="font-mono text-base font-semibold">{simulatedUsed}/{effectiveLimit}</div>
+              </div>
+            </div>
+            {immediateCount > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {immediateCount} pin{immediateCount > 1 ? "s" : ""} would publish at{" "}
+                <span className="font-medium text-foreground">{formatLocal(simAtMs)}</span> and free{" "}
+                {immediateCount > 1 ? "their slots" : "its slot"} at{" "}
+                <span className="font-medium text-foreground">{formatLocal(simAtMs + WEEK_MS)}</span>.
+              </div>
             )}
-            {wouldBlock && (
-              <div className="text-sm text-destructive">
-                Weekly cap is already at {used}/{effectiveLimit}. Publishing now would be rejected by the autopilot guard. Wait for the next slot to free.
+            {blockedCount > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Blocked pins — earliest publish window
+                </div>
+                <div className="space-y-1">
+                  {blockedSchedule.map((b) => {
+                    const remaining = b.publishAtMs ? b.publishAtMs - now : null;
+                    return (
+                      <div
+                        key={b.index}
+                        className="flex items-center justify-between rounded-md border bg-background p-2 text-xs"
+                      >
+                        <span className="font-mono text-muted-foreground">Pin #{b.index}</span>
+                        <div className="flex items-center gap-2">
+                          {b.publishAtMs ? (
+                            <>
+                              <span className="text-muted-foreground hidden sm:inline">
+                                {formatLocal(b.publishAtMs)}
+                              </span>
+                              <Badge variant="outline" className="font-mono">
+                                in {formatDuration(remaining ?? 0)}
+                              </Badge>
+                            </>
+                          ) : (
+                            <Badge variant="destructive" className="font-mono">no slot data</Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {fullyClearedAtMs && (
+                  <div className="text-xs text-muted-foreground pt-1">
+                    All {simN} pins cleared by{" "}
+                    <span className="font-medium text-foreground">{formatLocal(fullyClearedAtMs)}</span>{" "}
+                    (in {formatDuration(fullyClearedAtMs - now)}).
+                  </div>
+                )}
               </div>
             )}
           </div>
