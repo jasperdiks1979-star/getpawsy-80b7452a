@@ -2398,10 +2398,11 @@ async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string
   const candidates: any[] = selectedBoard ? [selectedBoard, ...remaining] : remaining;
   for (const candidate of candidates) {
     currentPayload = { ...requestPayload, board_id: candidate.id };
+    const safePayload = await preparePinterestPayload(sb, currentPayload, { endpoint: "/pins", function: "pinterest-automation", action: "direct_api_test", board_id: candidate.id });
     response = await fetch(endpoint, {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify(currentPayload),
+      body: JSON.stringify(safePayload.payload),
     });
     responseText = await response.text();
     try { responseBody = JSON.parse(responseText); } catch { responseBody = { raw: responseText }; }
@@ -2699,7 +2700,8 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       media_source: { source_type: "image_url", url: pin.pin_image_url },
       link: pin.destination_link,
     };
-    console.log("[pinterest-publish] Pinterest API request payload", requestPayload);
+    const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-automation", action: opts.actionName, pin_id: pin.id });
+    console.log("[pinterest-publish] Pinterest API request payload", safePayload.debugPayload);
 
     const claimUpdate: Record<string, unknown> = {
       status: "publishing",
@@ -2740,7 +2742,7 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     const response = await fetch(`${apiBase}/pins`, {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify(requestPayload),
+      body: JSON.stringify(safePayload.payload),
     });
     const responseText = await response.text();
     let responseJson: any = null;
