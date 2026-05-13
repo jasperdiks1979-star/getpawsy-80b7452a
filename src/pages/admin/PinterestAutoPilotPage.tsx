@@ -398,6 +398,74 @@ export default function PinterestAutoPilotPage() {
     },
   });
 
+  const { data: saturation } = useQuery({
+    queryKey: ["pinterest-saturation-7d"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("pinterest_pin_queue")
+        .select("product_id,product_name,product_slug,category_key,hook_group,board_id,board_name,destination_link,posted_at,pinterest_pin_id,pin_external_id")
+        .eq("status", "posted")
+        .gte("posted_at", since)
+        .limit(1000);
+      if (error) throw error;
+      const seen = new Set<string>();
+      const rows = (data ?? []).filter((r: any) => {
+        const ext = r.pinterest_pin_id || r.pin_external_id;
+        if (!ext || seen.has(ext)) return false;
+        seen.add(ext);
+        return true;
+      });
+      const byProduct = new Map<string, { name: string; slug: string | null; category: string | null; count: number; hooks: Record<string, number>; boards: Record<string, number>; lastPostMs: number }>();
+      const byCategory = new Map<string, number>();
+      const byUrl = new Map<string, number>();
+      for (const r of rows as any[]) {
+        const k = r.product_id as string;
+        const cur = byProduct.get(k) ?? { name: r.product_name ?? "", slug: r.product_slug, category: r.category_key, count: 0, hooks: {}, boards: {}, lastPostMs: 0 };
+        cur.count += 1;
+        if (r.hook_group) cur.hooks[r.hook_group] = (cur.hooks[r.hook_group] ?? 0) + 1;
+        if (r.board_name) cur.boards[r.board_name] = (cur.boards[r.board_name] ?? 0) + 1;
+        const ms = r.posted_at ? new Date(r.posted_at).getTime() : 0;
+        if (ms > cur.lastPostMs) cur.lastPostMs = ms;
+        byProduct.set(k, cur);
+        if (r.category_key) byCategory.set(r.category_key, (byCategory.get(r.category_key) ?? 0) + 1);
+        if (r.destination_link) byUrl.set(r.destination_link, (byUrl.get(r.destination_link) ?? 0) + 1);
+      }
+      const total = rows.length;
+      const products = Array.from(byProduct.entries()).map(([id, v]) => {
+        const sharePct = total > 0 ? (v.count / total) * 100 : 0;
+        const topHook = Object.entries(v.hooks).sort((a, b) => b[1] - a[1])[0];
+        const topBoard = Object.entries(v.boards).sort((a, b) => b[1] - a[1])[0];
+        const repeatedHook = topHook && topHook[1] > 2;
+        const boardSpam = topBoard && topBoard[1] >= 5 && Object.keys(v.boards).length === 1;
+        const runawayRisk =
+          (sharePct >= 15 ? 50 : 0) +
+          (v.count >= 5 ? 25 : 0) +
+          (repeatedHook ? 15 : 0) +
+          (boardSpam ? 10 : 0);
+        return {
+          id,
+          name: v.name,
+          slug: v.slug,
+          category: v.category,
+          count: v.count,
+          sharePct,
+          topHook: topHook?.[0] ?? null,
+          topHookCount: topHook?.[1] ?? 0,
+          topBoard: topBoard?.[0] ?? null,
+          topBoardCount: topBoard?.[1] ?? 0,
+          repeatedHook,
+          boardSpam,
+          runawayRisk: Math.min(100, runawayRisk),
+          lastPostMs: v.lastPostMs,
+        };
+      }).sort((a, b) => b.count - a.count);
+      const categories = Array.from(byCategory.entries()).map(([k, n]) => ({ key: k, n, sharePct: total > 0 ? (n / total) * 100 : 0 })).sort((a, b) => b.n - a.n);
+      return { total, products, categories };
+    },
+  });
+
   const updateSettings = useMutation({
     mutationFn: async (patch: Partial<Settings>) => {
       const { error } = await supabase
