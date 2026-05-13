@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
+import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 
 const MAX_RETRIES = 2;
 const BATCH_SIZE = 3; // max concurrency per cron run
@@ -11,6 +12,20 @@ const MAX_PINS_PER_HOUR = 50; // Pinterest safe rate limit
 const HERO_DAILY_CAP = 3;     // Performance Mode: 3 pins/day until scale_unlocked
 const PINTEREST_PRODUCTION_API_BASE = "https://api.pinterest.com/v5";
 const APPROVED_PINTEREST_CLIENT_ID = "1567611";
+
+async function preparePinterestPayload(sb: any, payload: Record<string, unknown>, context: Record<string, unknown>) {
+  const safe = sanitizeAndValidatePinterestPayload(payload);
+  const debug = { ...context, sanitized_payload: safe.debugPayload, rejected_fields: safe.rejectedFields, coerced_fields: safe.coercedFields };
+  console.log("[pinterest-payload-debug]", JSON.stringify(debug));
+  await sb.from("pinterest_post_logs").insert({
+    action: "payload_debug",
+    status: safe.ok ? "success" : "failed",
+    error_message: safe.ok ? null : `Invalid Pinterest integer payload: ${safe.rejectedFields.map((f) => f.path).join(", ")}`,
+    response_data: debug,
+  });
+  if (!safe.ok) throw new Error(`Invalid Pinterest payload: ${safe.rejectedFields.map((f) => `${f.path}=${String(f.value)}`).join(", ")}`);
+  return safe;
+}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -742,13 +757,14 @@ Deno.serve(async (req) => {
           media_source: { source_type: "image_url", url: pin.pin_image_url },
           link: destinationLink,
         };
+        const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-cron-worker", pin_id: pin.id });
         const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(requestPayload),
+          body: JSON.stringify(safePayload.payload),
         });
 
         if (!pinRes.ok) {

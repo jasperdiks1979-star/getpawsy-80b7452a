@@ -127,9 +127,9 @@ function computeDecisiveDrivers(
     summary = `Low engagement: ${num("saves")} saves & ${num("clicks")} clicks after ${num("impressions")} impressions.`;
   } else if (action === "skip") {
     // Two skip paths: weekly cap, or below quality threshold.
-    if (num("weekly_count") > 0 && num("weekly_count") >= 3) {
+    if (num("weekly_count") > 0 && num("weekly_count") >= Number(breakdown.product_weekly_limit ?? 3)) {
       checkLabels.add("Within weekly cap");
-      summary = `Hit weekly cap (${num("weekly_count")} pins this week).`;
+      summary = `Hit product weekly cap (${num("weekly_count")}/${Number(breakdown.product_weekly_limit ?? 3)}).`;
     } else {
       // Find the 1–2 weakest contributing factors (lowest fill ratio).
       const ranked = Object.entries(FACTOR_MAX)
@@ -175,6 +175,7 @@ function DecisiveBadge() {
 /** Derive safety checks from the score breakdown for human-readable explanation. */
 function deriveSafetyChecks(breakdown: Record<string, unknown>) {
   const num = (k: string) => Number(breakdown[k] ?? 0);
+  const coldStart = Boolean(breakdown.cold_start);
   return [
     {
       label: "Image quality acceptable",
@@ -188,8 +189,8 @@ function deriveSafetyChecks(breakdown: Record<string, unknown>) {
     },
     {
       label: "Within weekly cap",
-      passed: num("weekly_count") < 99,
-      detail: `${num("weekly_count")} pins this week`,
+      passed: num("weekly_count") < Number(breakdown.product_weekly_limit ?? 3) && num("weekly_total_count") < Number(breakdown.weekly_limit ?? 15),
+      detail: `product ${num("weekly_count")}/${Number(breakdown.product_weekly_limit ?? 3)} · weekly ${num("weekly_total_count")}/${Number(breakdown.weekly_limit ?? 15)} · daily ${num("daily_count")}/${Number(breakdown.daily_limit ?? 3)}`,
     },
     {
       label: "Has visual appeal for Pinterest",
@@ -203,11 +204,11 @@ function deriveSafetyChecks(breakdown: Record<string, unknown>) {
     },
     {
       label: "Has measured Pinterest history",
-      passed: num("impressions") > 0,
+      passed: true,
       detail:
         num("impressions") > 0
           ? `${num("impressions")} imp · ${num("saves")} saves · ${num("clicks")} clicks`
-          : "cold start (no history yet)",
+          : coldStart ? "cold start neutral — allowed for test pins" : "no history yet",
     },
   ];
 }
@@ -346,6 +347,7 @@ export default function PinterestAutoPilotPage() {
   const [overrideAction, setOverrideAction] = useState<Override["action"]>("force_promote");
   const [overrideReason, setOverrideReason] = useState("");
   const [openDecision, setOpenDecision] = useState<Decision | null>(null);
+  const [testPublishLog, setTestPublishLog] = useState<any | null>(null);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["autopilot-settings"],
@@ -385,6 +387,17 @@ export default function PinterestAutoPilotPage() {
     },
   });
 
+  const { data: diagnostic, refetch: refetchDiagnostic } = useQuery({
+    queryKey: ["pinterest-full-diagnostic"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "full_diagnostic" },
+      });
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
   const updateSettings = useMutation({
     mutationFn: async (patch: Partial<Settings>) => {
       const { error } = await supabase
@@ -414,6 +427,40 @@ export default function PinterestAutoPilotPage() {
     },
     onError: (e) => toast.error((e as Error).message),
   });
+
+  const publishSafeColdStartTest = useMutation({
+    mutationFn: async (dryRun: boolean) => {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "publish_safe_cold_start_test_pin", dryRun },
+      });
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (d) => {
+      setTestPublishLog(d);
+      refetchDiagnostic();
+      const message = d?.dryRun ? "Cold-start dry-run complete" : d?.published ? "Published 1 safe cold-start pin" : d?.error || "Cold-start publish failed";
+      if (d?.ok) toast.success(message);
+      else toast.error(message);
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const decisionStats = (() => {
+    const list = decisions ?? [];
+    const byReason = (needle: string) => list.filter((d) => `${d.reason || ""}`.toLowerCase().includes(needle)).length;
+    return {
+      publishable: list.filter((d) => ["normal", "scale"].includes(d.action)).length,
+      quality: byReason("quality threshold"),
+      cap: byReason("cap reached"),
+      duplicate: byReason("duplicate"),
+      missingMedia: byReason("image") + byReason("media"),
+      invalidPayload: byReason("payload"),
+      boardIssue: list.filter((d) => !d.selected_board_name).length,
+      authIssue: diagnostic?.auth_status?.valid === false ? 1 : 0,
+      coldStartEligible: list.filter((d) => Boolean((d.score_breakdown as any)?.cold_start) && ["normal", "scale"].includes(d.action)).length,
+    };
+  })();
 
   const addOverride = useMutation({
     mutationFn: async () => {
@@ -479,7 +526,69 @@ export default function PinterestAutoPilotPage() {
           )}
           Run Auto-Pilot
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => publishSafeColdStartTest.mutate(false)}
+          disabled={publishSafeColdStartTest.isPending}
+          size="lg"
+        >
+          {publishSafeColdStartTest.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+          Publish 1 safe cold-start test pin
+        </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pinterest diagnostics</CardTitle>
+          <CardDescription>Cold-start budget, blockers, payload validation, board and token status.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Publishable", decisionStats.publishable],
+              ["Blocked by quality", decisionStats.quality],
+              ["Blocked by cap", decisionStats.cap],
+              ["Blocked by duplicate", decisionStats.duplicate],
+              ["Missing media", decisionStats.missingMedia],
+              ["Invalid payload", decisionStats.invalidPayload],
+              ["Board issue", decisionStats.boardIssue],
+              ["Cold-start eligible", decisionStats.coldStartEligible],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div className="text-xl font-bold font-mono">{String(value)}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <Badge variant={diagnostic?.auth_status?.valid ? "default" : "destructive"}>Auth {diagnostic?.auth_status?.valid ? "OK" : "Issue"}</Badge>
+            <Badge variant={diagnostic?.board_status?.ok ? "default" : "destructive"}>Board {diagnostic?.board_status?.ok ? "OK" : "Issue"}</Badge>
+            <Badge variant={diagnostic?.payload_validation_status?.ok ? "default" : "destructive"}>Payload {diagnostic?.payload_validation_status?.ok ? "OK" : "Issue"}</Badge>
+            <Badge variant={diagnostic?.cap_status?.ok ? "default" : "outline"}>Cold-start cap {diagnostic?.cap_status ? `${diagnostic.cap_status.daily}/${diagnostic.cap_status.daily_limit} day · ${diagnostic.cap_status.weekly}/${diagnostic.cap_status.weekly_limit} week` : "—"}</Badge>
+          </div>
+          {diagnostic?.first_eligible_product && (
+            <div className="text-sm text-muted-foreground">
+              First eligible: <span className="font-medium text-foreground">{diagnostic.first_eligible_product.name}</span>
+            </div>
+          )}
+          {diagnostic?.exact_reason_if_no_pin_can_be_published && (
+            <div className="text-sm text-destructive">{diagnostic.exact_reason_if_no_pin_can_be_published}</div>
+          )}
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => publishSafeColdStartTest.mutate(true)} disabled={publishSafeColdStartTest.isPending}>
+              Dry-run safe test pin
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => refetchDiagnostic()}>
+              Refresh diagnostics
+            </Button>
+          </div>
+          {testPublishLog && (
+            <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-[11px]">
+              {JSON.stringify(testPublishLog, null, 2)}
+            </pre>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Settings */}
       <Card>
@@ -720,6 +829,11 @@ export default function PinterestAutoPilotPage() {
                       </TableCell>
                       <TableCell className="font-mono">
                         {Number(d.total_score).toFixed(0)}
+                        {(d.score_breakdown as any)?.applied_threshold && (
+                          <div className="text-[10px] text-muted-foreground">
+                            threshold {(d.score_breakdown as any).applied_threshold} · {(d.score_breakdown as any).threshold_mode}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {d.selected_hook_category ? (

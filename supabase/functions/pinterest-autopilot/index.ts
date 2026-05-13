@@ -96,6 +96,17 @@ interface PerfRow {
   performance_score: number;
 }
 
+const COLD_START_DAILY_CAP = 3;
+const COLD_START_WEEKLY_CAP = 15;
+const DEFAULT_DAILY_CAP = 8;
+
+function thresholdForDecision(mode: string, coldStart: boolean, scaleCandidate: boolean, dominationMode = false): number {
+  if (coldStart) return 50;
+  if (dominationMode) return 85;
+  if (scaleCandidate) return 80;
+  return 70;
+}
+
 function safeUrl(u: string | null | undefined): boolean {
   if (!u) return false;
   try {
@@ -245,7 +256,6 @@ async function handler(req: Request): Promise<Response> {
       .eq("id", 1)
       .maybeSingle();
     const mode = settings?.mode ?? "balanced";
-    const minScore = settings?.min_quality_score ?? 70;
     const maxPerWeek = settings?.max_pins_per_product_per_week ?? 3;
     const preferred = settings?.preferred_category ?? null;
     const enabled = settings?.enabled ?? false;
@@ -257,6 +267,7 @@ async function handler(req: Request): Promise<Response> {
       { data: boards },
       { data: perf },
       { data: recentQueue },
+      { data: runtimeSettings },
     ] = await Promise.all([
       supabase
         .from("products")
@@ -277,12 +288,14 @@ async function handler(req: Request): Promise<Response> {
         .select("product_id,impressions,clicks,saves,ctr,performance_score"),
       supabase
         .from("pinterest_pin_queue")
-        .select("product_id,board_id,created_at")
+        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status")
+        .eq("status", "posted")
         .gte(
-          "created_at",
+          "posted_at",
           new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
         )
         .limit(1000),
+      supabase.from("pinterest_runtime_settings").select("daily_pin_cap, domination_mode").eq("id", 1).maybeSingle(),
     ]);
 
     const overrideMap = new Map<string, Override>();
@@ -309,13 +322,28 @@ async function handler(req: Request): Promise<Response> {
     // Weekly counts per product + per board
     const productWeekly: Record<string, number> = {};
     const boardWeekly: Record<string, number> = {};
+    let dailyPublished = 0;
+    let weeklyPublished = 0;
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const seenPublishedPinIds = new Set<string>();
     for (const q of (recentQueue ?? []) as Array<{
       product_id: string;
       board_id: string | null;
+      posted_at: string | null;
+      pinterest_pin_id: string | null;
+      pin_external_id: string | null;
     }>) {
+      const externalId = q.pinterest_pin_id || q.pin_external_id;
+      if (!externalId || seenPublishedPinIds.has(externalId)) continue;
+      seenPublishedPinIds.add(externalId);
       productWeekly[q.product_id] = (productWeekly[q.product_id] ?? 0) + 1;
       if (q.board_id) boardWeekly[q.board_id] = (boardWeekly[q.board_id] ?? 0) + 1;
+      weeklyPublished++;
+      if (q.posted_at && new Date(q.posted_at).getTime() >= dayStart.getTime()) dailyPublished++;
     }
+    const dailyCap = Math.max(1, Number((runtimeSettings as any)?.daily_pin_cap ?? DEFAULT_DAILY_CAP));
+    const dominationMode = Boolean((runtimeSettings as any)?.domination_mode);
 
     // Score every eligible product
     const decisions: Array<{
@@ -357,31 +385,49 @@ async function handler(req: Request): Promise<Response> {
       const cat = categoryFitScore(p, preferred);
       const visual = visualAppealScore(p);
       const ship = shippingScore(p);
-      const perfRes = performanceScore(perfMap.get(p.id));
+      const history = perfMap.get(p.id);
+      const perfRes = performanceScore(history);
       const forced = ov?.action === "force_promote" ? 20 : 0;
 
       const total = img + margin + cat + visual + ship + perfRes.score + forced;
 
       const weekly = productWeekly[p.id] ?? 0;
+      const coldStart = !history || perfRes.signals.impressions <= 0;
+      const measuredHistory = !coldStart;
+      const scaleCandidate = measuredHistory && perfRes.score >= 18 && perfRes.signals.saves >= 10;
+      const appliedThreshold = thresholdForDecision(mode, coldStart, scaleCandidate, dominationMode);
+      const effectiveProductWeeklyCap = coldStart ? Math.max(maxPerWeek, 3) : maxPerWeek;
+      const effectiveWeeklyCap = coldStart ? COLD_START_WEEKLY_CAP : maxPerWeek;
+      const effectiveDailyCap = coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap;
       let act: "normal" | "skip" | "scale" | "pause" = "normal";
       let reason = "";
 
-      if (weekly >= maxPerWeek && !forced) {
+      if (dailyPublished >= effectiveDailyCap && !forced) {
         act = "skip";
-        reason = `weekly cap reached (${weekly}/${maxPerWeek})`;
-      } else if (perfRes.score >= 18 && perfRes.signals.saves >= 10) {
+        reason = `daily cap reached (${dailyPublished}/${effectiveDailyCap})`;
+      } else if (weeklyPublished >= effectiveWeeklyCap && !forced) {
+        act = "skip";
+        reason = `weekly cap reached (${weeklyPublished}/${effectiveWeeklyCap})`;
+      } else if (weekly >= effectiveProductWeeklyCap && !forced) {
+        act = "skip";
+        reason = `product weekly cap reached (${weekly}/${effectiveProductWeeklyCap})`;
+      } else if (scaleCandidate) {
         act = "scale";
         reason = "winner pattern detected";
       } else if (
+        measuredHistory &&
         perfRes.signals.impressions >= 500 &&
         perfRes.signals.saves <= 1 &&
         perfRes.signals.clicks <= 1
       ) {
         act = "pause";
         reason = "low engagement after exposure";
-      } else if (total < minScore && !forced) {
+      } else if (dominationMode && measuredHistory && total < thresholdForDecision(mode, false, false, true) && !forced) {
         act = "skip";
-        reason = `below quality threshold (${total}/${minScore})`;
+        reason = `below domination threshold (${total}/${thresholdForDecision(mode, false, false, true)})`;
+      } else if (total < appliedThreshold && !forced) {
+        act = "skip";
+        reason = `below quality threshold (${total}/${appliedThreshold})`;
       }
 
       const board = pickBoard(p, niche, (boards ?? []) as Board[], boardWeekly);
@@ -398,7 +444,17 @@ async function handler(req: Request): Promise<Response> {
           shipping: ship,
           performance: perfRes.score,
           forced,
+          cold_start: coldStart,
+          measured_history: measuredHistory,
+          safety_status: coldStart ? "neutral" : "measured",
+          applied_threshold: appliedThreshold,
+          threshold_mode: coldStart ? "cold_start" : act === "scale" ? "scale" : dominationMode ? "domination" : "normal",
+          daily_count: dailyPublished,
+          daily_limit: effectiveDailyCap,
           weekly_count: weekly,
+          product_weekly_limit: effectiveProductWeeklyCap,
+          weekly_total_count: weeklyPublished,
+          weekly_limit: effectiveWeeklyCap,
           impressions: perfRes.signals.impressions,
           saves: perfRes.signals.saves,
           clicks: perfRes.signals.clicks,
