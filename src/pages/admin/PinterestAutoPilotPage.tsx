@@ -699,6 +699,9 @@ export default function PinterestAutoPilotPage() {
         </CardContent>
       </Card>
 
+      {/* Pin-level decision panel — chronological phase breakdown */}
+      <PinDecisionPanel diagnostic={diagnostic} testPublishLog={testPublishLog} />
+
       {/* Publish saturation / runaway risk */}
       <Card>
         <CardHeader>
