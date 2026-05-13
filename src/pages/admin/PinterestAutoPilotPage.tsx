@@ -398,6 +398,26 @@ export default function PinterestAutoPilotPage() {
     },
   });
 
+  const [showDiagnosticJson, setShowDiagnosticJson] = useState(false);
+  const runFullDiagnostic = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "full_diagnostic" },
+      });
+      if (error) throw error;
+      if (data && data.ok === false && data.error) throw new Error(data.error);
+      return data as any;
+    },
+    onSuccess: (d) => {
+      qc.setQueryData(["pinterest-full-diagnostic"], d);
+      setShowDiagnosticJson(true);
+      const reason = d?.exact_reason_if_no_pin_can_be_published;
+      if (reason) toast.warning(`Diagnostic complete — ${reason}`);
+      else toast.success("Diagnostic complete — no blockers detected");
+    },
+    onError: (e) => toast.error((e as Error).message || "Diagnostic failed"),
+  });
+
   const { data: saturation } = useQuery({
     queryKey: ["pinterest-saturation-7d"],
     refetchInterval: 60_000,
@@ -646,10 +666,31 @@ export default function PinterestAutoPilotPage() {
             <Button variant="secondary" size="sm" onClick={() => publishSafeColdStartTest.mutate(true)} disabled={publishSafeColdStartTest.isPending}>
               Dry-run safe test pin
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => refetchDiagnostic()}>
-              Refresh diagnostics
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => runFullDiagnostic.mutate()}
+              disabled={runFullDiagnostic.isPending}
+            >
+              {runFullDiagnostic.isPending ? (
+                <RefreshCw className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : null}
+              Run full diagnostic
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => refetchDiagnostic()}>
+              Refresh
+            </Button>
+            {diagnostic && (
+              <Button variant="ghost" size="sm" onClick={() => setShowDiagnosticJson((v) => !v)}>
+                {showDiagnosticJson ? "Hide raw JSON" : "Show raw JSON"}
+              </Button>
+            )}
           </div>
+          {showDiagnosticJson && diagnostic && (
+            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-[11px]">
+              {JSON.stringify(diagnostic, null, 2)}
+            </pre>
+          )}
           {testPublishLog && (
             <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-[11px]">
               {JSON.stringify(testPublishLog, null, 2)}
