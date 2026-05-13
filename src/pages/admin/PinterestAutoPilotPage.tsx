@@ -39,6 +39,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
+import { PinDecisionPanel } from "@/components/admin/PinDecisionPanel";
 
 type Settings = {
   id: number;
