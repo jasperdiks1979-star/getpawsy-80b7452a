@@ -296,7 +296,7 @@ async function handler(req: Request): Promise<Response> {
         .select("product_id,impressions,clicks,saves,ctr,performance_score"),
       supabase
         .from("pinterest_pin_queue")
-        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status,hook_category,destination_url,product_category")
+        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status,hook_group,destination_link,category_key")
         .eq("status", "posted")
         .gte(
           "posted_at",
@@ -356,9 +356,9 @@ async function handler(req: Request): Promise<Response> {
       posted_at: string | null;
       pinterest_pin_id: string | null;
       pin_external_id: string | null;
-      hook_category?: string | null;
-      destination_url?: string | null;
-      product_category?: string | null;
+      hook_group?: string | null;
+      destination_link?: string | null;
+      category_key?: string | null;
     }>) {
       const externalId = q.pinterest_pin_id || q.pin_external_id;
       if (!externalId || seenPublishedPinIds.has(externalId)) continue;
@@ -375,14 +375,14 @@ async function handler(req: Request): Promise<Response> {
           dailyPublished++;
           productDaily[q.product_id] = (productDaily[q.product_id] ?? 0) + 1;
         }
-        if (q.hook_category) {
+        if (q.hook_group) {
           productHookWeekly[q.product_id] ??= {};
-          productHookWeekly[q.product_id][q.hook_category] =
-            (productHookWeekly[q.product_id][q.hook_category] ?? 0) + 1;
+          productHookWeekly[q.product_id][q.hook_group] =
+            (productHookWeekly[q.product_id][q.hook_group] ?? 0) + 1;
         }
-        if (q.destination_url) urlWeekly[q.destination_url] = (urlWeekly[q.destination_url] ?? 0) + 1;
-        if (q.product_category) {
-          const ck = q.product_category.toLowerCase();
+        if (q.destination_link) urlWeekly[q.destination_link] = (urlWeekly[q.destination_link] ?? 0) + 1;
+        if (q.category_key) {
+          const ck = q.category_key.toLowerCase();
           categoryWeekly[ck] = (categoryWeekly[ck] ?? 0) + 1;
         }
       }
