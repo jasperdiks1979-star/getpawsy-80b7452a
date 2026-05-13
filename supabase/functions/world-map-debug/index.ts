@@ -14,10 +14,10 @@ const RANGE_MS: Record<Range, number> = {
   "30d": 30 * 24 * 60 * 60 * 1000,
 };
 
-const US_VALUES = new Set([
+export const US_VALUES = new Set([
   "us", "usa", "u.s.", "u.s.a.", "united states", "united states of america",
 ]);
-const isUS = (c?: string | null) => !!c && US_VALUES.has(c.trim().toLowerCase());
+export const isUS = (c?: string | null) => !!c && US_VALUES.has(c.trim().toLowerCase());
 
 const ADMIN_PATH_RE = /^\/(admin|dashboard|founder-mode|diagnostics|growth-verification|healthz)/i;
 const TEST_QUERY_RE = /[?&](test|internal|dryrun|preview)=true/i;
