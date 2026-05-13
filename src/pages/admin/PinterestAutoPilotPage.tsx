@@ -827,6 +827,11 @@ export default function PinterestAutoPilotPage() {
                       </TableCell>
                       <TableCell className="font-mono">
                         {Number(d.total_score).toFixed(0)}
+                        {(d.score_breakdown as any)?.applied_threshold && (
+                          <div className="text-[10px] text-muted-foreground">
+                            threshold {(d.score_breakdown as any).applied_threshold} · {(d.score_breakdown as any).threshold_mode}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {d.selected_hook_category ? (
