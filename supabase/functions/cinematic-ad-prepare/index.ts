@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json(); } catch { /* allow empty */ }
 
-  const product_slug: string = body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top-design";
+  const product_slug: string = body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top";
   const hook_variant: string = body.hook_variant ?? "default";
   const voice_id: string = body.voice_id ?? SARAH;
 
