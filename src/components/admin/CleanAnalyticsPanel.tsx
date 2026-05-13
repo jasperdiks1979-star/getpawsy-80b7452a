@@ -16,6 +16,8 @@ interface DebugResponse {
   total_raw_events: number;
   excluded_internal: number;
   excluded_bots: number;
+  bot_reasons?: Record<string, number>;
+  bot_samples?: Array<{ reason: string; path: string; browser: string | null; referrer: string | null; utm_source: string | null; country: string | null; created_at: string }>;
   excluded_admin: number;
   excluded_non_us: number;
   clean_events: number;
