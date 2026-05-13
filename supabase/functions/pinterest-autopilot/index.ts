@@ -422,9 +422,9 @@ async function handler(req: Request): Promise<Response> {
       ) {
         act = "pause";
         reason = "low engagement after exposure";
-      } else if (dominationMode && measuredHistory && total < thresholdForDecision("aggressive", false, false) && !forced) {
+      } else if (dominationMode && measuredHistory && total < thresholdForDecision(mode, false, false, true) && !forced) {
         act = "skip";
-        reason = `below domination threshold (${total}/${thresholdForDecision("aggressive", false, false)})`;
+        reason = `below domination threshold (${total}/${thresholdForDecision(mode, false, false, true)})`;
       } else if (total < appliedThreshold && !forced) {
         act = "skip";
         reason = `below quality threshold (${total}/${appliedThreshold})`;
