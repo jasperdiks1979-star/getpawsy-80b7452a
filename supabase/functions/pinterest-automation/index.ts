@@ -9,6 +9,7 @@ const QA_LOCKDOWN_ERROR = {
 };
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
+import { classifyProductsByMediaHost, evaluateMediaHost, isOwnDomainImage, pickOwnDomainImage, hostOf as ownHostOf } from "../_shared/pinterest-media-host.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
