@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
   // Lookup product to get hero image + name
   const { data: product, error: prodErr } = await admin
     .from("products_public")
-    .select("slug, name, image_url, image_urls")
+    .select("slug, name, image_url")
     .eq("slug", product_slug)
     .maybeSingle();
 
