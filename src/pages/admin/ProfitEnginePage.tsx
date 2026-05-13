@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target, Zap, LineChart, CheckCircle2 } from "lucide-react";
+import { Flame, Pause, Rocket, RefreshCw, DollarSign, Target, Zap, LineChart, CheckCircle2, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 type Settings = {
   blended_margin_pct: number;
@@ -77,6 +78,27 @@ const verdictMeta: Record<Verdict, { label: string; cls: string; icon: any }> = 
 
 export default function ProfitEnginePage() {
   const qc = useQueryClient();
+  const { invokeFunction } = useAuthenticatedFetch();
+
+  // Resilient invoker: one automatic retry after 5s on transport-level failure.
+  // Treats any error or `ok:false` body as failure, so the user always sees JSON.
+  const invokeWithRetry = async <T,>(name: string, options?: any): Promise<T> => {
+    const attempt = async () => {
+      const { data, error } = await invokeFunction<any>(name, { ...(options || {}), silent: true });
+      if (error) throw new Error(error.message || "Edge function transport error");
+      if (data && data.ok === false) {
+        const code = data.code ? `${data.code}: ` : "";
+        throw new Error(`${code}${data.message || "Function reported failure"}`);
+      }
+      return data as T;
+    };
+    try { return await attempt(); }
+    catch (e1) {
+      console.warn(`[ProfitEngine] ${name} failed, retrying in 5s…`, e1);
+      await new Promise((r) => setTimeout(r, 5000));
+      return await attempt();
+    }
+  };
 
   const settingsQ = useQuery({
     queryKey: ["profit-engine-settings"],
@@ -216,9 +238,7 @@ export default function ProfitEnginePage() {
 
   const syncMut = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("profit-engine-sync");
-      if (error) throw error;
-      return data;
+      return await invokeWithRetry<any>("profit-engine-sync");
     },
     onSuccess: (d: any) => {
       toast.success(
@@ -232,11 +252,7 @@ export default function ProfitEnginePage() {
 
   const decideMut = useMutation({
     mutationFn: async (apply: boolean) => {
-      const { data, error } = await supabase.functions.invoke("profit-engine-decide", {
-        body: { apply },
-      });
-      if (error) throw error;
-      return data;
+      return await invokeWithRetry<any>("profit-engine-decide", { body: { apply } });
     },
     onSuccess: (d: any) => {
       const c = d?.counts ?? {};
@@ -250,11 +266,9 @@ export default function ProfitEnginePage() {
 
   const syncAndScoreMut = useMutation({
     mutationFn: async () => {
-      const sync = await supabase.functions.invoke("profit-engine-sync");
-      if (sync.error) throw sync.error;
-      const dec = await supabase.functions.invoke("profit-engine-decide", { body: { apply: true } });
-      if (dec.error) throw dec.error;
-      return { sync: sync.data, decide: dec.data };
+      const sync = await invokeWithRetry<any>("profit-engine-sync");
+      const decide = await invokeWithRetry<any>("profit-engine-decide", { body: { apply: true } });
+      return { sync, decide };
     },
     onSuccess: ({ sync, decide }: any) => {
       const c = decide?.counts ?? {};
@@ -281,6 +295,20 @@ export default function ProfitEnginePage() {
     },
   });
 
+  // Diagnostics: last log row from profit_engine_function_logs
+  const diagQ = useQuery({
+    queryKey: ["profit-engine-diag"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("profit_engine_function_logs")
+        .select("created_at, phase, level, message, duration_ms, rows_processed, scoring_source")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return (data?.[0] ?? null) as any;
+    },
+    refetchInterval: 30_000,
+  });
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       <Helmet>
@@ -291,7 +319,7 @@ export default function ProfitEnginePage() {
       <header className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Profit Engine</h1>
-          <p className="text-muted-foreground">Kill / pause / scale ads using break-even math.</p>
+          <p className="text-muted-foreground">Kill / pause / scale ads using break-even math. <Badge variant="outline" className="ml-1">US-only</Badge></p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="ghost">
