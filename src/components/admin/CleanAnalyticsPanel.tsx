@@ -259,6 +259,18 @@ export const CleanAnalyticsPanel = () => {
                   <Row label="Internal / test" value={current.excluded_internal} />
                   <Row label="Admin / diagnostics" value={current.excluded_admin} />
                   <Row label="Bot / preview / dryRun" value={current.excluded_bots} />
+                  {current.bot_reasons && Object.keys(current.bot_reasons).length > 0 && (
+                    <div className="ml-4 mt-1 mb-2 space-y-0.5 border-l-2 border-muted pl-2">
+                      {Object.entries(current.bot_reasons)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([reason, count]) => (
+                          <div key={reason} className="flex justify-between text-xs text-muted-foreground">
+                            <span title={BOT_REASON_HELP[reason] || reason}>↳ {BOT_REASON_LABEL[reason] || reason}</span>
+                            <span className="tabular-nums">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                   <Row label="Non-US" value={current.excluded_non_us} />
                   <Row label="Total raw events" value={current.total_raw_events} bold />
                   <Row label="Clean events" value={current.clean_events} bold />
