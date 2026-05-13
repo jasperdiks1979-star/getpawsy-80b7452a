@@ -4,6 +4,7 @@
 // AND settings.enabled=true. Reuses pinterest-creative-director for actual generation.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { evaluateMediaHost, classifyProductsByMediaHost } from "../_shared/pinterest-media-host.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
