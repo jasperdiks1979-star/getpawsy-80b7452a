@@ -25,6 +25,8 @@ import {
   X,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 const sections = [
