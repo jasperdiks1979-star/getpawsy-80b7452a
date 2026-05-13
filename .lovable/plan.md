@@ -1,89 +1,108 @@
-# US Market Intelligence + Trend Analysis Engine
+# Plan: Pinterest Video Covers + Profit Engine Reliability
 
-Builds on the existing Growth Intelligence Engine (`gi_*` tables, `/admin/growth-intelligence`). Adds a compliant, US-only trend + competitor + creative-pattern layer that feeds the existing scoring/queue system.
-
-## Compliance Guardrails (hardcoded, non-negotiable)
-
-- US-only weighting (`market = 'US'` everywhere)
-- Inspiration only — no asset downloads, no 1:1 clones, no review copying
-- Respect robots.txt; only public URLs/metadata
-- Remix engine produces transformed originals (different copy, different visuals, own brand)
-- Auto-publish stays OFF; trend insights generate DRAFTS only
-- All competitor entries logged with source URL + observation date for audit
-
-## Phase 1 — Foundation (this turn, on approval)
-
-### Database (new `mi_*` tables, admin-only RLS)
-
-- `mi_trends` — trend_type, term/topic, market, source, score, momentum, season, first_seen, last_seen
-- `mi_trend_signals` — daily raw signals (source, value, captured_at) feeding `mi_trends`
-- `mi_competitors` — name, domain, category, notes
-- `mi_competitor_observations` — competitor_id, url, platform, hook_type, cta_type, visual_style, posting_cadence, est_engagement, aesthetic_category, structure, thumbnail_pattern, trust_signals, lp_notes, observed_at
-- `mi_creative_recipes` — name, hook_family, first_3s_structure, cta_timing, overlay_style, palette_category, emotional_angle, curiosity_pattern, pain_framing, benefit_framing, social_proof_structure, pacing, scene_density, product_positioning, source_refs[]
-- `mi_remix_drafts` — recipe_id, product_id, generated_copy, generated_brief, status (draft/approved/queued/rejected), compliance_flags
-- `mi_opportunities` — type (niche_gap/weak_competitor/low_comp_topic/content_gap/viral_hook/seasonal), title, evidence, score, status
-- `mi_recommendations` — title, body, category, confidence, evidence_refs, status (new/seen/applied/dismissed)
-- `mi_seasonal_forecasts` — category, week_of_year, expected_lift, confidence
-
-### US-only views
-- `us_mi_trends_v`, `us_mi_opportunities_v`, `us_mi_recommendations_v` (filter market='US', exclude bot/internal sources)
-
-### Admin Dashboard — `/admin/market-intelligence` (8 tabs)
-1. Trend Radar (real-time `mi_trends` sorted by momentum)
-2. Competitor Intelligence (CRUD on observations, manual import)
-3. Hook Leaderboard (aggregated from observations + creatives)
-4. Winning Styles (palette/pacing/aesthetic winners)
-5. Viral Pattern Library (`mi_creative_recipes`)
-6. Opportunity Gaps (`mi_opportunities`)
-7. Seasonal Forecasts (`mi_seasonal_forecasts`)
-8. Recommended Next Creatives (`mi_recommendations` + remix drafts)
-
-### Manual import (Phase 1)
-- CSV upload for competitor observations
-- Manual trend entry form
-- Manual recipe entry form
-
-No external scraping yet — all data via internal signals + manual entry. This keeps Phase 1 100% compliant out of the gate.
-
-## Phase 2 — Signal Ingestion
-
-- `mi-ingest-internal` edge function: pulls from existing `gi_*` data, GSC (CSV), GA4 (CSV) → writes `mi_trend_signals`
-- `mi-pinterest-trends` edge function: uses already-connected Pinterest API for our own pin performance (no scraping competitors)
-- Aggregator that rolls signals into `mi_trends` with US weighting
-- Google Trends via manual CSV import
-
-## Phase 3 — Pattern Extraction & Remix
-
-- `mi-extract-recipe` edge function (Lovable AI / Gemini): given a manually-pasted public URL or text, extracts hook family / pacing / palette category and stores a recipe — never stores assets
-- `mi-remix-draft` edge function: takes recipe + a GetPawsy product → generates ORIGINAL copy + visual brief (text-only brief, our own AI image gen runs separately) → writes `mi_remix_drafts`
-- Compliance checker: blocks drafts containing copyrighted phrasing, banned terms, or competitor brand mentions
-
-## Phase 4 — Opportunity & Recommendation Engine
-
-- `mi-detect-opportunities` edge function: cross-joins trends × catalog × competitor coverage to surface gaps
-- `mi-generate-recommendations` edge function: turns opportunities + winning styles into plain-English recommendations
-- Hook into existing Pinterest/TikTok queues to push approved remix drafts as drafts only
-
-## Phase 5 — Self-Learning Loop
-
-- Feedback table: every published creative → measure US performance via `gi_*` rollups → reinforce/decay recipe scores
-- Weekly `mi-learn` edge function adjusts recipe weights and prunes underperformers
-- Seasonal forecaster trained on 52-week rolling window
-
-## Safety / what this engine will NEVER do
-
-- Download or store competitor images/videos
-- Auto-publish anything
-- Suggest copying exact text or branding
-- Use non-US data to drive US recommendations
-- Bypass robots.txt or platform ToS
-
-## Default state
-
-- All automation = `DRAFT_ONLY`
-- Market = `US` hardcoded
-- Empty dashboards on first load with clear "no data yet" states + import CTAs
+Two independent fixes, delivered in one round.
 
 ---
 
-**Reageer met "ga" om Phase 1 te starten** (database schema + `/admin/market-intelligence` dashboard met 8 tabs + manual import forms).
+## Part A — Pinterest Video Publish: Auto Cover Images
+
+**Root cause:** Pinterest `/v5/pins` rejects video pins without one of `cover_image_url`, `cover_image_content_type+data`, or `cover_image_key_frame_time`. We currently send none.
+
+### A1. DB migration — `pinterest_video_assets`
+Add columns:
+- `cover_image_url text`
+- `cover_generated boolean default false`
+- `key_frame_second numeric default 1.5`
+- `thumbnail_status text default 'pending'` — values: `pending | processing | awaiting_media_ready | thumbnail_generated | publishing | published | failed`
+- `cover_attempts int default 0`
+- `cover_last_error text`
+- `next_retry_at timestamptz`
+- `cover_score jsonb` (stop-scroll, ctr, clarity, emotion)
+
+Plus storage bucket `pinterest-video-covers` (public read, admin write).
+
+### A2. Publisher fix (`pinterest-video-publisher/index.ts`)
+**Immediate unblock (always works, zero deps):**
+- Always include `cover_image_key_frame_time: asset.key_frame_second ?? 1.5` in the `media_source` payload.
+- Fallback ladder on `media_timeout` / cover errors: try `1.5 → 0.8 → 2.0 → 3.0`, persisting the working value.
+- If `cover_image_url` is set on the asset, send that instead (Pinterest prefers explicit URL).
+- Always send `title`, `description`, `link`, `media_source` together.
+- Status state machine writes back to `thumbnail_status` at every phase.
+- Retry queue: on `media_timeout` set `next_retry_at = now + 90s/180s/360s` (exponential), re-queueable by cron.
+- Pre-flight validator: rejects payload with clear error if any required field missing (no Pinterest round-trip).
+
+### A3. Cover generation (`pinterest-video-cover-generate` — new edge function)
+Background worker that processes assets where `cover_generated=false`:
+- Tries to fetch the source video, extracts a JPEG cover at `key_frame_second` using a server-side approach. Since edge runtime has no ffmpeg, we use a **product-image fallback first**: pull the asset's source product image, render to 1000×1500 (Pinterest 2:3) on a branded backdrop via Canvas (skia-canvas via `npm:` — if unavailable, skip and rely on `key_frame_time`).
+- Uploads JPEG to `pinterest-video-covers` bucket → public URL → writes to `cover_image_url`, sets `cover_generated=true`, `thumbnail_status='thumbnail_generated'`.
+- If generation fails → keeps `key_frame_second` fallback; publisher still works via `cover_image_key_frame_time`.
+- AI scoring via Lovable AI (gemini-flash-lite) writes `cover_score` jsonb. Non-blocking.
+
+### A4. Cron
+- Every 10 min: `pinterest-video-cover-generate` (limit 10).
+- Every 5 min: re-queue assets with `next_retry_at <= now()` and `thumbnail_status in ('failed','awaiting_media_ready')`.
+
+### A5. Admin UI (`PinterestVideoQueuePage.tsx`)
+Per-asset row addition:
+- Thumbnail preview (cover_image_url or placeholder + key-frame badge)
+- `thumbnail_status` chip
+- "Regenerate cover" button → invokes `pinterest-video-cover-generate` with `force:true`
+- Last error tooltip
+
+---
+
+## Part B — Profit Engine sync failure
+
+**Symptom:** "Failed to send a request to the Edge Function" on `/admin/profit-engine` Sync button.
+
+### B1. Diagnose first
+Read current `profit-engine-sync/index.ts` and `ProfitEnginePage.tsx`, check edge logs to confirm whether the function is throwing on boot (CORS, missing env, deno.lock) or never reachable.
+
+### B2. Hardening (`profit-engine-sync`)
+- Strict CORS shared headers, OPTIONS preflight returns 200.
+- `Authorization: Bearer` validation via `getClaims()`; admin role check.
+- Global `try/catch` returning `{ ok:false, code, phase, message, traceId }` with HTTP 200 (so the client always sees JSON, never network error).
+- Phase logging: `auth → fetch_analytics → normalize → score → write → done` to `profit_engine_function_logs` (create if missing).
+- Env-var presence check at boot, returns helpful 200-JSON error if missing.
+- `AbortController` 25s timeout around external calls.
+- Pinterest-metrics fallback: if Pinterest call fails, continue with shop conversions / CTR / outbound clicks / add_to_cart filtered to `country='United States'` and `is_internal=false`.
+- Always JSON response, never empty.
+
+### B3. Health endpoint
+New `profit-engine-health` (separate function — simpler than path routing in Deno):
+```
+GET → { ok:true, ts, version, auth_required:true, env_loaded:{supabase:true,pinterest:bool,ga4:bool} }
+```
+
+### B4. Frontend (`ProfitEnginePage.tsx`)
+- Use `useAuthenticatedFetch.invokeFunction('profit-engine-sync')` (already retries on 401, refreshes token).
+- One automatic retry after 5s if the first call returns network/transport error.
+- Diagnostics panel: last sync ts, last error, duration ms, rows processed, scoring source — read from `profit_engine_function_logs` last row.
+- US-only filter visible in UI as a locked badge.
+
+### B5. US-only data guard
+All SQL filters in scoring: `WHERE country = 'United States' AND is_internal = false AND user_agent NOT bot-pattern`. Centralized helper in the function.
+
+---
+
+## Files touched
+
+**New**
+- `supabase/functions/pinterest-video-cover-generate/index.ts`
+- `supabase/functions/profit-engine-health/index.ts`
+- migration: cover columns + `pinterest-video-covers` bucket + `profit_engine_function_logs` table
+
+**Updated**
+- `supabase/functions/pinterest-video-publisher/index.ts` — cover_image_key_frame_time + URL + retry ladder + state machine
+- `supabase/functions/profit-engine-sync/index.ts` — full hardening
+- `src/pages/admin/PinterestVideoQueuePage.tsx` — thumbnail column, regenerate button, status chip
+- `src/pages/admin/ProfitEnginePage.tsx` — invokeFunction + retry + diagnostics panel
+- cron schedule (insert via `supabase--insert`, not migration)
+
+---
+
+## Out of scope (intentionally deferred)
+- True video frame extraction (needs FFmpeg compute worker — not available in Deno edge). We achieve the user's goal via `cover_image_key_frame_time` (Pinterest extracts the frame for us) + branded product-image fallback. This unblocks publishing today.
+- Real-time AI thumbnail "stop-scroll" optimization beyond a single Gemini score per asset.
+
+Pinterest will accept and publish video pins as soon as Part A2 ships — even before any cover generation runs — because `cover_image_key_frame_time` alone satisfies their API.
