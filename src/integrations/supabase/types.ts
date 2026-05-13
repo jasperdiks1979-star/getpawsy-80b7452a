@@ -8085,6 +8085,11 @@ export type Database = {
           aspect_ratio: string | null
           content_hash: string
           country_target: string
+          cover_attempts: number
+          cover_generated: boolean
+          cover_image_url: string | null
+          cover_last_error: string | null
+          cover_score: Json | null
           created_at: string
           detected_platform: string | null
           duration_seconds: number | null
@@ -8093,16 +8098,19 @@ export type Database = {
           hook_type: string
           id: string
           is_active: boolean
+          key_frame_second: number
           language_target: string
           last_publish_at: string | null
           last_skip_reason: string | null
           mime_type: string | null
+          next_retry_at: string | null
           pet_relevance_score: number | null
           product_slug: string
           public_url: string
           publish_count: number
           storage_bucket: string
           storage_path: string
+          thumbnail_status: string
           thumbnail_url: string | null
           updated_at: string
           us_market_score: number | null
@@ -8112,6 +8120,11 @@ export type Database = {
           aspect_ratio?: string | null
           content_hash: string
           country_target?: string
+          cover_attempts?: number
+          cover_generated?: boolean
+          cover_image_url?: string | null
+          cover_last_error?: string | null
+          cover_score?: Json | null
           created_at?: string
           detected_platform?: string | null
           duration_seconds?: number | null
@@ -8120,16 +8133,19 @@ export type Database = {
           hook_type?: string
           id?: string
           is_active?: boolean
+          key_frame_second?: number
           language_target?: string
           last_publish_at?: string | null
           last_skip_reason?: string | null
           mime_type?: string | null
+          next_retry_at?: string | null
           pet_relevance_score?: number | null
           product_slug?: string
           public_url: string
           publish_count?: number
           storage_bucket: string
           storage_path: string
+          thumbnail_status?: string
           thumbnail_url?: string | null
           updated_at?: string
           us_market_score?: number | null
@@ -8139,6 +8155,11 @@ export type Database = {
           aspect_ratio?: string | null
           content_hash?: string
           country_target?: string
+          cover_attempts?: number
+          cover_generated?: boolean
+          cover_image_url?: string | null
+          cover_last_error?: string | null
+          cover_score?: Json | null
           created_at?: string
           detected_platform?: string | null
           duration_seconds?: number | null
@@ -8147,16 +8168,19 @@ export type Database = {
           hook_type?: string
           id?: string
           is_active?: boolean
+          key_frame_second?: number
           language_target?: string
           last_publish_at?: string | null
           last_skip_reason?: string | null
           mime_type?: string | null
+          next_retry_at?: string | null
           pet_relevance_score?: number | null
           product_slug?: string
           public_url?: string
           publish_count?: number
           storage_bucket?: string
           storage_path?: string
+          thumbnail_status?: string
           thumbnail_url?: string | null
           updated_at?: string
           us_market_score?: number | null
@@ -9266,6 +9290,48 @@ export type Database = {
           reason?: string
           recommended_budget_delta_pct?: number
           verdict?: string
+        }
+        Relationships: []
+      }
+      profit_engine_function_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          function_name: string
+          id: string
+          level: string
+          message: string | null
+          payload: Json | null
+          phase: string
+          rows_processed: number | null
+          scoring_source: string | null
+          trace_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          function_name: string
+          id?: string
+          level?: string
+          message?: string | null
+          payload?: Json | null
+          phase: string
+          rows_processed?: number | null
+          scoring_source?: string | null
+          trace_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          function_name?: string
+          id?: string
+          level?: string
+          message?: string | null
+          payload?: Json | null
+          phase?: string
+          rows_processed?: number | null
+          scoring_source?: string | null
+          trace_id?: string
         }
         Relationships: []
       }
