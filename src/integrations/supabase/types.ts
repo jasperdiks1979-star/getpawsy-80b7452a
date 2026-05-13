@@ -7510,6 +7510,7 @@ export type Database = {
           approved_by: string | null
           board_id: string | null
           board_name: string
+          cap_recovery_mode: boolean
           category_key: string | null
           content_type: string
           created_at: string
@@ -7544,6 +7545,8 @@ export type Database = {
           publish_attempts: number
           publishing_started_at: string | null
           qa_reasons: string[]
+          recovery_mode_publish: boolean
+          recovery_trace: Json | null
           rejection_reason: string | null
           retries: number
           scheduled_at: string | null
@@ -7556,6 +7559,7 @@ export type Database = {
           approved_by?: string | null
           board_id?: string | null
           board_name?: string
+          cap_recovery_mode?: boolean
           category_key?: string | null
           content_type?: string
           created_at?: string
@@ -7590,6 +7594,8 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          recovery_mode_publish?: boolean
+          recovery_trace?: Json | null
           rejection_reason?: string | null
           retries?: number
           scheduled_at?: string | null
@@ -7602,6 +7608,7 @@ export type Database = {
           approved_by?: string | null
           board_id?: string | null
           board_name?: string
+          cap_recovery_mode?: boolean
           category_key?: string | null
           content_type?: string
           created_at?: string
@@ -7636,6 +7643,8 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          recovery_mode_publish?: boolean
+          recovery_trace?: Json | null
           rejection_reason?: string | null
           retries?: number
           scheduled_at?: string | null

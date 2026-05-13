@@ -33,7 +33,7 @@ function formatLocal(ms: number): string {
   });
 }
 
-export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number }) {
+export function WeeklyCapCountdown({ weeklyLimit = 15, capStatus }: { weeklyLimit?: number; capStatus?: any }) {
   const [now, setNow] = useState<number>(Date.now());
   const notifiedSlots = useRef<Set<string>>(new Set());
   const initialMount = useRef(true);
@@ -67,12 +67,23 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
     },
   });
 
-  const used = data?.length ?? 0;
-  const usedPct = Math.min(100, Math.round((used / Math.max(1, weeklyLimit)) * 100));
-  const atCap = used >= weeklyLimit;
+  const effectiveLimit = Number(capStatus?.effective_weekly_limit ?? capStatus?.weekly_limit ?? weeklyLimit);
+  const used = Number(capStatus?.effective_weekly_usage ?? data?.length ?? 0);
+  const expiredPins = Number(capStatus?.expired_pins_awaiting_cleanup ?? 0);
+  const pausedPins = Number(capStatus?.paused_product_pins ?? 0);
+  const discountedRunawayPins = Number(capStatus?.discounted_runaway_pins ?? 0);
+  const recoverySlots = Number(capStatus?.recovery_slots_available ?? 0);
+  const pressurePct = Math.round(Number(capStatus?.actual_scheduler_pressure ?? used / Math.max(1, effectiveLimit)) * 100);
+  const usedPct = Math.min(100, Math.round((used / Math.max(1, effectiveLimit)) * 100));
+  const atCap = used >= effectiveLimit && recoverySlots <= 0;
 
   // Slots that will free up: each posted pin "expires" 7 days after posted_at
-  const slots = (data ?? []).map((r: any) => ({
+  const diagnosticSlots = Array.isArray(capStatus?.rolling_slots) ? capStatus.rolling_slots : null;
+  const slots = diagnosticSlots ? diagnosticSlots.map((r: any) => ({
+    freesAtMs: new Date(r.expires_at).getTime(),
+    productName: r.product_name || "—",
+    productSlug: null,
+  })) : (data ?? []).map((r: any) => ({
     freesAtMs: new Date(r.posted_at).getTime() + WEEK_MS,
     productName: r.product_name || "—",
     productSlug: r.product_slug || null,
@@ -85,8 +96,8 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
   const [simAtMs, setSimAtMs] = useState<number | null>(null);
   const simFreesAtMs = simAtMs ? simAtMs + WEEK_MS : null;
   const simulatedUsed = used + (simulating ? 1 : 0);
-  const simulatedAtCap = simulatedUsed >= weeklyLimit;
-  const wouldBlock = used >= weeklyLimit;
+  const simulatedAtCap = simulatedUsed >= effectiveLimit;
+  const wouldBlock = used >= effectiveLimit && recoverySlots <= 0;
 
   function runSimulation() {
     const t = Date.now();
@@ -114,12 +125,12 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
       if (remaining <= 0 && !notifiedSlots.current.has(key)) {
         notifiedSlots.current.add(key);
         toast.success(`Weekly cap slot freed up! "${s.productName}" is now available again.`, {
-          description: `You have room to publish another pin (currently using ${used}/${weeklyLimit}).`,
+          description: `You have room to publish another pin (currently using ${used}/${effectiveLimit}).`,
           duration: 8000,
         });
       }
     }
-  }, [now, upcoming, used, weeklyLimit]);
+  }, [now, upcoming, used, effectiveLimit]);
 
   return (
     <Card>
@@ -131,8 +142,8 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
               Rolling 7-day publish window. Each posted pin frees its slot exactly 7 days after publication — there is no fixed weekly reset.
             </CardDescription>
           </div>
-          <Badge variant={atCap ? "destructive" : used >= weeklyLimit * 0.8 ? "secondary" : "default"}>
-            {used}/{weeklyLimit} used
+          <Badge variant={atCap ? "destructive" : used >= effectiveLimit * 0.8 ? "secondary" : "default"}>
+            {used}/{effectiveLimit} active
           </Badge>
         </div>
       </CardHeader>
@@ -165,8 +176,8 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
                 {wouldBlock
                   ? "BLOCKED — cap already full"
                   : simulatedAtCap
-                    ? `Would hit cap (${simulatedUsed}/${weeklyLimit})`
-                    : `OK — ${simulatedUsed}/${weeklyLimit} after publish`}
+                    ? `Would hit cap (${simulatedUsed}/${effectiveLimit})`
+                    : `OK — ${simulatedUsed}/${effectiveLimit} after publish`}
               </Badge>
             </div>
             {!wouldBlock && (
@@ -183,13 +194,13 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Remaining budget after publish:{" "}
-                  <span className="font-mono">{Math.max(0, weeklyLimit - simulatedUsed)}</span> pins
+                  <span className="font-mono">{Math.max(0, effectiveLimit - simulatedUsed)}</span> pins
                 </div>
               </>
             )}
             {wouldBlock && (
               <div className="text-sm text-destructive">
-                Weekly cap is already at {used}/{weeklyLimit}. Publishing now would be rejected by the autopilot guard. Wait for the next slot to free.
+                Weekly cap is already at {used}/{effectiveLimit}. Publishing now would be rejected by the autopilot guard. Wait for the next slot to free.
               </div>
             )}
           </div>
@@ -197,10 +208,25 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
 
         <div>
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-            <span>Weekly budget consumed</span>
-            <span className="font-mono">{usedPct}%</span>
+            <span>Actual scheduler pressure</span>
+            <span className="font-mono">{pressurePct}%</span>
           </div>
           <Progress value={usedPct} />
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Active rolling pins", `${used}/${effectiveLimit}`],
+            ["Expired awaiting cleanup", expiredPins],
+            ["Paused-product pins", pausedPins],
+            ["Discounted runaway pins", discountedRunawayPins],
+            ["Recovery slots", recoverySlots],
+          ].map(([label, value]) => (
+            <div key={String(label)} className="rounded-md border p-3">
+              <div className="text-[11px] text-muted-foreground">{label}</div>
+              <div className="font-mono text-lg font-semibold">{String(value)}</div>
+            </div>
+          ))}
         </div>
 
         <div className="rounded-lg border p-4 bg-muted/30">
@@ -213,7 +239,7 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
           ) : !nextReset ? (
             <div className="flex items-center gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span>No pins in the rolling window — full {weeklyLimit}-pin budget available now.</span>
+              <span>No pins in the rolling window — full {effectiveLimit}-pin budget available now.</span>
             </div>
           ) : (
             <div className="space-y-1">
