@@ -296,20 +296,28 @@ async function handler(req: Request): Promise<Response> {
         .select("product_id,impressions,clicks,saves,ctr,performance_score"),
       supabase
         .from("pinterest_pin_queue")
-        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status")
+        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status,hook_category,destination_url,product_category")
         .eq("status", "posted")
         .gte(
           "posted_at",
           new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
         )
         .limit(1000),
-      supabase.from("pinterest_runtime_settings").select("daily_pin_cap, domination_mode").eq("id", 1).maybeSingle(),
+      supabase.from("pinterest_runtime_settings")
+        .select("daily_pin_cap, domination_mode, safe_growth_mode, product_cooldown_hours, max_pins_per_product_per_day, max_category_share_pct, recovery_min_gap_hours, last_recovery_pin_at")
+        .eq("id", 1).maybeSingle(),
     ]);
 
     const overrideMap = new Map<string, Override>();
     for (const o of (overrides ?? []) as Override[]) {
       if (o.expires_at && new Date(o.expires_at).getTime() < Date.now()) continue;
       overrideMap.set(o.product_id, o);
+    }
+
+    // Set of products that should never count toward caps (paused/excluded)
+    const excludedFromCaps = new Set<string>();
+    for (const [pid, ov] of overrideMap.entries()) {
+      if (ov.action === "paused" || ov.action === "exclude") excludedFromCaps.add(pid);
     }
 
     // Aggregate perf by product_id (string)
@@ -330,10 +338,17 @@ async function handler(req: Request): Promise<Response> {
     // Weekly counts per product + per board
     const productWeekly: Record<string, number> = {};
     const boardWeekly: Record<string, number> = {};
+    const productDaily: Record<string, number> = {};
+    const productLastPostMs: Record<string, number> = {};
+    const productHookWeekly: Record<string, Record<string, number>> = {};
+    const urlWeekly: Record<string, number> = {};
+    const categoryWeekly: Record<string, number> = {};
     let dailyPublished = 0;
     let weeklyPublished = 0;
+    let weeklyPublishedAll = 0; // includes paused products (for transparency)
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
+    const nowMs = Date.now();
     const seenPublishedPinIds = new Set<string>();
     for (const q of (recentQueue ?? []) as Array<{
       product_id: string;
@@ -341,17 +356,47 @@ async function handler(req: Request): Promise<Response> {
       posted_at: string | null;
       pinterest_pin_id: string | null;
       pin_external_id: string | null;
+      hook_category?: string | null;
+      destination_url?: string | null;
+      product_category?: string | null;
     }>) {
       const externalId = q.pinterest_pin_id || q.pin_external_id;
       if (!externalId || seenPublishedPinIds.has(externalId)) continue;
       seenPublishedPinIds.add(externalId);
       productWeekly[q.product_id] = (productWeekly[q.product_id] ?? 0) + 1;
       if (q.board_id) boardWeekly[q.board_id] = (boardWeekly[q.board_id] ?? 0) + 1;
-      weeklyPublished++;
-      if (q.posted_at && new Date(q.posted_at).getTime() >= dayStart.getTime()) dailyPublished++;
+      weeklyPublishedAll++;
+      const postedMs = q.posted_at ? new Date(q.posted_at).getTime() : 0;
+      // Skip paused products from active caps so one runaway can't block the whole queue
+      const counted = !excludedFromCaps.has(q.product_id);
+      if (counted) {
+        weeklyPublished++;
+        if (postedMs >= dayStart.getTime()) {
+          dailyPublished++;
+          productDaily[q.product_id] = (productDaily[q.product_id] ?? 0) + 1;
+        }
+        if (q.hook_category) {
+          productHookWeekly[q.product_id] ??= {};
+          productHookWeekly[q.product_id][q.hook_category] =
+            (productHookWeekly[q.product_id][q.hook_category] ?? 0) + 1;
+        }
+        if (q.destination_url) urlWeekly[q.destination_url] = (urlWeekly[q.destination_url] ?? 0) + 1;
+        if (q.product_category) {
+          const ck = q.product_category.toLowerCase();
+          categoryWeekly[ck] = (categoryWeekly[ck] ?? 0) + 1;
+        }
+      }
+      if (postedMs > (productLastPostMs[q.product_id] ?? 0)) productLastPostMs[q.product_id] = postedMs;
     }
     const dailyCap = Math.max(1, Number((runtimeSettings as any)?.daily_pin_cap ?? DEFAULT_DAILY_CAP));
     const dominationMode = Boolean((runtimeSettings as any)?.domination_mode);
+    const safeGrowth = (runtimeSettings as any)?.safe_growth_mode !== false; // default on
+    const productCooldownHours = Number((runtimeSettings as any)?.product_cooldown_hours ?? PRODUCT_COOLDOWN_HOURS_DEFAULT);
+    const productDailyCap = Number((runtimeSettings as any)?.max_pins_per_product_per_day ?? PRODUCT_DAILY_CAP_DEFAULT);
+    const categoryShareCap = Number((runtimeSettings as any)?.max_category_share_pct ?? 30) / 100;
+    const recoveryGapHours = Number((runtimeSettings as any)?.recovery_min_gap_hours ?? 12);
+    const lastRecoveryMs = (runtimeSettings as any)?.last_recovery_pin_at
+      ? new Date((runtimeSettings as any).last_recovery_pin_at).getTime() : 0;
 
     // Score every eligible product
     const decisions: Array<{
