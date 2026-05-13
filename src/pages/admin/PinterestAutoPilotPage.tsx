@@ -439,7 +439,9 @@ export default function PinterestAutoPilotPage() {
     onSuccess: (d) => {
       setTestPublishLog(d);
       refetchDiagnostic();
-      toast[d?.ok ? "success" : "error"](d?.dryRun ? "Cold-start dry-run complete" : d?.published ? "Published 1 safe cold-start pin" : d?.error || "Cold-start publish failed");
+      const message = d?.dryRun ? "Cold-start dry-run complete" : d?.published ? "Published 1 safe cold-start pin" : d?.error || "Cold-start publish failed";
+      if (d?.ok) toast.success(message);
+      else toast.error(message);
     },
     onError: (e) => toast.error((e as Error).message),
   });
