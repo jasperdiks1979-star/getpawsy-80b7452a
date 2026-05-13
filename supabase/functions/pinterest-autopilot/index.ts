@@ -99,6 +99,14 @@ interface PerfRow {
 const COLD_START_DAILY_CAP = 3;
 const COLD_START_WEEKLY_CAP = 15;
 const DEFAULT_DAILY_CAP = 8;
+const SAFE_GROWTH_WEEKLY_CAP = 20;
+const SAFE_GROWTH_DAILY_CAP = 4;
+const PRODUCT_DAILY_CAP_DEFAULT = 2;
+const PRODUCT_COOLDOWN_HOURS_DEFAULT = 48;
+const MAX_CATEGORY_SHARE_DEFAULT = 0.30;
+const RUNAWAY_SHARE_THRESHOLD = 0.15; // single product cannot exceed 15% of 7d volume
+const HOOK_REUSE_PER_PRODUCT_PER_WEEK = 2;
+const URL_REUSE_PER_WEEK = 5;
 
 function thresholdForDecision(mode: string, coldStart: boolean, scaleCandidate: boolean, dominationMode = false): number {
   if (coldStart) return 50;
@@ -288,20 +296,28 @@ async function handler(req: Request): Promise<Response> {
         .select("product_id,impressions,clicks,saves,ctr,performance_score"),
       supabase
         .from("pinterest_pin_queue")
-        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status")
+        .select("product_id,board_id,posted_at,pinterest_pin_id,pin_external_id,status,hook_group,destination_link,category_key")
         .eq("status", "posted")
         .gte(
           "posted_at",
           new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
         )
         .limit(1000),
-      supabase.from("pinterest_runtime_settings").select("daily_pin_cap, domination_mode").eq("id", 1).maybeSingle(),
+      supabase.from("pinterest_runtime_settings")
+        .select("daily_pin_cap, domination_mode, safe_growth_mode, product_cooldown_hours, max_pins_per_product_per_day, max_category_share_pct, recovery_min_gap_hours, last_recovery_pin_at")
+        .eq("id", 1).maybeSingle(),
     ]);
 
     const overrideMap = new Map<string, Override>();
     for (const o of (overrides ?? []) as Override[]) {
       if (o.expires_at && new Date(o.expires_at).getTime() < Date.now()) continue;
       overrideMap.set(o.product_id, o);
+    }
+
+    // Set of products that should never count toward caps (paused/excluded)
+    const excludedFromCaps = new Set<string>();
+    for (const [pid, ov] of overrideMap.entries()) {
+      if (ov.action === "paused" || ov.action === "exclude") excludedFromCaps.add(pid);
     }
 
     // Aggregate perf by product_id (string)
@@ -322,10 +338,17 @@ async function handler(req: Request): Promise<Response> {
     // Weekly counts per product + per board
     const productWeekly: Record<string, number> = {};
     const boardWeekly: Record<string, number> = {};
+    const productDaily: Record<string, number> = {};
+    const productLastPostMs: Record<string, number> = {};
+    const productHookWeekly: Record<string, Record<string, number>> = {};
+    const urlWeekly: Record<string, number> = {};
+    const categoryWeekly: Record<string, number> = {};
     let dailyPublished = 0;
     let weeklyPublished = 0;
+    let weeklyPublishedAll = 0; // includes paused products (for transparency)
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
+    const nowMs = Date.now();
     const seenPublishedPinIds = new Set<string>();
     for (const q of (recentQueue ?? []) as Array<{
       product_id: string;
@@ -333,17 +356,47 @@ async function handler(req: Request): Promise<Response> {
       posted_at: string | null;
       pinterest_pin_id: string | null;
       pin_external_id: string | null;
+      hook_group?: string | null;
+      destination_link?: string | null;
+      category_key?: string | null;
     }>) {
       const externalId = q.pinterest_pin_id || q.pin_external_id;
       if (!externalId || seenPublishedPinIds.has(externalId)) continue;
       seenPublishedPinIds.add(externalId);
       productWeekly[q.product_id] = (productWeekly[q.product_id] ?? 0) + 1;
       if (q.board_id) boardWeekly[q.board_id] = (boardWeekly[q.board_id] ?? 0) + 1;
-      weeklyPublished++;
-      if (q.posted_at && new Date(q.posted_at).getTime() >= dayStart.getTime()) dailyPublished++;
+      weeklyPublishedAll++;
+      const postedMs = q.posted_at ? new Date(q.posted_at).getTime() : 0;
+      // Skip paused products from active caps so one runaway can't block the whole queue
+      const counted = !excludedFromCaps.has(q.product_id);
+      if (counted) {
+        weeklyPublished++;
+        if (postedMs >= dayStart.getTime()) {
+          dailyPublished++;
+          productDaily[q.product_id] = (productDaily[q.product_id] ?? 0) + 1;
+        }
+        if (q.hook_group) {
+          productHookWeekly[q.product_id] ??= {};
+          productHookWeekly[q.product_id][q.hook_group] =
+            (productHookWeekly[q.product_id][q.hook_group] ?? 0) + 1;
+        }
+        if (q.destination_link) urlWeekly[q.destination_link] = (urlWeekly[q.destination_link] ?? 0) + 1;
+        if (q.category_key) {
+          const ck = q.category_key.toLowerCase();
+          categoryWeekly[ck] = (categoryWeekly[ck] ?? 0) + 1;
+        }
+      }
+      if (postedMs > (productLastPostMs[q.product_id] ?? 0)) productLastPostMs[q.product_id] = postedMs;
     }
     const dailyCap = Math.max(1, Number((runtimeSettings as any)?.daily_pin_cap ?? DEFAULT_DAILY_CAP));
     const dominationMode = Boolean((runtimeSettings as any)?.domination_mode);
+    const safeGrowth = (runtimeSettings as any)?.safe_growth_mode !== false; // default on
+    const productCooldownHours = Number((runtimeSettings as any)?.product_cooldown_hours ?? PRODUCT_COOLDOWN_HOURS_DEFAULT);
+    const productDailyCap = Number((runtimeSettings as any)?.max_pins_per_product_per_day ?? PRODUCT_DAILY_CAP_DEFAULT);
+    const categoryShareCap = Number((runtimeSettings as any)?.max_category_share_pct ?? 30) / 100;
+    const recoveryGapHours = Number((runtimeSettings as any)?.recovery_min_gap_hours ?? 12);
+    const lastRecoveryMs = (runtimeSettings as any)?.last_recovery_pin_at
+      ? new Date((runtimeSettings as any).last_recovery_pin_at).getTime() : 0;
 
     // Score every eligible product
     const decisions: Array<{
@@ -392,13 +445,24 @@ async function handler(req: Request): Promise<Response> {
       const total = img + margin + cat + visual + ship + perfRes.score + forced;
 
       const weekly = productWeekly[p.id] ?? 0;
+      const dailyForProduct = productDaily[p.id] ?? 0;
+      const lastPostMs = productLastPostMs[p.id] ?? 0;
+      const hoursSinceLastPost = lastPostMs ? (nowMs - lastPostMs) / 3_600_000 : Infinity;
+      const productCategoryKey = (p.category ?? "").toLowerCase();
+      const categoryCount = categoryWeekly[productCategoryKey] ?? 0;
+      const sharePct = weeklyPublished > 0 ? weekly / weeklyPublished : 0;
       const coldStart = !history || perfRes.signals.impressions <= 0;
       const measuredHistory = !coldStart;
       const scaleCandidate = measuredHistory && perfRes.score >= 18 && perfRes.signals.saves >= 10;
       const appliedThreshold = thresholdForDecision(mode, coldStart, scaleCandidate, dominationMode);
-      const effectiveProductWeeklyCap = coldStart ? Math.max(maxPerWeek, 3) : maxPerWeek;
-      const effectiveWeeklyCap = coldStart ? COLD_START_WEEKLY_CAP : maxPerWeek;
-      const effectiveDailyCap = coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap;
+      const baseProductWeeklyCap = Math.min(5, coldStart ? Math.max(maxPerWeek, 3) : maxPerWeek);
+      const effectiveProductWeeklyCap = safeGrowth ? Math.min(5, baseProductWeeklyCap) : baseProductWeeklyCap;
+      const effectiveWeeklyCap = safeGrowth
+        ? SAFE_GROWTH_WEEKLY_CAP
+        : (coldStart ? COLD_START_WEEKLY_CAP : Math.max(maxPerWeek * 5, 20));
+      const effectiveDailyCap = safeGrowth
+        ? Math.min(dailyCap, SAFE_GROWTH_DAILY_CAP)
+        : (coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap);
       let act: "normal" | "skip" | "scale" | "pause" = "normal";
       let reason = "";
 
@@ -411,6 +475,23 @@ async function handler(req: Request): Promise<Response> {
       } else if (weekly >= effectiveProductWeeklyCap && !forced) {
         act = "skip";
         reason = `product weekly cap reached (${weekly}/${effectiveProductWeeklyCap})`;
+      } else if (dailyForProduct >= productDailyCap && !forced) {
+        act = "skip";
+        reason = `product daily cap reached (${dailyForProduct}/${productDailyCap})`;
+      } else if (hoursSinceLastPost < productCooldownHours && !forced) {
+        act = "skip";
+        reason = `product cooldown active (${hoursSinceLastPost.toFixed(1)}h/${productCooldownHours}h)`;
+      } else if (sharePct >= RUNAWAY_SHARE_THRESHOLD && weekly >= 2 && !forced) {
+        act = "skip";
+        reason = `runaway share guard (${(sharePct * 100).toFixed(0)}%/${RUNAWAY_SHARE_THRESHOLD * 100}% of 7d volume)`;
+      } else if (
+        weeklyPublished >= 5 &&
+        productCategoryKey &&
+        (categoryCount + 1) / Math.max(1, weeklyPublished + 1) > categoryShareCap &&
+        !forced
+      ) {
+        act = "skip";
+        reason = `category diversity guard (${productCategoryKey} ${categoryCount}/${weeklyPublished})`;
       } else if (scaleCandidate) {
         act = "scale";
         reason = "winner pattern detected";
@@ -432,6 +513,22 @@ async function handler(req: Request): Promise<Response> {
 
       const board = pickBoard(p, niche, (boards ?? []) as Board[], boardWeekly);
       const hook = pickHookCategory(niche, perfMap.get(p.id));
+
+      // Hook reuse guard (after hook is picked)
+      const hookReuseCount = productHookWeekly[p.id]?.[hook] ?? 0;
+      if (act === "normal" && hookReuseCount >= HOOK_REUSE_PER_PRODUCT_PER_WEEK && !forced) {
+        act = "skip";
+        reason = `hook reuse guard (${hook} ${hookReuseCount}x/${HOOK_REUSE_PER_PRODUCT_PER_WEEK})`;
+      }
+      // Destination URL reuse guard
+      const destSlug = p.slug ? `/products/${p.slug}` : null;
+      const destReuse = destSlug
+        ? Object.entries(urlWeekly).filter(([u]) => u.includes(destSlug)).reduce((a, [, n]) => a + n, 0)
+        : 0;
+      if (act === "normal" && destReuse >= URL_REUSE_PER_WEEK && !forced) {
+        act = "skip";
+        reason = `destination url reuse guard (${destReuse}/${URL_REUSE_PER_WEEK})`;
+      }
 
       decisions.push({
         product: p,
@@ -455,6 +552,15 @@ async function handler(req: Request): Promise<Response> {
           product_weekly_limit: effectiveProductWeeklyCap,
           weekly_total_count: weeklyPublished,
           weekly_limit: effectiveWeeklyCap,
+          weekly_total_all: weeklyPublishedAll,
+          product_share_pct: Math.round(sharePct * 100),
+          product_daily_count: dailyForProduct,
+          product_daily_limit: productDailyCap,
+          hours_since_last_post: Number.isFinite(hoursSinceLastPost) ? Math.round(hoursSinceLastPost) : null,
+          product_cooldown_hours: productCooldownHours,
+          category_count_7d: categoryCount,
+          category_share_cap: Math.round(categoryShareCap * 100),
+          safe_growth_mode: safeGrowth,
           impressions: perfRes.signals.impressions,
           saves: perfRes.signals.saves,
           clicks: perfRes.signals.clicks,
@@ -517,6 +623,17 @@ async function handler(req: Request): Promise<Response> {
       action_requested: action,
       total_evaluated: decisions.length,
       total_returned: top.length,
+      runtime: {
+        safe_growth_mode: safeGrowth,
+        domination_mode: dominationMode,
+        daily_published: dailyPublished,
+        daily_cap: dailyCap,
+        weekly_published: weeklyPublished,
+        weekly_published_all: weeklyPublishedAll,
+        excluded_products: Array.from(excludedFromCaps),
+        last_recovery_pin_at: (runtimeSettings as any)?.last_recovery_pin_at ?? null,
+        recovery_min_gap_hours: recoveryGapHours,
+      },
       decisions: top.map((d) => ({
         product_id: d.product.id,
         product_slug: d.product.slug,

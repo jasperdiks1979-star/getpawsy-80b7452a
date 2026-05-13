@@ -402,6 +402,37 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── 1b. Hard exclude paused/excluded products via pinterest_autopilot_overrides ──
+    try {
+      const { data: ovr } = await sb
+        .from("pinterest_autopilot_overrides")
+        .select("product_id,action,expires_at")
+        .in("action", ["paused", "exclude"]);
+      const excluded = new Set<string>(
+        (ovr ?? []).filter((o: any) =>
+          !o.expires_at || new Date(o.expires_at).getTime() > Date.now()
+        ).map((o: any) => o.product_id),
+      );
+      if (excluded.size > 0) {
+        const before = pins.length;
+        const dropped = (pins as any[]).filter((p) => excluded.has(p.product_id));
+        const kept = (pins as any[]).filter((p) => !excluded.has(p.product_id));
+        for (const d of dropped) {
+          await sb.from("pinterest_pin_queue").update({
+            status: "skipped",
+            error_message: "Product paused via autopilot override",
+          }).eq("id", d.id);
+        }
+        pins.length = 0;
+        pins.push(...kept);
+        if (before !== pins.length) {
+          console.log(`[cron] excluded ${before - pins.length} pins for paused products`);
+        }
+      }
+    } catch (e) {
+      console.warn("[cron] override filter failed (non-fatal):", e);
+    }
+
     // ── 2. Resolve access token (with refresh if needed) ──
     const conn = await getLatestPinterestConnection(sb);
 

@@ -398,6 +398,74 @@ export default function PinterestAutoPilotPage() {
     },
   });
 
+  const { data: saturation } = useQuery({
+    queryKey: ["pinterest-saturation-7d"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("pinterest_pin_queue")
+        .select("product_id,product_name,product_slug,category_key,hook_group,board_id,board_name,destination_link,posted_at,pinterest_pin_id,pin_external_id")
+        .eq("status", "posted")
+        .gte("posted_at", since)
+        .limit(1000);
+      if (error) throw error;
+      const seen = new Set<string>();
+      const rows = (data ?? []).filter((r: any) => {
+        const ext = r.pinterest_pin_id || r.pin_external_id;
+        if (!ext || seen.has(ext)) return false;
+        seen.add(ext);
+        return true;
+      });
+      const byProduct = new Map<string, { name: string; slug: string | null; category: string | null; count: number; hooks: Record<string, number>; boards: Record<string, number>; lastPostMs: number }>();
+      const byCategory = new Map<string, number>();
+      const byUrl = new Map<string, number>();
+      for (const r of rows as any[]) {
+        const k = r.product_id as string;
+        const cur = byProduct.get(k) ?? { name: r.product_name ?? "", slug: r.product_slug, category: r.category_key, count: 0, hooks: {}, boards: {}, lastPostMs: 0 };
+        cur.count += 1;
+        if (r.hook_group) cur.hooks[r.hook_group] = (cur.hooks[r.hook_group] ?? 0) + 1;
+        if (r.board_name) cur.boards[r.board_name] = (cur.boards[r.board_name] ?? 0) + 1;
+        const ms = r.posted_at ? new Date(r.posted_at).getTime() : 0;
+        if (ms > cur.lastPostMs) cur.lastPostMs = ms;
+        byProduct.set(k, cur);
+        if (r.category_key) byCategory.set(r.category_key, (byCategory.get(r.category_key) ?? 0) + 1);
+        if (r.destination_link) byUrl.set(r.destination_link, (byUrl.get(r.destination_link) ?? 0) + 1);
+      }
+      const total = rows.length;
+      const products = Array.from(byProduct.entries()).map(([id, v]) => {
+        const sharePct = total > 0 ? (v.count / total) * 100 : 0;
+        const topHook = Object.entries(v.hooks).sort((a, b) => b[1] - a[1])[0];
+        const topBoard = Object.entries(v.boards).sort((a, b) => b[1] - a[1])[0];
+        const repeatedHook = topHook && topHook[1] > 2;
+        const boardSpam = topBoard && topBoard[1] >= 5 && Object.keys(v.boards).length === 1;
+        const runawayRisk =
+          (sharePct >= 15 ? 50 : 0) +
+          (v.count >= 5 ? 25 : 0) +
+          (repeatedHook ? 15 : 0) +
+          (boardSpam ? 10 : 0);
+        return {
+          id,
+          name: v.name,
+          slug: v.slug,
+          category: v.category,
+          count: v.count,
+          sharePct,
+          topHook: topHook?.[0] ?? null,
+          topHookCount: topHook?.[1] ?? 0,
+          topBoard: topBoard?.[0] ?? null,
+          topBoardCount: topBoard?.[1] ?? 0,
+          repeatedHook,
+          boardSpam,
+          runawayRisk: Math.min(100, runawayRisk),
+          lastPostMs: v.lastPostMs,
+        };
+      }).sort((a, b) => b.count - a.count);
+      const categories = Array.from(byCategory.entries()).map(([k, n]) => ({ key: k, n, sharePct: total > 0 ? (n / total) * 100 : 0 })).sort((a, b) => b.n - a.n);
+      return { total, products, categories };
+    },
+  });
+
   const updateSettings = useMutation({
     mutationFn: async (patch: Partial<Settings>) => {
       const { error } = await supabase
@@ -586,6 +654,110 @@ export default function PinterestAutoPilotPage() {
             <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-[11px]">
               {JSON.stringify(testPublishLog, null, 2)}
             </pre>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Publish saturation / runaway risk */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Publish saturation (rolling 7d)</CardTitle>
+          <CardDescription>
+            Top products by publish count, share of weekly volume, hook/board reuse, and runaway risk score.
+            Total deduped pins: {saturation?.total ?? 0}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!saturation ? (
+            <div className="text-sm text-muted-foreground">Loading…</div>
+          ) : saturation.products.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No pins published in the last 7 days.</div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead className="text-right">7d pins</TableHead>
+                      <TableHead className="text-right">Share</TableHead>
+                      <TableHead>Top hook</TableHead>
+                      <TableHead>Top board</TableHead>
+                      <TableHead className="text-right">Risk</TableHead>
+                      <TableHead>Flags</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {saturation.products.slice(0, 12).map((p) => {
+                      const isPaused = (overrides ?? []).some(
+                        (o) =>
+                          o.product_id === p.id &&
+                          (o.action === "paused" || o.action === "exclude") &&
+                          (!o.expires_at || new Date(o.expires_at).getTime() > Date.now()),
+                      );
+                      const flags: string[] = [];
+                      if (p.count > 5) flags.push(">5/wk");
+                      if (p.sharePct > 15) flags.push(">15% share");
+                      if (p.repeatedHook) flags.push("hook reuse");
+                      if (p.boardSpam) flags.push("board spam");
+                      if (isPaused) flags.push("paused");
+                      return (
+                        <TableRow key={p.id} className={p.runawayRisk >= 50 ? "bg-destructive/5" : undefined}>
+                          <TableCell className="max-w-[260px] truncate" title={p.name}>
+                            {p.name || p.id.slice(0, 8)}
+                            <div className="text-xs text-muted-foreground">{p.category ?? "—"}</div>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">{p.count}</TableCell>
+                          <TableCell className="text-right tabular-nums">{p.sharePct.toFixed(1)}%</TableCell>
+                          <TableCell className="text-xs">{p.topHook ? `${p.topHook} ×${p.topHookCount}` : "—"}</TableCell>
+                          <TableCell className="text-xs">{p.topBoard ? `${p.topBoard} ×${p.topBoardCount}` : "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            <span className={p.runawayRisk >= 50 ? "text-destructive font-semibold" : p.runawayRisk >= 25 ? "text-amber-600" : ""}>
+                              {p.runawayRisk}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <div className="flex flex-wrap gap-1">
+                              {flags.map((f) => (
+                                <Badge key={f} variant={f === "paused" ? "secondary" : "outline"} className="text-[10px]">
+                                  {f}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {!isPaused && p.runawayRisk >= 50 && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setOverrideProductId(p.id);
+                                  setOverrideAction("paused");
+                                  setOverrideReason("runaway saturation guard");
+                                }}
+                              >
+                                Pause
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              {saturation.categories.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Category share:{" "}
+                  {saturation.categories.slice(0, 6).map((c) => (
+                    <span key={c.key} className={c.sharePct > 30 ? "text-destructive font-semibold mr-3" : "mr-3"}>
+                      {c.key}: {c.n} ({c.sharePct.toFixed(0)}%)
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
