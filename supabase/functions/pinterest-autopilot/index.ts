@@ -386,31 +386,48 @@ async function handler(req: Request): Promise<Response> {
       const cat = categoryFitScore(p, preferred);
       const visual = visualAppealScore(p);
       const ship = shippingScore(p);
-      const perfRes = performanceScore(perfMap.get(p.id));
+      const history = perfMap.get(p.id);
+      const perfRes = performanceScore(history);
       const forced = ov?.action === "force_promote" ? 20 : 0;
 
       const total = img + margin + cat + visual + ship + perfRes.score + forced;
 
       const weekly = productWeekly[p.id] ?? 0;
+      const coldStart = !history || perfRes.signals.impressions <= 0;
+      const measuredHistory = !coldStart;
+      const scaleCandidate = measuredHistory && perfRes.score >= 18 && perfRes.signals.saves >= 10;
+      const appliedThreshold = thresholdForDecision(mode, coldStart, scaleCandidate);
+      const effectiveWeeklyCap = coldStart ? Math.max(maxPerWeek, COLD_START_WEEKLY_CAP) : maxPerWeek;
+      const effectiveDailyCap = coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap;
       let act: "normal" | "skip" | "scale" | "pause" = "normal";
       let reason = "";
 
-      if (weekly >= maxPerWeek && !forced) {
+      if (dailyPublished >= effectiveDailyCap && !forced) {
         act = "skip";
-        reason = `weekly cap reached (${weekly}/${maxPerWeek})`;
-      } else if (perfRes.score >= 18 && perfRes.signals.saves >= 10) {
+        reason = `daily cap reached (${dailyPublished}/${effectiveDailyCap})`;
+      } else if (weeklyPublished >= effectiveWeeklyCap && !forced) {
+        act = "skip";
+        reason = `weekly cap reached (${weeklyPublished}/${effectiveWeeklyCap})`;
+      } else if (weekly >= effectiveWeeklyCap && !forced) {
+        act = "skip";
+        reason = `product weekly cap reached (${weekly}/${effectiveWeeklyCap})`;
+      } else if (scaleCandidate) {
         act = "scale";
         reason = "winner pattern detected";
       } else if (
+        measuredHistory &&
         perfRes.signals.impressions >= 500 &&
         perfRes.signals.saves <= 1 &&
         perfRes.signals.clicks <= 1
       ) {
         act = "pause";
         reason = "low engagement after exposure";
-      } else if (total < minScore && !forced) {
+      } else if (dominationMode && measuredHistory && total < thresholdForDecision("aggressive", false, false) && !forced) {
         act = "skip";
-        reason = `below quality threshold (${total}/${minScore})`;
+        reason = `below domination threshold (${total}/${thresholdForDecision("aggressive", false, false)})`;
+      } else if (total < appliedThreshold && !forced) {
+        act = "skip";
+        reason = `below quality threshold (${total}/${appliedThreshold})`;
       }
 
       const board = pickBoard(p, niche, (boards ?? []) as Board[], boardWeekly);
@@ -427,7 +444,16 @@ async function handler(req: Request): Promise<Response> {
           shipping: ship,
           performance: perfRes.score,
           forced,
+          cold_start: coldStart,
+          measured_history: measuredHistory,
+          safety_status: coldStart ? "neutral" : "measured",
+          applied_threshold: appliedThreshold,
+          threshold_mode: coldStart ? "cold_start" : act === "scale" ? "scale" : dominationMode ? "domination" : "normal",
+          daily_count: dailyPublished,
+          daily_limit: effectiveDailyCap,
           weekly_count: weekly,
+          weekly_total_count: weeklyPublished,
+          weekly_limit: effectiveWeeklyCap,
           impressions: perfRes.signals.impressions,
           saves: perfRes.signals.saves,
           clicks: perfRes.signals.clicks,
