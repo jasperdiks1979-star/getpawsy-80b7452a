@@ -9,6 +9,7 @@ const QA_LOCKDOWN_ERROR = {
 };
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
+import { classifyProductsByMediaHost, evaluateMediaHost } from "../_shared/pinterest-media-host.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
@@ -2316,13 +2317,20 @@ function scoreSafeColdStartProduct(p: any): number {
 
 async function pickSafeColdStartProduct(sb: any) {
   const { data: products } = await sb.from("products")
-    .select("id,name,slug,category,price,image_url,stock,is_active,is_duplicate")
+    .select("id,name,slug,category,price,image_url,images,stock,is_active,is_duplicate")
     .eq("is_active", true)
     .eq("is_duplicate", false)
     .not("image_url", "is", null)
     .gt("stock", 0)
     .limit(100);
-  const candidates = (products || []).filter((p: any) => p.slug && p.image_url && safeProductSlug(p.slug));
+  const candidates = (products || []).filter((p: any) => {
+    if (!(p.slug && p.image_url && safeProductSlug(p.slug))) return false;
+    const gate = evaluateMediaHost(p);
+    if (!gate.ok) return false;
+    p.image_url = gate.selected_image; // force own-domain image
+    p._media_gate = gate;
+    return true;
+  });
   candidates.sort((a: any, b: any) => scoreSafeColdStartProduct(b) - scoreSafeColdStartProduct(a));
   return candidates[0] || null;
 }
@@ -2504,6 +2512,16 @@ async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>)
   const auth = token ? await validatePinterestAuth(sb, conn, token) : null;
   const product = await pickSafeColdStartProduct(sb);
   const caps = await getColdStartCaps(sb);
+  // Media-host classification across the active catalog
+  const { data: catalogForMedia } = await sb.from("products")
+    .select("slug,image_url,images,is_active,is_duplicate,stock")
+    .eq("is_active", true)
+    .eq("is_duplicate", false)
+    .not("image_url", "is", null)
+    .gt("stock", 0)
+    .limit(1000);
+  const mediaHostStatus = classifyProductsByMediaHost(catalogForMedia || []);
+  const productGate = product ? evaluateMediaHost(product) : null;
   const destination = product ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=cold_start_test&utm_content=safe_test` : null;
   const imageCheck = product?.image_url ? await checkPublicUrl(product.image_url, "getpawsy.pet") : { ok: false, reason: "missing_media" };
   const destinationCheck = destination ? await checkPublicUrl(destination, "getpawsy.pet") : { ok: false, reason: "missing_destination" };
@@ -2543,6 +2561,13 @@ async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>)
     board_status: { ok: !!selectedBoard?.id, selected_board: selectedBoard ? { id: selectedBoard.id, name: selectedBoard.name || null } : null, board_count: auth?.boards?.length || 0 },
     token_status: { present: !!conn?.access_token, refreshed: !!token, prefix: tokenPrefix(token) },
     media_status: imageCheck,
+    media_host_status: {
+      ...mediaHostStatus,
+      selected_product_image_host: productGate?.selected_host || null,
+      selected_product_media_host_ok: productGate?.ok ?? false,
+      selected_product_fallback_used: productGate?.fallback_used ?? false,
+      policy: { allowed_hosts: ["getpawsy.pet", "www.getpawsy.pet"], blocked_examples: ["cf.cjdropshipping.com", "oss-cf.cjdropshipping.com", "cdn.cjdropshipping.com"] },
+    },
     payload_validation_status: payload ? { ok: payload.ok, rejected_fields: payload.rejectedFields, coerced_fields: payload.coercedFields, sanitized_payload: payload.debugPayload } : { ok: false, reason: "not_built" },
     cap_status: caps,
     recovery_mode_status: recoveryModeStatus,
@@ -2567,8 +2592,8 @@ async function runSafeColdStartTestPublish(sb: any, cors: Record<string, string>
   log.push({ step: "cold_start_caps", ok: caps.ok, detail: caps });
   if (!caps.ok) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}. Use Force safe recovery pin for the 12h recovery bypass.` });
   const product = await pickSafeColdStartProduct(sb);
-  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product) } : null });
-  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No safe cold-start product found" });
+  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product), media_gate: (product as any)._media_gate || null } : null });
+  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No safe cold-start product with own-domain media found" });
   const board = await pickBestProductionBoard(sb, auth.boards);
   log.push({ step: "board", ok: !!board?.id, detail: board ? { id: board.id, name: board.name || null } : null });
   if (!board?.id) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No production-eligible board found" });
@@ -2637,13 +2662,13 @@ async function runSafeColdStartTestPublish(sb: any, cors: Record<string, string>
 
 async function pickSafeRecoveryProduct(sb: any, runaway: Awaited<ReturnType<typeof getRunawayContext>>) {
   const { data: products } = await sb.from("products")
-    .select("id,name,slug,category,price,image_url,stock,is_active,is_duplicate")
+    .select("id,name,slug,category,price,image_url,images,stock,is_active,is_duplicate")
     .eq("is_active", true)
     .eq("is_duplicate", false)
     .not("image_url", "is", null)
     .gt("stock", 0)
     .limit(200);
-  const candidates = (products || []).filter((p: any) => {
+  const preCandidates = (products || []).filter((p: any) => {
     const category = String(p.category || "").toLowerCase();
     const detectedCategory = detectCategory(p.name || "", p.category || "").toLowerCase();
     return p.slug && p.image_url && safeProductSlug(p.slug)
@@ -2651,6 +2676,15 @@ async function pickSafeRecoveryProduct(sb: any, runaway: Awaited<ReturnType<type
       && !runaway.categories.has(category)
       && !runaway.categories.has(detectedCategory);
   });
+  // Strict media-host gate: only own-domain images allowed. Skip CJ/external.
+  const candidates: any[] = [];
+  for (const p of preCandidates) {
+    const gate = evaluateMediaHost(p);
+    if (!gate.ok) continue;
+    p.image_url = gate.selected_image;
+    p._media_gate = gate;
+    candidates.push(p);
+  }
   candidates.sort((a: any, b: any) => scoreSafeColdStartProduct(b) - scoreSafeColdStartProduct(a));
   return candidates[0] || null;
 }
@@ -2708,8 +2742,8 @@ async function runSafeRecoveryPublish(sb: any, cors: Record<string, string>, opt
   if (!auth.auth_valid) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: auth.failure_response.error });
 
   const product = await pickSafeRecoveryProduct(sb, runaway);
-  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, category: product.category, score: scoreSafeColdStartProduct(product), excluded_runaway_products: Array.from(runaway.runawayProductIds) } : { reason: "no_non_runaway_non_category_product" } });
-  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "No safe recovery product outside runaway product/category found" });
+  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, category: product.category, score: scoreSafeColdStartProduct(product), media_gate: (product as any)._media_gate || null, excluded_runaway_products: Array.from(runaway.runawayProductIds) } : { reason: "no_own_domain_media_or_no_non_runaway_product" } });
+  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "No safe recovery product with own-domain media outside runaway product/category found" });
 
   const board = await pickRecoveryBoard(sb, auth.boards, runaway);
   log.push({ step: "board", ok: !!board?.id, detail: board ? { id: board.id, name: board.name || null, excluded_board_ids: Array.from(runaway.boardIds), excluded_board_names: Array.from(runaway.boardNames) } : { reason: "no_different_production_board" } });

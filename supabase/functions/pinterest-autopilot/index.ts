@@ -4,6 +4,7 @@
 // AND settings.enabled=true. Reuses pinterest-creative-director for actual generation.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { evaluateMediaHost } from "../_shared/pinterest-media-host.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -414,6 +415,9 @@ async function handler(req: Request): Promise<Response> {
       reason: string;
       niche: string;
     }> = [];
+    const mediaBlockedSlugs: Array<{ slug: string; host: string | null }> = [];
+    let mediaBlockedCount = 0;
+    let mediaOwnDomainCount = 0;
 
     for (const p of (products ?? []) as Product[]) {
       const ov = overrideMap.get(p.id);
@@ -437,6 +441,21 @@ async function handler(req: Request): Promise<Response> {
       if (img < 8) {
         continue; // bad image → silently skip
       }
+      // STRICT media-host gate — only own-domain images may reach Pinterest.
+      // External CJ/supplier hosts must never be selected (they fail with
+      // unexpected_host at publish-time and waste cap).
+      const mediaGate = evaluateMediaHost(p);
+      if (!mediaGate.ok) {
+        mediaBlockedCount++;
+        if (mediaBlockedSlugs.length < 20) {
+          mediaBlockedSlugs.push({ slug: String(p.slug || ""), host: mediaGate.selected_host });
+        }
+        continue; // skip BEFORE scoring/selection — no cap consumed
+      }
+      mediaOwnDomainCount++;
+      // Force selection to use the own-domain image (may differ from p.image_url
+      // when fallback walked p.images[]).
+      (p as any).image_url = mediaGate.selected_image;
       const niche = detectNiche(p.name, p.category);
 
       const margin = marginScore(p);
@@ -644,6 +663,12 @@ async function handler(req: Request): Promise<Response> {
         runaway_paused_products: Array.from(runawayPausedProducts),
         last_recovery_pin_at: (runtimeSettings as any)?.last_recovery_pin_at ?? null,
         recovery_min_gap_hours: recoveryGapHours,
+      },
+      media_host_status: {
+        own_domain_eligible: mediaOwnDomainCount,
+        external_blocked: mediaBlockedCount,
+        blocked_sample: mediaBlockedSlugs,
+        policy: { allowed_hosts: ["getpawsy.pet", "www.getpawsy.pet"], blocked_examples: ["cf.cjdropshipping.com", "oss-cf.cjdropshipping.com", "cdn.cjdropshipping.com"] },
       },
       decisions: top.map((d) => ({
         product_id: d.product.id,
