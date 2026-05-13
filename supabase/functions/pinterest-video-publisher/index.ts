@@ -6,6 +6,7 @@ import { getPinterestApiBase } from "../_shared/pinterest-config.ts";
 import { generateVideoMeta, DEFAULT_DESTINATION_URL } from "../_shared/pinterest-video-meta.ts";
 import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
 import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
+import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -141,10 +142,21 @@ async function publishVideoPin(opts: {
       link: queueRow.destination_url,
       media_source: mediaSource,
     };
+    const safePayload = sanitizeAndValidatePinterestPayload(pinPayload);
+    console.log(`[pvp ${trace_id}] sanitized Pinterest payload`, { payload: safePayload.debugPayload, rejectedFields: safePayload.rejectedFields, coercedFields: safePayload.coercedFields });
+    await logStage(sb, queue_id, "payload_debug", safePayload.ok ? "ok" : "fail", {
+      endpoint: "/pins",
+      sanitized_payload: safePayload.debugPayload,
+      rejected_fields: safePayload.rejectedFields,
+      coerced_fields: safePayload.coercedFields,
+    }, trace_id);
+    if (!safePayload.ok) {
+      return { ok: false, code: "INVALID_PINTEREST_PAYLOAD", message: `Invalid integer fields: ${safePayload.rejectedFields.map((f) => f.path).join(", ")}` };
+    }
     pinRes = await fetch(`${apiBase}/pins`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(pinPayload),
+      body: JSON.stringify(safePayload.payload),
     });
     pinBody = await pinRes.json().catch(() => ({}));
     await logStage(sb, queue_id, "create_pin", pinRes.ok ? "ok" : "fail",
