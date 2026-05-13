@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle, Download } from "lucide-react";
+import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle, Download, Copy, SkipForward } from "lucide-react";
 import { useState } from "react";
 import {
   Sheet,
@@ -39,6 +39,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
+import { PinDecisionPanel } from "@/components/admin/PinDecisionPanel";
 
 type Settings = {
   id: number;
@@ -698,6 +699,9 @@ export default function PinterestAutoPilotPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pin-level decision panel — chronological phase breakdown */}
+      <PinDecisionPanel diagnostic={diagnostic} testPublishLog={testPublishLog} />
 
       {/* Publish saturation / runaway risk */}
       <Card>
