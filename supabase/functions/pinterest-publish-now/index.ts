@@ -4,12 +4,27 @@
 //   { mode: "pin", pinId: ... } → publish that specific row (bypasses eligibility filters,
 //                                  still respects already-published guard)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 const PINTEREST_API = "https://api.pinterest.com/v5";
+
+async function preparePinterestPayload(sb: any, payload: Record<string, unknown>, context: Record<string, unknown>) {
+  const safe = sanitizeAndValidatePinterestPayload(payload);
+  const debug = { ...context, sanitized_payload: safe.debugPayload, rejected_fields: safe.rejectedFields, coerced_fields: safe.coercedFields };
+  console.log("[pinterest-payload-debug]", JSON.stringify(debug));
+  await sb.from("pinterest_post_logs").insert({
+    action: "payload_debug",
+    status: safe.ok ? "success" : "failed",
+    error_message: safe.ok ? null : `Invalid Pinterest integer payload: ${safe.rejectedFields.map((f) => f.path).join(", ")}`,
+    response_data: debug,
+  });
+  if (!safe.ok) throw new Error(`Invalid Pinterest payload: ${safe.rejectedFields.map((f) => `${f.path}=${String(f.value)}`).join(", ")}`);
+  return safe;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -221,6 +236,7 @@ Deno.serve(async (req) => {
     media_source: { source_type: "image_url", url: row.pin_image_url },
     link: row.destination_link,
   };
+  const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-publish-now", pin_id: row.id });
   console.log(`[publish-now] POST /pins pin=${row.id} board=${boardId} img=${row.pin_image_url}`);
   const t0 = Date.now();
   let pinRes: Response;
@@ -230,7 +246,7 @@ Deno.serve(async (req) => {
     pinRes = await fetch(`${PINTEREST_API}/pins`, {
       method: "POST",
       headers: { Authorization: `Bearer ${conn.access_token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(requestPayload),
+      body: JSON.stringify(safePayload.payload),
     });
     bodyText = await pinRes.text();
     try { parsed = JSON.parse(bodyText); } catch { parsed = { raw: bodyText }; }
