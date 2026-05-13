@@ -100,9 +100,9 @@ const COLD_START_DAILY_CAP = 3;
 const COLD_START_WEEKLY_CAP = 15;
 const DEFAULT_DAILY_CAP = 8;
 
-function thresholdForDecision(mode: string, coldStart: boolean, scaleCandidate: boolean): number {
+function thresholdForDecision(mode: string, coldStart: boolean, scaleCandidate: boolean, dominationMode = false): number {
   if (coldStart) return 50;
-  if (mode === "aggressive") return 85;
+  if (dominationMode) return 85;
   if (scaleCandidate) return 80;
   return 70;
 }
@@ -395,7 +395,7 @@ async function handler(req: Request): Promise<Response> {
       const coldStart = !history || perfRes.signals.impressions <= 0;
       const measuredHistory = !coldStart;
       const scaleCandidate = measuredHistory && perfRes.score >= 18 && perfRes.signals.saves >= 10;
-      const appliedThreshold = thresholdForDecision(mode, coldStart, scaleCandidate);
+      const appliedThreshold = thresholdForDecision(mode, coldStart, scaleCandidate, dominationMode);
       const effectiveProductWeeklyCap = coldStart ? Math.max(maxPerWeek, 3) : maxPerWeek;
       const effectiveWeeklyCap = coldStart ? COLD_START_WEEKLY_CAP : maxPerWeek;
       const effectiveDailyCap = coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap;
