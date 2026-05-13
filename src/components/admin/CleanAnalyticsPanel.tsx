@@ -16,6 +16,8 @@ interface DebugResponse {
   total_raw_events: number;
   excluded_internal: number;
   excluded_bots: number;
+  bot_reasons?: Record<string, number>;
+  bot_samples?: Array<{ reason: string; path: string; browser: string | null; referrer: string | null; utm_source: string | null; country: string | null; created_at: string }>;
   excluded_admin: number;
   excluded_non_us: number;
   clean_events: number;
@@ -35,6 +37,24 @@ interface DebugResponse {
 }
 
 const RANGES: Range[] = ["24h", "7d", "30d"];
+
+const BOT_REASON_LABEL: Record<string, string> = {
+  test_query_param: "Test/preview query param",
+  bot_browser_ua: "Bot browser/UA",
+  bot_referrer: "Known crawler referrer",
+  bot_utm_marker: "Bot UTM marker",
+  zero_geo_ping: "Zero (0,0) geo ping",
+  empty_signal_stack: "Empty signal stack",
+  unknown: "Unknown bot rule",
+};
+const BOT_REASON_HELP: Record<string, string> = {
+  test_query_param: "URL contained ?test=true / ?internal=true / ?dryrun=true / ?preview=true",
+  bot_browser_ua: "browser field matched: bot|crawler|spider|headless|puppeteer|playwright|curl|wget|python-requests|axios…",
+  bot_referrer: "referrer matched a known crawler/bot domain (Googlebot, Ahrefs, Semrush, FB/Twitter scraper, Slackbot…)",
+  bot_utm_marker: "utm_source/medium/campaign contained bot|crawler|monitor|uptime|test|qa|automation",
+  zero_geo_ping: "lat/lng = 0,0 — synthetic ping or server-side request",
+  empty_signal_stack: "No geo, no browser, no referrer, no UTM, no identity — pure bot ping",
+};
 
 async function fetchRange(range: Range, usOnly: boolean): Promise<DebugResponse> {
   const { data, error } = await supabase.functions.invoke("world-map-debug", {
@@ -257,6 +277,18 @@ export const CleanAnalyticsPanel = () => {
                   <Row label="Internal / test" value={current.excluded_internal} />
                   <Row label="Admin / diagnostics" value={current.excluded_admin} />
                   <Row label="Bot / preview / dryRun" value={current.excluded_bots} />
+                  {current.bot_reasons && Object.keys(current.bot_reasons).length > 0 && (
+                    <div className="ml-4 mt-1 mb-2 space-y-0.5 border-l-2 border-muted pl-2">
+                      {Object.entries(current.bot_reasons)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([reason, count]) => (
+                          <div key={reason} className="flex justify-between text-xs text-muted-foreground">
+                            <span title={BOT_REASON_HELP[reason] || reason}>↳ {BOT_REASON_LABEL[reason] || reason}</span>
+                            <span className="tabular-nums">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                   <Row label="Non-US" value={current.excluded_non_us} />
                   <Row label="Total raw events" value={current.total_raw_events} bold />
                   <Row label="Clean events" value={current.clean_events} bold />
