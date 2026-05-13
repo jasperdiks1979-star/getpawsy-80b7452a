@@ -269,3 +269,6 @@ verify_jwt = false
 
 [functions.pinterest-publish-now]
 verify_jwt = false
+
+[functions.profit-engine-health]
+verify_jwt = false
