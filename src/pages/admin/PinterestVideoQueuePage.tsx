@@ -20,6 +20,10 @@ type VideoAsset = {
   publish_count: number;
   is_active: boolean;
   aspect_ratio?: string | null;
+  cover_image_url?: string | null;
+  thumbnail_status?: string | null;
+  key_frame_second?: number | null;
+  cover_last_error?: string | null;
 };
 type QueueRow = {
   id: string;
@@ -155,6 +159,15 @@ function VideoCard({
         <Badge className={`absolute top-2 left-2 ${HOOK_BADGE_COLORS[asset.hook_type] || HOOK_BADGE_COLORS.unknown}`}>
           {asset.hook_type}
         </Badge>
+        {asset.thumbnail_status && asset.thumbnail_status !== "pending" && (
+          <Badge
+            variant={asset.thumbnail_status === "published" ? "default" : asset.thumbnail_status === "failed" ? "destructive" : "secondary"}
+            className="absolute bottom-2 left-2 text-[10px]"
+            title={asset.cover_last_error || `cover frame ${asset.key_frame_second ?? 1.5}s`}
+          >
+            cover: {asset.thumbnail_status}
+          </Badge>
+        )}
         {asset.publish_count > 0 && (
           <Badge variant="secondary" className="absolute top-2 right-2">
             ×{asset.publish_count}
