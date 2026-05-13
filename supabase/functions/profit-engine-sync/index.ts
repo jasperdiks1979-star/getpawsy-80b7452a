@@ -97,14 +97,12 @@ serve(async (req) => {
     // ── Phase: normalize (US-only paid orders for attribution) ─────
     const { data: orders } = await sb
       .from("orders")
-      .select("items, total_amount, created_at, shipping_address, billing_address, country")
+      .select("items, total_amount, created_at, shipping_address")
       .eq("status", "paid")
       .gte("created_at", since30);
 
     const isUsOrder = (o: any): boolean => {
-      const c1 = (o?.country || "").toString().toUpperCase();
-      const c2 = (o?.shipping_address?.country || o?.billing_address?.country || "").toString().toUpperCase();
-      const country = c1 || c2;
+      const country = (o?.shipping_address?.country || "").toString().toUpperCase();
       if (!country) return false;
       return country === "US" || country === "USA" || country === "UNITED STATES";
     };
