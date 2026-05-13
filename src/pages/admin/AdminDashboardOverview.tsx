@@ -174,6 +174,35 @@ export default function AdminDashboardOverview() {
           </div>
         </div>
 
+        {/* Prominent Cinematic Ads shortcut */}
+        {!query.trim() && (
+          <Card
+            className="cursor-pointer border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 hover:shadow-md hover:border-primary/50 transition-all group"
+            onClick={() => navigate('/admin/cinematic-ads')}
+          >
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-primary text-primary-foreground shadow-sm">
+                  <Video className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    Cinematic Ads
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    AI-generated product promo videos voor Pinterest, TikTok & IG Reels
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" className="gap-1.5 shrink-0">
+                Ga naar Cinematic Ads
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Search results view */}
         {query.trim() && (
           <div>
