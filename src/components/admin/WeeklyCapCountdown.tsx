@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Clock, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, CheckCircle2, Sparkles, X } from "lucide-react";
 
 const WEEK_MS = 7 * 24 * 3600 * 1000;
 
@@ -79,6 +80,29 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
   const nextReset = slots[0]?.freesAtMs ?? null;
   const upcoming = slots.slice(0, 10);
 
+  // Hypothetical "what if I publish now" simulation
+  const [simulating, setSimulating] = useState(false);
+  const [simAtMs, setSimAtMs] = useState<number | null>(null);
+  const simFreesAtMs = simAtMs ? simAtMs + WEEK_MS : null;
+  const simulatedUsed = used + (simulating ? 1 : 0);
+  const simulatedAtCap = simulatedUsed >= weeklyLimit;
+  const wouldBlock = used >= weeklyLimit;
+
+  function runSimulation() {
+    const t = Date.now();
+    setSimAtMs(t);
+    setSimulating(true);
+    toast.info("Simulated publish-now — see scenario card below.", {
+      description: wouldBlock
+        ? "Cap reached: real publish would be blocked right now."
+        : `Slot would free at ${formatLocal(t + WEEK_MS)}.`,
+    });
+  }
+  function clearSimulation() {
+    setSimulating(false);
+    setSimAtMs(null);
+  }
+
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -113,6 +137,64 @@ export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number 
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed p-3">
+          <div className="text-xs text-muted-foreground">
+            <div className="font-semibold text-foreground">Scenario: publish 1 pin now</div>
+            <div>Simulates the cap impact and exact slot-free time.</div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {simulating && (
+              <Button size="sm" variant="ghost" onClick={clearSimulation}>
+                <X className="h-3.5 w-3.5 mr-1" /> Clear
+              </Button>
+            )}
+            <Button size="sm" variant="secondary" onClick={runSimulation}>
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Simulate publish now
+            </Button>
+          </div>
+        </div>
+
+        {simulating && simAtMs && simFreesAtMs && (
+          <div className="rounded-lg border p-4 bg-accent/30 space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">
+                Simulation result
+              </div>
+              <Badge variant={wouldBlock ? "destructive" : simulatedAtCap ? "secondary" : "default"}>
+                {wouldBlock
+                  ? "BLOCKED — cap already full"
+                  : simulatedAtCap
+                    ? `Would hit cap (${simulatedUsed}/${weeklyLimit})`
+                    : `OK — ${simulatedUsed}/${weeklyLimit} after publish`}
+              </Badge>
+            </div>
+            {!wouldBlock && (
+              <>
+                <div className="text-sm">
+                  This pin would free its slot in{" "}
+                  <span className="font-mono font-bold tabular-nums">
+                    {formatDuration(simFreesAtMs - now)}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Slot frees at <span className="font-medium text-foreground">{formatLocal(simFreesAtMs)}</span>{" "}
+                  · published at <span className="font-medium text-foreground">{formatLocal(simAtMs)}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Remaining budget after publish:{" "}
+                  <span className="font-mono">{Math.max(0, weeklyLimit - simulatedUsed)}</span> pins
+                </div>
+              </>
+            )}
+            {wouldBlock && (
+              <div className="text-sm text-destructive">
+                Weekly cap is already at {used}/{weeklyLimit}. Publishing now would be rejected by the autopilot guard. Wait for the next slot to free.
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
             <span>Weekly budget consumed</span>
