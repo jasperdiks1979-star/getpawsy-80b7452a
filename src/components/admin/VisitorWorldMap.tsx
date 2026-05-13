@@ -189,6 +189,11 @@ export const VisitorWorldMap = () => {
     const saved = localStorage.getItem("map-hot-spots");
     return saved !== null ? saved === "true" : true;
   });
+  // US-only and internal-traffic filters (default ON for clean data)
+  const [usOnly, setUsOnly] = useState(() => localStorage.getItem("map-us-only") !== "false");
+  const [excludeInternal, setExcludeInternal] = useState(() => localStorage.getItem("map-exclude-internal") !== "false");
+  useEffect(() => { localStorage.setItem("map-us-only", String(usOnly)); }, [usOnly]);
+  useEffect(() => { localStorage.setItem("map-exclude-internal", String(excludeInternal)); }, [excludeInternal]);
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const userInteractingRef = useRef(false);
   const hotSpotMarkersRef = useRef<mapboxgl.Marker[]>([]);
@@ -368,7 +373,7 @@ export const VisitorWorldMap = () => {
 
   // Fetch visitor activities with time range
   const { data: activities, refetch, isLoading, isFetching } = useQuery({
-    queryKey: ["visitor-activities", timeRange],
+    queryKey: ["visitor-activities", timeRange, usOnly, excludeInternal],
     queryFn: async () => {
       mapPerfMark("first-data-start");
       const timeRangeMs = getTimeRangeMs();
@@ -376,11 +381,14 @@ export const VisitorWorldMap = () => {
       if (timeRange === "live") {
         // For LIVE mode: only show sessions with heartbeat in the last 60 seconds
         const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
-        const { data, error } = await supabase
+        let q = supabase
           .from("visitor_activity")
           .select("*")
           .gte("last_seen_at", sixtySecondsAgo)
           .order("last_seen_at", { ascending: false });
+        if (excludeInternal) q = q.or("is_internal.is.null,is_internal.eq.false");
+        if (usOnly) q = q.in("country", ["United States", "USA", "US"]);
+        const { data, error } = await q;
 
         if (error) throw error;
         
@@ -397,16 +405,30 @@ export const VisitorWorldMap = () => {
         return Array.from(sessionMap.values());
       }
       
-      // For historical modes: use created_at as before
-      const { data, error } = await supabase
-        .from("visitor_activity")
-        .select("*")
-        .gte("created_at", new Date(Date.now() - timeRangeMs).toISOString())
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      // For historical modes: paginate to bypass the 1000-row Supabase cap
+      const since = new Date(Date.now() - timeRangeMs).toISOString();
+      const PAGE = 1000;
+      const HARD_CAP = 20000;
+      const all: VisitorActivity[] = [];
+      let from = 0;
+      while (from < HARD_CAP) {
+        let q = supabase
+          .from("visitor_activity")
+          .select("*")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (excludeInternal) q = q.or("is_internal.is.null,is_internal.eq.false");
+        if (usOnly) q = q.in("country", ["United States", "USA", "US"]);
+        const { data, error } = await q;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...(data as unknown as VisitorActivity[]));
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
       mapPerfMark("first-data-end");
-      return (data || []) as VisitorActivity[];
+      return all;
     },
     // Live mode refreshes every 3 seconds for real-time feel
     refetchInterval: timeRange === "live" ? 3000 : timeRange === "15m" || timeRange === "1h" ? 10000 : 30000,
