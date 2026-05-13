@@ -136,14 +136,15 @@ Deno.serve(async (req) => {
   const voice_id: string = body.voice_id ?? SARAH;
 
   // Lookup product to get hero image + name
-  const { data: product } = await admin
+  const { data: product, error: prodErr } = await admin
     .from("products_public")
-    .select("slug, name, image_url, image_urls")
+    .select("slug, name, image_url")
     .eq("slug", product_slug)
     .maybeSingle();
 
+  console.log("[cinematic-ad-prepare]", traceId, { product_slug, found: !!product, prodErr: prodErr?.message });
   if (!product?.image_url) {
-    return json(404, { ok: false, traceId, message: `product not found or has no image_url: ${product_slug}` });
+    return json(404, { ok: false, traceId, message: `product not found or has no image_url: ${product_slug}${prodErr ? ` (${prodErr.message})` : ""}` });
   }
   const productName: string = product.name ?? product_slug;
   const heroUrl: string = product.image_url;
