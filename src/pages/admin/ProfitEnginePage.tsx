@@ -301,13 +301,47 @@ export default function ProfitEnginePage() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("profit_engine_function_logs")
-        .select("created_at, phase, level, message, duration_ms, rows_processed, scoring_source")
+        .select("created_at, trace_id, phase, level, message, duration_ms, rows_processed, scoring_source")
         .order("created_at", { ascending: false })
         .limit(1);
       return (data?.[0] ?? null) as any;
     },
     refetchInterval: 30_000,
   });
+
+  async function exportDiagnosticsCsv() {
+    const traceId = diagQ.data?.trace_id;
+    if (!traceId) {
+      toast.error("No diagnostics run available yet");
+      return;
+    }
+    const { data, error } = await (supabase as any)
+      .from("profit_engine_function_logs")
+      .select("created_at, trace_id, phase, level, message, duration_ms, rows_processed, scoring_source")
+      .eq("trace_id", traceId)
+      .order("created_at", { ascending: true });
+    if (error || !data?.length) {
+      toast.error("Could not load diagnostics rows");
+      return;
+    }
+    const cols = ["created_at", "trace_id", "phase", "level", "duration_ms", "rows_processed", "scoring_source", "message"];
+    const esc = (v: unknown) => {
+      if (v === null || v === undefined) return "";
+      const s = typeof v === "string" ? v : JSON.stringify(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [cols.join(","), ...data.map((r: any) => cols.map((c) => esc(r[c])).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `profit-engine-diagnostics-${traceId}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${data.length} diagnostic rows`);
+  }
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -362,7 +396,12 @@ export default function ProfitEnginePage() {
           <CardTitle className="flex items-center gap-2 text-base">
             <Activity className="h-4 w-4" />Sync diagnostics
           </CardTitle>
-          <CardDescription>Latest Profit Engine function run.</CardDescription>
+          <CardDescription className="flex items-center justify-between gap-2">
+            <span>Latest Profit Engine function run.</span>
+            <Button size="sm" variant="outline" onClick={exportDiagnosticsCsv} disabled={!diagQ.data?.trace_id}>
+              Export diagnostics CSV
+            </Button>
+          </CardDescription>
         </CardHeader>
         <CardContent className="text-sm grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           <div><div className="text-xs text-muted-foreground">Last run</div><div className="font-medium">{diagQ.data?.created_at ? new Date(diagQ.data.created_at).toLocaleString() : "—"}</div></div>
