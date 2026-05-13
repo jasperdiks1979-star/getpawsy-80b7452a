@@ -2291,6 +2291,96 @@ async function checkPublicUrl(url: string, expectedHost: string) {
   }
 }
 
+function scoreSafeColdStartProduct(p: any): number {
+  const t = `${p.name || ""} ${p.category || ""}`.toLowerCase();
+  let score = 0;
+  if (p.image_url) score += 20;
+  if ((p.stock ?? 0) > 0) score += 20;
+  if (/litter|cat tree|condo|dog bed|carrier|stroller/.test(t)) score += 15;
+  if ((p.price ?? 0) >= 40) score += 10;
+  if (/getpawsy/i.test(p.name || "")) score += 5;
+  return score;
+}
+
+async function pickSafeColdStartProduct(sb: any) {
+  const { data: products } = await sb.from("products")
+    .select("id,name,slug,category,price,image_url,stock,is_active,is_duplicate")
+    .eq("is_active", true)
+    .eq("is_duplicate", false)
+    .not("image_url", "is", null)
+    .gt("stock", 0)
+    .limit(100);
+  const candidates = (products || []).filter((p: any) => p.slug && p.image_url && safeProductSlug(p.slug));
+  candidates.sort((a: any, b: any) => scoreSafeColdStartProduct(b) - scoreSafeColdStartProduct(a));
+  return candidates[0] || null;
+}
+
+function safeProductSlug(slug: string) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(slug || ""));
+}
+
+async function getColdStartCaps(sb: any) {
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+  const { data: recent } = await sb.from("pinterest_pin_queue")
+    .select("pinterest_pin_id,pin_external_id,posted_at")
+    .eq("status", "posted")
+    .gte("posted_at", weekStart)
+    .limit(1000);
+  const seen = new Set<string>();
+  let daily = 0;
+  let weekly = 0;
+  for (const row of recent || []) {
+    const id = (row as any).pinterest_pin_id || (row as any).pin_external_id;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    weekly++;
+    if ((row as any).posted_at && new Date((row as any).posted_at).getTime() >= dayStart.getTime()) daily++;
+  }
+  return { daily, weekly, daily_limit: 3, weekly_limit: 15, ok: daily < 3 && weekly < 15 };
+}
+
+async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>) {
+  const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
+  const token = conn?.access_token ? await getFreshPinterestProductionToken(sb, conn) : null;
+  const auth = token ? await validatePinterestAuth(sb, conn, token) : null;
+  const product = await pickSafeColdStartProduct(sb);
+  const caps = await getColdStartCaps(sb);
+  const destination = product ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=cold_start_test&utm_content=safe_test` : null;
+  const imageCheck = product?.image_url ? await checkPublicUrl(product.image_url, "getpawsy.pet") : { ok: false, reason: "missing_media" };
+  const destinationCheck = destination ? await checkPublicUrl(destination, "getpawsy.pet") : { ok: false, reason: "missing_destination" };
+  const selectedBoard = auth?.boards?.length ? await pickBestProductionBoard(sb, auth.boards) : null;
+  const payload = product && selectedBoard && destination ? sanitizeAndValidatePinterestPayload({
+    title: String(product.name || "GetPawsy Pet Essential").slice(0, 90),
+    description: `A practical GetPawsy pick for US pet parents.`,
+    board_id: selectedBoard.id,
+    media_source: { source_type: "image_url", url: product.image_url },
+    link: destination,
+  }) : null;
+  const exactReason = !conn?.access_token ? "Pinterest token missing"
+    : !auth?.auth_valid ? auth?.failure_response?.error || "Pinterest auth failed"
+    : !selectedBoard?.id ? "No production-eligible Pinterest board"
+    : !product ? "No eligible in-stock product with media"
+    : !imageCheck.ok ? `Media blocked: ${(imageCheck as any).reason}`
+    : !destinationCheck.ok ? `Destination blocked: ${(destinationCheck as any).reason}`
+    : !caps.ok ? `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}`
+    : payload && !payload.ok ? `Payload invalid: ${payload.rejectedFields.map((f) => f.path).join(",")}`
+    : null;
+  return json(cors, {
+    ok: !exactReason,
+    auth_status: { connected: !!conn?.access_token, valid: !!auth?.auth_valid },
+    board_status: { ok: !!selectedBoard?.id, selected_board: selectedBoard ? { id: selectedBoard.id, name: selectedBoard.name || null } : null, board_count: auth?.boards?.length || 0 },
+    token_status: { present: !!conn?.access_token, refreshed: !!token, prefix: tokenPrefix(token) },
+    media_status: imageCheck,
+    payload_validation_status: payload ? { ok: payload.ok, rejected_fields: payload.rejectedFields, coerced_fields: payload.coercedFields, sanitized_payload: payload.debugPayload } : { ok: false, reason: "not_built" },
+    cap_status: caps,
+    cold_start_status: { eligible: !exactReason, daily_budget: `${caps.daily}/${caps.daily_limit}`, weekly_budget: `${caps.weekly}/${caps.weekly_limit}` },
+    first_eligible_product: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product) } : null,
+    exact_reason_if_no_pin_can_be_published: exactReason,
+  });
+}
+
 async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, opts?: { sourceLogId?: string | null }) {
   const startedAt = Date.now();
   const replaysLogId = opts?.sourceLogId || null;
