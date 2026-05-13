@@ -84,6 +84,7 @@ interface Board {
 interface Override {
   product_id: string;
   action: "exclude" | "force_promote" | "paused";
+  reason?: string | null;
   expires_at: string | null;
 }
 
@@ -99,7 +100,7 @@ interface PerfRow {
 const COLD_START_DAILY_CAP = 3;
 const COLD_START_WEEKLY_CAP = 15;
 const DEFAULT_DAILY_CAP = 8;
-const SAFE_GROWTH_WEEKLY_CAP = 20;
+const SAFE_GROWTH_WEEKLY_CAP = 15;
 const SAFE_GROWTH_DAILY_CAP = 4;
 const PRODUCT_DAILY_CAP_DEFAULT = 2;
 const PRODUCT_COOLDOWN_HOURS_DEFAULT = 48;
@@ -285,7 +286,7 @@ async function handler(req: Request): Promise<Response> {
         .eq("is_active", true)
         .eq("is_duplicate", false)
         .limit(500),
-      supabase.from("pinterest_autopilot_overrides").select("product_id,action,expires_at"),
+      supabase.from("pinterest_autopilot_overrides").select("product_id,action,reason,expires_at"),
       supabase
         .from("pinterest_boards")
         .select(
@@ -316,8 +317,10 @@ async function handler(req: Request): Promise<Response> {
 
     // Set of products that should never count toward caps (paused/excluded)
     const excludedFromCaps = new Set<string>();
+    const runawayPausedProducts = new Set<string>();
     for (const [pid, ov] of overrideMap.entries()) {
       if (ov.action === "paused" || ov.action === "exclude") excludedFromCaps.add(pid);
+      if (ov.action === "paused" && String(ov.reason || "").toLowerCase().includes("runaway_publish_loop")) runawayPausedProducts.add(pid);
     }
 
     // Aggregate perf by product_id (string)
@@ -346,6 +349,7 @@ async function handler(req: Request): Promise<Response> {
     let dailyPublished = 0;
     let weeklyPublished = 0;
     let weeklyPublishedAll = 0; // includes paused products (for transparency)
+    let discountedRunawayPins = 0;
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
     const nowMs = Date.now();
@@ -369,6 +373,7 @@ async function handler(req: Request): Promise<Response> {
       const postedMs = q.posted_at ? new Date(q.posted_at).getTime() : 0;
       // Skip paused products from active caps so one runaway can't block the whole queue
       const counted = !excludedFromCaps.has(q.product_id);
+      if (runawayPausedProducts.has(q.product_id)) discountedRunawayPins++;
       if (counted) {
         weeklyPublished++;
         if (postedMs >= dayStart.getTime()) {
@@ -630,7 +635,13 @@ async function handler(req: Request): Promise<Response> {
         daily_cap: dailyCap,
         weekly_published: weeklyPublished,
         weekly_published_all: weeklyPublishedAll,
+        effective_weekly_usage: weeklyPublished,
+        effective_weekly_limit: SAFE_GROWTH_WEEKLY_CAP,
+        active_rolling_pins: weeklyPublished,
+        discounted_runaway_pins: discountedRunawayPins,
+        cap_recovery_mode: discountedRunawayPins > 0,
         excluded_products: Array.from(excludedFromCaps),
+        runaway_paused_products: Array.from(runawayPausedProducts),
         last_recovery_pin_at: (runtimeSettings as any)?.last_recovery_pin_at ?? null,
         recovery_min_gap_hours: recoveryGapHours,
       },

@@ -679,6 +679,12 @@ Deno.serve(async (req) => {
       return await runSafeColdStartTestPublish(sb, cors, { dryRun: body.dryRun !== false });
     }
 
+    if (action === "force_safe_recovery_pin") {
+      const adminCheck = await authorizeDirectTest(sb, req, body);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      return await runSafeRecoveryPublish(sb, cors, { dryRun: Boolean(body.dryRun) });
+    }
+
     if (action === "mint_direct_test_token") {
       const adminCheck = await requireDirectTestAdmin(sb, req);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
@@ -2325,26 +2331,171 @@ function safeProductSlug(slug: string) {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(slug || ""));
 }
 
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+const DAY_MS = 24 * 3600 * 1000;
+const RECOVERY_HOOKS = [
+  "Fresh pick for pet homes",
+  "Smart pet upgrade today",
+  "Simple comfort for pets",
+  "A cleaner pet routine",
+  "Built for everyday pets",
+];
+
+function isRunawayPausedOverride(row: any) {
+  return row?.action === "paused" && String(row?.reason || "").toLowerCase().includes("runaway_publish_loop");
+}
+
+function getPinExternalId(row: any) {
+  return String(row?.pinterest_pin_id || row?.pin_external_id || row?.id || "");
+}
+
+function validatePinterestUtm(url: string) {
+  try {
+    const parsed = new URL(url);
+    const required = {
+      utm_source: "pinterest",
+      utm_medium: "organic",
+      utm_campaign: "cap_recovery",
+    };
+    const missing = Object.entries(required)
+      .filter(([key, value]) => parsed.searchParams.get(key) !== value)
+      .map(([key]) => key);
+    return { ok: missing.length === 0, missing, required };
+  } catch {
+    return { ok: false, missing: ["malformed_url"], required: {} };
+  }
+}
+
+async function getRunawayContext(sb: any) {
+  const { data: overrides } = await sb.from("pinterest_autopilot_overrides")
+    .select("product_id,action,reason,expires_at")
+    .eq("action", "paused");
+  const now = Date.now();
+  const runawayProductIds = new Set<string>();
+  for (const ov of overrides || []) {
+    if ((ov as any).expires_at && new Date((ov as any).expires_at).getTime() < now) continue;
+    if (isRunawayPausedOverride(ov)) runawayProductIds.add(String((ov as any).product_id));
+  }
+
+  const { data: runawayPins } = runawayProductIds.size
+    ? await sb.from("pinterest_pin_queue")
+      .select("product_id,category_key,hook_group,board_id,board_name,posted_at")
+      .eq("status", "posted")
+      .in("product_id", Array.from(runawayProductIds))
+      .order("posted_at", { ascending: false })
+      .limit(500)
+    : { data: [] };
+
+  const categories = new Set<string>();
+  const hooks = new Set<string>();
+  const boardIds = new Set<string>();
+  const boardNames = new Set<string>();
+  for (const pin of runawayPins || []) {
+    if ((pin as any).category_key) categories.add(String((pin as any).category_key).toLowerCase());
+    if ((pin as any).hook_group) hooks.add(String((pin as any).hook_group).toLowerCase());
+    if ((pin as any).board_id) boardIds.add(String((pin as any).board_id));
+    if ((pin as any).board_name) boardNames.add(String((pin as any).board_name).toLowerCase());
+  }
+  return { runawayProductIds, categories, hooks, boardIds, boardNames, pin_count: (runawayPins || []).length };
+}
+
 async function getColdStartCaps(sb: any) {
   const dayStart = new Date();
   dayStart.setHours(0, 0, 0, 0);
-  const weekStart = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
-  const { data: recent } = await sb.from("pinterest_pin_queue")
-    .select("pinterest_pin_id,pin_external_id,posted_at")
+  const nowMs = Date.now();
+  const weekStartMs = nowMs - WEEK_MS;
+  const weekStart = new Date(weekStartMs).toISOString();
+  const dayNext = new Date(nowMs + DAY_MS).toISOString();
+  const runaway = await getRunawayContext(sb);
+  const { data: rows } = await sb.from("pinterest_pin_queue")
+    .select("id,product_id,product_name,pinterest_pin_id,pin_external_id,posted_at,recovery_mode_publish,cap_recovery_mode")
     .eq("status", "posted")
-    .gte("posted_at", weekStart)
-    .limit(1000);
+    .not("posted_at", "is", null)
+    .order("posted_at", { ascending: true })
+    .limit(5000);
+  const { data: settings } = await sb.from("pinterest_runtime_settings")
+    .select("recovery_min_gap_hours,last_recovery_pin_at")
+    .eq("id", 1)
+    .maybeSingle();
   const seen = new Set<string>();
   let daily = 0;
-  let weekly = 0;
-  for (const row of recent || []) {
-    const id = (row as any).pinterest_pin_id || (row as any).pin_external_id;
+  let activeRolling = 0;
+  let expiredAwaitingCleanup = 0;
+  let pausedProductPins = 0;
+  let discountedRunawayPins = 0;
+  const rollingSlots: Array<{ pin_id: string; product_id: string | null; product_name: string | null; posted_at: string; expires_at: string; recovery_mode_publish: boolean }> = [];
+  for (const row of rows || []) {
+    const id = getPinExternalId(row);
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    weekly++;
-    if ((row as any).posted_at && new Date((row as any).posted_at).getTime() >= dayStart.getTime()) daily++;
+    const postedAt = String((row as any).posted_at || "");
+    const postedMs = new Date(postedAt).getTime();
+    if (!Number.isFinite(postedMs) || postedMs > nowMs) continue;
+    const isRolling = postedMs >= weekStartMs;
+    const isRunaway = runaway.runawayProductIds.has(String((row as any).product_id || ""));
+    if (!isRolling) {
+      expiredAwaitingCleanup++;
+      continue;
+    }
+    if (isRunaway) {
+      pausedProductPins++;
+      discountedRunawayPins++;
+      continue;
+    }
+    activeRolling++;
+    rollingSlots.push({
+      pin_id: id,
+      product_id: (row as any).product_id || null,
+      product_name: (row as any).product_name || null,
+      posted_at: postedAt,
+      expires_at: new Date(postedMs + WEEK_MS).toISOString(),
+      recovery_mode_publish: Boolean((row as any).recovery_mode_publish || (row as any).cap_recovery_mode),
+    });
+    if (postedMs >= dayStart.getTime()) daily++;
   }
-  return { daily, weekly, daily_limit: 3, weekly_limit: 15, ok: daily < 3 && weekly < 15 };
+  rollingSlots.sort((a, b) => new Date(a.expires_at).getTime() - new Date(b.expires_at).getTime());
+  const recoveryGapHours = Math.max(12, Number((settings as any)?.recovery_min_gap_hours ?? 12));
+  const lastRecoveryMs = (settings as any)?.last_recovery_pin_at ? new Date((settings as any).last_recovery_pin_at).getTime() : 0;
+  const recoveryGapOk = !lastRecoveryMs || nowMs - lastRecoveryMs >= recoveryGapHours * 3600_000;
+  const capRecoveryMode = discountedRunawayPins > 0 || activeRolling >= 15;
+  const recoverySlotsAvailable = capRecoveryMode && recoveryGapOk ? 1 : 0;
+  const pinsExpiringNext24h = rollingSlots.filter((s) => {
+    const expiresMs = new Date(s.expires_at).getTime();
+    return expiresMs > nowMs && expiresMs <= nowMs + DAY_MS;
+  }).length;
+  return {
+    daily,
+    weekly: activeRolling,
+    daily_limit: 3,
+    weekly_limit: 15,
+    ok: daily < 3 && activeRolling < 15,
+    rolling_window_start: weekStart,
+    rolling_window_end: new Date(nowMs).toISOString(),
+    next_expiring_pin_at: rollingSlots[0]?.expires_at || null,
+    pins_expiring_next_24h: pinsExpiringNext24h,
+    effective_weekly_usage: activeRolling,
+    effective_weekly_limit: 15,
+    recovery_slots_available: recoverySlotsAvailable,
+    active_rolling_pins: activeRolling,
+    expired_pins_awaiting_cleanup: expiredAwaitingCleanup,
+    paused_product_pins: pausedProductPins,
+    discounted_runaway_pins: discountedRunawayPins,
+    cap_recovery_mode: capRecoveryMode,
+    recovery_gap_hours: recoveryGapHours,
+    last_recovery_pin_at: (settings as any)?.last_recovery_pin_at || null,
+    recovery_gap_ok: recoveryGapOk,
+    actual_scheduler_pressure: activeRolling / 15,
+    rolling_slots: rollingSlots.slice(0, 25),
+    runaway_product_ids: Array.from(runaway.runawayProductIds),
+    runaway_context: {
+      product_ids: Array.from(runaway.runawayProductIds),
+      categories: Array.from(runaway.categories),
+      hooks: Array.from(runaway.hooks),
+      board_ids: Array.from(runaway.boardIds),
+      board_names: Array.from(runaway.boardNames),
+      historical_pin_count: runaway.pin_count,
+    },
+  };
 }
 
 async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>) {
@@ -2364,15 +2515,28 @@ async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>)
     media_source: { source_type: "image_url", url: product.image_url },
     link: destination,
   }) : null;
+  const historicalCapOnly = !caps.ok && caps.recovery_slots_available > 0;
   const exactReason = !conn?.access_token ? "Pinterest token missing"
     : !auth?.auth_valid ? auth?.failure_response?.error || "Pinterest auth failed"
     : !selectedBoard?.id ? "No production-eligible Pinterest board"
     : !product ? "No eligible in-stock product with media"
     : !imageCheck.ok ? `Media blocked: ${(imageCheck as any).reason}`
     : !destinationCheck.ok ? `Destination blocked: ${(destinationCheck as any).reason}`
-    : !caps.ok ? `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}`
+    : !caps.ok && !historicalCapOnly ? `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}`
     : payload && !payload.ok ? `Payload invalid: ${payload.rejectedFields.map((f) => f.path).join(",")}`
     : null;
+  const recoveryModeStatus = {
+    cap_recovery_mode: caps.cap_recovery_mode,
+    emergency_recovery_available: historicalCapOnly,
+    reason: historicalCapOnly ? "Only historical rolling-cap exhaustion remains; one safe recovery publish is allowed per 12h." : null,
+    rules: {
+      max_recovery_pins_per_12h: 1,
+      must_avoid_runaway_product: true,
+      must_avoid_runaway_category: true,
+      must_avoid_runaway_hook: true,
+      must_avoid_runaway_board: true,
+    },
+  };
   return json(cors, {
     ok: !exactReason,
     auth_status: { connected: !!conn?.access_token, valid: !!auth?.auth_valid },
@@ -2381,7 +2545,8 @@ async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>)
     media_status: imageCheck,
     payload_validation_status: payload ? { ok: payload.ok, rejected_fields: payload.rejectedFields, coerced_fields: payload.coercedFields, sanitized_payload: payload.debugPayload } : { ok: false, reason: "not_built" },
     cap_status: caps,
-    cold_start_status: { eligible: !exactReason, daily_budget: `${caps.daily}/${caps.daily_limit}`, weekly_budget: `${caps.weekly}/${caps.weekly_limit}` },
+    recovery_mode_status: recoveryModeStatus,
+    cold_start_status: { eligible: !exactReason, daily_budget: `${caps.daily}/${caps.daily_limit}`, weekly_budget: `${caps.weekly}/${caps.weekly_limit}`, recovery_publish_allowed: historicalCapOnly },
     first_eligible_product: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product) } : null,
     exact_reason_if_no_pin_can_be_published: exactReason,
   });
@@ -2400,7 +2565,7 @@ async function runSafeColdStartTestPublish(sb: any, cors: Record<string, string>
   if (!auth.auth_valid) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: auth.failure_response.error });
   const caps = await getColdStartCaps(sb);
   log.push({ step: "cold_start_caps", ok: caps.ok, detail: caps });
-  if (!caps.ok) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}` });
+  if (!caps.ok) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}. Use Force safe recovery pin for the 12h recovery bypass.` });
   const product = await pickSafeColdStartProduct(sb);
   log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product) } : null });
   if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No safe cold-start product found" });
@@ -2468,6 +2633,175 @@ async function runSafeColdStartTestPublish(sb: any, cors: Record<string, string>
     });
   }
   return json(cors, { ok: response.ok && !!pinId, dryRun: false, published: !!pinId, pinterest_pin_id: pinId, external_url: externalUrl, log, response: responseBody });
+}
+
+async function pickSafeRecoveryProduct(sb: any, runaway: Awaited<ReturnType<typeof getRunawayContext>>) {
+  const { data: products } = await sb.from("products")
+    .select("id,name,slug,category,price,image_url,stock,is_active,is_duplicate")
+    .eq("is_active", true)
+    .eq("is_duplicate", false)
+    .not("image_url", "is", null)
+    .gt("stock", 0)
+    .limit(200);
+  const candidates = (products || []).filter((p: any) => {
+    const category = String(p.category || "").toLowerCase();
+    const detectedCategory = detectCategory(p.name || "", p.category || "").toLowerCase();
+    return p.slug && p.image_url && safeProductSlug(p.slug)
+      && !runaway.runawayProductIds.has(String(p.id))
+      && !runaway.categories.has(category)
+      && !runaway.categories.has(detectedCategory);
+  });
+  candidates.sort((a: any, b: any) => scoreSafeColdStartProduct(b) - scoreSafeColdStartProduct(a));
+  return candidates[0] || null;
+}
+
+async function pickRecoveryBoard(sb: any, boards: any[], runaway: Awaited<ReturnType<typeof getRunawayContext>>) {
+  const eligible = await pickAllEligibleBoards(sb, boards, null);
+  const filtered = eligible.filter((b: any) => {
+    const id = String(b?.id || "");
+    const name = String(b?.name || "").toLowerCase();
+    return id && !runaway.boardIds.has(id) && !runaway.boardNames.has(name);
+  });
+  filtered.sort((a: any, b: any) => {
+    const pa = Number(a?.pin_count ?? 0);
+    const pb = Number(b?.pin_count ?? 0);
+    return pa - pb;
+  });
+  return filtered[0] || null;
+}
+
+async function getRecentRecoveryPublish(sb: any, sinceIso: string) {
+  const { data } = await sb.from("pinterest_pin_queue")
+    .select("id,posted_at,pinterest_pin_id,pin_external_id,product_slug")
+    .eq("status", "posted")
+    .eq("recovery_mode_publish", true)
+    .gte("posted_at", sinceIso)
+    .order("posted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data || null;
+}
+
+async function runSafeRecoveryPublish(sb: any, cors: Record<string, string>, opts: { dryRun: boolean }) {
+  const traceId = crypto.randomUUID();
+  const log: Array<{ step: string; ok: boolean; detail: unknown }> = [];
+  const startedAt = Date.now();
+  const runaway = await getRunawayContext(sb);
+  const caps = await getColdStartCaps(sb);
+  log.push({ step: "rolling_cap", ok: caps.ok || caps.recovery_slots_available > 0, detail: caps });
+
+  const recentRecovery = await getRecentRecoveryPublish(sb, new Date(Date.now() - 12 * 3600_000).toISOString());
+  const recoveryAllowed = !recentRecovery && (caps.ok || caps.recovery_slots_available > 0);
+  log.push({ step: "recovery_rate_limit", ok: recoveryAllowed, detail: { recent_recovery: compactPinForDiagnostics(recentRecovery), min_gap_hours: 12, recovery_slots_available: caps.recovery_slots_available } });
+  if (!recoveryAllowed) {
+    return json(cors, { ok: false, dryRun: opts.dryRun, traceId, recovery_mode_publish: false, error: recentRecovery ? "Recovery publish already used in the last 12h" : "No safe recovery slot available", log, cap_status: caps });
+  }
+
+  const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
+  log.push({ step: "token_loaded", ok: !!conn?.access_token, detail: { connection_id: conn?.id || null } });
+  if (!conn?.access_token) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "Pinterest token missing" });
+  const accessToken = await getFreshPinterestProductionToken(sb, conn);
+  log.push({ step: "token_refresh", ok: !!accessToken, detail: { prefix: tokenPrefix(accessToken) } });
+  if (!accessToken) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "Pinterest token refresh failed" });
+  const auth = await validatePinterestAuth(sb, conn, accessToken);
+  log.push({ step: "auth", ok: auth.auth_valid, detail: { board_count: auth.boards.length } });
+  if (!auth.auth_valid) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: auth.failure_response.error });
+
+  const product = await pickSafeRecoveryProduct(sb, runaway);
+  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, category: product.category, score: scoreSafeColdStartProduct(product), excluded_runaway_products: Array.from(runaway.runawayProductIds) } : { reason: "no_non_runaway_non_category_product" } });
+  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "No safe recovery product outside runaway product/category found" });
+
+  const board = await pickRecoveryBoard(sb, auth.boards, runaway);
+  log.push({ step: "board", ok: !!board?.id, detail: board ? { id: board.id, name: board.name || null, excluded_board_ids: Array.from(runaway.boardIds), excluded_board_names: Array.from(runaway.boardNames) } : { reason: "no_different_production_board" } });
+  if (!board?.id) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "No different production-eligible board found for recovery publish" });
+
+  const hook = RECOVERY_HOOKS.find((h) => !runaway.hooks.has(h.toLowerCase())) || `Recovery pick ${Date.now().toString(36)}`;
+  const categoryKey = detectCategory(product.name || "", product.category || "");
+  const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=cap_recovery&utm_content=${product.slug}-recovery`;
+  const imageCheck = await checkPublicUrl(product.image_url, "getpawsy.pet");
+  const destinationCheck = await checkPublicUrl(destination, "getpawsy.pet");
+  const utmCheck = validatePinterestUtm(destination);
+  log.push({ step: "media", ok: imageCheck.ok, detail: imageCheck });
+  log.push({ step: "destination", ok: destinationCheck.ok, detail: destinationCheck });
+  log.push({ step: "utm", ok: utmCheck.ok, detail: utmCheck });
+  log.push({ step: "hook", ok: !runaway.hooks.has(hook.toLowerCase()), detail: { hook, excluded_hooks: Array.from(runaway.hooks) } });
+  if (!imageCheck.ok || !destinationCheck.ok || !utmCheck.ok) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "Recovery media, destination, or UTM validation failed" });
+
+  const rawPayload = {
+    title: `${hook} — ${String(product.name || "GetPawsy Pet Pick").slice(0, 55)}`.slice(0, 90),
+    description: `A practical GetPawsy pick for US pet parents.\n\nLearn more →`,
+    board_id: String(board.id),
+    media_source: { source_type: "image_url", url: product.image_url },
+    link: destination,
+  };
+  const safePayload = await preparePinterestPayload(sb, rawPayload, { endpoint: "/pins", function: "pinterest-automation", action: "force_safe_recovery_pin", traceId, product_id: product.id });
+  log.push({ step: "payload_integers", ok: safePayload.ok, detail: { rejected_fields: safePayload.rejectedFields, coerced_fields: safePayload.coercedFields, sanitized_payload: safePayload.debugPayload } });
+  if (!safePayload.ok) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "Payload integer validation failed" });
+
+  if (opts.dryRun) {
+    return json(cors, { ok: true, dryRun: true, traceId, recovery_mode_publish: true, cap_recovery_mode: true, log, cap_status: caps, product: { id: product.id, slug: product.slug, name: product.name, category: product.category }, board: { id: board.id, name: board.name || null }, hook, payload: safePayload.debugPayload });
+  }
+
+  const response = await fetch(`${PINTEREST_PRODUCTION_API_BASE}/pins`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(safePayload.payload),
+  });
+  const responseText = await response.text();
+  let responseBody: any = null;
+  try { responseBody = JSON.parse(responseText); } catch { responseBody = { raw: responseText }; }
+  const pinId = typeof responseBody?.id === "string" ? responseBody.id : null;
+  const externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
+  log.push({ step: "publish", ok: response.ok && !!pinId, detail: { status: response.status, pinterest_pin_id: pinId, response: responseBody } });
+
+  await sb.from("pinterest_publish_logs").insert({
+    status: response.ok && pinId ? "success" : "failed",
+    board_id: String(board.id),
+    image_url: product.image_url,
+    pin_title: rawPayload.title,
+    destination_link: destination,
+    request_payload: { ...safePayload.debugPayload, recovery_mode_publish: true, cap_recovery_mode: true, traceId },
+    response_payload: { response: responseBody, log, cap_status: caps },
+    error_message: response.ok && pinId ? null : `Pinterest API ${response.status}: ${responseText.slice(0, 500)}`,
+    duration_ms: Date.now() - startedAt,
+  });
+
+  if (response.ok && pinId) {
+    const postedAt = new Date().toISOString();
+    const queueInsert = {
+      product_id: product.id,
+      product_slug: product.slug,
+      product_name: product.name,
+      pin_variant: `recovery_${Date.now().toString(36)}`,
+      hook_group: hook,
+      category_key: categoryKey,
+      pin_title: rawPayload.title,
+      pin_description: rawPayload.description,
+      pin_image_url: product.image_url,
+      destination_link: destination,
+      board_name: String(board.name || "GetPawsy Products"),
+      board_id: String(board.id),
+      status: "posted",
+      posted_at: postedAt,
+      pinterest_pin_id: pinId,
+      pin_external_id: pinId,
+      external_url: externalUrl,
+      scheduled_at: postedAt,
+      approved_at: postedAt,
+      recovery_mode_publish: true,
+      cap_recovery_mode: true,
+      recovery_trace: { traceId, cap_status: caps, avoided_runaway: caps.runaway_context, hook, board_id: String(board.id) },
+      meta: { recovery_mode_publish: true, cap_recovery_mode: true, traceId },
+    };
+    const { error: insertError } = await sb.from("pinterest_pin_queue").insert(queueInsert);
+    log.push({ step: "store_pin", ok: !insertError, detail: insertError ? { error: insertError.message } : { pinterest_pin_id: pinId, external_url: externalUrl } });
+    if (insertError) return json(cors, { ok: false, dryRun: false, traceId, recovery_mode_publish: true, published: true, pinterest_pin_id: pinId, external_url: externalUrl, log, error: `Published but failed to store queue row: ${insertError.message}` });
+    await sb.from("pinterest_runtime_settings").update({ last_recovery_pin_at: postedAt, updated_at: postedAt }).eq("id", 1);
+    await sb.from("pinterest_connection").update({ last_publish_at: postedAt, last_error: null }).eq("id", conn.id);
+    await sb.from("products").update({ pinterest_last_posted_at: postedAt, pinterest_status: "posted" }).eq("id", product.id);
+  }
+
+  return json(cors, { ok: response.ok && !!pinId, dryRun: false, traceId, recovery_mode_publish: true, cap_recovery_mode: true, published: !!pinId, pinterest_pin_id: pinId, external_url: externalUrl, log, cap_status: caps, response: responseBody });
 }
 
 async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, opts?: { sourceLogId?: string | null }) {

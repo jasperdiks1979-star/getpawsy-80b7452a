@@ -102,14 +102,16 @@ function buildPhasesFromDiagnostic(d: any): Phase[] {
   // 6. Caps
   const caps = d.cap_status;
   const capOk = !!caps?.ok;
+  const weeklyUsed = caps?.effective_weekly_usage ?? caps?.weekly;
+  const weeklyLimit = caps?.effective_weekly_limit ?? caps?.weekly_limit;
   phases.push({
     key: "caps",
     label: "6 · Cold-start caps",
     status: capOk ? "ok" : "fail",
     rootCause: caps
       ? capOk
-        ? `Within budget — daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}`
-        : `Cap reached — daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}`
+        ? `Within budget — daily ${caps.daily}/${caps.daily_limit}, active weekly ${weeklyUsed}/${weeklyLimit}`
+        : `Cap reached — daily ${caps.daily}/${caps.daily_limit}, active weekly ${weeklyUsed}/${weeklyLimit}; recovery slots ${caps.recovery_slots_available ?? 0}`
       : "No cap data",
     detail: caps,
   });

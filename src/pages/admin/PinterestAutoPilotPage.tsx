@@ -350,6 +350,7 @@ export default function PinterestAutoPilotPage() {
   const [overrideReason, setOverrideReason] = useState("");
   const [openDecision, setOpenDecision] = useState<Decision | null>(null);
   const [testPublishLog, setTestPublishLog] = useState<any | null>(null);
+  const [recoveryPublishLog, setRecoveryPublishLog] = useState<any | null>(null);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["autopilot-settings"],
@@ -529,11 +530,31 @@ export default function PinterestAutoPilotPage() {
     onSuccess: (d) => {
       setTestPublishLog(d);
       refetchDiagnostic();
+      qc.invalidateQueries({ queryKey: ["pinterest-weekly-cap-timeline"] });
       const message = d?.dryRun ? "Cold-start dry-run complete" : d?.published ? "Published 1 safe cold-start pin" : d?.error || "Cold-start publish failed";
       if (d?.ok) toast.success(message);
       else toast.error(message);
     },
     onError: (e) => toast.error((e as Error).message),
+  });
+
+  const forceSafeRecoveryPin = useMutation({
+    mutationFn: async (dryRun: boolean) => {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "force_safe_recovery_pin", dryRun },
+      });
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (d) => {
+      setRecoveryPublishLog(d);
+      refetchDiagnostic();
+      qc.invalidateQueries({ queryKey: ["pinterest-weekly-cap-timeline"] });
+      const message = d?.dryRun ? "Recovery dry-run complete" : d?.published ? "Published 1 safe recovery pin" : d?.error || "Recovery publish failed";
+      if (d?.ok) toast.success(message);
+      else toast.error(message);
+    },
+    onError: (e) => toast.error((e as Error).message || "Recovery publish failed"),
   });
 
   const decisionStats = (() => {
@@ -625,6 +646,15 @@ export default function PinterestAutoPilotPage() {
           {publishSafeColdStartTest.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
           Publish 1 safe cold-start test pin
         </Button>
+        <Button
+          variant="default"
+          onClick={() => forceSafeRecoveryPin.mutate(false)}
+          disabled={forceSafeRecoveryPin.isPending}
+          size="lg"
+        >
+          {forceSafeRecoveryPin.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <SkipForward className="w-4 h-4 mr-2" />}
+          Force safe recovery pin
+        </Button>
       </div>
 
       <Card>
@@ -654,8 +684,26 @@ export default function PinterestAutoPilotPage() {
             <Badge variant={diagnostic?.auth_status?.valid ? "default" : "destructive"}>Auth {diagnostic?.auth_status?.valid ? "OK" : "Issue"}</Badge>
             <Badge variant={diagnostic?.board_status?.ok ? "default" : "destructive"}>Board {diagnostic?.board_status?.ok ? "OK" : "Issue"}</Badge>
             <Badge variant={diagnostic?.payload_validation_status?.ok ? "default" : "destructive"}>Payload {diagnostic?.payload_validation_status?.ok ? "OK" : "Issue"}</Badge>
-            <Badge variant={diagnostic?.cap_status?.ok ? "default" : "outline"}>Cold-start cap {diagnostic?.cap_status ? `${diagnostic.cap_status.daily}/${diagnostic.cap_status.daily_limit} day · ${diagnostic.cap_status.weekly}/${diagnostic.cap_status.weekly_limit} week` : "—"}</Badge>
+            <Badge variant={diagnostic?.cap_status?.ok ? "default" : "outline"}>Cold-start cap {diagnostic?.cap_status ? `${diagnostic.cap_status.daily}/${diagnostic.cap_status.daily_limit} day · ${diagnostic.cap_status.effective_weekly_usage ?? diagnostic.cap_status.weekly}/${diagnostic.cap_status.effective_weekly_limit ?? diagnostic.cap_status.weekly_limit} active week` : "—"}</Badge>
+            {diagnostic?.cap_status?.cap_recovery_mode && <Badge variant="secondary">cap_recovery_mode=true</Badge>}
           </div>
+          {diagnostic?.cap_status && (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+              {[
+                ["Active rolling pins", `${diagnostic.cap_status.active_rolling_pins}/${diagnostic.cap_status.effective_weekly_limit}`],
+                ["Expired awaiting cleanup", diagnostic.cap_status.expired_pins_awaiting_cleanup],
+                ["Paused-product pins", diagnostic.cap_status.paused_product_pins],
+                ["Discounted runaway pins", diagnostic.cap_status.discounted_runaway_pins],
+                ["Recovery slots", diagnostic.cap_status.recovery_slots_available],
+                ["Expiring next 24h", diagnostic.cap_status.pins_expiring_next_24h],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                  <div className="text-lg font-bold font-mono">{String(value ?? 0)}</div>
+                </div>
+              ))}
+            </div>
+          )}
           {diagnostic?.first_eligible_product && (
             <div className="text-sm text-muted-foreground">
               First eligible: <span className="font-medium text-foreground">{diagnostic.first_eligible_product.name}</span>
@@ -667,6 +715,9 @@ export default function PinterestAutoPilotPage() {
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => publishSafeColdStartTest.mutate(true)} disabled={publishSafeColdStartTest.isPending}>
               Dry-run safe test pin
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => forceSafeRecoveryPin.mutate(true)} disabled={forceSafeRecoveryPin.isPending}>
+              Dry-run recovery pin
             </Button>
             <Button
               variant="default"
@@ -698,14 +749,19 @@ export default function PinterestAutoPilotPage() {
               {JSON.stringify(testPublishLog, null, 2)}
             </pre>
           )}
+          {recoveryPublishLog && (
+            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-[11px]">
+              {JSON.stringify(recoveryPublishLog, null, 2)}
+            </pre>
+          )}
         </CardContent>
       </Card>
 
       {/* Pin-level decision panel — chronological phase breakdown */}
-      <PinDecisionPanel diagnostic={diagnostic} testPublishLog={testPublishLog} />
+      <PinDecisionPanel diagnostic={diagnostic} testPublishLog={recoveryPublishLog || testPublishLog} />
 
       {/* Weekly cap countdown — rolling 7d reset timeline */}
-      <WeeklyCapCountdown weeklyLimit={diagnostic?.cap_status?.weekly_limit ?? 15} />
+      <WeeklyCapCountdown weeklyLimit={diagnostic?.cap_status?.effective_weekly_limit ?? diagnostic?.cap_status?.weekly_limit ?? 15} capStatus={diagnostic?.cap_status} />
 
       {/* Publish saturation / runaway risk */}
       <Card>
