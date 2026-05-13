@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-05-08T07:10:04.285Z" total_products="526">
+<merchant_diagnostics generated="2026-05-13T22:52:29.717Z" total_products="526">
   <summary>
     <missing_gtin>67</missing_gtin>
     <missing_image>0</missing_image>
@@ -85,10 +85,10 @@
     <issue type="missing_gtin" product_id="33ad17c0-b009-4df5-8e45-265fcb78bdbc" name="GetPawsy Minimalist Dog Harness – Outdoor Adjustable Design" />
     <issue type="missing_gtin" product_id="64b2bb00-2064-4992-9c06-bdc263421dc3" name="Dog &amp; Cat Bandana Collar – Double Layer Plaid Bib Style Collar" />
     <issue type="missing_gtin" product_id="d5629014-78fc-437d-a4a2-b0e9daf2cf71" name="New Rabbit-fleece Pet Dog Comfort And Warmth Scarf" />
+    <issue type="short_title" product_id="55e15142-c8ea-4e5c-bba9-5be7d55be5be" name="Cat Shelves for Indoor Cats" length="27" />
     <issue type="short_title" product_id="1cb0c3a0-a373-4276-994d-24dbce8b97fc" name="Cat Bed with Washable Cushion for Cats" length="38" />
     <issue type="overlength_title" product_id="f9b4abd0-91b2-42f1-8b94-98488778c519" name="Super Cute Appearance Pet Feeding And Drinking Device, Cleverly Designed With..." length="200" />
     <issue type="overlength_title" product_id="c48e0e44-e340-45e6-851d-c7727138c1fd" name="Modern Indoor Cat Tree Wooden Cat Tower Suitable For Cats, Includes Hammock, ..." length="152" />
-    <issue type="short_title" product_id="55e15142-c8ea-4e5c-bba9-5be7d55be5be" name="Cat Shelves for Indoor Cats" length="27" />
     <issue type="overlength_title" product_id="6d402a08-0533-4c0e-8dd4-3659998178d0" name="Mewoo Large Cat Tree Tower For Adult Cats - Multi-Level Scratching Post With ..." length="151" />
     <issue type="short_title" product_id="4b2647e2-6604-41fb-8bf8-631273c6d3f5" name="Self-Priming Pet Paw Hair Trimmer" length="33" />
     <issue type="short_title" product_id="41a6593b-3cac-4f1a-99b1-234e2b93ed2f" name="Waterless Dog Wash" length="18" />
@@ -102,28 +102,28 @@
     <issue type="overlength_title" product_id="81c94a04-ac96-4c49-b49f-6be17203b04d" name="Mewoo Washable Pet Bed For Small Dogs &amp; Cats - 23x23x7 Inch Orthopedic Dog Be..." length="151" />
     <issue type="overlength_title" product_id="84cd536c-9651-485a-aabf-cf7c388cb744" name="Mewoo Washable Pet Bed For Cats &amp; Small Dogs - 23x23x7 Inch Round Orthopedic ..." length="157" />
     <issue type="overlength_title" product_id="2f472f5e-38ed-4b6b-9a8b-6c5c50f232fa" name="MEWOOFUN Donut Cat Bed For Indoor Cats - Round Washable Plush Pet Bed With Ja..." length="177" />
-    <issue type="short_title" product_id="175ad360-d7ee-40ad-bbdf-b714cb596635" name="Dome Covered Cat Litter Box with Lid" length="36" />
-    <issue type="short_title" product_id="f1e9acbd-e14c-4d5d-a2e7-757391465691" name="Hooded Cat Litter Box w/ Litter Mat" length="35" />
-    <issue type="short_title" product_id="7cfca0ec-5fda-46f9-a842-79e57bd7479c" name="Hooded Cat Litter Box" length="21" />
+    <issue type="short_title" product_id="0e209c06-4e36-427b-8af0-a0adab96327c" name="Cat Litter Box Enclosure With Drawers" length="37" />
     <issue type="short_title" product_id="6d307223-27a9-483b-aad9-40cc0ae6894c" name="Covered Cat Litter Box with Lid" length="31" />
     <issue type="short_title" product_id="71f38863-6b7c-4f23-86a4-7f9d0dbcac8e" name="Cat Litter Box with Lid" length="23" />
-    <issue type="short_title" product_id="0e209c06-4e36-427b-8af0-a0adab96327c" name="Cat Litter Box Enclosure With Drawers" length="37" />
     <issue type="short_title" product_id="c44d2145-2552-4a1d-81ef-36e260065638" name="Cat Litter Box Toilet with Lid" length="30" />
+    <issue type="short_title" product_id="7cfca0ec-5fda-46f9-a842-79e57bd7479c" name="Hooded Cat Litter Box" length="21" />
+    <issue type="short_title" product_id="f1e9acbd-e14c-4d5d-a2e7-757391465691" name="Hooded Cat Litter Box w/ Litter Mat" length="35" />
+    <issue type="short_title" product_id="175ad360-d7ee-40ad-bbdf-b714cb596635" name="Dome Covered Cat Litter Box with Lid" length="36" />
     <issue type="overlength_title" product_id="b6d36d9c-ab85-4331-9069-240920b287ca" name=" Wicker Dog House Outdoor with Canopy, Rattan Dog Bed with Water-resistant Cu..." length="180" />
     <issue type="overlength_title" product_id="45d9e415-8db8-42d8-9a5e-d6abaaf4c5ff" name=" Wicker Dog House Outdoor with Canopy, Rattan Dog Bed with Water-resistant Cu..." length="181" />
     <issue type="overlength_title" product_id="42823f27-f3ec-4494-a081-73c7fbc029e0" name="2 In 1 Wireless Electric Dog Fence Waterproof Pet Shock Boundary Containment ..." length="160" />
     <issue type="overlength_title" product_id="f6b8db89-d763-48dc-9dce-972b609651bd" name="Pet Carrier Backpack, Expandable Cat Dog Carrier With Front &amp; Back Extension,..." length="173" />
-    <issue type="overlength_title" product_id="54e8ae20-0a7d-47b5-8eb9-1193cacb5263" name=" Fully Enclosed Cat Litter Box with Lid &amp; Drawer Design, Covered Litter Box A..." length="193" />
     <issue type="overlength_title" product_id="b7e7c3af-2ea9-4483-91e2-bc974b1d3b01" name=" Floor-to-Ceiling Cat Tree Cat Climbing Tower with Sisal-Covered Scratching P..." length="159" />
+    <issue type="overlength_title" product_id="54e8ae20-0a7d-47b5-8eb9-1193cacb5263" name=" Fully Enclosed Cat Litter Box with Lid &amp; Drawer Design, Covered Litter Box A..." length="193" />
     <issue type="overlength_title" product_id="8eea41d7-2e96-43fb-b7c7-da9f6f1318b6" name=" 6&quot; Height Small Puppy Dog Feeding Station for Messy Pets, Stainless Steel El..." length="161" />
-    <issue type="overlength_title" product_id="c511afe4-081e-41cc-9e61-ed9946fb56a7" name="Dog Chew Toys, Dog Toothbrush Care Cleaning Sticks, Dog Toothbrush Chew Toy S..." length="190" />
-    <issue type="overlength_title" product_id="6d5d4336-2af9-46ce-a6de-0c8884acbd4a" name="84.6 In Dark Gray Cat Tree Tower With Wide Base, 3 Large Hinding Condo, 11 Si..." length="193" />
     <issue type="overlength_title" product_id="17c1494b-b677-4868-a3f9-bc7280755f5b" name="Extra Thick Indoor Cat Scratching Post With Hanging Ball Toy - Durable Fiberb..." length="173" />
-    <issue type="overlength_title" product_id="41d9da7b-156b-4d22-a1ce-7b8c0c90d3ac" name="59in Large Tall Christmas Tree Cat Tower With 2 Cat Condos &amp; Scratching Post,..." length="171" />
-    <issue type="overlength_title" product_id="9977601c-9de8-4beb-8aee-71cdd23b8814" name="Mushroom Cat Climbing Frame, Sisal Cat Climbing Post, Interesting Red And Whi..." length="197" />
-    <issue type="overlength_title" product_id="4b79fbbe-b07e-4530-9890-38836c534452" name="Cat Toys - Interactive Toy For Cat , Kitten Toys, Lightweight Resin Duck Shap..." length="156" />
     <issue type="short_title" product_id="b77331a7-9057-4bab-af77-a9324b191655" name="Cat Tumbler Toy Ball" length="20" />
     <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
+    <issue type="overlength_title" product_id="41d9da7b-156b-4d22-a1ce-7b8c0c90d3ac" name="59in Large Tall Christmas Tree Cat Tower With 2 Cat Condos &amp; Scratching Post,..." length="171" />
+    <issue type="overlength_title" product_id="4b79fbbe-b07e-4530-9890-38836c534452" name="Cat Toys - Interactive Toy For Cat , Kitten Toys, Lightweight Resin Duck Shap..." length="156" />
+    <issue type="overlength_title" product_id="9977601c-9de8-4beb-8aee-71cdd23b8814" name="Mushroom Cat Climbing Frame, Sisal Cat Climbing Post, Interesting Red And Whi..." length="197" />
+    <issue type="overlength_title" product_id="6d5d4336-2af9-46ce-a6de-0c8884acbd4a" name="84.6 In Dark Gray Cat Tree Tower With Wide Base, 3 Large Hinding Condo, 11 Si..." length="193" />
+    <issue type="overlength_title" product_id="c511afe4-081e-41cc-9e61-ed9946fb56a7" name="Dog Chew Toys, Dog Toothbrush Care Cleaning Sticks, Dog Toothbrush Chew Toy S..." length="190" />
     <issue type="overlength_title" product_id="d3f8b8c6-5846-4d38-a39e-b89efe3dca7f" name="Dog Puzzle Toy, Adjustable Treat Dispensing Ball Food Dispenser Tough Slow Fe..." length="166" />
     <issue type="overlength_title" product_id="c8a9adc6-fd11-4e5e-bac3-139982e767dc" name=" 85.5&quot; Cat Tree Height Adjustable Floor-to-Ceiling 4-Tier Kitty Climbing Acti..." length="171" />
     <issue type="duplicate_title" product_ids="539df59c-f25d-45aa-8257-634a3e4a5743,00996613-2cdc-41ae-87a0-6e9248293d75" count="2" />
