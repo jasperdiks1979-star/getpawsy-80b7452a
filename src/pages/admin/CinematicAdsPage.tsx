@@ -37,7 +37,7 @@ export default function CinematicAdsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [productSlug, setProductSlug] = useState("enclosed-cat-litter-box-extra-large-flip-top-design");
+  const [productSlug, setProductSlug] = useState("enclosed-cat-litter-box-extra-large-flip-top");
   const [hookVariant, setHookVariant] = useState("default");
 
   const load = async () => {
