@@ -2317,13 +2317,20 @@ function scoreSafeColdStartProduct(p: any): number {
 
 async function pickSafeColdStartProduct(sb: any) {
   const { data: products } = await sb.from("products")
-    .select("id,name,slug,category,price,image_url,stock,is_active,is_duplicate")
+    .select("id,name,slug,category,price,image_url,images,stock,is_active,is_duplicate")
     .eq("is_active", true)
     .eq("is_duplicate", false)
     .not("image_url", "is", null)
     .gt("stock", 0)
     .limit(100);
-  const candidates = (products || []).filter((p: any) => p.slug && p.image_url && safeProductSlug(p.slug));
+  const candidates = (products || []).filter((p: any) => {
+    if (!(p.slug && p.image_url && safeProductSlug(p.slug))) return false;
+    const gate = evaluateMediaHost(p);
+    if (!gate.ok) return false;
+    p.image_url = gate.selected_image; // force own-domain image
+    p._media_gate = gate;
+    return true;
+  });
   candidates.sort((a: any, b: any) => scoreSafeColdStartProduct(b) - scoreSafeColdStartProduct(a));
   return candidates[0] || null;
 }
@@ -2638,13 +2645,13 @@ async function runSafeColdStartTestPublish(sb: any, cors: Record<string, string>
 
 async function pickSafeRecoveryProduct(sb: any, runaway: Awaited<ReturnType<typeof getRunawayContext>>) {
   const { data: products } = await sb.from("products")
-    .select("id,name,slug,category,price,image_url,stock,is_active,is_duplicate")
+    .select("id,name,slug,category,price,image_url,images,stock,is_active,is_duplicate")
     .eq("is_active", true)
     .eq("is_duplicate", false)
     .not("image_url", "is", null)
     .gt("stock", 0)
     .limit(200);
-  const candidates = (products || []).filter((p: any) => {
+  const preCandidates = (products || []).filter((p: any) => {
     const category = String(p.category || "").toLowerCase();
     const detectedCategory = detectCategory(p.name || "", p.category || "").toLowerCase();
     return p.slug && p.image_url && safeProductSlug(p.slug)
@@ -2652,6 +2659,15 @@ async function pickSafeRecoveryProduct(sb: any, runaway: Awaited<ReturnType<type
       && !runaway.categories.has(category)
       && !runaway.categories.has(detectedCategory);
   });
+  // Strict media-host gate: only own-domain images allowed. Skip CJ/external.
+  const candidates: any[] = [];
+  for (const p of preCandidates) {
+    const gate = evaluateMediaHost(p);
+    if (!gate.ok) continue;
+    p.image_url = gate.selected_image;
+    p._media_gate = gate;
+    candidates.push(p);
+  }
   candidates.sort((a: any, b: any) => scoreSafeColdStartProduct(b) - scoreSafeColdStartProduct(a));
   return candidates[0] || null;
 }
