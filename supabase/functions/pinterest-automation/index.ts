@@ -655,6 +655,24 @@ Deno.serve(async (req) => {
       return await runDirectPinterestApiTest(sb, conn, accessToken, cors, { sourceLogId });
     }
 
+    if (action === "payload_debug") {
+      const adminCheck = await authorizeDirectTest(sb, req, body);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      const { data } = await sb.from("pinterest_post_logs")
+        .select("created_at,status,error_message,response_data")
+        .eq("action", "payload_debug")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return json(cors, { ok: true, last: data || null });
+    }
+
+    if (action === "full_diagnostic") {
+      const adminCheck = await authorizeDirectTest(sb, req, body);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      return await runFullPinterestDiagnostic(sb, cors);
+    }
+
     if (action === "mint_direct_test_token") {
       const adminCheck = await requireDirectTestAdmin(sb, req);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
