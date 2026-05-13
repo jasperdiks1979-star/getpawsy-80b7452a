@@ -22,6 +22,32 @@ export const isUS = (c?: string | null) => !!c && US_VALUES.has(c.trim().toLower
 const ADMIN_PATH_RE = /^\/(admin|dashboard|founder-mode|diagnostics|growth-verification|healthz)/i;
 const TEST_QUERY_RE = /[?&](test|internal|dryrun|preview)=true/i;
 
+// ── Explicit bot detection ────────────────────────────────────────
+// Each rule returns a stable reason code so the UI can show *why* an event
+// was excluded, not just that it was excluded. First match wins.
+const BOT_BROWSER_RE = /(bot|crawler|spider|crawl|slurp|bingpreview|headless|phantomjs|puppeteer|playwright|lighthouse|pingdom|gtmetrix|monitor|uptimerobot|curl|wget|python-requests|httpclient|axios|node-fetch|go-http-client|java\/)/i;
+const BOT_REFERRER_RE = /(googlebot|bingbot|yandex|baiduspider|duckduckbot|ahrefs|semrush|mj12bot|dotbot|screaming\s*frog|petalbot|applebot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|slackbot|discordbot|skypeuripreview|embedly|crawler\.)/i;
+const BOT_UTM_RE = /(bot|crawler|spider|preview|monitor|uptime|test|qa|automation)/i;
+
+type BotCheck = { isBot: boolean; reason: string | null };
+function detectBot(r: any): BotCheck {
+  const path: string = r.page_path || "";
+  if (TEST_QUERY_RE.test(path)) return { isBot: true, reason: "test_query_param" };
+  const browser: string = (r.browser || "").toString();
+  if (browser && BOT_BROWSER_RE.test(browser)) return { isBot: true, reason: "bot_browser_ua" };
+  const referrer: string = (r.referrer || "").toString();
+  if (referrer && BOT_REFERRER_RE.test(referrer)) return { isBot: true, reason: "bot_referrer" };
+  const utm = `${r.utm_source || ""} ${r.utm_medium || ""} ${r.utm_campaign || ""}`.trim();
+  if (utm && BOT_UTM_RE.test(utm) && !/pinterest|tiktok|google|facebook|instagram/i.test(utm)) {
+    return { isBot: true, reason: "bot_utm_marker" };
+  }
+  // Geo signature: exact (0,0) lat/lng with no country = synthetic ping
+  if ((r.latitude === 0 && r.longitude === 0) || (r.latitude == null && r.longitude == null && !r.country && !r.city)) {
+    return { isBot: true, reason: "no_geo_signature" };
+  }
+  return { isBot: false, reason: null };
+}
+
 // Activity types that count as a "pageview". Anything else (cart_action, add_to_cart event,
 // purchase event, heartbeat, etc.) is NOT counted as a pageview to avoid mixing event types.
 const PAGEVIEW_TYPES = new Set([
@@ -91,13 +117,32 @@ Deno.serve(async (req) => {
 
     const total_raw_events = all.length;
     let excluded_internal = 0, excluded_bots = 0, excluded_admin = 0, excluded_non_us = 0;
+    const bot_reasons: Record<string, number> = {};
+    const bot_samples: Array<{ reason: string; path: string; browser: string | null; referrer: string | null; utm_source: string | null; country: string | null; created_at: string }> = [];
 
     const clean: any[] = [];
     for (const r of all) {
       if (r.is_internal === true) { excluded_internal++; continue; }
       const path = r.page_path || "";
       if (ADMIN_PATH_RE.test(path)) { excluded_admin++; continue; }
-      if (TEST_QUERY_RE.test(path)) { excluded_bots++; continue; }
+      const bot = detectBot(r);
+      if (bot.isBot) {
+        excluded_bots++;
+        const reason = bot.reason || "unknown";
+        bot_reasons[reason] = (bot_reasons[reason] || 0) + 1;
+        if (bot_samples.length < 20) {
+          bot_samples.push({
+            reason,
+            path,
+            browser: r.browser ?? null,
+            referrer: r.referrer ?? null,
+            utm_source: r.utm_source ?? null,
+            country: r.country ?? null,
+            created_at: r.created_at,
+          });
+        }
+        continue;
+      }
       if (usOnly && !isUS(r.country)) { excluded_non_us++; continue; }
       clean.push(r);
     }
@@ -209,6 +254,8 @@ Deno.serve(async (req) => {
       total_raw_events,
       excluded_internal,
       excluded_bots,
+      bot_reasons,
+      bot_samples,
       excluded_admin,
       excluded_non_us,
       clean_events: clean.length,
