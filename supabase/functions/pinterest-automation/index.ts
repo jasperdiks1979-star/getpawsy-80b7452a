@@ -2512,6 +2512,16 @@ async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>)
   const auth = token ? await validatePinterestAuth(sb, conn, token) : null;
   const product = await pickSafeColdStartProduct(sb);
   const caps = await getColdStartCaps(sb);
+  // Media-host classification across the active catalog
+  const { data: catalogForMedia } = await sb.from("products")
+    .select("slug,image_url,images,is_active,is_duplicate,stock")
+    .eq("is_active", true)
+    .eq("is_duplicate", false)
+    .not("image_url", "is", null)
+    .gt("stock", 0)
+    .limit(1000);
+  const mediaHostStatus = classifyProductsByMediaHost(catalogForMedia || []);
+  const productGate = product ? evaluateMediaHost(product) : null;
   const destination = product ? `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=cold_start_test&utm_content=safe_test` : null;
   const imageCheck = product?.image_url ? await checkPublicUrl(product.image_url, "getpawsy.pet") : { ok: false, reason: "missing_media" };
   const destinationCheck = destination ? await checkPublicUrl(destination, "getpawsy.pet") : { ok: false, reason: "missing_destination" };
@@ -2551,6 +2561,13 @@ async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>)
     board_status: { ok: !!selectedBoard?.id, selected_board: selectedBoard ? { id: selectedBoard.id, name: selectedBoard.name || null } : null, board_count: auth?.boards?.length || 0 },
     token_status: { present: !!conn?.access_token, refreshed: !!token, prefix: tokenPrefix(token) },
     media_status: imageCheck,
+    media_host_status: {
+      ...mediaHostStatus,
+      selected_product_image_host: productGate?.selected_host || null,
+      selected_product_media_host_ok: productGate?.ok ?? false,
+      selected_product_fallback_used: productGate?.fallback_used ?? false,
+      policy: { allowed_hosts: ["getpawsy.pet", "www.getpawsy.pet"], blocked_examples: ["cf.cjdropshipping.com", "oss-cf.cjdropshipping.com", "cdn.cjdropshipping.com"] },
+    },
     payload_validation_status: payload ? { ok: payload.ok, rejected_fields: payload.rejectedFields, coerced_fields: payload.coercedFields, sanitized_payload: payload.debugPayload } : { ok: false, reason: "not_built" },
     cap_status: caps,
     recovery_mode_status: recoveryModeStatus,
