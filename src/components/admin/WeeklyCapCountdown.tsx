@@ -34,10 +34,31 @@ function formatLocal(ms: number): string {
 
 export function WeeklyCapCountdown({ weeklyLimit = 15 }: { weeklyLimit?: number }) {
   const [now, setNow] = useState<number>(Date.now());
+  const notifiedSlots = useRef<Set<string>>(new Set());
+  const initialMount = useRef(true);
+
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
+    for (const s of upcoming) {
+      const remaining = s.freesAtMs - now;
+      const key = `${s.freesAtMs}-${s.productSlug ?? s.productName}`;
+      if (remaining <= 0 && !notifiedSlots.current.has(key)) {
+        notifiedSlots.current.add(key);
+        toast.success(`Weekly cap slot freed up! "${s.productName}" is now available again.`, {
+          description: `You have room to publish another pin (currently using ${used}/${weeklyLimit}).`,
+          duration: 8000,
+        });
+      }
+    }
+  }, [now, upcoming, used, weeklyLimit]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["pinterest-weekly-cap-timeline"],
