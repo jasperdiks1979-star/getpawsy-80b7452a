@@ -256,7 +256,6 @@ async function handler(req: Request): Promise<Response> {
       .eq("id", 1)
       .maybeSingle();
     const mode = settings?.mode ?? "balanced";
-    const minScore = settings?.min_quality_score ?? 70;
     const maxPerWeek = settings?.max_pins_per_product_per_week ?? 3;
     const preferred = settings?.preferred_category ?? null;
     const enabled = settings?.enabled ?? false;
