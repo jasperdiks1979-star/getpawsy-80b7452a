@@ -91,6 +91,42 @@ const sections = [
 
 export default function AdminDashboardOverview() {
   const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut: / to focus search (not when typing in another field)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (e.key === 'Escape') {
+        setQuery('');
+        inputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const allItems = useMemo(() => {
+    return sections.flatMap((s) => s.items.map((i) => ({ ...i, sectionTitle: s.title })));
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null; // null = show all sections normally
+    return allItems.filter(
+      (item) =>
+        item.label.toLowerCase().includes(q) ||
+        item.desc.toLowerCase().includes(q) ||
+        item.to.toLowerCase().includes(q) ||
+        item.sectionTitle.toLowerCase().includes(q)
+    );
+  }, [query, allItems]);
+
+  const hasResults = !filtered || filtered.length > 0;
 
   return (
     <>
@@ -98,42 +134,105 @@ export default function AdminDashboardOverview() {
         <title>Admin Dashboard | GetPawsy</title>
       </Helmet>
       <div className="container py-8 space-y-8 max-w-6xl">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <LayoutDashboard className="h-6 w-6 text-primary" />
-            Admin Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Centraal overzicht van alle admin tools en dashboards.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <LayoutDashboard className="h-6 w-6 text-primary" />
+              Admin Dashboard
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Centraal overzicht van alle admin tools en dashboards.
+            </p>
+          </div>
+
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder="Zoek admin tools…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9 pr-8"
+            />
+            {query && (
+              <button
+                onClick={() => { setQuery(''); inputRef.current?.focus(); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Wis zoekopdracht"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            {!query && (
+              <span className="hidden sm:inline-flex absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground border border-muted rounded px-1.5 py-0.5">
+                /
+              </span>
+            )}
+          </div>
         </div>
 
-        {sections.map((section) => (
-          <div key={section.title}>
+        {/* Search results view */}
+        {query.trim() && (
+          <div>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              {section.title}
+              {hasResults ? `Resultaten voor "${query.trim()}"` : 'Geen resultaten'}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {section.items.map((item) => (
-                <Card
-                  key={item.to}
-                  className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all group"
-                  onClick={() => navigate(item.to)}
-                >
-                  <CardContent className="p-4 flex items-start gap-3">
-                    <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{item.label}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{item.desc}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {hasResults ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {filtered!.map((item) => (
+                  <Card
+                    key={item.to}
+                    className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all group"
+                    onClick={() => navigate(item.to)}
+                  >
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{item.label}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{item.desc}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">{item.sectionTitle}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Probeer een andere zoekterm.</p>
+            )}
           </div>
-        ))}
+        )}
+
+        {/* Default section view */}
+        {!query.trim() &&
+          sections.map((section) => (
+            <div key={section.title}>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                {section.title}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {section.items.map((item) => (
+                  <Card
+                    key={item.to}
+                    className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all group"
+                    onClick={() => navigate(item.to)}
+                  >
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{item.label}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{item.desc}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
       </div>
     </>
   );
