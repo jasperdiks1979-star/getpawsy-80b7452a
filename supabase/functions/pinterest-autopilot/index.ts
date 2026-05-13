@@ -415,6 +415,9 @@ async function handler(req: Request): Promise<Response> {
       reason: string;
       niche: string;
     }> = [];
+    const mediaBlockedSlugs: Array<{ slug: string; host: string | null }> = [];
+    let mediaBlockedCount = 0;
+    let mediaOwnDomainCount = 0;
 
     for (const p of (products ?? []) as Product[]) {
       const ov = overrideMap.get(p.id);
@@ -438,6 +441,21 @@ async function handler(req: Request): Promise<Response> {
       if (img < 8) {
         continue; // bad image → silently skip
       }
+      // STRICT media-host gate — only own-domain images may reach Pinterest.
+      // External CJ/supplier hosts must never be selected (they fail with
+      // unexpected_host at publish-time and waste cap).
+      const mediaGate = evaluateMediaHost(p);
+      if (!mediaGate.ok) {
+        mediaBlockedCount++;
+        if (mediaBlockedSlugs.length < 20) {
+          mediaBlockedSlugs.push({ slug: String(p.slug || ""), host: mediaGate.selected_host });
+        }
+        continue; // skip BEFORE scoring/selection — no cap consumed
+      }
+      mediaOwnDomainCount++;
+      // Force selection to use the own-domain image (may differ from p.image_url
+      // when fallback walked p.images[]).
+      (p as any).image_url = mediaGate.selected_image;
       const niche = detectNiche(p.name, p.category);
 
       const margin = marginScore(p);
