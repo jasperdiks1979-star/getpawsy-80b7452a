@@ -1093,19 +1093,21 @@ Deno.serve(async (req) => {
           const mode = await getPinterestMode(sb);
           const apiBase = await getPinterestApiBase(sb);
           console.log("[pinterest] publish", { mode, api_base: apiBase, test: true });
+          const rawPayload = {
+            title,
+            description,
+            board_id: boardId,
+            media_source: { source_type: "image_url", url: p.image_url },
+            link,
+          };
+          const safePayload = await preparePinterestPayload(sb, rawPayload, { endpoint: "/pins", function: "pinterest-automation", action: "test_publish_sandbox", product_id: p.id });
           const res = await fetch(`${apiBase}/pins`, {
             method: "POST",
             headers: {
               Authorization: `Bearer ${conn.access_token}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              title,
-              description,
-              board_id: boardId,
-              media_source: { source_type: "image_url", url: p.image_url },
-              link,
-            }),
+            body: JSON.stringify(safePayload.payload),
           });
           const body = await res.json().catch(() => ({}));
           console.log("[pinterest] response", { status: res.status, mode, api_base: apiBase, pin_id: body?.id });
