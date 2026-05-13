@@ -309,6 +309,63 @@ export default function ProfitEnginePage() {
     refetchInterval: 30_000,
   });
 
+  // Recent runs (distinct trace_ids) for the timeline selector.
+  const recentRunsQ = useQuery({
+    queryKey: ["profit-engine-recent-runs"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("profit_engine_function_logs")
+        .select("trace_id, created_at, phase, level")
+        .order("created_at", { ascending: false })
+        .limit(60);
+      const seen = new Set<string>();
+      const runs: Array<{ trace_id: string; created_at: string; phase: string; level: string }> = [];
+      for (const r of (data ?? []) as any[]) {
+        if (!r.trace_id || seen.has(r.trace_id)) continue;
+        seen.add(r.trace_id);
+        runs.push(r);
+        if (runs.length >= 10) break;
+      }
+      return runs;
+    },
+    refetchInterval: 30_000,
+  });
+
+  const [selectedTrace, setSelectedTrace] = useState<string | null>(null);
+  const activeTrace = selectedTrace ?? diagQ.data?.trace_id ?? null;
+
+  // Timeline rows for the selected trace.
+  const timelineQ = useQuery({
+    queryKey: ["profit-engine-timeline", activeTrace],
+    enabled: !!activeTrace,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("profit_engine_function_logs")
+        .select("id, created_at, phase, level, message, duration_ms, rows_processed, scoring_source")
+        .eq("trace_id", activeTrace)
+        .order("created_at", { ascending: true });
+      return (data ?? []) as any[];
+    },
+    refetchInterval: 30_000,
+  });
+
+  // Recent Pinterest video cover errors — surfaced alongside the run timeline
+  // because cover failures are the most common reason a "successful" sync still
+  // can't publish video pins.
+  const coverErrorsQ = useQuery({
+    queryKey: ["pinterest-video-cover-errors"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("pinterest_video_assets")
+        .select("id, filename, thumbnail_status, cover_attempts, cover_last_error, next_retry_at, updated_at")
+        .not("cover_last_error", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(8);
+      return (data ?? []) as any[];
+    },
+    refetchInterval: 60_000,
+  });
+
   // Persistent health: pings profit-engine-health and finds last successful sync.
   const healthQ = useQuery({
     queryKey: ["profit-engine-health"],
@@ -470,6 +527,87 @@ export default function ProfitEnginePage() {
           <div><div className="text-xs text-muted-foreground">Rows processed</div><div className="font-medium">{diagQ.data?.rows_processed ?? "—"}</div></div>
           <div><div className="text-xs text-muted-foreground">Scoring source</div><div className="font-medium">{diagQ.data?.scoring_source ?? "—"}</div></div>
           {diagQ.data?.message && <div className="sm:col-span-2 lg:col-span-5 text-xs text-muted-foreground truncate">{diagQ.data.message}</div>}
+        </CardContent>
+        <CardContent className="border-t pt-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Run:</span>
+            {(recentRunsQ.data ?? []).slice(0, 6).map((r) => {
+              const isActive = r.trace_id === activeTrace;
+              const short = r.trace_id.slice(0, 8);
+              return (
+                <button
+                  key={r.trace_id}
+                  onClick={() => setSelectedTrace(r.trace_id)}
+                  className={`text-[11px] font-mono px-2 py-1 rounded border transition ${
+                    isActive ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 hover:bg-muted border-border"
+                  }`}
+                  title={`${r.trace_id} · ${new Date(r.created_at).toLocaleString()}`}
+                >
+                  {short}
+                </button>
+              );
+            })}
+            {activeTrace && (
+              <button
+                className="text-[11px] underline text-muted-foreground hover:text-foreground ml-auto"
+                onClick={() => {
+                  navigator.clipboard.writeText(activeTrace).then(() => toast.success("traceId copied"));
+                }}
+              >
+                Copy traceId · {activeTrace.slice(0, 8)}…
+              </button>
+            )}
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground mb-2">Phase timeline</div>
+            {!activeTrace || (timelineQ.data ?? []).length === 0 ? (
+              <div className="text-xs text-muted-foreground italic">No phase events for this run.</div>
+            ) : (
+              <ol className="relative border-l border-border pl-4 space-y-2">
+                {(timelineQ.data ?? []).map((row: any) => (
+                  <li key={row.id} className="relative">
+                    <span
+                      className={`absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
+                        row.level === "error" ? "bg-destructive" : row.level === "warn" ? "bg-amber-500" : "bg-emerald-500"
+                      }`}
+                    />
+                    <div className="flex flex-wrap items-baseline gap-2 text-xs">
+                      <span className="font-mono text-muted-foreground">{new Date(row.created_at).toLocaleTimeString()}</span>
+                      <span className="font-medium">{row.phase}</span>
+                      <Badge variant={row.level === "error" ? "destructive" : row.level === "warn" ? "secondary" : "outline"} className="text-[10px]">
+                        {row.level}
+                      </Badge>
+                      {row.duration_ms != null && <span className="text-muted-foreground">{row.duration_ms} ms</span>}
+                      {row.rows_processed != null && <span className="text-muted-foreground">{row.rows_processed} rows</span>}
+                      {row.scoring_source && <span className="text-muted-foreground italic">{row.scoring_source}</span>}
+                    </div>
+                    {row.message && <div className="text-xs text-muted-foreground mt-0.5 break-words">{row.message}</div>}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground mb-2">Recent Pinterest cover errors</div>
+            {(coverErrorsQ.data ?? []).length === 0 ? (
+              <div className="text-xs text-muted-foreground italic">No cover errors recorded.</div>
+            ) : (
+              <ul className="space-y-1.5">
+                {(coverErrorsQ.data ?? []).map((a: any) => (
+                  <li key={a.id} className="text-xs flex flex-wrap items-baseline gap-2 border-l-2 border-destructive/40 pl-2">
+                    <span className="font-mono text-muted-foreground">{new Date(a.updated_at).toLocaleString()}</span>
+                    <span className="font-medium truncate max-w-[260px]">{a.filename}</span>
+                    <Badge variant="outline" className="text-[10px]">{a.thumbnail_status ?? "—"}</Badge>
+                    {a.cover_attempts != null && <span className="text-muted-foreground">attempt {a.cover_attempts}</span>}
+                    {a.next_retry_at && <span className="text-muted-foreground">retry {new Date(a.next_retry_at).toLocaleTimeString()}</span>}
+                    <span className="text-destructive break-words">{a.cover_last_error}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </CardContent>
       </Card>
 
