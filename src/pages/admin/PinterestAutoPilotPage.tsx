@@ -398,6 +398,26 @@ export default function PinterestAutoPilotPage() {
     },
   });
 
+  const [showDiagnosticJson, setShowDiagnosticJson] = useState(false);
+  const runFullDiagnostic = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "full_diagnostic" },
+      });
+      if (error) throw error;
+      if (data && data.ok === false && data.error) throw new Error(data.error);
+      return data as any;
+    },
+    onSuccess: (d) => {
+      qc.setQueryData(["pinterest-full-diagnostic"], d);
+      setShowDiagnosticJson(true);
+      const reason = d?.exact_reason_if_no_pin_can_be_published;
+      if (reason) toast.warning(`Diagnostic complete — ${reason}`);
+      else toast.success("Diagnostic complete — no blockers detected");
+    },
+    onError: (e) => toast.error((e as Error).message || "Diagnostic failed"),
+  });
+
   const { data: saturation } = useQuery({
     queryKey: ["pinterest-saturation-7d"],
     refetchInterval: 60_000,
