@@ -2592,8 +2592,8 @@ async function runSafeColdStartTestPublish(sb: any, cors: Record<string, string>
   log.push({ step: "cold_start_caps", ok: caps.ok, detail: caps });
   if (!caps.ok) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}. Use Force safe recovery pin for the 12h recovery bypass.` });
   const product = await pickSafeColdStartProduct(sb);
-  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product) } : null });
-  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No safe cold-start product found" });
+  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product), media_gate: (product as any)._media_gate || null } : null });
+  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No safe cold-start product with own-domain media found" });
   const board = await pickBestProductionBoard(sb, auth.boards);
   log.push({ step: "board", ok: !!board?.id, detail: board ? { id: board.id, name: board.name || null } : null });
   if (!board?.id) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No production-eligible board found" });
