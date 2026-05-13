@@ -113,21 +113,79 @@ async function publishVideoPin(opts: {
 
   // Stage 4: create pin
   console.log(`[pvp ${trace_id}] stage=create_pin`);
-  const pinPayload = {
-    title: queueRow.title,
-    description: queueRow.description,
-    board_id: queueRow.board_id,
-    link: queueRow.destination_url,
-    media_source: { source_type: "video_id", media_id: mediaId },
-  };
-  const pinRes = await fetch(`${apiBase}/pins`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(pinPayload),
-  });
-  const pinBody = await pinRes.json().catch(() => ({}));
-  await logStage(sb, queue_id, "create_pin", pinRes.ok ? "ok" : "fail", { status: pinRes.status, body: pinBody }, trace_id);
-  if (!pinRes.ok || !pinBody?.id) return { ok: false, code: "PIN_CREATE_FAILED", message: pinBody?.message || `status ${pinRes.status}` };
+  // Pinterest video pins REQUIRE one of: cover_image_url, cover_image_content_type+data,
+  // or cover_image_key_frame_time. We always send key_frame_time as a baseline (Pinterest
+  // extracts the frame for us) and prefer an explicit cover_image_url when available.
+  // On failure we walk a fallback ladder of frame times and persist the working value.
+  const baseSecond = Number(asset.key_frame_second ?? 1.5);
+  const frameLadder = Array.from(new Set([baseSecond, 1.5, 0.8, 2.0, 3.0])).filter((n) => n > 0);
+
+  let pinBody: any = null;
+  let pinRes: Response | null = null;
+  let chosenSecond: number | null = null;
+
+  for (const second of frameLadder) {
+    const mediaSource: Record<string, unknown> = {
+      source_type: "video_id",
+      media_id: mediaId,
+      cover_image_key_frame_time: second,
+    };
+    if (asset.cover_image_url) {
+      // Explicit cover URL takes precedence over key-frame extraction.
+      mediaSource.cover_image_url = asset.cover_image_url;
+    }
+    const pinPayload = {
+      title: queueRow.title,
+      description: queueRow.description,
+      board_id: queueRow.board_id,
+      link: queueRow.destination_url,
+      media_source: mediaSource,
+    };
+    pinRes = await fetch(`${apiBase}/pins`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(pinPayload),
+    });
+    pinBody = await pinRes.json().catch(() => ({}));
+    await logStage(sb, queue_id, "create_pin", pinRes.ok ? "ok" : "fail",
+      { status: pinRes.status, body: pinBody, key_frame_second: second, used_cover_url: !!asset.cover_image_url }, trace_id);
+    if (pinRes.ok && pinBody?.id) { chosenSecond = second; break; }
+    // Only retry the ladder for cover-related failures; fail fast otherwise.
+    const msg = (pinBody?.message || "").toString().toLowerCase();
+    const coverIssue = msg.includes("cover") || msg.includes("key_frame") || msg.includes("media_timeout");
+    if (!coverIssue || asset.cover_image_url) break;
+  }
+  if (!pinRes?.ok || !pinBody?.id) {
+    // Mark for retry queue if Pinterest reported a media timeout.
+    const msg = (pinBody?.message || "").toString().toLowerCase();
+    if (msg.includes("media_timeout")) {
+      const attempts = (asset.cover_attempts || 0) + 1;
+      const delaySec = attempts === 1 ? 90 : attempts === 2 ? 180 : 360;
+      await sb.from("pinterest_video_assets").update({
+        thumbnail_status: "awaiting_media_ready",
+        cover_attempts: attempts,
+        cover_last_error: pinBody?.message || `status ${pinRes?.status}`,
+        next_retry_at: new Date(Date.now() + delaySec * 1000).toISOString(),
+      }).eq("id", asset.id);
+    } else {
+      await sb.from("pinterest_video_assets").update({
+        thumbnail_status: "failed",
+        cover_last_error: pinBody?.message || `status ${pinRes?.status}`,
+      }).eq("id", asset.id);
+    }
+    return { ok: false, code: "PIN_CREATE_FAILED", message: pinBody?.message || `status ${pinRes?.status}` };
+  }
+  // Persist the working frame time so subsequent publishes skip the ladder.
+  if (chosenSecond != null && chosenSecond !== baseSecond) {
+    await sb.from("pinterest_video_assets").update({
+      key_frame_second: chosenSecond,
+      thumbnail_status: "published",
+    }).eq("id", asset.id);
+  } else {
+    await sb.from("pinterest_video_assets").update({
+      thumbnail_status: "published",
+    }).eq("id", asset.id);
+  }
 
   return { ok: true, pin_id: pinBody.id, external_url: `https://www.pinterest.com/pin/${pinBody.id}/` };
 }
