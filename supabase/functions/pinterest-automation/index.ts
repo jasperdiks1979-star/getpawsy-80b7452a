@@ -2387,6 +2387,89 @@ async function runFullPinterestDiagnostic(sb: any, cors: Record<string, string>)
   });
 }
 
+async function runSafeColdStartTestPublish(sb: any, cors: Record<string, string>, opts: { dryRun: boolean }) {
+  const log: Array<{ step: string; ok: boolean; detail: unknown }> = [];
+  const conn = await getLatestPinterestConnection(sb, { requireConnected: false });
+  log.push({ step: "token_loaded", ok: !!conn?.access_token, detail: { connection_id: conn?.id || null } });
+  if (!conn?.access_token) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "Pinterest token missing" });
+  const accessToken = await getFreshPinterestProductionToken(sb, conn);
+  log.push({ step: "token_refresh", ok: !!accessToken, detail: { prefix: tokenPrefix(accessToken) } });
+  if (!accessToken) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "Pinterest token refresh failed" });
+  const auth = await validatePinterestAuth(sb, conn, accessToken);
+  log.push({ step: "auth", ok: auth.auth_valid, detail: { board_count: auth.boards.length } });
+  if (!auth.auth_valid) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: auth.failure_response.error });
+  const caps = await getColdStartCaps(sb);
+  log.push({ step: "cold_start_caps", ok: caps.ok, detail: caps });
+  if (!caps.ok) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: `Cold-start cap reached: daily ${caps.daily}/${caps.daily_limit}, weekly ${caps.weekly}/${caps.weekly_limit}` });
+  const product = await pickSafeColdStartProduct(sb);
+  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, score: scoreSafeColdStartProduct(product) } : null });
+  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No safe cold-start product found" });
+  const board = await pickBestProductionBoard(sb, auth.boards);
+  log.push({ step: "board", ok: !!board?.id, detail: board ? { id: board.id, name: board.name || null } : null });
+  if (!board?.id) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "No production-eligible board found" });
+  const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=cold_start_test&utm_content=safe_test`;
+  const imageCheck = await checkPublicUrl(product.image_url, "getpawsy.pet");
+  const destinationCheck = await checkPublicUrl(destination, "getpawsy.pet");
+  log.push({ step: "image", ok: imageCheck.ok, detail: imageCheck });
+  log.push({ step: "destination", ok: destinationCheck.ok, detail: destinationCheck });
+  if (!imageCheck.ok || !destinationCheck.ok) return json(cors, { ok: false, dryRun: opts.dryRun, log, error: "Media or destination validation failed" });
+  const rawPayload = {
+    title: String(product.name || "GetPawsy Pet Essential").slice(0, 90),
+    description: `A practical GetPawsy pick for US pet parents.`,
+    board_id: board.id,
+    media_source: { source_type: "image_url", url: product.image_url },
+    link: destination,
+  };
+  const safePayload = await preparePinterestPayload(sb, rawPayload, { endpoint: "/pins", function: "pinterest-automation", action: "publish_safe_cold_start_test_pin", product_id: product.id });
+  log.push({ step: "payload", ok: safePayload.ok, detail: { rejected_fields: safePayload.rejectedFields, coerced_fields: safePayload.coercedFields, sanitized_payload: safePayload.debugPayload } });
+  if (opts.dryRun) return json(cors, { ok: true, dryRun: true, log, product: { id: product.id, slug: product.slug, name: product.name }, board: { id: board.id, name: board.name || null } });
+
+  const startedAt = Date.now();
+  const response = await fetch(`${PINTEREST_PRODUCTION_API_BASE}/pins`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(safePayload.payload),
+  });
+  const responseText = await response.text();
+  let responseBody: any = null;
+  try { responseBody = JSON.parse(responseText); } catch { responseBody = { raw: responseText }; }
+  const pinId = typeof responseBody?.id === "string" ? responseBody.id : null;
+  const externalUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : null;
+  log.push({ step: "publish", ok: response.ok && !!pinId, detail: { status: response.status, pin_id: pinId, response: responseBody } });
+  await sb.from("pinterest_publish_logs").insert({
+    status: response.ok && pinId ? "success" : "failed",
+    board_id: String(board.id),
+    image_url: product.image_url,
+    pin_title: rawPayload.title,
+    destination_link: destination,
+    request_payload: safePayload.debugPayload,
+    response_payload: { response: responseBody, log },
+    error_message: response.ok && pinId ? null : `Pinterest API ${response.status}: ${responseText.slice(0, 500)}`,
+    duration_ms: Date.now() - startedAt,
+  });
+  if (response.ok && pinId) {
+    await sb.from("pinterest_pin_queue").insert({
+      product_id: product.id,
+      product_slug: product.slug,
+      product_name: product.name,
+      pin_variant: "hook",
+      pin_title: rawPayload.title,
+      pin_description: rawPayload.description,
+      pin_image_url: product.image_url,
+      destination_link: destination,
+      board_name: String(board.name || "GetPawsy Products"),
+      board_id: String(board.id),
+      status: "posted",
+      posted_at: new Date().toISOString(),
+      pinterest_pin_id: pinId,
+      pin_external_id: pinId,
+      external_url: externalUrl,
+      scheduled_at: new Date().toISOString(),
+    });
+  }
+  return json(cors, { ok: response.ok && !!pinId, dryRun: false, published: !!pinId, pinterest_pin_id: pinId, external_url: externalUrl, log, response: responseBody });
+}
+
 async function runDirectPinterestApiTest(sb: any, conn: any, accessToken: string, cors: Record<string, string>, opts?: { sourceLogId?: string | null }) {
   const startedAt = Date.now();
   const replaysLogId = opts?.sourceLogId || null;
