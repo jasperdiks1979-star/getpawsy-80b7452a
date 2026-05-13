@@ -127,9 +127,9 @@ function computeDecisiveDrivers(
     summary = `Low engagement: ${num("saves")} saves & ${num("clicks")} clicks after ${num("impressions")} impressions.`;
   } else if (action === "skip") {
     // Two skip paths: weekly cap, or below quality threshold.
-    if (num("weekly_count") > 0 && num("weekly_count") >= 3) {
+    if (num("weekly_count") > 0 && num("weekly_count") >= Number(breakdown.product_weekly_limit ?? 3)) {
       checkLabels.add("Within weekly cap");
-      summary = `Hit weekly cap (${num("weekly_count")} pins this week).`;
+      summary = `Hit product weekly cap (${num("weekly_count")}/${Number(breakdown.product_weekly_limit ?? 3)}).`;
     } else {
       // Find the 1–2 weakest contributing factors (lowest fill ratio).
       const ranked = Object.entries(FACTOR_MAX)
@@ -175,6 +175,7 @@ function DecisiveBadge() {
 /** Derive safety checks from the score breakdown for human-readable explanation. */
 function deriveSafetyChecks(breakdown: Record<string, unknown>) {
   const num = (k: string) => Number(breakdown[k] ?? 0);
+  const coldStart = Boolean(breakdown.cold_start);
   return [
     {
       label: "Image quality acceptable",
@@ -188,8 +189,8 @@ function deriveSafetyChecks(breakdown: Record<string, unknown>) {
     },
     {
       label: "Within weekly cap",
-      passed: num("weekly_count") < 99,
-      detail: `${num("weekly_count")} pins this week`,
+      passed: num("weekly_count") < Number(breakdown.product_weekly_limit ?? 3) && num("weekly_total_count") < Number(breakdown.weekly_limit ?? 15),
+      detail: `product ${num("weekly_count")}/${Number(breakdown.product_weekly_limit ?? 3)} · weekly ${num("weekly_total_count")}/${Number(breakdown.weekly_limit ?? 15)} · daily ${num("daily_count")}/${Number(breakdown.daily_limit ?? 3)}`,
     },
     {
       label: "Has visual appeal for Pinterest",
@@ -203,11 +204,11 @@ function deriveSafetyChecks(breakdown: Record<string, unknown>) {
     },
     {
       label: "Has measured Pinterest history",
-      passed: num("impressions") > 0,
+      passed: true,
       detail:
         num("impressions") > 0
           ? `${num("impressions")} imp · ${num("saves")} saves · ${num("clicks")} clicks`
-          : "cold start (no history yet)",
+          : coldStart ? "cold start neutral — allowed for test pins" : "no history yet",
     },
   ];
 }
