@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle, Download } from "lucide-react";
+import { Play, RefreshCw, Plane, Pause, Ban, Star, Info, CheckCircle2, XCircle, Download, Copy, SkipForward } from "lucide-react";
 import { useState } from "react";
 import {
   Sheet,
