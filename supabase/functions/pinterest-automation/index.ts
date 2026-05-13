@@ -2742,8 +2742,8 @@ async function runSafeRecoveryPublish(sb: any, cors: Record<string, string>, opt
   if (!auth.auth_valid) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: auth.failure_response.error });
 
   const product = await pickSafeRecoveryProduct(sb, runaway);
-  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, category: product.category, score: scoreSafeColdStartProduct(product), excluded_runaway_products: Array.from(runaway.runawayProductIds) } : { reason: "no_non_runaway_non_category_product" } });
-  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "No safe recovery product outside runaway product/category found" });
+  log.push({ step: "product", ok: !!product, detail: product ? { id: product.id, slug: product.slug, name: product.name, category: product.category, score: scoreSafeColdStartProduct(product), media_gate: (product as any)._media_gate || null, excluded_runaway_products: Array.from(runaway.runawayProductIds) } : { reason: "no_own_domain_media_or_no_non_runaway_product" } });
+  if (!product) return json(cors, { ok: false, dryRun: opts.dryRun, traceId, log, error: "No safe recovery product with own-domain media outside runaway product/category found" });
 
   const board = await pickRecoveryBoard(sb, auth.boards, runaway);
   log.push({ step: "board", ok: !!board?.id, detail: board ? { id: board.id, name: board.name || null, excluded_board_ids: Array.from(runaway.boardIds), excluded_board_names: Array.from(runaway.boardNames) } : { reason: "no_different_production_board" } });
