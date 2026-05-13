@@ -320,7 +320,7 @@ export default function ProfitEnginePage() {
           .from("profit_engine_function_logs")
           .select("created_at")
           .eq("level", "info")
-          .eq("phase", "complete")
+          .in("phase", ["done", "complete"])
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
