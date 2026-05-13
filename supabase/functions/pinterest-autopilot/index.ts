@@ -397,7 +397,8 @@ async function handler(req: Request): Promise<Response> {
       const measuredHistory = !coldStart;
       const scaleCandidate = measuredHistory && perfRes.score >= 18 && perfRes.signals.saves >= 10;
       const appliedThreshold = thresholdForDecision(mode, coldStart, scaleCandidate);
-      const effectiveWeeklyCap = coldStart ? Math.max(maxPerWeek, COLD_START_WEEKLY_CAP) : maxPerWeek;
+      const effectiveProductWeeklyCap = coldStart ? Math.max(maxPerWeek, 3) : maxPerWeek;
+      const effectiveWeeklyCap = coldStart ? COLD_START_WEEKLY_CAP : maxPerWeek;
       const effectiveDailyCap = coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap;
       let act: "normal" | "skip" | "scale" | "pause" = "normal";
       let reason = "";
@@ -408,9 +409,9 @@ async function handler(req: Request): Promise<Response> {
       } else if (weeklyPublished >= effectiveWeeklyCap && !forced) {
         act = "skip";
         reason = `weekly cap reached (${weeklyPublished}/${effectiveWeeklyCap})`;
-      } else if (weekly >= effectiveWeeklyCap && !forced) {
+      } else if (weekly >= effectiveProductWeeklyCap && !forced) {
         act = "skip";
-        reason = `product weekly cap reached (${weekly}/${effectiveWeeklyCap})`;
+        reason = `product weekly cap reached (${weekly}/${effectiveProductWeeklyCap})`;
       } else if (scaleCandidate) {
         act = "scale";
         reason = "winner pattern detected";
@@ -452,6 +453,7 @@ async function handler(req: Request): Promise<Response> {
           daily_count: dailyPublished,
           daily_limit: effectiveDailyCap,
           weekly_count: weekly,
+          product_weekly_limit: effectiveProductWeeklyCap,
           weekly_total_count: weeklyPublished,
           weekly_limit: effectiveWeeklyCap,
           impressions: perfRes.signals.impressions,
