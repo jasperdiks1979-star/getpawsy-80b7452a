@@ -99,6 +99,14 @@ interface PerfRow {
 const COLD_START_DAILY_CAP = 3;
 const COLD_START_WEEKLY_CAP = 15;
 const DEFAULT_DAILY_CAP = 8;
+const SAFE_GROWTH_WEEKLY_CAP = 20;
+const SAFE_GROWTH_DAILY_CAP = 4;
+const PRODUCT_DAILY_CAP_DEFAULT = 2;
+const PRODUCT_COOLDOWN_HOURS_DEFAULT = 48;
+const MAX_CATEGORY_SHARE_DEFAULT = 0.30;
+const RUNAWAY_SHARE_THRESHOLD = 0.15; // single product cannot exceed 15% of 7d volume
+const HOOK_REUSE_PER_PRODUCT_PER_WEEK = 2;
+const URL_REUSE_PER_WEEK = 5;
 
 function thresholdForDecision(mode: string, coldStart: boolean, scaleCandidate: boolean, dominationMode = false): number {
   if (coldStart) return 50;
