@@ -445,13 +445,25 @@ async function handler(req: Request): Promise<Response> {
       const total = img + margin + cat + visual + ship + perfRes.score + forced;
 
       const weekly = productWeekly[p.id] ?? 0;
+      const dailyForProduct = productDaily[p.id] ?? 0;
+      const lastPostMs = productLastPostMs[p.id] ?? 0;
+      const hoursSinceLastPost = lastPostMs ? (nowMs - lastPostMs) / 3_600_000 : Infinity;
+      const productCategoryKey = (p.category ?? "").toLowerCase();
+      const categoryCount = categoryWeekly[productCategoryKey] ?? 0;
+      const productHookCount = productHookWeekly[p.id]?.[hook] ?? 0; // computed below; recompute after pickHook
+      const sharePct = weeklyPublished > 0 ? weekly / weeklyPublished : 0;
       const coldStart = !history || perfRes.signals.impressions <= 0;
       const measuredHistory = !coldStart;
       const scaleCandidate = measuredHistory && perfRes.score >= 18 && perfRes.signals.saves >= 10;
       const appliedThreshold = thresholdForDecision(mode, coldStart, scaleCandidate, dominationMode);
-      const effectiveProductWeeklyCap = coldStart ? Math.max(maxPerWeek, 3) : maxPerWeek;
-      const effectiveWeeklyCap = coldStart ? COLD_START_WEEKLY_CAP : maxPerWeek;
-      const effectiveDailyCap = coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap;
+      const baseProductWeeklyCap = Math.min(5, coldStart ? Math.max(maxPerWeek, 3) : maxPerWeek);
+      const effectiveProductWeeklyCap = safeGrowth ? Math.min(5, baseProductWeeklyCap) : baseProductWeeklyCap;
+      const effectiveWeeklyCap = safeGrowth
+        ? SAFE_GROWTH_WEEKLY_CAP
+        : (coldStart ? COLD_START_WEEKLY_CAP : Math.max(maxPerWeek * 5, 20));
+      const effectiveDailyCap = safeGrowth
+        ? Math.min(dailyCap, SAFE_GROWTH_DAILY_CAP)
+        : (coldStart ? Math.min(dailyCap, COLD_START_DAILY_CAP) : dailyCap);
       let act: "normal" | "skip" | "scale" | "pause" = "normal";
       let reason = "";
 
@@ -464,6 +476,23 @@ async function handler(req: Request): Promise<Response> {
       } else if (weekly >= effectiveProductWeeklyCap && !forced) {
         act = "skip";
         reason = `product weekly cap reached (${weekly}/${effectiveProductWeeklyCap})`;
+      } else if (dailyForProduct >= productDailyCap && !forced) {
+        act = "skip";
+        reason = `product daily cap reached (${dailyForProduct}/${productDailyCap})`;
+      } else if (hoursSinceLastPost < productCooldownHours && !forced) {
+        act = "skip";
+        reason = `product cooldown active (${hoursSinceLastPost.toFixed(1)}h/${productCooldownHours}h)`;
+      } else if (sharePct >= RUNAWAY_SHARE_THRESHOLD && weekly >= 2 && !forced) {
+        act = "skip";
+        reason = `runaway share guard (${(sharePct * 100).toFixed(0)}%/${RUNAWAY_SHARE_THRESHOLD * 100}% of 7d volume)`;
+      } else if (
+        weeklyPublished >= 5 &&
+        productCategoryKey &&
+        (categoryCount + 1) / Math.max(1, weeklyPublished + 1) > categoryShareCap &&
+        !forced
+      ) {
+        act = "skip";
+        reason = `category diversity guard (${productCategoryKey} ${categoryCount}/${weeklyPublished})`;
       } else if (scaleCandidate) {
         act = "scale";
         reason = "winner pattern detected";
@@ -485,6 +514,22 @@ async function handler(req: Request): Promise<Response> {
 
       const board = pickBoard(p, niche, (boards ?? []) as Board[], boardWeekly);
       const hook = pickHookCategory(niche, perfMap.get(p.id));
+
+      // Hook reuse guard (after hook is picked)
+      const hookReuseCount = productHookWeekly[p.id]?.[hook] ?? 0;
+      if (act === "normal" && hookReuseCount >= HOOK_REUSE_PER_PRODUCT_PER_WEEK && !forced) {
+        act = "skip";
+        reason = `hook reuse guard (${hook} ${hookReuseCount}x/${HOOK_REUSE_PER_PRODUCT_PER_WEEK})`;
+      }
+      // Destination URL reuse guard
+      const destSlug = p.slug ? `/products/${p.slug}` : null;
+      const destReuse = destSlug
+        ? Object.entries(urlWeekly).filter(([u]) => u.includes(destSlug)).reduce((a, [, n]) => a + n, 0)
+        : 0;
+      if (act === "normal" && destReuse >= URL_REUSE_PER_WEEK && !forced) {
+        act = "skip";
+        reason = `destination url reuse guard (${destReuse}/${URL_REUSE_PER_WEEK})`;
+      }
 
       decisions.push({
         product: p,
