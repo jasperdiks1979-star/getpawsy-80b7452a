@@ -901,6 +901,96 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_ad_jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          hook_variant: string
+          id: string
+          music_url: string | null
+          output_duration_seconds: number | null
+          output_mp4_url: string | null
+          output_thumbnail_url: string | null
+          pinterest_asset_id: string | null
+          prepared_at: string | null
+          product_slug: string
+          pushed_to_pinterest_at: string | null
+          rendered_at: string | null
+          scene_assets: Json
+          scene_specs: Json
+          status: string
+          status_message: string | null
+          updated_at: string
+          vo_script: string | null
+          vo_url: string | null
+          voice_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          hook_variant?: string
+          id?: string
+          music_url?: string | null
+          output_duration_seconds?: number | null
+          output_mp4_url?: string | null
+          output_thumbnail_url?: string | null
+          pinterest_asset_id?: string | null
+          prepared_at?: string | null
+          product_slug: string
+          pushed_to_pinterest_at?: string | null
+          rendered_at?: string | null
+          scene_assets?: Json
+          scene_specs?: Json
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          vo_script?: string | null
+          vo_url?: string | null
+          voice_id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          hook_variant?: string
+          id?: string
+          music_url?: string | null
+          output_duration_seconds?: number | null
+          output_mp4_url?: string | null
+          output_thumbnail_url?: string | null
+          pinterest_asset_id?: string | null
+          prepared_at?: string | null
+          product_slug?: string
+          pushed_to_pinterest_at?: string | null
+          rendered_at?: string | null
+          scene_assets?: Json
+          scene_specs?: Json
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          vo_script?: string | null
+          vo_url?: string | null
+          voice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cinematic_ad_jobs_pinterest_asset_id_fkey"
+            columns: ["pinterest_asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_jobs_pinterest_asset_id_fkey"
+            columns: ["pinterest_asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_winners"
+            referencedColumns: ["asset_id"]
+          },
+        ]
+      }
       cj_product_bookmarks: {
         Row: {
           category_name: string | null

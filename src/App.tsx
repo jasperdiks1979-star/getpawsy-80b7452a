@@ -402,6 +402,7 @@ const SeoAgentAutonomous = lazyWithRetry(() => import("./pages/admin/SeoAgentAut
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
 const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
+const CinematicAdsPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
 const GscUrlInspectionHelper = lazyWithRetry(() => import("./pages/admin/GscUrlInspectionHelper"));
@@ -1896,6 +1897,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <EdgeDiagnosticsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-ads"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicAdsPage />
                                 </Suspense>
                               }
                             />
