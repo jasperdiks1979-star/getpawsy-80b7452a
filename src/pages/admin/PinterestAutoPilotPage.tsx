@@ -523,7 +523,69 @@ export default function PinterestAutoPilotPage() {
           )}
           Run Auto-Pilot
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => publishSafeColdStartTest.mutate(false)}
+          disabled={publishSafeColdStartTest.isPending}
+          size="lg"
+        >
+          {publishSafeColdStartTest.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+          Publish 1 safe cold-start test pin
+        </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pinterest diagnostics</CardTitle>
+          <CardDescription>Cold-start budget, blockers, payload validation, board and token status.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Publishable", decisionStats.publishable],
+              ["Blocked by quality", decisionStats.quality],
+              ["Blocked by cap", decisionStats.cap],
+              ["Blocked by duplicate", decisionStats.duplicate],
+              ["Missing media", decisionStats.missingMedia],
+              ["Invalid payload", decisionStats.invalidPayload],
+              ["Board issue", decisionStats.boardIssue],
+              ["Cold-start eligible", decisionStats.coldStartEligible],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div className="text-xl font-bold font-mono">{String(value)}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <Badge variant={diagnostic?.auth_status?.valid ? "default" : "destructive"}>Auth {diagnostic?.auth_status?.valid ? "OK" : "Issue"}</Badge>
+            <Badge variant={diagnostic?.board_status?.ok ? "default" : "destructive"}>Board {diagnostic?.board_status?.ok ? "OK" : "Issue"}</Badge>
+            <Badge variant={diagnostic?.payload_validation_status?.ok ? "default" : "destructive"}>Payload {diagnostic?.payload_validation_status?.ok ? "OK" : "Issue"}</Badge>
+            <Badge variant={diagnostic?.cap_status?.ok ? "default" : "outline"}>Cold-start cap {diagnostic?.cap_status ? `${diagnostic.cap_status.daily}/${diagnostic.cap_status.daily_limit} day · ${diagnostic.cap_status.weekly}/${diagnostic.cap_status.weekly_limit} week` : "—"}</Badge>
+          </div>
+          {diagnostic?.first_eligible_product && (
+            <div className="text-sm text-muted-foreground">
+              First eligible: <span className="font-medium text-foreground">{diagnostic.first_eligible_product.name}</span>
+            </div>
+          )}
+          {diagnostic?.exact_reason_if_no_pin_can_be_published && (
+            <div className="text-sm text-destructive">{diagnostic.exact_reason_if_no_pin_can_be_published}</div>
+          )}
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => publishSafeColdStartTest.mutate(true)} disabled={publishSafeColdStartTest.isPending}>
+              Dry-run safe test pin
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => refetchDiagnostic()}>
+              Refresh diagnostics
+            </Button>
+          </div>
+          {testPublishLog && (
+            <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-[11px]">
+              {JSON.stringify(testPublishLog, null, 2)}
+            </pre>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Settings */}
       <Card>
