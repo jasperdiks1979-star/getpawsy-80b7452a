@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import { PinDecisionPanel } from "@/components/admin/PinDecisionPanel";
+import { WeeklyCapCountdown } from "@/components/admin/WeeklyCapCountdown";
 
 type Settings = {
   id: number;
@@ -702,6 +703,9 @@ export default function PinterestAutoPilotPage() {
 
       {/* Pin-level decision panel — chronological phase breakdown */}
       <PinDecisionPanel diagnostic={diagnostic} testPublishLog={testPublishLog} />
+
+      {/* Weekly cap countdown — rolling 7d reset timeline */}
+      <WeeklyCapCountdown weeklyLimit={diagnostic?.cap_status?.weekly_limit ?? 15} />
 
       {/* Publish saturation / runaway risk */}
       <Card>
