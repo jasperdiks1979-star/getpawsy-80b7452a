@@ -7917,14 +7917,20 @@ export type Database = {
           last_pin_publish_at: string | null
           last_pin_publish_error: string | null
           last_pin_published_at: string | null
+          last_recovery_pin_at: string | null
+          max_category_share_pct: number
+          max_pins_per_product_per_day: number
           max_render_retries: number
           min_gap_minutes: number
           mode: string
           pacing_mode: string
+          product_cooldown_hours: number
           production_publish_verified: boolean
           production_publish_verified_at: string | null
           production_trial_detected: boolean
           quality_threshold: number
+          recovery_min_gap_hours: number
+          safe_growth_mode: boolean
           scale_unlocked: boolean
           updated_at: string
           updated_by: string | null
@@ -7945,14 +7951,20 @@ export type Database = {
           last_pin_publish_at?: string | null
           last_pin_publish_error?: string | null
           last_pin_published_at?: string | null
+          last_recovery_pin_at?: string | null
+          max_category_share_pct?: number
+          max_pins_per_product_per_day?: number
           max_render_retries?: number
           min_gap_minutes?: number
           mode?: string
           pacing_mode?: string
+          product_cooldown_hours?: number
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
           production_trial_detected?: boolean
           quality_threshold?: number
+          recovery_min_gap_hours?: number
+          safe_growth_mode?: boolean
           scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -7973,14 +7985,20 @@ export type Database = {
           last_pin_publish_at?: string | null
           last_pin_publish_error?: string | null
           last_pin_published_at?: string | null
+          last_recovery_pin_at?: string | null
+          max_category_share_pct?: number
+          max_pins_per_product_per_day?: number
           max_render_retries?: number
           min_gap_minutes?: number
           mode?: string
           pacing_mode?: string
+          product_cooldown_hours?: number
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
           production_trial_detected?: boolean
           quality_threshold?: number
+          recovery_min_gap_hours?: number
+          safe_growth_mode?: boolean
           scale_unlocked?: boolean
           updated_at?: string
           updated_by?: string | null
