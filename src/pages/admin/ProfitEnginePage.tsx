@@ -357,6 +357,23 @@ export default function ProfitEnginePage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Activity className="h-4 w-4" />Sync diagnostics
+          </CardTitle>
+          <CardDescription>Latest Profit Engine function run.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <div><div className="text-xs text-muted-foreground">Last run</div><div className="font-medium">{diagQ.data?.created_at ? new Date(diagQ.data.created_at).toLocaleString() : "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Phase</div><div className="font-medium">{diagQ.data?.phase ?? "—"} <Badge variant={diagQ.data?.level === "error" ? "destructive" : diagQ.data?.level === "warn" ? "secondary" : "outline"} className="ml-1">{diagQ.data?.level ?? "—"}</Badge></div></div>
+          <div><div className="text-xs text-muted-foreground">Duration</div><div className="font-medium">{diagQ.data?.duration_ms != null ? `${diagQ.data.duration_ms} ms` : "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Rows processed</div><div className="font-medium">{diagQ.data?.rows_processed ?? "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Scoring source</div><div className="font-medium">{diagQ.data?.scoring_source ?? "—"}</div></div>
+          {diagQ.data?.message && <div className="sm:col-span-2 lg:col-span-5 text-xs text-muted-foreground truncate">{diagQ.data.message}</div>}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-3 md:grid-cols-4">
         <SummaryCard label="Scale" value={summary.counts.scale} cls="text-emerald-600" />
         <SummaryCard label="Pause" value={summary.counts.pause} cls="text-amber-600" />
