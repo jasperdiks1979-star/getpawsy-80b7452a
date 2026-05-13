@@ -44,6 +44,7 @@ const sections = [
       { to: '/admin/analytics-hub', label: 'Analytics Hub', icon: Gauge, desc: 'Traffic & conversion data' },
       { to: '/admin/cta-copy-performance', label: 'CTA Copy Performance', icon: Target, desc: '/go CTA CTR per placement × variant' },
       { to: '/admin/tiktok-realtime-funnel', label: 'TikTok Realtime Funnel', icon: Activity, desc: 'Live TikTok sessions → cart → checkout met conversie %' },
+      { to: '/admin/cinematic-ads', label: 'Cinematic Ads', icon: Video, desc: 'AI-generated product promo videos voor Pinterest, TikTok & IG Reels' },
       { to: '/admin/utm-validation-log', label: 'UTM Validation Log', icon: ShieldAlert, desc: 'Per sessie UTMs valideren — detecteert ontbrekende/foutieve params' },
       { to: '/admin/tracking-anomalies', label: 'Tracking Anomalies', icon: ShieldAlert, desc: 'Sessies met events die niet correleren (orphan cart/checkout, mismatches)' },
       { to: '/admin/utm-conversion-events', label: 'UTM × Conversions', icon: ShieldAlert, desc: 'Per add_to_cart en checkout de UTM-set van die sessie' },
