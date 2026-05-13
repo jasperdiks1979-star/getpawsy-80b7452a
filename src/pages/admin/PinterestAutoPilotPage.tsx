@@ -346,6 +346,7 @@ export default function PinterestAutoPilotPage() {
   const [overrideAction, setOverrideAction] = useState<Override["action"]>("force_promote");
   const [overrideReason, setOverrideReason] = useState("");
   const [openDecision, setOpenDecision] = useState<Decision | null>(null);
+  const [testPublishLog, setTestPublishLog] = useState<any | null>(null);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["autopilot-settings"],
@@ -385,6 +386,17 @@ export default function PinterestAutoPilotPage() {
     },
   });
 
+  const { data: diagnostic, refetch: refetchDiagnostic } = useQuery({
+    queryKey: ["pinterest-full-diagnostic"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "full_diagnostic" },
+      });
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
   const updateSettings = useMutation({
     mutationFn: async (patch: Partial<Settings>) => {
       const { error } = await supabase
@@ -414,6 +426,38 @@ export default function PinterestAutoPilotPage() {
     },
     onError: (e) => toast.error((e as Error).message),
   });
+
+  const publishSafeColdStartTest = useMutation({
+    mutationFn: async (dryRun: boolean) => {
+      const { data, error } = await supabase.functions.invoke("pinterest-automation", {
+        body: { action: "publish_safe_cold_start_test_pin", dryRun },
+      });
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (d) => {
+      setTestPublishLog(d);
+      refetchDiagnostic();
+      toast[d?.ok ? "success" : "error"](d?.dryRun ? "Cold-start dry-run complete" : d?.published ? "Published 1 safe cold-start pin" : d?.error || "Cold-start publish failed");
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const decisionStats = (() => {
+    const list = decisions ?? [];
+    const byReason = (needle: string) => list.filter((d) => `${d.reason || ""}`.toLowerCase().includes(needle)).length;
+    return {
+      publishable: list.filter((d) => ["normal", "scale"].includes(d.action)).length,
+      quality: byReason("quality threshold"),
+      cap: byReason("cap reached"),
+      duplicate: byReason("duplicate"),
+      missingMedia: byReason("image") + byReason("media"),
+      invalidPayload: byReason("payload"),
+      boardIssue: list.filter((d) => !d.selected_board_name).length,
+      authIssue: diagnostic?.auth_status?.valid === false ? 1 : 0,
+      coldStartEligible: list.filter((d) => Boolean((d.score_breakdown as any)?.cold_start) && ["normal", "scale"].includes(d.action)).length,
+    };
+  })();
 
   const addOverride = useMutation({
     mutationFn: async () => {
