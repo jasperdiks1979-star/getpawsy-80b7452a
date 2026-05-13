@@ -664,6 +664,12 @@ async function handler(req: Request): Promise<Response> {
         last_recovery_pin_at: (runtimeSettings as any)?.last_recovery_pin_at ?? null,
         recovery_min_gap_hours: recoveryGapHours,
       },
+      media_host_status: {
+        own_domain_eligible: mediaOwnDomainCount,
+        external_blocked: mediaBlockedCount,
+        blocked_sample: mediaBlockedSlugs,
+        policy: { allowed_hosts: ["getpawsy.pet", "www.getpawsy.pet"], blocked_examples: ["cf.cjdropshipping.com", "oss-cf.cjdropshipping.com", "cdn.cjdropshipping.com"] },
+      },
       decisions: top.map((d) => ({
         product_id: d.product.id,
         product_slug: d.product.slug,
