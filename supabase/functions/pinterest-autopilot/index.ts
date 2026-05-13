@@ -450,7 +450,6 @@ async function handler(req: Request): Promise<Response> {
       const hoursSinceLastPost = lastPostMs ? (nowMs - lastPostMs) / 3_600_000 : Infinity;
       const productCategoryKey = (p.category ?? "").toLowerCase();
       const categoryCount = categoryWeekly[productCategoryKey] ?? 0;
-      const productHookCount = productHookWeekly[p.id]?.[hook] ?? 0; // computed below; recompute after pickHook
       const sharePct = weeklyPublished > 0 ? weekly / weeklyPublished : 0;
       const coldStart = !history || perfRes.signals.impressions <= 0;
       const measuredHistory = !coldStart;
