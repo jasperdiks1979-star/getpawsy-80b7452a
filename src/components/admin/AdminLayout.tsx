@@ -22,6 +22,7 @@ import {
   History,
   Wrench,
   Gauge,
+  Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
