@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { PINTEREST_ALLOWED_SLUGS, runPinQa } from "../_shared/pinterest-qa.ts";
+import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 
 const QA_LOCKDOWN_ERROR = {
   ok: false,
@@ -35,6 +36,20 @@ const DIRECT_TEST_DESCRIPTION = "A smart automatic litter box for busy cat owner
 const DIRECT_TEST_REQUIRED_SCOPE = "pins:write";
 const DIRECT_TEST_ADMIN_EMAILS = new Set(["jasperdiks@hotmail.com"]);
 const APPROVED_PINTEREST_CLIENT_ID = "1567611";
+
+async function preparePinterestPayload(sb: any, payload: Record<string, unknown>, context: Record<string, unknown>) {
+  const safe = sanitizeAndValidatePinterestPayload(payload);
+  const debug = { ...context, sanitized_payload: safe.debugPayload, rejected_fields: safe.rejectedFields, coerced_fields: safe.coercedFields };
+  console.log("[pinterest-payload-debug]", JSON.stringify(debug));
+  await sb.from("pinterest_post_logs").insert({
+    action: "payload_debug",
+    status: safe.ok ? "success" : "failed",
+    error_message: safe.ok ? null : `Invalid Pinterest integer payload: ${safe.rejectedFields.map((f) => f.path).join(", ")}`,
+    response_data: debug,
+  });
+  if (!safe.ok) throw new Error(`Invalid Pinterest payload: ${safe.rejectedFields.map((f) => `${f.path}=${String(f.value)}`).join(", ")}`);
+  return safe;
+}
 
 function tokenPrefix(token: string | null | undefined) {
   return token ? token.slice(0, 12) : null;
