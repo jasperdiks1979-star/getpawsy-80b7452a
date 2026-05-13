@@ -41,9 +41,18 @@ function detectBot(r: any): BotCheck {
   if (utm && BOT_UTM_RE.test(utm) && !/pinterest|tiktok|google|facebook|instagram/i.test(utm)) {
     return { isBot: true, reason: "bot_utm_marker" };
   }
-  // Geo signature: exact (0,0) lat/lng with no country = synthetic ping
-  if ((r.latitude === 0 && r.longitude === 0) || (r.latitude == null && r.longitude == null && !r.country && !r.city)) {
-    return { isBot: true, reason: "no_geo_signature" };
+  // Synthetic-ping signature: exact (0,0) lat/lng OR fully empty signal stack
+  // (no geo, no browser, no referrer, no session/visitor identity). Any single
+  // real client field present disqualifies this rule to avoid false positives
+  // on legit visitors with blocked geo lookup.
+  if (r.latitude === 0 && r.longitude === 0) {
+    return { isBot: true, reason: "zero_geo_ping" };
+  }
+  const hasGeo = r.country || r.city || r.latitude != null || r.longitude != null;
+  const hasClientSignal = !!(r.browser || r.device_type || r.referrer || r.utm_source);
+  const hasIdentity = !!(r.visitor_id || r.session_id);
+  if (!hasGeo && !hasClientSignal && !hasIdentity) {
+    return { isBot: true, reason: "empty_signal_stack" };
   }
   return { isBot: false, reason: null };
 }
