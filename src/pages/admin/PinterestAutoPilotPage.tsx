@@ -709,6 +709,36 @@ export default function PinterestAutoPilotPage() {
               First eligible: <span className="font-medium text-foreground">{diagnostic.first_eligible_product.name}</span>
             </div>
           )}
+          {diagnostic?.media_host_status && (
+            <div className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Media-host gate</div>
+                <Badge variant={diagnostic.media_host_status.selected_product_media_host_ok ? "default" : "destructive"}>
+                  {diagnostic.media_host_status.selected_product_media_host_ok ? "own-domain OK" : "external blocked"}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                <div><div className="text-xs text-muted-foreground">Own-domain eligible</div><div className="font-mono font-bold">{diagnostic.media_host_status.own_domain}</div></div>
+                <div><div className="text-xs text-muted-foreground">External blocked</div><div className="font-mono font-bold text-destructive">{diagnostic.media_host_status.external_blocked}</div></div>
+                <div><div className="text-xs text-muted-foreground">No image</div><div className="font-mono font-bold">{diagnostic.media_host_status.no_image}</div></div>
+                <div><div className="text-xs text-muted-foreground">Selected host</div><div className="font-mono text-xs break-all">{diagnostic.media_host_status.selected_product_image_host || "—"}{diagnostic.media_host_status.selected_product_fallback_used && " (fallback)"}</div></div>
+              </div>
+              {Array.isArray(diagnostic.media_host_status.blocked_sample) && diagnostic.media_host_status.blocked_sample.length > 0 && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground">First {diagnostic.media_host_status.blocked_sample.length} blocked product slugs</summary>
+                  <ul className="mt-1 space-y-0.5 max-h-40 overflow-auto">
+                    {diagnostic.media_host_status.blocked_sample.map((b: any) => (
+                      <li key={b.slug} className="font-mono text-[11px] flex justify-between gap-2 border-b py-0.5">
+                        <span className="truncate">{b.slug}</span>
+                        <span className="text-muted-foreground shrink-0">{b.host}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              <div className="text-[11px] text-muted-foreground">Allowed: getpawsy.pet · Blocked: cf.cjdropshipping.com, oss-cf.cjdropshipping.com</div>
+            </div>
+          )}
           {diagnostic?.exact_reason_if_no_pin_can_be_published && (
             <div className="text-sm text-destructive">{diagnostic.exact_reason_if_no_pin_can_be_published}</div>
           )}
