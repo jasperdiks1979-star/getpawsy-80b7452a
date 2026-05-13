@@ -309,6 +309,47 @@ export default function ProfitEnginePage() {
     refetchInterval: 30_000,
   });
 
+  // Persistent health: pings profit-engine-health and finds last successful sync.
+  const healthQ = useQuery({
+    queryKey: ["profit-engine-health"],
+    queryFn: async () => {
+      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/profit-engine-health`;
+      const [healthRes, lastOk] = await Promise.all([
+        fetch(url).then((r) => r.json()).catch(() => null),
+        (supabase as any)
+          .from("profit_engine_function_logs")
+          .select("created_at")
+          .eq("level", "info")
+          .eq("phase", "complete")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const env = healthRes?.env_loaded ?? {};
+      const missing = Object.entries(env).filter(([, v]) => !v).map(([k]) => k);
+      return {
+        reachable: !!healthRes?.ok,
+        missing,
+        last_success_at: lastOk?.data?.created_at ?? null,
+      };
+    },
+    refetchInterval: 60_000,
+  });
+
+  const healthState: "ok" | "warn" | "down" = !healthQ.data
+    ? "warn"
+    : !healthQ.data.reachable || healthQ.data.missing.length > 0
+      ? "down"
+      : "ok";
+  const healthLabel = healthState === "down"
+    ? (!healthQ.data?.reachable ? "Unreachable" : `Missing: ${healthQ.data?.missing.join(", ")}`)
+    : healthState === "warn"
+      ? "Checking…"
+      : "Healthy";
+  const lastOkLabel = healthQ.data?.last_success_at
+    ? `Last success ${new Date(healthQ.data.last_success_at).toLocaleString()}`
+    : "No successful sync yet";
+
   async function exportDiagnosticsCsv() {
     const traceId = diagQ.data?.trace_id;
     if (!traceId) {
@@ -355,7 +396,26 @@ export default function ProfitEnginePage() {
           <h1 className="text-3xl font-bold tracking-tight">Profit Engine</h1>
           <p className="text-muted-foreground">Kill / pause / scale ads using break-even math. <Badge variant="outline" className="ml-1">US-only</Badge></p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          <div
+            className={`flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs ${
+              healthState === "down"
+                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                : healthState === "ok"
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                  : "border-muted bg-muted/30 text-muted-foreground"
+            }`}
+            title={`${healthLabel} · ${lastOkLabel}`}
+            aria-label={`Profit Engine health: ${healthLabel}. ${lastOkLabel}.`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                healthState === "down" ? "bg-destructive" : healthState === "ok" ? "bg-emerald-500" : "bg-muted-foreground"
+              } ${healthState === "warn" ? "animate-pulse" : ""}`}
+            />
+            <span className="font-medium">{healthLabel}</span>
+            <span className="opacity-70">· {lastOkLabel}</span>
+          </div>
           <Button asChild variant="ghost">
             <Link to="/admin/profit-engine/trends">
               <LineChart className="h-4 w-4 mr-2" />Trends
