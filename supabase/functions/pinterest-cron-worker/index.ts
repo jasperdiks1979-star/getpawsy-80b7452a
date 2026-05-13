@@ -757,13 +757,14 @@ Deno.serve(async (req) => {
           media_source: { source_type: "image_url", url: pin.pin_image_url },
           link: destinationLink,
         };
+        const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-cron-worker", pin_id: pin.id });
         const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(requestPayload),
+          body: JSON.stringify(safePayload.payload),
         });
 
         if (!pinRes.ok) {
