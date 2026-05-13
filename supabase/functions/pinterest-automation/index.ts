@@ -673,6 +673,12 @@ Deno.serve(async (req) => {
       return await runFullPinterestDiagnostic(sb, cors);
     }
 
+    if (action === "publish_safe_cold_start_test_pin") {
+      const adminCheck = await authorizeDirectTest(sb, req, body);
+      if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
+      return await runSafeColdStartTestPublish(sb, cors, { dryRun: body.dryRun !== false });
+    }
+
     if (action === "mint_direct_test_token") {
       const adminCheck = await requireDirectTestAdmin(sb, req);
       if (!adminCheck.ok) return json(cors, { ok: false, error: adminCheck.error });
