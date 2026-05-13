@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
+import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, XCircle, PlayCircle } from "lucide-react";
 
 type Range = "24h" | "7d" | "30d";
 
@@ -101,6 +101,51 @@ export const CleanAnalyticsPanel = () => {
     return w;
   }, [data, current]);
 
+  const consistency = useMemo(() => {
+    const d24 = data["24h"]; const d7 = data["7d"]; const d30 = data["30d"];
+    if (!d24 || !d7 || !d30) return null;
+    type Check = { id: string; label: string; pass: boolean; severity: "error" | "warn" | "info"; detail: string };
+    const checks: Check[] = [];
+    const push = (id: string, label: string, pass: boolean, detail: string, severity: Check["severity"] = "error") =>
+      checks.push({ id, label, pass, detail, severity });
+
+    // Monotonicity: 24h <= 7d <= 30d for cumulative metrics
+    const monoMetrics: Array<keyof DebugResponse> = [
+      "unique_visitors", "sessions", "pageviews", "product_views",
+      "add_to_cart", "checkout_started", "purchases", "clean_events", "total_raw_events",
+    ];
+    for (const m of monoMetrics) {
+      const a = Number(d24[m] ?? 0), b = Number(d7[m] ?? 0), c = Number(d30[m] ?? 0);
+      push(`mono-${String(m)}`, `Monotonic ${String(m)} (24h ≤ 7d ≤ 30d)`, a <= b && b <= c,
+        `24h=${a} • 7d=${b} • 30d=${c}`);
+    }
+
+    // 7d == 30d warning (likely stale or capped)
+    push("7d-eq-30d-uv", "7d ≠ 30d unique visitors",
+      !(d7.unique_visitors > 0 && d7.unique_visitors === d30.unique_visitors),
+      `7d=${d7.unique_visitors} • 30d=${d30.unique_visitors}`, "warn");
+    push("7d-eq-30d-pv", "7d ≠ 30d pageviews",
+      !(d7.pageviews > 0 && d7.pageviews === d30.pageviews),
+      `7d=${d7.pageviews} • 30d=${d30.pageviews}`, "warn");
+
+    // Funnel sanity per range
+    for (const r of RANGES) {
+      const d = data[r]!;
+      push(`funnel-pv-sess-${r}`, `${r}: pageviews ≥ sessions`, d.pageviews >= d.sessions,
+        `pv=${d.pageviews} • sess=${d.sessions}`);
+      push(`funnel-atc-pv-${r}`, `${r}: add_to_cart ≤ product_views`, d.add_to_cart <= d.product_views,
+        `atc=${d.add_to_cart} • pv=${d.product_views}`, "warn");
+      push(`funnel-co-atc-${r}`, `${r}: checkout_started ≤ add_to_cart`, d.checkout_started <= d.add_to_cart,
+        `co=${d.checkout_started} • atc=${d.add_to_cart}`, "warn");
+      push(`funnel-pur-co-${r}`, `${r}: purchases ≤ checkout_started`, d.purchases <= d.checkout_started,
+        `pur=${d.purchases} • co=${d.checkout_started}`, "warn");
+    }
+
+    const errors = checks.filter(c => !c.pass && c.severity === "error").length;
+    const warns = checks.filter(c => !c.pass && c.severity === "warn").length;
+    return { checks, errors, warns, total: checks.length };
+  }, [data]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -139,6 +184,56 @@ export const CleanAnalyticsPanel = () => {
             ))}
           </div>
         )}
+
+        {/* Consistency test */}
+        <div className="rounded-lg border bg-card">
+          <div className="flex items-center justify-between p-3 border-b">
+            <div>
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <PlayCircle className="h-4 w-4" />
+                Consistency test (24h / 7d / 30d)
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Monotonicity, 7d≠30d guard, and funnel sanity (pv≥sess, atc≤pv, co≤atc, pur≤co).
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {consistency && (
+                <>
+                  <Badge variant={consistency.errors === 0 ? "default" : "destructive"}>
+                    {consistency.total - consistency.errors - consistency.warns}/{consistency.total} pass
+                  </Badge>
+                  {consistency.warns > 0 && <Badge variant="outline">{consistency.warns} warn</Badge>}
+                  {consistency.errors > 0 && <Badge variant="destructive">{consistency.errors} fail</Badge>}
+                </>
+              )}
+              <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Re-run"}
+              </Button>
+            </div>
+          </div>
+          {!consistency ? (
+            <div className="p-3 text-sm text-muted-foreground">Loading ranges…</div>
+          ) : (
+            <div className="p-3 grid md:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+              {consistency.checks.map((c) => (
+                <div key={c.id} className="flex items-start gap-2 py-1 border-b last:border-0">
+                  {c.pass ? (
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-500 flex-shrink-0" />
+                  ) : c.severity === "warn" ? (
+                    <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
+                  ) : (
+                    <XCircle className="h-4 w-4 mt-0.5 text-destructive flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className={c.pass ? "" : "font-medium"}>{c.label}</div>
+                    <div className="text-xs text-muted-foreground font-mono truncate">{c.detail}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {!current ? (
           <div className="text-sm text-muted-foreground">Loading…</div>
