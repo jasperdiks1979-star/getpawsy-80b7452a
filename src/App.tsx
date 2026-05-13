@@ -1901,6 +1901,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-ads"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicAdsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="sitemap-ping"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
