@@ -38,6 +38,22 @@ interface DebugResponse {
 
 const RANGES: Range[] = ["24h", "7d", "30d"];
 
+const BOT_REASON_LABEL: Record<string, string> = {
+  test_query_param: "Test/preview query param",
+  bot_browser_ua: "Bot browser/UA",
+  bot_referrer: "Known crawler referrer",
+  bot_utm_marker: "Bot UTM marker",
+  no_geo_signature: "Missing geo signature",
+  unknown: "Unknown bot rule",
+};
+const BOT_REASON_HELP: Record<string, string> = {
+  test_query_param: "URL contained ?test=true / ?internal=true / ?dryrun=true / ?preview=true",
+  bot_browser_ua: "browser field matched: bot|crawler|spider|headless|puppeteer|playwright|curl|wget|python-requests|axios…",
+  bot_referrer: "referrer matched a known crawler/bot domain (Googlebot, Ahrefs, Semrush, FB/Twitter scraper, Slackbot…)",
+  bot_utm_marker: "utm_source/medium/campaign contained bot|crawler|monitor|uptime|test|qa|automation",
+  no_geo_signature: "lat/lng = 0,0 or no country/city/coords — likely synthetic ping or server-side bot",
+};
+
 async function fetchRange(range: Range, usOnly: boolean): Promise<DebugResponse> {
   const { data, error } = await supabase.functions.invoke("world-map-debug", {
     method: "GET",
