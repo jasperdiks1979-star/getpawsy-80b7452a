@@ -2240,6 +2240,21 @@ export const VisitorWorldMap = () => {
           </div>
         </div>
 
+        {/* Clean-data filters */}
+        <div className="flex flex-wrap items-center gap-4 mt-3 px-1 py-2 rounded-md border border-dashed">
+          <div className="flex items-center gap-2">
+            <Switch id="map-us-only" checked={usOnly} onCheckedChange={setUsOnly} />
+            <Label htmlFor="map-us-only" className="text-xs">US-only</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="map-exclude-internal" checked={excludeInternal} onCheckedChange={setExcludeInternal} />
+            <Label htmlFor="map-exclude-internal" className="text-xs">Exclude internal/test</Label>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            Defaults ON. Toggle OFF to see global / raw traffic for debugging.
+          </span>
+        </div>
+
         {/* Stats Row */}
         <div className="flex flex-wrap items-center gap-2 mt-3">
           <Badge variant="secondary" className="flex items-center gap-1">
@@ -2262,7 +2277,7 @@ export const VisitorWorldMap = () => {
             style={{ borderColor: ACTIVITY_COLORS.browsing, color: ACTIVITY_COLORS.browsing }}
           >
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.browsing }} />
-            {counts.browsing} browsen
+            {counts.browsing} pageviews
           </Badge>
           <Badge 
             variant="outline" 
