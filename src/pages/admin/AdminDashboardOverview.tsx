@@ -20,6 +20,7 @@ import {
   Search,
   Layers,
   Filter,
+  Video,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
