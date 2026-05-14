@@ -34,21 +34,35 @@ if (!SUPABASE_URL || !SERVICE_KEY || !WORKER_SECRET || !JOB_ID) {
 
 const HEADERS = { "Content-Type": "application/json", "x-render-secret": WORKER_SECRET };
 
-async function postWebhook(payload) {
+async function fetchWithTimeout(url, opts = {}, timeoutMs = 30_000) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), timeoutMs);
   try {
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`, {
-      method: "POST", headers: HEADERS, body: JSON.stringify(payload),
-    });
-    const t = await r.text();
-    console.log("[webhook]", r.status, t);
-  } catch (e) { console.error("[webhook] failed", e); }
+    return await fetch(url, { ...opts, signal: ac.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function postWebhook(payload) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`, {
+        method: "POST", headers: HEADERS, body: JSON.stringify(payload),
+      }, 15_000);
+      const t = await r.text();
+      console.log("[webhook]", r.status, t);
+      if (r.ok) return;
+    } catch (e) { console.error("[webhook] attempt", attempt, "failed", e?.message ?? e); }
+    await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+  }
 }
 
 async function claimJob() {
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-claim-job`, {
+  const r = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/cinematic-ad-claim-job`, {
     method: "POST", headers: HEADERS,
     body: JSON.stringify({ worker_id: WORKER_ID, job_id: JOB_ID }),
-  });
+  }, 15_000);
   const data = await r.json();
   if (!data.ok || !data.job) throw new Error(`claim failed: ${JSON.stringify(data)}`);
   return data.job;
@@ -63,10 +77,21 @@ function sh(cmd, args, opts = {}) {
 }
 
 async function download(url, dest) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`download ${url} -> ${r.status}`);
-  const buf = new Uint8Array(await r.arrayBuffer());
-  writeFileSync(dest, buf);
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetchWithTimeout(url, {}, 60_000);
+      if (!r.ok) throw new Error(`download ${url} -> ${r.status}`);
+      const buf = new Uint8Array(await r.arrayBuffer());
+      writeFileSync(dest, buf);
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[download] attempt ${attempt} failed: ${e?.message ?? e}`);
+      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 async function uploadToStorage(localPath, objectPath) {
