@@ -46,12 +46,20 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... RENDER_WORKER_SECRET=... \
 
 ## Deploy to Render.com
 
-1. New → Background Worker → connect this repo
+1. New → **Web Service** (so health checks work) → connect this repo
 2. **Environment**: Node 20
-3. **Build command**: `npm --prefix render-worker install && apt-get update && apt-get install -y ffmpeg && curl -fsSL https://bun.sh/install | bash`
-4. **Start command**: `npm --prefix render-worker start`
-5. Add env vars from the table above (Settings → Environment)
-6. Deploy
+3. **Root Directory**: leave blank (repo root). Worker lives at `render-worker/` relative to repo root, full path on Render is `/opt/render/project/src/render-worker/`.
+4. **Build command**:
+    ```
+    apt-get update && apt-get install -y ffmpeg && curl -fsSL https://bun.sh/install | bash && npm --prefix render-worker install && npm --prefix render-worker run build
+    ```
+5. **Start command**: `npm --prefix render-worker start`
+6. **Health check path**: `/health`
+7. Add env vars from the table above (Settings → Environment), including `PORT` (Render sets this automatically for Web Services)
+8. Deploy
+
+### Troubleshooting ENOENT `render-worker/package.json`
+If Render logs show `npm error path /opt/render/project/src/render-worker/package.json` / `ENOENT`, the GitHub sync did not include the `render-worker/` folder. Verify in GitHub UI that `render-worker/package.json` and `render-worker/start.mjs` exist on the branch Render is deploying. If not, re-trigger sync from Lovable and redeploy.
 
 ## Deploy to Railway
 
