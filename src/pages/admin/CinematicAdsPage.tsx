@@ -45,6 +45,8 @@ export default function CinematicAdsPage() {
   const [hookVariant, setHookVariant] = useState("default");
   const [smoke, setSmoke] = useState<any>(null);
   const [smokeBusy, setSmokeBusy] = useState(false);
+  const [e2e, setE2e] = useState<any>(null);
+  const [e2eBusy, setE2eBusy] = useState(false);
 
   const runSmokeTest = async () => {
     setSmokeBusy(true);
@@ -56,6 +58,18 @@ export default function CinematicAdsPage() {
       else toast.success(`Smoke test passed (${data?.summary?.passed} OK, ${data?.summary?.warned} warn)`);
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
     finally { setSmokeBusy(false); }
+  };
+
+  const runE2eTest = async () => {
+    setE2eBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-e2e-test", { body: {} });
+      if (error) throw error;
+      setE2e(data);
+      if (data?.ok) toast.success(`E2E pipeline test passed in ${data.durationMs}ms`);
+      else toast.error(`E2E test failed (${data?.summary?.failed} step(s))`);
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setE2eBusy(false); }
   };
 
   const load = async () => {
