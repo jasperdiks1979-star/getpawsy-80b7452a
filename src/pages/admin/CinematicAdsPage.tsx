@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck } from "lucide-react";
 
 type Job = {
   id: string;
@@ -43,6 +43,20 @@ export default function CinematicAdsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [productSlug, setProductSlug] = useState("enclosed-cat-litter-box-extra-large-flip-top");
   const [hookVariant, setHookVariant] = useState("default");
+  const [smoke, setSmoke] = useState<any>(null);
+  const [smokeBusy, setSmokeBusy] = useState(false);
+
+  const runSmokeTest = async () => {
+    setSmokeBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-smoke-test", { body: {} });
+      if (error) throw error;
+      setSmoke(data);
+      if (data?.summary?.failed > 0) toast.error(`Smoke test: ${data.summary.failed} failed, ${data.summary.warned} warn`);
+      else toast.success(`Smoke test passed (${data?.summary?.passed} OK, ${data?.summary?.warned} warn)`);
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setSmokeBusy(false); }
+  };
 
   const load = async () => {
     const { data, error } = await supabase
