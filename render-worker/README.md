@@ -19,6 +19,21 @@ Fly.io, a VPS, your laptop).
 | `RENDER_WORKER_SECRET` | Same value as the `RENDER_WORKER_SECRET` secret in Lovable Cloud |
 | `POLL_INTERVAL_MS` | optional, default `120000` (2 min) |
 | `RENDER_WORKER_ID` | optional, defaults to a random id |
+| `PORT` | optional. If set, exposes health endpoints (use Render **Web Service** instead of Background Worker) |
+| `MAX_CONSECUTIVE_FAILURES` | optional, default `5` (process exits for restart) |
+| `CLAIM_TIMEOUT_MS` | optional, default `15000` |
+| `RENDER_TIMEOUT_MS` | optional, default `1200000` (20 min) |
+
+## Health endpoints (when `PORT` is set)
+
+| Path | Purpose |
+|------|---------|
+| `/health` | liveness — process is up |
+| `/health/worker` | poll/render stats, busy state, current job |
+| `/health/supabase` | upstream connectivity to Lovable Cloud |
+| `/debug/runtime` | node version, env presence (booleans only), full state |
+
+All endpoints return JSON. No secrets are exposed.
 
 ## Run locally
 
