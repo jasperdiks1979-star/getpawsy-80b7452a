@@ -45,6 +45,8 @@ export default function CinematicAdsPage() {
   const [hookVariant, setHookVariant] = useState("default");
   const [smoke, setSmoke] = useState<any>(null);
   const [smokeBusy, setSmokeBusy] = useState(false);
+  const [e2e, setE2e] = useState<any>(null);
+  const [e2eBusy, setE2eBusy] = useState(false);
 
   const runSmokeTest = async () => {
     setSmokeBusy(true);
@@ -56,6 +58,18 @@ export default function CinematicAdsPage() {
       else toast.success(`Smoke test passed (${data?.summary?.passed} OK, ${data?.summary?.warned} warn)`);
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
     finally { setSmokeBusy(false); }
+  };
+
+  const runE2eTest = async () => {
+    setE2eBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-e2e-test", { body: {} });
+      if (error) throw error;
+      setE2e(data);
+      if (data?.ok) toast.success(`E2E pipeline test passed in ${data.durationMs}ms`);
+      else toast.error(`E2E test failed (${data?.summary?.failed} step(s))`);
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setE2eBusy(false); }
   };
 
   const load = async () => {
@@ -200,6 +214,36 @@ export default function CinematicAdsPage() {
             {smokeBusy ? <Loader2 className="size-4 animate-spin mr-1" /> : <ShieldCheck className="size-4 mr-1" />}
             Run end-to-end smoke test
           </Button>
+          <Button size="sm" variant="secondary" onClick={runE2eTest} disabled={e2eBusy} className="ml-2">
+            {e2eBusy ? <Loader2 className="size-4 animate-spin mr-1" /> : <ShieldCheck className="size-4 mr-1" />}
+            Run automated E2E pipeline test
+          </Button>
+          <p className="text-[11px] text-muted-foreground">
+            E2E test creates a throwaway job, walks queue → claim → upload → webhook, validates the public MP4 URL, then deletes the test job. No external worker required.
+          </p>
+          {e2e && (
+            <div className="text-xs space-y-2">
+              <div className="flex flex-wrap gap-3">
+                <span className={e2e.ok ? "text-emerald-700 font-semibold" : "text-destructive font-semibold"}>
+                  {e2e.ok ? "Pipeline OK ✓" : "Pipeline FAILED"}
+                </span>
+                <span className="text-muted-foreground">{e2e.durationMs}ms · trace {e2e.traceId}</span>
+              </div>
+              <div className="border rounded divide-y">
+                {(e2e.steps ?? []).map((s: any, i: number) => (
+                  <div key={i} className="p-2 flex items-start gap-2">
+                    <Badge className={s.status === "OK" ? "bg-emerald-500/10 text-emerald-700" : "bg-destructive/10 text-destructive"}>
+                      {s.status}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">{s.name} <span className="text-muted-foreground font-normal">({s.ms}ms)</span></div>
+                      {s.reason !== "ok" && <div className="text-muted-foreground break-words">{s.reason}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {smoke?.summary && (
             <div className="text-xs flex flex-wrap gap-3">
               <span className="text-emerald-600">OK: {smoke.summary.passed}</span>
