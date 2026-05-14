@@ -272,3 +272,9 @@ verify_jwt = false
 
 [functions.profit-engine-health]
 verify_jwt = false
+
+[functions.cinematic-ad-render-webhook]
+verify_jwt = false
+
+[functions.cinematic-ad-claim-job]
+verify_jwt = false

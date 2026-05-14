@@ -1,0 +1,11 @@
+{
+  "name": "getpawsy-cinematic-render-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node start.mjs",
+    "once": "node start.mjs --once"
+  },
+  "engines": { "node": ">=20" }
+}
