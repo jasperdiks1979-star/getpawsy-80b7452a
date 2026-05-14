@@ -910,12 +910,18 @@ export type Database = {
           id: string
           music_url: string | null
           output_duration_seconds: number | null
+          output_file_size_bytes: number | null
           output_mp4_url: string | null
           output_thumbnail_url: string | null
           pinterest_asset_id: string | null
           prepared_at: string | null
           product_slug: string
           pushed_to_pinterest_at: string | null
+          render_attempts: number
+          render_queued_at: string | null
+          render_started_at: string | null
+          render_token: string | null
+          render_worker_id: string | null
           rendered_at: string | null
           scene_assets: Json
           scene_specs: Json
@@ -934,12 +940,18 @@ export type Database = {
           id?: string
           music_url?: string | null
           output_duration_seconds?: number | null
+          output_file_size_bytes?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           pinterest_asset_id?: string | null
           prepared_at?: string | null
           product_slug: string
           pushed_to_pinterest_at?: string | null
+          render_attempts?: number
+          render_queued_at?: string | null
+          render_started_at?: string | null
+          render_token?: string | null
+          render_worker_id?: string | null
           rendered_at?: string | null
           scene_assets?: Json
           scene_specs?: Json
@@ -958,12 +970,18 @@ export type Database = {
           id?: string
           music_url?: string | null
           output_duration_seconds?: number | null
+          output_file_size_bytes?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           pinterest_asset_id?: string | null
           prepared_at?: string | null
           product_slug?: string
           pushed_to_pinterest_at?: string | null
+          render_attempts?: number
+          render_queued_at?: string | null
+          render_started_at?: string | null
+          render_token?: string | null
+          render_worker_id?: string | null
           rendered_at?: string | null
           scene_assets?: Json
           scene_specs?: Json
