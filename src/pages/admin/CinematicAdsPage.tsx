@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw } from "lucide-react";
 
 type Job = {
   id: string;
@@ -22,12 +22,16 @@ type Job = {
   error_message: string | null;
   created_at: string;
   prepared_at: string | null;
+  render_attempts?: number | null;
+  render_worker_id?: string | null;
+  render_queued_at?: string | null;
 };
 
 const STATUS_COLOR: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
   preparing: "bg-blue-500/10 text-blue-600",
   prepared: "bg-emerald-500/10 text-emerald-600",
+  render_queued: "bg-indigo-500/10 text-indigo-600",
   rendering: "bg-amber-500/10 text-amber-600",
   rendered: "bg-emerald-600/15 text-emerald-700",
   failed: "bg-destructive/10 text-destructive",
@@ -85,6 +89,36 @@ export default function CinematicAdsPage() {
     finally { setBusyId(null); }
   };
 
+  const sendToRenderWorker = async (jobId: string) => {
+    setBusyId(jobId);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-queue-render", { body: { job_id: jobId } });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "queue failed");
+      toast.success("Queued for render worker.");
+      // copy command to clipboard for convenience
+      try { await navigator.clipboard.writeText(data.command); } catch { /* noop */ }
+      load();
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setBusyId(null); }
+  };
+
+  const copyText = async (text: string, label: string) => {
+    try { await navigator.clipboard.writeText(text); toast.success(`${label} copied`); }
+    catch { toast.error("Clipboard blocked"); }
+  };
+
+  const ghCommand = (jobId: string) =>
+    `gh workflow run render-cinematic-ad.yml -f job_id=${jobId}`;
+
+  const groups = {
+    prepared: jobs.filter(j => j.status === "prepared"),
+    render_queued: jobs.filter(j => j.status === "render_queued"),
+    rendering: jobs.filter(j => j.status === "rendering"),
+    rendered: jobs.filter(j => j.status === "rendered"),
+    failed: jobs.filter(j => j.status === "failed"),
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-6xl">
       <header className="space-y-1">
@@ -121,15 +155,41 @@ export default function CinematicAdsPage() {
         </CardContent>
       </Card>
 
+      <Card className="border-primary/20">
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Cloud className="size-4" /> External Render Worker</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-xs text-muted-foreground">
+          <p>
+            Lovable Cloud cannot run ffmpeg/Chromium. Click <strong>Send to Render Worker</strong> on a prepared job to queue it; then either trigger the GitHub Actions workflow or let your Render.com / Railway worker pick it up.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => copyText("gh workflow run render-cinematic-ad.yml -f job_id=<JOB_UUID>", "GitHub Actions command")}>
+              <Copy className="size-3 mr-1" /> Copy GitHub Actions command
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => copyText("Render.com → New Background Worker → see render-worker/README.md for env vars + start command.", "Render.com instructions")}>
+              <Copy className="size-3 mr-1" /> Copy Render.com setup
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => load()}>
+              <RefreshCw className="size-3 mr-1" /> Refresh
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase text-muted-foreground tracking-wide">Queue</h2>
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading…</div>
         ) : jobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No jobs yet.</p>
         ) : (
-          <div className="space-y-3">
-            {jobs.map((j) => (
+          (["prepared","render_queued","rendering","rendered","failed"] as const).map((groupKey) => {
+            const groupJobs = groups[groupKey];
+            if (groupJobs.length === 0) return null;
+            return (
+            <div key={groupKey} className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase text-muted-foreground tracking-wide">
+                {groupKey.replace("_"," ")} <span className="ml-1 opacity-60">({groupJobs.length})</span>
+              </h2>
+              {groupJobs.map((j) => (
               <Card key={j.id}>
                 <CardContent className="p-4 space-y-3">
                   <div className="flex flex-wrap items-center gap-2 justify-between">
@@ -137,6 +197,9 @@ export default function CinematicAdsPage() {
                       <div className="font-mono text-xs text-muted-foreground">{j.id.slice(0, 8)}</div>
                       <div className="font-medium text-sm">{j.product_slug}</div>
                       <div className="text-xs text-muted-foreground">hook: {j.hook_variant} · {new Date(j.created_at).toLocaleString()}</div>
+                      {(j.render_attempts ?? 0) > 0 && (
+                        <div className="text-[10px] text-muted-foreground">attempts: {j.render_attempts}{j.render_worker_id ? ` · ${j.render_worker_id}` : ""}</div>
+                      )}
                     </div>
                     <Badge className={STATUS_COLOR[j.status] ?? "bg-muted"}>{j.status}</Badge>
                   </div>
@@ -163,6 +226,17 @@ export default function CinematicAdsPage() {
                   )}
 
                   <div className="flex flex-wrap gap-2">
+                    {(j.status === "prepared" || j.status === "failed") && (
+                      <Button size="sm" onClick={() => sendToRenderWorker(j.id)} disabled={busyId === j.id}>
+                        {busyId === j.id ? <Loader2 className="size-4 animate-spin mr-1" /> : <Cloud className="size-4 mr-1" />}
+                        Send to Render Worker
+                      </Button>
+                    )}
+                    {(j.status === "prepared" || j.status === "render_queued" || j.status === "failed") && (
+                      <Button size="sm" variant="outline" onClick={() => copyText(ghCommand(j.id), "GH command")}>
+                        <Copy className="size-3 mr-1" /> Copy GH command
+                      </Button>
+                    )}
                     {j.output_mp4_url && (
                       <>
                         <Button size="sm" variant="outline" asChild>
@@ -185,8 +259,10 @@ export default function CinematicAdsPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+            );
+          })
         )}
       </section>
     </div>
