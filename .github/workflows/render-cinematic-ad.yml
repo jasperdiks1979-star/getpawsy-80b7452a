@@ -1,0 +1,40 @@
+name: Render Cinematic Ad
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "cinematic_ad_jobs.id (UUID) to render"
+        required: true
+        type: string
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg + chromium deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg chromium-browser fonts-liberation libnss3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Render MP4
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RENDER_WORKER_SECRET: ${{ secrets.RENDER_WORKER_SECRET }}
+          RENDER_WORKER_ID: gh-actions-${{ github.run_id }}
+        run: bun remotion/scripts/render-cinematic-ad.mjs --job=${{ inputs.job_id }}
