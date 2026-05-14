@@ -189,6 +189,49 @@ export default function CinematicAdsPage() {
         </CardContent>
       </Card>
 
+      <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldCheck className="size-4" /> Pipeline Smoke Test
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button size="sm" onClick={runSmokeTest} disabled={smokeBusy}>
+            {smokeBusy ? <Loader2 className="size-4 animate-spin mr-1" /> : <ShieldCheck className="size-4 mr-1" />}
+            Run end-to-end smoke test
+          </Button>
+          {smoke?.summary && (
+            <div className="text-xs flex flex-wrap gap-3">
+              <span className="text-emerald-600">OK: {smoke.summary.passed}</span>
+              <span className="text-amber-600">WARN: {smoke.summary.warned}</span>
+              <span className="text-destructive">FAIL: {smoke.summary.failed}</span>
+              <span className={smoke.summary.productionReady ? "text-emerald-700 font-semibold" : "text-muted-foreground"}>
+                {smoke.summary.productionReady ? "Production-ready ✓" : "Not yet production-ready"}
+              </span>
+              {smoke.job_used && <span className="font-mono text-muted-foreground">job: {String(smoke.job_used).slice(0,8)}</span>}
+            </div>
+          )}
+          {Array.isArray(smoke?.checks) && (
+            <div className="border rounded divide-y">
+              {smoke.checks.map((c: any) => (
+                <div key={c.traceId} className="p-2 text-xs flex items-start gap-2">
+                  <Badge className={
+                    c.status === "OK" ? "bg-emerald-500/10 text-emerald-700"
+                    : c.status === "WARN" ? "bg-amber-500/10 text-amber-700"
+                    : "bg-destructive/10 text-destructive"
+                  }>{c.status}</Badge>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium">{c.name}</div>
+                    <div className="text-muted-foreground break-words">{c.reason}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono">trace {c.traceId} · {new Date(c.ts).toLocaleTimeString()}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <section className="space-y-3">
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading…</div>
