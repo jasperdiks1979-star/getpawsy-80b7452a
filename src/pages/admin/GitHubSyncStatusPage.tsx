@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, GitBranch, CheckCircle2, AlertCircle, GitMerge, ExternalLink, Settings } from "lucide-react";
+import { RefreshCw, GitBranch, CheckCircle2, AlertCircle, GitMerge, ExternalLink, Settings, BellRing, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const LS_KEY = "gp.github.repo";
 const LS_TOKEN = "gp.github.token";
