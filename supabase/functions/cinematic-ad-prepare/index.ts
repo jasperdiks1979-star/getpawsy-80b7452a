@@ -209,6 +209,20 @@ const DEFAULT_VO = (productName: string) =>
  */
 type GeneratedCopy = { vo_script: string; captions: string[] };
 
+/**
+ * Multi-variant copy. `vo_scripts` = N alternative voice-over scripts.
+ * `caption_variants` = 6 scenes × N alternative captions per scene.
+ * Used so each render of the same product can rotate through different copy
+ * to avoid campaign repetition / ad fatigue.
+ */
+export type GeneratedCopyVariants = {
+  vo_scripts: string[];
+  caption_variants: string[][]; // [sceneIdx][variantIdx]
+};
+
+export const DEFAULT_VARIANT_COUNT = 3;
+const MAX_VARIANT_COUNT = 5;
+
 async function generateProductCopy(
   product: { name: string; description?: string | null; category?: string | null; primary_species?: string | null; primary_intent?: string | null },
   apiKey: string,
@@ -274,6 +288,116 @@ Rules:
     console.error("[generate-copy] failed", e);
     return null;
   }
+}
+
+/**
+ * Generate N variants of voiceover + captions in a single AI call so the
+ * model can deliberately diversify angle, hook, and rhythm across variants.
+ */
+async function generateProductCopyVariants(
+  product: { name: string; description?: string | null; category?: string | null; primary_species?: string | null; primary_intent?: string | null },
+  apiKey: string,
+  n: number,
+): Promise<GeneratedCopyVariants | null> {
+  const variantCount = Math.max(1, Math.min(MAX_VARIANT_COUNT, Math.floor(n)));
+  const sys = `You are a senior US-native direct-response copywriter for GetPawsy, a premium pet brand. You will write ${variantCount} clearly distinct variants of a 6-scene short-form ad (TikTok / Pinterest, 9:16, ~25 seconds). Each variant must use a DIFFERENT angle, hook, rhythm and word choice — no near-duplicates. Tone: confident, warm, US-native, premium-but-friendly. Strict compliance: NO health claims, NO "vet-approved", NO "eco-friendly", NO fake reviews, NO price anchoring, NO placeholder text. Always end with a clear call-to-action to GetPawsy.pet.`;
+  const user = `Product:
+- Name: ${product.name}
+- Category: ${product.category ?? "pet product"}
+- Species: ${product.primary_species ?? "pet"}
+- Intent: ${product.primary_intent ?? "general"}
+- Description: ${(product.description ?? "").slice(0, 600)}
+
+Return STRICT JSON (no prose, no markdown) with this exact shape:
+{
+  "vo_scripts": [ ${Array(variantCount).fill('"<one continuous voiceover, 45-65 words, natural spoken cadence, ends with: Get yours at GetPawsy dot pet>"').join(", ")} ],
+  "caption_variants": [
+    [ ${Array(variantCount).fill('"<Scene 1 hook caption — 3-6 words, problem/curiosity>"').join(", ")} ],
+    [ ${Array(variantCount).fill('"<Scene 2 reveal caption — 3-6 words, names the product>"').join(", ")} ],
+    [ ${Array(variantCount).fill('"<Scene 3 benefit caption — 3-6 words, scale or fit>"').join(", ")} ],
+    [ ${Array(variantCount).fill('"<Scene 4 craftsmanship caption — 3-6 words, quality detail>"').join(", ")} ],
+    [ ${Array(variantCount).fill('"<Scene 5 lifestyle caption — 3-6 words, ease of use>"').join(", ")} ],
+    [ ${Array(variantCount).fill('"<Scene 6 CTA caption — exactly: Get yours at GetPawsy.pet>"').join(", ")} ]
+  ]
+}
+
+Rules:
+- caption_variants must have exactly 6 sub-arrays (one per scene), each of length ${variantCount}.
+- vo_scripts must have exactly ${variantCount} entries.
+- Captions must be specific to THIS product (do not say "litter box" unless this is a litter box).
+- Within each scene, the ${variantCount} captions must be meaningfully different (different wording, not just synonyms).
+- Across vo_scripts the ${variantCount} variants must lead with a different hook angle.
+- Every Scene 6 CTA caption must be exactly: Get yours at GetPawsy.pet
+- Each vo_script must mention the product name once, naturally.`;
+
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) {
+      console.error("[generate-copy-variants] non-2xx", res.status, await res.text());
+      return null;
+    }
+    const data = await res.json();
+    const raw: string = data?.choices?.[0]?.message?.content ?? "";
+    const cleaned = raw.replace(/^```json\s*|\s*```$/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+
+    const voScripts = Array.isArray(parsed?.vo_scripts)
+      ? parsed.vo_scripts.map((v: unknown) => String(v ?? "").trim()).filter(Boolean)
+      : [];
+    const captionVariants = Array.isArray(parsed?.caption_variants)
+      ? parsed.caption_variants.map((row: unknown) =>
+          Array.isArray(row)
+            ? row.map((c: unknown) => String(c ?? "").trim()).filter(Boolean)
+            : [],
+        )
+      : [];
+
+    if (voScripts.length === 0 || captionVariants.length !== 6 || captionVariants.some((row: string[]) => row.length === 0)) {
+      console.error("[generate-copy-variants] invalid shape", { voScripts: voScripts.length, scenes: captionVariants.length });
+      return null;
+    }
+
+    // Force every scene-6 variant to the canonical CTA string.
+    captionVariants[5] = captionVariants[5].map(() => "Get yours at GetPawsy.pet");
+
+    return { vo_scripts: voScripts, caption_variants: captionVariants };
+  } catch (e) {
+    console.error("[generate-copy-variants] failed", e);
+    return null;
+  }
+}
+
+/**
+ * Pick variant index for this run. Caller-provided value wins; otherwise we
+ * count existing prepared jobs for this product and rotate so successive
+ * campaigns don't reuse the same copy.
+ */
+async function pickVariantIndex(
+  admin: any,
+  product_slug: string,
+  override: unknown,
+  totalVariants: number,
+): Promise<number> {
+  if (totalVariants <= 1) return 0;
+  if (typeof override === "number" && Number.isFinite(override)) {
+    return ((Math.floor(override) % totalVariants) + totalVariants) % totalVariants;
+  }
+  const { count } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("product_slug", product_slug);
+  return ((count ?? 0) % totalVariants + totalVariants) % totalVariants;
 }
 
 async function aiImageEdit(prompt: string, sourceUrl: string, apiKey: string): Promise<Uint8Array> {
@@ -353,6 +477,10 @@ const handler = async (req: Request): Promise<Response> => {
   const product_slug: string = body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top";
   const hook_variant: string = body.hook_variant ?? "default";
   const voice_id: string = body.voice_id ?? SARAH;
+  const requestedVariantCount: number = Math.max(
+    1,
+    Math.min(MAX_VARIANT_COUNT, Math.floor(Number(body.variant_count) || DEFAULT_VARIANT_COUNT)),
+  );
 
   // Lookup product to get hero image + copy-generation fields
   const { data: product, error: prodErr } = await admin
@@ -392,32 +520,66 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const scenes = DEFAULT_SCENES(productName);
 
-    // Auto-generate vo_script + captions per product so they stay consistent
-    // with the actual product. Falls back to blueprint copy on any failure.
-    let voScript: string = body.vo_script ?? "";
-    if (!voScript || (Array.isArray(body.captions) && body.captions.length === 6)) {
-      // honor full overrides below
-    }
-    if (!body.vo_script || !Array.isArray(body.captions)) {
-      const generated = await generateProductCopy(product as any, lovableKey);
+    // ── Multi-variant copy generation ─────────────────────────────────────
+    // Build N alternative voiceovers and N alternative captions per scene
+    // so successive campaigns can rotate copy and avoid ad fatigue.
+    let voScript: string = typeof body.vo_script === "string" ? body.vo_script : "";
+    let voScriptVariants: string[] = [];
+    let captionVariants: string[][] = scenes.map((s) => [s.caption]);
+
+    const captionsOverride: string[] | null =
+      Array.isArray(body.captions) && body.captions.length === 6
+        ? body.captions.map((c: unknown) => String(c ?? ""))
+        : null;
+
+    const needAi = !voScript || !captionsOverride;
+    if (needAi) {
+      const generated = await generateProductCopyVariants(product as any, lovableKey, requestedVariantCount);
       if (generated) {
-        if (!body.vo_script) voScript = generated.vo_script;
-        if (!Array.isArray(body.captions)) {
-          for (let i = 0; i < scenes.length; i++) {
-            scenes[i].caption = generated.captions[i] ?? scenes[i].caption;
-          }
-        }
-        console.log("[cinematic-ad-prepare]", traceId, "ai-copy generated", { vo_words: voScript.split(/\s+/).length, captions: scenes.map(s => s.caption) });
+        voScriptVariants = generated.vo_scripts;
+        captionVariants = generated.caption_variants;
+        console.log("[cinematic-ad-prepare]", traceId, "ai-copy variants generated", {
+          vo_variants: voScriptVariants.length,
+          captions_per_scene: captionVariants.map((c) => c.length),
+        });
       } else {
-        console.warn("[cinematic-ad-prepare]", traceId, "ai-copy fallback to blueprint defaults");
+        console.warn("[cinematic-ad-prepare]", traceId, "variant ai-copy failed; trying single-variant fallback");
+        const single = await generateProductCopy(product as any, lovableKey);
+        if (single) {
+          voScriptVariants = [single.vo_script];
+          captionVariants = single.captions.map((c) => [c]);
+        } else {
+          console.warn("[cinematic-ad-prepare]", traceId, "ai-copy fallback to blueprint defaults");
+          voScriptVariants = [DEFAULT_VO(productName)];
+          captionVariants = scenes.map((s) => [s.caption]);
+        }
       }
     }
-    if (Array.isArray(body.captions) && body.captions.length === 6) {
-      for (let i = 0; i < scenes.length; i++) {
-        scenes[i].caption = String(body.captions[i] ?? scenes[i].caption);
-      }
+
+    // Caller overrides win and become a single locked variant.
+    if (voScript) voScriptVariants = [voScript];
+    if (captionsOverride) {
+      captionVariants = captionsOverride.map((c) => [c]);
     }
-    if (!voScript) voScript = DEFAULT_VO(productName);
+
+    // Pick which variant to use for this run.
+    const totalVariants = Math.min(
+      voScriptVariants.length,
+      ...captionVariants.map((row) => row.length),
+    );
+    const variantIndex = await pickVariantIndex(admin, product_slug, body.variant_index, totalVariants);
+
+    voScript = voScriptVariants[variantIndex] ?? voScriptVariants[0] ?? DEFAULT_VO(productName);
+    for (let i = 0; i < scenes.length; i++) {
+      const row = captionVariants[i] ?? [];
+      scenes[i].caption = row[variantIndex] ?? row[0] ?? scenes[i].caption;
+    }
+    console.log("[cinematic-ad-prepare]", traceId, "variant selected", {
+      variantIndex,
+      totalVariants,
+      vo_words: voScript.split(/\s+/).length,
+      captions: scenes.map((s) => s.caption),
+    });
 
     // Generate scenes in parallel (best effort; on failure fall back to hero image)
     const sceneResults = await Promise.allSettled(
@@ -465,6 +627,9 @@ const handler = async (req: Request): Promise<Response> => {
         scene_assets,
         vo_script: voScript,
         vo_url: voUrl,
+        vo_script_variants: voScriptVariants,
+        caption_variants: captionVariants,
+        variant_index: variantIndex,
         prepared_at: new Date().toISOString(),
       })
       .eq("id", jobId)
