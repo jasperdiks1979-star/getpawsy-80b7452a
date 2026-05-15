@@ -66,7 +66,7 @@ type SceneBlueprint = {
   lens: string;           // focal length / lens character
 };
 
-const SHOT_BLUEPRINTS: Omit<SceneBlueprint, "index">[] = [
+export const SHOT_BLUEPRINTS: Omit<SceneBlueprint, "index">[] = [
   {
     duration_seconds: 4,
     caption: () => "Stop settling for less.",
@@ -164,7 +164,7 @@ function buildScenePrompt(b: Omit<SceneBlueprint, "index">, productName: string,
   ].join(" ");
 }
 
-const DEFAULT_SCENES = (productName: string): Scene[] => {
+export const DEFAULT_SCENES = (productName: string): Scene[] => {
   const scenes: Scene[] = SHOT_BLUEPRINTS.map((b, i) => {
     const index = i + 1;
     const prompt = buildScenePrompt(b, productName, index);
