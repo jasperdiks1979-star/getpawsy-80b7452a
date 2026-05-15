@@ -22,6 +22,14 @@ type Job = {
   variant_index?: number | null;
   pinterest_asset_id: string | null;
   pushed_to_pinterest_at: string | null;
+  pinterest_pin_id?: string | null;
+  pinterest_pin_url?: string | null;
+  pinterest_publish_error?: string | null;
+  pinterest_publish_attempts?: number | null;
+  last_pinterest_attempt_at?: string | null;
+  render_complete_at?: string | null;
+  pinterest_uploaded_at?: string | null;
+  published_at?: string | null;
   error_message: string | null;
   created_at: string;
   prepared_at: string | null;
@@ -37,6 +45,9 @@ const STATUS_COLOR: Record<string, string> = {
   render_queued: "bg-indigo-500/10 text-indigo-600",
   rendering: "bg-amber-500/10 text-amber-600",
   rendered: "bg-emerald-600/15 text-emerald-700",
+  render_complete: "bg-emerald-600/15 text-emerald-700",
+  pinterest_uploaded: "bg-sky-500/15 text-sky-700",
+  published: "bg-pink-500/15 text-pink-700",
   failed: "bg-destructive/10 text-destructive",
 };
 
