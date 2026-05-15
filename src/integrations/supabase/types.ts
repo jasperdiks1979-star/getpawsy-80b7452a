@@ -909,16 +909,24 @@ export type Database = {
           error_message: string | null
           hook_variant: string
           id: string
+          last_pinterest_attempt_at: string | null
           music_url: string | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
           output_mp4_url: string | null
           output_thumbnail_url: string | null
           pinterest_asset_id: string | null
+          pinterest_pin_id: string | null
+          pinterest_pin_url: string | null
+          pinterest_publish_attempts: number
+          pinterest_publish_error: string | null
+          pinterest_uploaded_at: string | null
           prepared_at: string | null
           product_slug: string
+          published_at: string | null
           pushed_to_pinterest_at: string | null
           render_attempts: number
+          render_complete_at: string | null
           render_queued_at: string | null
           render_started_at: string | null
           render_token: string | null
@@ -942,16 +950,24 @@ export type Database = {
           error_message?: string | null
           hook_variant?: string
           id?: string
+          last_pinterest_attempt_at?: string | null
           music_url?: string | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           pinterest_asset_id?: string | null
+          pinterest_pin_id?: string | null
+          pinterest_pin_url?: string | null
+          pinterest_publish_attempts?: number
+          pinterest_publish_error?: string | null
+          pinterest_uploaded_at?: string | null
           prepared_at?: string | null
           product_slug: string
+          published_at?: string | null
           pushed_to_pinterest_at?: string | null
           render_attempts?: number
+          render_complete_at?: string | null
           render_queued_at?: string | null
           render_started_at?: string | null
           render_token?: string | null
@@ -975,16 +991,24 @@ export type Database = {
           error_message?: string | null
           hook_variant?: string
           id?: string
+          last_pinterest_attempt_at?: string | null
           music_url?: string | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           pinterest_asset_id?: string | null
+          pinterest_pin_id?: string | null
+          pinterest_pin_url?: string | null
+          pinterest_publish_attempts?: number
+          pinterest_publish_error?: string | null
+          pinterest_uploaded_at?: string | null
           prepared_at?: string | null
           product_slug?: string
+          published_at?: string | null
           pushed_to_pinterest_at?: string | null
           render_attempts?: number
+          render_complete_at?: string | null
           render_queued_at?: string | null
           render_started_at?: string | null
           render_token?: string | null
