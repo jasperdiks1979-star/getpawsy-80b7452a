@@ -363,7 +363,7 @@ Rules:
         )
       : [];
 
-    if (voScripts.length === 0 || captionVariants.length !== 6 || captionVariants.some((row) => row.length === 0)) {
+    if (voScripts.length === 0 || captionVariants.length !== 6 || captionVariants.some((row: string[]) => row.length === 0)) {
       console.error("[generate-copy-variants] invalid shape", { voScripts: voScripts.length, scenes: captionVariants.length });
       return null;
     }
@@ -384,7 +384,7 @@ Rules:
  * campaigns don't reuse the same copy.
  */
 async function pickVariantIndex(
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   product_slug: string,
   override: unknown,
   totalVariants: number,
