@@ -320,7 +320,7 @@ async function elevenLabsTts(text: string, voiceId: string, apiKey: string): Pro
   return new Uint8Array(await res.arrayBuffer());
 }
 
-Deno.serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = trace();
 
