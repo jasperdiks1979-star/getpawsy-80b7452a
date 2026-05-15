@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight } from "lucide-react";
 
 type Job = {
   id: string;
@@ -17,6 +17,9 @@ type Job = {
   vo_script: string | null;
   output_mp4_url: string | null;
   scene_assets: Array<{ index: number; image_url: string; caption: string; duration_seconds: number; ai_generated: boolean }>;
+  caption_variants?: string[][] | null;
+  vo_script_variants?: string[] | null;
+  variant_index?: number | null;
   pinterest_asset_id: string | null;
   pushed_to_pinterest_at: string | null;
   error_message: string | null;
