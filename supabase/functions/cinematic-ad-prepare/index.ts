@@ -355,10 +355,10 @@ Deno.serve(async (req) => {
   const hook_variant: string = body.hook_variant ?? "default";
   const voice_id: string = body.voice_id ?? SARAH;
 
-  // Lookup product to get hero image + name
+  // Lookup product to get hero image + copy-generation fields
   const { data: product, error: prodErr } = await admin
     .from("products_public")
-    .select("slug, name, image_url")
+    .select("slug, name, image_url, description, category, primary_species, primary_intent")
     .eq("slug", product_slug)
     .maybeSingle();
 
@@ -392,7 +392,33 @@ Deno.serve(async (req) => {
 
   try {
     const scenes = DEFAULT_SCENES(productName);
-    const voScript: string = body.vo_script ?? DEFAULT_VO(productName);
+
+    // Auto-generate vo_script + captions per product so they stay consistent
+    // with the actual product. Falls back to blueprint copy on any failure.
+    let voScript: string = body.vo_script ?? "";
+    if (!voScript || (Array.isArray(body.captions) && body.captions.length === 6)) {
+      // honor full overrides below
+    }
+    if (!body.vo_script || !Array.isArray(body.captions)) {
+      const generated = await generateProductCopy(product as any, lovableKey);
+      if (generated) {
+        if (!body.vo_script) voScript = generated.vo_script;
+        if (!Array.isArray(body.captions)) {
+          for (let i = 0; i < scenes.length; i++) {
+            scenes[i].caption = generated.captions[i] ?? scenes[i].caption;
+          }
+        }
+        console.log("[cinematic-ad-prepare]", traceId, "ai-copy generated", { vo_words: voScript.split(/\s+/).length, captions: scenes.map(s => s.caption) });
+      } else {
+        console.warn("[cinematic-ad-prepare]", traceId, "ai-copy fallback to blueprint defaults");
+      }
+    }
+    if (Array.isArray(body.captions) && body.captions.length === 6) {
+      for (let i = 0; i < scenes.length; i++) {
+        scenes[i].caption = String(body.captions[i] ?? scenes[i].caption);
+      }
+    }
+    if (!voScript) voScript = DEFAULT_VO(productName);
 
     // Generate scenes in parallel (best effort; on failure fall back to hero image)
     const sceneResults = await Promise.allSettled(
