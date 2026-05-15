@@ -903,6 +903,7 @@ export type Database = {
       }
       cinematic_ad_jobs: {
         Row: {
+          caption_variants: Json
           created_at: string
           created_by: string | null
           error_message: string | null
@@ -928,11 +929,14 @@ export type Database = {
           status: string
           status_message: string | null
           updated_at: string
+          variant_index: number
           vo_script: string | null
+          vo_script_variants: Json
           vo_url: string | null
           voice_id: string
         }
         Insert: {
+          caption_variants?: Json
           created_at?: string
           created_by?: string | null
           error_message?: string | null
@@ -958,11 +962,14 @@ export type Database = {
           status?: string
           status_message?: string | null
           updated_at?: string
+          variant_index?: number
           vo_script?: string | null
+          vo_script_variants?: Json
           vo_url?: string | null
           voice_id?: string
         }
         Update: {
+          caption_variants?: Json
           created_at?: string
           created_by?: string | null
           error_message?: string | null
@@ -988,7 +995,9 @@ export type Database = {
           status?: string
           status_message?: string | null
           updated_at?: string
+          variant_index?: number
           vo_script?: string | null
+          vo_script_variants?: Json
           vo_url?: string | null
           voice_id?: string
         }
