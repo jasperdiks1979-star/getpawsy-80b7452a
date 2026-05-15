@@ -287,6 +287,98 @@ export default function GitHubSyncStatusPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Deploy confirmation (Render)</CardTitle>
+          <Button variant="outline" size="sm" onClick={refreshDeploy} disabled={deployLoading}>
+            <RefreshCw className={`h-4 w-4 ${deployLoading ? "animate-spin" : ""}`} />
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="renderUrl">
+              Worker health URL returning <code>{`{ commit }`}</code> (preferred)
+            </Label>
+            <Input
+              id="renderUrl"
+              value={renderUrlInput}
+              onChange={(e) => setRenderUrlInput(e.target.value)}
+              placeholder="https://your-worker.onrender.com/healthz"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="renderKey">…or Render API key</Label>
+              <Input
+                id="renderKey"
+                type="password"
+                value={renderApiKeyInput}
+                onChange={(e) => setRenderApiKeyInput(e.target.value)}
+                placeholder="rnd_…"
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="renderSvc">Render service ID</Label>
+              <Input
+                id="renderSvc"
+                value={renderServiceIdInput}
+                onChange={(e) => setRenderServiceIdInput(e.target.value)}
+                placeholder="srv-…"
+              />
+            </div>
+          </div>
+          <Button onClick={saveRender} size="sm">
+            Save Render config
+          </Button>
+
+          {deployError && (
+            <div className="flex items-start gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{deployError}</span>
+            </div>
+          )}
+
+          {deployedCommit && (
+            <div className="border rounded-md p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Render deployed commit</p>
+                {deployMatches === true && (
+                  <Badge variant="default" className="gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Matches main
+                  </Badge>
+                )}
+                {deployMatches === false && (
+                  <Badge variant="destructive" className="gap-1">
+                    <AlertCircle className="h-3 w-3" /> Behind main
+                  </Badge>
+                )}
+              </div>
+              <div className="font-mono text-xs break-all">{deployedCommit}</div>
+              <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
+                {deployStatus && <span>status: {deployStatus}</span>}
+                {deployFetchedAt && <span>checked: {deployFetchedAt.toLocaleTimeString()}</span>}
+                {mainShort && deployedShort && (
+                  <span>
+                    deployed <code>{deployedShort}</code> vs main <code>{mainShort}</code>
+                  </span>
+                )}
+              </div>
+              {deployMatches === false && (
+                <p className="text-xs text-destructive">
+                  Render is not on the latest <code>main</code>. Trigger a redeploy in Render or wait for auto-deploy.
+                </p>
+              )}
+            </div>
+          )}
+          {!deployedCommit && !deployError && (
+            <p className="text-xs text-muted-foreground">
+              Configure a worker health URL or Render API key + service ID to enable deploy confirmation.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {error && (
         <Card className="border-destructive">
           <CardContent className="pt-6 flex items-start gap-2">
