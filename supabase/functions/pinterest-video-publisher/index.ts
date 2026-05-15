@@ -29,6 +29,13 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
 
 async function getAdminClient(req: Request) {
   const sbAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  // Service-mode: allow internal callers (cinematic-ad-render-webhook auto-publish chain)
+  // to invoke this function without a user JWT, gated by RENDER_WORKER_SECRET.
+  const renderSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+  const headerSecret = req.headers.get("x-render-secret") ?? "";
+  if (renderSecret && headerSecret && headerSecret === renderSecret) {
+    return { sb: sbAdmin, user: { id: "service:render-worker", email: "service@render-worker" } as any, isAdmin: true, authError: null };
+  }
   const authHeader = req.headers.get("Authorization") || "";
   if (!authHeader.startsWith("Bearer ")) return { sb: sbAdmin, user: null, isAdmin: false, authError: "MISSING_BEARER_TOKEN" };
   const sbUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
