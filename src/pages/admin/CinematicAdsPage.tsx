@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight } from "lucide-react";
 
 type Job = {
   id: string;
@@ -17,6 +17,9 @@ type Job = {
   vo_script: string | null;
   output_mp4_url: string | null;
   scene_assets: Array<{ index: number; image_url: string; caption: string; duration_seconds: number; ai_generated: boolean }>;
+  caption_variants?: string[][] | null;
+  vo_script_variants?: string[] | null;
+  variant_index?: number | null;
   pinterest_asset_id: string | null;
   pushed_to_pinterest_at: string | null;
   error_message: string | null;
@@ -41,6 +44,7 @@ export default function CinematicAdsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [openPreview, setOpenPreview] = useState<Record<string, boolean>>({});
   const [productSlug, setProductSlug] = useState("enclosed-cat-litter-box-extra-large-flip-top");
   const [hookVariant, setHookVariant] = useState("default");
   const [smoke, setSmoke] = useState<any>(null);
@@ -306,6 +310,104 @@ export default function CinematicAdsPage() {
                   </div>
                   {j.status_message && <p className="text-xs text-muted-foreground">{j.status_message}</p>}
                   {j.error_message && <p className="text-xs text-destructive">{j.error_message}</p>}
+
+                  {(j.vo_script || (j.scene_assets && j.scene_assets.length > 0)) && (() => {
+                    const isOpen = openPreview[j.id] ?? (j.status === "prepared" || j.status === "render_queued");
+                    const variantCount = Math.min(
+                      (j.vo_script_variants?.length ?? 0) || 1,
+                      ...((j.caption_variants ?? []).map((row) => row?.length ?? 0).filter((n) => n > 0)),
+                    );
+                    const hasVariants = variantCount > 1;
+                    return (
+                      <div className="rounded border bg-muted/30">
+                        <button
+                          type="button"
+                          onClick={() => setOpenPreview((s) => ({ ...s, [j.id]: !isOpen }))}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-medium hover:bg-muted/50 rounded-t"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                            <FileText className="size-3.5" />
+                            Copy preview — review captions & voiceover before render
+                          </span>
+                          {hasVariants && (
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                              variant {(j.variant_index ?? 0) + 1} / {variantCount}
+                            </span>
+                          )}
+                        </button>
+                        {isOpen && (
+                          <div className="px-3 pb-3 pt-1 space-y-3 text-xs">
+                            {j.vo_script && (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
+                                    Voiceover script
+                                    <span className="ml-2 font-normal normal-case">
+                                      {j.vo_script.split(/\s+/).filter(Boolean).length} words
+                                    </span>
+                                  </span>
+                                  <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => copyText(j.vo_script ?? "", "VO script")}>
+                                    <Copy className="size-3 mr-1" /> Copy
+                                  </Button>
+                                </div>
+                                <p className="leading-relaxed whitespace-pre-wrap">{j.vo_script}</p>
+                                {(j.vo_script_variants?.length ?? 0) > 1 && (
+                                  <details className="pt-1">
+                                    <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">
+                                      {j.vo_script_variants!.length} VO variants available
+                                    </summary>
+                                    <ol className="list-decimal pl-5 pt-1 space-y-1 text-muted-foreground">
+                                      {j.vo_script_variants!.map((v, i) => (
+                                        <li key={i} className={i === (j.variant_index ?? 0) ? "text-foreground font-medium" : ""}>
+                                          {v}
+                                        </li>
+                                      ))}
+                                    </ol>
+                                  </details>
+                                )}
+                              </div>
+                            )}
+
+                            {j.scene_assets && j.scene_assets.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
+                                  Scene captions
+                                </span>
+                                <ol className="space-y-1.5">
+                                  {j.scene_assets
+                                    .slice()
+                                    .sort((a, b) => a.index - b.index)
+                                    .map((s) => {
+                                      const altRow = j.caption_variants?.[s.index - 1] ?? [];
+                                      const alts = altRow.filter((c) => c && c !== s.caption);
+                                      return (
+                                        <li key={s.index} className="flex items-start gap-2">
+                                          <span className="font-mono text-[10px] text-muted-foreground mt-0.5 shrink-0 w-5">
+                                            {s.index}.
+                                          </span>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium">{s.caption}</div>
+                                            {alts.length > 0 && (
+                                              <div className="text-[10px] text-muted-foreground">
+                                                alts: {alts.join(" · ")}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <span className="text-[10px] text-muted-foreground shrink-0">
+                                            {s.duration_seconds}s
+                                          </span>
+                                        </li>
+                                      );
+                                    })}
+                                </ol>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {j.scene_assets?.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
