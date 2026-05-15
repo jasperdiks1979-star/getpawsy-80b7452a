@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
     // Fire the auto-publish chain when render reaches a terminal-success state.
     // We don't await it from the HTTP response perspective (worker doesn't need
     // to block) but we DO await it inside the handler so logs stream coherently.
-    if (patch.status === "render_complete" && job.output_mp4_url || (status === "rendered" || status === "uploaded")) {
+    if ((status === "rendered" || status === "uploaded") && (body.mp4_url || job.output_mp4_url)) {
       try {
         await runAutoPublishChain(admin, jobId, traceId);
       } catch (e) {
