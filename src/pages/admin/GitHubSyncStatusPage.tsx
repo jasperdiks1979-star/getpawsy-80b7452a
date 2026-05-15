@@ -161,6 +161,71 @@ export default function GitHubSyncStatusPage() {
 
   const inSync = lovableBranches.length === 0;
 
+  const refreshDeploy = useCallback(async () => {
+    setDeployError(null);
+    if (!renderUrl && !(renderApiKey && renderServiceId)) {
+      setDeployedCommit(null);
+      setDeployStatus(null);
+      return;
+    }
+    setDeployLoading(true);
+    try {
+      if (renderApiKey && renderServiceId) {
+        const res = await fetch(
+          `https://api.render.com/v1/services/${renderServiceId}/deploys?limit=1`,
+          { headers: { Authorization: `Bearer ${renderApiKey}`, Accept: "application/json" } },
+        );
+        if (!res.ok) throw new Error(`render api: ${res.status}`);
+        const arr = await res.json();
+        const dep = Array.isArray(arr) ? arr[0]?.deploy : null;
+        if (!dep) throw new Error("no deploys returned");
+        setDeployedCommit(dep.commit?.id || null);
+        setDeployStatus(dep.status || null);
+      } else {
+        const res = await fetch(renderUrl, { cache: "no-store" });
+        if (!res.ok) throw new Error(`health: ${res.status}`);
+        const data = await res.json();
+        const sha =
+          data.commit || data.sha || data.gitCommit || data.git_commit || data.RENDER_GIT_COMMIT || null;
+        if (!sha) throw new Error("response missing commit/sha field");
+        setDeployedCommit(String(sha));
+        setDeployStatus(data.status || "live");
+      }
+      setDeployFetchedAt(new Date());
+    } catch (e) {
+      setDeployError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeployLoading(false);
+    }
+  }, [renderUrl, renderApiKey, renderServiceId]);
+
+  useEffect(() => {
+    refreshDeploy();
+    const id = setInterval(refreshDeploy, 30_000);
+    return () => clearInterval(id);
+  }, [refreshDeploy]);
+
+  const saveRender = () => {
+    const url = renderUrlInput.trim();
+    const key = renderApiKeyInput.trim();
+    const svc = renderServiceIdInput.trim();
+    url ? localStorage.setItem(LS_RENDER_URL, url) : localStorage.removeItem(LS_RENDER_URL);
+    key ? localStorage.setItem(LS_RENDER_API_KEY, key) : localStorage.removeItem(LS_RENDER_API_KEY);
+    svc ? localStorage.setItem(LS_RENDER_SERVICE, svc) : localStorage.removeItem(LS_RENDER_SERVICE);
+    setRenderUrl(url);
+    setRenderApiKey(key);
+    setRenderServiceId(svc);
+    toast({ title: "Render config saved" });
+  };
+
+  const deployedShort = deployedCommit?.slice(0, 7);
+  const mainShort = mainCommit?.sha.slice(0, 7);
+  const deployMatches =
+    deployedCommit && mainCommit
+      ? deployedCommit.startsWith(mainCommit.sha.slice(0, 7)) ||
+        mainCommit.sha.startsWith(deployedCommit.slice(0, 7))
+      : null;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
