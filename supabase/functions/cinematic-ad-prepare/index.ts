@@ -202,6 +202,81 @@ const DEFAULT_SCENES = (productName: string): Scene[] => {
 const DEFAULT_VO = (productName: string) =>
   `Tired of scooping every day? Meet ${productName}. Extra large. Fully enclosed. Designed to keep odors and litter inside, where they belong. Premium materials. Effortless cleaning. Your cat will love it. You will too. Get yours today at GetPawsy dot pet.`;
 
+/**
+ * Generate a per-product voiceover script + 6 scene captions from product
+ * fields (name, description, category, species). The model returns strict
+ * JSON; if anything fails we fall back to the static DEFAULT_VO + blueprint
+ * captions so the pipeline never blocks on copy generation.
+ */
+type GeneratedCopy = { vo_script: string; captions: string[] };
+
+async function generateProductCopy(
+  product: { name: string; description?: string | null; category?: string | null; primary_species?: string | null; primary_intent?: string | null },
+  apiKey: string,
+): Promise<GeneratedCopy | null> {
+  const sys = `You are a senior US-native direct-response copywriter for GetPawsy, a premium pet brand. Write a 6-scene short-form ad (TikTok / Pinterest, 9:16, ~25 seconds). Tone: confident, warm, US-native, premium-but-friendly. Strict compliance: NO health claims, NO "vet-approved", NO "eco-friendly", NO fake reviews, NO price anchoring, NO placeholder text. Always end with a clear call-to-action to GetPawsy.pet.`;
+  const user = `Product:
+- Name: ${product.name}
+- Category: ${product.category ?? "pet product"}
+- Species: ${product.primary_species ?? "pet"}
+- Intent: ${product.primary_intent ?? "general"}
+- Description: ${(product.description ?? "").slice(0, 600)}
+
+Return STRICT JSON (no prose, no markdown) with this exact shape:
+{
+  "vo_script": "<one continuous voiceover, 45-65 words, natural spoken cadence, ends with: Get yours at GetPawsy dot pet>",
+  "captions": [
+    "<Scene 1 hook caption — 3-6 words, problem/curiosity>",
+    "<Scene 2 reveal caption — 3-6 words, names the product>",
+    "<Scene 3 benefit caption — 3-6 words, scale or fit>",
+    "<Scene 4 craftsmanship caption — 3-6 words, quality detail>",
+    "<Scene 5 lifestyle caption — 3-6 words, ease of use>",
+    "<Scene 6 CTA caption — exactly: Get yours at GetPawsy.pet>"
+  ]
+}
+
+Rules:
+- Captions must be specific to THIS product (do not say "litter box" unless this is a litter box).
+- All 6 captions must be unique.
+- Scene 6 caption must be exactly: Get yours at GetPawsy.pet
+- vo_script must mention the product name once, naturally.`;
+
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) {
+      console.error("[generate-copy] non-2xx", res.status, await res.text());
+      return null;
+    }
+    const data = await res.json();
+    const raw: string = data?.choices?.[0]?.message?.content ?? "";
+    const cleaned = raw.replace(/^```json\s*|\s*```$/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (typeof parsed?.vo_script !== "string" || !Array.isArray(parsed?.captions) || parsed.captions.length !== 6) {
+      console.error("[generate-copy] invalid shape", parsed);
+      return null;
+    }
+    const captions = parsed.captions.map((c: unknown) => String(c ?? "").trim()).filter(Boolean);
+    if (captions.length !== 6) return null;
+    // Force CTA scene 6 to canonical brand string
+    captions[5] = "Get yours at GetPawsy.pet";
+    return { vo_script: String(parsed.vo_script).trim(), captions };
+  } catch (e) {
+    console.error("[generate-copy] failed", e);
+    return null;
+  }
+}
+
 async function aiImageEdit(prompt: string, sourceUrl: string, apiKey: string): Promise<Uint8Array> {
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
