@@ -22,6 +22,14 @@ type Job = {
   variant_index?: number | null;
   pinterest_asset_id: string | null;
   pushed_to_pinterest_at: string | null;
+  pinterest_pin_id?: string | null;
+  pinterest_pin_url?: string | null;
+  pinterest_publish_error?: string | null;
+  pinterest_publish_attempts?: number | null;
+  last_pinterest_attempt_at?: string | null;
+  render_complete_at?: string | null;
+  pinterest_uploaded_at?: string | null;
+  published_at?: string | null;
   error_message: string | null;
   created_at: string;
   prepared_at: string | null;
@@ -37,6 +45,9 @@ const STATUS_COLOR: Record<string, string> = {
   render_queued: "bg-indigo-500/10 text-indigo-600",
   rendering: "bg-amber-500/10 text-amber-600",
   rendered: "bg-emerald-600/15 text-emerald-700",
+  render_complete: "bg-emerald-600/15 text-emerald-700",
+  pinterest_uploaded: "bg-sky-500/15 text-sky-700",
+  published: "bg-pink-500/15 text-pink-700",
   failed: "bg-destructive/10 text-destructive",
 };
 
@@ -426,6 +437,35 @@ export default function CinematicAdsPage() {
 
                   {j.output_mp4_url && (
                     <video controls src={j.output_mp4_url} className="w-full max-w-[240px] aspect-[9/16] rounded border bg-black" preload="none" />
+                  )}
+
+                  {(j.pinterest_pin_url || j.pinterest_publish_error || (j.pinterest_publish_attempts ?? 0) > 0) && (
+                    <div className="rounded border bg-muted/30 p-3 text-xs space-y-1.5">
+                      <div className="font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
+                        Pinterest publish
+                      </div>
+                      {j.pinterest_pin_url ? (
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-pink-500/15 text-pink-700">live</Badge>
+                          <a href={j.pinterest_pin_url} target="_blank" rel="noopener noreferrer" className="text-primary underline truncate">
+                            {j.pinterest_pin_url}
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground">
+                          {j.status === "pinterest_uploaded" ? "Uploaded; awaiting pin creation." : "Not yet published."}
+                        </div>
+                      )}
+                      {(j.pinterest_publish_attempts ?? 0) > 0 && (
+                        <div className="text-[10px] text-muted-foreground">
+                          attempts: {j.pinterest_publish_attempts}
+                          {j.last_pinterest_attempt_at && ` · last ${new Date(j.last_pinterest_attempt_at).toLocaleString()}`}
+                        </div>
+                      )}
+                      {j.pinterest_publish_error && (
+                        <div className="text-destructive break-words">{j.pinterest_publish_error}</div>
+                      )}
+                    </div>
                   )}
 
                   <div className="flex flex-wrap gap-2">
