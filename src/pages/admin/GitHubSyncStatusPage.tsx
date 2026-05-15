@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, GitBranch, CheckCircle2, AlertCircle } from "lucide-react";
+import { RefreshCw, GitBranch, CheckCircle2, AlertCircle, GitMerge, ExternalLink } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const LS_KEY = "gp.github.repo";
+const LS_TOKEN = "gp.github.token";
 
 type Commit = {
   sha: string;
@@ -19,6 +21,9 @@ type Branch = { name: string; commit: { sha: string } };
 export default function GitHubSyncStatusPage() {
   const [repo, setRepo] = useState<string>(() => localStorage.getItem(LS_KEY) || "");
   const [input, setInput] = useState(repo);
+  const [token, setToken] = useState<string>(() => localStorage.getItem(LS_TOKEN) || "");
+  const [tokenInput, setTokenInput] = useState(token);
+  const [merging, setMerging] = useState<string | null>(null);
   const [mainCommit, setMainCommit] = useState<Commit | null>(null);
   const [lovableBranches, setLovableBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +71,79 @@ export default function GitHubSyncStatusPage() {
     setRepo(cleaned);
   };
 
+  const saveToken = () => {
+    const t = tokenInput.trim();
+    if (t) localStorage.setItem(LS_TOKEN, t);
+    else localStorage.removeItem(LS_TOKEN);
+    setToken(t);
+    toast({ title: t ? "Token saved" : "Token cleared" });
+  };
+
+  const ghHeaders = (): HeadersInit => ({
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  });
+
+  const mergeBranch = async (branch: string) => {
+    if (!token) {
+      window.open(
+        `https://github.com/${repo}/compare/main...${branch}?expand=1`,
+        "_blank",
+        "noreferrer",
+      );
+      return;
+    }
+    setMerging(branch);
+    try {
+      // 1. Find or create PR
+      const listRes = await fetch(
+        `https://api.github.com/repos/${repo}/pulls?state=open&head=${repo.split("/")[0]}:${branch}&base=main`,
+        { headers: ghHeaders() },
+      );
+      if (!listRes.ok) throw new Error(`list pulls: ${listRes.status}`);
+      const existing: Array<{ number: number; html_url: string }> = await listRes.json();
+      let pr = existing[0];
+      if (!pr) {
+        const createRes = await fetch(`https://api.github.com/repos/${repo}/pulls`, {
+          method: "POST",
+          headers: { ...ghHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `Sync ${branch} → main`,
+            head: branch,
+            base: "main",
+            body: "Auto-opened from GitHub Sync Status panel.",
+          }),
+        });
+        if (!createRes.ok) {
+          const txt = await createRes.text();
+          throw new Error(`create PR: ${createRes.status} ${txt}`);
+        }
+        pr = await createRes.json();
+      }
+      // 2. Merge PR
+      const mergeRes = await fetch(
+        `https://api.github.com/repos/${repo}/pulls/${pr.number}/merge`,
+        {
+          method: "PUT",
+          headers: { ...ghHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({ merge_method: "merge" }),
+        },
+      );
+      if (!mergeRes.ok) {
+        const txt = await mergeRes.text();
+        throw new Error(`merge: ${mergeRes.status} ${txt}`);
+      }
+      toast({ title: "Merged into main", description: branch });
+      await refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ title: "Merge failed", description: msg, variant: "destructive" });
+    } finally {
+      setMerging(null);
+    }
+  };
+
   const inSync = lovableBranches.length === 0;
 
   return (
@@ -101,6 +179,31 @@ export default function GitHubSyncStatusPage() {
               {lastFetched && ` · updated ${lastFetched.toLocaleTimeString()}`}
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">GitHub token (optional)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Label htmlFor="token">
+            Personal access token with <code>repo</code> scope. Stored only in this browser.
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="token"
+              type="password"
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="ghp_…"
+              autoComplete="off"
+            />
+            <Button onClick={saveToken}>Save</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {token ? "Token set — Merge button will auto-create + merge PR." : "Without a token, Merge opens GitHub's PR page."}
+          </p>
         </CardContent>
       </Card>
 
@@ -169,18 +272,29 @@ export default function GitHubSyncStatusPage() {
                   <p className="font-medium text-sm">{b.name}</p>
                   <p className="font-mono text-xs text-muted-foreground">{b.commit.sha}</p>
                 </div>
-                <a
-                  href={`https://github.com/${repo}/compare/main...${b.name}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs underline"
-                >
-                  Compare → main
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://github.com/${repo}/compare/main...${b.name}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs underline inline-flex items-center gap-1"
+                  >
+                    Compare <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <Button
+                    size="sm"
+                    onClick={() => mergeBranch(b.name)}
+                    disabled={merging === b.name}
+                    className="gap-1"
+                  >
+                    <GitMerge className="h-3 w-3" />
+                    {merging === b.name ? "Merging…" : token ? "Merge to main" : "Open PR"}
+                  </Button>
+                </div>
               </div>
             ))}
             <p className="text-xs text-muted-foreground pt-2">
-              These branches contain commits not yet on <code>main</code>. Open a PR on GitHub to merge.
+              These branches contain commits not yet on <code>main</code>. Add a token above for one-click merge, or click Open PR.
             </p>
           </CardContent>
         </Card>
