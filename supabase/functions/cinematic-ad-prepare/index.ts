@@ -477,6 +477,10 @@ const handler = async (req: Request): Promise<Response> => {
   const product_slug: string = body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top";
   const hook_variant: string = body.hook_variant ?? "default";
   const voice_id: string = body.voice_id ?? SARAH;
+  const requestedVariantCount: number = Math.max(
+    1,
+    Math.min(MAX_VARIANT_COUNT, Math.floor(Number(body.variant_count) || DEFAULT_VARIANT_COUNT)),
+  );
 
   // Lookup product to get hero image + copy-generation fields
   const { data: product, error: prodErr } = await admin
@@ -516,32 +520,66 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const scenes = DEFAULT_SCENES(productName);
 
-    // Auto-generate vo_script + captions per product so they stay consistent
-    // with the actual product. Falls back to blueprint copy on any failure.
-    let voScript: string = body.vo_script ?? "";
-    if (!voScript || (Array.isArray(body.captions) && body.captions.length === 6)) {
-      // honor full overrides below
-    }
-    if (!body.vo_script || !Array.isArray(body.captions)) {
-      const generated = await generateProductCopy(product as any, lovableKey);
+    // ── Multi-variant copy generation ─────────────────────────────────────
+    // Build N alternative voiceovers and N alternative captions per scene
+    // so successive campaigns can rotate copy and avoid ad fatigue.
+    let voScript: string = typeof body.vo_script === "string" ? body.vo_script : "";
+    let voScriptVariants: string[] = [];
+    let captionVariants: string[][] = scenes.map((s) => [s.caption]);
+
+    const captionsOverride: string[] | null =
+      Array.isArray(body.captions) && body.captions.length === 6
+        ? body.captions.map((c: unknown) => String(c ?? ""))
+        : null;
+
+    const needAi = !voScript || !captionsOverride;
+    if (needAi) {
+      const generated = await generateProductCopyVariants(product as any, lovableKey, requestedVariantCount);
       if (generated) {
-        if (!body.vo_script) voScript = generated.vo_script;
-        if (!Array.isArray(body.captions)) {
-          for (let i = 0; i < scenes.length; i++) {
-            scenes[i].caption = generated.captions[i] ?? scenes[i].caption;
-          }
-        }
-        console.log("[cinematic-ad-prepare]", traceId, "ai-copy generated", { vo_words: voScript.split(/\s+/).length, captions: scenes.map(s => s.caption) });
+        voScriptVariants = generated.vo_scripts;
+        captionVariants = generated.caption_variants;
+        console.log("[cinematic-ad-prepare]", traceId, "ai-copy variants generated", {
+          vo_variants: voScriptVariants.length,
+          captions_per_scene: captionVariants.map((c) => c.length),
+        });
       } else {
-        console.warn("[cinematic-ad-prepare]", traceId, "ai-copy fallback to blueprint defaults");
+        console.warn("[cinematic-ad-prepare]", traceId, "variant ai-copy failed; trying single-variant fallback");
+        const single = await generateProductCopy(product as any, lovableKey);
+        if (single) {
+          voScriptVariants = [single.vo_script];
+          captionVariants = single.captions.map((c) => [c]);
+        } else {
+          console.warn("[cinematic-ad-prepare]", traceId, "ai-copy fallback to blueprint defaults");
+          voScriptVariants = [DEFAULT_VO(productName)];
+          captionVariants = scenes.map((s) => [s.caption]);
+        }
       }
     }
-    if (Array.isArray(body.captions) && body.captions.length === 6) {
-      for (let i = 0; i < scenes.length; i++) {
-        scenes[i].caption = String(body.captions[i] ?? scenes[i].caption);
-      }
+
+    // Caller overrides win and become a single locked variant.
+    if (voScript) voScriptVariants = [voScript];
+    if (captionsOverride) {
+      captionVariants = captionsOverride.map((c) => [c]);
     }
-    if (!voScript) voScript = DEFAULT_VO(productName);
+
+    // Pick which variant to use for this run.
+    const totalVariants = Math.min(
+      voScriptVariants.length,
+      ...captionVariants.map((row) => row.length),
+    );
+    const variantIndex = await pickVariantIndex(admin, product_slug, body.variant_index, totalVariants);
+
+    voScript = voScriptVariants[variantIndex] ?? voScriptVariants[0] ?? DEFAULT_VO(productName);
+    for (let i = 0; i < scenes.length; i++) {
+      const row = captionVariants[i] ?? [];
+      scenes[i].caption = row[variantIndex] ?? row[0] ?? scenes[i].caption;
+    }
+    console.log("[cinematic-ad-prepare]", traceId, "variant selected", {
+      variantIndex,
+      totalVariants,
+      vo_words: voScript.split(/\s+/).length,
+      captions: scenes.map((s) => s.caption),
+    });
 
     // Generate scenes in parallel (best effort; on failure fall back to hero image)
     const sceneResults = await Promise.allSettled(
@@ -589,6 +627,9 @@ const handler = async (req: Request): Promise<Response> => {
         scene_assets,
         vo_script: voScript,
         vo_url: voUrl,
+        vo_script_variants: voScriptVariants,
+        caption_variants: captionVariants,
+        variant_index: variantIndex,
         prepared_at: new Date().toISOString(),
       })
       .eq("id", jobId)
