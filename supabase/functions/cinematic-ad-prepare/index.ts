@@ -20,7 +20,6 @@
  * Response: { ok, traceId, message, job }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,7 +65,7 @@ type SceneBlueprint = {
   lens: string;           // focal length / lens character
 };
 
-const SHOT_BLUEPRINTS: Omit<SceneBlueprint, "index">[] = [
+export const SHOT_BLUEPRINTS: Omit<SceneBlueprint, "index">[] = [
   {
     duration_seconds: 4,
     caption: () => "Stop settling for less.",
@@ -164,7 +163,7 @@ function buildScenePrompt(b: Omit<SceneBlueprint, "index">, productName: string,
   ].join(" ");
 }
 
-const DEFAULT_SCENES = (productName: string): Scene[] => {
+export const DEFAULT_SCENES = (productName: string): Scene[] => {
   const scenes: Scene[] = SHOT_BLUEPRINTS.map((b, i) => {
     const index = i + 1;
     const prompt = buildScenePrompt(b, productName, index);
@@ -320,7 +319,7 @@ async function elevenLabsTts(text: string, voiceId: string, apiKey: string): Pro
   return new Uint8Array(await res.arrayBuffer());
 }
 
-Deno.serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = trace();
 
@@ -479,4 +478,10 @@ Deno.serve(async (req) => {
     await admin.from("cinematic_ad_jobs").update({ status: "failed", error_message: msg, status_message: "preparation failed" }).eq("id", jobId);
     return json(500, { ok: false, traceId, message: msg });
   }
-});
+};
+
+if (import.meta.main) {
+  Deno.serve(handler);
+}
+
+export { handler };
