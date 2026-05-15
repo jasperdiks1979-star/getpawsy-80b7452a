@@ -479,4 +479,10 @@ const handler = async (req: Request): Promise<Response> => {
     await admin.from("cinematic_ad_jobs").update({ status: "failed", error_message: msg, status_message: "preparation failed" }).eq("id", jobId);
     return json(500, { ok: false, traceId, message: msg });
   }
-});
+};
+
+if (import.meta.main) {
+  Deno.serve(handler);
+}
+
+export { handler };
