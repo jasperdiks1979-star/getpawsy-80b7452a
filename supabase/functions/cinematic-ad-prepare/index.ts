@@ -20,7 +20,6 @@
  * Response: { ok, traceId, message, job }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
