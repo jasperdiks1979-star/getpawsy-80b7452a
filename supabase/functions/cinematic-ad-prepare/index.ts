@@ -45,14 +45,159 @@ type Scene = {
   prompt: string;
 };
 
-const DEFAULT_SCENES = (productName: string): Scene[] => [
-  { index: 1, duration_seconds: 4, caption: "Tired of cleaning the litter box?", prompt: `Cinematic close-up of ${productName} in a sunlit modern living room, soft window light, ultra-realistic, premium product photography, 9:16 vertical, shallow depth of field` },
-  { index: 2, duration_seconds: 4, caption: "Meet the GetPawsy Flip-Top", prompt: `Hero shot of ${productName} on a polished hardwood floor, dramatic side lighting, ultra-realistic premium pet brand commercial, 9:16 vertical` },
-  { index: 3, duration_seconds: 4, caption: "Extra-large enclosed design", prompt: `Macro detail of the flip-top hinge of ${productName}, materials and craftsmanship visible, premium product cinematography, 9:16 vertical` },
-  { index: 4, duration_seconds: 5, caption: "Keeps odors and litter inside", prompt: `${productName} placed beside a happy clean cat in a Scandinavian-style apartment, soft warm lighting, lifestyle photography, 9:16 vertical` },
-  { index: 5, duration_seconds: 4, caption: "Easy to clean. Easy to love.", prompt: `Top-down hero shot of ${productName} with the lid open, showing spacious interior, studio lighting on a beige backdrop, 9:16 vertical` },
-  { index: 6, duration_seconds: 5, caption: "Get yours at GetPawsy.pet", prompt: `Final hero beauty shot of ${productName} centered, glowing rim light, premium pet brand commercial finale, 9:16 vertical` },
+/**
+ * Cinematic shot blueprint. Each scene MUST be visually distinct: unique
+ * camera framing, environment, lighting, subject action, crop and emotional
+ * tone. Nano Banana otherwise gravitates toward replicating the source
+ * hero image, which produced 6 nearly-identical scenes.
+ */
+type SceneBlueprint = {
+  index: number;
+  duration_seconds: number;
+  caption: string;
+  objective: string;
+  framing: string;        // shot type: macro, wide, top-down, low-angle, OTS...
+  angle: string;          // camera angle
+  environment: string;    // setting
+  lighting: string;       // lighting design
+  action: string;         // subject + action
+  emotion: string;        // emotional tone
+  productAngle: string;   // how the product is presented
+  lens: string;           // focal length / lens character
+};
+
+const SHOT_BLUEPRINTS: Omit<SceneBlueprint, "index">[] = [
+  {
+    duration_seconds: 4,
+    caption: "Tired of cleaning the litter box?",
+    objective: "Hook the viewer with a relatable cat-owner problem",
+    framing: "wide interior establishing shot",
+    angle: "eye-level, slight low angle from the floor",
+    environment: "bright modern American living room with hardwood floors, large window, sheer curtains, indoor plants",
+    lighting: "soft golden-hour window light from camera left, warm rim, gentle bounce",
+    action: "a curious adult tabby cat walks toward the litter box and steps in through the flip-top entrance",
+    emotion: "everyday, relatable, slight frustration before relief",
+    productAngle: "three-quarter front view at floor level, product on the right third",
+    lens: "35mm full-frame, f/4, deep but cinematic depth of field",
+  },
+  {
+    duration_seconds: 4,
+    caption: "Meet the GetPawsy Flip-Top",
+    objective: "Reveal the product as the hero solution",
+    framing: "low-angle hero product shot, product fills 70% of frame",
+    angle: "low 15-degree upward angle",
+    environment: "minimal Scandinavian studio set with cream backdrop and soft floor reflection",
+    lighting: "dramatic side key light from camera right, deep shadow on the left, subtle teal kicker",
+    action: "no cat, no hands — pure product reveal with a slow implied push-in",
+    emotion: "premium, confident, brand-defining",
+    productAngle: "front-facing hero pose, lid closed, logo plate visible",
+    lens: "50mm, f/2.8, shallow depth of field",
+  },
+  {
+    duration_seconds: 4,
+    caption: "Extra-large enclosed design",
+    objective: "Show scale and enclosed privacy",
+    framing: "wide side-profile shot showing full silhouette",
+    angle: "perfect 90-degree side profile at cat eye level",
+    environment: "Scandinavian apartment corner, light oak floor, white wall, woven basket beside it for scale reference",
+    lighting: "bright diffused daylight from a softbox camera left, very even, editorial",
+    action: "a large adult cat sits comfortably half-inside, demonstrating interior space",
+    emotion: "spacious, reassuring, premium",
+    productAngle: "full side silhouette, lid closed, entrance facing camera-right",
+    lens: "50mm, f/5.6, sharp throughout",
+  },
+  {
+    duration_seconds: 5,
+    caption: "Keeps odors and litter inside",
+    objective: "Communicate odor + mess control via macro craftsmanship",
+    framing: "extreme macro close-up of the flip-top hinge and door seal",
+    angle: "tight 45-degree macro, product fills entire frame",
+    environment: "out-of-focus warm bokeh of a kitchen background",
+    lighting: "moody chiaroscuro key light, rim highlight along the hinge edge",
+    action: "the flip-top door gently closes, sealing the entrance — micro-detail of the hinge mechanism",
+    emotion: "engineered, premium, trustworthy",
+    productAngle: "macro detail of hinge + entrance seal, no full product visible",
+    lens: "100mm macro, f/4, razor-thin depth of field on the hinge",
+  },
+  {
+    duration_seconds: 4,
+    caption: "Easy to clean. Easy to love.",
+    objective: "Show effortless owner cleaning + happy cat lifestyle",
+    framing: "top-down overhead lifestyle shot",
+    angle: "directly overhead, 90-degree top-down",
+    environment: "clean light-oak floor, neatly folded towel and a small scoop placed beside the open litter box",
+    lighting: "bright soft overhead daylight, no harsh shadows, airy and clean",
+    action: "a woman's hand (no face) lifts the flip-top lid revealing a spotless interior; a calm white cat lounges nearby",
+    emotion: "effortless, satisfying, calm",
+    productAngle: "top-down with lid hinged open, full interior visible",
+    lens: "24mm wide, f/5.6, everything in focus",
+  },
+  {
+    duration_seconds: 5,
+    caption: "Get yours at GetPawsy.pet",
+    objective: "Closing premium beauty shot for brand recall",
+    framing: "centered cinematic hero beauty shot, product isolated",
+    angle: "dead-center front, very slight 5-degree downward tilt",
+    environment: "deep matte charcoal seamless backdrop with subtle vignette",
+    lighting: "dual rim lights (cool blue camera-left, warm amber camera-right), dark moody key, glowing edge light",
+    action: "no cat, no hands — pure product as a sculpted object, faint atmospheric haze",
+    emotion: "iconic, premium, aspirational, finale",
+    productAngle: "three-quarter hero pose, lid closed, slight pedestal feel",
+    lens: "85mm, f/2.8, cinematic anamorphic feel",
+  },
 ];
+
+function buildScenePrompt(b: Omit<SceneBlueprint, "index">, productName: string, idx: number): string {
+  // Order matters: lead with the unique scene-specific creative direction so
+  // Nano Banana does not default to replicating the source hero composition.
+  return [
+    `Scene ${idx} of 6 — ${b.objective}.`,
+    `Shot: ${b.framing}, ${b.angle}.`,
+    `Lens: ${b.lens}.`,
+    `Environment: ${b.environment}.`,
+    `Lighting: ${b.lighting}.`,
+    `Subject & action: ${b.action}.`,
+    `Product presentation: ${b.productAngle} of the ${productName}.`,
+    `Emotional tone: ${b.emotion}.`,
+    `Style: ultra-realistic premium TikTok / Pinterest pet-brand commercial still, cinematic color grade, photoreal, no text, no logos overlay, no watermark, 9:16 vertical 1080x1920.`,
+    `IMPORTANT: re-imagine the composition completely for this scene — do NOT copy the framing or background of the source reference image. Use the reference only to preserve the exact product design, colors, and proportions of the ${productName}. Each of the 6 scenes must look visually distinct from the others.`,
+  ].join(" ");
+}
+
+const DEFAULT_SCENES = (productName: string): Scene[] => {
+  const scenes: Scene[] = SHOT_BLUEPRINTS.map((b, i) => {
+    const index = i + 1;
+    const prompt = buildScenePrompt(b, productName, index);
+    return {
+      index,
+      duration_seconds: b.duration_seconds,
+      caption: b.caption,
+      prompt,
+    };
+  });
+
+  // Hard uniqueness enforcement — guarantees no two scenes share the same
+  // prompt, framing, or environment. If a collision somehow appears, append a
+  // disambiguator so Nano Banana cannot collapse them into the same image.
+  const seenPrompts = new Set<string>();
+  const seenFraming = new Set<string>();
+  const seenEnv = new Set<string>();
+  for (let i = 0; i < scenes.length; i++) {
+    const b = SHOT_BLUEPRINTS[i];
+    if (seenFraming.has(b.framing) || seenEnv.has(b.environment) || seenPrompts.has(scenes[i].prompt)) {
+      scenes[i].prompt += ` Unique-variant-token: scene-${i + 1}-${Math.random().toString(36).slice(2, 8)}.`;
+    }
+    seenPrompts.add(scenes[i].prompt);
+    seenFraming.add(b.framing);
+    seenEnv.add(b.environment);
+  }
+
+  for (const s of scenes) {
+    console.log(`[scene-${s.index}-prompt]`, s.prompt);
+  }
+
+  return scenes;
+};
 
 const DEFAULT_VO = (productName: string) =>
   `Tired of scooping every day? Meet ${productName}. Extra large. Fully enclosed. Designed to keep odors and litter inside, where they belong. Premium materials. Effortless cleaning. Your cat will love it. You will too. Get yours today at GetPawsy dot pet.`;
