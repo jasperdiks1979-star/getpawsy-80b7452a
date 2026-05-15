@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, GitBranch, CheckCircle2, AlertCircle, GitMerge, ExternalLink } from "lucide-react";
+import { RefreshCw, GitBranch, CheckCircle2, AlertCircle, GitMerge, ExternalLink, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const LS_KEY = "gp.github.repo";
@@ -259,6 +259,54 @@ export default function GitHubSyncStatusPage() {
               {lastFetched && ` · updated ${lastFetched.toLocaleTimeString()}`}
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <GitBranch className="h-4 w-4" /> Working branch → main
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Force future Lovable edits to commit directly to <code>main</code> instead of a separate{" "}
+            <code>lovable/...</code> branch. This is a Lovable account setting and must be toggled in the
+            Lovable UI — the buttons below jump straight to the right pages.
+          </p>
+          <ol className="text-sm list-decimal list-inside space-y-1 text-muted-foreground">
+            <li>Open Account Settings → Labs and disable "GitHub Branch Switching", or</li>
+            <li>Open the chat + menu → GitHub and switch the active branch to <code>main</code>.</li>
+          </ol>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button asChild size="sm">
+              <a
+                href="https://lovable.dev/settings/labs"
+                target="_blank"
+                rel="noreferrer"
+                className="gap-1"
+              >
+                <Settings className="h-3 w-3" />
+                Open Labs settings
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <a
+                href="https://docs.lovable.dev/integrations/github"
+                target="_blank"
+                rel="noreferrer"
+                className="gap-1"
+              >
+                GitHub integration docs
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground pt-1">
+            Verify success below: when "Pending Lovable branches" stays at 0 after your next save, future
+            commits are landing on <code>main</code>.
+          </p>
         </CardContent>
       </Card>
 
