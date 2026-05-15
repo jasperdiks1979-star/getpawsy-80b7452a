@@ -105,7 +105,12 @@ Deno.serve(async (req) => {
       0x69,0x73,0x6f,0x6d, 0x69,0x73,0x6f,0x32, 0x61,0x76,0x63,0x31, 0x6d,0x70,0x34,0x31,
     ]);
     const filler = new Uint8Array(220_000);
-    crypto.getRandomValues(filler);
+    // crypto.getRandomValues is capped at 65_536 bytes per call — fill in chunks.
+    // For a throwaway test object, deterministic fill is fine (and cheaper).
+    for (let i = 0; i < filler.length; i += 65_536) {
+      const view = filler.subarray(i, Math.min(i + 65_536, filler.length));
+      crypto.getRandomValues(view);
+    }
     const blob = new Blob([ftyp, filler], { type: "video/mp4" });
     const { error } = await admin.storage.from("cinematic-ads").upload(targetPath.replace(/^cinematic-ads\//, ""), blob, {
       contentType: "video/mp4", upsert: true,
