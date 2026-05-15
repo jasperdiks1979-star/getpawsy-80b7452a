@@ -9,6 +9,9 @@ import { toast } from "@/hooks/use-toast";
 
 const LS_KEY = "gp.github.repo";
 const LS_TOKEN = "gp.github.token";
+const LS_RENDER_URL = "gp.render.healthUrl";
+const LS_RENDER_API_KEY = "gp.render.apiKey";
+const LS_RENDER_SERVICE = "gp.render.serviceId";
 
 type Commit = {
   sha: string;
@@ -29,6 +32,18 @@ export default function GitHubSyncStatusPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
+
+  const [renderUrl, setRenderUrl] = useState<string>(() => localStorage.getItem(LS_RENDER_URL) || "");
+  const [renderUrlInput, setRenderUrlInput] = useState(renderUrl);
+  const [renderApiKey, setRenderApiKey] = useState<string>(() => localStorage.getItem(LS_RENDER_API_KEY) || "");
+  const [renderApiKeyInput, setRenderApiKeyInput] = useState(renderApiKey);
+  const [renderServiceId, setRenderServiceId] = useState<string>(() => localStorage.getItem(LS_RENDER_SERVICE) || "");
+  const [renderServiceIdInput, setRenderServiceIdInput] = useState(renderServiceId);
+  const [deployedCommit, setDeployedCommit] = useState<string | null>(null);
+  const [deployStatus, setDeployStatus] = useState<string | null>(null);
+  const [deployFetchedAt, setDeployFetchedAt] = useState<Date | null>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const [deployLoading, setDeployLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!repo) return;
