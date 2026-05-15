@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight, AlertTriangle, Activity, RotateCcw } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 type Job = {
   id: string;
@@ -49,7 +50,42 @@ const STATUS_COLOR: Record<string, string> = {
   pinterest_uploaded: "bg-sky-500/15 text-sky-700",
   published: "bg-pink-500/15 text-pink-700",
   failed: "bg-destructive/10 text-destructive",
+  worker_stale: "bg-orange-500/15 text-orange-700",
 };
+
+type HealthSnapshot = {
+  workerLive: boolean;
+  workerStale: boolean;
+  lastClaimAt: string | null;
+  lastClaimAgeMs: number | null;
+  lastClaimWorkerId: string | null;
+  lastClaimJobId: string | null;
+  lastCompleteAt: string | null;
+  currentJob: { id: string; product_slug: string; render_worker_id: string | null; render_started_at: string | null } | null;
+  staleCandidates: Array<{ id: string; product_slug: string; render_queued_at: string | null }>;
+  flaggedStale: Array<{ id: string; product_slug: string }>;
+  staleThresholdMs: number;
+  workerLiveWindowMs: number;
+};
+
+type HealthResponse = {
+  ok: boolean;
+  message?: string;
+  code?: string;
+  secrets?: Record<string, boolean>;
+  snapshot?: HealthSnapshot;
+  workerHealth?: { ok: boolean; data?: any; error?: string };
+};
+
+function fmtAge(ms: number | null): string {
+  if (ms === null) return "never";
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s ago`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m ago`;
+}
 
 export default function CinematicAdsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -62,6 +98,8 @@ export default function CinematicAdsPage() {
   const [smokeBusy, setSmokeBusy] = useState(false);
   const [e2e, setE2e] = useState<any>(null);
   const [e2eBusy, setE2eBusy] = useState(false);
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [healthBusy, setHealthBusy] = useState(false);
 
   const runSmokeTest = async () => {
     setSmokeBusy(true);
@@ -99,11 +137,13 @@ export default function CinematicAdsPage() {
 
   useEffect(() => {
     load().finally(() => setLoading(false));
+    loadHealth();
+    const interval = setInterval(() => { loadHealth(); }, 30_000);
     const ch = supabase
       .channel("cinematic_ad_jobs_changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "cinematic_ad_jobs" }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { clearInterval(interval); supabase.removeChannel(ch); };
   }, []);
 
   const generate = async () => {
@@ -146,6 +186,44 @@ export default function CinematicAdsPage() {
     finally { setBusyId(null); }
   };
 
+  const loadHealth = async () => {
+    setHealthBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "health" } });
+      if (error) throw error;
+      setHealth(data as HealthResponse);
+    } catch (e: any) {
+      setHealth({ ok: false, message: e?.message ?? String(e) });
+    } finally {
+      setHealthBusy(false);
+    }
+  };
+
+  const retryRender = async (jobId: string) => {
+    setBusyId(jobId);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "retry_render", job_id: jobId } });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "retry_render failed");
+      toast.success("Re-queued for render worker.");
+      load();
+      loadHealth();
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setBusyId(null); }
+  };
+
+  const retryPublish = async (jobId: string) => {
+    setBusyId(jobId);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "retry_publish", job_id: jobId } });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "retry_publish failed");
+      toast.success("Pinterest publish chain re-triggered.");
+      load();
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setBusyId(null); }
+  };
+
   const copyText = async (text: string, label: string) => {
     try { await navigator.clipboard.writeText(text); toast.success(`${label} copied`); }
     catch { toast.error("Clipboard blocked"); }
@@ -159,6 +237,7 @@ export default function CinematicAdsPage() {
     render_queued: jobs.filter(j => j.status === "render_queued"),
     rendering: jobs.filter(j => j.status === "rendering"),
     rendered: jobs.filter(j => j.status === "rendered"),
+    worker_stale: jobs.filter(j => j.status === "worker_stale"),
     failed: jobs.filter(j => j.status === "failed"),
   };
 
@@ -172,6 +251,97 @@ export default function CinematicAdsPage() {
           Hybrid Remotion + Nano Banana pipeline. Generate cinematic 9:16 promo videos for Pinterest, TikTok &amp; Reels.
         </p>
       </header>
+
+      {health?.code === "MISSING_SECRETS" && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Render pipeline misconfigured</AlertTitle>
+          <AlertDescription className="text-xs">
+            {health.message}
+            {health.secrets && (
+              <ul className="mt-2 list-disc pl-5">
+                {Object.entries(health.secrets).map(([k, v]) => (
+                  <li key={k} className={v ? "text-emerald-700" : "text-destructive"}>
+                    {k}: {v ? "set" : "missing"}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {health?.snapshot && (!health.snapshot.workerLive || health.snapshot.workerStale) && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Render worker is not claiming jobs</AlertTitle>
+          <AlertDescription className="text-xs space-y-1">
+            <div>
+              Last claim: {fmtAge(health.snapshot.lastClaimAgeMs)}
+              {health.snapshot.lastClaimWorkerId && ` · worker ${health.snapshot.lastClaimWorkerId}`}
+            </div>
+            {health.snapshot.staleCandidates.length + health.snapshot.flaggedStale.length > 0 && (
+              <div>
+                {health.snapshot.staleCandidates.length + health.snapshot.flaggedStale.length} job(s) stuck in render_queued for &gt; 10 min.
+                Verify the Render.com worker is running and that <code>RENDER_WORKER_SECRET</code> matches.
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="size-4" /> Render worker health
+            {health?.snapshot && (
+              <Badge className={health.snapshot.workerLive ? "bg-emerald-500/15 text-emerald-700" : "bg-orange-500/15 text-orange-700"}>
+                {health.snapshot.workerLive ? "live" : "stale"}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-xs space-y-2">
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={loadHealth} disabled={healthBusy}>
+              {healthBusy ? <Loader2 className="size-3 animate-spin mr-1" /> : <RefreshCw className="size-3 mr-1" />}
+              Refresh
+            </Button>
+            <span className="text-muted-foreground">Polled every 30s · also reads <code>/health/worker</code> when configured.</span>
+          </div>
+          {!health && <div className="text-muted-foreground">Loading…</div>}
+          {health && !health.ok && health.code !== "MISSING_SECRETS" && (
+            <div className="text-destructive">Health check failed: {health.message}</div>
+          )}
+          {health?.snapshot && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div><div className="text-muted-foreground">Worker live</div><div className="font-mono">{String(health.snapshot.workerLive)}</div></div>
+              <div><div className="text-muted-foreground">Last claim</div><div className="font-mono">{fmtAge(health.snapshot.lastClaimAgeMs)}</div></div>
+              <div><div className="text-muted-foreground">Last claim worker</div><div className="font-mono truncate">{health.snapshot.lastClaimWorkerId ?? "—"}</div></div>
+              <div><div className="text-muted-foreground">Last poll</div><div className="font-mono">{health.workerHealth?.data?.lastPollAt ? new Date(health.workerHealth.data.lastPollAt).toLocaleTimeString() : "—"}</div></div>
+              <div><div className="text-muted-foreground">Consecutive failures</div><div className="font-mono">{health.workerHealth?.data?.consecutiveFailures ?? "—"}</div></div>
+              <div><div className="text-muted-foreground">Current job</div><div className="font-mono truncate">{health.snapshot.currentJob?.id?.slice(0, 8) ?? "—"}</div></div>
+              <div><div className="text-muted-foreground">Last render complete</div><div className="font-mono">{health.snapshot.lastCompleteAt ? new Date(health.snapshot.lastCompleteAt).toLocaleString() : "—"}</div></div>
+              <div><div className="text-muted-foreground">Stale (queued &gt; 10m)</div><div className="font-mono">{health.snapshot.staleCandidates.length + health.snapshot.flaggedStale.length}</div></div>
+              <div><div className="text-muted-foreground">Threshold</div><div className="font-mono">{Math.round(health.snapshot.staleThresholdMs / 60000)}m</div></div>
+            </div>
+          )}
+          {health?.workerHealth && !health.workerHealth.ok && (
+            <div className="text-[11px] text-muted-foreground">
+              <code>/health/worker</code>: {health.workerHealth.error ?? "unreachable"}
+            </div>
+          )}
+          {health?.secrets && (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] pt-1 border-t">
+              {Object.entries(health.secrets).map(([k, v]) => (
+                <span key={k} className={v ? "text-emerald-700" : "text-destructive"}>
+                  {v ? "✓" : "✗"} {k}
+                </span>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-base">Generate Viral Ad</CardTitle></CardHeader>
@@ -297,7 +467,7 @@ export default function CinematicAdsPage() {
         ) : jobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No jobs yet.</p>
         ) : (
-          (["prepared","render_queued","rendering","rendered","failed"] as const).map((groupKey) => {
+          (["prepared","render_queued","rendering","rendered","worker_stale","failed"] as const).map((groupKey) => {
             const groupJobs = groups[groupKey];
             if (groupJobs.length === 0) return null;
             return (
@@ -473,6 +643,18 @@ export default function CinematicAdsPage() {
                       <Button size="sm" onClick={() => sendToRenderWorker(j.id)} disabled={busyId === j.id}>
                         {busyId === j.id ? <Loader2 className="size-4 animate-spin mr-1" /> : <Cloud className="size-4 mr-1" />}
                         Send to Render Worker
+                      </Button>
+                    )}
+                    {(j.status === "render_queued" || j.status === "rendering" || j.status === "worker_stale" || j.status === "failed") && (
+                      <Button size="sm" variant="outline" onClick={() => retryRender(j.id)} disabled={busyId === j.id}>
+                        {busyId === j.id ? <Loader2 className="size-4 animate-spin mr-1" /> : <RotateCcw className="size-4 mr-1" />}
+                        Retry render
+                      </Button>
+                    )}
+                    {j.output_mp4_url && (j.status !== "published" || j.pinterest_publish_error) && (
+                      <Button size="sm" variant="outline" onClick={() => retryPublish(j.id)} disabled={busyId === j.id}>
+                        {busyId === j.id ? <Loader2 className="size-4 animate-spin mr-1" /> : <Send className="size-4 mr-1" />}
+                        Retry publish
                       </Button>
                     )}
                     {(j.status === "prepared" || j.status === "render_queued" || j.status === "failed") && (
