@@ -235,6 +235,7 @@ process.on("uncaughtException", (e) => log("error", "uncaughtException", { err: 
 
 // ---------- main ----------
 async function main() {
+  console.log("[CINEMATIC WORKER] started from render-worker/start.mjs");
   console.log("[CINEMATIC WORKER] started");
   console.log("[CINEMATIC WORKER] polling cinematic_ad_jobs every", POLL, "ms");
   log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE });
