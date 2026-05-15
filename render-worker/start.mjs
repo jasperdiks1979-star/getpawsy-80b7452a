@@ -40,7 +40,8 @@ const SCRIPT = join(__dirname, "..", "remotion", "scripts", "render-cinematic-ad
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SECRET = process.env.RENDER_WORKER_SECRET;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const POLL = Number(process.env.POLL_INTERVAL_MS || 120_000);
+const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
+const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30_000);
 const WORKER_ID = process.env.RENDER_WORKER_ID || `worker-${Math.random().toString(36).slice(2, 8)}`;
 const ONCE = process.argv.includes("--once");
 const PORT = process.env.PORT ? Number(process.env.PORT) : null;
@@ -234,8 +235,25 @@ process.on("uncaughtException", (e) => log("error", "uncaughtException", { err: 
 
 // ---------- main ----------
 async function main() {
+  console.log("[CINEMATIC WORKER] started");
+  console.log("[CINEMATIC WORKER] polling cinematic_ad_jobs every", POLL, "ms");
   log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE });
   startHealthServer();
+  if (!ONCE) {
+    setInterval(() => {
+      log("info", "heartbeat", {
+        workerId: WORKER_ID,
+        uptimeSec: Math.round((Date.now()-STARTED_AT)/1000),
+        busy: state.busy,
+        currentJobId: state.currentJobId,
+        lastPollAt: state.lastPollAt,
+        lastPollOk: state.lastPollOk,
+        lastPollReason: state.lastPollReason,
+        totals: { claimed: state.totalClaimed, succeeded: state.totalSucceeded, failed: state.totalFailed },
+        consecutiveFailures: state.consecutiveFailures,
+      });
+    }, HEARTBEAT_MS);
+  }
   await tick();
   if (ONCE) { log("info", "once mode complete"); return; }
   setInterval(tick, POLL);
