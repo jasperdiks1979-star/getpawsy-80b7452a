@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, GitBranch, CheckCircle2, AlertCircle, GitMerge, ExternalLink, Settings } from "lucide-react";
+import { RefreshCw, GitBranch, CheckCircle2, AlertCircle, GitMerge, ExternalLink, Settings, BellRing, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const LS_KEY = "gp.github.repo";
 const LS_TOKEN = "gp.github.token";
@@ -519,6 +520,168 @@ export default function GitHubSyncStatusPage() {
           </CardContent>
         </Card>
       )}
+
+      <SyncAlertsCard />
     </div>
+  );
+}
+
+type SyncAlert = {
+  id: string;
+  created_at: string;
+  branch: string;
+  branch_sha: string;
+  main_sha: string;
+  ahead_by: number;
+  behind_by: number;
+  message: string | null;
+  resolved: boolean;
+};
+
+function SyncAlertsCard() {
+  const [alerts, setAlerts] = useState<SyncAlert[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [notifyOn, setNotifyOn] = useState<boolean>(
+    () => typeof Notification !== "undefined" && Notification.permission === "granted",
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("github_sync_alerts")
+      .select("*")
+      .eq("resolved", false)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!error && data) setAlerts(data as SyncAlert[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("github_sync_alerts")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "github_sync_alerts" },
+        (payload) => {
+          const row = payload.new as SyncAlert;
+          setAlerts((prev) => [row, ...prev.filter((a) => a.id !== row.id)]);
+          toast({
+            title: "GitHub sync alert",
+            description: row.message ?? `${row.branch} ahead of main`,
+            variant: "destructive",
+          });
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            try {
+              new Notification("GitHub sync alert", {
+                body: row.message ?? `${row.branch} is ${row.ahead_by} commit(s) ahead of main`,
+                tag: row.id,
+              });
+            } catch {
+              /* noop */
+            }
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "github_sync_alerts" },
+        (payload) => {
+          const row = payload.new as SyncAlert;
+          setAlerts((prev) =>
+            row.resolved ? prev.filter((a) => a.id !== row.id) : prev.map((a) => (a.id === row.id ? row : a)),
+          );
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [load]);
+
+  const enableNotifications = async () => {
+    if (typeof Notification === "undefined") {
+      toast({ title: "Notifications not supported in this browser" });
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    setNotifyOn(perm === "granted");
+    toast({ title: perm === "granted" ? "Notifications enabled" : "Notifications denied" });
+  };
+
+  const runNow = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("github-sync-check", { body: {} });
+      if (error) throw error;
+      toast({ title: "Check complete", description: (data as { message?: string })?.message ?? "ok" });
+      await load();
+    } catch (e) {
+      toast({ title: "Check failed", description: String((e as Error).message ?? e), variant: "destructive" });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const resolve = async (id: string) => {
+    const { error } = await supabase
+      .from("github_sync_alerts")
+      .update({ resolved: true, resolved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Could not resolve", description: error.message, variant: "destructive" });
+      return;
+    }
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base flex items-center gap-2">
+          <BellRing className="h-4 w-4" /> Sync alerts (background check)
+        </CardTitle>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={enableNotifications} disabled={notifyOn}>
+            {notifyOn ? "Notifications on" : "Enable browser alerts"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={runNow} disabled={running} className="gap-1">
+            <Play className={`h-3 w-3 ${running ? "animate-pulse" : ""}`} />
+            {running ? "Checking…" : "Run check now"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          A background job runs every 15 min and writes an alert here if any edit branch has commits not yet on
+          <code> main</code>. New alerts also pop up in this browser.
+        </p>
+        {alerts.length === 0 && !loading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground border rounded-md p-3">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            No open alerts — your edit branches are on main.
+          </div>
+        )}
+        {alerts.map((a) => (
+          <div key={a.id} className="flex items-center justify-between border rounded-md p-3">
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">{a.branch}</p>
+              <p className="text-xs text-muted-foreground">
+                {a.ahead_by} ahead · {a.behind_by} behind · {new Date(a.created_at).toLocaleString()}
+              </p>
+              <p className="font-mono text-xs text-muted-foreground truncate">{a.branch_sha}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => resolve(a.id)}>
+              Mark resolved
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
