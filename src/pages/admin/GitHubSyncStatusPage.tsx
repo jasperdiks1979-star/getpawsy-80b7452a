@@ -9,6 +9,9 @@ import { toast } from "@/hooks/use-toast";
 
 const LS_KEY = "gp.github.repo";
 const LS_TOKEN = "gp.github.token";
+const LS_RENDER_URL = "gp.render.healthUrl";
+const LS_RENDER_API_KEY = "gp.render.apiKey";
+const LS_RENDER_SERVICE = "gp.render.serviceId";
 
 type Commit = {
   sha: string;
@@ -29,6 +32,18 @@ export default function GitHubSyncStatusPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
+
+  const [renderUrl, setRenderUrl] = useState<string>(() => localStorage.getItem(LS_RENDER_URL) || "");
+  const [renderUrlInput, setRenderUrlInput] = useState(renderUrl);
+  const [renderApiKey, setRenderApiKey] = useState<string>(() => localStorage.getItem(LS_RENDER_API_KEY) || "");
+  const [renderApiKeyInput, setRenderApiKeyInput] = useState(renderApiKey);
+  const [renderServiceId, setRenderServiceId] = useState<string>(() => localStorage.getItem(LS_RENDER_SERVICE) || "");
+  const [renderServiceIdInput, setRenderServiceIdInput] = useState(renderServiceId);
+  const [deployedCommit, setDeployedCommit] = useState<string | null>(null);
+  const [deployStatus, setDeployStatus] = useState<string | null>(null);
+  const [deployFetchedAt, setDeployFetchedAt] = useState<Date | null>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const [deployLoading, setDeployLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!repo) return;
@@ -146,6 +161,71 @@ export default function GitHubSyncStatusPage() {
 
   const inSync = lovableBranches.length === 0;
 
+  const refreshDeploy = useCallback(async () => {
+    setDeployError(null);
+    if (!renderUrl && !(renderApiKey && renderServiceId)) {
+      setDeployedCommit(null);
+      setDeployStatus(null);
+      return;
+    }
+    setDeployLoading(true);
+    try {
+      if (renderApiKey && renderServiceId) {
+        const res = await fetch(
+          `https://api.render.com/v1/services/${renderServiceId}/deploys?limit=1`,
+          { headers: { Authorization: `Bearer ${renderApiKey}`, Accept: "application/json" } },
+        );
+        if (!res.ok) throw new Error(`render api: ${res.status}`);
+        const arr = await res.json();
+        const dep = Array.isArray(arr) ? arr[0]?.deploy : null;
+        if (!dep) throw new Error("no deploys returned");
+        setDeployedCommit(dep.commit?.id || null);
+        setDeployStatus(dep.status || null);
+      } else {
+        const res = await fetch(renderUrl, { cache: "no-store" });
+        if (!res.ok) throw new Error(`health: ${res.status}`);
+        const data = await res.json();
+        const sha =
+          data.commit || data.sha || data.gitCommit || data.git_commit || data.RENDER_GIT_COMMIT || null;
+        if (!sha) throw new Error("response missing commit/sha field");
+        setDeployedCommit(String(sha));
+        setDeployStatus(data.status || "live");
+      }
+      setDeployFetchedAt(new Date());
+    } catch (e) {
+      setDeployError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeployLoading(false);
+    }
+  }, [renderUrl, renderApiKey, renderServiceId]);
+
+  useEffect(() => {
+    refreshDeploy();
+    const id = setInterval(refreshDeploy, 30_000);
+    return () => clearInterval(id);
+  }, [refreshDeploy]);
+
+  const saveRender = () => {
+    const url = renderUrlInput.trim();
+    const key = renderApiKeyInput.trim();
+    const svc = renderServiceIdInput.trim();
+    url ? localStorage.setItem(LS_RENDER_URL, url) : localStorage.removeItem(LS_RENDER_URL);
+    key ? localStorage.setItem(LS_RENDER_API_KEY, key) : localStorage.removeItem(LS_RENDER_API_KEY);
+    svc ? localStorage.setItem(LS_RENDER_SERVICE, svc) : localStorage.removeItem(LS_RENDER_SERVICE);
+    setRenderUrl(url);
+    setRenderApiKey(key);
+    setRenderServiceId(svc);
+    toast({ title: "Render config saved" });
+  };
+
+  const deployedShort = deployedCommit?.slice(0, 7);
+  const mainShort = mainCommit?.sha.slice(0, 7);
+  const deployMatches =
+    deployedCommit && mainCommit
+      ? deployedCommit.startsWith(mainCommit.sha.slice(0, 7)) ||
+        mainCommit.sha.startsWith(deployedCommit.slice(0, 7))
+      : null;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
@@ -204,6 +284,98 @@ export default function GitHubSyncStatusPage() {
           <p className="text-xs text-muted-foreground">
             {token ? "Token set — Merge button will auto-create + merge PR." : "Without a token, Merge opens GitHub's PR page."}
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Deploy confirmation (Render)</CardTitle>
+          <Button variant="outline" size="sm" onClick={refreshDeploy} disabled={deployLoading}>
+            <RefreshCw className={`h-4 w-4 ${deployLoading ? "animate-spin" : ""}`} />
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="renderUrl">
+              Worker health URL returning <code>{`{ commit }`}</code> (preferred)
+            </Label>
+            <Input
+              id="renderUrl"
+              value={renderUrlInput}
+              onChange={(e) => setRenderUrlInput(e.target.value)}
+              placeholder="https://your-worker.onrender.com/healthz"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="renderKey">…or Render API key</Label>
+              <Input
+                id="renderKey"
+                type="password"
+                value={renderApiKeyInput}
+                onChange={(e) => setRenderApiKeyInput(e.target.value)}
+                placeholder="rnd_…"
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="renderSvc">Render service ID</Label>
+              <Input
+                id="renderSvc"
+                value={renderServiceIdInput}
+                onChange={(e) => setRenderServiceIdInput(e.target.value)}
+                placeholder="srv-…"
+              />
+            </div>
+          </div>
+          <Button onClick={saveRender} size="sm">
+            Save Render config
+          </Button>
+
+          {deployError && (
+            <div className="flex items-start gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{deployError}</span>
+            </div>
+          )}
+
+          {deployedCommit && (
+            <div className="border rounded-md p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Render deployed commit</p>
+                {deployMatches === true && (
+                  <Badge variant="default" className="gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Matches main
+                  </Badge>
+                )}
+                {deployMatches === false && (
+                  <Badge variant="destructive" className="gap-1">
+                    <AlertCircle className="h-3 w-3" /> Behind main
+                  </Badge>
+                )}
+              </div>
+              <div className="font-mono text-xs break-all">{deployedCommit}</div>
+              <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
+                {deployStatus && <span>status: {deployStatus}</span>}
+                {deployFetchedAt && <span>checked: {deployFetchedAt.toLocaleTimeString()}</span>}
+                {mainShort && deployedShort && (
+                  <span>
+                    deployed <code>{deployedShort}</code> vs main <code>{mainShort}</code>
+                  </span>
+                )}
+              </div>
+              {deployMatches === false && (
+                <p className="text-xs text-destructive">
+                  Render is not on the latest <code>main</code>. Trigger a redeploy in Render or wait for auto-deploy.
+                </p>
+              )}
+            </div>
+          )}
+          {!deployedCommit && !deployError && (
+            <p className="text-xs text-muted-foreground">
+              Configure a worker health URL or Render API key + service ID to enable deploy confirmation.
+            </p>
+          )}
         </CardContent>
       </Card>
 
