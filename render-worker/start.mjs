@@ -119,7 +119,9 @@ async function pingSupabase() {
 function runRender(jobId) {
   return new Promise((res) => {
     const env = { ...process.env, JOB_ID: jobId, RENDER_WORKER_ID: WORKER_ID };
-    const p = spawn("bun", [SCRIPT, `--job=${jobId}`], { env, stdio: "inherit" });
+    // Use the same Node binary that's running the worker — Render images may not have `bun`,
+    // and the previous `spawn("bun", ...)` caused immediate ENOENT (exit 128) on deploy.
+    const p = spawn(process.execPath, [SCRIPT, `--job=${jobId}`], { env, stdio: "inherit" });
     let done = false;
     const finish = (code) => { if (done) return; done = true; res(code); };
     const killTimer = setTimeout(() => {
