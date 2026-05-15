@@ -311,6 +311,104 @@ export default function CinematicAdsPage() {
                   {j.status_message && <p className="text-xs text-muted-foreground">{j.status_message}</p>}
                   {j.error_message && <p className="text-xs text-destructive">{j.error_message}</p>}
 
+                  {(j.vo_script || (j.scene_assets && j.scene_assets.length > 0)) && (() => {
+                    const isOpen = openPreview[j.id] ?? (j.status === "prepared" || j.status === "render_queued");
+                    const variantCount = Math.min(
+                      (j.vo_script_variants?.length ?? 0) || 1,
+                      ...((j.caption_variants ?? []).map((row) => row?.length ?? 0).filter((n) => n > 0)),
+                    );
+                    const hasVariants = variantCount > 1;
+                    return (
+                      <div className="rounded border bg-muted/30">
+                        <button
+                          type="button"
+                          onClick={() => setOpenPreview((s) => ({ ...s, [j.id]: !isOpen }))}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-medium hover:bg-muted/50 rounded-t"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                            <FileText className="size-3.5" />
+                            Copy preview — review captions & voiceover before render
+                          </span>
+                          {hasVariants && (
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                              variant {(j.variant_index ?? 0) + 1} / {variantCount}
+                            </span>
+                          )}
+                        </button>
+                        {isOpen && (
+                          <div className="px-3 pb-3 pt-1 space-y-3 text-xs">
+                            {j.vo_script && (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
+                                    Voiceover script
+                                    <span className="ml-2 font-normal normal-case">
+                                      {j.vo_script.split(/\s+/).filter(Boolean).length} words
+                                    </span>
+                                  </span>
+                                  <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => copyText(j.vo_script ?? "", "VO script")}>
+                                    <Copy className="size-3 mr-1" /> Copy
+                                  </Button>
+                                </div>
+                                <p className="leading-relaxed whitespace-pre-wrap">{j.vo_script}</p>
+                                {(j.vo_script_variants?.length ?? 0) > 1 && (
+                                  <details className="pt-1">
+                                    <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">
+                                      {j.vo_script_variants!.length} VO variants available
+                                    </summary>
+                                    <ol className="list-decimal pl-5 pt-1 space-y-1 text-muted-foreground">
+                                      {j.vo_script_variants!.map((v, i) => (
+                                        <li key={i} className={i === (j.variant_index ?? 0) ? "text-foreground font-medium" : ""}>
+                                          {v}
+                                        </li>
+                                      ))}
+                                    </ol>
+                                  </details>
+                                )}
+                              </div>
+                            )}
+
+                            {j.scene_assets && j.scene_assets.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
+                                  Scene captions
+                                </span>
+                                <ol className="space-y-1.5">
+                                  {j.scene_assets
+                                    .slice()
+                                    .sort((a, b) => a.index - b.index)
+                                    .map((s) => {
+                                      const altRow = j.caption_variants?.[s.index - 1] ?? [];
+                                      const alts = altRow.filter((c) => c && c !== s.caption);
+                                      return (
+                                        <li key={s.index} className="flex items-start gap-2">
+                                          <span className="font-mono text-[10px] text-muted-foreground mt-0.5 shrink-0 w-5">
+                                            {s.index}.
+                                          </span>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium">{s.caption}</div>
+                                            {alts.length > 0 && (
+                                              <div className="text-[10px] text-muted-foreground">
+                                                alts: {alts.join(" · ")}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <span className="text-[10px] text-muted-foreground shrink-0">
+                                            {s.duration_seconds}s
+                                          </span>
+                                        </li>
+                                      );
+                                    })}
+                                </ol>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {j.scene_assets?.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                       {j.scene_assets.map((s) => (
