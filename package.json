@@ -21,6 +21,8 @@
     "verify:us-address": "node scripts/verify-us-address.mjs",
     "verify:us-address:dist": "node scripts/verify-us-address.mjs --dist",
     "edge:contract": "bash scripts/edge-contract-check.sh"
+    ,
+    "start:render-worker": "node render-worker/start.mjs"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.11.0",
