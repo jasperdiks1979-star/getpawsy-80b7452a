@@ -403,6 +403,7 @@ const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"))
 const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const CinematicAdsPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsPage"));
+const GitHubSyncStatusPage = lazyWithRetry(() => import("./pages/admin/GitHubSyncStatusPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
 const GscUrlInspectionHelper = lazyWithRetry(() => import("./pages/admin/GscUrlInspectionHelper"));
@@ -1905,6 +1906,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CinematicAdsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="github-sync"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GitHubSyncStatusPage />
                                 </Suspense>
                               }
                             />
