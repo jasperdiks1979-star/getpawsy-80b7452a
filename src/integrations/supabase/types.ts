@@ -3179,6 +3179,45 @@ export type Database = {
         }
         Relationships: []
       }
+      github_sync_alerts: {
+        Row: {
+          ahead_by: number
+          behind_by: number
+          branch: string
+          branch_sha: string
+          created_at: string
+          id: string
+          main_sha: string
+          message: string | null
+          resolved: boolean
+          resolved_at: string | null
+        }
+        Insert: {
+          ahead_by?: number
+          behind_by?: number
+          branch: string
+          branch_sha: string
+          created_at?: string
+          id?: string
+          main_sha: string
+          message?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+        }
+        Update: {
+          ahead_by?: number
+          behind_by?: number
+          branch?: string
+          branch_sha?: string
+          created_at?: string
+          id?: string
+          main_sha?: string
+          message?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+        }
+        Relationships: []
+      }
       google_sheets_exports: {
         Row: {
           created_at: string
