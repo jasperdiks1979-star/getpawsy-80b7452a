@@ -13047,6 +13047,7 @@ export type Database = {
           reset_at: string
         }[]
       }
+      cinematic_recover_stuck_jobs: { Args: never; Returns: Json }
       cleanup_old_health_checks: { Args: never; Returns: undefined }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_old_web_vitals: { Args: never; Returns: undefined }
