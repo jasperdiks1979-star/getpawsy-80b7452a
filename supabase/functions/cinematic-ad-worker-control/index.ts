@@ -50,6 +50,110 @@ function requiredSecretsReport() {
   };
 }
 
+// Required secrets that must live on the GitHub repo for
+// .github/workflows/render-cinematic-ad.yml to succeed.
+const REQUIRED_GITHUB_SECRETS = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "RENDER_WORKER_SECRET",
+] as const;
+
+type GhSecretsValidation = {
+  ok: boolean;
+  repo: string | null;
+  workflow: string;
+  ref: string;
+  ghPatPresent: boolean;
+  ghRepoPresent: boolean;
+  ghApiStatus: number | null;
+  ghApiOk: boolean;
+  message?: string;
+  // Per-required secret presence on the GitHub repo (never includes values).
+  secrets: Record<string, { present: boolean; updatedAt?: string | null }>;
+  missing: string[];
+  hint?: string;
+};
+
+async function validateGithubSecrets(traceId: string): Promise<GhSecretsValidation> {
+  const base: GhSecretsValidation = {
+    ok: false,
+    repo: GH_REPO || null,
+    workflow: GH_WORKFLOW,
+    ref: GH_REF,
+    ghPatPresent: !!GH_PAT,
+    ghRepoPresent: !!GH_REPO,
+    ghApiStatus: null,
+    ghApiOk: false,
+    secrets: Object.fromEntries(REQUIRED_GITHUB_SECRETS.map((k) => [k, { present: false }])),
+    missing: [...REQUIRED_GITHUB_SECRETS],
+  };
+  if (!GH_PAT) {
+    base.message = "GH_PAT secret missing in Lovable Cloud. Cannot query GitHub API.";
+    base.hint = "Add a GitHub Personal Access Token with repo scope as GH_PAT in Cloud → Functions → Secrets.";
+    return base;
+  }
+  if (!GH_REPO) {
+    base.message = "GH_REPO secret missing in Lovable Cloud (format: owner/repo).";
+    base.hint = "Add GH_REPO (e.g. your-org/your-repo) in Cloud → Functions → Secrets.";
+    return base;
+  }
+  try {
+    const url = `https://api.github.com/repos/${GH_REPO}/actions/secrets?per_page=100`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${GH_PAT}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "lovable-cinematic-ads",
+      },
+    });
+    base.ghApiStatus = res.status;
+    base.ghApiOk = res.ok;
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.warn(`[gh-secrets] ${traceId} list failed`, { status: res.status, body: text.slice(0, 200) });
+      if (res.status === 401 || res.status === 403) {
+        base.message = `GitHub API ${res.status}: token rejected. PAT needs 'repo' scope (classic) or 'Secrets: read' (fine-grained) on ${GH_REPO}.`;
+        base.hint = "Rotate GH_PAT with the correct scopes and update it in Cloud secrets.";
+      } else if (res.status === 404) {
+        base.message = `GitHub API 404: repo ${GH_REPO} not found or token has no access.`;
+        base.hint = "Verify GH_REPO is exactly owner/repo and the PAT owner can see it.";
+      } else {
+        base.message = `GitHub API ${res.status}: ${text.slice(0, 200)}`;
+      }
+      return base;
+    }
+    const body = await res.json().catch(() => ({ secrets: [] }));
+    const found = new Map<string, string | null>();
+    for (const s of body.secrets ?? []) {
+      if (s?.name) found.set(s.name, s.updated_at ?? null);
+    }
+    const missing: string[] = [];
+    for (const k of REQUIRED_GITHUB_SECRETS) {
+      if (found.has(k)) {
+        base.secrets[k] = { present: true, updatedAt: found.get(k) ?? null };
+      } else {
+        missing.push(k);
+      }
+    }
+    base.missing = missing;
+    base.ok = missing.length === 0;
+    if (!base.ok) {
+      base.message = `Missing GitHub repo secrets: ${missing.join(", ")}`;
+      base.hint = `Open https://github.com/${GH_REPO}/settings/secrets/actions and add the missing entries.`;
+    } else {
+      base.message = `All ${REQUIRED_GITHUB_SECRETS.length} required GitHub secrets are present on ${GH_REPO}.`;
+    }
+    console.log(`[gh-secrets] ${traceId} validate`, { repo: GH_REPO, ok: base.ok, missing });
+    return base;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[gh-secrets] ${traceId} crash`, msg);
+    base.message = `GitHub API call failed: ${msg}`;
+    return base;
+  }
+}
+
 function missingRequired(): string[] {
   const missing: string[] = [];
   if (!SUPABASE_URL) missing.push("SUPABASE_URL");
