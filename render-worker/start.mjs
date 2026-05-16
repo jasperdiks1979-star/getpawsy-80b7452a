@@ -173,13 +173,14 @@ async function tick() {
   if (state.busy) return;
   state.busy = true;
   state.lastPollAt = new Date().toISOString();
-  console.log(`[CINEMATIC WORKER] polling workerId=${WORKER_ID} at=${state.lastPollAt}`);
+  console.log(`[CINEMATIC WORKER] polling queue table=cinematic_ad_jobs filter=status='render_queued' workerId=${WORKER_ID} at=${state.lastPollAt}`);
   await writeHeartbeat({ claimed: false });
   try {
     const data = await claimJob();
     state.lastPollOk = !!data?.ok;
     state.lastPollReason = data?.reason ?? null;
     if (!data?.ok || !data.job) {
+      console.log(`[CINEMATIC WORKER] found 0 queued jobs reason=${data?.reason ?? "no jobs"}`);
       log("info", "poll idle", { reason: data?.reason ?? "no jobs" });
       state.consecutiveFailures = 0;
       return;
@@ -187,16 +188,20 @@ async function tick() {
     const jobId = data.job.job_id;
     state.currentJobId = jobId;
     state.totalClaimed++;
-    console.log(`[CINEMATIC WORKER] claimed job ${jobId}`);
+    console.log(`[CINEMATIC WORKER] found >=1 queued jobs`);
+    console.log(`[CINEMATIC WORKER] claiming job ${jobId}`);
+    console.log(`[CINEMATIC WORKER] claimed job ${jobId} status->rendering`);
     await writeHeartbeat({ claimed: true, jobId });
     log("info", "job claimed", { jobId, workerId: WORKER_ID });
+    console.log(`[CINEMATIC WORKER] render started job=${jobId}`);
     const code = await runRender(jobId);
     state.lastRenderAt = new Date().toISOString();
     state.lastRenderExit = code;
     if (code === 0) {
       state.totalSucceeded++;
       state.consecutiveFailures = 0;
-      console.log(`[CINEMATIC WORKER] completed job ${jobId}`);
+      console.log(`[CINEMATIC WORKER] render completed job=${jobId}`);
+      console.log(`[CINEMATIC WORKER] upload completed job=${jobId}`);
       log("info", "job rendered ok", { jobId });
     } else {
       state.totalFailed++;
