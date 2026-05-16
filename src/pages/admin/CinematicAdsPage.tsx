@@ -81,6 +81,29 @@ type HealthResponse = {
   workerHealth?: { ok: boolean; data?: any; error?: string };
 };
 
+type PublicWorkerHealth = {
+  ok: boolean;
+  route: string;
+  workerLive: boolean;
+  lastHeartbeat: string | null;
+  lastClaim: string | null;
+  currentJobId?: string | null;
+  queueDepth: number;
+  message?: string;
+};
+
+type ApiRouteProbe = {
+  checkedUrl: string;
+  fallbackUrl: string;
+  status: number | null;
+  contentType: string | null;
+  spaFallbackDetected: boolean;
+  error?: string;
+};
+
+const WORKER_HEALTH_API_PATH = "/api/health/worker";
+const WORKER_HEALTH_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/worker-health`;
+
 function fmtAge(ms: number | null): string {
   if (ms === null) return "never";
   const s = Math.floor(ms / 1000);
@@ -103,6 +126,8 @@ export default function CinematicAdsPage() {
   const [e2e, setE2e] = useState<any>(null);
   const [e2eBusy, setE2eBusy] = useState(false);
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [publicWorkerHealth, setPublicWorkerHealth] = useState<PublicWorkerHealth | null>(null);
+  const [apiRouteProbe, setApiRouteProbe] = useState<ApiRouteProbe | null>(null);
   const [healthBusy, setHealthBusy] = useState(false);
   const [debugPanel, setDebugPanel] = useState<any>(null);
   const [debugBusy, setDebugBusy] = useState(false);
