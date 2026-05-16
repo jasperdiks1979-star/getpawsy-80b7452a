@@ -739,6 +739,49 @@ export default function CinematicAdsPage() {
                 </a>
               </Button>
             </div>
+
+            {/* Inline token input — same logic as the modal, just always visible */}
+            <div className="space-y-1 pt-1 border-t">
+              <Label htmlFor="gh-pat-inline" className="text-xs">Paste new GH_PAT</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="gh-pat-inline"
+                    type={showToken ? "text" : "password"}
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={newToken}
+                    onChange={(e) => setNewToken(e.target.value.trim())}
+                    placeholder="ghp_… or github_pat_…"
+                    className="pr-9 font-mono text-xs h-8"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showToken ? "Hide token" : "Show token"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowToken((v) => !v)}
+                  >
+                    {showToken ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={saveNewToken}
+                  disabled={tokenSaving || !isValidPatFormatClient(newToken)}
+                >
+                  {tokenSaving ? <Loader2 className="size-3 animate-spin mr-1" /> : <KeyRound className="size-3 mr-1" />}
+                  Save &amp; validate
+                </Button>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {newToken.length === 0
+                  ? "Validated against repo before saving. Auto-retries queued render dispatch."
+                  : isValidPatFormatClient(newToken)
+                    ? <span className="text-emerald-700">Format OK — click Save &amp; validate.</span>
+                    : <span className="text-destructive">Format invalid. Expect ghp_… or github_pat_….</span>}
+              </div>
+            </div>
+
             {patValidation && (
               <>
                 <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-1">
