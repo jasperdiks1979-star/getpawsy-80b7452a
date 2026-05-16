@@ -24,6 +24,10 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 const RENDER_WORKER_HEALTH_URL = Deno.env.get("RENDER_WORKER_HEALTH_URL") ?? "";
+const GH_PAT = Deno.env.get("GH_PAT") ?? Deno.env.get("GITHUB_TOKEN") ?? "";
+const GH_REPO = Deno.env.get("GH_REPO") ?? Deno.env.get("GITHUB_REPO") ?? "";
+const GH_WORKFLOW = Deno.env.get("GH_WORKFLOW") ?? "render-cinematic-ad.yml";
+const GH_REF = Deno.env.get("GH_REF") ?? "main";
 
 const STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const WORKER_LIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
@@ -41,6 +45,8 @@ function requiredSecretsReport() {
     SUPABASE_SERVICE_ROLE_KEY: !!SERVICE_KEY,
     RENDER_WORKER_SECRET: !!RENDER_WORKER_SECRET,
     RENDER_WORKER_HEALTH_URL: !!RENDER_WORKER_HEALTH_URL,
+    GH_PAT: !!GH_PAT,
+    GH_REPO: !!GH_REPO,
   };
 }
 
@@ -309,6 +315,99 @@ async function retryPublish(admin: any, jobId: string, traceId: string) {
   return { ok: true, jobId, webhookTrace: body.traceId ?? null };
 }
 
+async function resetStale(admin: any, traceId: string, ids?: string[]) {
+  let query = admin
+    .from("cinematic_ad_jobs")
+    .select("id")
+    .eq("status", "worker_stale");
+  if (ids && ids.length > 0) query = query.in("id", ids);
+  const { data: targets, error } = await query;
+  if (error) throw error;
+  if (!targets || targets.length === 0) {
+    return { reset: 0, ids: [] as string[] };
+  }
+  const targetIds = targets.map((t: any) => t.id);
+  const nowIso = new Date().toISOString();
+  const { error: updErr } = await admin
+    .from("cinematic_ad_jobs")
+    .update({
+      status: "render_queued",
+      render_queued_at: nowIso,
+      render_started_at: null,
+      render_complete_at: null,
+      render_worker_id: null,
+      error_message: null,
+      status_message: "Re-queued from worker_stale via admin reset.",
+      updated_at: nowIso,
+    })
+    .in("id", targetIds);
+  if (updErr) throw updErr;
+  console.log(`[reset-stale] ${traceId} reset ${targetIds.length} jobs`, { ids: targetIds });
+  return { reset: targetIds.length, ids: targetIds };
+}
+
+async function triggerGithubWorkflow(
+  admin: any,
+  traceId: string,
+  opts: { job_id?: string; claim_next?: boolean },
+) {
+  if (!GH_PAT) throw new Error("GH_PAT secret not configured");
+  if (!GH_REPO) throw new Error("GH_REPO secret not configured (format: owner/repo)");
+  if (!opts.job_id && !opts.claim_next) {
+    throw new Error("Either job_id or claim_next=true is required");
+  }
+
+  let jobId = opts.job_id ?? "";
+  if (!jobId && opts.claim_next) {
+    const { data: next, error: nextErr } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id")
+      .eq("status", "render_queued")
+      .order("render_queued_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (nextErr) throw nextErr;
+    if (!next) return { ok: true, dispatched: false, message: "no render_queued jobs to claim" };
+    jobId = next.id;
+  }
+
+  const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`;
+  const ghRes = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": `Bearer ${GH_PAT}`,
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+      "User-Agent": "lovable-cinematic-ads",
+    },
+    body: JSON.stringify({ ref: GH_REF, inputs: { job_id: jobId } }),
+  });
+
+  if (!ghRes.ok) {
+    const text = await ghRes.text().catch(() => "");
+    console.error(`[gh-dispatch] ${traceId} failed`, { status: ghRes.status, body: text.slice(0, 500) });
+    throw new Error(`GitHub workflow_dispatch failed: ${ghRes.status} ${text.slice(0, 200)}`);
+  }
+
+  // Mark the job as queued-for-render so the UI shows immediate movement.
+  // The render worker will flip it to "rendering" when cinematic-ad-claim-job is called.
+  const nowIso = new Date().toISOString();
+  await admin
+    .from("cinematic_ad_jobs")
+    .update({
+      status: "render_queued",
+      render_queued_at: nowIso,
+      status_message: `Dispatched to GitHub Actions (${GH_WORKFLOW}@${GH_REF}) at ${nowIso}`,
+      updated_at: nowIso,
+    })
+    .eq("id", jobId);
+
+  const runsUrl = `https://github.com/${GH_REPO}/actions/workflows/${GH_WORKFLOW}`;
+  console.log(`[gh-dispatch] ${traceId} dispatched`, { jobId, repo: GH_REPO, workflow: GH_WORKFLOW });
+  return { ok: true, dispatched: true, jobId, repo: GH_REPO, workflow: GH_WORKFLOW, ref: GH_REF, runsUrl };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = trace();
@@ -379,6 +478,20 @@ Deno.serve(async (req) => {
       const jobId = String(body.job_id ?? "");
       if (!jobId) return json({ ok: false, traceId, message: "job_id required" }, 400);
       const result = await retryPublish(admin, jobId, traceId);
+      return json({ ok: true, traceId, ...result });
+    }
+
+    if (action === "reset_stale") {
+      const ids = Array.isArray(body.ids) ? body.ids.map((x: unknown) => String(x)) : undefined;
+      const result = await resetStale(admin, traceId, ids);
+      return json({ ok: true, traceId, ...result });
+    }
+
+    if (action === "trigger_github_workflow") {
+      const result = await triggerGithubWorkflow(admin, traceId, {
+        job_id: body.job_id ? String(body.job_id) : undefined,
+        claim_next: Boolean(body.claim_next),
+      });
       return json({ ok: true, traceId, ...result });
     }
 

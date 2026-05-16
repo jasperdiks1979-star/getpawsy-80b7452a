@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight, AlertTriangle, Activity, RotateCcw } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight, AlertTriangle, Activity, RotateCcw, PlayCircle, Trash2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 type Job = {
@@ -324,6 +324,46 @@ export default function CinematicAdsPage() {
   const ghCommand = (jobId: string) =>
     `gh workflow run render-cinematic-ad.yml -f job_id=${jobId}`;
 
+  const runGithubWorker = async (jobId?: string) => {
+    setBusyId(jobId ?? "__gh__");
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", {
+        body: jobId ? { action: "trigger_github_workflow", job_id: jobId } : { action: "trigger_github_workflow", claim_next: true },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "trigger failed");
+      if (data.dispatched === false) {
+        toast.info(data.message ?? "Nothing to dispatch");
+      } else {
+        toast.success(`Dispatched job ${String(data.jobId).slice(0, 8)} to ${data.workflow}`);
+        if (data.runsUrl) window.open(data.runsUrl, "_blank", "noopener");
+      }
+      load(); loadHealth();
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      if (/GH_PAT|GH_REPO/.test(msg)) {
+        toast.error(`GitHub trigger not configured: ${msg}. Add GH_PAT (repo scope) and GH_REPO (owner/repo) in Cloud secrets.`);
+      } else {
+        toast.error(msg);
+      }
+    } finally { setBusyId(null); }
+  };
+
+  const resetStaleJobs = async () => {
+    if (!confirm("Reset all worker_stale jobs back to render_queued?")) return;
+    setBusyId("__reset__");
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", {
+        body: { action: "reset_stale" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "reset failed");
+      toast.success(`Reset ${data.reset ?? 0} stale job(s) to render_queued`);
+      load(); loadHealth();
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setBusyId(null); }
+  };
+
   const groups = {
     prepared: jobs.filter(j => j.status === "prepared"),
     render_queued: jobs.filter(j => j.status === "render_queued"),
@@ -455,6 +495,16 @@ export default function CinematicAdsPage() {
               {healthBusy ? <Loader2 className="size-3 animate-spin mr-1" /> : <RefreshCw className="size-3 mr-1" />}
               Refresh
             </Button>
+            <Button size="sm" onClick={() => runGithubWorker()} disabled={busyId === "__gh__"}>
+              {busyId === "__gh__" ? <Loader2 className="size-3 animate-spin mr-1" /> : <PlayCircle className="size-3 mr-1" />}
+              Run GitHub Render Worker Now
+            </Button>
+            {(health?.snapshot?.flaggedStale?.length ?? 0) > 0 && (
+              <Button size="sm" variant="destructive" onClick={resetStaleJobs} disabled={busyId === "__reset__"}>
+                {busyId === "__reset__" ? <Loader2 className="size-3 animate-spin mr-1" /> : <Trash2 className="size-3 mr-1" />}
+                Reset stale jobs ({health.snapshot.flaggedStale.length})
+              </Button>
+            )}
             <span className="text-muted-foreground">
               Polled every 30s · liveness from heartbeats &amp; job activity. Backend JSON: <code>{WORKER_HEALTH_FUNCTION_URL}</code>.
             </span>
@@ -825,9 +875,15 @@ export default function CinematicAdsPage() {
                       </Button>
                     )}
                     {(j.status === "prepared" || j.status === "render_queued" || j.status === "failed") && (
-                      <Button size="sm" variant="outline" onClick={() => copyText(ghCommand(j.id), "GH command")}>
-                        <Copy className="size-3 mr-1" /> Copy GH command
-                      </Button>
+                      <>
+                        <Button size="sm" onClick={() => runGithubWorker(j.id)} disabled={busyId === j.id}>
+                          {busyId === j.id ? <Loader2 className="size-3 animate-spin mr-1" /> : <PlayCircle className="size-3 mr-1" />}
+                          Run GitHub now
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => copyText(ghCommand(j.id), "GH command")}>
+                          <Copy className="size-3 mr-1" /> Copy GH command
+                        </Button>
+                      </>
                     )}
                     {j.output_mp4_url && (
                       <>

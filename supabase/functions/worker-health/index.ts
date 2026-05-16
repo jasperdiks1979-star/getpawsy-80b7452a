@@ -80,17 +80,20 @@ Deno.serve(async (req) => {
     const actualWorkerLive = Math.min(hbAge, claimAge, touchAge) < LIVE_WINDOW_MS;
     const routeActive = !hbError && !currentError && !claimError && !touchError && !queueError;
 
-    console.log("[worker-health] snapshot", { workerLive: routeActive, actualWorkerLive, hbAge, claimAge, queueDepth });
+    console.log("[worker-health] snapshot", { workerLive: actualWorkerLive, routeActive, hbAge, claimAge, queueDepth });
     return json({
       ok: true,
       route: "/api/health/worker",
-      workerLive: routeActive,
+      // workerLive must reflect a REAL heartbeat / claim / job-touch within the live window.
+      // Route-availability is reported separately so the UI can distinguish "endpoint up"
+      // from "worker actually polling".
+      workerLive: actualWorkerLive,
+      routeActive,
       lastHeartbeat,
       lastClaim,
       currentJobId: current?.id ?? hb?.last_job_id ?? null,
       queueDepth: queueDepth ?? 0,
-      message: "API route active",
-      actualWorkerLive,
+      message: actualWorkerLive ? "Worker live" : "API route active — no recent worker activity",
       errors: {
         heartbeat: hbError?.message ?? null,
         current: currentError?.message ?? null,
