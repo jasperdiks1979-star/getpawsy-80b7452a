@@ -607,9 +607,13 @@ export default function CinematicAdsPage() {
         </CardHeader>
         <CardContent className="text-xs space-y-2">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
-            <span>Admin Supabase host: <code className="text-foreground">{ADMIN_SUPABASE_HOST}</code></span>
-            <span>Server host: <code className="text-foreground">{debugPanel?.supabase_host ?? "—"}</code></span>
+            <span>Admin backend URL: <code className="text-foreground">{import.meta.env.VITE_SUPABASE_URL}</code></span>
+            <span>Server backend URL: <code className="text-foreground">{debugPanel?.supabase_url ?? health?.activeBackend?.supabase_url ?? "—"}</code></span>
+            <span>GitHub Actions must use: <code className="text-foreground">{debugPanel?.github_actions_expected?.expected_value ?? health?.activeBackend?.required_github_secret?.value ?? "—"}</code></span>
+            <span>Admin host: <code className="text-foreground">{ADMIN_SUPABASE_HOST}</code></span>
+            <span>Server host: <code className="text-foreground">{debugPanel?.supabase_host ?? health?.activeBackend?.supabase_host ?? "—"}</code></span>
             <span>Table: <code className="text-foreground">{debugPanel?.table ?? "cinematic_ad_jobs"}</code></span>
+            {debugPanel?.table_count != null && <span>Rows: <code className="text-foreground">{debugPanel.table_count}</code></span>}
           </div>
           {debugPanel?.supabase_host && debugPanel.supabase_host !== ADMIN_SUPABASE_HOST && (
             <Alert variant="destructive" className="py-2">
@@ -624,6 +628,19 @@ export default function CinematicAdsPage() {
               {Object.entries(debugPanel.status_counts).map(([k, v]) => (
                 <Badge key={k} variant="outline" className="text-[10px]">{k}: {String(v)}</Badge>
               ))}
+            </div>
+          )}
+          {debugPanel?.endpoint_urls && (
+            <div className="rounded-md border p-2 bg-muted/30 space-y-1">
+              <div className="font-medium text-foreground">Render endpoints on active backend</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
+                {Object.entries(debugPanel.endpoint_urls).map(([name, url]) => (
+                  <div key={name} className="min-w-0">
+                    <code className="text-foreground">{name}</code>
+                    <div className="font-mono text-[10px] text-muted-foreground truncate">{String(url)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           {debugPanel?.latest_rows?.length > 0 && (
