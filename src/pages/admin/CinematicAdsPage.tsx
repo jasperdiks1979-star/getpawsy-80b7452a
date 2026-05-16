@@ -875,9 +875,15 @@ export default function CinematicAdsPage() {
                       </Button>
                     )}
                     {(j.status === "prepared" || j.status === "render_queued" || j.status === "failed") && (
-                      <Button size="sm" variant="outline" onClick={() => copyText(ghCommand(j.id), "GH command")}>
-                        <Copy className="size-3 mr-1" /> Copy GH command
-                      </Button>
+                      <>
+                        <Button size="sm" onClick={() => runGithubWorker(j.id)} disabled={busyId === j.id}>
+                          {busyId === j.id ? <Loader2 className="size-3 animate-spin mr-1" /> : <PlayCircle className="size-3 mr-1" />}
+                          Run GitHub now
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => copyText(ghCommand(j.id), "GH command")}>
+                          <Copy className="size-3 mr-1" /> Copy GH command
+                        </Button>
+                      </>
                     )}
                     {j.output_mp4_url && (
                       <>
