@@ -104,6 +104,25 @@ export default function CinematicAdsPage() {
   const [e2eBusy, setE2eBusy] = useState(false);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthBusy, setHealthBusy] = useState(false);
+  const [debugPanel, setDebugPanel] = useState<any>(null);
+  const [debugBusy, setDebugBusy] = useState(false);
+
+  const ADMIN_SUPABASE_HOST = (() => {
+    try { return new URL(import.meta.env.VITE_SUPABASE_URL as string).host; } catch { return "unknown"; }
+  })();
+
+  const loadDebugPanel = async () => {
+    setDebugBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "debug_panel" } });
+      if (error) throw error;
+      setDebugPanel(data);
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setDebugBusy(false);
+    }
+  };
 
   const runSmokeTest = async () => {
     setSmokeBusy(true);
@@ -209,9 +228,21 @@ export default function CinematicAdsPage() {
       const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "retry_render", job_id: jobId } });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "retry_render failed");
-      toast.success("Re-queued for render worker.");
+      const adminHost = ADMIN_SUPABASE_HOST;
+      const serverHost = (data as any).supabase_host;
+      const fresh = (data as any).fresh;
+      console.log("[retry-render][client]", {
+        jobId, prevStatus: (data as any).prevStatus, newStatus: (data as any).newStatus,
+        adminHost, serverHost, fresh,
+      });
+      if (serverHost && adminHost !== serverHost) {
+        toast.warning(`Admin/server Supabase host mismatch: admin=${adminHost} server=${serverHost}`);
+      } else {
+        toast.success(`Re-queued (${(data as any).prevStatus} → ${(data as any).newStatus}). DB host: ${serverHost ?? adminHost}`);
+      }
       load();
       loadHealth();
+      loadDebugPanel();
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
     finally { setBusyId(null); }
   };
