@@ -38,6 +38,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "remotion", "scripts", "render-cinematic-ad.mjs");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
+let SUPABASE_HOST = "unknown";
+try { SUPABASE_HOST = new URL(SUPABASE_URL).host; } catch { /* noop */ }
 const SECRET = process.env.RENDER_WORKER_SECRET;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
@@ -173,14 +175,15 @@ async function tick() {
   if (state.busy) return;
   state.busy = true;
   state.lastPollAt = new Date().toISOString();
-  console.log(`[CINEMATIC WORKER] polling queue table=cinematic_ad_jobs filter=status='render_queued' workerId=${WORKER_ID} at=${state.lastPollAt}`);
+  console.log(`[CINEMATIC WORKER] polling queue table=cinematic_ad_jobs filter=status='render_queued' host=${SUPABASE_HOST} workerId=${WORKER_ID} at=${state.lastPollAt}`);
   await writeHeartbeat({ claimed: false });
   try {
     const data = await claimJob();
     state.lastPollOk = !!data?.ok;
     state.lastPollReason = data?.reason ?? null;
+    console.log(`[CINEMATIC WORKER] claim response ok=${data?.ok} reason=${data?.reason ?? "-"} queued_count=${data?.queued_count ?? "?"} server_host=${data?.supabase_host ?? "?"} message=${data?.message ?? "-"}`);
     if (!data?.ok || !data.job) {
-      console.log(`[CINEMATIC WORKER] found 0 queued jobs reason=${data?.reason ?? "no jobs"}`);
+      console.log(`[CINEMATIC WORKER] found ${data?.queued_count ?? 0} queued jobs (claim returned no job) reason=${data?.reason ?? data?.message ?? "no jobs"}`);
       log("info", "poll idle", { reason: data?.reason ?? "no jobs" });
       state.consecutiveFailures = 0;
       return;
@@ -288,7 +291,8 @@ process.on("uncaughtException", (e) => log("error", "uncaughtException", { err: 
 async function main() {
   console.log("[CINEMATIC WORKER] started from render-worker/start.mjs");
   console.log("[CINEMATIC WORKER] started");
-  console.log("[CINEMATIC WORKER] polling cinematic_ad_jobs every", POLL, "ms");
+  console.log(`[CINEMATIC WORKER] config host=${SUPABASE_HOST} table=cinematic_ad_jobs filter=status='render_queued' pollMs=${POLL} workerId=${WORKER_ID}`);
+  console.log(`[CINEMATIC WORKER] env: SUPABASE_URL set=${!!SUPABASE_URL} SERVICE_KEY set=${!!SERVICE_KEY} RENDER_WORKER_SECRET set=${!!SECRET}`);
   log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE });
   startHealthServer();
   console.log(`[worker-health] HTTP server bound on port ${PORT}`);
