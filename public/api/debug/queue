@@ -1,0 +1,6 @@
+{
+  "ok": true,
+  "route": "/api/debug/queue",
+  "message": "API route active",
+  "note": "Static safety route; live queue debug is available at /functions/v1/worker-debug?view=queue."
+}
