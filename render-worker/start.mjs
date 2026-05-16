@@ -44,7 +44,7 @@ const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30_000);
 const WORKER_ID = process.env.RENDER_WORKER_ID || `worker-${Math.random().toString(36).slice(2, 8)}`;
 const ONCE = process.argv.includes("--once");
-const PORT = process.env.PORT ? Number(process.env.PORT) : null;
+const PORT = Number(process.env.PORT || 10000);
 const MAX_CONSECUTIVE_FAILURES = Number(process.env.MAX_CONSECUTIVE_FAILURES || 5);
 const CLAIM_TIMEOUT_MS = Number(process.env.CLAIM_TIMEOUT_MS || 15_000);
 const RENDER_TIMEOUT_MS = Number(process.env.RENDER_TIMEOUT_MS || 20 * 60 * 1000);
@@ -171,15 +171,16 @@ async function tick() {
     state.currentJobId = null;
     state.busy = false;
     if (state.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-      log("fatal", "too many consecutive failures, exiting for restart", { count: state.consecutiveFailures });
-      process.exit(1);
+      log("error", "too many consecutive failures — backing off, keeping process alive", { count: state.consecutiveFailures });
+      // Do NOT exit; Render Web Service must keep serving /health.
+      // Reset counter so polling resumes after a cool-down tick.
+      state.consecutiveFailures = 0;
     }
   }
 }
 
 // ---------- optional health http server ----------
 function startHealthServer() {
-  if (!PORT) return;
   const server = createServer(async (req, res) => {
     const send = (status, body) => {
       res.writeHead(status, { "Content-Type": "application/json" });
@@ -187,11 +188,13 @@ function startHealthServer() {
     };
     try {
       if (req.url === "/health" || req.url === "/api/health") {
-        return send(200, { ok: true, workerId: WORKER_ID, uptimeSec: Math.round((Date.now()-STARTED_AT)/1000) });
+        return send(200, { ok: true, worker: true, timestamp: Date.now(), workerId: WORKER_ID, uptimeSec: Math.round((Date.now()-STARTED_AT)/1000) });
       }
       if (req.url === "/health/worker" || req.url === "/api/health/worker") {
         return send(200, {
           ok: state.consecutiveFailures < MAX_CONSECUTIVE_FAILURES,
+          worker: true,
+          timestamp: Date.now(),
           workerId: WORKER_ID,
           busy: state.busy,
           currentJobId: state.currentJobId,
@@ -225,7 +228,9 @@ function startHealthServer() {
       send(500, { ok: false, error: String(e?.message ?? e) });
     }
   });
-  server.listen(PORT, () => log("info", "health server listening", { port: PORT }));
+  server.keepAliveTimeout = 61_000;
+  server.headersTimeout = 62_000;
+  server.listen(PORT, "0.0.0.0", () => log("info", "health server listening", { port: PORT }));
 }
 
 // ---------- shutdown ----------
@@ -242,6 +247,7 @@ async function main() {
   console.log("[CINEMATIC WORKER] polling cinematic_ad_jobs every", POLL, "ms");
   log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE });
   startHealthServer();
+  console.log(`[worker-health] HTTP server bound on port ${PORT}`);
   if (!ONCE) {
     setInterval(() => {
       log("info", "heartbeat", {
