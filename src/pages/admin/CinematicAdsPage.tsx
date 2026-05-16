@@ -417,8 +417,25 @@ export default function CinematicAdsPage() {
       const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", {
         body: jobId ? { action: "trigger_github_workflow", job_id: jobId } : { action: "trigger_github_workflow", claim_next: true },
       });
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.message ?? "trigger failed");
+      if (error) {
+        // Try to read body for our friendly GH_SECRETS_MISSING code.
+        let body: any = (error as any)?.context?.body;
+        if (typeof body === "string") { try { body = JSON.parse(body); } catch { /* noop */ } }
+        if (body?.code === "GH_SECRETS_MISSING" && body?.validation) {
+          setGhSecrets(body.validation as GhSecretValidation);
+          toast.error(body.message ?? "GitHub repo is missing required secrets.");
+          return;
+        }
+        throw error;
+      }
+      if (!data?.ok) {
+        if ((data as any)?.code === "GH_SECRETS_MISSING" && (data as any)?.validation) {
+          setGhSecrets((data as any).validation as GhSecretValidation);
+          toast.error((data as any).message ?? "GitHub repo is missing required secrets.");
+          return;
+        }
+        throw new Error((data as any)?.message ?? "trigger failed");
+      }
       if (data.dispatched === false) {
         toast.info(data.message ?? "Nothing to dispatch");
       } else {
