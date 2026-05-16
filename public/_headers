@@ -54,6 +54,21 @@
   Content-Type: application/json; charset=utf-8
   X-Content-Type-Options: nosniff
 
+/api/health/worker
+  Cache-Control: no-store, max-age=0
+  Content-Type: application/json; charset=utf-8
+  X-Content-Type-Options: nosniff
+
+/api/debug/worker
+  Cache-Control: no-store, max-age=0
+  Content-Type: application/json; charset=utf-8
+  X-Content-Type-Options: nosniff
+
+/api/debug/queue
+  Cache-Control: no-store, max-age=0
+  Content-Type: application/json; charset=utf-8
+  X-Content-Type-Options: nosniff
+
 # Health check
 /healthz.json
   Cache-Control: no-cache
