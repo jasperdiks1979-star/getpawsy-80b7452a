@@ -442,9 +442,9 @@ export default function CinematicAdsPage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Activity className="size-4" /> Render worker health
-            {health?.snapshot && (
-              <Badge className={health.snapshot.workerLive ? "bg-emerald-500/15 text-emerald-700" : "bg-orange-500/15 text-orange-700"}>
-                {health.snapshot.workerLive ? "live" : "stale"}
+            {(publicWorkerHealth || health?.snapshot) && (
+              <Badge className={(publicWorkerHealth?.workerLive ?? health?.snapshot?.workerLive) ? "bg-emerald-500/15 text-emerald-700" : "bg-orange-500/15 text-orange-700"}>
+                {(publicWorkerHealth?.workerLive ?? health?.snapshot?.workerLive) ? "live" : "stale"}
               </Badge>
             )}
           </CardTitle>
@@ -456,9 +456,26 @@ export default function CinematicAdsPage() {
               Refresh
             </Button>
             <span className="text-muted-foreground">
-              Polled every 30s · liveness from heartbeats &amp; job activity. Public JSON: <code>/api/health/worker</code>.
+              Polled every 30s · liveness from heartbeats &amp; job activity. Backend JSON: <code>{WORKER_HEALTH_FUNCTION_URL}</code>.
             </span>
           </div>
+          {apiRouteProbe?.spaFallbackDetected && (
+            <Alert variant="destructive" className="py-2">
+              <AlertTriangle className="size-4" />
+              <AlertTitle className="text-xs">Backend API route unavailable — SPA fallback detected</AlertTitle>
+              <AlertDescription className="text-xs">
+                <code>{apiRouteProbe.checkedUrl}</code> returned <code>{apiRouteProbe.contentType}</code>, so the admin is using the direct backend function instead.
+              </AlertDescription>
+            </Alert>
+          )}
+          {publicWorkerHealth && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded border border-border/60 p-2">
+              <div><div className="text-muted-foreground">Backend route</div><div className="font-mono truncate">{publicWorkerHealth.route}</div></div>
+              <div><div className="text-muted-foreground">Worker live</div><div className="font-mono">{String(publicWorkerHealth.workerLive)}</div></div>
+              <div><div className="text-muted-foreground">Queue depth</div><div className="font-mono">{publicWorkerHealth.queueDepth}</div></div>
+              <div><div className="text-muted-foreground">Message</div><div className="font-mono truncate">{publicWorkerHealth.message ?? "—"}</div></div>
+            </div>
+          )}
           {!health && <div className="text-muted-foreground">Loading…</div>}
           {health && !health.ok && health.code !== "MISSING_SECRETS" && (
             <div className="text-destructive">Health check failed: {health.message}</div>
