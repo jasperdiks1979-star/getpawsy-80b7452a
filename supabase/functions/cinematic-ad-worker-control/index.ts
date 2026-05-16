@@ -461,6 +461,19 @@ async function triggerGithubWorkflow(
     throw new Error("Either job_id or claim_next=true is required");
   }
 
+  // Block dispatch if the GitHub repo is missing any required workflow secret —
+  // otherwise the run starts and fails deep inside the Render MP4 step.
+  const ghValidation = await validateGithubSecrets(traceId);
+  if (!ghValidation.ok) {
+    const detail = ghValidation.missing.length
+      ? `GitHub repository secrets missing: ${ghValidation.missing.join(", ")}. Open https://github.com/${GH_REPO}/settings/secrets/actions and add them before dispatching.`
+      : ghValidation.message ?? "GitHub secrets validation failed";
+    const err: any = new Error(detail);
+    err.code = "GH_SECRETS_MISSING";
+    err.validation = ghValidation;
+    throw err;
+  }
+
   let jobId = opts.job_id ?? "";
   if (!jobId && opts.claim_next) {
     const { data: next, error: nextErr } = await admin
@@ -592,11 +605,33 @@ Deno.serve(async (req) => {
     }
 
     if (action === "trigger_github_workflow") {
-      const result = await triggerGithubWorkflow(admin, traceId, {
-        job_id: body.job_id ? String(body.job_id) : undefined,
-        claim_next: Boolean(body.claim_next),
+      try {
+        const result = await triggerGithubWorkflow(admin, traceId, {
+          job_id: body.job_id ? String(body.job_id) : undefined,
+          claim_next: Boolean(body.claim_next),
+        });
+        return json({ ok: true, traceId, ...result });
+      } catch (e: any) {
+        if (e?.code === "GH_SECRETS_MISSING") {
+          return json({
+            ok: false, traceId,
+            code: "GH_SECRETS_MISSING",
+            message: e.message,
+            validation: e.validation,
+          }, 412);
+        }
+        throw e;
+      }
+    }
+
+    if (action === "validate_github_secrets") {
+      const validation = await validateGithubSecrets(traceId);
+      return json({
+        ok: validation.ok,
+        traceId,
+        secrets: requiredSecretsReport(),
+        github: validation,
       });
-      return json({ ok: true, traceId, ...result });
     }
 
     if (action === "debug_panel") {
