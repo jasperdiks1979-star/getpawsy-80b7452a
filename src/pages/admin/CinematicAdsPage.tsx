@@ -92,6 +92,63 @@ type PublicWorkerHealth = {
   message?: string;
 };
 
+type GhSecretValidation = {
+  ok: boolean;
+  repo: string | null;
+  workflow: string;
+  ref: string;
+  ghPatPresent: boolean;
+  ghRepoPresent: boolean;
+  ghApiStatus: number | null;
+  ghApiOk: boolean;
+  message?: string;
+  secrets: Record<string, { present: boolean; updatedAt?: string | null }>;
+  missing: string[];
+  hint?: string;
+};
+
+type SecretSpec = {
+  name: string;
+  scope: "cloud" | "github";
+  label: string;
+  whereToFind: string;
+  link?: { label: string; url: string };
+};
+
+const SECRET_CATALOG: SecretSpec[] = [
+  {
+    name: "SUPABASE_URL",
+    scope: "github",
+    label: "Backend project URL",
+    whereToFind: "Lovable Cloud → Settings → Project URL (also injected as VITE_SUPABASE_URL).",
+  },
+  {
+    name: "SUPABASE_SERVICE_ROLE_KEY",
+    scope: "github",
+    label: "Backend service role key",
+    whereToFind: "Lovable Cloud → Settings → API → service_role key. Never share publicly.",
+  },
+  {
+    name: "RENDER_WORKER_SECRET",
+    scope: "github",
+    label: "Render worker shared secret",
+    whereToFind: "Same value as RENDER_WORKER_SECRET in Cloud → Functions → Secrets. Must match on both sides.",
+  },
+  {
+    name: "GH_PAT",
+    scope: "cloud",
+    label: "GitHub Personal Access Token",
+    whereToFind: "github.com → Settings → Developer settings → Personal access tokens. Needs 'repo' scope (classic) or 'Actions: write' + 'Secrets: read' (fine-grained).",
+    link: { label: "Open GitHub PAT settings", url: "https://github.com/settings/tokens" },
+  },
+  {
+    name: "GH_REPO",
+    scope: "cloud",
+    label: "GitHub repository (owner/repo)",
+    whereToFind: "Format: your-org/your-repo. The repo that hosts .github/workflows/render-cinematic-ad.yml.",
+  },
+];
+
 type ApiRouteProbe = {
   checkedUrl: string;
   fallbackUrl: string;
@@ -131,6 +188,8 @@ export default function CinematicAdsPage() {
   const [healthBusy, setHealthBusy] = useState(false);
   const [debugPanel, setDebugPanel] = useState<any>(null);
   const [debugBusy, setDebugBusy] = useState(false);
+  const [ghSecrets, setGhSecrets] = useState<GhSecretValidation | null>(null);
+  const [ghSecretsBusy, setGhSecretsBusy] = useState(false);
 
   const ADMIN_SUPABASE_HOST = (() => {
     try { return new URL(import.meta.env.VITE_SUPABASE_URL as string).host; } catch { return "unknown"; }
@@ -146,6 +205,34 @@ export default function CinematicAdsPage() {
       toast.error(e?.message ?? String(e));
     } finally {
       setDebugBusy(false);
+    }
+  };
+
+  const validateGithubSecrets = async () => {
+    setGhSecretsBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", {
+        body: { action: "validate_github_secrets" },
+      });
+      if (error) throw error;
+      const validation: GhSecretValidation | undefined = (data as any)?.github;
+      if (!validation) throw new Error((data as any)?.message ?? "validation response missing");
+      setGhSecrets(validation);
+      if (validation.ok) {
+        toast.success(`All ${Object.keys(validation.secrets).length} GitHub secrets present on ${validation.repo}.`);
+      } else if (validation.missing?.length) {
+        toast.error(`Missing GitHub secrets: ${validation.missing.join(", ")}`);
+      } else {
+        toast.error(validation.message ?? "GitHub secrets validation failed");
+      }
+      // Refresh Cloud-side secret presence too.
+      if ((data as any)?.secrets) {
+        setHealth((prev) => ({ ...(prev ?? { ok: true }), secrets: (data as any).secrets } as HealthResponse));
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setGhSecretsBusy(false);
     }
   };
 
