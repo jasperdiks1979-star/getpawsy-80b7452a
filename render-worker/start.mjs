@@ -102,6 +102,40 @@ async function claimJob() {
   return r.json();
 }
 
+// Upserts a heartbeat row so the admin dashboard can determine worker liveness
+// without depending on a public HTTP route (Render Background Workers have none).
+async function writeHeartbeat({ claimed = false, jobId = null } = {}) {
+  try {
+    const nowIso = new Date().toISOString();
+    const body = {
+      worker_id: WORKER_ID,
+      last_poll_at: nowIso,
+      updated_at: nowIso,
+      ...(claimed ? { last_claim_at: nowIso, last_job_id: jobId } : {}),
+    };
+    const r = await fetchWithRetry(
+      `${SUPABASE_URL}/rest/v1/cinematic_worker_heartbeats?on_conflict=worker_id`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          Prefer: "resolution=merge-duplicates,return=minimal",
+        },
+        body: JSON.stringify(body),
+      },
+      { timeoutMs: 5_000, retries: 1 },
+    );
+    if (!r.ok) {
+      const txt = await r.text().catch(() => "");
+      log("warn", "heartbeat upsert non-2xx", { status: r.status, body: txt.slice(0, 200) });
+    }
+  } catch (e) {
+    log("warn", "heartbeat upsert failed", { err: String(e?.message ?? e) });
+  }
+}
+
 async function pingSupabase() {
   try {
     const r = await fetchWithRetry(
@@ -139,6 +173,8 @@ async function tick() {
   if (state.busy) return;
   state.busy = true;
   state.lastPollAt = new Date().toISOString();
+  console.log(`[CINEMATIC WORKER] polling workerId=${WORKER_ID} at=${state.lastPollAt}`);
+  await writeHeartbeat({ claimed: false });
   try {
     const data = await claimJob();
     state.lastPollOk = !!data?.ok;
@@ -151,6 +187,8 @@ async function tick() {
     const jobId = data.job.job_id;
     state.currentJobId = jobId;
     state.totalClaimed++;
+    console.log(`[CINEMATIC WORKER] claimed job ${jobId}`);
+    await writeHeartbeat({ claimed: true, jobId });
     log("info", "job claimed", { jobId, workerId: WORKER_ID });
     const code = await runRender(jobId);
     state.lastRenderAt = new Date().toISOString();
@@ -158,6 +196,7 @@ async function tick() {
     if (code === 0) {
       state.totalSucceeded++;
       state.consecutiveFailures = 0;
+      console.log(`[CINEMATIC WORKER] completed job ${jobId}`);
       log("info", "job rendered ok", { jobId });
     } else {
       state.totalFailed++;
