@@ -12,6 +12,12 @@ jobs:
   render:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RENDER_WORKER_SECRET: ${{ secrets.RENDER_WORKER_SECRET }}
+      JOB_ID: ${{ inputs.job_id }}
+      RENDER_WORKER_ID: gh-actions-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +36,33 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Preflight env check
+        run: |
+          echo "JOB_ID=${JOB_ID}"
+          MISSING=0
+          if [ -z "${SUPABASE_URL:-}" ]; then
+            echo "::error::GitHub repository secret missing: SUPABASE_URL"
+            MISSING=1
+          else
+            echo "SUPABASE_URL exists"
+          fi
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "::error::GitHub repository secret missing: SUPABASE_SERVICE_ROLE_KEY"
+            MISSING=1
+          else
+            echo "SUPABASE_SERVICE_ROLE_KEY exists"
+          fi
+          if [ -z "${RENDER_WORKER_SECRET:-}" ]; then
+            echo "::error::GitHub repository secret missing: RENDER_WORKER_SECRET"
+            MISSING=1
+          else
+            echo "RENDER_WORKER_SECRET exists"
+          fi
+          if [ -z "${JOB_ID:-}" ]; then
+            echo "::error::workflow_dispatch input missing: job_id"
+            MISSING=1
+          fi
+          if [ "$MISSING" -ne 0 ]; then exit 1; fi
+
       - name: Render MP4
-        env:
-          JOB_ID: ${{ inputs.job_id }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          RENDER_WORKER_SECRET: ${{ secrets.RENDER_WORKER_SECRET }}
-          RENDER_WORKER_ID: gh-actions-${{ github.run_id }}
         run: bun remotion/scripts/render-cinematic-ad.mjs --job=${{ inputs.job_id }}
