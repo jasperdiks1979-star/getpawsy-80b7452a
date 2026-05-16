@@ -32,6 +32,19 @@ const DEFAULT_PAT_TEST_REPO = "jasperdiks1979-star/getpawsy-80b7452a";
 
 const STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const WORKER_LIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+const CANONICAL_FUNCTIONS = [
+  "cinematic-ad-claim-job",
+  "cinematic-ad-render-webhook",
+  "worker-health",
+  "cinematic-ad-worker-control",
+  "cinematic-ad-queue-render",
+] as const;
+const COMPAT_FUNCTIONS = [
+  "cinematic-ad-complete-job",
+  "cinematic-ad-fail-job",
+  "cinematic-ad-worker-health",
+  "cinematic-ad-dispatch",
+] as const;
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
 function json(obj: unknown, status = 200) {
@@ -76,6 +89,21 @@ function requiredSecretsReport(ghPatPresent: boolean) {
     RENDER_WORKER_HEALTH_URL: !!RENDER_WORKER_HEALTH_URL,
     GH_PAT: ghPatPresent,
     GH_REPO: !!GH_REPO,
+  };
+}
+
+function activeBackend() {
+  let supabaseHost = "unknown";
+  try { supabaseHost = new URL(SUPABASE_URL).host; } catch { /* noop */ }
+  return {
+    supabase_url: SUPABASE_URL,
+    supabase_host: supabaseHost,
+    functions_base_url: SUPABASE_URL ? `${SUPABASE_URL}/functions/v1` : "",
+    required_github_secret: {
+      name: "SUPABASE_URL",
+      value: SUPABASE_URL,
+      must_match_queue_table: true,
+    },
   };
 }
 
@@ -809,6 +837,7 @@ Deno.serve(async (req) => {
       return json({
         ok: true,
         traceId,
+        activeBackend: activeBackend(),
         secrets: requiredSecretsReport(!!ghPat.token),
         ghPat: { source: ghPat.source, present: !!ghPat.token, updatedAt: ghPat.updatedAt, masked: ghPat.token ? maskToken(ghPat.token) : null },
         snapshot,
@@ -917,8 +946,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "debug_panel") {
-      let supabaseHost = "unknown";
-      try { supabaseHost = new URL(SUPABASE_URL).host; } catch { /* noop */ }
       const { data: rows, error: rowsErr } = await admin
         .from("cinematic_ad_jobs")
         .select("id,status,render_queued_at,render_started_at,render_complete_at,render_worker_id,updated_at")
@@ -927,18 +954,31 @@ Deno.serve(async (req) => {
       const { data: allStatus, error: statErr } = await admin
         .from("cinematic_ad_jobs")
         .select("status");
+      const { count: tableCount, error: tableErr } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id", { count: "exact", head: true });
       const counts: Record<string, number> = {};
       for (const r of allStatus ?? []) {
         counts[r.status] = (counts[r.status] ?? 0) + 1;
       }
+      const backend = activeBackend();
       return json({
         ok: true,
         traceId,
-        supabase_host: supabaseHost,
+        ...backend,
         table: "cinematic_ad_jobs",
+        table_exists: !tableErr,
+        table_count: tableCount ?? 0,
         status_counts: counts,
+        endpoint_urls: Object.fromEntries([...CANONICAL_FUNCTIONS, ...COMPAT_FUNCTIONS].map((name) => [name, `${backend.functions_base_url}/${name}`])),
+        github_actions_expected: {
+          secret_name: "SUPABASE_URL",
+          expected_value: backend.supabase_url,
+          workflow: GH_WORKFLOW,
+          repo: GH_REPO || null,
+        },
         latest_rows: rows ?? [],
-        errors: { rowsErr: rowsErr?.message ?? null, statErr: statErr?.message ?? null },
+        errors: { rowsErr: rowsErr?.message ?? null, statErr: statErr?.message ?? null, tableErr: tableErr?.message ?? null },
       });
     }
 
