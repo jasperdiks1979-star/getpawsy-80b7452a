@@ -32,6 +32,19 @@ const DEFAULT_PAT_TEST_REPO = "jasperdiks1979-star/getpawsy-80b7452a";
 
 const STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const WORKER_LIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+const CANONICAL_FUNCTIONS = [
+  "cinematic-ad-claim-job",
+  "cinematic-ad-render-webhook",
+  "worker-health",
+  "cinematic-ad-worker-control",
+  "cinematic-ad-queue-render",
+] as const;
+const COMPAT_FUNCTIONS = [
+  "cinematic-ad-complete-job",
+  "cinematic-ad-fail-job",
+  "cinematic-ad-worker-health",
+  "cinematic-ad-dispatch",
+] as const;
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
 function json(obj: unknown, status = 200) {
@@ -76,6 +89,21 @@ function requiredSecretsReport(ghPatPresent: boolean) {
     RENDER_WORKER_HEALTH_URL: !!RENDER_WORKER_HEALTH_URL,
     GH_PAT: ghPatPresent,
     GH_REPO: !!GH_REPO,
+  };
+}
+
+function activeBackend() {
+  let supabaseHost = "unknown";
+  try { supabaseHost = new URL(SUPABASE_URL).host; } catch { /* noop */ }
+  return {
+    supabase_url: SUPABASE_URL,
+    supabase_host: supabaseHost,
+    functions_base_url: SUPABASE_URL ? `${SUPABASE_URL}/functions/v1` : "",
+    required_github_secret: {
+      name: "SUPABASE_URL",
+      value: SUPABASE_URL,
+      must_match_queue_table: true,
+    },
   };
 }
 
