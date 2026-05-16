@@ -171,8 +171,10 @@ async function tick() {
     state.currentJobId = null;
     state.busy = false;
     if (state.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-      log("fatal", "too many consecutive failures, exiting for restart", { count: state.consecutiveFailures });
-      process.exit(1);
+      log("error", "too many consecutive failures — backing off, keeping process alive", { count: state.consecutiveFailures });
+      // Do NOT exit; Render Web Service must keep serving /health.
+      // Reset counter so polling resumes after a cool-down tick.
+      state.consecutiveFailures = 0;
     }
   }
 }
