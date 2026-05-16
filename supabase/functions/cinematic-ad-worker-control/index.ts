@@ -837,6 +837,7 @@ Deno.serve(async (req) => {
       return json({
         ok: true,
         traceId,
+        activeBackend: activeBackend(),
         secrets: requiredSecretsReport(!!ghPat.token),
         ghPat: { source: ghPat.source, present: !!ghPat.token, updatedAt: ghPat.updatedAt, masked: ghPat.token ? maskToken(ghPat.token) : null },
         snapshot,
@@ -945,8 +946,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "debug_panel") {
-      let supabaseHost = "unknown";
-      try { supabaseHost = new URL(SUPABASE_URL).host; } catch { /* noop */ }
       const { data: rows, error: rowsErr } = await admin
         .from("cinematic_ad_jobs")
         .select("id,status,render_queued_at,render_started_at,render_complete_at,render_worker_id,updated_at")
@@ -955,18 +954,31 @@ Deno.serve(async (req) => {
       const { data: allStatus, error: statErr } = await admin
         .from("cinematic_ad_jobs")
         .select("status");
+      const { count: tableCount, error: tableErr } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id", { count: "exact", head: true });
       const counts: Record<string, number> = {};
       for (const r of allStatus ?? []) {
         counts[r.status] = (counts[r.status] ?? 0) + 1;
       }
+      const backend = activeBackend();
       return json({
         ok: true,
         traceId,
-        supabase_host: supabaseHost,
+        ...backend,
         table: "cinematic_ad_jobs",
+        table_exists: !tableErr,
+        table_count: tableCount ?? 0,
         status_counts: counts,
+        endpoint_urls: Object.fromEntries([...CANONICAL_FUNCTIONS, ...COMPAT_FUNCTIONS].map((name) => [name, `${backend.functions_base_url}/${name}`])),
+        github_actions_expected: {
+          secret_name: "SUPABASE_URL",
+          expected_value: backend.supabase_url,
+          workflow: GH_WORKFLOW,
+          repo: GH_REPO || null,
+        },
         latest_rows: rows ?? [],
-        errors: { rowsErr: rowsErr?.message ?? null, statErr: statErr?.message ?? null },
+        errors: { rowsErr: rowsErr?.message ?? null, statErr: statErr?.message ?? null, tableErr: tableErr?.message ?? null },
       });
     }
 
