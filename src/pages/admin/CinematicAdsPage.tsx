@@ -287,6 +287,62 @@ export default function CinematicAdsPage() {
         </p>
       </header>
 
+      {/* Debug panel — surfaces exact DB state so worker/admin mismatches are visible */}
+      <Card className="border-dashed">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Activity className="size-4" /> Queue debug panel
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={loadDebugPanel} disabled={debugBusy}>
+            {debugBusy ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+            <span className="ml-1">Refresh</span>
+          </Button>
+        </CardHeader>
+        <CardContent className="text-xs space-y-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+            <span>Admin Supabase host: <code className="text-foreground">{ADMIN_SUPABASE_HOST}</code></span>
+            <span>Server host: <code className="text-foreground">{debugPanel?.supabase_host ?? "—"}</code></span>
+            <span>Table: <code className="text-foreground">{debugPanel?.table ?? "cinematic_ad_jobs"}</code></span>
+          </div>
+          {debugPanel?.supabase_host && debugPanel.supabase_host !== ADMIN_SUPABASE_HOST && (
+            <Alert variant="destructive" className="py-2">
+              <AlertTitle className="text-xs">Host mismatch</AlertTitle>
+              <AlertDescription className="text-xs">
+                Admin and worker-control edge function are on different Supabase projects. Render worker env likely points elsewhere too.
+              </AlertDescription>
+            </Alert>
+          )}
+          {debugPanel?.status_counts && (
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(debugPanel.status_counts).map(([k, v]) => (
+                <Badge key={k} variant="outline" className="text-[10px]">{k}: {String(v)}</Badge>
+              ))}
+            </div>
+          )}
+          {debugPanel?.latest_rows?.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[10px]">
+                <thead className="text-muted-foreground">
+                  <tr><th className="text-left pr-2">id</th><th className="text-left pr-2">status</th><th className="text-left pr-2">queued</th><th className="text-left pr-2">started</th><th className="text-left pr-2">updated</th></tr>
+                </thead>
+                <tbody>
+                  {debugPanel.latest_rows.map((r: any) => (
+                    <tr key={r.id} className="border-t border-border/50">
+                      <td className="pr-2 font-mono">{r.id.slice(0, 8)}</td>
+                      <td className="pr-2">{r.status}</td>
+                      <td className="pr-2">{r.render_queued_at ? new Date(r.render_queued_at).toLocaleTimeString() : "—"}</td>
+                      <td className="pr-2">{r.render_started_at ? new Date(r.render_started_at).toLocaleTimeString() : "—"}</td>
+                      <td className="pr-2">{r.updated_at ? new Date(r.updated_at).toLocaleTimeString() : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {!debugPanel && <div className="text-muted-foreground">Click Refresh to load DB snapshot.</div>}
+        </CardContent>
+      </Card>
+
       {health?.code === "MISSING_SECRETS" && (
         <Alert variant="destructive">
           <AlertTriangle className="size-4" />
