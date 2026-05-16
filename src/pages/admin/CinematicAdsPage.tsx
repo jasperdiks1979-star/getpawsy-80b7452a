@@ -582,6 +582,154 @@ export default function CinematicAdsPage() {
         </Alert>
       )}
 
+      {/* GitHub Secrets diagnostics — block dispatch when repo secrets are missing */}
+      <Card className="border-dashed">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <ShieldCheck className="size-4" /> GitHub Secrets setup
+            {ghSecrets && (
+              <Badge className={ghSecrets.ok ? "bg-emerald-500/15 text-emerald-700" : "bg-destructive/10 text-destructive"}>
+                {ghSecrets.ok ? "all present" : `${ghSecrets.missing.length} missing`}
+              </Badge>
+            )}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={validateGithubSecrets} disabled={ghSecretsBusy}>
+              {ghSecretsBusy ? <Loader2 className="size-3 animate-spin mr-1" /> : <ShieldCheck className="size-3 mr-1" />}
+              Validate GitHub Secrets
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="text-xs space-y-3">
+          <p className="text-muted-foreground">
+            The render workflow (<code>.github/workflows/render-cinematic-ad.yml</code>) needs three repo-level secrets on GitHub
+            and two on Lovable Cloud to dispatch from the admin. We never read or display secret values — only whether they exist.
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {ghSecrets?.repo && (
+              <Button asChild size="sm" variant="outline">
+                <a href={`https://github.com/${ghSecrets.repo}/settings/secrets/actions`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-3 mr-1" /> Open GitHub repo secrets
+                </a>
+              </Button>
+            )}
+            <Button asChild size="sm" variant="outline">
+              <a
+                href={`https://supabase.com/dashboard/project/${import.meta.env.VITE_SUPABASE_PROJECT_ID}/settings/api`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="size-3 mr-1" /> Open backend API settings
+              </a>
+            </Button>
+            {ghSecrets?.repo && (
+              <Button asChild size="sm" variant="outline">
+                <a href={`https://github.com/${ghSecrets.repo}/actions/workflows/${ghSecrets.workflow}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-3 mr-1" /> Workflow runs
+                </a>
+              </Button>
+            )}
+          </div>
+
+          {ghSecrets && !ghSecrets.ok && (
+            <Alert variant="destructive" className="py-2">
+              <AlertTriangle className="size-4" />
+              <AlertTitle className="text-xs">Render dispatch is blocked</AlertTitle>
+              <AlertDescription className="text-xs space-y-1">
+                <div>{ghSecrets.message}</div>
+                {ghSecrets.hint && <div className="text-muted-foreground">{ghSecrets.hint}</div>}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead className="text-muted-foreground">
+                <tr>
+                  <th className="text-left pr-2 pb-1">Secret</th>
+                  <th className="text-left pr-2 pb-1">Where it lives</th>
+                  <th className="text-left pr-2 pb-1">Status</th>
+                  <th className="text-left pr-2 pb-1">How to find it</th>
+                  <th className="text-left pb-1"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {SECRET_CATALOG.map((spec) => {
+                  const cloudPresent = health?.secrets?.[spec.name];
+                  const ghEntry = ghSecrets?.secrets?.[spec.name];
+                  const present = spec.scope === "github"
+                    ? (ghEntry?.present ?? null)
+                    : (cloudPresent ?? null);
+                  const statusLabel = present === null
+                    ? "unknown"
+                    : present ? "present" : "missing";
+                  const statusClass = present === null
+                    ? "bg-muted text-muted-foreground"
+                    : present ? "bg-emerald-500/15 text-emerald-700" : "bg-destructive/10 text-destructive";
+                  return (
+                    <tr key={spec.name} className="border-t border-border/50 align-top">
+                      <td className="pr-2 py-1 font-mono">{spec.name}</td>
+                      <td className="pr-2 py-1">
+                        <Badge variant="outline" className="text-[10px]">
+                          {spec.scope === "github" ? "GitHub repo" : "Lovable Cloud"}
+                        </Badge>
+                        <div className="text-muted-foreground mt-0.5">{spec.label}</div>
+                      </td>
+                      <td className="pr-2 py-1">
+                        <Badge className={statusClass}>{statusLabel}</Badge>
+                        {spec.scope === "github" && ghEntry?.updatedAt && (
+                          <div className="text-muted-foreground mt-0.5 text-[10px]">
+                            updated {new Date(ghEntry.updatedAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </td>
+                      <td className="pr-2 py-1 text-muted-foreground max-w-[28ch]">
+                        {spec.whereToFind}
+                        {spec.link && (
+                          <a
+                            href={spec.link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1 underline text-primary"
+                          >
+                            {spec.link.label}
+                          </a>
+                        )}
+                      </td>
+                      <td className="py-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2"
+                          onClick={() => copyText(spec.name, `${spec.name} name`)}
+                          title="Copy secret name"
+                        >
+                          <Copy className="size-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {ghSecrets && (
+            <div className="text-muted-foreground">
+              Repo: <code className="text-foreground">{ghSecrets.repo ?? "—"}</code> ·
+              workflow: <code className="text-foreground">{ghSecrets.workflow}</code>@<code className="text-foreground">{ghSecrets.ref}</code> ·
+              GitHub API status: <code className="text-foreground">{ghSecrets.ghApiStatus ?? "—"}</code>
+            </div>
+          )}
+          {!ghSecrets && (
+            <div className="text-muted-foreground">
+              Click <strong>Validate GitHub Secrets</strong> to query the GitHub API for repo-secret presence (names only, never values).
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
