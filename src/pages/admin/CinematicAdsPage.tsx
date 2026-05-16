@@ -66,6 +66,10 @@ type HealthSnapshot = {
   flaggedStale: Array<{ id: string; product_slug: string }>;
   staleThresholdMs: number;
   workerLiveWindowMs: number;
+  heartbeat?: { worker_id: string; last_poll_at: string; last_claim_at: string | null; last_job_id: string | null } | null;
+  heartbeatAgeMs?: number | null;
+  lastTouchedAt?: string | null;
+  lastTouchedAgeMs?: number | null;
 };
 
 type HealthResponse = {
@@ -271,13 +275,13 @@ export default function CinematicAdsPage() {
         </Alert>
       )}
 
-      {health?.snapshot && (!health.snapshot.workerLive || health.snapshot.workerStale) && (
+      {health?.snapshot && health.snapshot.workerStale && (
         <Alert variant="destructive">
           <AlertTriangle className="size-4" />
           <AlertTitle>Render worker is not claiming jobs</AlertTitle>
           <AlertDescription className="text-xs space-y-1">
             <div>
-              Last claim: {fmtAge(health.snapshot.lastClaimAgeMs)}
+              Last claim: {fmtAge(health.snapshot.lastClaimAgeMs)} · last heartbeat: {fmtAge(health.snapshot.heartbeatAgeMs ?? null)}
               {health.snapshot.lastClaimWorkerId && ` · worker ${health.snapshot.lastClaimWorkerId}`}
             </div>
             {health.snapshot.staleCandidates.length + health.snapshot.flaggedStale.length > 0 && (
@@ -307,7 +311,9 @@ export default function CinematicAdsPage() {
               {healthBusy ? <Loader2 className="size-3 animate-spin mr-1" /> : <RefreshCw className="size-3 mr-1" />}
               Refresh
             </Button>
-            <span className="text-muted-foreground">Polled every 30s · also reads <code>/health/worker</code> when configured.</span>
+            <span className="text-muted-foreground">
+              Polled every 30s · liveness from heartbeats &amp; job activity. <code>/health/worker</code> is optional.
+            </span>
           </div>
           {!health && <div className="text-muted-foreground">Loading…</div>}
           {health && !health.ok && health.code !== "MISSING_SECRETS" && (
@@ -318,8 +324,8 @@ export default function CinematicAdsPage() {
               <div><div className="text-muted-foreground">Worker live</div><div className="font-mono">{String(health.snapshot.workerLive)}</div></div>
               <div><div className="text-muted-foreground">Last claim</div><div className="font-mono">{fmtAge(health.snapshot.lastClaimAgeMs)}</div></div>
               <div><div className="text-muted-foreground">Last claim worker</div><div className="font-mono truncate">{health.snapshot.lastClaimWorkerId ?? "—"}</div></div>
-              <div><div className="text-muted-foreground">Last poll</div><div className="font-mono">{health.workerHealth?.data?.lastPollAt ? new Date(health.workerHealth.data.lastPollAt).toLocaleTimeString() : "—"}</div></div>
-              <div><div className="text-muted-foreground">Consecutive failures</div><div className="font-mono">{health.workerHealth?.data?.consecutiveFailures ?? "—"}</div></div>
+              <div><div className="text-muted-foreground">Last heartbeat</div><div className="font-mono">{fmtAge(health.snapshot.heartbeatAgeMs ?? null)}</div></div>
+              <div><div className="text-muted-foreground">Last job touch</div><div className="font-mono">{fmtAge(health.snapshot.lastTouchedAgeMs ?? null)}</div></div>
               <div><div className="text-muted-foreground">Current job</div><div className="font-mono truncate">{health.snapshot.currentJob?.id?.slice(0, 8) ?? "—"}</div></div>
               <div><div className="text-muted-foreground">Last render complete</div><div className="font-mono">{health.snapshot.lastCompleteAt ? new Date(health.snapshot.lastCompleteAt).toLocaleString() : "—"}</div></div>
               <div><div className="text-muted-foreground">Stale (queued &gt; 10m)</div><div className="font-mono">{health.snapshot.staleCandidates.length + health.snapshot.flaggedStale.length}</div></div>
@@ -328,7 +334,7 @@ export default function CinematicAdsPage() {
           )}
           {health?.workerHealth && !health.workerHealth.ok && (
             <div className="text-[11px] text-muted-foreground">
-              <code>/health/worker</code>: {health.workerHealth.error ?? "unreachable"}
+              Health endpoint unavailable ({health.workerHealth.error ?? "unreachable"}). This is normal for Render Background Workers — liveness is derived from DB activity.
             </div>
           )}
           {health?.secrets && (
