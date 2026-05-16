@@ -24,10 +24,11 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 const RENDER_WORKER_HEALTH_URL = Deno.env.get("RENDER_WORKER_HEALTH_URL") ?? "";
-const GH_PAT = Deno.env.get("GH_PAT") ?? Deno.env.get("GITHUB_TOKEN") ?? "";
+const GH_PAT_ENV = Deno.env.get("GH_PAT") ?? Deno.env.get("GITHUB_TOKEN") ?? "";
 const GH_REPO = Deno.env.get("GH_REPO") ?? Deno.env.get("GITHUB_REPO") ?? "";
 const GH_WORKFLOW = Deno.env.get("GH_WORKFLOW") ?? "render-cinematic-ad.yml";
 const GH_REF = Deno.env.get("GH_REF") ?? "main";
+const DEFAULT_PAT_TEST_REPO = "jasperdiks1979-star/getpawsy-80b7452a";
 
 const STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const WORKER_LIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
@@ -39,13 +40,41 @@ function json(obj: unknown, status = 200) {
   });
 }
 
-function requiredSecretsReport() {
+// Resolve effective GH_PAT: DB-backed rotation takes precedence over env.
+// The raw value never leaves this function.
+async function getEffectiveGhPat(admin: any): Promise<{ token: string; source: "db" | "env" | "none"; updatedAt: string | null }> {
+  try {
+    const { data } = await admin
+      .from("admin_secrets")
+      .select("value, updated_at")
+      .eq("name", "GH_PAT")
+      .maybeSingle();
+    if (data?.value) return { token: String(data.value), source: "db", updatedAt: data.updated_at ?? null };
+  } catch (_e) { /* table may not exist yet */ }
+  if (GH_PAT_ENV) return { token: GH_PAT_ENV, source: "env", updatedAt: null };
+  return { token: "", source: "none", updatedAt: null };
+}
+
+function maskToken(t: string): string {
+  if (!t) return "";
+  const prefix = t.slice(0, 8);
+  return `${prefix}${"•".repeat(8)}`;
+}
+
+// Acceptable PAT formats: classic `ghp_…` or fine-grained `github_pat_…`.
+function isValidPatFormat(t: string): { ok: boolean; kind: "classic" | "fine_grained" | "unknown" } {
+  if (/^ghp_[A-Za-z0-9]{30,}$/.test(t)) return { ok: true, kind: "classic" };
+  if (/^github_pat_[A-Za-z0-9_]{40,}$/.test(t)) return { ok: true, kind: "fine_grained" };
+  return { ok: false, kind: "unknown" };
+}
+
+function requiredSecretsReport(ghPatPresent: boolean) {
   return {
     SUPABASE_URL: !!SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: !!SERVICE_KEY,
     RENDER_WORKER_SECRET: !!RENDER_WORKER_SECRET,
     RENDER_WORKER_HEALTH_URL: !!RENDER_WORKER_HEALTH_URL,
-    GH_PAT: !!GH_PAT,
+    GH_PAT: ghPatPresent,
     GH_REPO: !!GH_REPO,
   };
 }
@@ -74,20 +103,20 @@ type GhSecretsValidation = {
   hint?: string;
 };
 
-async function validateGithubSecrets(traceId: string): Promise<GhSecretsValidation> {
+async function validateGithubSecrets(traceId: string, ghPat: string): Promise<GhSecretsValidation> {
   const base: GhSecretsValidation = {
     ok: false,
     repo: GH_REPO || null,
     workflow: GH_WORKFLOW,
     ref: GH_REF,
-    ghPatPresent: !!GH_PAT,
+    ghPatPresent: !!ghPat,
     ghRepoPresent: !!GH_REPO,
     ghApiStatus: null,
     ghApiOk: false,
     secrets: Object.fromEntries(REQUIRED_GITHUB_SECRETS.map((k) => [k, { present: false }])),
     missing: [...REQUIRED_GITHUB_SECRETS],
   };
-  if (!GH_PAT) {
+  if (!ghPat) {
     base.message = "GH_PAT secret missing in Lovable Cloud. Cannot query GitHub API.";
     base.hint = "Add a GitHub Personal Access Token with repo scope as GH_PAT in Cloud → Functions → Secrets.";
     return base;
@@ -102,7 +131,7 @@ async function validateGithubSecrets(traceId: string): Promise<GhSecretsValidati
     const res = await fetch(url, {
       headers: {
         Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${GH_PAT}`,
+        Authorization: `Bearer ${ghPat}`,
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "lovable-cinematic-ads",
       },
@@ -152,6 +181,212 @@ async function validateGithubSecrets(traceId: string): Promise<GhSecretsValidati
     base.message = `GitHub API call failed: ${msg}`;
     return base;
   }
+}
+
+/**
+ * Validate a GH_PAT against GitHub by probing the specific permissions the
+ * render workflow needs. Never logs or echoes the token value.
+ *
+ * Probes:
+ *   - GET /user                       → token works at all
+ *   - GET /repos/{repo}               → repository access
+ *   - GET /repos/{repo}/actions/permissions → Actions read
+ *   - GET /repos/{repo}/actions/secrets       → Secrets read
+ *   - GET /repos/{repo}/actions/workflows/{wf} → workflow_dispatch target visible
+ */
+type PatCheck = { ok: boolean; status: number | null; message: string };
+type PatValidation = {
+  ok: boolean;
+  format: { ok: boolean; kind: string };
+  repoTested: string;
+  workflow: string;
+  checks: {
+    api_access: PatCheck;
+    repo_access: PatCheck;
+    actions_permission: PatCheck;
+    secrets_permission: PatCheck;
+    workflow_dispatch: PatCheck;
+  };
+  scopes: string[] | null;
+  tokenKind: "classic" | "fine_grained" | "unknown";
+  hint?: string;
+};
+
+async function validateGithubPat(
+  traceId: string,
+  ghPat: string,
+  opts: { repo?: string },
+): Promise<PatValidation> {
+  const fmt = isValidPatFormat(ghPat);
+  const repoTested = opts.repo || GH_REPO || DEFAULT_PAT_TEST_REPO;
+  const out: PatValidation = {
+    ok: false,
+    format: { ok: fmt.ok, kind: fmt.kind },
+    repoTested,
+    workflow: GH_WORKFLOW,
+    checks: {
+      api_access:         { ok: false, status: null, message: "not checked" },
+      repo_access:        { ok: false, status: null, message: "not checked" },
+      actions_permission: { ok: false, status: null, message: "not checked" },
+      secrets_permission: { ok: false, status: null, message: "not checked" },
+      workflow_dispatch:  { ok: false, status: null, message: "not checked" },
+    },
+    scopes: null,
+    tokenKind: fmt.kind,
+  };
+  if (!ghPat) {
+    out.hint = "No GH_PAT configured. Paste a token in 'Update GitHub Token'.";
+    return out;
+  }
+  if (!fmt.ok) {
+    out.hint = "Token format invalid. Expect ghp_… (classic) or github_pat_… (fine-grained).";
+    return out;
+  }
+
+  const headers = {
+    Accept: "application/vnd.github+json",
+    Authorization: `Bearer ${ghPat}`,
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "lovable-cinematic-ads",
+  };
+
+  // 1. /user — basic token validity. Also reveals scopes header for classic PATs.
+  try {
+    const r = await fetch("https://api.github.com/user", { headers });
+    const scopes = r.headers.get("x-oauth-scopes");
+    out.scopes = scopes ? scopes.split(",").map((s) => s.trim()).filter(Boolean) : null;
+    out.checks.api_access = {
+      ok: r.ok, status: r.status,
+      message: r.ok ? "PAT authenticates to GitHub API" : `GitHub API rejected token (${r.status})`,
+    };
+    if (!r.ok) {
+      out.hint = "Token is invalid or revoked. Generate a new PAT at https://github.com/settings/personal-access-tokens.";
+      return out;
+    }
+  } catch (e) {
+    out.checks.api_access = { ok: false, status: null, message: `network error: ${e instanceof Error ? e.message : String(e)}` };
+    return out;
+  }
+
+  // 2. repo access
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repoTested}`, { headers });
+    out.checks.repo_access = {
+      ok: r.ok, status: r.status,
+      message: r.ok
+        ? `Repository access OK (${repoTested})`
+        : r.status === 404
+          ? `Repository access denied (404). Token cannot see ${repoTested}.`
+          : `Repository access failed (${r.status})`,
+    };
+  } catch (e) {
+    out.checks.repo_access = { ok: false, status: null, message: `network error: ${e instanceof Error ? e.message : String(e)}` };
+  }
+
+  // 3. actions permission (read)
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repoTested}/actions/permissions`, { headers });
+    out.checks.actions_permission = {
+      ok: r.ok, status: r.status,
+      message: r.ok
+        ? "Actions: read OK"
+        : r.status === 403
+          ? "Missing Actions write permission (fine-grained PAT needs Actions: Read and write)"
+          : `Actions permission check failed (${r.status})`,
+    };
+  } catch (e) {
+    out.checks.actions_permission = { ok: false, status: null, message: `network error: ${e instanceof Error ? e.message : String(e)}` };
+  }
+
+  // 4. secrets permission (read)
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repoTested}/actions/secrets?per_page=1`, { headers });
+    out.checks.secrets_permission = {
+      ok: r.ok, status: r.status,
+      message: r.ok
+        ? "Secrets: read OK"
+        : r.status === 403
+          ? "Missing Secrets permission (fine-grained PAT needs Secrets: Read and write)"
+          : `Secrets permission check failed (${r.status})`,
+    };
+  } catch (e) {
+    out.checks.secrets_permission = { ok: false, status: null, message: `network error: ${e instanceof Error ? e.message : String(e)}` };
+  }
+
+  // 5. workflow_dispatch target
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/${repoTested}/actions/workflows/${GH_WORKFLOW}`,
+      { headers },
+    );
+    out.checks.workflow_dispatch = {
+      ok: r.ok, status: r.status,
+      message: r.ok
+        ? "workflow_dispatch OK"
+        : r.status === 404
+          ? `Workflow ${GH_WORKFLOW} not found in ${repoTested}`
+          : `workflow_dispatch check failed (${r.status})`,
+    };
+  } catch (e) {
+    out.checks.workflow_dispatch = { ok: false, status: null, message: `network error: ${e instanceof Error ? e.message : String(e)}` };
+  }
+
+  const allOk = Object.values(out.checks).every((c) => c.ok);
+  out.ok = allOk;
+  if (!allOk && !out.hint) {
+    if (!out.checks.repo_access.ok) {
+      out.hint = `Grant the PAT access to ${repoTested}. Fine-grained PATs must explicitly select this repository.`;
+    } else if (!out.checks.actions_permission.ok) {
+      out.hint = "Fine-grained PAT needs Actions: Read and write.";
+    } else if (!out.checks.secrets_permission.ok) {
+      out.hint = "Fine-grained PAT needs Secrets: Read and write.";
+    } else if (!out.checks.workflow_dispatch.ok) {
+      out.hint = `Push the render workflow file to ${repoTested}, or set GH_REPO to the correct repository.`;
+    }
+  }
+  console.log(`[gh-pat] ${traceId} validate`, {
+    repo: repoTested,
+    kind: fmt.kind,
+    ok: out.ok,
+    statuses: Object.fromEntries(Object.entries(out.checks).map(([k, v]) => [k, v.status])),
+  });
+  return out;
+}
+
+async function updateGhPat(
+  admin: any,
+  traceId: string,
+  newToken: string,
+  userId: string,
+): Promise<PatValidation> {
+  const fmt = isValidPatFormat(newToken);
+  if (!fmt.ok) {
+    const err: any = new Error("Token format invalid. Expect ghp_… (classic) or github_pat_… (fine-grained).");
+    err.code = "GH_PAT_FORMAT";
+    throw err;
+  }
+  // Test BEFORE persisting so we never store a broken token.
+  const validation = await validateGithubPat(traceId, newToken, {});
+  if (!validation.checks.api_access.ok) {
+    const err: any = new Error("Token did not authenticate to GitHub. Not saved.");
+    err.code = "GH_PAT_REJECTED";
+    err.validation = validation;
+    throw err;
+  }
+  const { error } = await admin
+    .from("admin_secrets")
+    .upsert({ name: "GH_PAT", value: newToken, updated_at: new Date().toISOString(), updated_by: userId }, { onConflict: "name" });
+  if (error) throw error;
+  console.log(`[gh-pat] ${traceId} rotated`, {
+    user: userId,
+    kind: fmt.kind,
+    apiOk: validation.checks.api_access.ok,
+    repoOk: validation.checks.repo_access.ok,
+    actionsOk: validation.checks.actions_permission.ok,
+    secretsOk: validation.checks.secrets_permission.ok,
+    workflowOk: validation.checks.workflow_dispatch.ok,
+  });
+  return validation;
 }
 
 function missingRequired(): string[] {
@@ -453,9 +688,10 @@ async function resetStale(admin: any, traceId: string, ids?: string[]) {
 async function triggerGithubWorkflow(
   admin: any,
   traceId: string,
-  opts: { job_id?: string; claim_next?: boolean },
+  opts: { job_id?: string; claim_next?: boolean; ghPat?: string },
 ) {
-  if (!GH_PAT) throw new Error("GH_PAT secret not configured");
+  const ghPat = opts.ghPat ?? (await getEffectiveGhPat(admin)).token;
+  if (!ghPat) throw new Error("GH_PAT secret not configured");
   if (!GH_REPO) throw new Error("GH_REPO secret not configured (format: owner/repo)");
   if (!opts.job_id && !opts.claim_next) {
     throw new Error("Either job_id or claim_next=true is required");
@@ -463,7 +699,7 @@ async function triggerGithubWorkflow(
 
   // Block dispatch if the GitHub repo is missing any required workflow secret —
   // otherwise the run starts and fails deep inside the Render MP4 step.
-  const ghValidation = await validateGithubSecrets(traceId);
+  const ghValidation = await validateGithubSecrets(traceId, ghPat);
   if (!ghValidation.ok) {
     const detail = ghValidation.missing.length
       ? `GitHub repository secrets missing: ${ghValidation.missing.join(", ")}. Open https://github.com/${GH_REPO}/settings/secrets/actions and add them before dispatching.`
@@ -493,7 +729,7 @@ async function triggerGithubWorkflow(
     method: "POST",
     headers: {
       "Accept": "application/vnd.github+json",
-      "Authorization": `Bearer ${GH_PAT}`,
+      "Authorization": `Bearer ${ghPat}`,
       "X-GitHub-Api-Version": "2022-11-28",
       "Content-Type": "application/json",
       "User-Agent": "lovable-cinematic-ads",
@@ -536,7 +772,7 @@ Deno.serve(async (req) => {
         traceId,
         code: "MISSING_SECRETS",
         message: `Missing required secrets: ${missing.join(", ")}. Configure them in Lovable Cloud → Functions → Secrets.`,
-        secrets: requiredSecretsReport(),
+        secrets: requiredSecretsReport(!!GH_PAT_ENV),
       }, 500);
     }
 
@@ -568,11 +804,13 @@ Deno.serve(async (req) => {
       }
       const snapshot = await buildHealthSnapshot(admin, traceId);
       const workerHealth = await fetchWorkerHealth(traceId);
+      const ghPat = await getEffectiveGhPat(admin);
       console.log(`[worker-claim] ${traceId} lastClaimAt=${snapshot.lastClaimAt} live=${snapshot.workerLive}`);
       return json({
         ok: true,
         traceId,
-        secrets: requiredSecretsReport(),
+        secrets: requiredSecretsReport(!!ghPat.token),
+        ghPat: { source: ghPat.source, present: !!ghPat.token, updatedAt: ghPat.updatedAt, masked: ghPat.token ? maskToken(ghPat.token) : null },
         snapshot,
         autoMarked,
         workerHealth,
@@ -606,9 +844,11 @@ Deno.serve(async (req) => {
 
     if (action === "trigger_github_workflow") {
       try {
+        const ghPat = (await getEffectiveGhPat(admin)).token;
         const result = await triggerGithubWorkflow(admin, traceId, {
           job_id: body.job_id ? String(body.job_id) : undefined,
           claim_next: Boolean(body.claim_next),
+          ghPat,
         });
         return json({ ok: true, traceId, ...result });
       } catch (e: any) {
@@ -625,13 +865,55 @@ Deno.serve(async (req) => {
     }
 
     if (action === "validate_github_secrets") {
-      const validation = await validateGithubSecrets(traceId);
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      const validation = await validateGithubSecrets(traceId, ghPat);
       return json({
         ok: validation.ok,
         traceId,
-        secrets: requiredSecretsReport(),
+        secrets: requiredSecretsReport(!!ghPat),
         github: validation,
       });
+    }
+
+    if (action === "validate_github_pat") {
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      const repo = body.repo ? String(body.repo) : undefined;
+      const validation = await validateGithubPat(traceId, ghPat, { repo });
+      return json({ ok: validation.ok, traceId, pat: validation });
+    }
+
+    if (action === "update_github_pat") {
+      const newToken = String(body.token ?? "");
+      const retry = Boolean(body.retry_dispatch);
+      if (!newToken) return json({ ok: false, traceId, message: "token required" }, 400);
+      try {
+        const validation = await updateGhPat(admin, traceId, newToken, userData.user.id);
+        let dispatched: any = null;
+        if (retry && validation.ok) {
+          try {
+            dispatched = await triggerGithubWorkflow(admin, traceId, {
+              claim_next: true,
+              ghPat: newToken,
+            });
+          } catch (dispatchErr: any) {
+            dispatched = { ok: false, error: dispatchErr?.message ?? String(dispatchErr) };
+          }
+        }
+        return json({
+          ok: true, traceId,
+          masked: maskToken(newToken),
+          source: "db",
+          pat: validation,
+          dispatched,
+        });
+      } catch (e: any) {
+        return json({
+          ok: false, traceId,
+          code: e?.code ?? "GH_PAT_UPDATE_FAILED",
+          message: e?.message ?? String(e),
+          pat: e?.validation ?? null,
+        }, 400);
+      }
     }
 
     if (action === "debug_panel") {

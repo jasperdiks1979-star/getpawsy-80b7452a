@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight, AlertTriangle, Activity, RotateCcw, PlayCircle, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight, AlertTriangle, Activity, RotateCcw, PlayCircle, Trash2, KeyRound, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 type Job = {
   id: string;
@@ -79,6 +81,7 @@ type HealthResponse = {
   secrets?: Record<string, boolean>;
   snapshot?: HealthSnapshot;
   workerHealth?: { ok: boolean; data?: any; error?: string };
+  ghPat?: { source: "db" | "env" | "none"; present: boolean; updatedAt: string | null; masked: string | null };
 };
 
 type PublicWorkerHealth = {
@@ -106,6 +109,37 @@ type GhSecretValidation = {
   missing: string[];
   hint?: string;
 };
+
+type PatCheck = { ok: boolean; status: number | null; message: string };
+type PatValidation = {
+  ok: boolean;
+  format: { ok: boolean; kind: string };
+  repoTested: string;
+  workflow: string;
+  checks: {
+    api_access: PatCheck;
+    repo_access: PatCheck;
+    actions_permission: PatCheck;
+    secrets_permission: PatCheck;
+    workflow_dispatch: PatCheck;
+  };
+  scopes: string[] | null;
+  tokenKind: string;
+  hint?: string;
+};
+
+const PAT_TEST_REPO = "jasperdiks1979-star/getpawsy-80b7452a";
+const PAT_CHECK_LABELS: Array<{ key: keyof PatValidation["checks"]; label: string }> = [
+  { key: "api_access", label: "GitHub API access" },
+  { key: "repo_access", label: "Repository access" },
+  { key: "actions_permission", label: "Actions permission" },
+  { key: "secrets_permission", label: "Secrets permission" },
+  { key: "workflow_dispatch", label: "workflow_dispatch" },
+];
+
+function isValidPatFormatClient(t: string): boolean {
+  return /^ghp_[A-Za-z0-9]{30,}$/.test(t) || /^github_pat_[A-Za-z0-9_]{40,}$/.test(t);
+}
 
 type SecretSpec = {
   name: string;
@@ -190,6 +224,13 @@ export default function CinematicAdsPage() {
   const [debugBusy, setDebugBusy] = useState(false);
   const [ghSecrets, setGhSecrets] = useState<GhSecretValidation | null>(null);
   const [ghSecretsBusy, setGhSecretsBusy] = useState(false);
+  const [patValidation, setPatValidation] = useState<PatValidation | null>(null);
+  const [patBusy, setPatBusy] = useState(false);
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const [newToken, setNewToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [tokenSaving, setTokenSaving] = useState(false);
+  const [lastSavedMask, setLastSavedMask] = useState<string | null>(null);
 
   const ADMIN_SUPABASE_HOST = (() => {
     try { return new URL(import.meta.env.VITE_SUPABASE_URL as string).host; } catch { return "unknown"; }
@@ -233,6 +274,65 @@ export default function CinematicAdsPage() {
       toast.error(e?.message ?? String(e));
     } finally {
       setGhSecretsBusy(false);
+    }
+  };
+
+  const validatePat = async () => {
+    setPatBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", {
+        body: { action: "validate_github_pat", repo: PAT_TEST_REPO },
+      });
+      if (error) throw error;
+      const v = (data as any)?.pat as PatValidation | undefined;
+      if (!v) throw new Error((data as any)?.message ?? "validation response missing");
+      setPatValidation(v);
+      if (v.ok) toast.success("PAT valid — all 5 checks passed.");
+      else toast.error(v.hint ?? "PAT validation failed. See diagnostics.");
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setPatBusy(false);
+    }
+  };
+
+  const saveNewToken = async () => {
+    if (!isValidPatFormatClient(newToken)) {
+      toast.error("Token format invalid. Expect ghp_… or github_pat_….");
+      return;
+    }
+    setTokenSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", {
+        body: { action: "update_github_pat", token: newToken, retry_dispatch: true },
+      });
+      if (error) {
+        let body: any = (error as any)?.context?.body;
+        if (typeof body === "string") { try { body = JSON.parse(body); } catch { /* noop */ } }
+        if (body?.pat) setPatValidation(body.pat as PatValidation);
+        throw new Error(body?.message ?? error.message);
+      }
+      if (!data?.ok) {
+        if ((data as any)?.pat) setPatValidation((data as any).pat as PatValidation);
+        throw new Error((data as any)?.message ?? "save failed");
+      }
+      setPatValidation((data as any).pat as PatValidation);
+      setLastSavedMask((data as any).masked ?? null);
+      setNewToken("");
+      setShowToken(false);
+      setTokenModalOpen(false);
+      toast.success("New GitHub PAT saved and validated.");
+      const dispatched = (data as any).dispatched;
+      if (dispatched?.dispatched) {
+        toast.success(`Auto-dispatched job ${String(dispatched.jobId).slice(0, 8)} to ${dispatched.workflow}`);
+      } else if (dispatched?.error) {
+        toast.warning(`Token saved but auto-dispatch failed: ${dispatched.error}`);
+      }
+      loadHealth();
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setTokenSaving(false);
     }
   };
 
@@ -593,7 +693,15 @@ export default function CinematicAdsPage() {
               </Badge>
             )}
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Button size="sm" variant="outline" onClick={() => setTokenModalOpen(true)}>
+              <KeyRound className="size-3 mr-1" />
+              Update GitHub Token
+            </Button>
+            <Button size="sm" variant="outline" onClick={validatePat} disabled={patBusy}>
+              {patBusy ? <Loader2 className="size-3 animate-spin mr-1" /> : <KeyRound className="size-3 mr-1" />}
+              Validate GitHub PAT
+            </Button>
             <Button size="sm" variant="outline" onClick={validateGithubSecrets} disabled={ghSecretsBusy}>
               {ghSecretsBusy ? <Loader2 className="size-3 animate-spin mr-1" /> : <ShieldCheck className="size-3 mr-1" />}
               Validate GitHub Secrets
@@ -601,6 +709,76 @@ export default function CinematicAdsPage() {
           </div>
         </CardHeader>
         <CardContent className="text-xs space-y-3">
+          {/* GH_PAT status + per-permission checks */}
+          <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <KeyRound className="size-4" />
+                <span className="font-medium">GitHub Personal Access Token</span>
+                {health?.ghPat?.present ? (
+                  <Badge className="bg-emerald-500/15 text-emerald-700">
+                    stored · {health.ghPat.source}
+                  </Badge>
+                ) : (
+                  <Badge className="bg-destructive/10 text-destructive">not set</Badge>
+                )}
+              </div>
+              <div className="text-muted-foreground">
+                {(lastSavedMask ?? health?.ghPat?.masked) && (
+                  <>Masked: <code className="text-foreground">{lastSavedMask ?? health?.ghPat?.masked}</code></>
+                )}
+                {health?.ghPat?.updatedAt && (
+                  <span className="ml-2">· rotated {new Date(health.ghPat.updatedAt).toLocaleString()}</span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm" variant="ghost" className="h-7 px-2">
+                <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-3 mr-1" /> Open GitHub PAT settings
+                </a>
+              </Button>
+            </div>
+            {patValidation && (
+              <>
+                <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-1">
+                  {PAT_CHECK_LABELS.map(({ key, label }) => {
+                    const c = patValidation.checks[key];
+                    return (
+                      <div key={key} className="flex items-start gap-2">
+                        {c.ok ? (
+                          <CheckCircle2 className="size-3.5 mt-0.5 text-emerald-600 shrink-0" />
+                        ) : (
+                          <XCircle className="size-3.5 mt-0.5 text-destructive shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <div className="font-medium">{label}</div>
+                          <div className="text-muted-foreground">
+                            {c.message}{c.status ? ` (HTTP ${c.status})` : ""}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="text-muted-foreground flex flex-wrap gap-x-3">
+                  <span>kind: <code className="text-foreground">{patValidation.tokenKind}</code></span>
+                  <span>tested against: <code className="text-foreground">{patValidation.repoTested}</code></span>
+                  {patValidation.scopes && patValidation.scopes.length > 0 && (
+                    <span>scopes: <code className="text-foreground">{patValidation.scopes.join(", ")}</code></span>
+                  )}
+                </div>
+                {!patValidation.ok && patValidation.hint && (
+                  <Alert variant="destructive" className="py-2 mt-1">
+                    <AlertTriangle className="size-4" />
+                    <AlertTitle className="text-xs">Fix this before dispatching</AlertTitle>
+                    <AlertDescription className="text-xs">{patValidation.hint}</AlertDescription>
+                  </Alert>
+                )}
+              </>
+            )}
+          </div>
+
           <p className="text-muted-foreground">
             The render workflow (<code>.github/workflows/render-cinematic-ad.yml</code>) needs three repo-level secrets on GitHub
             and two on Lovable Cloud to dispatch from the admin. We never read or display secret values — only whether they exist.
@@ -729,6 +907,71 @@ export default function CinematicAdsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Secure rotation modal */}
+      <Dialog open={tokenModalOpen} onOpenChange={setTokenModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="size-4" /> Update GitHub Token
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Paste a new GitHub Personal Access Token. Accepted formats:
+              <code className="mx-1">ghp_…</code> (classic, <code>repo</code> scope) or
+              <code className="mx-1">github_pat_…</code> (fine-grained: Actions R/W, Secrets R/W, Contents R, Metadata R).
+              We validate it against <code>{PAT_TEST_REPO}</code> before saving and never display the value back.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="gh-pat-input" className="text-xs">New GH_PAT</Label>
+              <div className="relative">
+                <Input
+                  id="gh-pat-input"
+                  type={showToken ? "text" : "password"}
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={newToken}
+                  onChange={(e) => setNewToken(e.target.value.trim())}
+                  placeholder="ghp_… or github_pat_…"
+                  className="pr-10 font-mono text-xs"
+                />
+                <button
+                  type="button"
+                  aria-label={showToken ? "Hide token" : "Show token"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowToken((v) => !v)}
+                >
+                  {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {newToken.length === 0
+                  ? "Paste a token to enable Save."
+                  : isValidPatFormatClient(newToken)
+                    ? <span className="text-emerald-700">Format OK — will be validated on save.</span>
+                    : <span className="text-destructive">Format invalid. Expect ghp_… or github_pat_….</span>}
+              </div>
+            </div>
+            <Alert className="py-2">
+              <ShieldCheck className="size-4" />
+              <AlertDescription className="text-xs">
+                On save we'll re-run worker diagnostics and auto-retry any queued render dispatch.
+                The token is stored encrypted at rest and only readable by backend functions.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setTokenModalOpen(false); setNewToken(""); setShowToken(false); }} disabled={tokenSaving}>
+              Cancel
+            </Button>
+            <Button onClick={saveNewToken} disabled={tokenSaving || !isValidPatFormatClient(newToken)}>
+              {tokenSaving ? <Loader2 className="size-3 animate-spin mr-1" /> : <KeyRound className="size-3 mr-1" />}
+              Save &amp; validate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader className="pb-2">

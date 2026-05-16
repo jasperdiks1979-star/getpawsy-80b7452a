@@ -134,6 +134,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_secrets: {
+        Row: {
+          name: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          name: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          name?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       agm_actions: {
         Row: {
           action_type: string
