@@ -230,6 +230,41 @@ jobs:
           echo "Ref       : ${{ github.ref }}"
           echo "Actor     : ${{ github.actor }}"
           echo "================================================================"
+
+      - name: Verify production /api/health/worker returns JSON
+        run: |
+          set -u
+          URL="https://getpawsy.pet/api/health/worker"
+          echo "Probing $URL ..."
+          # Retry for up to ~2 minutes to allow the deploy to propagate
+          attempt=0
+          max_attempts=24
+          sleep_s=5
+          body_file="$(mktemp)"
+          headers_file="$(mktemp)"
+          while [ "$attempt" -lt "$max_attempts" ]; do
+            attempt=$((attempt + 1))
+            http_code=$(curl -sS -L -o "$body_file" -D "$headers_file" -w "%{http_code}" "$URL" || echo "000")
+            content_type=$(grep -i '^content-type:' "$headers_file" | tail -1 | tr -d '\r' | awk '{print tolower($0)}')
+            echo "Attempt $attempt: HTTP $http_code | $content_type"
+            if echo "$content_type" | grep -q 'application/json'; then
+              if jq -e . "$body_file" >/dev/null 2>&1; then
+                echo "::notice title=Health check OK::$URL returned valid JSON"
+                echo "---- response body ----"
+                jq . "$body_file" || cat "$body_file"
+                exit 0
+              else
+                echo "JSON content-type but body failed to parse, retrying..."
+              fi
+            fi
+            sleep "$sleep_s"
+          done
+          echo "::error title=Health check failed::$URL did not return valid JSON after $max_attempts attempts"
+          echo "---- last response headers ----"
+          cat "$headers_file"
+          echo "---- last response body (first 500 bytes) ----"
+          head -c 500 "$body_file"
+          exit 1
       # Discord notification (uncomment if using Discord)
       # - name: Discord notification
       #   if: vars.DISCORD_WEBHOOK_URL != ''
