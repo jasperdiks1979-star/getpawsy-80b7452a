@@ -78,6 +78,12 @@ type HealthResponse = {
   ok: boolean;
   message?: string;
   code?: string;
+  activeBackend?: {
+    supabase_url: string;
+    supabase_host: string;
+    functions_base_url: string;
+    required_github_secret: { name: string; value: string; must_match_queue_table: boolean };
+  };
   secrets?: Record<string, boolean>;
   snapshot?: HealthSnapshot;
   workerHealth?: { ok: boolean; data?: any; error?: string };
