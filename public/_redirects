@@ -87,5 +87,10 @@
 /api/feed-source-preview /api/feed-source-preview 200
 /api/feed-check /api/feed-check 200
 
+# ── Worker health/debug API → Supabase Edge Functions (must precede SPA fallback) ──
+/api/health/worker https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/worker-health 200
+/api/debug/worker  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/worker-debug 200
+/api/debug/queue   https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/worker-debug?view=queue 200
+
 # ── SPA fallback ──
 /* /index.html 200
