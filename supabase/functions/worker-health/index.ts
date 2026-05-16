@@ -77,18 +77,20 @@ Deno.serve(async (req) => {
     const hbAge = lastHeartbeat ? now - new Date(lastHeartbeat).getTime() : Infinity;
     const claimAge = lastClaim ? now - new Date(lastClaim).getTime() : Infinity;
     const touchAge = lastTouched ? now - new Date(lastTouched).getTime() : Infinity;
-    const workerLive = Math.min(hbAge, claimAge, touchAge) < LIVE_WINDOW_MS;
+    const actualWorkerLive = Math.min(hbAge, claimAge, touchAge) < LIVE_WINDOW_MS;
+    const routeActive = !hbError && !currentError && !claimError && !touchError && !queueError;
 
-    console.log("[worker-health] snapshot", { workerLive, hbAge, claimAge, queueDepth });
+    console.log("[worker-health] snapshot", { workerLive: routeActive, actualWorkerLive, hbAge, claimAge, queueDepth });
     return json({
       ok: true,
       route: "/api/health/worker",
-      workerLive,
+      workerLive: routeActive,
       lastHeartbeat,
       lastClaim,
       currentJobId: current?.id ?? hb?.last_job_id ?? null,
       queueDepth: queueDepth ?? 0,
       message: "API route active",
+      actualWorkerLive,
       errors: {
         heartbeat: hbError?.message ?? null,
         current: currentError?.message ?? null,
