@@ -399,7 +399,7 @@ export default function CinematicAdsPage() {
               Refresh
             </Button>
             <span className="text-muted-foreground">
-              Polled every 30s · liveness from heartbeats &amp; job activity. <code>/health/worker</code> is optional.
+              Polled every 30s · liveness from heartbeats &amp; job activity. Public JSON: <code>/api/health/worker</code>.
             </span>
           </div>
           {!health && <div className="text-muted-foreground">Loading…</div>}
