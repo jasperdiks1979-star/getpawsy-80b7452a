@@ -25,20 +25,37 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+    let supabaseHost = "unknown";
+    try { supabaseHost = new URL(SUPABASE_URL).host; } catch { /* noop */ }
+
+    // Diagnostic: count queued jobs and surface select errors.
+    const queuedCountRes = await admin
+      .from("cinematic_ad_jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "render_queued");
+    const queuedCount = queuedCountRes.count ?? 0;
+    if (queuedCountRes.error) {
+      console.error(`[claim-job] ${traceId} queued count error`, queuedCountRes.error);
+    }
+    console.log(`[claim-job] ${traceId} host=${supabaseHost} queued_count=${queuedCount} worker=${workerId}`);
+
     // Refuse if something already rendering (1 job at a time globally)
     const { count: activeCount } = await admin
       .from("cinematic_ad_jobs").select("id", { count: "exact", head: true }).eq("status", "rendering");
     if ((activeCount ?? 0) > 0 && !explicitJobId) {
-      return json({ ok: true, traceId, job: null, reason: "another job is rendering" });
+      return json({ ok: true, traceId, job: null, reason: "another job is rendering", queued_count: queuedCount, supabase_host: supabaseHost });
     }
 
     let q = admin.from("cinematic_ad_jobs").select("*");
     if (explicitJobId) q = q.eq("id", explicitJobId);
     else q = q.eq("status", "render_queued").order("render_queued_at", { ascending: true }).limit(1);
     const { data: jobs, error: qErr } = await q;
-    if (qErr) return json({ ok: false, traceId, message: qErr.message }, 500);
+    if (qErr) {
+      console.error(`[claim-job] ${traceId} select error`, qErr);
+      return json({ ok: false, traceId, message: qErr.message, supabase_host: supabaseHost }, 500);
+    }
     const job = jobs?.[0];
-    if (!job) return json({ ok: true, traceId, job: null, reason: "no jobs" });
+    if (!job) return json({ ok: true, traceId, job: null, reason: "no jobs", queued_count: queuedCount, supabase_host: supabaseHost });
 
     // Lock by setting rendering status only if still queued
     const { data: locked, error: lockErr } = await admin
@@ -54,11 +71,13 @@ Deno.serve(async (req) => {
       .in("status", ["render_queued", "rendering"])
       .select()
       .maybeSingle();
-    if (lockErr) return json({ ok: false, traceId, message: lockErr.message }, 500);
-    if (!locked) return json({ ok: true, traceId, job: null, reason: "lock lost" });
+    if (lockErr) return json({ ok: false, traceId, message: lockErr.message, supabase_host: supabaseHost }, 500);
+    if (!locked) return json({ ok: true, traceId, job: null, reason: "lock lost", queued_count: queuedCount, supabase_host: supabaseHost });
 
     return json({
       ok: true, traceId,
+      queued_count: queuedCount,
+      supabase_host: supabaseHost,
       job: {
         job_id: locked.id,
         product_slug: locked.product_slug,

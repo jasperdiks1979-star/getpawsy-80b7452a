@@ -1,4 +1,1 @@
-render-worker-script-confirmed-2026-05-15T18:09:54Z
-docker-npm-install-fallback-for-render
-cinematic-scene-prompt-uniqueness-fix
-force-redeploy-2026-05-16-claim-pipeline-fix
+2026-05-16T01:11:34Z debug-host-logging

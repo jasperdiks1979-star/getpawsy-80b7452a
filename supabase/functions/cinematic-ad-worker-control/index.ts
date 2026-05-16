@@ -229,25 +229,47 @@ async function markStale(admin: any, traceId: string) {
 }
 
 async function retryRender(admin: any, jobId: string, traceId: string) {
+  let supabaseHost = "unknown";
+  try { supabaseHost = new URL(SUPABASE_URL).host; } catch { /* noop */ }
   const { data: job, error: jobErr } = await admin
-    .from("cinematic_ad_jobs").select("id,status,render_attempts").eq("id", jobId).maybeSingle();
+    .from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();
   if (jobErr || !job) throw new Error("job not found");
+  const prevStatus = job.status;
   const renderToken = crypto.randomUUID();
-  const { error: updErr } = await admin
+  const nowIso = new Date().toISOString();
+  const patch = {
+    status: "render_queued",
+    render_token: renderToken,
+    render_queued_at: nowIso,
+    render_started_at: null,
+    render_complete_at: null,
+    render_worker_id: null,
+    error_message: null,
+    pinterest_publish_error: null,
+    rendered_at: null,
+    status_message: "Re-queued via admin retry.",
+    updated_at: nowIso,
+  };
+  const { error: updErr, count: updCount } = await admin
     .from("cinematic_ad_jobs")
-    .update({
-      status: "render_queued",
-      render_token: renderToken,
-      render_queued_at: new Date().toISOString(),
-      render_started_at: null,
-      render_worker_id: null,
-      error_message: null,
-      status_message: "Re-queued via admin retry.",
-    })
+    .update(patch, { count: "exact" })
     .eq("id", jobId);
   if (updErr) throw updErr;
-  console.log(`[retry-render] ${traceId} re-queued`, { jobId, prevStatus: job.status });
-  return { ok: true, jobId, prevStatus: job.status };
+  // Re-fetch to confirm DB-side state.
+  const { data: fresh } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id,status,render_queued_at,render_started_at,render_complete_at,render_worker_id,render_attempts,error_message,updated_at")
+    .eq("id", jobId)
+    .maybeSingle();
+  console.log(`[retry-render] ${traceId} re-queued`, {
+    jobId,
+    prevStatus,
+    newStatus: fresh?.status,
+    supabase_host: supabaseHost,
+    update_count: updCount ?? null,
+    fresh,
+  });
+  return { ok: true, jobId, prevStatus, newStatus: fresh?.status ?? "render_queued", supabase_host: supabaseHost, fresh };
 }
 
 async function retryPublish(admin: any, jobId: string, traceId: string) {
@@ -358,6 +380,32 @@ Deno.serve(async (req) => {
       if (!jobId) return json({ ok: false, traceId, message: "job_id required" }, 400);
       const result = await retryPublish(admin, jobId, traceId);
       return json({ ok: true, traceId, ...result });
+    }
+
+    if (action === "debug_panel") {
+      let supabaseHost = "unknown";
+      try { supabaseHost = new URL(SUPABASE_URL).host; } catch { /* noop */ }
+      const { data: rows, error: rowsErr } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id,status,render_queued_at,render_started_at,render_complete_at,render_worker_id,updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(10);
+      const { data: allStatus, error: statErr } = await admin
+        .from("cinematic_ad_jobs")
+        .select("status");
+      const counts: Record<string, number> = {};
+      for (const r of allStatus ?? []) {
+        counts[r.status] = (counts[r.status] ?? 0) + 1;
+      }
+      return json({
+        ok: true,
+        traceId,
+        supabase_host: supabaseHost,
+        table: "cinematic_ad_jobs",
+        status_counts: counts,
+        latest_rows: rows ?? [],
+        errors: { rowsErr: rowsErr?.message ?? null, statErr: statErr?.message ?? null },
+      });
     }
 
     return json({ ok: false, traceId, message: `unknown action: ${action}` }, 400);

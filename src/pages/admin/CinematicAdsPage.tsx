@@ -104,6 +104,25 @@ export default function CinematicAdsPage() {
   const [e2eBusy, setE2eBusy] = useState(false);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthBusy, setHealthBusy] = useState(false);
+  const [debugPanel, setDebugPanel] = useState<any>(null);
+  const [debugBusy, setDebugBusy] = useState(false);
+
+  const ADMIN_SUPABASE_HOST = (() => {
+    try { return new URL(import.meta.env.VITE_SUPABASE_URL as string).host; } catch { return "unknown"; }
+  })();
+
+  const loadDebugPanel = async () => {
+    setDebugBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "debug_panel" } });
+      if (error) throw error;
+      setDebugPanel(data);
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setDebugBusy(false);
+    }
+  };
 
   const runSmokeTest = async () => {
     setSmokeBusy(true);
@@ -209,9 +228,21 @@ export default function CinematicAdsPage() {
       const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "retry_render", job_id: jobId } });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "retry_render failed");
-      toast.success("Re-queued for render worker.");
+      const adminHost = ADMIN_SUPABASE_HOST;
+      const serverHost = (data as any).supabase_host;
+      const fresh = (data as any).fresh;
+      console.log("[retry-render][client]", {
+        jobId, prevStatus: (data as any).prevStatus, newStatus: (data as any).newStatus,
+        adminHost, serverHost, fresh,
+      });
+      if (serverHost && adminHost !== serverHost) {
+        toast.warning(`Admin/server Supabase host mismatch: admin=${adminHost} server=${serverHost}`);
+      } else {
+        toast.success(`Re-queued (${(data as any).prevStatus} → ${(data as any).newStatus}). DB host: ${serverHost ?? adminHost}`);
+      }
       load();
       loadHealth();
+      loadDebugPanel();
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
     finally { setBusyId(null); }
   };
@@ -255,6 +286,62 @@ export default function CinematicAdsPage() {
           Hybrid Remotion + Nano Banana pipeline. Generate cinematic 9:16 promo videos for Pinterest, TikTok &amp; Reels.
         </p>
       </header>
+
+      {/* Debug panel — surfaces exact DB state so worker/admin mismatches are visible */}
+      <Card className="border-dashed">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Activity className="size-4" /> Queue debug panel
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={loadDebugPanel} disabled={debugBusy}>
+            {debugBusy ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+            <span className="ml-1">Refresh</span>
+          </Button>
+        </CardHeader>
+        <CardContent className="text-xs space-y-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+            <span>Admin Supabase host: <code className="text-foreground">{ADMIN_SUPABASE_HOST}</code></span>
+            <span>Server host: <code className="text-foreground">{debugPanel?.supabase_host ?? "—"}</code></span>
+            <span>Table: <code className="text-foreground">{debugPanel?.table ?? "cinematic_ad_jobs"}</code></span>
+          </div>
+          {debugPanel?.supabase_host && debugPanel.supabase_host !== ADMIN_SUPABASE_HOST && (
+            <Alert variant="destructive" className="py-2">
+              <AlertTitle className="text-xs">Host mismatch</AlertTitle>
+              <AlertDescription className="text-xs">
+                Admin and worker-control edge function are on different Supabase projects. Render worker env likely points elsewhere too.
+              </AlertDescription>
+            </Alert>
+          )}
+          {debugPanel?.status_counts && (
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(debugPanel.status_counts).map(([k, v]) => (
+                <Badge key={k} variant="outline" className="text-[10px]">{k}: {String(v)}</Badge>
+              ))}
+            </div>
+          )}
+          {debugPanel?.latest_rows?.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[10px]">
+                <thead className="text-muted-foreground">
+                  <tr><th className="text-left pr-2">id</th><th className="text-left pr-2">status</th><th className="text-left pr-2">queued</th><th className="text-left pr-2">started</th><th className="text-left pr-2">updated</th></tr>
+                </thead>
+                <tbody>
+                  {debugPanel.latest_rows.map((r: any) => (
+                    <tr key={r.id} className="border-t border-border/50">
+                      <td className="pr-2 font-mono">{r.id.slice(0, 8)}</td>
+                      <td className="pr-2">{r.status}</td>
+                      <td className="pr-2">{r.render_queued_at ? new Date(r.render_queued_at).toLocaleTimeString() : "—"}</td>
+                      <td className="pr-2">{r.render_started_at ? new Date(r.render_started_at).toLocaleTimeString() : "—"}</td>
+                      <td className="pr-2">{r.updated_at ? new Date(r.updated_at).toLocaleTimeString() : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {!debugPanel && <div className="text-muted-foreground">Click Refresh to load DB snapshot.</div>}
+        </CardContent>
+      </Card>
 
       {health?.code === "MISSING_SECRETS" && (
         <Alert variant="destructive">
