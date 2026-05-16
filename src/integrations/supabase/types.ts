@@ -1042,6 +1042,30 @@ export type Database = {
           },
         ]
       }
+      cinematic_worker_heartbeats: {
+        Row: {
+          last_claim_at: string | null
+          last_job_id: string | null
+          last_poll_at: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          last_claim_at?: string | null
+          last_job_id?: string | null
+          last_poll_at?: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          last_claim_at?: string | null
+          last_job_id?: string | null
+          last_poll_at?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: []
+      }
       cj_product_bookmarks: {
         Row: {
           category_name: string | null
