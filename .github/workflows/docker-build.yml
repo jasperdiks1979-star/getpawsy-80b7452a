@@ -216,6 +216,20 @@ jobs:
           echo "docker pull ${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+      - name: Print deployed image tag
+        run: |
+          echo "::notice title=Deployed Image::${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}"
+          echo "::notice title=Commit SHA::${{ github.sha }} (short: $(echo ${{ github.sha }} | cut -c1-7))"
+          echo "::notice title=Image Digest::${{ needs.build.outputs.image_digest }}"
+          echo ""
+          echo "==================== DEPLOYED TO PRODUCTION ===================="
+          echo "Image Tag : ${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}"
+          echo "Commit    : ${{ github.sha }}"
+          echo "Short SHA : $(echo ${{ github.sha }} | cut -c1-7)"
+          echo "Digest    : ${{ needs.build.outputs.image_digest }}"
+          echo "Ref       : ${{ github.ref }}"
+          echo "Actor     : ${{ github.actor }}"
+          echo "================================================================"
       # Discord notification (uncomment if using Discord)
       # - name: Discord notification
       #   if: vars.DISCORD_WEBHOOK_URL != ''
