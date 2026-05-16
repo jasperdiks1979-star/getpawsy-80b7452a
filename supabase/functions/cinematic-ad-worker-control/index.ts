@@ -688,9 +688,10 @@ async function resetStale(admin: any, traceId: string, ids?: string[]) {
 async function triggerGithubWorkflow(
   admin: any,
   traceId: string,
-  opts: { job_id?: string; claim_next?: boolean },
+  opts: { job_id?: string; claim_next?: boolean; ghPat?: string },
 ) {
-  if (!GH_PAT) throw new Error("GH_PAT secret not configured");
+  const ghPat = opts.ghPat ?? (await getEffectiveGhPat(admin)).token;
+  if (!ghPat) throw new Error("GH_PAT secret not configured");
   if (!GH_REPO) throw new Error("GH_REPO secret not configured (format: owner/repo)");
   if (!opts.job_id && !opts.claim_next) {
     throw new Error("Either job_id or claim_next=true is required");
@@ -698,7 +699,7 @@ async function triggerGithubWorkflow(
 
   // Block dispatch if the GitHub repo is missing any required workflow secret —
   // otherwise the run starts and fails deep inside the Render MP4 step.
-  const ghValidation = await validateGithubSecrets(traceId);
+  const ghValidation = await validateGithubSecrets(traceId, ghPat);
   if (!ghValidation.ok) {
     const detail = ghValidation.missing.length
       ? `GitHub repository secrets missing: ${ghValidation.missing.join(", ")}. Open https://github.com/${GH_REPO}/settings/secrets/actions and add them before dispatching.`
@@ -728,7 +729,7 @@ async function triggerGithubWorkflow(
     method: "POST",
     headers: {
       "Accept": "application/vnd.github+json",
-      "Authorization": `Bearer ${GH_PAT}`,
+      "Authorization": `Bearer ${ghPat}`,
       "X-GitHub-Api-Version": "2022-11-28",
       "Content-Type": "application/json",
       "User-Agent": "lovable-cinematic-ads",
@@ -803,11 +804,13 @@ Deno.serve(async (req) => {
       }
       const snapshot = await buildHealthSnapshot(admin, traceId);
       const workerHealth = await fetchWorkerHealth(traceId);
+      const ghPat = await getEffectiveGhPat(admin);
       console.log(`[worker-claim] ${traceId} lastClaimAt=${snapshot.lastClaimAt} live=${snapshot.workerLive}`);
       return json({
         ok: true,
         traceId,
-        secrets: requiredSecretsReport(),
+        secrets: requiredSecretsReport(!!ghPat.token),
+        ghPat: { source: ghPat.source, present: !!ghPat.token, updatedAt: ghPat.updatedAt, masked: ghPat.token ? maskToken(ghPat.token) : null },
         snapshot,
         autoMarked,
         workerHealth,
@@ -841,9 +844,11 @@ Deno.serve(async (req) => {
 
     if (action === "trigger_github_workflow") {
       try {
+        const ghPat = (await getEffectiveGhPat(admin)).token;
         const result = await triggerGithubWorkflow(admin, traceId, {
           job_id: body.job_id ? String(body.job_id) : undefined,
           claim_next: Boolean(body.claim_next),
+          ghPat,
         });
         return json({ ok: true, traceId, ...result });
       } catch (e: any) {
@@ -860,13 +865,55 @@ Deno.serve(async (req) => {
     }
 
     if (action === "validate_github_secrets") {
-      const validation = await validateGithubSecrets(traceId);
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      const validation = await validateGithubSecrets(traceId, ghPat);
       return json({
         ok: validation.ok,
         traceId,
-        secrets: requiredSecretsReport(),
+        secrets: requiredSecretsReport(!!ghPat),
         github: validation,
       });
+    }
+
+    if (action === "validate_github_pat") {
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      const repo = body.repo ? String(body.repo) : undefined;
+      const validation = await validateGithubPat(traceId, ghPat, { repo });
+      return json({ ok: validation.ok, traceId, pat: validation });
+    }
+
+    if (action === "update_github_pat") {
+      const newToken = String(body.token ?? "");
+      const retry = Boolean(body.retry_dispatch);
+      if (!newToken) return json({ ok: false, traceId, message: "token required" }, 400);
+      try {
+        const validation = await updateGhPat(admin, traceId, newToken, userData.user.id);
+        let dispatched: any = null;
+        if (retry && validation.ok) {
+          try {
+            dispatched = await triggerGithubWorkflow(admin, traceId, {
+              claim_next: true,
+              ghPat: newToken,
+            });
+          } catch (dispatchErr: any) {
+            dispatched = { ok: false, error: dispatchErr?.message ?? String(dispatchErr) };
+          }
+        }
+        return json({
+          ok: true, traceId,
+          masked: maskToken(newToken),
+          source: "db",
+          pat: validation,
+          dispatched,
+        });
+      } catch (e: any) {
+        return json({
+          ok: false, traceId,
+          code: e?.code ?? "GH_PAT_UPDATE_FAILED",
+          message: e?.message ?? String(e),
+          pat: e?.validation ?? null,
+        }, 400);
+      }
     }
 
     if (action === "debug_panel") {
