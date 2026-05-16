@@ -495,6 +495,16 @@ export default function CinematicAdsPage() {
               {healthBusy ? <Loader2 className="size-3 animate-spin mr-1" /> : <RefreshCw className="size-3 mr-1" />}
               Refresh
             </Button>
+            <Button size="sm" onClick={() => runGithubWorker()} disabled={busyId === "__gh__"}>
+              {busyId === "__gh__" ? <Loader2 className="size-3 animate-spin mr-1" /> : <PlayCircle className="size-3 mr-1" />}
+              Run GitHub Render Worker Now
+            </Button>
+            {(health?.snapshot?.flaggedStale?.length ?? 0) > 0 && (
+              <Button size="sm" variant="destructive" onClick={resetStaleJobs} disabled={busyId === "__reset__"}>
+                {busyId === "__reset__" ? <Loader2 className="size-3 animate-spin mr-1" /> : <Trash2 className="size-3 mr-1" />}
+                Reset stale jobs ({health.snapshot.flaggedStale.length})
+              </Button>
+            )}
             <span className="text-muted-foreground">
               Polled every 30s · liveness from heartbeats &amp; job activity. Backend JSON: <code>{WORKER_HEALTH_FUNCTION_URL}</code>.
             </span>
