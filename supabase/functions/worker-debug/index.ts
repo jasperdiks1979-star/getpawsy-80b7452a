@@ -1,7 +1,9 @@
 /**
  * worker-debug (public)
  *
- * Backs /api/debug/worker and /api/debug/queue.
+ * Backs worker debug JSON endpoints.
+ * Canonical app aliases: /api/debug/worker and /api/debug/queue (when hosting supports API proxying)
+ * Direct backend fallback: /functions/v1/worker-debug?view=worker|queue
  * Query string ?view=worker | ?view=queue (default: worker).
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -25,7 +27,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     if (!SUPABASE_URL || !SERVICE_KEY) {
-      return json({ ok: false, reason: "server_misconfigured" }, 500);
+      return json({ ok: false, route: "/api/debug/worker", reason: "server_misconfigured" });
     }
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const url = new URL(req.url);
@@ -43,7 +45,10 @@ Deno.serve(async (req) => {
       const counts: Record<string, number> = {};
       for (const r of allStatus ?? []) counts[r.status] = (counts[r.status] ?? 0) + 1;
       return json({
-        ok: true, view: "queue", supabase_host: supabaseHost,
+        ok: true,
+        route: "/api/debug/queue",
+        view: "queue",
+        supabase_host: supabaseHost,
         table: "cinematic_ad_jobs",
         status_counts: counts,
         latest_rows: rows ?? [],
@@ -57,11 +62,14 @@ Deno.serve(async (req) => {
       .order("last_poll_at", { ascending: false })
       .limit(5);
     return json({
-      ok: true, view: "worker", supabase_host: supabaseHost,
+      ok: true,
+      route: "/api/debug/worker",
+      view: "worker",
+      supabase_host: supabaseHost,
       heartbeats: hb ?? [],
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return json({ ok: false, error: msg }, 500);
+    return json({ ok: false, route: "/api/debug/worker", error: msg });
   }
 });
