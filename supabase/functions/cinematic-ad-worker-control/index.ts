@@ -772,7 +772,7 @@ Deno.serve(async (req) => {
         traceId,
         code: "MISSING_SECRETS",
         message: `Missing required secrets: ${missing.join(", ")}. Configure them in Lovable Cloud → Functions → Secrets.`,
-        secrets: requiredSecretsReport(),
+        secrets: requiredSecretsReport(!!GH_PAT_ENV),
       }, 500);
     }
 
