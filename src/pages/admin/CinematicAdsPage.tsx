@@ -237,8 +237,40 @@ export default function CinematicAdsPage() {
   const loadHealth = async () => {
     setHealthBusy(true);
     try {
-      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "health" } });
+      const apiProbe: ApiRouteProbe = {
+        checkedUrl: WORKER_HEALTH_API_PATH,
+        fallbackUrl: WORKER_HEALTH_FUNCTION_URL,
+        status: null,
+        contentType: null,
+        spaFallbackDetected: false,
+      };
+      try {
+        const routeRes = await fetch(`${WORKER_HEALTH_API_PATH}?t=${Date.now()}`, {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        });
+        apiProbe.status = routeRes.status;
+        apiProbe.contentType = routeRes.headers.get("content-type");
+        apiProbe.spaFallbackDetected = (apiProbe.contentType ?? "").includes("text/html");
+      } catch (probeErr: any) {
+        apiProbe.error = probeErr?.message ?? String(probeErr);
+      }
+      setApiRouteProbe(apiProbe);
+
+      const [controlResult, publicRes] = await Promise.all([
+        supabase.functions.invoke("cinematic-ad-worker-control", { body: { action: "health" } }),
+        fetch(`${WORKER_HEALTH_FUNCTION_URL}?t=${Date.now()}`, {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        }),
+      ]);
+      const { data, error } = controlResult;
       if (error) throw error;
+      const publicContentType = publicRes.headers.get("content-type") ?? "";
+      if (publicContentType.includes("text/html")) {
+        throw new Error("Backend API route unavailable — SPA fallback detected");
+      }
+      setPublicWorkerHealth(await publicRes.json());
       setHealth(data as HealthResponse);
     } catch (e: any) {
       setHealth({ ok: false, message: e?.message ?? String(e) });
