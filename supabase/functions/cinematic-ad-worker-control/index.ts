@@ -113,14 +113,51 @@ async function buildHealthSnapshot(admin: any, traceId: string) {
     .select("id,product_slug,render_queued_at,status_message")
     .eq("status", "worker_stale");
 
-  const lastClaimAt = lastClaimRow?.render_started_at ?? null;
+  // Heartbeat row written by the Render background worker on every poll —
+  // this is the primary liveness signal because Background Workers expose
+  // no public HTTP routes.
+  const { data: heartbeatRow } = await admin
+    .from("cinematic_worker_heartbeats")
+    .select("worker_id,last_poll_at,last_claim_at,last_job_id,updated_at")
+    .order("last_poll_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Most recent activity timestamp from cinematic_ad_jobs (any of the worker-touched fields)
+  const { data: lastTouchedRow } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id,product_slug,updated_at,render_started_at,render_complete_at")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const heartbeatAt = heartbeatRow?.last_poll_at ?? null;
+  const heartbeatAgeMs = heartbeatAt ? now - new Date(heartbeatAt).getTime() : null;
+  const lastClaimAt =
+    heartbeatRow?.last_claim_at ?? lastClaimRow?.render_started_at ?? null;
   const lastCompleteAt = lastCompleteRow?.render_complete_at ?? null;
+  const lastTouchedAt = lastTouchedRow?.updated_at ?? null;
   const lastClaimAgeMs = lastClaimAt ? now - new Date(lastClaimAt).getTime() : null;
-  const workerLive = lastClaimAgeMs !== null && lastClaimAgeMs < WORKER_LIVE_WINDOW_MS;
-  const workerStale = (staleCandidates?.length ?? 0) > 0 || (flaggedStale?.length ?? 0) > 0;
+  const lastTouchedAgeMs = lastTouchedAt ? now - new Date(lastTouchedAt).getTime() : null;
+
+  // Worker is "live" if ANY of these signals fired within the live window
+  // (heartbeat is preferred, but job activity is enough — Background Workers
+  // have no HTTP endpoint we can rely on).
+  const liveSignals = [heartbeatAgeMs, lastClaimAgeMs, lastTouchedAgeMs]
+    .filter((v): v is number => typeof v === "number");
+  const workerLive =
+    liveSignals.length > 0 && Math.min(...liveSignals) < STALE_AFTER_MS;
+
+  // Only mark "stale" when there are jobs sitting in render_queued AND no
+  // liveness signal in the last 10 minutes. A backlog with a live worker
+  // is just a backlog, not a stuck worker.
+  const hasStaleQueue =
+    (staleCandidates?.length ?? 0) > 0 || (flaggedStale?.length ?? 0) > 0;
+  const workerStale = hasStaleQueue && !workerLive;
 
   console.log(`[worker-health] ${traceId} snapshot`, {
-    workerLive, workerStale, lastClaimAgeMs,
+    workerLive, workerStale,
+    heartbeatAgeMs, lastClaimAgeMs, lastTouchedAgeMs,
     staleCandidates: staleCandidates?.length ?? 0,
     flaggedStale: flaggedStale?.length ?? 0,
   });
@@ -133,15 +170,39 @@ async function buildHealthSnapshot(admin: any, traceId: string) {
     lastClaimWorkerId: lastClaimRow?.render_worker_id ?? null,
     lastClaimJobId: lastClaimRow?.id ?? null,
     lastCompleteAt,
+    heartbeat: heartbeatRow ?? null,
+    heartbeatAgeMs,
+    lastTouchedAt,
+    lastTouchedAgeMs,
     currentJob: currentRow ?? null,
     staleCandidates: staleCandidates ?? [],
     flaggedStale: flaggedStale ?? [],
     staleThresholdMs: STALE_AFTER_MS,
-    workerLiveWindowMs: WORKER_LIVE_WINDOW_MS,
+    workerLiveWindowMs: STALE_AFTER_MS,
   };
 }
 
 async function markStale(admin: any, traceId: string) {
+  // Safety: never auto-mark queued jobs as stale if the worker has any
+  // liveness signal in the last 10 minutes (heartbeat, claim, or job touch).
+  const now = Date.now();
+  const cutoffIso10 = new Date(now - STALE_AFTER_MS).toISOString();
+  const { data: hb } = await admin
+    .from("cinematic_worker_heartbeats")
+    .select("last_poll_at,last_claim_at")
+    .gt("last_poll_at", cutoffIso10)
+    .limit(1)
+    .maybeSingle();
+  const { data: recentTouch } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id")
+    .gt("updated_at", cutoffIso10)
+    .limit(1)
+    .maybeSingle();
+  if (hb || recentTouch) {
+    console.log(`[worker-stale] ${traceId} skip auto-mark — worker has recent activity`);
+    return { marked: 0, ids: [] as string[], skipped: true as const };
+  }
   const cutoffIso = new Date(Date.now() - STALE_AFTER_MS).toISOString();
   const { data: targets, error } = await admin
     .from("cinematic_ad_jobs")
