@@ -18,6 +18,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import sodium from "https://esm.sh/libsodium-wrappers-sumo@0.7.15";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -209,6 +210,71 @@ async function validateGithubSecrets(traceId: string, ghPat: string): Promise<Gh
     base.message = `GitHub API call failed: ${msg}`;
     return base;
   }
+}
+
+async function putGithubSecret(
+  traceId: string,
+  ghPat: string,
+  repo: string,
+  secretName: string,
+  secretValue: string,
+): Promise<{ name: string; ok: boolean; status: number; updated: boolean; message: string }> {
+  await sodium.ready;
+  const headers = {
+    Accept: "application/vnd.github+json",
+    Authorization: `Bearer ${ghPat}`,
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "lovable-cinematic-ads",
+  };
+  const keyRes = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/public-key`, { headers });
+  const publicKey = await keyRes.json().catch(() => ({}));
+  if (!keyRes.ok || !publicKey?.key || !publicKey?.key_id) {
+    return { name: secretName, ok: false, status: keyRes.status, updated: false, message: "GitHub public key fetch failed" };
+  }
+  const encryptedBytes = sodium.crypto_box_seal(
+    secretValue,
+    sodium.from_base64(publicKey.key, sodium.base64_variants.ORIGINAL),
+  );
+  const encrypted_value = sodium.to_base64(encryptedBytes, sodium.base64_variants.ORIGINAL);
+  const putRes = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/${secretName}`, {
+    method: "PUT",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ encrypted_value, key_id: publicKey.key_id }),
+  });
+  const body = await putRes.text().catch(() => "");
+  const ok = putRes.status === 201 || putRes.status === 204;
+  console.log(`[gh-secrets] ${traceId} sync ${secretName}`, { status: putRes.status, ok });
+  return {
+    name: secretName,
+    ok,
+    status: putRes.status,
+    updated: ok,
+    message: ok ? "secret synced" : body.slice(0, 200),
+  };
+}
+
+async function syncGithubSecrets(traceId: string, ghPat: string) {
+  if (!ghPat) throw new Error("GH_PAT secret not configured");
+  if (!GH_REPO) throw new Error("GH_REPO secret not configured (format: owner/repo)");
+  const desired = {
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY,
+    RENDER_WORKER_SECRET,
+  } as const;
+  const results = [] as Array<{ name: string; ok: boolean; status: number; updated: boolean; message: string }>;
+  for (const [name, value] of Object.entries(desired)) {
+    if (!value) throw new Error(`Cannot sync missing secret: ${name}`);
+    results.push(await putGithubSecret(traceId, ghPat, GH_REPO, name, value));
+  }
+  const validation = await validateGithubSecrets(traceId, ghPat);
+  return {
+    ok: results.every((r) => r.ok) && validation.ok,
+    repo: GH_REPO,
+    workflow: GH_WORKFLOW,
+    synced: results,
+    validation,
+    expected: activeBackend().required_github_secret,
+  };
 }
 
 /**
@@ -423,6 +489,11 @@ function missingRequired(): string[] {
   if (!SERVICE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   if (!RENDER_WORKER_SECRET) missing.push("RENDER_WORKER_SECRET");
   return missing;
+}
+
+function actionAllowsServiceAuth(req: Request, secret: string, action: string): boolean {
+  if (!secret || req.headers.get("x-render-secret") !== secret) return false;
+  return ["health", "debug_panel", "validate_github_secrets", "sync_github_secrets", "trigger_github_workflow"].includes(action);
 }
 
 async function fetchWorkerHealth(traceId: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -804,22 +875,27 @@ Deno.serve(async (req) => {
       }, 500);
     }
 
-    // Auth: admin only
+    // Auth: admin UI token, or render-secret for backend-only maintenance actions.
+    const serviceAuthorized = actionAllowsServiceAuth(req, RENDER_WORKER_SECRET, String((await req.clone().json().catch(() => ({}))).action ?? "health"));
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return json({ ok: false, traceId, message: "unauthenticated" }, 401);
-    }
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) {
+    if (!serviceAuthorized && !authHeader.startsWith("Bearer ")) {
       return json({ ok: false, traceId, message: "unauthenticated" }, 401);
     }
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: roleRow } = await admin
-      .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) return json({ ok: false, traceId, message: "forbidden" }, 403);
+    let userId: string | null = null;
+    if (!serviceAuthorized) {
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        return json({ ok: false, traceId, message: "unauthenticated" }, 401);
+      }
+      userId = userData.user.id;
+      const { data: roleRow } = await admin
+        .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
+      if (!roleRow) return json({ ok: false, traceId, message: "forbidden" }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const action = String(body.action ?? "health");
@@ -904,6 +980,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "sync_github_secrets") {
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      const result = await syncGithubSecrets(traceId, ghPat);
+      return json({ ok: result.ok, traceId, ...result }, result.ok ? 200 : 500);
+    }
+
     if (action === "validate_github_pat") {
       const ghPat = (await getEffectiveGhPat(admin)).token;
       const repo = body.repo ? String(body.repo) : undefined;
@@ -916,7 +998,7 @@ Deno.serve(async (req) => {
       const retry = Boolean(body.retry_dispatch);
       if (!newToken) return json({ ok: false, traceId, message: "token required" }, 400);
       try {
-        const validation = await updateGhPat(admin, traceId, newToken, userData.user.id);
+          const validation = await updateGhPat(admin, traceId, newToken, userId ?? "service");
         let dispatched: any = null;
         if (retry && validation.ok) {
           try {

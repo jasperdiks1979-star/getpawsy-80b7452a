@@ -21,14 +21,24 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_URL_RAW = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const WORKER_SECRET = process.env.RENDER_WORKER_SECRET;
 const JOB_ID = process.env.JOB_ID || process.argv.find(a => a.startsWith("--job="))?.slice(6);
 const WORKER_ID = process.env.RENDER_WORKER_ID || `worker-${Math.random().toString(36).slice(2, 8)}`;
+const EXPECTED_PROJECT_REF = "nojvgfbcjgipjxpfatmm";
+const SUPABASE_URL = SUPABASE_URL_RAW ? SUPABASE_URL_RAW.replace(/\/+$/, "") : "";
+const FUNCTIONS_BASE_URL = (process.env.FUNCTIONS_BASE_URL || process.env.SUPABASE_FUNCTIONS_BASE_URL || `${SUPABASE_URL}/functions/v1`).replace(/\/+$/, "");
 
 if (!SUPABASE_URL || !SERVICE_KEY || !WORKER_SECRET || !JOB_ID) {
   console.error("Missing env. Required: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RENDER_WORKER_SECRET, JOB_ID");
+  process.exit(2);
+}
+
+let SUPABASE_HOST = "unknown";
+try { SUPABASE_HOST = new URL(SUPABASE_URL).host; } catch {}
+if (!SUPABASE_HOST.startsWith(`${EXPECTED_PROJECT_REF}.`)) {
+  console.error(`[preflight] SUPABASE_URL points to ${SUPABASE_HOST}; expected ${EXPECTED_PROJECT_REF}.supabase.co`);
   process.exit(2);
 }
 
@@ -47,7 +57,7 @@ async function fetchWithTimeout(url, opts = {}, timeoutMs = 30_000) {
 async function postWebhook(payload) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const r = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`, {
+      const r = await fetchWithTimeout(`${FUNCTIONS_BASE_URL}/cinematic-ad-render-webhook`, {
         method: "POST", headers: HEADERS, body: JSON.stringify(payload),
       }, 15_000);
       const t = await r.text();
@@ -59,11 +69,15 @@ async function postWebhook(payload) {
 }
 
 async function claimJob() {
-  const r = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/cinematic-ad-claim-job`, {
+  console.log(`[claim] POST ${FUNCTIONS_BASE_URL}/cinematic-ad-claim-job host=${SUPABASE_HOST} worker=${WORKER_ID}`);
+  const r = await fetchWithTimeout(`${FUNCTIONS_BASE_URL}/cinematic-ad-claim-job`, {
     method: "POST", headers: HEADERS,
     body: JSON.stringify({ worker_id: WORKER_ID, job_id: JOB_ID }),
   }, 15_000);
-  const data = await r.json();
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { ok: false, message: text }; }
+  console.log(`[claim] response status=${r.status} ok=${Boolean(data?.ok)} trace=${data?.traceId ?? "none"}`);
   if (!data.ok || !data.job) throw new Error(`claim failed: ${JSON.stringify(data)}`);
   return data.job;
 }
@@ -114,7 +128,7 @@ async function uploadToStorage(localPath, objectPath) {
 
 async function main() {
   const startedAt = Date.now();
-  console.log(`[render] claiming job ${JOB_ID} as ${WORKER_ID}`);
+  console.log(`[render] claiming job ${JOB_ID} as ${WORKER_ID}`, { supabase_host: SUPABASE_HOST, functions_base_url: FUNCTIONS_BASE_URL });
   const job = await claimJob();
   console.log(`[render] claimed`, { job_id: job.job_id, scenes: job.scene_assets?.length });
   await postWebhook({ job_id: job.job_id, status: "rendering", render_token: job.render_token, worker_id: WORKER_ID });

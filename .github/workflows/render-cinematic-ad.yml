@@ -14,10 +14,12 @@ jobs:
     timeout-minutes: 25
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      FUNCTIONS_BASE_URL: ${{ secrets.SUPABASE_URL }}/functions/v1
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       RENDER_WORKER_SECRET: ${{ secrets.RENDER_WORKER_SECRET }}
       JOB_ID: ${{ inputs.job_id }}
       RENDER_WORKER_ID: gh-actions-${{ github.run_id }}
+      EXPECTED_SUPABASE_HOST: nojvgfbcjgipjxpfatmm.supabase.co
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +46,11 @@ jobs:
             echo "::error::GitHub repository secret missing: SUPABASE_URL"
             MISSING=1
           else
-            echo "SUPABASE_URL exists"
+            echo "SUPABASE_URL host=$(node -e \"console.log(new URL(process.env.SUPABASE_URL).host)\")"
+            if [ "$(node -e \"console.log(new URL(process.env.SUPABASE_URL).host)\")" != "${EXPECTED_SUPABASE_HOST}" ]; then
+              echo "::error::SUPABASE_URL must point to ${EXPECTED_SUPABASE_HOST}"
+              MISSING=1
+            fi
           fi
           if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
             echo "::error::GitHub repository secret missing: SUPABASE_SERVICE_ROLE_KEY"
@@ -63,6 +69,7 @@ jobs:
             MISSING=1
           fi
           if [ "$MISSING" -ne 0 ]; then exit 1; fi
+          echo "FUNCTIONS_BASE_URL=${FUNCTIONS_BASE_URL}"
 
       - name: Render MP4
         run: bun remotion/scripts/render-cinematic-ad.mjs --job=${{ inputs.job_id }}

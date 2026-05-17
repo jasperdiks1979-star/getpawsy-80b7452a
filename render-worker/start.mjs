@@ -40,6 +40,11 @@ const SCRIPT = join(__dirname, "..", "remotion", "scripts", "render-cinematic-ad
 const SUPABASE_URL = process.env.SUPABASE_URL;
 let SUPABASE_HOST = "unknown";
 try { SUPABASE_HOST = new URL(SUPABASE_URL).host; } catch { /* noop */ }
+const EXPECTED_SUPABASE_HOST = process.env.EXPECTED_SUPABASE_HOST || "nojvgfbcjgipjxpfatmm.supabase.co";
+if (SUPABASE_HOST !== EXPECTED_SUPABASE_HOST) {
+  log("fatal", "SUPABASE_URL points to the wrong backend", { supabaseHost: SUPABASE_HOST, expected: EXPECTED_SUPABASE_HOST });
+  process.exit(2);
+}
 const SECRET = process.env.RENDER_WORKER_SECRET;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
@@ -182,6 +187,9 @@ async function tick() {
     state.lastPollOk = !!data?.ok;
     state.lastPollReason = data?.reason ?? null;
     console.log(`[CINEMATIC WORKER] claim response ok=${data?.ok} reason=${data?.reason ?? "-"} queued_count=${data?.queued_count ?? "?"} server_host=${data?.supabase_host ?? "?"} message=${data?.message ?? "-"}`);
+    if (data?.supabase_host && data.supabase_host !== SUPABASE_HOST) {
+      throw new Error(`backend mismatch: worker=${SUPABASE_HOST} claim_function=${data.supabase_host}`);
+    }
     if (!data?.ok || !data.job) {
       console.log(`[CINEMATIC WORKER] found ${data?.queued_count ?? 0} queued jobs (claim returned no job) reason=${data?.reason ?? data?.message ?? "no jobs"}`);
       log("info", "poll idle", { reason: data?.reason ?? "no jobs" });
