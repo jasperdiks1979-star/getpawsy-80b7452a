@@ -491,6 +491,11 @@ function missingRequired(): string[] {
   return missing;
 }
 
+function actionAllowsServiceAuth(req: Request, secret: string, action: string): boolean {
+  if (!secret || req.headers.get("x-render-secret") !== secret) return false;
+  return ["health", "debug_panel", "validate_github_secrets", "sync_github_secrets", "trigger_github_workflow"].includes(action);
+}
+
 async function fetchWorkerHealth(traceId: string): Promise<{ ok: boolean; data?: any; error?: string }> {
   if (!RENDER_WORKER_HEALTH_URL) return { ok: false, error: "RENDER_WORKER_HEALTH_URL not set" };
   try {
@@ -993,7 +998,7 @@ Deno.serve(async (req) => {
       const retry = Boolean(body.retry_dispatch);
       if (!newToken) return json({ ok: false, traceId, message: "token required" }, 400);
       try {
-        const validation = await updateGhPat(admin, traceId, newToken, userData.user.id);
+          const validation = await updateGhPat(admin, traceId, newToken, userId ?? "service");
         let dispatched: any = null;
         if (retry && validation.ok) {
           try {
