@@ -20,11 +20,15 @@ jobs:
       JOB_ID: ${{ inputs.job_id }}
       RENDER_WORKER_ID: gh-actions-${{ github.run_id }}
       EXPECTED_SUPABASE_HOST: nojvgfbcjgipjxpfatmm.supabase.co
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Install ffmpeg + chromium deps
+        shell: bash
         run: |
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y ffmpeg chromium-browser fonts-liberation libnss3
 
@@ -39,37 +43,47 @@ jobs:
           bun-version: latest
 
       - name: Preflight env check
+        shell: bash
         run: |
+          set -euo pipefail
+
           echo "JOB_ID=${JOB_ID}"
-          MISSING=0
+
           if [ -z "${SUPABASE_URL:-}" ]; then
-            echo "::error::GitHub repository secret missing: SUPABASE_URL"
-            MISSING=1
-          else
-            echo "SUPABASE_URL host=$(node -e \"console.log(new URL(process.env.SUPABASE_URL).host)\")"
-            if [ "$(node -e \"console.log(new URL(process.env.SUPABASE_URL).host)\")" != "${EXPECTED_SUPABASE_HOST}" ]; then
-              echo "::error::SUPABASE_URL must point to ${EXPECTED_SUPABASE_HOST}"
-              MISSING=1
-            fi
+            echo "Error: GitHub repository secret missing: SUPABASE_URL"
+            exit 1
           fi
+
           if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
-            echo "::error::GitHub repository secret missing: SUPABASE_SERVICE_ROLE_KEY"
-            MISSING=1
-          else
-            echo "SUPABASE_SERVICE_ROLE_KEY exists"
+            echo "Error: GitHub repository secret missing: SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
           fi
+
           if [ -z "${RENDER_WORKER_SECRET:-}" ]; then
-            echo "::error::GitHub repository secret missing: RENDER_WORKER_SECRET"
-            MISSING=1
-          else
-            echo "RENDER_WORKER_SECRET exists"
+            echo "Error: GitHub repository secret missing: RENDER_WORKER_SECRET"
+            exit 1
           fi
+
           if [ -z "${JOB_ID:-}" ]; then
-            echo "::error::workflow_dispatch input missing: job_id"
-            MISSING=1
+            echo "Error: workflow_dispatch input missing: job_id"
+            exit 1
           fi
-          if [ "$MISSING" -ne 0 ]; then exit 1; fi
+
+          SUPABASE_HOST=$(node -e 'console.log(new URL(process.env.SUPABASE_URL).host)')
+          echo "SUPABASE_URL host=${SUPABASE_HOST}"
+
+          if [ "${SUPABASE_HOST}" != "${EXPECTED_SUPABASE_HOST}" ]; then
+            echo "Error: SUPABASE_URL must point to ${EXPECTED_SUPABASE_HOST}"
+            exit 1
+          fi
+
+          echo "SUPABASE_SERVICE_ROLE_KEY exists"
+          echo "RENDER_WORKER_SECRET exists"
           echo "FUNCTIONS_BASE_URL=${FUNCTIONS_BASE_URL}"
+          echo "Preflight env check OK"
 
       - name: Render MP4
-        run: bun remotion/scripts/render-cinematic-ad.mjs --job=${{ inputs.job_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun remotion/scripts/render-cinematic-ad.mjs --job="${JOB_ID}"
