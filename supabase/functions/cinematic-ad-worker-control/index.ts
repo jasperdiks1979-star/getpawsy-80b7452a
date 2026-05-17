@@ -870,22 +870,27 @@ Deno.serve(async (req) => {
       }, 500);
     }
 
-    // Auth: admin only
+    // Auth: admin UI token, or render-secret for backend-only maintenance actions.
+    const serviceAuthorized = actionAllowsServiceAuth(req, RENDER_WORKER_SECRET, String((await req.clone().json().catch(() => ({}))).action ?? "health"));
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return json({ ok: false, traceId, message: "unauthenticated" }, 401);
-    }
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) {
+    if (!serviceAuthorized && !authHeader.startsWith("Bearer ")) {
       return json({ ok: false, traceId, message: "unauthenticated" }, 401);
     }
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: roleRow } = await admin
-      .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) return json({ ok: false, traceId, message: "forbidden" }, 403);
+    let userId: string | null = null;
+    if (!serviceAuthorized) {
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        return json({ ok: false, traceId, message: "unauthenticated" }, 401);
+      }
+      userId = userData.user.id;
+      const { data: roleRow } = await admin
+        .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
+      if (!roleRow) return json({ ok: false, traceId, message: "forbidden" }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const action = String(body.action ?? "health");
