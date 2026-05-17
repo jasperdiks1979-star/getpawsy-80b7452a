@@ -18,6 +18,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import sodium from "https://esm.sh/libsodium-wrappers-sumo@0.7.15";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -209,6 +210,71 @@ async function validateGithubSecrets(traceId: string, ghPat: string): Promise<Gh
     base.message = `GitHub API call failed: ${msg}`;
     return base;
   }
+}
+
+async function putGithubSecret(
+  traceId: string,
+  ghPat: string,
+  repo: string,
+  secretName: string,
+  secretValue: string,
+): Promise<{ name: string; ok: boolean; status: number; updated: boolean; message: string }> {
+  await sodium.ready;
+  const headers = {
+    Accept: "application/vnd.github+json",
+    Authorization: `Bearer ${ghPat}`,
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "lovable-cinematic-ads",
+  };
+  const keyRes = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/public-key`, { headers });
+  const publicKey = await keyRes.json().catch(() => ({}));
+  if (!keyRes.ok || !publicKey?.key || !publicKey?.key_id) {
+    return { name: secretName, ok: false, status: keyRes.status, updated: false, message: "GitHub public key fetch failed" };
+  }
+  const encryptedBytes = sodium.crypto_box_seal(
+    secretValue,
+    sodium.from_base64(publicKey.key, sodium.base64_variants.ORIGINAL),
+  );
+  const encrypted_value = sodium.to_base64(encryptedBytes, sodium.base64_variants.ORIGINAL);
+  const putRes = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/${secretName}`, {
+    method: "PUT",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ encrypted_value, key_id: publicKey.key_id }),
+  });
+  const body = await putRes.text().catch(() => "");
+  const ok = putRes.status === 201 || putRes.status === 204;
+  console.log(`[gh-secrets] ${traceId} sync ${secretName}`, { status: putRes.status, ok });
+  return {
+    name: secretName,
+    ok,
+    status: putRes.status,
+    updated: ok,
+    message: ok ? "secret synced" : body.slice(0, 200),
+  };
+}
+
+async function syncGithubSecrets(traceId: string, ghPat: string) {
+  if (!ghPat) throw new Error("GH_PAT secret not configured");
+  if (!GH_REPO) throw new Error("GH_REPO secret not configured (format: owner/repo)");
+  const desired = {
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY,
+    RENDER_WORKER_SECRET,
+  } as const;
+  const results = [] as Array<{ name: string; ok: boolean; status: number; updated: boolean; message: string }>;
+  for (const [name, value] of Object.entries(desired)) {
+    if (!value) throw new Error(`Cannot sync missing secret: ${name}`);
+    results.push(await putGithubSecret(traceId, ghPat, GH_REPO, name, value));
+  }
+  const validation = await validateGithubSecrets(traceId, ghPat);
+  return {
+    ok: results.every((r) => r.ok) && validation.ok,
+    repo: GH_REPO,
+    workflow: GH_WORKFLOW,
+    synced: results,
+    validation,
+    expected: activeBackend().required_github_secret,
+  };
 }
 
 /**
