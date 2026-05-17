@@ -970,6 +970,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "sync_github_secrets") {
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      const result = await syncGithubSecrets(traceId, ghPat);
+      return json({ ok: result.ok, traceId, ...result }, result.ok ? 200 : 500);
+    }
+
     if (action === "validate_github_pat") {
       const ghPat = (await getEffectiveGhPat(admin)).token;
       const repo = body.repo ? String(body.repo) : undefined;
