@@ -13069,6 +13069,21 @@ export type Database = {
         }[]
       }
       cinematic_recover_stuck_jobs: { Args: never; Returns: Json }
+      claim_cinematic_ad_job: {
+        Args: { p_job_id?: string; p_worker_id: string }
+        Returns: {
+          hook_variant: string
+          id: string
+          music_url: string
+          previous_status: string
+          product_slug: string
+          render_attempts: number
+          render_token: string
+          render_worker_id: string
+          scene_assets: Json
+          vo_url: string
+        }[]
+      }
       cleanup_old_health_checks: { Args: never; Returns: undefined }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_old_web_vitals: { Args: never; Returns: undefined }

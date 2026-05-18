@@ -46,53 +46,21 @@ Deno.serve(async (req) => {
       return json({ ok: true, traceId, job: null, reason: "another job is rendering", queued_count: queuedCount, supabase_host: supabaseHost });
     }
 
-    let q = admin.from("cinematic_ad_jobs").select("*");
-    if (explicitJobId) q = q.eq("id", explicitJobId);
-    else q = q.eq("status", "render_queued").order("render_queued_at", { ascending: true }).limit(1);
-    const { data: jobs, error: qErr } = await q;
-    if (qErr) {
-      console.error(`[claim-job] ${traceId} select error`, qErr);
-      return json({ ok: false, traceId, message: qErr.message, supabase_host: supabaseHost }, 500);
-    }
-    const job = jobs?.[0];
-    if (!job) return json({ ok: true, traceId, job: null, reason: "no jobs", queued_count: queuedCount, supabase_host: supabaseHost });
-
-    console.log(`[claim-job] ${traceId} selected job=${job.id} status=${job.status} explicit=${!!explicitJobId} attempts=${job.render_attempts ?? 0}`);
-
-    // Lock logic:
-    // - Auto-claim (no explicit id): only from render_queued.
-    // - Explicit job_id (GitHub Actions dispatch / manual retry): allow claim from
-    //   any state except actively rendering by a *different* worker. This permits
-    //   retrying jobs left in terminal states like render_failed, render_complete,
-    //   or pinterest_uploaded.
-    if (explicitJobId && job.status === "rendering" && job.render_worker_id && job.render_worker_id !== workerId) {
-      console.warn(`[claim-job] ${traceId} job=${job.id} already rendering on worker=${job.render_worker_id}`);
-      return json({ ok: true, traceId, job: null, reason: `already rendering on ${job.render_worker_id}`, supabase_host: supabaseHost });
-    }
-
-    let lockQuery = admin
-      .from("cinematic_ad_jobs")
-      .update({
-        status: "rendering",
-        render_worker_id: workerId,
-        render_started_at: new Date().toISOString(),
-        render_attempts: (job.render_attempts ?? 0) + 1,
-        status_message: `worker ${workerId} claimed job`,
-      })
-      .eq("id", job.id);
-    if (!explicitJobId) {
-      lockQuery = lockQuery.eq("status", "render_queued");
-    }
-    const { data: locked, error: lockErr } = await lockQuery.select().maybeSingle();
+    console.log(`[claim-job] ${traceId} claim request explicit=${Boolean(explicitJobId)} requested_job=${explicitJobId ?? "auto"}`);
+    const { data: locked, error: lockErr } = await admin.rpc("claim_cinematic_ad_job", {
+      p_worker_id: workerId,
+      p_job_id: explicitJobId,
+    }).maybeSingle();
     if (lockErr) {
-      console.error(`[claim-job] ${traceId} lock error`, lockErr);
+      console.error(`[claim-job] ${traceId} atomic lock error`, lockErr);
       return json({ ok: false, traceId, message: lockErr.message, supabase_host: supabaseHost }, 500);
     }
     if (!locked) {
-      console.warn(`[claim-job] ${traceId} lock lost job=${job.id} prior_status=${job.status}`);
-      return json({ ok: true, traceId, job: null, reason: "lock lost", current_status: job.status, queued_count: queuedCount, supabase_host: supabaseHost });
+      console.warn(`[claim-job] ${traceId} no atomic claim explicit=${Boolean(explicitJobId)} requested_job=${explicitJobId ?? "auto"}`);
+      return json({ ok: true, traceId, job: null, reason: "no claimable job", queued_count: queuedCount, supabase_host: supabaseHost });
     }
-    console.log(`[claim-job] ${traceId} locked job=${locked.id} status=rendering worker=${workerId} attempts=${locked.render_attempts}`);
+    console.log(`[claim-job] ${traceId} selected job=${locked.id} previous_status=${locked.previous_status} lock_acquired=true worker=${workerId}`);
+    console.log(`[claim-job] ${traceId} update success job=${locked.id} status=rendering attempts=${locked.render_attempts}`);
 
     return json({
       ok: true, traceId,

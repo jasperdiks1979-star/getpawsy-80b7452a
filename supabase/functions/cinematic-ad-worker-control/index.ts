@@ -823,6 +823,21 @@ async function triggerGithubWorkflow(
     jobId = next.id;
   }
 
+  // Mark as queued before dispatching so GitHub cannot race ahead, claim the job,
+  // and then get overwritten back to render_queued by this control function.
+  const nowIso = new Date().toISOString();
+  await admin
+    .from("cinematic_ad_jobs")
+    .update({
+      status: "render_queued",
+      render_queued_at: nowIso,
+      render_started_at: null,
+      render_worker_id: null,
+      status_message: `Dispatching to GitHub Actions (${GH_WORKFLOW}@${GH_REF}) at ${nowIso}`,
+      updated_at: nowIso,
+    })
+    .eq("id", jobId);
+
   const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`;
   const ghRes = await fetch(url, {
     method: "POST",
@@ -842,18 +857,16 @@ async function triggerGithubWorkflow(
     throw new Error(`GitHub workflow_dispatch failed: ${ghRes.status} ${text.slice(0, 200)}`);
   }
 
-  // Mark the job as queued-for-render so the UI shows immediate movement.
-  // The render worker will flip it to "rendering" when cinematic-ad-claim-job is called.
-  const nowIso = new Date().toISOString();
+  // Confirm queued-for-render only while the job is still queued. If the worker
+  // already claimed it, do not overwrite rendering/render_complete state.
   await admin
     .from("cinematic_ad_jobs")
     .update({
-      status: "render_queued",
-      render_queued_at: nowIso,
       status_message: `Dispatched to GitHub Actions (${GH_WORKFLOW}@${GH_REF}) at ${nowIso}`,
       updated_at: nowIso,
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .eq("status", "render_queued");
 
   const runsUrl = `https://github.com/${GH_REPO}/actions/workflows/${GH_WORKFLOW}`;
   console.log(`[gh-dispatch] ${traceId} dispatched`, { jobId, repo: GH_REPO, workflow: GH_WORKFLOW });
