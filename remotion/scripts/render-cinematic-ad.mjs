@@ -90,6 +90,67 @@ function sh(cmd, args, opts = {}) {
   });
 }
 
+function shCapture(cmd, args) {
+  return new Promise((res, rej) => {
+    const p = spawn(cmd, args);
+    let stdout = "", stderr = "";
+    p.stdout.on("data", d => stdout += d.toString());
+    p.stderr.on("data", d => stderr += d.toString());
+    p.on("exit", code => res({ code, stdout, stderr }));
+    p.on("error", rej);
+  });
+}
+
+async function ffprobeDims(file) {
+  const r = await shCapture("ffprobe", [
+    "-v", "error", "-select_streams", "v:0",
+    "-show_entries", "stream=width,height,duration",
+    "-of", "json", file,
+  ]);
+  try {
+    const j = JSON.parse(r.stdout);
+    const s = j.streams?.[0] ?? {};
+    return { width: Number(s.width) || 0, height: Number(s.height) || 0, duration: Number(s.duration) || 0 };
+  } catch { return { width: 0, height: 0, duration: 0 }; }
+}
+
+/**
+ * Motion score via ffmpeg scene-change detection. Counts the number of frames
+ * whose scene-change score exceeds 0.01, normalized by total frames.
+ * Output ~0.00 = static slideshow, >0.02 = lively cinematic motion.
+ */
+async function motionScore(file, totalFrames) {
+  const r = await shCapture("ffmpeg", [
+    "-i", file,
+    "-vf", "select='gt(scene,0.01)',showinfo",
+    "-f", "null", "-",
+  ]);
+  const matches = (r.stderr.match(/showinfo.*n:\s*\d+/g) ?? []).length;
+  if (!totalFrames || totalFrames <= 0) return matches > 0 ? 0.02 : 0;
+  return Number((matches / totalFrames).toFixed(4));
+}
+
+/**
+ * Detect black bars via ffmpeg cropdetect. If detected crop differs from full
+ * frame, we have letterboxing.
+ */
+async function hasBlackBars(file, w, h) {
+  const r = await shCapture("ffmpeg", [
+    "-ss", "1", "-i", file, "-vframes", "60",
+    "-vf", "cropdetect=24:16:0",
+    "-f", "null", "-",
+  ]);
+  const m = r.stderr.match(/crop=(\d+):(\d+):/);
+  if (!m) return false;
+  const cw = Number(m[1]), ch = Number(m[2]);
+  // Allow 8px tolerance for rounding noise
+  return Math.abs(cw - w) > 8 || Math.abs(ch - h) > 8;
+}
+
+async function extractThumbnail(file, outPath) {
+  await sh("ffmpeg", ["-y", "-ss", "1.0", "-i", file, "-vframes", "1", "-q:v", "3", outPath]);
+}
+
 async function download(url, dest) {
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -138,6 +199,16 @@ async function main() {
     // 1. download scenes
     const scenes = (job.scene_assets ?? []).slice().sort((a, b) => a.index - b.index);
     if (scenes.length === 0) throw new Error("no scene_assets");
+    // Viral-vertical contract — fall back to safe defaults if claim payload
+    // is from an older queue function.
+    const W = Number(job.width) || 1080;
+    const H = Number(job.height) || 1920;
+    const FPS = Number(job.fps) || 30;
+    const TOTAL_FRAMES = Number(job.duration_in_frames) || 0;
+    const PRESET = job.preset || "pin-organic";
+    const COMPOSITION = job.composition_id || "viral-vertical";
+    const MOTION_FLOOR = Number(job.motion_score_floor) || 0.012;
+    console.log(`[render] contract`, { COMPOSITION, PRESET, W, H, FPS, TOTAL_FRAMES, scenes: scenes.length });
     const sceneFiles = [];
     for (const s of scenes) {
       const f = join(work, `scene-${s.index}.jpg`);
@@ -149,16 +220,34 @@ async function main() {
     if (job.voiceover_url) { voPath = join(work, "vo.mp3"); await download(job.voiceover_url, voPath); }
     if (job.music_url)    { musicPath = join(work, "music.mp3"); await download(job.music_url, musicPath); }
 
-    // 3. build concat list (9:16, 1080x1920, ken-burns-lite via fps)
-    // Use individual segment renders -> concat, simpler reliability.
+    // 3. Build segments at W×H with Ken-Burns zoompan motion so renders are
+    // NOT static slideshows — this is what unblocks motion_score validation.
+    // Alternating zoom-in / zoom-out + slow pan per scene. Center-weighted
+    // framing (crop force-fills 1080x1920, mobile-safe).
     const segs = [];
     for (let i = 0; i < sceneFiles.length; i++) {
       const seg = join(work, `seg-${i}.mp4`);
+      const dur = sceneFiles[i].duration;
+      const frames = Math.round(dur * FPS);
+      // Upscale source first so zoompan has pixels to work with, then crop.
+      const zoomIn = i % 2 === 0;
+      const zoomExpr = zoomIn
+        ? `min(zoom+0.0015,1.25)`
+        : `if(eq(on,0),1.25,max(zoom-0.0015,1.0))`;
+      const xExpr = `iw/2-(iw/zoom/2)+sin(on/${frames}*PI)*30`;
+      const yExpr = `ih/2-(ih/zoom/2)+cos(on/${frames}*PI)*30`;
+      const vf = [
+        `scale=${W * 2}:${H * 2}:force_original_aspect_ratio=increase`,
+        `crop=${W * 2}:${H * 2}`,
+        `zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${W}x${H}:fps=${FPS}`,
+        `format=yuv420p`,
+      ].join(",");
       await sh("ffmpeg", [
-        "-y", "-loop", "1", "-t", String(sceneFiles[i].duration),
+        "-y", "-loop", "1", "-t", String(dur),
         "-i", sceneFiles[i].file,
-        "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p",
-        "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+        "-vf", vf,
+        "-r", String(FPS), "-c:v", "libx264", "-preset", "veryfast",
+        "-pix_fmt", "yuv420p",
         seg,
       ]);
       segs.push(seg);
@@ -166,7 +255,10 @@ async function main() {
     const listPath = join(work, "list.txt");
     writeFileSync(listPath, segs.map(p => `file '${p}'`).join("\n"));
     const silentVideo = join(work, "video.mp4");
-    await sh("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", silentVideo]);
+    // Re-encode on concat so the bitstream is uniform (zoompan outputs vary).
+    await sh("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
+      "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+      "-r", String(FPS), silentVideo]);
 
     // 4. mix audio
     const finalPath = join(work, "final.mp4");
@@ -195,15 +287,63 @@ async function main() {
     const size = statSync(finalPath).size;
     const durationSec = (Date.now() - startedAt) / 1000;
 
-    // 5. upload
+    // 5. Probe output: dimensions, real duration, motion score, black bars,
+    //    thumbnail. These feed cinematic-ad-validate -> validation_report.passed.
+    const probe = await ffprobeDims(finalPath);
+    const realDurationSec = probe.duration || sceneFiles.reduce((a, s) => a + s.duration, 0);
+    const totalRenderedFrames = Math.round(realDurationSec * FPS);
+    const motion = await motionScore(finalPath, totalRenderedFrames);
+    const blackBars = await hasBlackBars(finalPath, probe.width || W, probe.height || H);
+    const thumbPath = join(work, "thumb.jpg");
+    let thumbnailUrl = null;
+    try {
+      await extractThumbnail(finalPath, thumbPath);
+      const thumbObject = `cinematic-ads/${job.product_slug}/${job.job_id}-thumb.jpg`;
+      const thumbUrl = `${SUPABASE_URL}/storage/v1/object/${thumbObject}`;
+      const tr = await fetch(thumbUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY,
+          "Content-Type": "image/jpeg", "x-upsert": "true",
+        },
+        body: readFileSync(thumbPath),
+      });
+      if (tr.ok) thumbnailUrl = `${SUPABASE_URL}/storage/v1/object/public/${thumbObject}`;
+      else console.warn("[render] thumbnail upload failed", tr.status, await tr.text());
+    } catch (e) {
+      console.warn("[render] thumbnail extract failed", e?.message ?? e);
+    }
+
+    // 6. upload MP4
     const objectPath = job.output_target; // already cinematic-ads/...
     console.log(`[render] uploading -> ${objectPath} (${size} bytes)`);
     const publicUrl = await uploadToStorage(finalPath, objectPath);
 
-    await postWebhook({
-      job_id: job.job_id, status: "uploaded", render_token: job.render_token,
-      mp4_url: publicUrl, file_size: size, duration: durationSec, worker_id: WORKER_ID,
+    const webhookPayload = {
+      job_id: job.job_id,
+      status: "uploaded",
+      render_token: job.render_token,
+      mp4_url: publicUrl,
+      file_size: size,
+      // Real media duration (not wall-clock) — used by validator.
+      duration: Number(realDurationSec.toFixed(2)),
+      worker_id: WORKER_ID,
+      // Viral-vertical contract output
+      width: probe.width || W,
+      height: probe.height || H,
+      motion_score: motion,
+      black_bars: blackBars,
+      thumbnail_url: thumbnailUrl,
+      composition_id: COMPOSITION,
+      preset: PRESET,
+      wall_clock_seconds: Number(durationSec.toFixed(2)),
+    };
+    console.log("[render] webhook payload", {
+      ...webhookPayload,
+      motion_floor: MOTION_FLOOR,
+      motion_pass: motion >= MOTION_FLOOR,
     });
+    await postWebhook(webhookPayload);
     console.log("[render] done", publicUrl);
   } catch (e) {
     console.error("[render] failed", e);
