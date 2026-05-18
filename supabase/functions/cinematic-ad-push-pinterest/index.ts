@@ -46,12 +46,28 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json(); } catch {}
   const jobId = body.job_id;
+  const force = body.force === true;
   if (!jobId) return json(400, { ok: false, traceId, message: "job_id required" });
 
   const { data: job, error: jobErr } = await admin
     .from("cinematic_ad_jobs").select("*").eq("id", jobId).single();
   if (jobErr || !job) return json(404, { ok: false, traceId, message: "job not found" });
   if (!job.output_mp4_url) return json(400, { ok: false, traceId, message: "job has no output_mp4_url yet" });
+
+  // Validation + approval gate. `force=true` lets admin override (logged below).
+  if (!force) {
+    const report = job.validation_report as { passed?: boolean } | null;
+    if (!report?.passed) {
+      return json(412, { ok: false, traceId, message: "validation has not passed; re-validate or use force=true" });
+    }
+  }
+
+  // Stamp approval (admin who pushed).
+  await admin.from("cinematic_ad_jobs").update({
+    approved_at: new Date().toISOString(),
+    approved_by: userData.user.id,
+    status_message: force ? "force-pushed by admin" : "approved by admin — pushing to Pinterest",
+  }).eq("id", jobId);
 
   const filename = `cinematic-${job.product_slug}-${jobId.slice(0, 8)}.mp4`;
   const storagePath = `${jobId}/output.mp4`;
