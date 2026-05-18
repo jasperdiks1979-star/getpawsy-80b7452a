@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RefreshCw, Clock, CheckCircle2, XCircle, Film, ExternalLink, Bell, Play } from "lucide-react";
+import { Loader2, RefreshCw, Clock, CheckCircle2, XCircle, Film, ExternalLink, Bell, Play, Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
