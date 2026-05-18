@@ -1009,13 +1009,16 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          approved_for_render: boolean
           caption_variants: Json
           created_at: string
           created_by: string | null
           error_message: string | null
+          hashtags: string[]
           hook_variant: string
           id: string
           last_pinterest_attempt_at: string | null
+          media_warnings: Json
           motion_score: number | null
           music_url: string | null
           output_black_bars: boolean | null
@@ -1025,6 +1028,9 @@ export type Database = {
           output_mp4_url: string | null
           output_thumbnail_url: string | null
           output_width: number | null
+          pin_description: string | null
+          pin_destination_url: string | null
+          pin_title: string | null
           pinterest_asset_id: string | null
           pinterest_pin_id: string | null
           pinterest_pin_url: string | null
@@ -1054,17 +1060,21 @@ export type Database = {
           vo_script_variants: Json
           vo_url: string | null
           voice_id: string
+          voice_style: string | null
         }
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          approved_for_render?: boolean
           caption_variants?: Json
           created_at?: string
           created_by?: string | null
           error_message?: string | null
+          hashtags?: string[]
           hook_variant?: string
           id?: string
           last_pinterest_attempt_at?: string | null
+          media_warnings?: Json
           motion_score?: number | null
           music_url?: string | null
           output_black_bars?: boolean | null
@@ -1074,6 +1084,9 @@ export type Database = {
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           output_width?: number | null
+          pin_description?: string | null
+          pin_destination_url?: string | null
+          pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
@@ -1103,17 +1116,21 @@ export type Database = {
           vo_script_variants?: Json
           vo_url?: string | null
           voice_id?: string
+          voice_style?: string | null
         }
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          approved_for_render?: boolean
           caption_variants?: Json
           created_at?: string
           created_by?: string | null
           error_message?: string | null
+          hashtags?: string[]
           hook_variant?: string
           id?: string
           last_pinterest_attempt_at?: string | null
+          media_warnings?: Json
           motion_score?: number | null
           music_url?: string | null
           output_black_bars?: boolean | null
@@ -1123,6 +1140,9 @@ export type Database = {
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           output_width?: number | null
+          pin_description?: string | null
+          pin_destination_url?: string | null
+          pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
@@ -1152,6 +1172,7 @@ export type Database = {
           vo_script_variants?: Json
           vo_url?: string | null
           voice_id?: string
+          voice_style?: string | null
         }
         Relationships: [
           {
