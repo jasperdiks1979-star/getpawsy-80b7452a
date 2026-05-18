@@ -9,6 +9,9 @@ import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, Re
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
+import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
+import VoiceStyleSelector, { type VoiceStyleId } from "@/components/admin/cinematic/VoiceStyleSelector";
 
 type Job = {
   id: string;
@@ -218,6 +221,9 @@ export default function CinematicAdsPage() {
   const [openPreview, setOpenPreview] = useState<Record<string, boolean>>({});
   const [productSlug, setProductSlug] = useState("enclosed-cat-litter-box-extra-large-flip-top");
   const [hookVariant, setHookVariant] = useState("default");
+  const [pickedProduct, setPickedProduct] = useState<PickerProduct | null>(null);
+  const [voiceStyle, setVoiceStyle] = useState<VoiceStyleId>("lifestyle_female");
+  const navigate = useNavigate();
   const [smoke, setSmoke] = useState<any>(null);
   const [smokeBusy, setSmokeBusy] = useState(false);
   const [e2e, setE2e] = useState<any>(null);
