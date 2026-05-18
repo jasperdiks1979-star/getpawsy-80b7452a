@@ -131,6 +131,52 @@ export default function CinematicAdsDashboardPage() {
   const [selected, setSelected] = useState<Job | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [alertSettings, setAlertSettings] = useState<any>(null);
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [runningCheck, setRunningCheck] = useState(false);
+
+  const loadAlerts = useCallback(async () => {
+    const [{ data: s }, { data: a }] = await Promise.all([
+      supabase.from("cinematic_ad_alert_settings").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("cinematic_ad_alert_log").select("*").order("created_at", { ascending: false }).limit(25),
+    ]);
+    if (s) setAlertSettings(s);
+    setAlerts(a || []);
+  }, []);
+
+  useEffect(() => {
+    loadAlerts();
+    const t = setInterval(loadAlerts, 30_000);
+    return () => clearInterval(t);
+  }, [loadAlerts]);
+
+  const saveAlertSettings = useCallback(async (patch: Record<string, unknown>) => {
+    setAlertSaving(true);
+    const { error } = await supabase
+      .from("cinematic_ad_alert_settings")
+      .update(patch as any)
+      .eq("id", 1);
+    setAlertSaving(false);
+    if (error) { toast.error(error.message); return; }
+    setAlertSettings((prev: any) => ({ ...(prev || {}), ...patch }));
+    toast.success("Alert settings saved");
+  }, []);
+
+  const runAlertCheckNow = useCallback(async () => {
+    setRunningCheck(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-alert-monitor", { body: {} });
+      if (error) throw error;
+      const d = data as any;
+      toast.success(`Checked ${d?.candidates_examined ?? 0} candidates · ${d?.new_alerts ?? 0} new alerts · ${d?.emails_sent ?? 0} emails sent`);
+      await loadAlerts();
+    } catch (e: any) {
+      toast.error(e?.message || "Monitor run failed");
+    } finally {
+      setRunningCheck(false);
+    }
+  }, [loadAlerts]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setRefreshing(true);
