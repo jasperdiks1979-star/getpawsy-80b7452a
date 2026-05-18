@@ -265,9 +265,18 @@ Deno.serve(async (req) => {
         console.error(`[validate] ${traceId} validator crashed`, e);
       }
 
-      // Validation passed. Hold for admin approval unless worker explicitly
-      // signals auto_approve=true (e.g. backfill, smoke test).
-      const autoApprove = Boolean(body.auto_approve);
+      // Validation passed. Hold for admin approval unless either:
+      //   - the worker explicitly signals auto_approve=true (backfill/smoke), or
+      //   - the job was queued by the autopilot orchestrator (auto_publish=true).
+      const { data: freshJob } = await admin
+        .from("cinematic_ad_jobs").select("auto_publish, autopilot, confidence_scores, autopilot_threshold")
+        .eq("id", jobId).maybeSingle();
+      const autoApprove =
+        Boolean(body.auto_approve) ||
+        Boolean(freshJob?.auto_publish) ||
+        (Boolean(freshJob?.autopilot) &&
+          Number(freshJob?.confidence_scores?.overall ?? 0) >=
+            Number(freshJob?.autopilot_threshold ?? 100));
       if (!autoApprove) {
         await admin.from("cinematic_ad_jobs").update({
           status: "awaiting_approval",

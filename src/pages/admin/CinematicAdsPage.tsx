@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight, AlertTriangle, Activity, RotateCcw, PlayCircle, Trash2, KeyRound, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, RefreshCw, ShieldCheck, FileText, ChevronDown, ChevronRight, AlertTriangle, Activity, RotateCcw, PlayCircle, Trash2, KeyRound, Eye, EyeOff, CheckCircle2, XCircle, Rocket } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -408,6 +408,25 @@ export default function CinematicAdsPage() {
       if (!data?.ok) throw new Error(data?.message ?? "prepare failed");
       const jobId = (data as any)?.job?.id;
       toast.success("Assets prepared — review and approve in preview.");
+      if (jobId) navigate(`/admin/cinematic-ads/preview/${jobId}`);
+      load();
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setBusyId(null); }
+  };
+
+  const runAutopilot = async () => {
+    const slug = pickedProduct?.slug ?? productSlug;
+    if (!slug) { toast.error("Pick a product first"); return; }
+    setBusyId("__autopilot__");
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-autopilot", {
+        body: { product_slug: slug, autopilot_threshold: 70 },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "autopilot failed");
+      const jobId = (data as any)?.job_id;
+      const score = (data as any)?.scores?.overall;
+      toast.success(`Autopilot ${score >= 70 ? "engaged" : "held for review"} — confidence ${score}/100`);
       if (jobId) navigate(`/admin/cinematic-ads/preview/${jobId}`);
       load();
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
@@ -1156,9 +1175,19 @@ export default function CinematicAdsPage() {
             {busyId === "__new__" ? <Loader2 className="size-4 animate-spin mr-2" /> : <Sparkles className="size-4 mr-2" />}
             Generate ad concept
           </Button>
+          <Button
+            onClick={runAutopilot}
+            disabled={busyId === "__autopilot__"}
+            className="w-full sm:w-auto sm:ml-2 bg-gradient-to-r from-primary to-primary/70"
+          >
+            {busyId === "__autopilot__" ? <Loader2 className="size-4 animate-spin mr-2" /> : <Rocket className="size-4 mr-2" />}
+            🚀 One-click Autopilot
+          </Button>
           <p className="text-xs text-muted-foreground">
-            Generates 6 AI scene stills, professional voiceover, and Pinterest copy. You'll land on the
-            preview page to approve, regenerate, render, and publish to Pinterest.
+            <strong>Generate</strong> builds the assets and lands you on the preview page to approve.
+            <strong> Autopilot</strong> analyzes the product (audience, angle, preset, voice, pacing, motion, music),
+            generates everything, scores 5 confidence dimensions, and — if overall ≥ 70 — auto-approves,
+            auto-renders, auto-validates and auto-publishes to Pinterest with zero clicks.
           </p>
         </CardContent>
       </Card>
