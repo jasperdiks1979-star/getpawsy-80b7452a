@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, RefreshCw, Upload, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, RefreshCw, Upload, AlertTriangle, Mic, Download, Sparkles } from "lucide-react";
+import VoiceStyleSelector, { type VoiceStyleId } from "@/components/admin/cinematic/VoiceStyleSelector";
 
 const PRESET_OPTIONS = [
   { id: "pin-organic", label: "Pinterest Organic" },
@@ -36,6 +38,11 @@ export default function CinematicAdPreviewPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [hookEdit, setHookEdit] = useState("");
   const [presetEdit, setPresetEdit] = useState<string>("pin-organic");
+  const [pinTitle, setPinTitle] = useState("");
+  const [pinDesc, setPinDesc] = useState("");
+  const [pinUrl, setPinUrl] = useState("");
+  const [hashtags, setHashtags] = useState("");
+  const [voiceStyle, setVoiceStyle] = useState<VoiceStyleId>("lifestyle_female");
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const load = async () => {
@@ -46,6 +53,11 @@ export default function CinematicAdPreviewPage() {
     setJob(data);
     setHookEdit((data as any)?.hook_text ?? (data as any)?.hook_variant ?? "");
     setPresetEdit((data as any)?.preset ?? "pin-organic");
+    setPinTitle((data as any)?.pin_title ?? "");
+    setPinDesc((data as any)?.pin_description ?? "");
+    setPinUrl((data as any)?.pin_destination_url ?? "");
+    setHashtags(Array.isArray((data as any)?.hashtags) ? (data as any).hashtags.join(" ") : "");
+    setVoiceStyle(((data as any)?.voice_style as VoiceStyleId) ?? "lifestyle_female");
     setLoading(false);
   };
 
@@ -90,10 +102,50 @@ export default function CinematicAdPreviewPage() {
 
   const handleApproveAndPublish = async () => {
     if (!jobId) return;
+    setBusy("approve");
+    try {
+      await callFn("cinematic-ad-approve", {
+        job_id: jobId,
+        pin_title: pinTitle,
+        pin_description: pinDesc,
+        pin_destination_url: pinUrl,
+        hashtags: hashtags.split(/\s+/).filter(Boolean),
+        preset: presetEdit,
+      });
+      toast.success("Approved — render queued");
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  };
+
+  const handlePublishPinterest = async () => {
+    if (!jobId) return;
     setBusy("publish");
     try {
       await callFn("cinematic-ad-push-pinterest", { job_id: jobId });
-      toast.success("Approved & pushed to Pinterest");
+      toast.success("Pushed to Pinterest");
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  };
+
+  const handleRegenVO = async () => {
+    if (!jobId) return;
+    setBusy("regen-vo");
+    try {
+      await callFn("cinematic-ad-prepare", { job_id: jobId, product_slug: job.product_slug, regenerate: "vo", voice_style: voiceStyle });
+      toast.success("Voiceover regenerated");
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  };
+
+  const handleRegenHook = async () => {
+    if (!jobId) return;
+    setBusy("regen-hook");
+    try {
+      await callFn("cinematic-ad-prepare", { job_id: jobId, product_slug: job.product_slug, regenerate: "copy", voice_style: voiceStyle });
+      toast.success("Hook & pin copy regenerated");
       await load();
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(null); }
@@ -150,10 +202,79 @@ export default function CinematicAdPreviewPage() {
           <div className="text-xs text-muted-foreground">
             {job.output_width}×{job.output_height} · {job.output_duration_seconds?.toFixed?.(1) ?? "—"}s · {(Number(job.output_file_size_bytes ?? 0) / 1024 / 1024).toFixed(2)} MB
           </div>
+          {job.output_mp4_url && (
+            <a href={job.output_mp4_url} download className="text-xs inline-flex items-center gap-1 text-primary hover:underline">
+              <Download className="w-3 h-3" /> Download MP4
+            </a>
+          )}
         </div>
 
         {/* Right column */}
         <div className="space-y-4">
+          {/* Generated concept */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Generated concept</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {(Array.isArray(job.scene_assets) ? job.scene_assets : []).map((s: any) => (
+                  <div key={s.index} className="relative aspect-[9/16] bg-muted rounded overflow-hidden">
+                    {s.image_url && <img src={s.image_url} alt="" className="w-full h-full object-cover" />}
+                    <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1 py-0.5 truncate">{s.caption}</div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <Label className="text-xs">VO script</Label>
+                <Textarea readOnly value={job.vo_script ?? ""} rows={4} className="text-xs" />
+              </div>
+              <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
+                <Badge variant="outline">Voice: {job.voice_style ?? "—"}</Badge>
+                <Badge variant="outline">Voice ID: {(job.voice_id ?? "").slice(0, 8)}</Badge>
+                <Badge variant="outline">~{job.output_duration_seconds ?? "—"}s</Badge>
+                {Array.isArray(job.media_warnings) && job.media_warnings.length > 0 && (
+                  <Badge variant="outline" className="text-amber-600 border-amber-300">
+                    <AlertTriangle className="w-3 h-3 mr-1" /> {job.media_warnings.length} media warning(s)
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={handleRegenHook} disabled={busy !== null}>
+                  <Sparkles className={`w-3.5 h-3.5 mr-1 ${busy === "regen-hook" ? "animate-spin" : ""}`} /> Regenerate hook & copy
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleRegenVO} disabled={busy !== null}>
+                  <Mic className={`w-3.5 h-3.5 mr-1 ${busy === "regen-vo" ? "animate-spin" : ""}`} /> Regenerate voiceover
+                </Button>
+              </div>
+              <div>
+                <Label className="text-xs">Voiceover style</Label>
+                <VoiceStyleSelector value={voiceStyle} onChange={setVoiceStyle} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pin copy editor */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Pinterest copy (editable)</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <div>
+                <Label className="text-xs">Pin title</Label>
+                <Input value={pinTitle} onChange={(e) => setPinTitle(e.target.value)} maxLength={100} />
+              </div>
+              <div>
+                <Label className="text-xs">Pin description</Label>
+                <Textarea value={pinDesc} onChange={(e) => setPinDesc(e.target.value)} rows={3} maxLength={480} />
+              </div>
+              <div>
+                <Label className="text-xs">Destination URL</Label>
+                <Input value={pinUrl} onChange={(e) => setPinUrl(e.target.value)} placeholder="https://getpawsy.pet/products/..." />
+              </div>
+              <div>
+                <Label className="text-xs">Hashtags (space separated)</Label>
+                <Input value={hashtags} onChange={(e) => setHashtags(e.target.value)} placeholder="#cats #petproducts" />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Validator */}
           <Card>
             <CardHeader className="pb-3">
@@ -255,8 +376,11 @@ export default function CinematicAdPreviewPage() {
             <CardHeader className="pb-3"><CardTitle className="text-base">Approve & publish</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                <Button onClick={handleApproveAndPublish} disabled={!canPublish || busy !== null}>
-                  <Upload className="w-4 h-4 mr-1" /> Approve & push to Pinterest
+                <Button onClick={handleApproveAndPublish} disabled={busy !== null}>
+                  <CheckCircle2 className="w-4 h-4 mr-1" /> Approve & render MP4
+                </Button>
+                <Button onClick={handlePublishPinterest} disabled={!canPublish || busy !== null} variant="secondary">
+                  <Upload className="w-4 h-4 mr-1" /> Publish to Pinterest
                 </Button>
                 <Button onClick={handleForcePublish} disabled={busy !== null || !job.output_mp4_url} variant="outline">
                   Force publish (override validator)
@@ -267,6 +391,11 @@ export default function CinematicAdPreviewPage() {
               )}
               {job.approved_at && (
                 <p className="text-xs text-muted-foreground">Approved {new Date(job.approved_at).toLocaleString()}</p>
+              )}
+              {job.pinterest_pin_url && (
+                <a href={job.pinterest_pin_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">
+                  View live pin →
+                </a>
               )}
             </CardContent>
           </Card>
