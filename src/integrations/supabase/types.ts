@@ -1018,10 +1018,13 @@ export type Database = {
           last_pinterest_attempt_at: string | null
           motion_score: number | null
           music_url: string | null
+          output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
+          output_height: number | null
           output_mp4_url: string | null
           output_thumbnail_url: string | null
+          output_width: number | null
           pinterest_asset_id: string | null
           pinterest_pin_id: string | null
           pinterest_pin_url: string | null
@@ -1064,10 +1067,13 @@ export type Database = {
           last_pinterest_attempt_at?: string | null
           motion_score?: number | null
           music_url?: string | null
+          output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
+          output_height?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
+          output_width?: number | null
           pinterest_asset_id?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
@@ -1110,10 +1116,13 @@ export type Database = {
           last_pinterest_attempt_at?: string | null
           motion_score?: number | null
           music_url?: string | null
+          output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
+          output_height?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
+          output_width?: number | null
           pinterest_asset_id?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
