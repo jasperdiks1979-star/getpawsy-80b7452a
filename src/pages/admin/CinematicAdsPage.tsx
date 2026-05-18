@@ -394,14 +394,21 @@ export default function CinematicAdsPage() {
   }, []);
 
   const generate = async () => {
+    if (!pickedProduct?.slug && !productSlug) {
+      toast.error("Pick a product first");
+      return;
+    }
+    const slug = pickedProduct?.slug ?? productSlug;
     setBusyId("__new__");
     try {
       const { data, error } = await supabase.functions.invoke("cinematic-ad-prepare", {
-        body: { product_slug: productSlug, hook_variant: hookVariant },
+        body: { product_slug: slug, hook_variant: hookVariant, voice_style: voiceStyle },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "prepare failed");
-      toast.success("Assets prepared. Render the MP4 locally with the Remotion script, then push to Pinterest.");
+      const jobId = (data as any)?.job?.id;
+      toast.success("Assets prepared — review and approve in preview.");
+      if (jobId) navigate(`/admin/cinematic-ads/preview/${jobId}`);
       load();
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
     finally { setBusyId(null); }
