@@ -171,6 +171,43 @@ export default function CinematicAdPreviewPage() {
     finally { setBusy(null); }
   };
 
+  const selectHook = async (idx: number) => {
+    if (!jobId) return;
+    const hooks: HookVariantMeta[] = Array.isArray(job?.hook_variants_meta) ? job.hook_variants_meta : [];
+    const picked = hooks[idx];
+    if (!picked) return;
+    setBusy(`hook-${idx}`);
+    try {
+      const { error } = await supabase.from("cinematic_ad_jobs").update({
+        selected_hook_index: idx,
+        hook_text: picked.text,
+        hook_variant: picked.text,
+      }).eq("id", jobId);
+      if (error) throw error;
+      toast.success(`Hook set: ${picked.text.slice(0, 40)}`);
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  };
+
+  const selectCta = async (idx: number) => {
+    if (!jobId) return;
+    const ctas: CtaVariantMeta[] = Array.isArray(job?.cta_variants_meta) ? job.cta_variants_meta : [];
+    const picked = ctas[idx];
+    if (!picked) return;
+    setBusy(`cta-${idx}`);
+    try {
+      const { error } = await supabase.from("cinematic_ad_jobs").update({
+        selected_cta_index: idx,
+        cta_text: picked.text,
+      }).eq("id", jobId);
+      if (error) throw error;
+      toast.success(`CTA set: ${picked.text}`);
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  };
+
   const handleForcePublish = async () => {
     if (!jobId) return;
     if (!confirm("Validation has NOT passed. Force-publish anyway?")) return;
