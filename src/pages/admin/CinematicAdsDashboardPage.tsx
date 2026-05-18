@@ -449,6 +449,11 @@ export default function CinematicAdsDashboardPage() {
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground shrink-0">
                       {j.output_mp4_url && <span className="flex items-center gap-1"><Film className="h-3 w-3" /> MP4</span>}
                       {j.pinterest_pin_id && <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" /> Pin</span>}
+                      <a
+                        href={`/admin/cinematic-ads/preview/${j.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-primary underline-offset-2 hover:underline"
+                      >Preview</a>
                     </div>
                   </button>
                 );
