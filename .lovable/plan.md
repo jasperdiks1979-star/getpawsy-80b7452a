@@ -1,120 +1,85 @@
-# Cinematic Ad Pipeline — Viral Vertical Rebuild
+## Goal
+Turn the existing Cinematic Ads infrastructure into a professional Pinterest Vertical Video Ad generator that works for **any product** in the catalog, with a real product picker, premium voiceover selection, full preview-before-render workflow, and end-to-end quality validation.
 
-Goal: every Pinterest/TikTok render is true 1080×1920 motion (no slideshows), with hook typography, mobile-safe zones, dynamic scene composition, preset-driven presets, automated validation, and an admin preview before publish.
+Most plumbing already exists: `cinematic_ad_jobs` table, `cinematic-ad-prepare/queue-render/render-webhook/validate/push-pinterest` edge functions, Remotion `viral-vertical` composition, `CinematicAdPreviewPage`, and Pinterest publish. This plan layers the missing **professional product-picker UX, voice-style system, copy generation, approval gate, and quality checks** on top of that foundation.
 
-## 1. New Remotion composition: `viral-vertical`
+## Scope of changes
 
-File: `remotion/src/MainVideoViralVertical.tsx` + scenes under `remotion/src/scenes/viral/`.
+### 1. Database — minor additive migration
+Add to `cinematic_ad_jobs`:
+- `voice_style` text (one of `lifestyle_female`, `pet_parent`, `narrator`, `social_energetic`)
+- `pin_title`, `pin_description`, `pin_destination_url` text
+- `hashtags` text[]
+- `approved_for_render` boolean default false
+- `media_warnings` jsonb (asset quality warnings surfaced at prepare-time)
 
-Props-driven (Zod), so one composition serves all presets and any product:
-```ts
-type ViralProps = {
-  preset: 'pin-organic' | 'pin-ads' | 'tt-organic' | 'tt-spark';
-  hook: string;          // "I haven't scooped in 3 months"
-  subhook?: string;
-  cta: string;
-  ctaUrl: string;
-  product: { name: string; price: string; slug: string };
-  media: Array<           // 1..N, mixed
-    | { kind:'image'; src:string; focus?:{x:number;y:number}; motion?:'kenburns-in'|'kenburns-out'|'pan-left'|'pan-right'|'parallax' }
-    | { kind:'video';  src:string; trimStart?:number; trimEnd?:number }
-  >;
-  music?: string;
-};
-```
+No destructive changes. RLS already restricted to admins.
 
-Scenes (all 1080×1920, all use safe zones 96px top/bottom, 64px sides):
-1. `ViralHook` — frame 0-50, hook typography lands in <15 frames (≤0.5s), Ken Burns + colored over­lay.
-2. `ViralFeature` (×2-3) — closeup of media item with parallax layers and label chip.
-3. `ViralLifestyle` — wide framing with subtle pan + grain.
-4. `ViralCTA` — product name, price, big CTA, animated underline, last 3-4s held with micro-motion.
+### 2. Voice style registry (shared)
+New `supabase/functions/_shared/voice-styles.ts`:
+- Maps style id → `{ voice_id (ElevenLabs), label, persona_prompt, vo_pacing }`.
+- 4 styles: `lifestyle_female` (Sarah), `pet_parent` (Matilda warm), `narrator` (Brian calm), `social_energetic` (Liam punchy).
+- Used by `cinematic-ad-prepare` to pick voice + steer the VO script tone, and surfaced in the UI as a selector.
 
-Shared module `remotion/src/viralShared.tsx`:
-- `SafeFrame` helper rendering safe-zone guides (only when `?debug=1` URL param).
-- `KenBurnsLayer` for any still: detects aspect ratio, picks `cover` fit, animates `scale 1.04→1.18` + `translate` based on `focus`.
-- `ParallaxStack` — splits image into 3 z-layers via duplicated `Img` with different `translateY` * frame.
-- `MotionGenerator` — when media has only 1 still, auto-builds: zoom-in → cut → pan-right → cut → zoom-out, with crossfades, so it never feels like a slideshow.
-- `HookText` — large display font, top-safe, mask-reveal per word using spring stagger.
-- `Caption` — bottom-safe word-highlight subtitles.
+### 3. `cinematic-ad-prepare` upgrades
+- Accept `product_slug` for **any** product (lookup `products` by slug, fall back to id). Validate product has ≥1 usable image; otherwise populate `media_warnings` and flag `synth_motion=true`.
+- Accept `voice_style` and resolve `voice_id` from the registry.
+- Extend the AI prompt to also generate Pinterest copy: `pin_title`, `pin_description`, `hashtags`, `overlay_hook`, scene captions, CTA. Store on the job row.
+- Generate VO with the selected ElevenLabs voice, with explicit natural pauses (`<break time="350ms"/>`) and a strong final CTA. Save `duration_seconds`, `vo_url`, `voice_id`, `voice_style`, `vo_script`.
+- Always set `preset='pin-organic'` (1080x1920) unless overridden.
+- Set status `awaiting_approval` (not auto-queued) so the preview gate runs.
 
-Registered in `remotion/src/Root.tsx` with `calculateMetadata` for dynamic duration per preset (18s organic, 22s ads).
+### 4. `cinematic-ad-queue-render` gate
+- Refuse to queue unless `approved_for_render = true`. New `cinematic-ad-approve` edge function stamps `approved_for_render`, `approved_at`, `approved_by` then calls queue-render.
 
-## 2. Preset registry
+### 5. `cinematic-ad-push-pinterest` quality validation
+Already checks aspect & motion. Extend to also assert:
+- VO exists and `output_duration_seconds` ∈ [12, 25].
+- `output_mp4_url` returns HTTP 200 with `Content-Type: video/*`.
+- `pin_title` / `pin_description` populated.
+On success, save `pinterest_pin_url`.
 
-`supabase/functions/_shared/cinematic-presets.ts` — single source of truth, reused by edge functions and the React preview UI.
+### 6. Frontend — `CinematicAdsPage`
+Replace the current free-text slug input with a **searchable product picker**:
+- New component `ProductPicker.tsx` — debounced search against `products_public` view filtering on `name`, `slug`, `category`. Shows thumbnail, title, price, category, slug, stock badge, image count. Warns if `< 2 images`.
+- Voice style selector (4 options) with audio preview snippet (optional, plain `<audio>` for now).
+- "Generate ad concept" button → invokes `cinematic-ad-prepare` with `{ product_slug, voice_style }`.
+- After prepare returns, route to `/admin/cinematic-ads/preview/:jobId`.
 
-```ts
-export const PRESETS = {
-  'pin-organic': { width:1080, height:1920, fps:30, durationSec:18, music:'soft', captions:true, ctaHoldFrames:90, brandLogoFromFrame:60 },
-  'pin-ads':     { width:1080, height:1920, fps:30, durationSec:22, music:'soft', captions:true, ctaHoldFrames:120, brandLogoFromFrame:0, disclosure:true },
-  'tt-organic':  { width:1080, height:1920, fps:30, durationSec:18, music:'energy', captions:true, hookByFrame:24, brandLogoFromFrame:60 },
-  'tt-spark':    { width:1080, height:1920, fps:30, durationSec:22, music:'energy', captions:true, hookByFrame:24, brandLogoFromFrame:0, disclosure:true },
-};
-```
+### 7. `CinematicAdPreviewPage` upgrades
+Show full approval panel:
+- Selected product card (image, title, price, slug).
+- Generated scenes grid (6 scenes with thumbnails + captions + duration).
+- Overlay hook text, VO script (collapsible), voice style + voice id, estimated duration.
+- Pin title, description, hashtags, destination URL (editable inline).
+- Action buttons: **Regenerate hook**, **Regenerate voiceover**, **Approve & Render**, **Render MP4** (after queued), **Publish to Pinterest**, **Download MP4**.
+- `Approve & Render` saves any inline edits then calls `cinematic-ad-approve`.
+- `Regenerate hook` calls `cinematic-ad-prepare` with `{ job_id, regenerate: 'hook' }`.
+- `Regenerate voiceover` calls prepare with `{ job_id, regenerate: 'vo', voice_style }`.
 
-## 3. Edge functions — pipeline changes
+### 8. Quality goal
+- Composition is already `viral-vertical` 1080×1920 with Ken Burns, parallax, animated text (built last iteration). No new Remotion work needed beyond ensuring `synth_motion=true` is set when only 1 image is available so the existing `MotionGenerator` kicks in.
 
-- `cinematic-ad-prepare`: accept `preset`, fetch product + up-to-6 source images + any short clips, build `ViralProps`, push to `cinematic_ad_jobs.payload`. If only 1 still, mark `payload.synth_motion=true` so the composition uses `MotionGenerator`.
-- `cinematic-ad-queue-render` / `cinematic-ad-dispatch`: pass `compositionId='viral-vertical'` and the resolved preset's `width/height/fps/durationInFrames` to the render worker (GitHub Actions / render-worker), removing any 1:1 or 16:9 fallback paths.
-- `cinematic-ad-render-webhook`: on upload, before flipping job to `render_complete`, call new `cinematic-ad-validate`.
-- **NEW `cinematic-ad-validate`**: ffprobe the MP4 → assert `width===1080 && height===1920`, no black-bar borders (sample top/bottom row luma via ffmpeg `cropdetect`), duration within ±1s of preset, audio loudness in range, and a **motion score** = average frame-diff over sampled frames (ffmpeg `select='gt(scene,0.0)'` + stat). Threshold defaults: motion_score ≥ 0.012. Stores `validation_report` JSONB on `cinematic_ad_jobs`. If fail → job → `failed_validation` (does not push to Pinterest).
-- `cinematic-ad-push-pinterest`: refuses to publish unless `validation_report.passed === true`.
+## Out of scope
+- Music selection UI (still uses default track).
+- A/B variant rendering.
+- TikTok publish endpoint (preset exists, no publisher yet).
+- In-browser VO waveform editor.
 
-## 4. Database
+## Files
 
-Migration:
-```sql
-ALTER TABLE public.cinematic_ad_jobs
-  ADD COLUMN preset text NOT NULL DEFAULT 'pin-organic',
-  ADD COLUMN validation_report jsonb,
-  ADD COLUMN motion_score numeric,
-  ADD COLUMN approved_at timestamptz,
-  ADD COLUMN approved_by uuid;
--- new status value handled in app (failed_validation, awaiting_approval)
-```
+**Create**
+- `supabase/migrations/<ts>_cinematic_ads_pro.sql`
+- `supabase/functions/_shared/voice-styles.ts`
+- `supabase/functions/cinematic-ad-approve/index.ts`
+- `src/components/admin/cinematic/ProductPicker.tsx`
+- `src/components/admin/cinematic/VoiceStyleSelector.tsx`
 
-## 5. Admin preview panel
+**Edit**
+- `supabase/functions/cinematic-ad-prepare/index.ts` (any-product lookup, copy gen, voice style, approval status)
+- `supabase/functions/cinematic-ad-queue-render/index.ts` (approval gate)
+- `supabase/functions/cinematic-ad-push-pinterest/index.ts` (extra validations)
+- `src/pages/admin/CinematicAdsPage.tsx` (picker + voice selector)
+- `src/pages/admin/CinematicAdPreviewPage.tsx` (full approval workflow + new buttons)
 
-Route: `/admin/cinematic-ads/preview/:jobId` (lazy-loaded under existing admin chunk).
-
-Layout:
-- Sticky 9:16 `<video>` player (max-h 70vh) playing the rendered MP4.
-- Right column:
-  - Validator badges (aspect, black bars, duration, motion score, caption-safety).
-  - Per-scene timeline (chips with thumbnails from ffmpeg-extracted frames at scene boundaries) — click to seek.
-  - Override controls: change preset, swap hook text, re-queue render for a single scene (calls `cinematic-ad-queue-render` with `regenerateScene:n`).
-  - "Approve & Publish" button (disabled until validator passes). Writes `approved_at/by`, then invokes `cinematic-ad-push-pinterest`.
-
-A new column "Preview" in the existing dashboard table opens this panel.
-
-## Technical notes
-
-- Remotion: animations strictly `useCurrentFrame()` + `interpolate`/`spring`. Hook typography uses `@remotion/google-fonts/Inter` (already in deps) + `Bebas Neue` for display.
-- Motion synth from single still: 3 ffmpeg-style Ken-Burns sub-clips concatenated inside Remotion (no real ffmpeg call — pure transforms), so it stays one-pass render.
-- Validator runs in a Deno edge function using `Deno.Command("ffprobe"…)` if available; render-worker (Node) is the fallback host and posts the report back to a new `cinematic-ad-validation-callback` endpoint.
-- Safe zones enforced via shared `SAFE = { top:96, bottom:240, x:64 }` constants; the composition's `?debug=1` flag draws them for QA.
-- All new edge functions follow project standard JSON contract `{ok, traceId, message}` and use `npm:@supabase/supabase-js@2.49.1`.
-
-## Files touched
-
-Created:
-- `remotion/src/MainVideoViralVertical.tsx`
-- `remotion/src/viralShared.tsx`
-- `remotion/src/scenes/viral/{Hook,Feature,Lifestyle,CTA}.tsx`
-- `supabase/functions/_shared/cinematic-presets.ts`
-- `supabase/functions/cinematic-ad-validate/index.ts`
-- `supabase/functions/cinematic-ad-validation-callback/index.ts`
-- `supabase/migrations/<ts>_cinematic_viral.sql`
-- `src/pages/admin/CinematicAdPreviewPage.tsx`
-- `src/components/admin/cinematic/{ValidatorBadges,SceneTimeline,OverrideControls}.tsx`
-
-Edited:
-- `remotion/src/Root.tsx`
-- `supabase/functions/cinematic-ad-{prepare,queue-render,dispatch,render-webhook,push-pinterest}/index.ts`
-- `src/pages/admin/CinematicAdsDashboardPage.tsx` (add Preview column + Preset filter)
-- `src/App.tsx` (route)
-
-## Out of scope (flagged for later)
-- In-browser music volume / image swap editor.
-- Auto A/B variant generation across presets.
-- TikTok publish endpoint (still manual via link-in-bio per memory).
+Will report MP4 url, pin url, and validation report back to the user after a test job.
