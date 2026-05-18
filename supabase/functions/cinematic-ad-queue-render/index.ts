@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { PRESETS, getPreset, durationFrames, type CinematicPresetId } from "../_shared/cinematic-presets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -27,6 +28,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const jobId = String(body.job_id ?? "");
+    const presetId = (body.preset ?? "") as string;
     if (!jobId) return json({ ok: false, traceId: trace, message: "job_id required" }, 400);
 
     const { data: job, error: jobErr } = await admin
@@ -36,6 +38,10 @@ Deno.serve(async (req) => {
       return json({ ok: false, traceId: trace, message: `job status '${job.status}' not eligible (need prepared/failed)` }, 400);
     }
 
+    // Resolve preset: explicit body > job row > default.
+    const effectivePreset = getPreset(presetId || job.preset);
+    const totalFrames = durationFrames(effectivePreset);
+
     const renderToken = crypto.randomUUID();
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
@@ -43,7 +49,12 @@ Deno.serve(async (req) => {
         status: "render_queued",
         render_token: renderToken,
         render_queued_at: new Date().toISOString(),
+        preset: effectivePreset.id,
         error_message: null,
+        validation_report: null,
+        motion_score: null,
+        approved_at: null,
+        approved_by: null,
         status_message: "Queued for external render worker.",
       })
       .eq("id", jobId);
@@ -60,6 +71,30 @@ Deno.serve(async (req) => {
       output_target: `cinematic-ads/${job.product_slug}/${jobId}.mp4`,
       render_token: renderToken,
       webhook_url: webhookUrl,
+      // NEW: viral-vertical contract — render worker must honor these
+      composition_id: "viral-vertical",
+      width: effectivePreset.width,
+      height: effectivePreset.height,
+      fps: effectivePreset.fps,
+      duration_in_frames: totalFrames,
+      preset: effectivePreset.id,
+      input_props: {
+        preset: effectivePreset.id,
+        hook: job.hook_text ?? job.hook_variant ?? "Stop scrolling. Look at this.",
+        subhook: job.subhook_text ?? undefined,
+        cta: job.cta_text ?? "Tap to Shop →",
+        ctaUrl: `https://getpawsy.pet/products/${job.product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${effectivePreset.id}`,
+        product: {
+          name: job.product_name ?? job.product_slug,
+          price: job.product_price ?? "",
+          slug: job.product_slug,
+        },
+        media: Array.isArray(job.scene_assets) ? job.scene_assets : [],
+        music: job.music_url ?? undefined,
+        disclosure: effectivePreset.disclosure,
+        hookByFrame: effectivePreset.hookByFrame,
+        ctaHoldFrames: effectivePreset.ctaHoldFrames,
+      },
     };
 
     const command = `JOB_ID=${jobId} RENDER_TOKEN=${renderToken} WEBHOOK_URL=${webhookUrl} bun remotion/scripts/render-cinematic-ad.mjs`;
@@ -69,6 +104,7 @@ Deno.serve(async (req) => {
       traceId: trace,
       message: "Queued for render worker.",
       payload,
+      preset: effectivePreset,
       command,
       webhook_url: webhookUrl,
       worker_secret_configured: RENDER_WORKER_SECRET.length > 0,
