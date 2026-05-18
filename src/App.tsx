@@ -1920,6 +1920,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-ads/preview/:jobId"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicAdPreviewPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="github-sync"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
