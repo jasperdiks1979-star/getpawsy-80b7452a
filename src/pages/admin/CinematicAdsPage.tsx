@@ -9,6 +9,9 @@ import { Loader2, Sparkles, Video, ExternalLink, Send, Download, Cloud, Copy, Re
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
+import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
+import VoiceStyleSelector, { type VoiceStyleId } from "@/components/admin/cinematic/VoiceStyleSelector";
 
 type Job = {
   id: string;
@@ -218,6 +221,9 @@ export default function CinematicAdsPage() {
   const [openPreview, setOpenPreview] = useState<Record<string, boolean>>({});
   const [productSlug, setProductSlug] = useState("enclosed-cat-litter-box-extra-large-flip-top");
   const [hookVariant, setHookVariant] = useState("default");
+  const [pickedProduct, setPickedProduct] = useState<PickerProduct | null>(null);
+  const [voiceStyle, setVoiceStyle] = useState<VoiceStyleId>("lifestyle_female");
+  const navigate = useNavigate();
   const [smoke, setSmoke] = useState<any>(null);
   const [smokeBusy, setSmokeBusy] = useState(false);
   const [e2e, setE2e] = useState<any>(null);
@@ -388,14 +394,21 @@ export default function CinematicAdsPage() {
   }, []);
 
   const generate = async () => {
+    if (!pickedProduct?.slug && !productSlug) {
+      toast.error("Pick a product first");
+      return;
+    }
+    const slug = pickedProduct?.slug ?? productSlug;
     setBusyId("__new__");
     try {
       const { data, error } = await supabase.functions.invoke("cinematic-ad-prepare", {
-        body: { product_slug: productSlug, hook_variant: hookVariant },
+        body: { product_slug: slug, hook_variant: hookVariant, voice_style: voiceStyle },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "prepare failed");
-      toast.success("Assets prepared. Render the MP4 locally with the Remotion script, then push to Pinterest.");
+      const jobId = (data as any)?.job?.id;
+      toast.success("Assets prepared — review and approve in preview.");
+      if (jobId) navigate(`/admin/cinematic-ads/preview/${jobId}`);
       load();
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
     finally { setBusyId(null); }
@@ -1124,24 +1137,28 @@ export default function CinematicAdsPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Generate Viral Ad</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2">
-              <label className="text-xs text-muted-foreground">Product slug</label>
-              <Input value={productSlug} onChange={(e) => setProductSlug(e.target.value)} placeholder="product-slug" />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Hook variant</label>
-              <Input value={hookVariant} onChange={(e) => setHookVariant(e.target.value)} placeholder="default" />
-            </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Product</label>
+            <ProductPicker
+              value={pickedProduct}
+              onChange={(p) => { setPickedProduct(p); if (p) setProductSlug(p.slug); }}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Voiceover style</label>
+            <VoiceStyleSelector value={voiceStyle} onChange={setVoiceStyle} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Hook variant (optional override)</label>
+            <Input value={hookVariant} onChange={(e) => setHookVariant(e.target.value)} placeholder="default" />
           </div>
           <Button onClick={generate} disabled={busyId === "__new__"} className="w-full sm:w-auto">
             {busyId === "__new__" ? <Loader2 className="size-4 animate-spin mr-2" /> : <Sparkles className="size-4 mr-2" />}
-            Prepare cinematic assets
+            Generate ad concept
           </Button>
           <p className="text-xs text-muted-foreground">
-            Step 1 (this button): generates 6 AI scene stills + ElevenLabs voiceover (Sarah). Step 2: render MP4 locally
-            via <code className="text-[10px] bg-muted px-1 py-0.5 rounded">remotion/scripts/render-cinematic-ad.mjs</code>.
-            Step 3: click <strong>Push to Pinterest</strong> to register the MP4.
+            Generates 6 AI scene stills, professional voiceover, and Pinterest copy. You'll land on the
+            preview page to approve, regenerate, render, and publish to Pinterest.
           </p>
         </CardContent>
       </Card>

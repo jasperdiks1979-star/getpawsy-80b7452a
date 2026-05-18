@@ -37,6 +37,9 @@ Deno.serve(async (req) => {
     if (!["prepared", "failed", "render_queued"].includes(job.status)) {
       return json({ ok: false, traceId: trace, message: `job status '${job.status}' not eligible (need prepared/failed)` }, 400);
     }
+    if (!job.approved_for_render) {
+      return json({ ok: false, traceId: trace, message: "job not approved for render — call cinematic-ad-approve first" }, 412);
+    }
 
     // Resolve preset: explicit body > job row > default.
     const effectivePreset = getPreset(presetId || job.preset);

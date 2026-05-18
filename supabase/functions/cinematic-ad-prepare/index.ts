@@ -20,6 +20,7 @@
  * Response: { ok, traceId, message, job }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveVoiceStyle, type VoiceStyle } from "../_shared/voice-styles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -426,7 +427,7 @@ async function aiImageEdit(prompt: string, sourceUrl: string, apiKey: string): P
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }
 
-async function elevenLabsTts(text: string, voiceId: string, apiKey: string): Promise<Uint8Array> {
+async function elevenLabsTts(text: string, voiceId: string, apiKey: string, settings?: { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean; speed: number }): Promise<Uint8Array> {
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
     {
@@ -435,12 +436,76 @@ async function elevenLabsTts(text: string, voiceId: string, apiKey: string): Pro
       body: JSON.stringify({
         text,
         model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.4, use_speaker_boost: true, speed: 1.0 },
+        voice_settings: settings ?? { stability: 0.5, similarity_boost: 0.75, style: 0.4, use_speaker_boost: true, speed: 1.0 },
       }),
     },
   );
   if (!res.ok) throw new Error(`elevenlabs ${res.status}: ${await res.text()}`);
   return new Uint8Array(await res.arrayBuffer());
+}
+
+/**
+ * Pinterest pin copy. Separate from VO/captions so we can regenerate it
+ * independently and so failures don't block the render pipeline.
+ */
+type PinCopy = {
+  pin_title: string;
+  pin_description: string;
+  overlay_hook: string;
+  cta: string;
+  hashtags: string[];
+};
+
+async function generatePinCopy(
+  product: { name: string; description?: string | null; category?: string | null; primary_species?: string | null; slug: string },
+  voiceStyle: VoiceStyle,
+  apiKey: string,
+): Promise<PinCopy | null> {
+  const sys = `You are a senior US-native Pinterest ad copywriter for GetPawsy, a premium pet brand. Voice persona for this ad: ${voiceStyle.persona}. Compliance: NO health claims, NO "vet-approved", NO "eco-friendly", NO fake reviews, NO price anchoring. Premium US tone.`;
+  const user = `Product:
+- Name: ${product.name}
+- Category: ${product.category ?? "pet product"}
+- Species: ${product.primary_species ?? "pet"}
+- Description: ${(product.description ?? "").slice(0, 500)}
+
+Return STRICT JSON, no markdown:
+{
+  "pin_title": "<<=100 chars, Pinterest pin title, US-native, specific, no clickbait>",
+  "pin_description": "<<=480 chars, conversion-focused pin description, ends with: Shop now at GetPawsy.pet>",
+  "overlay_hook": "<3-6 word on-screen hook text for the first scene>",
+  "cta": "<<=20 char CTA button text>",
+  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5"]
+}`;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) { console.error("[pin-copy] non-2xx", res.status); return null; }
+    const data = await res.json();
+    const raw: string = data?.choices?.[0]?.message?.content ?? "";
+    const cleaned = raw.replace(/^```json\s*|\s*```$/g, "").trim();
+    const p = JSON.parse(cleaned);
+    if (typeof p?.pin_title !== "string" || typeof p?.pin_description !== "string") return null;
+    return {
+      pin_title: String(p.pin_title).slice(0, 100),
+      pin_description: String(p.pin_description).slice(0, 480),
+      overlay_hook: String(p.overlay_hook ?? "Stop scrolling.").slice(0, 60),
+      cta: String(p.cta ?? "Shop now").slice(0, 20),
+      hashtags: Array.isArray(p.hashtags) ? p.hashtags.map((s: unknown) => String(s || "").trim()).filter(Boolean).slice(0, 8) : [],
+    };
+  } catch (e) {
+    console.error("[pin-copy] failed", e);
+    return null;
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -476,7 +541,9 @@ const handler = async (req: Request): Promise<Response> => {
 
   const product_slug: string = body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top";
   const hook_variant: string = body.hook_variant ?? "default";
-  const voice_id: string = body.voice_id ?? SARAH;
+  const voiceStyle = resolveVoiceStyle(body.voice_style);
+  const voice_id: string = body.voice_id ?? voiceStyle.voice_id;
+  const regenerate: string | null = typeof body.regenerate === "string" ? body.regenerate : null;
   const requestedVariantCount: number = Math.max(
     1,
     Math.min(MAX_VARIANT_COUNT, Math.floor(Number(body.variant_count) || DEFAULT_VARIANT_COUNT)),
@@ -485,7 +552,7 @@ const handler = async (req: Request): Promise<Response> => {
   // Lookup product to get hero image + copy-generation fields
   const { data: product, error: prodErr } = await admin
     .from("products_public")
-    .select("slug, name, image_url, description, category, primary_species, primary_intent")
+    .select("slug, name, image_url, images, description, category, primary_species, primary_intent, price")
     .eq("slug", product_slug)
     .maybeSingle();
 
@@ -495,6 +562,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
   const productName: string = product.name ?? product_slug;
   const heroUrl: string = product.image_url;
+  const productImages: string[] = Array.isArray((product as any).images) ? (product as any).images.filter(Boolean) : [];
+  const mediaWarnings: Array<{ code: string; message: string }> = [];
+  if (productImages.length < 2) {
+    mediaWarnings.push({ code: "thin_media", message: `Only ${productImages.length || 1} usable image — AI scene synth will be used to add motion.` });
+  }
 
   // Find or create job
   let jobId: string | undefined = body.job_id;
@@ -505,16 +577,66 @@ const handler = async (req: Request): Promise<Response> => {
         product_slug,
         hook_variant,
         voice_id,
+        voice_style: voiceStyle.id,
         status: "preparing",
         status_message: "queued",
         created_by: userData.user.id,
+        media_warnings: mediaWarnings,
+        approved_for_render: false,
+        pin_destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,
       })
       .select("id")
       .single();
     if (insErr) return json(500, { ok: false, traceId, message: insErr.message });
     jobId = created.id;
   } else {
-    await admin.from("cinematic_ad_jobs").update({ status: "preparing", status_message: "preparing assets", error_message: null }).eq("id", jobId);
+    await admin.from("cinematic_ad_jobs").update({
+      status: "preparing",
+      status_message: regenerate ? `regenerating ${regenerate}` : "preparing assets",
+      error_message: null,
+      voice_style: voiceStyle.id,
+      voice_id,
+      media_warnings: mediaWarnings,
+      approved_for_render: false,
+    }).eq("id", jobId);
+  }
+
+  // ── Fast path: regenerate only voiceover or only pin copy ─────────────
+  if (regenerate === "vo" && body.job_id) {
+    try {
+      const { data: existing } = await admin.from("cinematic_ad_jobs").select("vo_script").eq("id", jobId).single();
+      const voScript = String(body.vo_script ?? existing?.vo_script ?? DEFAULT_VO(productName));
+      const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey, voiceStyle.settings);
+      const voPath = `${jobId}/voiceover-${Date.now()}.mp3`;
+      await admin.storage.from("cinematic-ads").upload(voPath, voBytes, { contentType: "audio/mpeg", upsert: true });
+      const voUrl = admin.storage.from("cinematic-ads").getPublicUrl(voPath).data.publicUrl;
+      const { data: u } = await admin.from("cinematic_ad_jobs").update({
+        vo_url: voUrl, vo_script: voScript, voice_id, voice_style: voiceStyle.id,
+        status: "prepared", status_message: "voiceover regenerated", approved_for_render: false,
+      }).eq("id", jobId).select("*").single();
+      return json(200, { ok: true, traceId, message: "voiceover regenerated", job: u });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return json(500, { ok: false, traceId, message: msg });
+    }
+  }
+
+  if (regenerate === "copy" || regenerate === "hook") {
+    try {
+      const pin = await generatePinCopy(product as any, voiceStyle, lovableKey);
+      const { data: u } = await admin.from("cinematic_ad_jobs").update({
+        pin_title: pin?.pin_title ?? null,
+        pin_description: pin?.pin_description ?? null,
+        hashtags: pin?.hashtags ?? [],
+        hook_variant: pin?.overlay_hook ?? hook_variant,
+        status_message: "pin copy regenerated",
+        approved_for_render: false,
+      }).eq("id", jobId).select("*").single();
+      return json(200, { ok: true, traceId, message: "pin copy regenerated", job: u });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return json(500, { ok: false, traceId, message: msg });
+    }
   }
 
   try {
@@ -607,29 +729,45 @@ const handler = async (req: Request): Promise<Response> => {
 
     // VO
     let voUrl: string | null = null;
+    let voDuration: number | null = null;
     try {
-      const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey);
+      const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey, voiceStyle.settings);
       const voPath = `${jobId}/voiceover.mp3`;
       const { error: voErr } = await admin.storage.from("cinematic-ads").upload(voPath, voBytes, {
         contentType: "audio/mpeg", upsert: true,
       });
       if (!voErr) voUrl = admin.storage.from("cinematic-ads").getPublicUrl(voPath).data.publicUrl;
+      // Rough estimate: assume ~155 wpm spoken cadence for our presets
+      const wordCount = voScript.trim().split(/\s+/).length;
+      voDuration = Math.round((wordCount / 155) * 60);
     } catch (e) {
       console.error("VO failed", e);
     }
+
+    // Pin copy (best-effort)
+    const pin = await generatePinCopy(product as any, voiceStyle, lovableKey);
 
     const { data: updated, error: upErr } = await admin
       .from("cinematic_ad_jobs")
       .update({
         status: "prepared",
-        status_message: "assets ready — ready to render",
+        status_message: "assets ready — awaiting approval",
         scene_specs: scenes,
         scene_assets,
         vo_script: voScript,
         vo_url: voUrl,
+        voice_id,
+        voice_style: voiceStyle.id,
+        output_duration_seconds: voDuration ?? undefined,
         vo_script_variants: voScriptVariants,
         caption_variants: captionVariants,
         variant_index: variantIndex,
+        pin_title: pin?.pin_title ?? null,
+        pin_description: pin?.pin_description ?? null,
+        hashtags: pin?.hashtags ?? [],
+        hook_variant: pin?.overlay_hook ?? hook_variant,
+        media_warnings: mediaWarnings,
+        approved_for_render: false,
         prepared_at: new Date().toISOString(),
       })
       .eq("id", jobId)
@@ -637,7 +775,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
     if (upErr) throw upErr;
 
-    return json(200, { ok: true, traceId, message: "prepared", job: updated });
+    return json(200, { ok: true, traceId, message: "prepared — awaiting approval", job: updated, media_warnings: mediaWarnings });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await admin.from("cinematic_ad_jobs").update({ status: "failed", error_message: msg, status_message: "preparation failed" }).eq("id", jobId);
