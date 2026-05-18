@@ -57,8 +57,20 @@ Deno.serve(async (req) => {
     const job = jobs?.[0];
     if (!job) return json({ ok: true, traceId, job: null, reason: "no jobs", queued_count: queuedCount, supabase_host: supabaseHost });
 
-    // Lock by setting rendering status only if still queued
-    const { data: locked, error: lockErr } = await admin
+    console.log(`[claim-job] ${traceId} selected job=${job.id} status=${job.status} explicit=${!!explicitJobId} attempts=${job.render_attempts ?? 0}`);
+
+    // Lock logic:
+    // - Auto-claim (no explicit id): only from render_queued.
+    // - Explicit job_id (GitHub Actions dispatch / manual retry): allow claim from
+    //   any state except actively rendering by a *different* worker. This permits
+    //   retrying jobs left in terminal states like render_failed, render_complete,
+    //   or pinterest_uploaded.
+    if (explicitJobId && job.status === "rendering" && job.render_worker_id && job.render_worker_id !== workerId) {
+      console.warn(`[claim-job] ${traceId} job=${job.id} already rendering on worker=${job.render_worker_id}`);
+      return json({ ok: true, traceId, job: null, reason: `already rendering on ${job.render_worker_id}`, supabase_host: supabaseHost });
+    }
+
+    let lockQuery = admin
       .from("cinematic_ad_jobs")
       .update({
         status: "rendering",
@@ -67,12 +79,20 @@ Deno.serve(async (req) => {
         render_attempts: (job.render_attempts ?? 0) + 1,
         status_message: `worker ${workerId} claimed job`,
       })
-      .eq("id", job.id)
-      .in("status", ["render_queued", "rendering"])
-      .select()
-      .maybeSingle();
-    if (lockErr) return json({ ok: false, traceId, message: lockErr.message, supabase_host: supabaseHost }, 500);
-    if (!locked) return json({ ok: true, traceId, job: null, reason: "lock lost", queued_count: queuedCount, supabase_host: supabaseHost });
+      .eq("id", job.id);
+    if (!explicitJobId) {
+      lockQuery = lockQuery.eq("status", "render_queued");
+    }
+    const { data: locked, error: lockErr } = await lockQuery.select().maybeSingle();
+    if (lockErr) {
+      console.error(`[claim-job] ${traceId} lock error`, lockErr);
+      return json({ ok: false, traceId, message: lockErr.message, supabase_host: supabaseHost }, 500);
+    }
+    if (!locked) {
+      console.warn(`[claim-job] ${traceId} lock lost job=${job.id} prior_status=${job.status}`);
+      return json({ ok: true, traceId, job: null, reason: "lock lost", current_status: job.status, queued_count: queuedCount, supabase_host: supabaseHost });
+    }
+    console.log(`[claim-job] ${traceId} locked job=${locked.id} status=rendering worker=${workerId} attempts=${locked.render_attempts}`);
 
     return json({
       ok: true, traceId,
