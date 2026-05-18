@@ -754,8 +754,10 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("VO failed", e);
     }
 
-    // Pin copy (best-effort)
-    const pin = await generatePinCopy(product as any, voiceStyle, lovableKey);
+    // Creative kit (5 hooks + 3 CTAs + pin copy + storyboard, scored)
+    const kit: CreativeKit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+    const topHook = kit.hook_variants[0];
+    const topCta = kit.cta_variants[0];
 
     const { data: updated, error: upErr } = await admin
       .from("cinematic_ad_jobs")
@@ -772,10 +774,17 @@ const handler = async (req: Request): Promise<Response> => {
         vo_script_variants: voScriptVariants,
         caption_variants: captionVariants,
         variant_index: variantIndex,
-        pin_title: pin?.pin_title ?? null,
-        pin_description: pin?.pin_description ?? null,
-        hashtags: pin?.hashtags ?? [],
-        hook_variant: pin?.overlay_hook ?? hook_variant,
+        pin_title: kit.pin_title,
+        pin_description: kit.pin_description,
+        hashtags: kit.hashtags,
+        hook_variants_meta: kit.hook_variants,
+        cta_variants_meta: kit.cta_variants,
+        storyboard: kit.storyboard,
+        selected_hook_index: 0,
+        selected_cta_index: 0,
+        hook_text: topHook?.text ?? null,
+        cta_text: topCta?.text ?? null,
+        hook_variant: topHook?.text ?? hook_variant,
         media_warnings: mediaWarnings,
         approved_for_render: false,
         prepared_at: new Date().toISOString(),
