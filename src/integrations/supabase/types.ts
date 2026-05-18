@@ -922,6 +922,89 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_ad_alert_log: {
+        Row: {
+          alert_type: string
+          created_at: string
+          dedupe_key: string
+          details: Json
+          email_error: string | null
+          email_sent: boolean
+          function_name: string | null
+          id: string
+          job_id: string | null
+          severity: string
+          summary: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          dedupe_key: string
+          details?: Json
+          email_error?: string | null
+          email_sent?: boolean
+          function_name?: string | null
+          id?: string
+          job_id?: string | null
+          severity?: string
+          summary: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          dedupe_key?: string
+          details?: Json
+          email_error?: string | null
+          email_sent?: boolean
+          function_name?: string | null
+          id?: string
+          job_id?: string | null
+          severity?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cinematic_ad_alert_log_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cinematic_ad_alert_settings: {
+        Row: {
+          channel: string
+          enabled: boolean
+          failure_lookback_minutes: number
+          id: number
+          queued_threshold_minutes: number
+          recipient_email: string
+          rendering_threshold_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          enabled?: boolean
+          failure_lookback_minutes?: number
+          id?: number
+          queued_threshold_minutes?: number
+          recipient_email?: string
+          rendering_threshold_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          enabled?: boolean
+          failure_lookback_minutes?: number
+          id?: number
+          queued_threshold_minutes?: number
+          recipient_email?: string
+          rendering_threshold_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cinematic_ad_jobs: {
         Row: {
           caption_variants: Json

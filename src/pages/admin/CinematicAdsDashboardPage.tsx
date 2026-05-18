@@ -4,11 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RefreshCw, Clock, CheckCircle2, XCircle, Film, ExternalLink } from "lucide-react";
+import { Loader2, RefreshCw, Clock, CheckCircle2, XCircle, Film, ExternalLink, Bell, Play } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 type StatusFilter = "all" | "queued" | "rendering" | "complete" | "failed";
 
@@ -128,6 +131,52 @@ export default function CinematicAdsDashboardPage() {
   const [selected, setSelected] = useState<Job | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [alertSettings, setAlertSettings] = useState<any>(null);
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [runningCheck, setRunningCheck] = useState(false);
+
+  const loadAlerts = useCallback(async () => {
+    const [{ data: s }, { data: a }] = await Promise.all([
+      supabase.from("cinematic_ad_alert_settings").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("cinematic_ad_alert_log").select("*").order("created_at", { ascending: false }).limit(25),
+    ]);
+    if (s) setAlertSettings(s);
+    setAlerts(a || []);
+  }, []);
+
+  useEffect(() => {
+    loadAlerts();
+    const t = setInterval(loadAlerts, 30_000);
+    return () => clearInterval(t);
+  }, [loadAlerts]);
+
+  const saveAlertSettings = useCallback(async (patch: Record<string, unknown>) => {
+    setAlertSaving(true);
+    const { error } = await supabase
+      .from("cinematic_ad_alert_settings")
+      .update(patch as any)
+      .eq("id", 1);
+    setAlertSaving(false);
+    if (error) { toast.error(error.message); return; }
+    setAlertSettings((prev: any) => ({ ...(prev || {}), ...patch }));
+    toast.success("Alert settings saved");
+  }, []);
+
+  const runAlertCheckNow = useCallback(async () => {
+    setRunningCheck(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-alert-monitor", { body: {} });
+      if (error) throw error;
+      const d = data as any;
+      toast.success(`Checked ${d?.candidates_examined ?? 0} candidates · ${d?.new_alerts ?? 0} new alerts · ${d?.emails_sent ?? 0} emails sent`);
+      await loadAlerts();
+    } catch (e: any) {
+      toast.error(e?.message || "Monitor run failed");
+    } finally {
+      setRunningCheck(false);
+    }
+  }, [loadAlerts]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setRefreshing(true);
@@ -223,6 +272,98 @@ export default function CinematicAdsDashboardPage() {
         onChange={(e) => setQuery(e.target.value)}
         className="max-w-md"
       />
+
+      <Card className="border-amber-500/30">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Bell className="h-4 w-4 text-amber-500" /> Failure alerts
+            {alertSettings && (
+              <Badge variant={alertSettings.enabled ? "default" : "secondary"} className="ml-1">
+                {alertSettings.enabled ? "ON" : "OFF"}
+              </Badge>
+            )}
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={runAlertCheckNow} disabled={runningCheck}>
+            {runningCheck ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Play className="h-3 w-3 mr-2" />}
+            Run check now
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {alertSettings && (
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Recipient email</Label>
+                <Input
+                  type="email"
+                  defaultValue={alertSettings.recipient_email}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v && v !== alertSettings.recipient_email) saveAlertSettings({ recipient_email: v });
+                  }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Stuck queued (min)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  defaultValue={alertSettings.queued_threshold_minutes}
+                  onBlur={(e) => {
+                    const v = Number(e.target.value);
+                    if (v > 0 && v !== alertSettings.queued_threshold_minutes) saveAlertSettings({ queued_threshold_minutes: v });
+                  }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Stuck rendering (min)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  defaultValue={alertSettings.rendering_threshold_minutes}
+                  onBlur={(e) => {
+                    const v = Number(e.target.value);
+                    if (v > 0 && v !== alertSettings.rendering_threshold_minutes) saveAlertSettings({ rendering_threshold_minutes: v });
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2 sm:col-span-4">
+                <Switch
+                  checked={alertSettings.enabled}
+                  onCheckedChange={(v) => saveAlertSettings({ enabled: v })}
+                  disabled={alertSaving}
+                />
+                <span className="text-xs text-muted-foreground">
+                  Monitor runs every 5 minutes. Detects stuck render_queued / rendering jobs and recent render_failed or pinterest publish failures.
+                  Alerts are deduped per incident; email delivery requires the app email infrastructure.
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-xs font-semibold mb-2">Recent alerts ({alerts.length})</div>
+            {alerts.length === 0 ? (
+              <div className="text-xs text-muted-foreground p-2 border rounded">No alerts recorded yet.</div>
+            ) : (
+              <div className="border rounded divide-y max-h-72 overflow-auto">
+                {alerts.map((a) => (
+                  <div key={a.id} className="p-2 text-xs flex flex-col sm:flex-row sm:items-center gap-2">
+                    <Badge variant={a.severity === "critical" ? "destructive" : "secondary"} className="text-[10px] w-fit">
+                      {a.severity}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] w-fit font-mono">{a.alert_type}</Badge>
+                    <span className="flex-1 truncate">{a.summary}</span>
+                    <span className="text-muted-foreground shrink-0">{fmtRelative(a.created_at)}</span>
+                    <Badge variant={a.email_sent ? "default" : "outline"} className="text-[10px] shrink-0">
+                      {a.email_sent ? "emailed" : a.email_error ? "email failed" : "logged"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2">
