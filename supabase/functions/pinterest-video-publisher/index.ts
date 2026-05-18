@@ -192,11 +192,14 @@ async function publishVideoPin(opts: {
 
   // Stage 2: stream MP4 from storage to Pinterest's S3 upload URL
   console.log(`[pvp ${trace_id}] stage=upload media_id=${mediaId}`);
-  const { data: blob, error: dlErr } = await sb.storage.from(asset.storage_bucket).download(asset.storage_path);
-  if (dlErr || !blob) {
-    await logStage(sb, queue_id, "download", "fail", { error: dlErr?.message }, trace_id);
-    return { ok: false, code: "DOWNLOAD_FAILED", message: dlErr?.message || "no blob" };
+  const mediaUrl = await resolveMediaUrl(sb, asset, trace_id);
+  if (!mediaUrl) {
+    await logStage(sb, queue_id, "media_url_resolve", "fail", { asset_id: asset.id }, trace_id);
+    return { ok: false, code: "MEDIA_URL_INVALID", message: "no output_mp4_url and no asset.public_url" };
   }
+  const fetched = await validateAndFetchMp4(sb, queue_id, mediaUrl, trace_id);
+  if (!fetched.ok) return fetched;
+  const blob = new Blob([fetched.bytes], { type: fetched.contentType });
   const fd = new FormData();
   for (const [k, v] of Object.entries(uploadParams)) fd.append(k, v);
   fd.append("file", blob, asset.filename);
