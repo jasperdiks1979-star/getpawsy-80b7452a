@@ -1,108 +1,120 @@
-# Plan: Pinterest Video Covers + Profit Engine Reliability
+# Cinematic Ad Pipeline — Viral Vertical Rebuild
 
-Two independent fixes, delivered in one round.
+Goal: every Pinterest/TikTok render is true 1080×1920 motion (no slideshows), with hook typography, mobile-safe zones, dynamic scene composition, preset-driven presets, automated validation, and an admin preview before publish.
 
----
+## 1. New Remotion composition: `viral-vertical`
 
-## Part A — Pinterest Video Publish: Auto Cover Images
+File: `remotion/src/MainVideoViralVertical.tsx` + scenes under `remotion/src/scenes/viral/`.
 
-**Root cause:** Pinterest `/v5/pins` rejects video pins without one of `cover_image_url`, `cover_image_content_type+data`, or `cover_image_key_frame_time`. We currently send none.
-
-### A1. DB migration — `pinterest_video_assets`
-Add columns:
-- `cover_image_url text`
-- `cover_generated boolean default false`
-- `key_frame_second numeric default 1.5`
-- `thumbnail_status text default 'pending'` — values: `pending | processing | awaiting_media_ready | thumbnail_generated | publishing | published | failed`
-- `cover_attempts int default 0`
-- `cover_last_error text`
-- `next_retry_at timestamptz`
-- `cover_score jsonb` (stop-scroll, ctr, clarity, emotion)
-
-Plus storage bucket `pinterest-video-covers` (public read, admin write).
-
-### A2. Publisher fix (`pinterest-video-publisher/index.ts`)
-**Immediate unblock (always works, zero deps):**
-- Always include `cover_image_key_frame_time: asset.key_frame_second ?? 1.5` in the `media_source` payload.
-- Fallback ladder on `media_timeout` / cover errors: try `1.5 → 0.8 → 2.0 → 3.0`, persisting the working value.
-- If `cover_image_url` is set on the asset, send that instead (Pinterest prefers explicit URL).
-- Always send `title`, `description`, `link`, `media_source` together.
-- Status state machine writes back to `thumbnail_status` at every phase.
-- Retry queue: on `media_timeout` set `next_retry_at = now + 90s/180s/360s` (exponential), re-queueable by cron.
-- Pre-flight validator: rejects payload with clear error if any required field missing (no Pinterest round-trip).
-
-### A3. Cover generation (`pinterest-video-cover-generate` — new edge function)
-Background worker that processes assets where `cover_generated=false`:
-- Tries to fetch the source video, extracts a JPEG cover at `key_frame_second` using a server-side approach. Since edge runtime has no ffmpeg, we use a **product-image fallback first**: pull the asset's source product image, render to 1000×1500 (Pinterest 2:3) on a branded backdrop via Canvas (skia-canvas via `npm:` — if unavailable, skip and rely on `key_frame_time`).
-- Uploads JPEG to `pinterest-video-covers` bucket → public URL → writes to `cover_image_url`, sets `cover_generated=true`, `thumbnail_status='thumbnail_generated'`.
-- If generation fails → keeps `key_frame_second` fallback; publisher still works via `cover_image_key_frame_time`.
-- AI scoring via Lovable AI (gemini-flash-lite) writes `cover_score` jsonb. Non-blocking.
-
-### A4. Cron
-- Every 10 min: `pinterest-video-cover-generate` (limit 10).
-- Every 5 min: re-queue assets with `next_retry_at <= now()` and `thumbnail_status in ('failed','awaiting_media_ready')`.
-
-### A5. Admin UI (`PinterestVideoQueuePage.tsx`)
-Per-asset row addition:
-- Thumbnail preview (cover_image_url or placeholder + key-frame badge)
-- `thumbnail_status` chip
-- "Regenerate cover" button → invokes `pinterest-video-cover-generate` with `force:true`
-- Last error tooltip
-
----
-
-## Part B — Profit Engine sync failure
-
-**Symptom:** "Failed to send a request to the Edge Function" on `/admin/profit-engine` Sync button.
-
-### B1. Diagnose first
-Read current `profit-engine-sync/index.ts` and `ProfitEnginePage.tsx`, check edge logs to confirm whether the function is throwing on boot (CORS, missing env, deno.lock) or never reachable.
-
-### B2. Hardening (`profit-engine-sync`)
-- Strict CORS shared headers, OPTIONS preflight returns 200.
-- `Authorization: Bearer` validation via `getClaims()`; admin role check.
-- Global `try/catch` returning `{ ok:false, code, phase, message, traceId }` with HTTP 200 (so the client always sees JSON, never network error).
-- Phase logging: `auth → fetch_analytics → normalize → score → write → done` to `profit_engine_function_logs` (create if missing).
-- Env-var presence check at boot, returns helpful 200-JSON error if missing.
-- `AbortController` 25s timeout around external calls.
-- Pinterest-metrics fallback: if Pinterest call fails, continue with shop conversions / CTR / outbound clicks / add_to_cart filtered to `country='United States'` and `is_internal=false`.
-- Always JSON response, never empty.
-
-### B3. Health endpoint
-New `profit-engine-health` (separate function — simpler than path routing in Deno):
-```
-GET → { ok:true, ts, version, auth_required:true, env_loaded:{supabase:true,pinterest:bool,ga4:bool} }
+Props-driven (Zod), so one composition serves all presets and any product:
+```ts
+type ViralProps = {
+  preset: 'pin-organic' | 'pin-ads' | 'tt-organic' | 'tt-spark';
+  hook: string;          // "I haven't scooped in 3 months"
+  subhook?: string;
+  cta: string;
+  ctaUrl: string;
+  product: { name: string; price: string; slug: string };
+  media: Array<           // 1..N, mixed
+    | { kind:'image'; src:string; focus?:{x:number;y:number}; motion?:'kenburns-in'|'kenburns-out'|'pan-left'|'pan-right'|'parallax' }
+    | { kind:'video';  src:string; trimStart?:number; trimEnd?:number }
+  >;
+  music?: string;
+};
 ```
 
-### B4. Frontend (`ProfitEnginePage.tsx`)
-- Use `useAuthenticatedFetch.invokeFunction('profit-engine-sync')` (already retries on 401, refreshes token).
-- One automatic retry after 5s if the first call returns network/transport error.
-- Diagnostics panel: last sync ts, last error, duration ms, rows processed, scoring source — read from `profit_engine_function_logs` last row.
-- US-only filter visible in UI as a locked badge.
+Scenes (all 1080×1920, all use safe zones 96px top/bottom, 64px sides):
+1. `ViralHook` — frame 0-50, hook typography lands in <15 frames (≤0.5s), Ken Burns + colored over­lay.
+2. `ViralFeature` (×2-3) — closeup of media item with parallax layers and label chip.
+3. `ViralLifestyle` — wide framing with subtle pan + grain.
+4. `ViralCTA` — product name, price, big CTA, animated underline, last 3-4s held with micro-motion.
 
-### B5. US-only data guard
-All SQL filters in scoring: `WHERE country = 'United States' AND is_internal = false AND user_agent NOT bot-pattern`. Centralized helper in the function.
+Shared module `remotion/src/viralShared.tsx`:
+- `SafeFrame` helper rendering safe-zone guides (only when `?debug=1` URL param).
+- `KenBurnsLayer` for any still: detects aspect ratio, picks `cover` fit, animates `scale 1.04→1.18` + `translate` based on `focus`.
+- `ParallaxStack` — splits image into 3 z-layers via duplicated `Img` with different `translateY` * frame.
+- `MotionGenerator` — when media has only 1 still, auto-builds: zoom-in → cut → pan-right → cut → zoom-out, with crossfades, so it never feels like a slideshow.
+- `HookText` — large display font, top-safe, mask-reveal per word using spring stagger.
+- `Caption` — bottom-safe word-highlight subtitles.
 
----
+Registered in `remotion/src/Root.tsx` with `calculateMetadata` for dynamic duration per preset (18s organic, 22s ads).
+
+## 2. Preset registry
+
+`supabase/functions/_shared/cinematic-presets.ts` — single source of truth, reused by edge functions and the React preview UI.
+
+```ts
+export const PRESETS = {
+  'pin-organic': { width:1080, height:1920, fps:30, durationSec:18, music:'soft', captions:true, ctaHoldFrames:90, brandLogoFromFrame:60 },
+  'pin-ads':     { width:1080, height:1920, fps:30, durationSec:22, music:'soft', captions:true, ctaHoldFrames:120, brandLogoFromFrame:0, disclosure:true },
+  'tt-organic':  { width:1080, height:1920, fps:30, durationSec:18, music:'energy', captions:true, hookByFrame:24, brandLogoFromFrame:60 },
+  'tt-spark':    { width:1080, height:1920, fps:30, durationSec:22, music:'energy', captions:true, hookByFrame:24, brandLogoFromFrame:0, disclosure:true },
+};
+```
+
+## 3. Edge functions — pipeline changes
+
+- `cinematic-ad-prepare`: accept `preset`, fetch product + up-to-6 source images + any short clips, build `ViralProps`, push to `cinematic_ad_jobs.payload`. If only 1 still, mark `payload.synth_motion=true` so the composition uses `MotionGenerator`.
+- `cinematic-ad-queue-render` / `cinematic-ad-dispatch`: pass `compositionId='viral-vertical'` and the resolved preset's `width/height/fps/durationInFrames` to the render worker (GitHub Actions / render-worker), removing any 1:1 or 16:9 fallback paths.
+- `cinematic-ad-render-webhook`: on upload, before flipping job to `render_complete`, call new `cinematic-ad-validate`.
+- **NEW `cinematic-ad-validate`**: ffprobe the MP4 → assert `width===1080 && height===1920`, no black-bar borders (sample top/bottom row luma via ffmpeg `cropdetect`), duration within ±1s of preset, audio loudness in range, and a **motion score** = average frame-diff over sampled frames (ffmpeg `select='gt(scene,0.0)'` + stat). Threshold defaults: motion_score ≥ 0.012. Stores `validation_report` JSONB on `cinematic_ad_jobs`. If fail → job → `failed_validation` (does not push to Pinterest).
+- `cinematic-ad-push-pinterest`: refuses to publish unless `validation_report.passed === true`.
+
+## 4. Database
+
+Migration:
+```sql
+ALTER TABLE public.cinematic_ad_jobs
+  ADD COLUMN preset text NOT NULL DEFAULT 'pin-organic',
+  ADD COLUMN validation_report jsonb,
+  ADD COLUMN motion_score numeric,
+  ADD COLUMN approved_at timestamptz,
+  ADD COLUMN approved_by uuid;
+-- new status value handled in app (failed_validation, awaiting_approval)
+```
+
+## 5. Admin preview panel
+
+Route: `/admin/cinematic-ads/preview/:jobId` (lazy-loaded under existing admin chunk).
+
+Layout:
+- Sticky 9:16 `<video>` player (max-h 70vh) playing the rendered MP4.
+- Right column:
+  - Validator badges (aspect, black bars, duration, motion score, caption-safety).
+  - Per-scene timeline (chips with thumbnails from ffmpeg-extracted frames at scene boundaries) — click to seek.
+  - Override controls: change preset, swap hook text, re-queue render for a single scene (calls `cinematic-ad-queue-render` with `regenerateScene:n`).
+  - "Approve & Publish" button (disabled until validator passes). Writes `approved_at/by`, then invokes `cinematic-ad-push-pinterest`.
+
+A new column "Preview" in the existing dashboard table opens this panel.
+
+## Technical notes
+
+- Remotion: animations strictly `useCurrentFrame()` + `interpolate`/`spring`. Hook typography uses `@remotion/google-fonts/Inter` (already in deps) + `Bebas Neue` for display.
+- Motion synth from single still: 3 ffmpeg-style Ken-Burns sub-clips concatenated inside Remotion (no real ffmpeg call — pure transforms), so it stays one-pass render.
+- Validator runs in a Deno edge function using `Deno.Command("ffprobe"…)` if available; render-worker (Node) is the fallback host and posts the report back to a new `cinematic-ad-validation-callback` endpoint.
+- Safe zones enforced via shared `SAFE = { top:96, bottom:240, x:64 }` constants; the composition's `?debug=1` flag draws them for QA.
+- All new edge functions follow project standard JSON contract `{ok, traceId, message}` and use `npm:@supabase/supabase-js@2.49.1`.
 
 ## Files touched
 
-**New**
-- `supabase/functions/pinterest-video-cover-generate/index.ts`
-- `supabase/functions/profit-engine-health/index.ts`
-- migration: cover columns + `pinterest-video-covers` bucket + `profit_engine_function_logs` table
+Created:
+- `remotion/src/MainVideoViralVertical.tsx`
+- `remotion/src/viralShared.tsx`
+- `remotion/src/scenes/viral/{Hook,Feature,Lifestyle,CTA}.tsx`
+- `supabase/functions/_shared/cinematic-presets.ts`
+- `supabase/functions/cinematic-ad-validate/index.ts`
+- `supabase/functions/cinematic-ad-validation-callback/index.ts`
+- `supabase/migrations/<ts>_cinematic_viral.sql`
+- `src/pages/admin/CinematicAdPreviewPage.tsx`
+- `src/components/admin/cinematic/{ValidatorBadges,SceneTimeline,OverrideControls}.tsx`
 
-**Updated**
-- `supabase/functions/pinterest-video-publisher/index.ts` — cover_image_key_frame_time + URL + retry ladder + state machine
-- `supabase/functions/profit-engine-sync/index.ts` — full hardening
-- `src/pages/admin/PinterestVideoQueuePage.tsx` — thumbnail column, regenerate button, status chip
-- `src/pages/admin/ProfitEnginePage.tsx` — invokeFunction + retry + diagnostics panel
-- cron schedule (insert via `supabase--insert`, not migration)
+Edited:
+- `remotion/src/Root.tsx`
+- `supabase/functions/cinematic-ad-{prepare,queue-render,dispatch,render-webhook,push-pinterest}/index.ts`
+- `src/pages/admin/CinematicAdsDashboardPage.tsx` (add Preview column + Preset filter)
+- `src/App.tsx` (route)
 
----
-
-## Out of scope (intentionally deferred)
-- True video frame extraction (needs FFmpeg compute worker — not available in Deno edge). We achieve the user's goal via `cover_image_key_frame_time` (Pinterest extracts the frame for us) + branded product-image fallback. This unblocks publishing today.
-- Real-time AI thumbnail "stop-scroll" optimization beyond a single Gemini score per asset.
-
-Pinterest will accept and publish video pins as soon as Part A2 ships — even before any cover generation runs — because `cover_image_key_frame_time` alone satisfies their API.
+## Out of scope (flagged for later)
+- In-browser music volume / image swap editor.
+- Auto A/B variant generation across presets.
+- TikTok publish endpoint (still manual via link-in-bio per memory).

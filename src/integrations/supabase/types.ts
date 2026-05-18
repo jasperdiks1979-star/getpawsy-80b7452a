@@ -1007,6 +1007,8 @@ export type Database = {
       }
       cinematic_ad_jobs: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           caption_variants: Json
           created_at: string
           created_by: string | null
@@ -1014,11 +1016,15 @@ export type Database = {
           hook_variant: string
           id: string
           last_pinterest_attempt_at: string | null
+          motion_score: number | null
           music_url: string | null
+          output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
+          output_height: number | null
           output_mp4_url: string | null
           output_thumbnail_url: string | null
+          output_width: number | null
           pinterest_asset_id: string | null
           pinterest_pin_id: string | null
           pinterest_pin_url: string | null
@@ -1026,6 +1032,7 @@ export type Database = {
           pinterest_publish_error: string | null
           pinterest_uploaded_at: string | null
           prepared_at: string | null
+          preset: string
           product_slug: string
           published_at: string | null
           pushed_to_pinterest_at: string | null
@@ -1041,6 +1048,7 @@ export type Database = {
           status: string
           status_message: string | null
           updated_at: string
+          validation_report: Json | null
           variant_index: number
           vo_script: string | null
           vo_script_variants: Json
@@ -1048,6 +1056,8 @@ export type Database = {
           voice_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           caption_variants?: Json
           created_at?: string
           created_by?: string | null
@@ -1055,11 +1065,15 @@ export type Database = {
           hook_variant?: string
           id?: string
           last_pinterest_attempt_at?: string | null
+          motion_score?: number | null
           music_url?: string | null
+          output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
+          output_height?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
+          output_width?: number | null
           pinterest_asset_id?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
@@ -1067,6 +1081,7 @@ export type Database = {
           pinterest_publish_error?: string | null
           pinterest_uploaded_at?: string | null
           prepared_at?: string | null
+          preset?: string
           product_slug: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
@@ -1082,6 +1097,7 @@ export type Database = {
           status?: string
           status_message?: string | null
           updated_at?: string
+          validation_report?: Json | null
           variant_index?: number
           vo_script?: string | null
           vo_script_variants?: Json
@@ -1089,6 +1105,8 @@ export type Database = {
           voice_id?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           caption_variants?: Json
           created_at?: string
           created_by?: string | null
@@ -1096,11 +1114,15 @@ export type Database = {
           hook_variant?: string
           id?: string
           last_pinterest_attempt_at?: string | null
+          motion_score?: number | null
           music_url?: string | null
+          output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
+          output_height?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
+          output_width?: number | null
           pinterest_asset_id?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
@@ -1108,6 +1130,7 @@ export type Database = {
           pinterest_publish_error?: string | null
           pinterest_uploaded_at?: string | null
           prepared_at?: string | null
+          preset?: string
           product_slug?: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
@@ -1123,6 +1146,7 @@ export type Database = {
           status?: string
           status_message?: string | null
           updated_at?: string
+          validation_report?: Json | null
           variant_index?: number
           vo_script?: string | null
           vo_script_variants?: Json
