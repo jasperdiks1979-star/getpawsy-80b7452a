@@ -1013,9 +1013,13 @@ export type Database = {
           caption_variants: Json
           created_at: string
           created_by: string | null
+          cta_text: string | null
+          cta_variants_meta: Json
           error_message: string | null
           hashtags: string[]
+          hook_text: string | null
           hook_variant: string
+          hook_variants_meta: Json
           id: string
           last_pinterest_attempt_at: string | null
           media_warnings: Json
@@ -1051,8 +1055,12 @@ export type Database = {
           rendered_at: string | null
           scene_assets: Json
           scene_specs: Json
+          selected_cta_index: number
+          selected_hook_index: number
           status: string
           status_message: string | null
+          storyboard: Json
+          subhook_text: string | null
           updated_at: string
           validation_report: Json | null
           variant_index: number
@@ -1069,9 +1077,13 @@ export type Database = {
           caption_variants?: Json
           created_at?: string
           created_by?: string | null
+          cta_text?: string | null
+          cta_variants_meta?: Json
           error_message?: string | null
           hashtags?: string[]
+          hook_text?: string | null
           hook_variant?: string
+          hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
           media_warnings?: Json
@@ -1107,8 +1119,12 @@ export type Database = {
           rendered_at?: string | null
           scene_assets?: Json
           scene_specs?: Json
+          selected_cta_index?: number
+          selected_hook_index?: number
           status?: string
           status_message?: string | null
+          storyboard?: Json
+          subhook_text?: string | null
           updated_at?: string
           validation_report?: Json | null
           variant_index?: number
@@ -1125,9 +1141,13 @@ export type Database = {
           caption_variants?: Json
           created_at?: string
           created_by?: string | null
+          cta_text?: string | null
+          cta_variants_meta?: Json
           error_message?: string | null
           hashtags?: string[]
+          hook_text?: string | null
           hook_variant?: string
+          hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
           media_warnings?: Json
@@ -1163,8 +1183,12 @@ export type Database = {
           rendered_at?: string | null
           scene_assets?: Json
           scene_specs?: Json
+          selected_cta_index?: number
+          selected_hook_index?: number
           status?: string
           status_message?: string | null
+          storyboard?: Json
+          subhook_text?: string | null
           updated_at?: string
           validation_report?: Json | null
           variant_index?: number
