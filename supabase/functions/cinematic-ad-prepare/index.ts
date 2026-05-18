@@ -20,6 +20,7 @@
  * Response: { ok, traceId, message, job }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveVoiceStyle, type VoiceStyle } from "../_shared/voice-styles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -426,7 +427,7 @@ async function aiImageEdit(prompt: string, sourceUrl: string, apiKey: string): P
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }
 
-async function elevenLabsTts(text: string, voiceId: string, apiKey: string): Promise<Uint8Array> {
+async function elevenLabsTts(text: string, voiceId: string, apiKey: string, settings?: { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean; speed: number }): Promise<Uint8Array> {
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
     {
@@ -435,12 +436,76 @@ async function elevenLabsTts(text: string, voiceId: string, apiKey: string): Pro
       body: JSON.stringify({
         text,
         model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.4, use_speaker_boost: true, speed: 1.0 },
+        voice_settings: settings ?? { stability: 0.5, similarity_boost: 0.75, style: 0.4, use_speaker_boost: true, speed: 1.0 },
       }),
     },
   );
   if (!res.ok) throw new Error(`elevenlabs ${res.status}: ${await res.text()}`);
   return new Uint8Array(await res.arrayBuffer());
+}
+
+/**
+ * Pinterest pin copy. Separate from VO/captions so we can regenerate it
+ * independently and so failures don't block the render pipeline.
+ */
+type PinCopy = {
+  pin_title: string;
+  pin_description: string;
+  overlay_hook: string;
+  cta: string;
+  hashtags: string[];
+};
+
+async function generatePinCopy(
+  product: { name: string; description?: string | null; category?: string | null; primary_species?: string | null; slug: string },
+  voiceStyle: VoiceStyle,
+  apiKey: string,
+): Promise<PinCopy | null> {
+  const sys = `You are a senior US-native Pinterest ad copywriter for GetPawsy, a premium pet brand. Voice persona for this ad: ${voiceStyle.persona}. Compliance: NO health claims, NO "vet-approved", NO "eco-friendly", NO fake reviews, NO price anchoring. Premium US tone.`;
+  const user = `Product:
+- Name: ${product.name}
+- Category: ${product.category ?? "pet product"}
+- Species: ${product.primary_species ?? "pet"}
+- Description: ${(product.description ?? "").slice(0, 500)}
+
+Return STRICT JSON, no markdown:
+{
+  "pin_title": "<<=100 chars, Pinterest pin title, US-native, specific, no clickbait>",
+  "pin_description": "<<=480 chars, conversion-focused pin description, ends with: Shop now at GetPawsy.pet>",
+  "overlay_hook": "<3-6 word on-screen hook text for the first scene>",
+  "cta": "<<=20 char CTA button text>",
+  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5"]
+}`;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) { console.error("[pin-copy] non-2xx", res.status); return null; }
+    const data = await res.json();
+    const raw: string = data?.choices?.[0]?.message?.content ?? "";
+    const cleaned = raw.replace(/^```json\s*|\s*```$/g, "").trim();
+    const p = JSON.parse(cleaned);
+    if (typeof p?.pin_title !== "string" || typeof p?.pin_description !== "string") return null;
+    return {
+      pin_title: String(p.pin_title).slice(0, 100),
+      pin_description: String(p.pin_description).slice(0, 480),
+      overlay_hook: String(p.overlay_hook ?? "Stop scrolling.").slice(0, 60),
+      cta: String(p.cta ?? "Shop now").slice(0, 20),
+      hashtags: Array.isArray(p.hashtags) ? p.hashtags.map((s: unknown) => String(s || "").trim()).filter(Boolean).slice(0, 8) : [],
+    };
+  } catch (e) {
+    console.error("[pin-copy] failed", e);
+    return null;
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
