@@ -54,11 +54,37 @@ Deno.serve(async (req) => {
   if (jobErr || !job) return json(404, { ok: false, traceId, message: "job not found" });
   if (!job.output_mp4_url) return json(400, { ok: false, traceId, message: "job has no output_mp4_url yet" });
 
-  // Validation + approval gate. `force=true` lets admin override (logged below).
+  // Pre-publish quality gate. force=true lets admin override (logged below).
   if (!force) {
     const report = job.validation_report as { passed?: boolean } | null;
-    if (!report?.passed) {
-      return json(412, { ok: false, traceId, message: "validation has not passed; re-validate or use force=true" });
+    const extraChecks: Array<{ name: string; passed: boolean; observed: unknown }> = [];
+
+    // 1. Validator must have passed
+    extraChecks.push({ name: "validator_passed", passed: !!report?.passed, observed: report?.passed ?? null });
+
+    // 2. Voiceover present
+    extraChecks.push({ name: "voiceover_present", passed: !!job.vo_url, observed: job.vo_url ?? null });
+
+    // 3. Duration in spec
+    const dur = Number(job.output_duration_seconds ?? 0);
+    extraChecks.push({ name: "duration_in_range_12_25s", passed: dur >= 12 && dur <= 25, observed: dur });
+
+    // 4. MP4 URL responds with video/*
+    let mp4Ok = false;
+    let mp4ContentType: string | null = null;
+    try {
+      const r = await fetch(job.output_mp4_url, { method: "HEAD" });
+      mp4ContentType = r.headers.get("content-type");
+      mp4Ok = r.ok && !!mp4ContentType && /^video\//.test(mp4ContentType);
+    } catch {}
+    extraChecks.push({ name: "mp4_public_url_video", passed: mp4Ok, observed: mp4ContentType ?? "unreachable" });
+
+    // 5. Pin copy present
+    extraChecks.push({ name: "pin_copy_present", passed: !!job.pin_title && !!job.pin_description, observed: { title: !!job.pin_title, description: !!job.pin_description } });
+
+    const failed = extraChecks.filter((c) => !c.passed);
+    if (failed.length > 0) {
+      return json(412, { ok: false, traceId, message: "pre-publish quality gate failed", failed_checks: failed });
     }
   }
 
