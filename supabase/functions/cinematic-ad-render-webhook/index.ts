@@ -223,8 +223,14 @@ Deno.serve(async (req) => {
       if (body.mp4_url) patch.output_mp4_url = String(body.mp4_url);
       if (body.duration != null) patch.output_duration_seconds = Number(body.duration);
       if (body.file_size != null) patch.output_file_size_bytes = Number(body.file_size);
+      // NEW: viral-vertical worker contract
+      if (body.width != null) patch.output_width = Number(body.width);
+      if (body.height != null) patch.output_height = Number(body.height);
+      if (body.motion_score != null) patch.motion_score = Number(body.motion_score);
+      if (body.black_bars != null) patch.output_black_bars = Boolean(body.black_bars);
+      if (body.thumbnail_url) patch.output_thumbnail_url = String(body.thumbnail_url);
       patch.error_message = null;
-      patch.status_message = "render complete — auto-publishing to Pinterest";
+      patch.status_message = "render complete — validating output";
     } else if (status === "failed") {
       const attempts = (job.render_attempts ?? 0);
       const willRetry = attempts < MAX_ATTEMPTS;
@@ -237,10 +243,39 @@ Deno.serve(async (req) => {
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
     if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
 
-    // Fire the auto-publish chain when render reaches a terminal-success state.
-    // We don't await it from the HTTP response perspective (worker doesn't need
-    // to block) but we DO await it inside the handler so logs stream coherently.
+    // On render success: run validator, then either auto-publish (if explicitly
+    // approved upstream) or hold for admin approval in the preview panel.
     if ((status === "rendered" || status === "uploaded") && (body.mp4_url || job.output_mp4_url)) {
+      try {
+        const valRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-validate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-render-secret": RENDER_WORKER_SECRET },
+          body: JSON.stringify({ job_id: jobId }),
+        });
+        const valJson: any = await valRes.json().catch(() => ({}));
+        console.log(`[validate] ${traceId} job=${jobId} ok=${valJson?.ok} passed=${valJson?.report?.passed}`);
+        if (!valJson?.report?.passed) {
+          await admin.from("cinematic_ad_jobs").update({
+            status: "awaiting_approval",
+            status_message: "validation failed — review in admin preview",
+          }).eq("id", jobId);
+          return json({ ok: true, traceId, message: "validated (failed) — awaiting admin review", validation: valJson?.report });
+        }
+      } catch (e) {
+        console.error(`[validate] ${traceId} validator crashed`, e);
+      }
+
+      // Validation passed. Hold for admin approval unless worker explicitly
+      // signals auto_approve=true (e.g. backfill, smoke test).
+      const autoApprove = Boolean(body.auto_approve);
+      if (!autoApprove) {
+        await admin.from("cinematic_ad_jobs").update({
+          status: "awaiting_approval",
+          status_message: "render + validation passed — awaiting admin approval",
+        }).eq("id", jobId);
+        return json({ ok: true, traceId, message: "awaiting admin approval" });
+      }
+
       try {
         await runAutoPublishChain(admin, jobId, traceId);
       } catch (e) {
