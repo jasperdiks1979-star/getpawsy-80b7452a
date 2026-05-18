@@ -122,6 +122,33 @@ function buildTimeline(job: Job, publishLog: any[]): TimelineEvent[] {
   return events;
 }
 
+function downloadJobsCsv(jobs: Job[], filename: string) {
+  const headers = [
+    "id", "product_slug", "hook_variant", "status", "status_message", "error_message",
+    "created_at", "prepared_at", "render_queued_at", "render_started_at", "render_complete_at",
+    "rendered_at", "pinterest_uploaded_at", "last_pinterest_attempt_at", "published_at",
+    "output_mp4_url", "output_thumbnail_url", "output_duration_seconds", "output_file_size_bytes",
+    "render_attempts", "render_worker_id", "pinterest_asset_id", "pinterest_pin_id",
+    "pinterest_pin_url", "pinterest_publish_error", "pinterest_publish_attempts",
+  ];
+  const escape = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, """)}"`;
+    return s;
+  };
+  const rows = jobs.map((j) => headers.map((h) => escape((j as Record<string, unknown>)[h]))).join("\n");
+  const csv = `${headers.join(",")}\n${rows}`;
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export default function CinematicAdsDashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
