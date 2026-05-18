@@ -312,6 +312,47 @@ async function publishVideoPin(opts: {
   return { ok: true, pin_id: pinBody.id, external_url: `https://www.pinterest.com/pin/${pinBody.id}/` };
 }
 
+// Retry the publish flow on transient download/network failures with
+// exponential backoff. Pinterest API errors (REGISTER_FAILED, UPLOAD_FAILED,
+// MEDIA_PROCESS_FAILED, PIN_CREATE_FAILED, INVALID_PINTEREST_PAYLOAD) are
+// surfaced immediately so the operator can act on them; only the storage/HTTP
+// fetch layer is auto-retried.
+const TRANSIENT_CODES = new Set(["DOWNLOAD_FAILED", "MEDIA_TIMEOUT"]);
+
+async function publishWithRetry(opts: {
+  sb: any; queue_id: string; asset: any; queueRow: any; token: string; trace_id: string;
+  maxAttempts?: number;
+}) {
+  const max = opts.maxAttempts ?? 3;
+  let last: Awaited<ReturnType<typeof publishVideoPin>> | null = null;
+  for (let attempt = 1; attempt <= max; attempt++) {
+    console.log(`[pvp ${opts.trace_id}] publish attempt ${attempt}/${max}`);
+    last = await publishVideoPin(opts);
+    if (last.ok) return last;
+    if (!TRANSIENT_CODES.has(last.code)) return last;
+    if (attempt === max) break;
+    const delayMs = Math.min(30000, 1000 * Math.pow(2, attempt)); // 2s, 4s, 8s, capped
+    await logStage(opts.sb, opts.queue_id, "publish_retry", "backoff",
+      { attempt, next_attempt_in_ms: delayMs, code: last.code, message: last.message }, opts.trace_id);
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return last!;
+}
+
+async function recordFinalFailure(sb: any, asset: any, code: string, message: string) {
+  // Mirror the final failure reason onto the cinematic_ad_jobs row when the
+  // asset originated from a cinematic render — gives operators one place to
+  // diagnose end-to-end pipeline failures.
+  try {
+    await sb.from("cinematic_ad_jobs").update({
+      pinterest_publish_error: `${code}: ${message}`,
+      last_pinterest_attempt_at: new Date().toISOString(),
+    }).eq("pinterest_asset_id", asset.id);
+  } catch (e) {
+    console.warn("[pvp] recordFinalFailure cinematic update failed", (e as Error).message);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const trace_id = crypto.randomUUID();
