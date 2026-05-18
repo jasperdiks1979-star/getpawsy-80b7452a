@@ -27,6 +27,106 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
   } catch (e) { console.error("[pvp] log failed", e); }
 }
 
+// ── Media URL resolution + validation ─────────────────────────────────
+// Pinterest /media uploads require a real, publicly fetchable MP4. The
+// previous implementation streamed from `sb.storage.download(...)`, which
+// silently failed (DOWNLOAD_FAILED) whenever the storage path no longer
+// matched the file that Remotion uploaded. We now resolve the URL from
+// cinematic_ad_jobs.output_mp4_url (the canonical render output) and only
+// fall back to asset.public_url if no linked job exists.
+const PUBLIC_STORAGE_MARKER = "/storage/v1/object/public/";
+
+async function resolveMediaUrl(sb: any, asset: any, trace_id: string): Promise<string | null> {
+  try {
+    const { data: job } = await sb
+      .from("cinematic_ad_jobs")
+      .select("output_mp4_url, status")
+      .eq("pinterest_asset_id", asset.id)
+      .not("output_mp4_url", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (job?.output_mp4_url) {
+      console.log(`[pvp ${trace_id}] media_url from cinematic_ad_jobs=${job.output_mp4_url}`);
+      return job.output_mp4_url as string;
+    }
+  } catch (e) {
+    console.warn(`[pvp ${trace_id}] cinematic_ad_jobs lookup failed`, (e as Error).message);
+  }
+  if (asset?.public_url) {
+    console.log(`[pvp ${trace_id}] media_url from asset.public_url=${asset.public_url}`);
+    return asset.public_url as string;
+  }
+  return null;
+}
+
+function isPublicMp4Url(url: string): { ok: boolean; reason?: string } {
+  let u: URL;
+  try { u = new URL(url); } catch { return { ok: false, reason: "not a valid URL" }; }
+  if (u.protocol !== "https:") return { ok: false, reason: `protocol must be https, got ${u.protocol}` };
+  if (u.pathname.startsWith("/functions/v1/")) return { ok: false, reason: "edge function path, not a public storage URL" };
+  if (!u.pathname.includes(PUBLIC_STORAGE_MARKER)) return { ok: false, reason: `missing ${PUBLIC_STORAGE_MARKER}` };
+  if (!/\.mp4(\?|$)/i.test(u.pathname)) return { ok: false, reason: "URL does not end in .mp4" };
+  return { ok: true };
+}
+
+async function validateAndFetchMp4(
+  sb: any,
+  queue_id: string,
+  url: string,
+  trace_id: string,
+): Promise<{ ok: true; bytes: Uint8Array; contentType: string; size: number } | { ok: false; code: string; message: string }> {
+  const fmt = isPublicMp4Url(url);
+  if (!fmt.ok) {
+    await logStage(sb, queue_id, "media_url_validate", "fail", { url, reason: fmt.reason }, trace_id);
+    return { ok: false, code: "MEDIA_URL_INVALID", message: `${fmt.reason}: ${url}` };
+  }
+
+  // HEAD probe — validate status, content-type, content-length without pulling bytes.
+  let headStatus = 0; let headType = ""; let headLen = 0;
+  try {
+    const head = await fetch(url, { method: "HEAD", redirect: "follow" });
+    headStatus = head.status;
+    headType = head.headers.get("content-type") || "";
+    headLen = Number(head.headers.get("content-length") || "0");
+  } catch (e) {
+    await logStage(sb, queue_id, "media_url_head", "fail", { url, error: (e as Error).message }, trace_id);
+    return { ok: false, code: "DOWNLOAD_FAILED", message: `HEAD threw: ${(e as Error).message}` };
+  }
+  console.log(`[pvp ${trace_id}] HEAD url=${url} status=${headStatus} type=${headType} len=${headLen}`);
+  await logStage(sb, queue_id, "media_url_head", headStatus === 200 ? "ok" : "fail",
+    { url, status: headStatus, content_type: headType, content_length: headLen }, trace_id);
+  if (headStatus !== 200) return { ok: false, code: "MEDIA_URL_INVALID", message: `HEAD status ${headStatus}` };
+  if (headType && !/video\/mp4|application\/octet-stream/i.test(headType)) {
+    return { ok: false, code: "MEDIA_URL_INVALID", message: `unexpected content-type ${headType}` };
+  }
+
+  // GET — pull bytes so we can hand them to Pinterest's S3 upload as a Blob.
+  let getStatus = 0; let getType = ""; let bytes: Uint8Array;
+  try {
+    const res = await fetch(url, { method: "GET", redirect: "follow" });
+    getStatus = res.status;
+    getType = res.headers.get("content-type") || headType;
+    if (getStatus !== 200) {
+      await logStage(sb, queue_id, "media_url_get", "fail", { url, status: getStatus, content_type: getType }, trace_id);
+      return { ok: false, code: "DOWNLOAD_FAILED", message: `GET status ${getStatus}` };
+    }
+    const ab = await res.arrayBuffer();
+    bytes = new Uint8Array(ab);
+  } catch (e) {
+    await logStage(sb, queue_id, "media_url_get", "fail", { url, error: (e as Error).message }, trace_id);
+    return { ok: false, code: "DOWNLOAD_FAILED", message: `GET threw: ${(e as Error).message}` };
+  }
+  if (!bytes.byteLength) {
+    await logStage(sb, queue_id, "media_url_get", "fail", { url, reason: "0 bytes" }, trace_id);
+    return { ok: false, code: "MEDIA_URL_INVALID", message: "empty body (0 bytes)" };
+  }
+  console.log(`[pvp ${trace_id}] GET url=${url} status=${getStatus} type=${getType} size=${bytes.byteLength}`);
+  await logStage(sb, queue_id, "media_url_get", "ok",
+    { url, status: getStatus, content_type: getType, size_bytes: bytes.byteLength }, trace_id);
+  return { ok: true, bytes, contentType: getType || "video/mp4", size: bytes.byteLength };
+}
+
 async function getAdminClient(req: Request) {
   const sbAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   // Service-mode: allow internal callers (cinematic-ad-render-webhook auto-publish chain)
