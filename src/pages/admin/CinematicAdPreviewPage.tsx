@@ -268,6 +268,114 @@ export default function CinematicAdPreviewPage() {
 
         {/* Right column */}
         <div className="space-y-4">
+          {/* AI Creative Kit — hooks, CTAs, storyboard */}
+          {(() => {
+            const hooks: HookVariantMeta[] = Array.isArray(job?.hook_variants_meta) ? job.hook_variants_meta : [];
+            const ctas: CtaVariantMeta[] = Array.isArray(job?.cta_variants_meta) ? job.cta_variants_meta : [];
+            const storyboard: StoryboardScene[] = Array.isArray(job?.storyboard) ? job.storyboard : [];
+            const selH = Number(job?.selected_hook_index ?? 0);
+            const selC = Number(job?.selected_cta_index ?? 0);
+            const recommended = hooks[0];
+            if (hooks.length === 0 && ctas.length === 0 && storyboard.length === 0) return null;
+            return (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center justify-between">
+                    <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI Creative Kit</span>
+                    <Button size="sm" variant="outline" onClick={handleRegenHook} disabled={busy !== null}>
+                      <RefreshCw className={`w-3.5 h-3.5 mr-1 ${busy === "regen-hook" ? "animate-spin" : ""}`} /> Regenerate
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {recommended && (
+                    <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-1">
+                        AI Recommended Hook
+                      </div>
+                      <div className="text-base font-semibold leading-snug">{recommended.text}</div>
+                      <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-2">
+                        <Badge variant="secondary">{ANGLE_LABEL[recommended.angle] ?? recommended.angle}</Badge>
+                        <Badge variant="outline">Predicted CTR score {recommended.score}</Badge>
+                        {recommended.reasoning && <span className="italic">{recommended.reasoning}</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  {hooks.length > 0 && (
+                    <div>
+                      <Label className="text-xs">Hook variants ({hooks.length}) — click to override</Label>
+                      <div className="space-y-1.5 mt-1.5">
+                        {hooks.map((h, i) => {
+                          const active = i === selH;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => selectHook(i)}
+                              disabled={busy !== null}
+                              className={`w-full text-left rounded-md border px-3 py-2 transition ${active ? "border-primary bg-primary/10" : "border-border hover:bg-muted"}`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-sm font-medium leading-snug">{h.text}</div>
+                                <div className="shrink-0 flex items-center gap-1.5">
+                                  <Badge variant="outline" className="text-[10px]">{ANGLE_LABEL[h.angle] ?? h.angle}</Badge>
+                                  <Badge variant={active ? "default" : "secondary"} className="text-[10px]">{h.score}</Badge>
+                                </div>
+                              </div>
+                              {h.reasoning && <div className="text-[10px] text-muted-foreground mt-0.5">{h.reasoning}</div>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {ctas.length > 0 && (
+                    <div>
+                      <Label className="text-xs">CTA variants ({ctas.length})</Label>
+                      <div className="flex flex-wrap gap-2 mt-1.5">
+                        {ctas.map((c, i) => {
+                          const active = i === selC;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => selectCta(i)}
+                              disabled={busy !== null}
+                              className={`rounded-md border px-3 py-1.5 text-sm transition ${active ? "border-primary bg-primary/10 font-semibold" : "border-border hover:bg-muted"}`}
+                            >
+                              {c.text} <span className="text-[10px] text-muted-foreground ml-1">{c.score}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {storyboard.length > 0 && (
+                    <div>
+                      <Label className="text-xs">Storyboard ({storyboard.length} scenes)</Label>
+                      <div className="space-y-1.5 mt-1.5">
+                        {storyboard.map((s) => (
+                          <div key={s.scene_index} className="rounded-md border p-2 text-xs">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="font-semibold">#{s.scene_index} · {s.role}</span>
+                              <span className="text-muted-foreground">{s.duration_s}s</span>
+                            </div>
+                            <div className="text-muted-foreground"><span className="font-medium text-foreground">Visual:</span> {s.visual}</div>
+                            <div className="text-muted-foreground"><span className="font-medium text-foreground">On-screen:</span> {s.on_screen_text}</div>
+                            <div className="text-muted-foreground"><span className="font-medium text-foreground">VO:</span> {s.vo_line}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {/* Generated concept */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Generated concept</CardTitle></CardHeader>
