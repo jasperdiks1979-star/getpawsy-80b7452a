@@ -414,6 +414,25 @@ export default function CinematicAdsPage() {
     finally { setBusyId(null); }
   };
 
+  const runAutopilot = async () => {
+    const slug = pickedProduct?.slug ?? productSlug;
+    if (!slug) { toast.error("Pick a product first"); return; }
+    setBusyId("__autopilot__");
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-autopilot", {
+        body: { product_slug: slug, autopilot_threshold: 70 },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "autopilot failed");
+      const jobId = (data as any)?.job_id;
+      const score = (data as any)?.scores?.overall;
+      toast.success(`Autopilot ${score >= 70 ? "engaged" : "held for review"} — confidence ${score}/100`);
+      if (jobId) navigate(`/admin/cinematic-ads/preview/${jobId}`);
+      load();
+    } catch (e: any) { toast.error(e?.message ?? String(e)); }
+    finally { setBusyId(null); }
+  };
+
   const pushToPinterest = async (jobId: string) => {
     setBusyId(jobId);
     try {
