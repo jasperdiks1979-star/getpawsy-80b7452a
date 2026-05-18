@@ -277,10 +277,25 @@ export default function CinematicAdsDashboardPage() {
           </h1>
           <p className="text-xs text-muted-foreground">Live view of the queue → render → Pinterest pipeline. Polls every 15s.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => load()} disabled={refreshing}>
-          {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => load()} disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date().toISOString().split("T")[0];
+              const label = filter === "all" ? "all" : filter;
+              downloadJobsCsv(filtered, `cinematic_ads_${label}_${today}.csv`);
+            }}
+            disabled={filtered.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </header>
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
