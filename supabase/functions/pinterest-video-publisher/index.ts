@@ -463,7 +463,7 @@ serve(async (req) => {
         board_id,
         attempt_count: (row.attempt_count || 0) + 1,
       }).eq("id", queue_id);
-      const result = await publishVideoPin({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
+      const result = await publishWithRetry({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
       if (result.ok) {
         await sb.from("pinterest_video_queue").update({
           status: "published", pin_id: result.pin_id, external_url: result.external_url, error_message: null,
@@ -478,6 +478,7 @@ serve(async (req) => {
       await sb.from("pinterest_video_queue").update({
         status: "failed", error_message: `${result.code}: ${result.message}`,
       }).eq("id", queue_id);
+      await recordFinalFailure(sb, asset, result.code, result.message);
       await log.error("retry failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
       return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
     }
@@ -503,7 +504,7 @@ serve(async (req) => {
         attempt_count: (row.attempt_count || 0) + 1,
       }).eq("id", queue_id);
 
-      const result = await publishVideoPin({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
+      const result = await publishWithRetry({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
 
       if (result.ok) {
         await sb.from("pinterest_video_queue").update({
@@ -523,6 +524,7 @@ serve(async (req) => {
           status: "failed",
           error_message: `${result.code}: ${result.message}`,
         }).eq("id", queue_id);
+        await recordFinalFailure(sb, asset, result.code, result.message);
         await log.error("publish failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
         return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
       }
