@@ -521,9 +521,9 @@ serve(async (req) => {
       await sb.from("pinterest_video_queue").update({
         status: "failed", error_message: `${result.code}: ${result.message}`,
       }).eq("id", queue_id);
-      await recordFinalFailure(sb, asset, result.code, result.message);
+      await recordFinalFailure(sb, queue_id, asset, result.code, result.message, result.attempts);
       await log.error("retry failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
-      return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
+      return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message, attempts: result.attempts });
     }
 
     // ── publish ─────────────────────────────────────────────────────
@@ -567,9 +567,9 @@ serve(async (req) => {
           status: "failed",
           error_message: `${result.code}: ${result.message}`,
         }).eq("id", queue_id);
-        await recordFinalFailure(sb, asset, result.code, result.message);
+        await recordFinalFailure(sb, queue_id, asset, result.code, result.message, result.attempts);
         await log.error("publish failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
-        return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
+        return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message, attempts: result.attempts });
       }
     }
 
