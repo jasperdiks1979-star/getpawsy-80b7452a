@@ -624,16 +624,25 @@ const handler = async (req: Request): Promise<Response> => {
 
   if (regenerate === "copy" || regenerate === "hook") {
     try {
-      const pin = await generatePinCopy(product as any, voiceStyle, lovableKey);
+      const kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+      const topHook = kit.hook_variants[0];
+      const topCta = kit.cta_variants[0];
       const { data: u } = await admin.from("cinematic_ad_jobs").update({
-        pin_title: pin?.pin_title ?? null,
-        pin_description: pin?.pin_description ?? null,
-        hashtags: pin?.hashtags ?? [],
-        hook_variant: pin?.overlay_hook ?? hook_variant,
-        status_message: "pin copy regenerated",
+        pin_title: kit.pin_title,
+        pin_description: kit.pin_description,
+        hashtags: kit.hashtags,
+        hook_variants_meta: kit.hook_variants,
+        cta_variants_meta: kit.cta_variants,
+        storyboard: kit.storyboard,
+        selected_hook_index: 0,
+        selected_cta_index: 0,
+        hook_text: topHook?.text ?? null,
+        cta_text: topCta?.text ?? null,
+        hook_variant: topHook?.text ?? hook_variant,
+        status_message: "creative kit regenerated",
         approved_for_render: false,
       }).eq("id", jobId).select("*").single();
-      return json(200, { ok: true, traceId, message: "pin copy regenerated", job: u });
+      return json(200, { ok: true, traceId, message: "creative kit regenerated", job: u });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return json(500, { ok: false, traceId, message: msg });
