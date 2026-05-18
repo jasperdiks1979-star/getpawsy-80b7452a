@@ -8725,6 +8725,7 @@ export type Database = {
           destination_url: string
           error_message: string | null
           external_url: string | null
+          failure_payload: Json | null
           hashtags: string[]
           id: string
           last_retry_at: string | null
@@ -8747,6 +8748,7 @@ export type Database = {
           destination_url: string
           error_message?: string | null
           external_url?: string | null
+          failure_payload?: Json | null
           hashtags?: string[]
           id?: string
           last_retry_at?: string | null
@@ -8769,6 +8771,7 @@ export type Database = {
           destination_url?: string
           error_message?: string | null
           external_url?: string | null
+          failure_payload?: Json | null
           hashtags?: string[]
           id?: string
           last_retry_at?: string | null

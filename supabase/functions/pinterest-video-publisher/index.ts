@@ -316,33 +316,76 @@ async function publishVideoPin(opts: {
 // exponential backoff. Pinterest API errors (REGISTER_FAILED, UPLOAD_FAILED,
 // MEDIA_PROCESS_FAILED, PIN_CREATE_FAILED, INVALID_PINTEREST_PAYLOAD) are
 // surfaced immediately so the operator can act on them; only the storage/HTTP
-// fetch layer is auto-retried.
-const TRANSIENT_CODES = new Set(["DOWNLOAD_FAILED", "MEDIA_TIMEOUT"]);
+// fetch layer is auto-retried. DOWNLOAD_FAILED gets the longest ladder because
+// it is typically a storage-propagation race after a fresh Remotion upload.
+type AttemptRecord = { n: number; code: string; message: string; at: string; next_delay_ms: number };
+
+const RETRY_LADDERS: Record<string, number[]> = {
+  // 5 attempts total: initial + 4 backoffs (5s, 10s, 20s, 40s) — ~75s window
+  DOWNLOAD_FAILED: [5_000, 10_000, 20_000, 40_000],
+  MEDIA_TIMEOUT: [2_000, 4_000, 8_000],
+};
 
 async function publishWithRetry(opts: {
   sb: any; queue_id: string; asset: any; queueRow: any; token: string; trace_id: string;
-  maxAttempts?: number;
-}) {
-  const max = opts.maxAttempts ?? 3;
+}): Promise<
+  | { ok: true; pin_id: string; external_url: string; attempts: AttemptRecord[] }
+  | { ok: false; code: string; message: string; attempts: AttemptRecord[] }
+> {
+  const attempts: AttemptRecord[] = [];
   let last: Awaited<ReturnType<typeof publishVideoPin>> | null = null;
-  for (let attempt = 1; attempt <= max; attempt++) {
-    console.log(`[pvp ${opts.trace_id}] publish attempt ${attempt}/${max}`);
+  let attempt = 0;
+  // Loop until: success, non-transient failure, or ladder exhausted.
+  // We always run at least one attempt; the ladder controls retries after that.
+  while (true) {
+    attempt += 1;
+    console.log(`[pvp ${opts.trace_id}] publish attempt #${attempt}`);
     last = await publishVideoPin(opts);
-    if (last.ok) return last;
-    if (!TRANSIENT_CODES.has(last.code)) return last;
-    if (attempt === max) break;
-    const delayMs = Math.min(30000, 1000 * Math.pow(2, attempt)); // 2s, 4s, 8s, capped
+    if (last.ok) return { ...last, attempts };
+    const ladder = RETRY_LADDERS[last.code];
+    const retryIdx = attempt - 1; // 0-based index into the delay ladder
+    const nextDelay = ladder?.[retryIdx];
+    attempts.push({
+      n: attempt,
+      code: last.code,
+      message: last.message,
+      at: new Date().toISOString(),
+      next_delay_ms: nextDelay ?? 0,
+    });
+    if (!nextDelay) {
+      // Either non-transient or ladder exhausted.
+      return { ok: false, code: last.code, message: last.message, attempts };
+    }
     await logStage(opts.sb, opts.queue_id, "publish_retry", "backoff",
-      { attempt, next_attempt_in_ms: delayMs, code: last.code, message: last.message }, opts.trace_id);
-    await new Promise((r) => setTimeout(r, delayMs));
+      { attempt, next_attempt_in_ms: nextDelay, code: last.code, message: last.message }, opts.trace_id);
+    await new Promise((r) => setTimeout(r, nextDelay));
   }
-  return last!;
 }
 
-async function recordFinalFailure(sb: any, asset: any, code: string, message: string) {
-  // Mirror the final failure reason onto the cinematic_ad_jobs row when the
-  // asset originated from a cinematic render — gives operators one place to
-  // diagnose end-to-end pipeline failures.
+async function recordFinalFailure(
+  sb: any,
+  queue_id: string,
+  asset: any,
+  code: string,
+  message: string,
+  attempts: AttemptRecord[],
+) {
+  const failure_payload = {
+    code,
+    message,
+    attempts,
+    attempt_count: attempts.length,
+    finalized_at: new Date().toISOString(),
+  };
+  // 1. Persist structured failure record on the queue row itself.
+  try {
+    await sb.from("pinterest_video_queue").update({ failure_payload }).eq("id", queue_id);
+  } catch (e) {
+    console.warn("[pvp] recordFinalFailure queue update failed", (e as Error).message);
+  }
+  // 2. Mirror final failure reason onto the cinematic_ad_jobs row when the
+  //    asset originated from a cinematic render — one place to diagnose
+  //    end-to-end pipeline failures.
   try {
     await sb.from("cinematic_ad_jobs").update({
       pinterest_publish_error: `${code}: ${message}`,
@@ -478,9 +521,9 @@ serve(async (req) => {
       await sb.from("pinterest_video_queue").update({
         status: "failed", error_message: `${result.code}: ${result.message}`,
       }).eq("id", queue_id);
-      await recordFinalFailure(sb, asset, result.code, result.message);
+      await recordFinalFailure(sb, queue_id, asset, result.code, result.message, result.attempts);
       await log.error("retry failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
-      return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
+      return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message, attempts: result.attempts });
     }
 
     // ── publish ─────────────────────────────────────────────────────
@@ -524,9 +567,9 @@ serve(async (req) => {
           status: "failed",
           error_message: `${result.code}: ${result.message}`,
         }).eq("id", queue_id);
-        await recordFinalFailure(sb, asset, result.code, result.message);
+        await recordFinalFailure(sb, queue_id, asset, result.code, result.message, result.attempts);
         await log.error("publish failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
-        return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
+        return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message, attempts: result.attempts });
       }
     }
 
