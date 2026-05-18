@@ -27,6 +27,106 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
   } catch (e) { console.error("[pvp] log failed", e); }
 }
 
+// ── Media URL resolution + validation ─────────────────────────────────
+// Pinterest /media uploads require a real, publicly fetchable MP4. The
+// previous implementation streamed from `sb.storage.download(...)`, which
+// silently failed (DOWNLOAD_FAILED) whenever the storage path no longer
+// matched the file that Remotion uploaded. We now resolve the URL from
+// cinematic_ad_jobs.output_mp4_url (the canonical render output) and only
+// fall back to asset.public_url if no linked job exists.
+const PUBLIC_STORAGE_MARKER = "/storage/v1/object/public/";
+
+async function resolveMediaUrl(sb: any, asset: any, trace_id: string): Promise<string | null> {
+  try {
+    const { data: job } = await sb
+      .from("cinematic_ad_jobs")
+      .select("output_mp4_url, status")
+      .eq("pinterest_asset_id", asset.id)
+      .not("output_mp4_url", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (job?.output_mp4_url) {
+      console.log(`[pvp ${trace_id}] media_url from cinematic_ad_jobs=${job.output_mp4_url}`);
+      return job.output_mp4_url as string;
+    }
+  } catch (e) {
+    console.warn(`[pvp ${trace_id}] cinematic_ad_jobs lookup failed`, (e as Error).message);
+  }
+  if (asset?.public_url) {
+    console.log(`[pvp ${trace_id}] media_url from asset.public_url=${asset.public_url}`);
+    return asset.public_url as string;
+  }
+  return null;
+}
+
+function isPublicMp4Url(url: string): { ok: boolean; reason?: string } {
+  let u: URL;
+  try { u = new URL(url); } catch { return { ok: false, reason: "not a valid URL" }; }
+  if (u.protocol !== "https:") return { ok: false, reason: `protocol must be https, got ${u.protocol}` };
+  if (u.pathname.startsWith("/functions/v1/")) return { ok: false, reason: "edge function path, not a public storage URL" };
+  if (!u.pathname.includes(PUBLIC_STORAGE_MARKER)) return { ok: false, reason: `missing ${PUBLIC_STORAGE_MARKER}` };
+  if (!/\.mp4(\?|$)/i.test(u.pathname)) return { ok: false, reason: "URL does not end in .mp4" };
+  return { ok: true };
+}
+
+async function validateAndFetchMp4(
+  sb: any,
+  queue_id: string,
+  url: string,
+  trace_id: string,
+): Promise<{ ok: true; bytes: Uint8Array; contentType: string; size: number } | { ok: false; code: string; message: string }> {
+  const fmt = isPublicMp4Url(url);
+  if (!fmt.ok) {
+    await logStage(sb, queue_id, "media_url_validate", "fail", { url, reason: fmt.reason }, trace_id);
+    return { ok: false, code: "MEDIA_URL_INVALID", message: `${fmt.reason}: ${url}` };
+  }
+
+  // HEAD probe — validate status, content-type, content-length without pulling bytes.
+  let headStatus = 0; let headType = ""; let headLen = 0;
+  try {
+    const head = await fetch(url, { method: "HEAD", redirect: "follow" });
+    headStatus = head.status;
+    headType = head.headers.get("content-type") || "";
+    headLen = Number(head.headers.get("content-length") || "0");
+  } catch (e) {
+    await logStage(sb, queue_id, "media_url_head", "fail", { url, error: (e as Error).message }, trace_id);
+    return { ok: false, code: "DOWNLOAD_FAILED", message: `HEAD threw: ${(e as Error).message}` };
+  }
+  console.log(`[pvp ${trace_id}] HEAD url=${url} status=${headStatus} type=${headType} len=${headLen}`);
+  await logStage(sb, queue_id, "media_url_head", headStatus === 200 ? "ok" : "fail",
+    { url, status: headStatus, content_type: headType, content_length: headLen }, trace_id);
+  if (headStatus !== 200) return { ok: false, code: "MEDIA_URL_INVALID", message: `HEAD status ${headStatus}` };
+  if (headType && !/video\/mp4|application\/octet-stream/i.test(headType)) {
+    return { ok: false, code: "MEDIA_URL_INVALID", message: `unexpected content-type ${headType}` };
+  }
+
+  // GET — pull bytes so we can hand them to Pinterest's S3 upload as a Blob.
+  let getStatus = 0; let getType = ""; let bytes: Uint8Array;
+  try {
+    const res = await fetch(url, { method: "GET", redirect: "follow" });
+    getStatus = res.status;
+    getType = res.headers.get("content-type") || headType;
+    if (getStatus !== 200) {
+      await logStage(sb, queue_id, "media_url_get", "fail", { url, status: getStatus, content_type: getType }, trace_id);
+      return { ok: false, code: "DOWNLOAD_FAILED", message: `GET status ${getStatus}` };
+    }
+    const ab = await res.arrayBuffer();
+    bytes = new Uint8Array(ab);
+  } catch (e) {
+    await logStage(sb, queue_id, "media_url_get", "fail", { url, error: (e as Error).message }, trace_id);
+    return { ok: false, code: "DOWNLOAD_FAILED", message: `GET threw: ${(e as Error).message}` };
+  }
+  if (!bytes.byteLength) {
+    await logStage(sb, queue_id, "media_url_get", "fail", { url, reason: "0 bytes" }, trace_id);
+    return { ok: false, code: "MEDIA_URL_INVALID", message: "empty body (0 bytes)" };
+  }
+  console.log(`[pvp ${trace_id}] GET url=${url} status=${getStatus} type=${getType} size=${bytes.byteLength}`);
+  await logStage(sb, queue_id, "media_url_get", "ok",
+    { url, status: getStatus, content_type: getType, size_bytes: bytes.byteLength }, trace_id);
+  return { ok: true, bytes, contentType: getType || "video/mp4", size: bytes.byteLength };
+}
+
 async function getAdminClient(req: Request) {
   const sbAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   // Service-mode: allow internal callers (cinematic-ad-render-webhook auto-publish chain)
@@ -92,11 +192,14 @@ async function publishVideoPin(opts: {
 
   // Stage 2: stream MP4 from storage to Pinterest's S3 upload URL
   console.log(`[pvp ${trace_id}] stage=upload media_id=${mediaId}`);
-  const { data: blob, error: dlErr } = await sb.storage.from(asset.storage_bucket).download(asset.storage_path);
-  if (dlErr || !blob) {
-    await logStage(sb, queue_id, "download", "fail", { error: dlErr?.message }, trace_id);
-    return { ok: false, code: "DOWNLOAD_FAILED", message: dlErr?.message || "no blob" };
+  const mediaUrl = await resolveMediaUrl(sb, asset, trace_id);
+  if (!mediaUrl) {
+    await logStage(sb, queue_id, "media_url_resolve", "fail", { asset_id: asset.id }, trace_id);
+    return { ok: false, code: "MEDIA_URL_INVALID", message: "no output_mp4_url and no asset.public_url" };
   }
+  const fetched = await validateAndFetchMp4(sb, queue_id, mediaUrl, trace_id);
+  if (!fetched.ok) return fetched;
+  const blob = new Blob([fetched.bytes], { type: fetched.contentType });
   const fd = new FormData();
   for (const [k, v] of Object.entries(uploadParams)) fd.append(k, v);
   fd.append("file", blob, asset.filename);
@@ -209,6 +312,47 @@ async function publishVideoPin(opts: {
   return { ok: true, pin_id: pinBody.id, external_url: `https://www.pinterest.com/pin/${pinBody.id}/` };
 }
 
+// Retry the publish flow on transient download/network failures with
+// exponential backoff. Pinterest API errors (REGISTER_FAILED, UPLOAD_FAILED,
+// MEDIA_PROCESS_FAILED, PIN_CREATE_FAILED, INVALID_PINTEREST_PAYLOAD) are
+// surfaced immediately so the operator can act on them; only the storage/HTTP
+// fetch layer is auto-retried.
+const TRANSIENT_CODES = new Set(["DOWNLOAD_FAILED", "MEDIA_TIMEOUT"]);
+
+async function publishWithRetry(opts: {
+  sb: any; queue_id: string; asset: any; queueRow: any; token: string; trace_id: string;
+  maxAttempts?: number;
+}) {
+  const max = opts.maxAttempts ?? 3;
+  let last: Awaited<ReturnType<typeof publishVideoPin>> | null = null;
+  for (let attempt = 1; attempt <= max; attempt++) {
+    console.log(`[pvp ${opts.trace_id}] publish attempt ${attempt}/${max}`);
+    last = await publishVideoPin(opts);
+    if (last.ok) return last;
+    if (!TRANSIENT_CODES.has(last.code)) return last;
+    if (attempt === max) break;
+    const delayMs = Math.min(30000, 1000 * Math.pow(2, attempt)); // 2s, 4s, 8s, capped
+    await logStage(opts.sb, opts.queue_id, "publish_retry", "backoff",
+      { attempt, next_attempt_in_ms: delayMs, code: last.code, message: last.message }, opts.trace_id);
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return last!;
+}
+
+async function recordFinalFailure(sb: any, asset: any, code: string, message: string) {
+  // Mirror the final failure reason onto the cinematic_ad_jobs row when the
+  // asset originated from a cinematic render — gives operators one place to
+  // diagnose end-to-end pipeline failures.
+  try {
+    await sb.from("cinematic_ad_jobs").update({
+      pinterest_publish_error: `${code}: ${message}`,
+      last_pinterest_attempt_at: new Date().toISOString(),
+    }).eq("pinterest_asset_id", asset.id);
+  } catch (e) {
+    console.warn("[pvp] recordFinalFailure cinematic update failed", (e as Error).message);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const trace_id = crypto.randomUUID();
@@ -319,7 +463,7 @@ serve(async (req) => {
         board_id,
         attempt_count: (row.attempt_count || 0) + 1,
       }).eq("id", queue_id);
-      const result = await publishVideoPin({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
+      const result = await publishWithRetry({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
       if (result.ok) {
         await sb.from("pinterest_video_queue").update({
           status: "published", pin_id: result.pin_id, external_url: result.external_url, error_message: null,
@@ -334,6 +478,7 @@ serve(async (req) => {
       await sb.from("pinterest_video_queue").update({
         status: "failed", error_message: `${result.code}: ${result.message}`,
       }).eq("id", queue_id);
+      await recordFinalFailure(sb, asset, result.code, result.message);
       await log.error("retry failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
       return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
     }
@@ -359,7 +504,7 @@ serve(async (req) => {
         attempt_count: (row.attempt_count || 0) + 1,
       }).eq("id", queue_id);
 
-      const result = await publishVideoPin({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
+      const result = await publishWithRetry({ sb, queue_id, asset, queueRow: { ...row, board_id }, token, trace_id });
 
       if (result.ok) {
         await sb.from("pinterest_video_queue").update({
@@ -379,6 +524,7 @@ serve(async (req) => {
           status: "failed",
           error_message: `${result.code}: ${result.message}`,
         }).eq("id", queue_id);
+        await recordFinalFailure(sb, asset, result.code, result.message);
         await log.error("publish failed", { code: result.code, message: result.message }, { queue_id, asset_id: asset.id });
         return ok({ ok: false, traceId: trace_id, code: result.code, message: result.message });
       }
