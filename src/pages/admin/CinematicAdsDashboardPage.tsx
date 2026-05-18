@@ -136,7 +136,7 @@ function downloadJobsCsv(jobs: Job[], filename: string) {
     if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   };
-  const rows = jobs.map((j) => headers.map((h) => esc((j as Record<string, unknown>)[h])).join(",")).join("\n");
+  const rows = jobs.map((j) => headers.map((h) => esc((j as unknown as Record<string, unknown>)[h])).join(",")).join("\n");
   const csv = `${headers.join(",")}\n${rows}`;
   const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
