@@ -11,9 +11,41 @@ import { MainVideoLitterBoxV5 } from "./MainVideoLitterBoxV5";
 import { MainVideoTimePain } from "./MainVideoTimePain";
 import { MainVideoSmellProblem } from "./MainVideoSmellProblem";
 import { MainVideoDirectBuyer } from "./MainVideoDirectBuyer";
+import { MainVideoViralVertical, viralPropsSchema } from "./MainVideoViralVertical";
 
 export const RemotionRoot = () => (
   <>
+    <Composition
+      id="viral-vertical"
+      component={MainVideoViralVertical}
+      durationInFrames={540}
+      fps={30}
+      width={1080}
+      height={1920}
+      schema={viralPropsSchema}
+      defaultProps={{
+        preset: "pin-organic" as const,
+        hook: "Stop scooping. Forever.",
+        subhook: "The litter box that cleans itself.",
+        cta: "Tap to Shop →",
+        ctaUrl: "https://getpawsy.pet",
+        product: { name: "Self-Cleaning Litter Box", price: "$268.99", slug: "automatic-cat-litter-box-self-cleaning-app-control" },
+        media: [],
+        debug: false,
+        disclosure: false,
+        hookByFrame: 24,
+        ctaHoldFrames: 120,
+      }}
+      calculateMetadata={({ props }) => {
+        const map: Record<string, number> = {
+          "pin-organic": 18 * 30,
+          "pin-ads": 22 * 30,
+          "tt-organic": 18 * 30,
+          "tt-spark": 22 * 30,
+        };
+        return { durationInFrames: map[(props as any).preset] ?? 540 };
+      }}
+    />
     <Composition
       id="main"
       component={MainVideo}
