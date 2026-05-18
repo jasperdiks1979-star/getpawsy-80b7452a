@@ -1137,24 +1137,28 @@ export default function CinematicAdsPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Generate Viral Ad</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2">
-              <label className="text-xs text-muted-foreground">Product slug</label>
-              <Input value={productSlug} onChange={(e) => setProductSlug(e.target.value)} placeholder="product-slug" />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Hook variant</label>
-              <Input value={hookVariant} onChange={(e) => setHookVariant(e.target.value)} placeholder="default" />
-            </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Product</label>
+            <ProductPicker
+              value={pickedProduct}
+              onChange={(p) => { setPickedProduct(p); if (p) setProductSlug(p.slug); }}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Voiceover style</label>
+            <VoiceStyleSelector value={voiceStyle} onChange={setVoiceStyle} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Hook variant (optional override)</label>
+            <Input value={hookVariant} onChange={(e) => setHookVariant(e.target.value)} placeholder="default" />
           </div>
           <Button onClick={generate} disabled={busyId === "__new__"} className="w-full sm:w-auto">
             {busyId === "__new__" ? <Loader2 className="size-4 animate-spin mr-2" /> : <Sparkles className="size-4 mr-2" />}
-            Prepare cinematic assets
+            Generate ad concept
           </Button>
           <p className="text-xs text-muted-foreground">
-            Step 1 (this button): generates 6 AI scene stills + ElevenLabs voiceover (Sarah). Step 2: render MP4 locally
-            via <code className="text-[10px] bg-muted px-1 py-0.5 rounded">remotion/scripts/render-cinematic-ad.mjs</code>.
-            Step 3: click <strong>Push to Pinterest</strong> to register the MP4.
+            Generates 6 AI scene stills, professional voiceover, and Pinterest copy. You'll land on the
+            preview page to approve, regenerate, render, and publish to Pinterest.
           </p>
         </CardContent>
       </Card>
