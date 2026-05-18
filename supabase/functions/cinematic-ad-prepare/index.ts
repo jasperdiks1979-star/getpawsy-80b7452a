@@ -729,29 +729,45 @@ const handler = async (req: Request): Promise<Response> => {
 
     // VO
     let voUrl: string | null = null;
+    let voDuration: number | null = null;
     try {
-      const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey);
+      const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey, voiceStyle.settings);
       const voPath = `${jobId}/voiceover.mp3`;
       const { error: voErr } = await admin.storage.from("cinematic-ads").upload(voPath, voBytes, {
         contentType: "audio/mpeg", upsert: true,
       });
       if (!voErr) voUrl = admin.storage.from("cinematic-ads").getPublicUrl(voPath).data.publicUrl;
+      // Rough estimate: assume ~155 wpm spoken cadence for our presets
+      const wordCount = voScript.trim().split(/\s+/).length;
+      voDuration = Math.round((wordCount / 155) * 60);
     } catch (e) {
       console.error("VO failed", e);
     }
+
+    // Pin copy (best-effort)
+    const pin = await generatePinCopy(product as any, voiceStyle, lovableKey);
 
     const { data: updated, error: upErr } = await admin
       .from("cinematic_ad_jobs")
       .update({
         status: "prepared",
-        status_message: "assets ready — ready to render",
+        status_message: "assets ready — awaiting approval",
         scene_specs: scenes,
         scene_assets,
         vo_script: voScript,
         vo_url: voUrl,
+        voice_id,
+        voice_style: voiceStyle.id,
+        output_duration_seconds: voDuration ?? undefined,
         vo_script_variants: voScriptVariants,
         caption_variants: captionVariants,
         variant_index: variantIndex,
+        pin_title: pin?.pin_title ?? null,
+        pin_description: pin?.pin_description ?? null,
+        hashtags: pin?.hashtags ?? [],
+        hook_variant: pin?.overlay_hook ?? hook_variant,
+        media_warnings: mediaWarnings,
+        approved_for_render: false,
         prepared_at: new Date().toISOString(),
       })
       .eq("id", jobId)
@@ -759,7 +775,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
     if (upErr) throw upErr;
 
-    return json(200, { ok: true, traceId, message: "prepared", job: updated });
+    return json(200, { ok: true, traceId, message: "prepared — awaiting approval", job: updated, media_warnings: mediaWarnings });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await admin.from("cinematic_ad_jobs").update({ status: "failed", error_message: msg, status_message: "preparation failed" }).eq("id", jobId);
