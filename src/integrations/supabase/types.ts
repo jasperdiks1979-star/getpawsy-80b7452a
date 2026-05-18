@@ -1007,10 +1007,16 @@ export type Database = {
       }
       cinematic_ad_jobs: {
         Row: {
+          ai_decisions: Json
           approved_at: string | null
           approved_by: string | null
           approved_for_render: boolean
+          auto_publish: boolean
+          autopilot: boolean
+          autopilot_log: Json
+          autopilot_threshold: number
           caption_variants: Json
+          confidence_scores: Json
           created_at: string
           created_by: string | null
           cta_text: string | null
@@ -1071,10 +1077,16 @@ export type Database = {
           voice_style: string | null
         }
         Insert: {
+          ai_decisions?: Json
           approved_at?: string | null
           approved_by?: string | null
           approved_for_render?: boolean
+          auto_publish?: boolean
+          autopilot?: boolean
+          autopilot_log?: Json
+          autopilot_threshold?: number
           caption_variants?: Json
+          confidence_scores?: Json
           created_at?: string
           created_by?: string | null
           cta_text?: string | null
@@ -1135,10 +1147,16 @@ export type Database = {
           voice_style?: string | null
         }
         Update: {
+          ai_decisions?: Json
           approved_at?: string | null
           approved_by?: string | null
           approved_for_render?: boolean
+          auto_publish?: boolean
+          autopilot?: boolean
+          autopilot_log?: Json
+          autopilot_threshold?: number
           caption_variants?: Json
+          confidence_scores?: Json
           created_at?: string
           created_by?: string | null
           cta_text?: string | null
