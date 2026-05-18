@@ -1175,9 +1175,19 @@ export default function CinematicAdsPage() {
             {busyId === "__new__" ? <Loader2 className="size-4 animate-spin mr-2" /> : <Sparkles className="size-4 mr-2" />}
             Generate ad concept
           </Button>
+          <Button
+            onClick={runAutopilot}
+            disabled={busyId === "__autopilot__"}
+            className="w-full sm:w-auto sm:ml-2 bg-gradient-to-r from-primary to-primary/70"
+          >
+            {busyId === "__autopilot__" ? <Loader2 className="size-4 animate-spin mr-2" /> : <Rocket className="size-4 mr-2" />}
+            🚀 One-click Autopilot
+          </Button>
           <p className="text-xs text-muted-foreground">
-            Generates 6 AI scene stills, professional voiceover, and Pinterest copy. You'll land on the
-            preview page to approve, regenerate, render, and publish to Pinterest.
+            <strong>Generate</strong> builds the assets and lands you on the preview page to approve.
+            <strong> Autopilot</strong> analyzes the product (audience, angle, preset, voice, pacing, motion, music),
+            generates everything, scores 5 confidence dimensions, and — if overall ≥ 70 — auto-approves,
+            auto-renders, auto-validates and auto-publishes to Pinterest with zero clicks.
           </p>
         </CardContent>
       </Card>
