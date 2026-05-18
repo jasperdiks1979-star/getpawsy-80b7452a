@@ -21,6 +21,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveVoiceStyle, type VoiceStyle } from "../_shared/voice-styles.ts";
+import { generateCreativeKit, type CreativeKit } from "../_shared/creative-kit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
