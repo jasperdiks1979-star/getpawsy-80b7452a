@@ -541,7 +541,9 @@ const handler = async (req: Request): Promise<Response> => {
 
   const product_slug: string = body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top";
   const hook_variant: string = body.hook_variant ?? "default";
-  const voice_id: string = body.voice_id ?? SARAH;
+  const voiceStyle = resolveVoiceStyle(body.voice_style);
+  const voice_id: string = body.voice_id ?? voiceStyle.voice_id;
+  const regenerate: string | null = typeof body.regenerate === "string" ? body.regenerate : null;
   const requestedVariantCount: number = Math.max(
     1,
     Math.min(MAX_VARIANT_COUNT, Math.floor(Number(body.variant_count) || DEFAULT_VARIANT_COUNT)),
@@ -550,7 +552,7 @@ const handler = async (req: Request): Promise<Response> => {
   // Lookup product to get hero image + copy-generation fields
   const { data: product, error: prodErr } = await admin
     .from("products_public")
-    .select("slug, name, image_url, description, category, primary_species, primary_intent")
+    .select("slug, name, image_url, images, description, category, primary_species, primary_intent, price")
     .eq("slug", product_slug)
     .maybeSingle();
 
@@ -560,6 +562,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
   const productName: string = product.name ?? product_slug;
   const heroUrl: string = product.image_url;
+  const productImages: string[] = Array.isArray((product as any).images) ? (product as any).images.filter(Boolean) : [];
+  const mediaWarnings: Array<{ code: string; message: string }> = [];
+  if (productImages.length < 2) {
+    mediaWarnings.push({ code: "thin_media", message: `Only ${productImages.length || 1} usable image — AI scene synth will be used to add motion.` });
+  }
 
   // Find or create job
   let jobId: string | undefined = body.job_id;
@@ -570,16 +577,66 @@ const handler = async (req: Request): Promise<Response> => {
         product_slug,
         hook_variant,
         voice_id,
+        voice_style: voiceStyle.id,
         status: "preparing",
         status_message: "queued",
         created_by: userData.user.id,
+        media_warnings: mediaWarnings,
+        approved_for_render: false,
+        pin_destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,
       })
       .select("id")
       .single();
     if (insErr) return json(500, { ok: false, traceId, message: insErr.message });
     jobId = created.id;
   } else {
-    await admin.from("cinematic_ad_jobs").update({ status: "preparing", status_message: "preparing assets", error_message: null }).eq("id", jobId);
+    await admin.from("cinematic_ad_jobs").update({
+      status: "preparing",
+      status_message: regenerate ? `regenerating ${regenerate}` : "preparing assets",
+      error_message: null,
+      voice_style: voiceStyle.id,
+      voice_id,
+      media_warnings: mediaWarnings,
+      approved_for_render: false,
+    }).eq("id", jobId);
+  }
+
+  // ── Fast path: regenerate only voiceover or only pin copy ─────────────
+  if (regenerate === "vo" && body.job_id) {
+    try {
+      const { data: existing } = await admin.from("cinematic_ad_jobs").select("vo_script").eq("id", jobId).single();
+      const voScript = String(body.vo_script ?? existing?.vo_script ?? DEFAULT_VO(productName));
+      const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey, voiceStyle.settings);
+      const voPath = `${jobId}/voiceover-${Date.now()}.mp3`;
+      await admin.storage.from("cinematic-ads").upload(voPath, voBytes, { contentType: "audio/mpeg", upsert: true });
+      const voUrl = admin.storage.from("cinematic-ads").getPublicUrl(voPath).data.publicUrl;
+      const { data: u } = await admin.from("cinematic_ad_jobs").update({
+        vo_url: voUrl, vo_script: voScript, voice_id, voice_style: voiceStyle.id,
+        status: "prepared", status_message: "voiceover regenerated", approved_for_render: false,
+      }).eq("id", jobId).select("*").single();
+      return json(200, { ok: true, traceId, message: "voiceover regenerated", job: u });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return json(500, { ok: false, traceId, message: msg });
+    }
+  }
+
+  if (regenerate === "copy" || regenerate === "hook") {
+    try {
+      const pin = await generatePinCopy(product as any, voiceStyle, lovableKey);
+      const { data: u } = await admin.from("cinematic_ad_jobs").update({
+        pin_title: pin?.pin_title ?? null,
+        pin_description: pin?.pin_description ?? null,
+        hashtags: pin?.hashtags ?? [],
+        hook_variant: pin?.overlay_hook ?? hook_variant,
+        status_message: "pin copy regenerated",
+        approved_for_render: false,
+      }).eq("id", jobId).select("*").single();
+      return json(200, { ok: true, traceId, message: "pin copy regenerated", job: u });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return json(500, { ok: false, traceId, message: msg });
+    }
   }
 
   try {
