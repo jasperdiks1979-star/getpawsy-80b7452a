@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RefreshCw, Clock, CheckCircle2, XCircle, Film, ExternalLink, Bell, Play } from "lucide-react";
+import { Loader2, RefreshCw, Clock, CheckCircle2, XCircle, Film, ExternalLink, Bell, Play, Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -120,6 +120,33 @@ function buildTimeline(job: Job, publishLog: any[]): TimelineEvent[] {
   }
   events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   return events;
+}
+
+function downloadJobsCsv(jobs: Job[], filename: string) {
+  const headers = [
+    "id", "product_slug", "hook_variant", "status", "status_message", "error_message",
+    "created_at", "prepared_at", "render_queued_at", "render_started_at", "render_complete_at",
+    "rendered_at", "pinterest_uploaded_at", "last_pinterest_attempt_at", "published_at",
+    "output_mp4_url", "output_thumbnail_url", "output_duration_seconds", "output_file_size_bytes",
+    "render_attempts", "render_worker_id", "pinterest_asset_id", "pinterest_pin_id",
+    "pinterest_pin_url", "pinterest_publish_error", "pinterest_publish_attempts",
+  ];
+  const esc = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
+  const rows = jobs.map((j) => headers.map((h) => esc((j as unknown as Record<string, unknown>)[h])).join(",")).join("\n");
+  const csv = `${headers.join(",")}\n${rows}`;
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export default function CinematicAdsDashboardPage() {
@@ -250,10 +277,25 @@ export default function CinematicAdsDashboardPage() {
           </h1>
           <p className="text-xs text-muted-foreground">Live view of the queue → render → Pinterest pipeline. Polls every 15s.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => load()} disabled={refreshing}>
-          {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => load()} disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date().toISOString().split("T")[0];
+              const label = filter === "all" ? "all" : filter;
+              downloadJobsCsv(filtered, `cinematic_ads_${label}_${today}.csv`);
+            }}
+            disabled={filtered.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </header>
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
