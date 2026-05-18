@@ -131,12 +131,12 @@ function downloadJobsCsv(jobs: Job[], filename: string) {
     "render_attempts", "render_worker_id", "pinterest_asset_id", "pinterest_pin_id",
     "pinterest_pin_url", "pinterest_publish_error", "pinterest_publish_attempts",
   ];
-  const escape = (v: unknown) => {
+  const esc = (v: unknown) => {
     const s = v == null ? "" : String(v);
-    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, """)}"`;
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   };
-  const rows = jobs.map((j) => headers.map((h) => escape((j as Record<string, unknown>)[h]))).join("\n");
+  const rows = jobs.map((j) => headers.map((h) => esc((j as Record<string, unknown>)[h])).join(",")).join("\n");
   const csv = `${headers.join(",")}\n${rows}`;
   const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
