@@ -12,6 +12,26 @@ import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, XCircle, RefreshCw, Upload, AlertTriangle, Mic, Download, Sparkles } from "lucide-react";
 import VoiceStyleSelector, { type VoiceStyleId } from "@/components/admin/cinematic/VoiceStyleSelector";
 
+type HookVariantMeta = { angle: string; text: string; score: number; reasoning?: string };
+type CtaVariantMeta = { text: string; score: number };
+type StoryboardScene = {
+  scene_index: number;
+  role: string;
+  visual: string;
+  on_screen_text: string;
+  vo_line: string;
+  duration_s: number;
+};
+
+const ANGLE_LABEL: Record<string, string> = {
+  emotional: "Emotional",
+  luxury: "Luxury",
+  problem_solution: "Problem / Solution",
+  curiosity: "Curiosity",
+  social_proof: "Social Proof",
+  ugc: "UGC",
+};
+
 const PRESET_OPTIONS = [
   { id: "pin-organic", label: "Pinterest Organic" },
   { id: "pin-ads", label: "Pinterest Ads" },
