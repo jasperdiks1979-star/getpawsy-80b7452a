@@ -1,85 +1,70 @@
-## Goal
-Turn the existing Cinematic Ads infrastructure into a professional Pinterest Vertical Video Ad generator that works for **any product** in the catalog, with a real product picker, premium voiceover selection, full preview-before-render workflow, and end-to-end quality validation.
+# Pinterest Autopilot + UUID Fix
 
-Most plumbing already exists: `cinematic_ad_jobs` table, `cinematic-ad-prepare/queue-render/render-webhook/validate/push-pinterest` edge functions, Remotion `viral-vertical` composition, `CinematicAdPreviewPage`, and Pinterest publish. This plan layers the missing **professional product-picker UX, voice-style system, copy generation, approval gate, and quality checks** on top of that foundation.
+Two coordinated workstreams:
 
-## Scope of changes
+## A. UUID handling fix (do first, blocks autopilot)
 
-### 1. Database — minor additive migration
-Add to `cinematic_ad_jobs`:
-- `voice_style` text (one of `lifestyle_female`, `pet_parent`, `narrator`, `social_energetic`)
-- `pin_title`, `pin_description`, `pin_destination_url` text
-- `hashtags` text[]
-- `approved_for_render` boolean default false
-- `media_warnings` jsonb (asset quality warnings surfaced at prepare-time)
+The cinematic ad pipeline currently truncates `job.id` to 8 chars in some display→dispatch paths, causing `invalid input syntax for type uuid: "6d5a583b"` errors when GitHub Actions/queue-render/webhook try to look up the job.
 
-No destructive changes. RLS already restricted to admins.
+**Audit + fix:**
+- Grep for `.slice(0, 8)`, `.substring(0, 8)`, `job_id.slice`, and short-id patterns across:
+  - `src/pages/admin/CinematicAdsPage.tsx`, `CinematicAdPreviewPage.tsx`, `CinematicAdsDashboardPage.tsx`
+  - `supabase/functions/cinematic-ad-*` (approve, queue-render, dispatch, worker-control, autopilot, webhook, claim-job)
+  - `.github/workflows/render-cinematic-ad.yml`
+- Replace dispatch paths to always send the full UUID. Keep short id ONLY for display labels like `Job #6d5a583b`.
+- Add UUID validation at every dispatch boundary:
+  ```ts
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID.test(jobId)) return error("Full UUID required. Do not use shortened display id.");
+  ```
+  Add the same regex check as a preflight step in `.github/workflows/render-cinematic-ad.yml`.
+- Add a "Copy full job id" button next to short id in dashboard + preview pages.
+- Verify Approve & Render MP4 button passes `job.id` (not display id) to the GitHub `workflow_dispatch` call.
 
-### 2. Voice style registry (shared)
-New `supabase/functions/_shared/voice-styles.ts`:
-- Maps style id → `{ voice_id (ElevenLabs), label, persona_prompt, vo_pacing }`.
-- 4 styles: `lifestyle_female` (Sarah), `pet_parent` (Matilda warm), `narrator` (Brian calm), `social_energetic` (Liam punchy).
-- Used by `cinematic-ad-prepare` to pick voice + steer the VO script tone, and surfaced in the UI as a selector.
+## B. Pinterest Autopilot
 
-### 3. `cinematic-ad-prepare` upgrades
-- Accept `product_slug` for **any** product (lookup `products` by slug, fall back to id). Validate product has ≥1 usable image; otherwise populate `media_warnings` and flag `synth_motion=true`.
-- Accept `voice_style` and resolve `voice_id` from the registry.
-- Extend the AI prompt to also generate Pinterest copy: `pin_title`, `pin_description`, `hashtags`, `overlay_hook`, scene captions, CTA. Store on the job row.
-- Generate VO with the selected ElevenLabs voice, with explicit natural pauses (`<break time="350ms"/>`) and a strong final CTA. Save `duration_seconds`, `vo_url`, `voice_id`, `voice_style`, `vo_script`.
-- Always set `preset='pin-organic'` (1080x1920) unless overridden.
-- Set status `awaiting_approval` (not auto-queued) so the preview gate runs.
+### B1. Database (one migration)
+- `pinterest_autopilot_schedule` — planned posts:
+  - `scheduled_at` (US-friendly time), `product_slug`, `product_id`, `status` (planned/preparing/rendering/awaiting_publish/published/skipped/failed), `cinematic_ad_job_id` (uuid fk), `skip_reason`, `pinterest_pin_id`, `pinterest_pin_url`, `published_at`, `validation_report` (jsonb), `creative_angle`, `attempt_count`, `notes`
+- `pinterest_autopilot_config` (singleton id=1): `enabled` (bool), `daily_post_target` (int default 5), `min_gap_minutes` (180), `quality_threshold` (70), `last_schedule_generated_for` (date)
+- RLS: admin-only via `has_role(auth.uid(),'admin')`. Service role bypasses.
+- Indexes on `(status, scheduled_at)`, `(product_id, scheduled_at)`.
 
-### 4. `cinematic-ad-queue-render` gate
-- Refuse to queue unless `approved_for_render = true`. New `cinematic-ad-approve` edge function stamps `approved_for_render`, `approved_at`, `approved_by` then calls queue-render.
+### B2. Edge functions
+- `pinterest-autopilot-scheduler` (cron, every 15 min):
+  1. If `enabled=false`, exit.
+  2. If today's schedule not generated → call generator.
+  3. Find planned rows where `scheduled_at <= now()` AND status='planned' AND last published >= 3h ago AND today's published count < 5 → mark `preparing`, dispatch.
+- `pinterest-autopilot-generate-schedule`:
+  - Pick 4–5 US-friendly slots (randomized within 09:00, 12:00, 15:00, 19:00, 21:00 ET ± jitter), min 3h apart.
+  - Select N distinct products: active, in stock, has primary image + ≥2 gallery images, valid slug, not posted in last 7 days. Score by image count, conversion fields, category strength. Insert planned rows.
+- `pinterest-autopilot-run-one`:
+  - Input: `schedule_id`. Calls `cinematic-ad-autopilot` with product_slug → gets `job_id`. Stores full UUID on schedule row. Sets status `rendering`. Webhook flow auto-publishes if quality passes (already implemented).
+  - On failure: retry once (regenerate), else mark `skipped` with reason and unlock that slot for another product.
+- `cinematic-ad-render-webhook` (extend): when auto-publish completes, update matching `pinterest_autopilot_schedule` row with pin_id, pin_url, published_at, validation_report.
 
-### 5. `cinematic-ad-push-pinterest` quality validation
-Already checks aspect & motion. Extend to also assert:
-- VO exists and `output_duration_seconds` ∈ [12, 25].
-- `output_mp4_url` returns HTTP 200 with `Content-Type: video/*`.
-- `pin_title` / `pin_description` populated.
-On success, save `pinterest_pin_url`.
+### B3. Cron
+Insert pg_cron job calling `pinterest-autopilot-scheduler` every 15 minutes (uses `supabase--insert` since URL+anon key are project-specific).
 
-### 6. Frontend — `CinematicAdsPage`
-Replace the current free-text slug input with a **searchable product picker**:
-- New component `ProductPicker.tsx` — debounced search against `products_public` view filtering on `name`, `slug`, `category`. Shows thumbnail, title, price, category, slug, stock badge, image count. Warns if `< 2 images`.
-- Voice style selector (4 options) with audio preview snippet (optional, plain `<audio>` for now).
-- "Generate ad concept" button → invokes `cinematic-ad-prepare` with `{ product_slug, voice_style }`.
-- After prepare returns, route to `/admin/cinematic-ads/preview/:jobId`.
+### B4. Admin UI: `/admin/pinterest-autopilot-daily`
+Reuse the existing `/admin/pinterest-autopilot` page or add a new tab. Panels:
+- Status header (ON/OFF toggle, today published X/5, next post in HH:MM)
+- Today's planned table (time, product thumbnail+slug, status, pin URL, skip reason)
+- Buttons: Turn On, Turn Off, Generate Today's Schedule, Run One Now, View Logs
+- Logs drawer: tail `pinterest_autopilot_schedule` + linked `cinematic_ad_jobs.autopilot_log`
 
-### 7. `CinematicAdPreviewPage` upgrades
-Show full approval panel:
-- Selected product card (image, title, price, slug).
-- Generated scenes grid (6 scenes with thumbnails + captions + duration).
-- Overlay hook text, VO script (collapsible), voice style + voice id, estimated duration.
-- Pin title, description, hashtags, destination URL (editable inline).
-- Action buttons: **Regenerate hook**, **Regenerate voiceover**, **Approve & Render**, **Render MP4** (after queued), **Publish to Pinterest**, **Download MP4**.
-- `Approve & Render` saves any inline edits then calls `cinematic-ad-approve`.
-- `Regenerate hook` calls `cinematic-ad-prepare` with `{ job_id, regenerate: 'hook' }`.
-- `Regenerate voiceover` calls prepare with `{ job_id, regenerate: 'vo', voice_style }`.
-
-### 8. Quality goal
-- Composition is already `viral-vertical` 1080×1920 with Ken Burns, parallax, animated text (built last iteration). No new Remotion work needed beyond ensuring `synth_motion=true` is set when only 1 image is available so the existing `MotionGenerator` kicks in.
+### B5. Quality gate
+Already implemented in `cinematic-ad-render-webhook` (validation_report.passed + score≥threshold). Schedule runner only sets `auto_publish=true` for autopilot jobs and reads back result.
 
 ## Out of scope
-- Music selection UI (still uses default track).
-- A/B variant rendering.
-- TikTok publish endpoint (preset exists, no publisher yet).
-- In-browser VO waveform editor.
+- New Remotion compositions (viral-vertical already exists)
+- New voice or creative engine (reuse `cinematic-ad-autopilot` + `creative-kit.ts`)
+- Manual hook entry UI (autopilot bypasses it)
 
-## Files
-
-**Create**
-- `supabase/migrations/<ts>_cinematic_ads_pro.sql`
-- `supabase/functions/_shared/voice-styles.ts`
-- `supabase/functions/cinematic-ad-approve/index.ts`
-- `src/components/admin/cinematic/ProductPicker.tsx`
-- `src/components/admin/cinematic/VoiceStyleSelector.tsx`
-
-**Edit**
-- `supabase/functions/cinematic-ad-prepare/index.ts` (any-product lookup, copy gen, voice style, approval status)
-- `supabase/functions/cinematic-ad-queue-render/index.ts` (approval gate)
-- `supabase/functions/cinematic-ad-push-pinterest/index.ts` (extra validations)
-- `src/pages/admin/CinematicAdsPage.tsx` (picker + voice selector)
-- `src/pages/admin/CinematicAdPreviewPage.tsx` (full approval workflow + new buttons)
-
-Will report MP4 url, pin url, and validation report back to the user after a test job.
+## Deliverables
+1. One migration (autopilot tables + RLS).
+2. One pg_cron insert.
+3. Three new edge functions + extension of webhook.
+4. UUID fix patch across ~6 files + workflow preflight.
+5. Admin daily-autopilot panel with controls.
+6. End-to-end smoke: toggle ON → generate schedule → run one now → render → validate → publish → row populated with pin URL.
