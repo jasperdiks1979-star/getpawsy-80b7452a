@@ -824,6 +824,10 @@ async function triggerGithubWorkflow(
     jobId = next.id;
   }
 
+  if (!UUID_RE.test(jobId)) {
+    throw new Error(`Full UUID required. Do not use shortened display id. (got: "${jobId}")`);
+  }
+
   // Mark as queued before dispatching so GitHub cannot race ahead, claim the job,
   // and then get overwritten back to render_queued by this control function.
   const nowIso = new Date().toISOString();
