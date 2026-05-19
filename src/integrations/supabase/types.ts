@@ -6976,6 +6976,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_autopilot_config: {
+        Row: {
+          daily_post_target: number
+          enabled: boolean
+          id: number
+          last_schedule_generated_for: string | null
+          min_gap_minutes: number
+          quality_threshold: number
+          updated_at: string
+        }
+        Insert: {
+          daily_post_target?: number
+          enabled?: boolean
+          id?: number
+          last_schedule_generated_for?: string | null
+          min_gap_minutes?: number
+          quality_threshold?: number
+          updated_at?: string
+        }
+        Update: {
+          daily_post_target?: number
+          enabled?: boolean
+          id?: number
+          last_schedule_generated_for?: string | null
+          min_gap_minutes?: number
+          quality_threshold?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_autopilot_decisions: {
         Row: {
           action: string
@@ -7065,6 +7095,95 @@ export type Database = {
           reason?: string | null
         }
         Relationships: []
+      }
+      pinterest_autopilot_schedule: {
+        Row: {
+          attempt_count: number
+          cinematic_ad_job_id: string | null
+          created_at: string
+          creative_angle: string | null
+          hashtags: string[] | null
+          id: string
+          log: Json
+          notes: string | null
+          pin_description: string | null
+          pin_title: string | null
+          pinterest_pin_id: string | null
+          pinterest_pin_url: string | null
+          product_id: string | null
+          product_image: string | null
+          product_name: string | null
+          product_slug: string
+          product_url: string | null
+          published_at: string | null
+          scheduled_at: string
+          scheduled_date: string
+          skip_reason: string | null
+          status: string
+          updated_at: string
+          validation_report: Json | null
+        }
+        Insert: {
+          attempt_count?: number
+          cinematic_ad_job_id?: string | null
+          created_at?: string
+          creative_angle?: string | null
+          hashtags?: string[] | null
+          id?: string
+          log?: Json
+          notes?: string | null
+          pin_description?: string | null
+          pin_title?: string | null
+          pinterest_pin_id?: string | null
+          pinterest_pin_url?: string | null
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string | null
+          product_slug: string
+          product_url?: string | null
+          published_at?: string | null
+          scheduled_at: string
+          scheduled_date: string
+          skip_reason?: string | null
+          status?: string
+          updated_at?: string
+          validation_report?: Json | null
+        }
+        Update: {
+          attempt_count?: number
+          cinematic_ad_job_id?: string | null
+          created_at?: string
+          creative_angle?: string | null
+          hashtags?: string[] | null
+          id?: string
+          log?: Json
+          notes?: string | null
+          pin_description?: string | null
+          pin_title?: string | null
+          pinterest_pin_id?: string | null
+          pinterest_pin_url?: string | null
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string | null
+          product_slug?: string
+          product_url?: string | null
+          published_at?: string | null
+          scheduled_at?: string
+          scheduled_date?: string
+          skip_reason?: string | null
+          status?: string
+          updated_at?: string
+          validation_report?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_autopilot_schedule_cinematic_ad_job_id_fkey"
+            columns: ["cinematic_ad_job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_autopilot_settings: {
         Row: {

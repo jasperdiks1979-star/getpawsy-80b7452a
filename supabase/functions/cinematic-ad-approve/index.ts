@@ -50,6 +50,8 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch {}
   const jobId = body.job_id;
   if (!jobId) return json(400, { ok: false, traceId, message: "job_id required" });
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(String(jobId))) return json(400, { ok: false, traceId, message: `Full UUID required. Do not use shortened display id. (got: "${jobId}")` });
 
   const { data: job, error: jobErr } = await admin
     .from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();

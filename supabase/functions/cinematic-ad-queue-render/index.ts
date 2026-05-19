@@ -7,6 +7,7 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 
 function traceId() { return crypto.randomUUID().slice(0, 8); }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -30,6 +31,7 @@ Deno.serve(async (req) => {
     const jobId = String(body.job_id ?? "");
     const presetId = (body.preset ?? "") as string;
     if (!jobId) return json({ ok: false, traceId: trace, message: "job_id required" }, 400);
+    if (!UUID_RE.test(jobId)) return json({ ok: false, traceId: trace, message: `Full UUID required. Do not use shortened display id. (got: "${jobId}")` }, 400);
 
     const { data: job, error: jobErr } = await admin
       .from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();

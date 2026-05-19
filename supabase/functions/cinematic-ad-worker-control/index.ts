@@ -48,6 +48,7 @@ const COMPAT_FUNCTIONS = [
 ] as const;
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -821,6 +822,10 @@ async function triggerGithubWorkflow(
     if (nextErr) throw nextErr;
     if (!next) return { ok: true, dispatched: false, message: "no render_queued jobs to claim" };
     jobId = next.id;
+  }
+
+  if (!UUID_RE.test(jobId)) {
+    throw new Error(`Full UUID required. Do not use shortened display id. (got: "${jobId}")`);
   }
 
   // Mark as queued before dispatching so GitHub cannot race ahead, claim the job,

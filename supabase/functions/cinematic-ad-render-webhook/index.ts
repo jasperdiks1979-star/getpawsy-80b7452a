@@ -164,6 +164,15 @@ async function runAutoPublishChain(admin: any, jobId: string, traceId: string): 
         published_at: new Date().toISOString(),
         pinterest_publish_error: null,
       }).eq("id", jobId);
+      // Mirror result onto the autopilot schedule row, if any.
+      try {
+        await admin.from("pinterest_autopilot_schedule").update({
+          status: "published",
+          pinterest_pin_id: result.pin_id,
+          pinterest_pin_url: result.pin_url,
+          published_at: new Date().toISOString(),
+        }).eq("cinematic_ad_job_id", jobId);
+      } catch (e) { console.warn(`[autopilot-mirror] ${traceId}`, e); }
       return;
     }
 
@@ -181,6 +190,12 @@ async function runAutoPublishChain(admin: any, jobId: string, traceId: string): 
       pinterest_publish_error: `[${lastErr.code}] ${lastErr.message}`,
       status_message: `auto-publish failed after ${MAX_PUBLISH_ATTEMPTS} attempts — Retry from admin`,
     }).eq("id", jobId);
+    try {
+      await admin.from("pinterest_autopilot_schedule").update({
+        status: "failed",
+        skip_reason: `[${lastErr.code}] ${lastErr.message}`,
+      }).eq("cinematic_ad_job_id", jobId);
+    } catch (e) { console.warn(`[autopilot-mirror] ${traceId}`, e); }
   }
 }
 
