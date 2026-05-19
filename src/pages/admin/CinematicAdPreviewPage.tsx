@@ -232,7 +232,18 @@ export default function CinematicAdPreviewPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Cinematic Ad Preview</h1>
           <p className="text-sm text-muted-foreground">
-            Job <code className="font-mono">{String(job.id).slice(0, 8)}</code> · {job.product_slug} · status <Badge variant="outline">{job.status}</Badge> · preset <Badge>{job.preset ?? "pin-organic"}</Badge>
+            Job <code className="font-mono">{String(job.id).slice(0, 8)}…</code>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 ml-1"
+              onClick={() => {
+                navigator.clipboard.writeText(String(job.id));
+                toast.success("Full UUID copied");
+              }}
+            >Copy full UUID</Button>
+            · {job.product_slug} · status <Badge variant="outline">{job.status}</Badge> · preset <Badge>{job.preset ?? "pin-organic"}</Badge>
           </p>
         </div>
       </div>
