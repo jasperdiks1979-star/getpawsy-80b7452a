@@ -1930,6 +1930,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-ads/one-job-verify"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicOneJobVerifyPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="github-sync"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
