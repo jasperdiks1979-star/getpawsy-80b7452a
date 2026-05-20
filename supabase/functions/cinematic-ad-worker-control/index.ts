@@ -1048,6 +1048,30 @@ Deno.serve(async (req) => {
       return json({ ok: true, traceId, queued_count: queued?.length ?? 0, dispatched });
     }
 
+    if (action === "publish_all_completed") {
+      // Find all rendered jobs that haven't been pinned to Pinterest yet.
+      const { data: ready, error: readyErr } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id")
+        .in("status", ["render_complete", "awaiting_approval", "approved"])
+        .not("output_mp4_url", "is", null)
+        .is("pinterest_pin_url", null)
+        .order("render_complete_at", { ascending: true })
+        .limit(50);
+      if (readyErr) return json({ ok: false, traceId, message: readyErr.message }, 500);
+      const published: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
+      for (const row of ready ?? []) {
+        try {
+          await retryPublish(admin, row.id, traceId);
+          published.push({ jobId: row.id, ok: true });
+        } catch (e: any) {
+          published.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+        }
+      }
+      const okCount = published.filter((p) => p.ok).length;
+      return json({ ok: true, traceId, completed_count: ready?.length ?? 0, published_count: okCount, published });
+    }
+
     if (action === "reset_stale") {
       const ids = Array.isArray(body.ids) ? body.ids.map((x: unknown) => String(x)) : undefined;
       const result = await resetStale(admin, traceId, ids);

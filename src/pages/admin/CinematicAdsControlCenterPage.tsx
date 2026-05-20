@@ -288,6 +288,25 @@ export default function CinematicAdsControlCenterPage() {
     }
   };
 
+  const publishableCount = useMemo(
+    () => rows.filter((r) => !!r.output_mp4_url && !r.pinterest_pin_url).length,
+    [rows],
+  );
+
+  const publishAllCompleted = async () => {
+    if (!confirm(`Publish all ${publishableCount} completed job(s) to Pinterest?`)) return;
+    setBulkBusy("publish_all");
+    try {
+      const r = await call("publish_all_completed", {});
+      toast.success(`Published ${r.published_count ?? 0} / ${r.completed_count ?? 0} to Pinterest`);
+      fetchRows();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Bulk publish failed");
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
   const autoHealNow = async () => {
     setBulkBusy("auto_heal");
     try {
@@ -329,6 +348,15 @@ export default function CinematicAdsControlCenterPage() {
           <Button size="sm" onClick={renderAllQueued} disabled={bulkBusy === "render_all" || stats.queued === 0}>
             {bulkBusy === "render_all" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
             Render all queued ({stats.queued})
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={publishAllCompleted}
+            disabled={bulkBusy === "publish_all" || publishableCount === 0}
+          >
+            {bulkBusy === "publish_all" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+            Publish all completed ({publishableCount})
           </Button>
         </div>
       </header>
