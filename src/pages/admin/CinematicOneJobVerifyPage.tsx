@@ -259,6 +259,16 @@ export default function CinematicOneJobVerifyPage() {
               {job?.status_message && (
                 <span className="text-xs text-muted-foreground">{job.status_message}</span>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto h-7"
+                onClick={resetToQueued}
+                disabled={resetting || !jobId}
+              >
+                {resetting && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                Reset to render_queued
+              </Button>
             </div>
 
             <ol className="space-y-2">
