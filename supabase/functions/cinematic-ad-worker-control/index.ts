@@ -624,6 +624,7 @@ async function buildHealthSnapshot(admin: any, traceId: string) {
     flaggedStale: flaggedStale ?? [],
     staleThresholdMs: STALE_AFTER_MS,
     workerLiveWindowMs: STALE_AFTER_MS,
+    queueHealth: (await admin.rpc("cinematic_queue_health")).data ?? null,
   };
 }
 
@@ -971,6 +972,12 @@ Deno.serve(async (req) => {
       const ids = Array.isArray(body.ids) ? body.ids.map((x: unknown) => String(x)) : undefined;
       const result = await resetStale(admin, traceId, ids);
       return json({ ok: true, traceId, ...result });
+    }
+
+    if (action === "clear_stale_duplicates") {
+      const { data, error } = await admin.rpc("clear_stale_cinematic_duplicates");
+      if (error) throw error;
+      return json({ ok: true, traceId, ...(data ?? {}) });
     }
 
     if (action === "trigger_github_workflow") {
