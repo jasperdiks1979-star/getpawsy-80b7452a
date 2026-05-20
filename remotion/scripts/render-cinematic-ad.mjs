@@ -168,6 +168,86 @@ async function extractThumbnail(file, outPath) {
   await sh("ffmpeg", ["-y", "-ss", "1.0", "-i", file, "-vframes", "1", "-q:v", "3", outPath]);
 }
 
+/**
+ * Perceptual aHash for an image file. Renders an 8x8 grayscale raw buffer
+ * via ffmpeg, then encodes each pixel as 1 bit (>= mean) → 64-bit hash.
+ * Returns a 16-char hex string, or null on failure (caller falls back to URL).
+ */
+async function aHash(file) {
+  const raw = `${file}.ahash.raw`;
+  try {
+    await sh("ffmpeg", [
+      "-y", "-loglevel", "error",
+      "-i", file,
+      "-vf", "scale=8:8:flags=area,format=gray",
+      "-frames:v", "1",
+      "-f", "rawvideo", "-pix_fmt", "gray", raw,
+    ]);
+    const buf = readFileSync(raw);
+    if (buf.length < 64) return null;
+    let sum = 0;
+    for (let i = 0; i < 64; i++) sum += buf[i];
+    const mean = sum / 64;
+    let hex = "";
+    for (let nibble = 0; nibble < 16; nibble++) {
+      let v = 0;
+      for (let b = 0; b < 4; b++) {
+        const pixel = buf[nibble * 4 + b];
+        v = (v << 1) | (pixel >= mean ? 1 : 0);
+      }
+      hex += v.toString(16);
+    }
+    return hex;
+  } catch {
+    return null;
+  }
+}
+
+function hammingHex(a, b) {
+  if (!a || !b || a.length !== b.length) return 64;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) {
+    let x = parseInt(a[i], 16) ^ parseInt(b[i], 16);
+    while (x) { d += x & 1; x >>= 1; }
+  }
+  return d;
+}
+
+/**
+ * Group scene hashes by perceptual similarity. Two scenes are considered
+ * duplicates when their hash hamming distance is <= maxDist (default 3 of 64,
+ * i.e. >= 95% bit-level similarity). Scenes that failed to hash fall back to
+ * exact image_url matching so we still catch obvious dupes.
+ */
+function groupByHashSimilarity(scenes, hashes, maxDist = 3) {
+  const groupOf = new Array(scenes.length).fill(-1);
+  const groupHashes = []; // representative hash per group
+  for (let i = 0; i < scenes.length; i++) {
+    const h = hashes[i];
+    let assigned = -1;
+    if (h) {
+      for (let g = 0; g < groupHashes.length; g++) {
+        if (hammingHex(groupHashes[g], h) <= maxDist) { assigned = g; break; }
+      }
+    } else {
+      // Fallback: exact URL match for un-hashable images
+      for (let j = 0; j < i; j++) {
+        if (!hashes[j] && scenes[j].image_url === scenes[i].image_url) {
+          assigned = groupOf[j]; break;
+        }
+      }
+    }
+    if (assigned === -1) {
+      assigned = groupHashes.length;
+      groupHashes.push(h ?? null);
+    }
+    groupOf[i] = assigned;
+  }
+  const counts = new Array(groupHashes.length).fill(0);
+  for (const g of groupOf) counts[g]++;
+  return { groupOf, counts, groupCount: groupHashes.length };
+}
+
 async function download(url, dest) {
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
