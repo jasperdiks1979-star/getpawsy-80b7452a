@@ -325,6 +325,72 @@ export default function CinematicAdsControlCenterPage() {
     toast.success(label);
   };
 
+  const exportToCsv = () => {
+    const headers = [
+      "id",
+      "product_name",
+      "product_slug",
+      "status",
+      "status_message",
+      "created_at",
+      "updated_at",
+      "render_queued_at",
+      "render_started_at",
+      "render_complete_at",
+      "render_heartbeat_at",
+      "render_worker_id",
+      "render_attempts",
+      "output_mp4_url",
+      "output_thumbnail_url",
+      "output_duration_seconds",
+      "pinterest_pin_url",
+      "pinterest_pin_id",
+      "pinterest_uploaded_at",
+      "error_message",
+      "pinterest_publish_error",
+    ];
+    const rows = filtered.map((j) => [
+      j.id,
+      j.product_name ?? "",
+      j.product_slug ?? "",
+      j.status,
+      j.status_message ?? "",
+      j.created_at,
+      j.updated_at,
+      j.render_queued_at ?? "",
+      j.render_started_at ?? "",
+      j.render_complete_at ?? "",
+      j.render_heartbeat_at ?? "",
+      j.render_worker_id ?? "",
+      String(j.render_attempts ?? ""),
+      j.output_mp4_url ?? "",
+      j.output_thumbnail_url ?? "",
+      String(j.output_duration_seconds ?? ""),
+      j.pinterest_pin_url ?? "",
+      j.pinterest_pin_id ?? "",
+      j.pinterest_uploaded_at ?? "",
+      j.error_message ?? "",
+      j.pinterest_publish_error ?? "",
+    ]);
+    const escape = (v: string) => {
+      const s = String(v ?? "");
+      if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, "\"\"")}"`;
+      return s;
+    };
+    const csv = [headers.join(","), ...rows.map((r) => r.map(escape).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const today = new Date().toISOString().split("T")[0];
+    a.download = `cinematic_jobs_${filter}_${today}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filtered.length} job(s) to CSV`);
+  };
+
   return (
     <div className="container mx-auto max-w-7xl space-y-4 px-3 py-4 md:px-6">
       <Helmet>
