@@ -422,11 +422,15 @@ Deno.serve(async (req) => {
       const slugs = Array.from(new Set((jobs ?? []).map((j: any) => j.product_slug).filter(Boolean)));
       const extraMap = new Map<string, any>();
       if (slugs.length) {
-        // Best-effort enrichment from products_public
-        const { data: products } = await admin.from("products_public")
-          .select("slug,opportunity_score,pinterest_potential,tiktok_potential,margin_score,image_quality_score")
-          .in("slug", slugs);
-        for (const p of products ?? []) extraMap.set(p.slug, p);
+        // Best-effort enrichment — tolerate missing columns
+        try {
+          const { data: products, error } = await admin.from("products_public")
+            .select("slug")
+            .in("slug", slugs);
+          if (!error) for (const p of products ?? []) extraMap.set(p.slug, p);
+        } catch (e) {
+          console.warn("[intelligence] products enrichment skipped", e);
+        }
       }
       const items: any[] = [];
       for (const job of jobs ?? []) {
