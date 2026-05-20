@@ -4,6 +4,7 @@ import { MarketCompetitorPanel } from "@/components/admin/market-intelligence/Ma
 import { MarketSignalPanel } from "@/components/admin/market-intelligence/MarketSignalPanel";
 import { MarketTrendsPanel } from "@/components/admin/market-intelligence/MarketTrendsPanel";
 import { MarketRecommendationsPanel } from "@/components/admin/market-intelligence/MarketRecommendationsPanel";
+import { MarketGapActionsPanel } from "@/components/admin/market-intelligence/MarketGapActionsPanel";
 
 export default function MarketIntelligencePage() {
   return (
@@ -15,6 +16,7 @@ export default function MarketIntelligencePage() {
       <div className="space-y-6">
         <MarketSignalPanel />
         <MarketCompetitorPanel />
+        <MarketGapActionsPanel />
         <MarketTrendsPanel />
         <MarketRecommendationsPanel />
         <MarketIntelligenceEngine />
