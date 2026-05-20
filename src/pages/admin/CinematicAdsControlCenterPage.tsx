@@ -748,6 +748,33 @@ function JobLogsViewer({ job, onRefresh }: { job: Job; onRefresh: () => Promise<
     return null;
   }, [lines]);
 
+  // Pull the most recent duplicate-scene diagnostic out of render_log.
+  const duplicateDiag = useMemo(() => {
+    const raw = Array.isArray(job.render_log) ? job.render_log : [];
+    for (let i = raw.length - 1; i >= 0; i--) {
+      const entry: any = raw[i];
+      if (entry && typeof entry === "object" && entry.duplicate_diagnostics) {
+        return entry.duplicate_diagnostics as {
+          duplicate_ratio_pct: number;
+          threshold_pct: number;
+          variation_attempts: number;
+          max_variation_attempts: number;
+          aborted: boolean;
+          accepted_after_variation: boolean;
+          per_scene: Array<{
+            index: number;
+            image_url: string;
+            repeat_count: number;
+            duplicate_pct: number;
+            variation_seed: string | null;
+            motion_variant: string | null;
+          }>;
+        };
+      }
+    }
+    return null;
+  }, [job.render_log]);
+
   const counts = useMemo(() => {
     const c = { info: 0, warn: 0, error: 0, ffmpeg: 0 };
     for (const l of lines) if (l.level in c) (c as any)[l.level]++;
@@ -785,6 +812,57 @@ function JobLogsViewer({ job, onRefresh }: { job: Job; onRefresh: () => Promise<
       {ffmpegProgress && (
         <div className="mb-2 rounded border bg-muted/40 p-2 font-mono text-[10px]">
           ffmpeg → frame <b>{ffmpegProgress.frame}</b> · fps <b>{ffmpegProgress.fps}</b> · time <b>{ffmpegProgress.time}</b> · speed <b>{ffmpegProgress.speed}</b>
+        </div>
+      )}
+      {duplicateDiag && (
+        <div className="mb-3 rounded border bg-muted/30 p-2 text-[10px]">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <span className="font-medium">Scene duplicate scan</span>
+            <Badge variant={duplicateDiag.aborted ? "destructive" : duplicateDiag.duplicate_ratio_pct > duplicateDiag.threshold_pct ? "secondary" : "outline"}>
+              {duplicateDiag.duplicate_ratio_pct}% dup
+            </Badge>
+            <span className="text-muted-foreground">
+              threshold {duplicateDiag.threshold_pct}% ·
+              variation pass {duplicateDiag.variation_attempts}/{duplicateDiag.max_variation_attempts}
+            </span>
+            <span className={duplicateDiag.aborted ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}>
+              {duplicateDiag.aborted
+                ? "aborted"
+                : duplicateDiag.accepted_after_variation
+                  ? "accepted after variation"
+                  : "accepted (below threshold)"}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full font-mono text-[10px]">
+              <thead className="text-muted-foreground">
+                <tr className="text-left">
+                  <th className="pr-2">#</th>
+                  <th className="pr-2">dup%</th>
+                  <th className="pr-2">rep</th>
+                  <th className="pr-2">variation seed</th>
+                  <th className="pr-2">motion</th>
+                  <th>image</th>
+                </tr>
+              </thead>
+              <tbody>
+                {duplicateDiag.per_scene.map(s => (
+                  <tr key={s.index} className="border-t border-border/40">
+                    <td className="pr-2">{s.index}</td>
+                    <td className={`pr-2 ${s.duplicate_pct >= 50 ? "text-destructive" : s.duplicate_pct >= 25 ? "text-yellow-600 dark:text-yellow-400" : ""}`}>
+                      {s.duplicate_pct}%
+                    </td>
+                    <td className="pr-2">{s.repeat_count}×</td>
+                    <td className="pr-2">{s.variation_seed ?? "—"}</td>
+                    <td className="pr-2">{s.motion_variant ?? "—"}</td>
+                    <td className="max-w-[140px] truncate text-muted-foreground">
+                      <a href={s.image_url} target="_blank" rel="noreferrer" className="hover:underline">{s.image_url.split("/").pop()}</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       <div className="mb-2 flex flex-wrap items-center gap-1">
