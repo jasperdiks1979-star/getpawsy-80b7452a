@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Brain, Crown, Check, X } from "lucide-react";
+import { Brain, Crown, Check, X, Send } from "lucide-react";
 
 type Rec = {
   id: string;
@@ -69,6 +69,17 @@ export function MarketRecommendationsPanel() {
   async function setStatus(id: string, status: "approved" | "dismissed") {
     await supabase.from("market_ai_recommendations" as any).update({ status }).eq("id", id);
     setRecs((rs) => rs.filter((r) => r.id !== id));
+    if (status === "approved") {
+      try {
+        const { data, error } = await supabase.functions.invoke("market-recommendations-route", {
+          body: { recommendation_id: id },
+        });
+        if (error) throw error;
+        toast.success("Routed to channels", { description: JSON.stringify(data?.summary ?? {}) });
+      } catch (e: any) {
+        toast.error("Routing failed", { description: e.message });
+      }
+    }
   }
 
   return (
@@ -83,6 +94,9 @@ export function MarketRecommendationsPanel() {
           </Button>
           <Button size="sm" disabled={!!busy} onClick={() => call("market-recommendations-synthesize")}>
             <Brain className="h-3 w-3 mr-1" /> Synthesize
+          </Button>
+          <Button size="sm" variant="outline" disabled={!!busy} onClick={() => call("market-recommendations-route")}>
+            <Send className="h-3 w-3 mr-1" /> Route approved
           </Button>
         </div>
       </CardHeader>
