@@ -627,14 +627,17 @@ export default function CinematicAdsControlCenterPage() {
                             {diagJob.pinterest_publish_error && (
                               <div className="rounded bg-destructive/10 p-2 text-destructive">Pin error: {diagJob.pinterest_publish_error}</div>
                             )}
-                            {Array.isArray(diagJob.render_log) && diagJob.render_log.length > 0 && (
-                              <div>
-                                <div className="mb-1 mt-3 font-medium">Render log</div>
-                                <pre className="max-h-72 overflow-auto rounded bg-muted p-2 text-[10px]">
-                                  {JSON.stringify(diagJob.render_log, null, 2)}
-                                </pre>
-                              </div>
-                            )}
+                            <JobLogsViewer
+                              job={diagJob}
+                              onRefresh={async () => {
+                                const { data } = await supabase
+                                  .from("cinematic_ad_jobs")
+                                  .select("*")
+                                  .eq("id", diagJob.id)
+                                  .maybeSingle();
+                                if (data) setDiagJob(data as Job);
+                              }}
+                            />
                           </div>
                         )}
                       </SheetContent>
@@ -663,6 +666,174 @@ function Row({ label, value, onCopy }: { label: string; value: string; onCopy?: 
         <button onClick={onCopy} className="text-muted-foreground hover:text-foreground">
           <Copy className="h-3 w-3" />
         </button>
+      )}
+    </div>
+  );
+}
+
+type LogLine = { ts?: string; level: string; message: string; isFfmpeg: boolean };
+
+function normalizeLogs(raw: any): LogLine[] {
+  if (raw == null) return [];
+  const arr = Array.isArray(raw) ? raw : typeof raw === "string" ? raw.split(/\r?\n/) : [raw];
+  const out: LogLine[] = [];
+  for (const item of arr) {
+    if (item == null) continue;
+    if (typeof item === "string") {
+      const s = item.trim();
+      if (!s) continue;
+      out.push({ level: detectLevel(s), message: s, isFfmpeg: isFfmpegLine(s) });
+    } else if (typeof item === "object") {
+      const message =
+        typeof item.message === "string" ? item.message :
+        typeof item.msg === "string" ? item.msg :
+        typeof item.line === "string" ? item.line :
+        JSON.stringify(item);
+      const level = String(item.level ?? item.severity ?? detectLevel(message)).toLowerCase();
+      const ts = item.ts ?? item.timestamp ?? item.time ?? item.at;
+      out.push({ ts: ts ? String(ts) : undefined, level, message, isFfmpeg: isFfmpegLine(message) });
+    }
+  }
+  return out;
+}
+
+function detectLevel(s: string): string {
+  const l = s.toLowerCase();
+  if (/\b(error|fatal|failed|exception|abort)\b/.test(l)) return "error";
+  if (/\b(warn|warning)\b/.test(l)) return "warn";
+  if (isFfmpegLine(s)) return "ffmpeg";
+  return "info";
+}
+
+function isFfmpegLine(s: string): boolean {
+  return /\b(frame=|fps=|time=|bitrate=|speed=|Lavf|Lavc|ffmpeg|remotion)/i.test(s);
+}
+
+function JobLogsViewer({ job, onRefresh }: { job: Job; onRefresh: () => Promise<void> }) {
+  const [query, setQuery] = useState("");
+  const [level, setLevel] = useState<"all" | "info" | "warn" | "error" | "ffmpeg">("all");
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const lines = useMemo(() => normalizeLogs(job.render_log), [job.render_log]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return lines.filter(l => {
+      if (level !== "all" && l.level !== level) return false;
+      if (q && !l.message.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [lines, query, level]);
+
+  const isLive = job.status === "rendering" || job.status === "render_queued";
+
+  useEffect(() => {
+    if (!isLive) return;
+    const id = setInterval(() => { onRefresh().catch(() => {}); }, 4000);
+    return () => clearInterval(id);
+  }, [isLive, onRefresh]);
+
+  useEffect(() => {
+    if (autoScroll && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [filtered, autoScroll]);
+
+  const ffmpegProgress = useMemo(() => {
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const m = lines[i].message.match(/frame=\s*(\d+).*?fps=\s*([\d.]+).*?time=\s*([\d:.]+).*?speed=\s*([\d.]+x)/);
+      if (m) return { frame: m[1], fps: m[2], time: m[3], speed: m[4] };
+    }
+    return null;
+  }, [lines]);
+
+  const counts = useMemo(() => {
+    const c = { info: 0, warn: 0, error: 0, ffmpeg: 0 };
+    for (const l of lines) if (l.level in c) (c as any)[l.level]++;
+    return c;
+  }, [lines]);
+
+  function downloadLog() {
+    const text = lines.map(l => `${l.ts ?? ""} [${l.level}] ${l.message}`).join("\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `render-log-${job.id}.log`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function copyAll() {
+    const text = filtered.map(l => `${l.ts ?? ""} [${l.level}] ${l.message}`).join("\n");
+    navigator.clipboard.writeText(text).then(() => toast.success("Logs copied"));
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="font-medium">Render log <span className="text-muted-foreground">({filtered.length}/{lines.length})</span></div>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={async () => { setRefreshing(true); await onRefresh(); setRefreshing(false); }} disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={copyAll} disabled={filtered.length === 0}><Copy className="h-3 w-3" /></Button>
+          <Button size="sm" variant="ghost" onClick={downloadLog} disabled={lines.length === 0}><Download className="h-3 w-3" /></Button>
+        </div>
+      </div>
+      {ffmpegProgress && (
+        <div className="mb-2 rounded border bg-muted/40 p-2 font-mono text-[10px]">
+          ffmpeg → frame <b>{ffmpegProgress.frame}</b> · fps <b>{ffmpegProgress.fps}</b> · time <b>{ffmpegProgress.time}</b> · speed <b>{ffmpegProgress.speed}</b>
+        </div>
+      )}
+      <div className="mb-2 flex flex-wrap items-center gap-1">
+        {(["all", "info", "warn", "error", "ffmpeg"] as const).map(k => (
+          <button
+            key={k}
+            onClick={() => setLevel(k)}
+            className={`rounded border px-2 py-0.5 text-[10px] ${level === k ? "bg-primary text-primary-foreground" : "bg-background"}`}
+          >
+            {k}{k !== "all" && ` (${(counts as any)[k] ?? 0})`}
+          </button>
+        ))}
+        <label className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
+          <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} />
+          auto-scroll
+        </label>
+      </div>
+      <Input
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        placeholder="Search logs..."
+        className="mb-2 h-8 text-xs"
+      />
+      <div
+        ref={scrollRef}
+        className="max-h-80 overflow-auto rounded border bg-background font-mono text-[10px] leading-relaxed"
+      >
+        {filtered.length === 0 ? (
+          <div className="p-3 text-center text-muted-foreground">No log lines{lines.length > 0 ? " match filter" : " yet"}.</div>
+        ) : (
+          filtered.map((l, i) => (
+            <div
+              key={i}
+              className={`flex gap-2 border-b border-border/40 px-2 py-0.5 ${
+                l.level === "error" ? "bg-destructive/10 text-destructive" :
+                l.level === "warn" ? "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400" :
+                l.isFfmpeg ? "text-blue-600 dark:text-blue-400" : ""
+              }`}
+            >
+              <span className="w-8 shrink-0 text-right text-muted-foreground">{i + 1}</span>
+              {l.ts && <span className="shrink-0 text-muted-foreground">{l.ts.replace("T", " ").slice(0, 19)}</span>}
+              <span className="shrink-0 uppercase text-muted-foreground">[{l.level}]</span>
+              <span className="min-w-0 whitespace-pre-wrap break-all">{l.message}</span>
+            </div>
+          ))
+        )}
+      </div>
+      {isLive && (
+        <div className="mt-1 text-[10px] text-muted-foreground">Live — refreshing every 4s while {job.status}.</div>
       )}
     </div>
   );
