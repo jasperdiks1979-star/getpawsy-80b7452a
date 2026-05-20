@@ -3789,6 +3789,71 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_creative_dna: {
+        Row: {
+          clicks: number
+          created_at: string
+          ewma_reward: number
+          gene_type: string
+          gene_value: string
+          generation: number
+          id: string
+          impressions: number
+          last_test_at: string | null
+          meta: Json
+          parent_id: string | null
+          retired_at: string | null
+          reward: number
+          sample_size: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          ewma_reward?: number
+          gene_type: string
+          gene_value: string
+          generation?: number
+          id?: string
+          impressions?: number
+          last_test_at?: string | null
+          meta?: Json
+          parent_id?: string | null
+          retired_at?: string | null
+          reward?: number
+          sample_size?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          ewma_reward?: number
+          gene_type?: string
+          gene_value?: string
+          generation?: number
+          id?: string
+          impressions?: number
+          last_test_at?: string | null
+          meta?: Json
+          parent_id?: string | null
+          retired_at?: string | null
+          reward?: number
+          sample_size?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_creative_dna_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "growth_creative_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       growth_decision_metrics: {
         Row: {
           clicks: number
