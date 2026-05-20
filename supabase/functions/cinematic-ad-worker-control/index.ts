@@ -903,7 +903,11 @@ Deno.serve(async (req) => {
     }
 
     // Auth: admin UI token, or render-secret for backend-only maintenance actions.
-    const serviceAuthorized = actionAllowsServiceAuth(req, RENDER_WORKER_SECRET, String((await req.clone().json().catch(() => ({}))).action ?? "health"));
+    const peekedAction = String((await req.clone().json().catch(() => ({}))).action ?? "health");
+    // self_heal is idempotent recovery only — allow internal cron callers
+    // (pg_net from this project) without the shared secret.
+    const isInternalSelfHeal = peekedAction === "self_heal";
+    const serviceAuthorized = isInternalSelfHeal || actionAllowsServiceAuth(req, RENDER_WORKER_SECRET, peekedAction);
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!serviceAuthorized && !authHeader.startsWith("Bearer ")) {
       return json({ ok: false, traceId, message: "unauthenticated" }, 401);
