@@ -752,7 +752,7 @@ const handler = async (req: Request): Promise<Response> => {
       scenes.map((s) => aiImageEdit(s.prompt, heroUrl, lovableKey)),
     );
 
-    const scene_assets: Array<{ index: number; image_url: string; caption: string; duration_seconds: number; ai_generated: boolean }> = [];
+    const scene_assets: Array<{ index: number; image_url: string; caption: string; duration_seconds: number; ai_generated: boolean; product_slug: string; product_id: string | null }> = [];
     for (let i = 0; i < scenes.length; i++) {
       const s = scenes[i];
       const res = sceneResults[i];
@@ -768,7 +768,7 @@ const handler = async (req: Request): Promise<Response> => {
           aiGen = true;
         }
       }
-      scene_assets.push({ index: s.index, image_url: imageUrl, caption: s.caption, duration_seconds: s.duration_seconds, ai_generated: aiGen });
+      scene_assets.push({ index: s.index, image_url: imageUrl, caption: s.caption, duration_seconds: s.duration_seconds, ai_generated: aiGen, product_slug, product_id: product.id ?? null });
     }
 
     // VO
@@ -810,6 +810,7 @@ const handler = async (req: Request): Promise<Response> => {
         variant_index: variantIndex,
         pin_title: kit.pin_title,
         pin_description: kit.pin_description,
+        pin_destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,
         hashtags: kit.hashtags,
         hook_variants_meta: kit.hook_variants,
         cta_variants_meta: kit.cta_variants,
@@ -820,6 +821,20 @@ const handler = async (req: Request): Promise<Response> => {
         cta_text: topCta?.text ?? null,
         hook_variant: topHook?.text ?? hook_variant,
         media_warnings: mediaWarnings,
+        product_id: product.id,
+        product_name: productName,
+        product_price: product.price != null ? String(product.price) : null,
+        product_lock: {
+          product_id: product.id,
+          product_slug,
+          product_name: productName,
+          product_price: product.price != null ? String(product.price) : null,
+          category: product.category ?? null,
+          image_url: heroUrl,
+          image_count: Math.max(1, productImages.length),
+          pin_title: kit.pin_title,
+          pin_destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,
+        },
         approved_for_render: false,
         prepared_at: new Date().toISOString(),
       })
