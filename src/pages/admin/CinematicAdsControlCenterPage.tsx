@@ -349,6 +349,15 @@ export default function CinematicAdsControlCenterPage() {
             {bulkBusy === "render_all" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
             Render all queued ({stats.queued})
           </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={publishAllCompleted}
+            disabled={bulkBusy === "publish_all" || publishableCount === 0}
+          >
+            {bulkBusy === "publish_all" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+            Publish all completed ({publishableCount})
+          </Button>
         </div>
       </header>
 
