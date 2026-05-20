@@ -226,7 +226,14 @@ Deno.serve(async (req) => {
 
     const patch: Record<string, unknown> = { status_message: `worker: ${status}` };
     const event = String(body.event ?? status);
-    const logPatch = (job.render_log ?? []).concat([{ event, at: new Date().toISOString(), worker_id: body.worker_id ?? null }]).slice(-100);
+    const logEntry: Record<string, unknown> = {
+      event,
+      at: new Date().toISOString(),
+      worker_id: body.worker_id ?? null,
+    };
+    if (body.duplicate_diagnostics) logEntry.duplicate_diagnostics = body.duplicate_diagnostics;
+    if (body.message) logEntry.message = body.message;
+    const logPatch = (job.render_log ?? []).concat([logEntry]).slice(-100);
     patch.render_log = logPatch;
 
     if (status === "rendering") {
