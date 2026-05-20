@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Play, RefreshCw, AlertTriangle } from "lucide-react";
+import { Loader2, Play, RefreshCw, AlertTriangle, Sparkles, Check } from "lucide-react";
 
 type Cfg = {
   enabled: boolean;
@@ -32,7 +32,8 @@ export function GrowthAutopilotConsole() {
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState<"score" | "select" | null>(null);
+  const [running, setRunning] = useState<"score" | "select" | "creative" | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -64,8 +65,8 @@ export function GrowthAutopilotConsole() {
     if (error) toast({ title: "Save failed", description: error.message, variant: "destructive" });
   }
 
-  async function run(fn: "growth-score-products" | "growth-select-daily") {
-    setRunning(fn === "growth-score-products" ? "score" : "select");
+  async function run(fn: "growth-score-products" | "growth-select-daily" | "growth-produce-creative") {
+    setRunning(fn === "growth-score-products" ? "score" : fn === "growth-select-daily" ? "select" : "creative");
     const { data, error } = await supabase.functions.invoke(fn, { body: {} });
     setRunning(null);
     if (error) {
@@ -78,6 +79,20 @@ export function GrowthAutopilotConsole() {
       description: r.message ?? "",
       variant: r.ok ? "default" : "destructive",
     });
+    load();
+  }
+
+  async function approve(id: string) {
+    setApproving(id);
+    const { error } = await supabase
+      .from("growth_decisions")
+      .update({ status: "approved" })
+      .eq("id", id);
+    setApproving(null);
+    if (error) {
+      toast({ title: "Approve failed", description: error.message, variant: "destructive" });
+      return;
+    }
     load();
   }
 
@@ -163,6 +178,10 @@ export function GrowthAutopilotConsole() {
             {running === "select" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
             Select today's products
           </Button>
+          <Button variant="secondary" onClick={() => run("growth-produce-creative")} disabled={running !== null}>
+            {running === "creative" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            Generate creatives
+          </Button>
         </div>
       </Card>
 
@@ -190,6 +209,9 @@ export function GrowthAutopilotConsole() {
                         {p.bucket ?? "pick"}
                       </Badge>
                       <Badge variant="outline">{d.status}</Badge>
+                      {(d.payload as any)?.cinematic_job_id && (
+                        <Badge variant="outline" className="bg-primary/10">creative queued</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {d.day} · {d.reason}
@@ -198,9 +220,23 @@ export function GrowthAutopilotConsole() {
                       <p className="text-sm italic mt-1 text-muted-foreground">“{p.recommended_hook}”</p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-2">
                     <div className="text-2xl font-bold">{Math.round(Number(p.opportunity_score ?? 0))}</div>
                     <div className="text-[10px] text-muted-foreground">score</div>
+                    {d.status === "pending" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => approve(d.id)}
+                        disabled={approving === d.id}
+                      >
+                        {approving === d.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <><Check className="h-3 w-3 mr-1" /> Approve</>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
