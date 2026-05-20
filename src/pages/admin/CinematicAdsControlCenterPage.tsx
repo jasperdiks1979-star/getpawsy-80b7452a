@@ -627,14 +627,17 @@ export default function CinematicAdsControlCenterPage() {
                             {diagJob.pinterest_publish_error && (
                               <div className="rounded bg-destructive/10 p-2 text-destructive">Pin error: {diagJob.pinterest_publish_error}</div>
                             )}
-                            {Array.isArray(diagJob.render_log) && diagJob.render_log.length > 0 && (
-                              <div>
-                                <div className="mb-1 mt-3 font-medium">Render log</div>
-                                <pre className="max-h-72 overflow-auto rounded bg-muted p-2 text-[10px]">
-                                  {JSON.stringify(diagJob.render_log, null, 2)}
-                                </pre>
-                              </div>
-                            )}
+                            <JobLogsViewer
+                              job={diagJob}
+                              onRefresh={async () => {
+                                const { data } = await supabase
+                                  .from("cinematic_ad_jobs")
+                                  .select("*")
+                                  .eq("id", diagJob.id)
+                                  .maybeSingle();
+                                if (data) setDiagJob(data as Job);
+                              }}
+                            />
                           </div>
                         )}
                       </SheetContent>
