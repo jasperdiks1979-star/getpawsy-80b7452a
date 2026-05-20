@@ -59,6 +59,39 @@ Deno.serve(async (req) => {
       .in("id", ids);
     const pmap = new Map((products ?? []).map((p) => [p.id, p]));
 
+    // Phase 5: feedback bias from learning loop
+    const { data: strat } = await sb
+      .from("growth_strategy_scores")
+      .select("dimension, key, score, samples");
+    const stratMap = new Map<string, { score: number; samples: number }>();
+    for (const s of strat ?? []) {
+      stratMap.set(`${s.dimension}::${String(s.key).toLowerCase()}`, {
+        score: Number(s.score ?? 0),
+        samples: Number(s.samples ?? 0),
+      });
+    }
+    // Bias range ~ +/- 12 points on opportunity_score
+    function biasFor(angle: string | null, category: string | null): { bias: number; meta: Record<string, number> } {
+      const meta: Record<string, number> = {};
+      let bias = 0;
+      const a = stratMap.get(`angle::${(angle ?? "").toLowerCase()}`);
+      const c = stratMap.get(`category::${(category ?? "").toLowerCase()}`);
+      if (a && a.samples >= 2) {
+        // strategy scores live roughly 0..50 (reward*200 capped). Center at 20.
+        const norm = Math.max(-1, Math.min(1, (a.score - 20) / 20));
+        const w = norm * 8;
+        bias += w;
+        meta.angle_bias = Number(w.toFixed(2));
+      }
+      if (c && c.samples >= 2) {
+        const norm = Math.max(-1, Math.min(1, (c.score - 20) / 20));
+        const w = norm * 4;
+        bias += w;
+        meta.category_bias = Number(w.toFixed(2));
+      }
+      return { bias, meta };
+    }
+
     // Exclude products picked in last 7 days
     const since7 = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
     const { data: recent } = await sb
@@ -68,7 +101,7 @@ Deno.serve(async (req) => {
       .gte("day", since7);
     const excluded = new Set((recent ?? []).map((r) => r.product_id).filter(Boolean));
 
-    const eligible: typeof scores = [];
+    const eligible: Array<typeof scores[number] & { adjusted: number; bias: number; bias_meta: Record<string, number> }> = [];
     for (const s of scores) {
       const p = pmap.get(s.product_id);
       if (!p) continue;
@@ -76,8 +109,12 @@ Deno.serve(async (req) => {
       if (!p.image_url) continue;
       if (excluded.has(s.product_id)) continue;
       if (whitelist.length > 0 && !whitelist.some((w) => (p.category ?? "").toLowerCase().includes(w.toLowerCase()))) continue;
-      eligible.push(s);
+      const { bias, meta } = biasFor(s.recommended_angle as string | null, p.category);
+      const adjusted = Number(s.opportunity_score) + bias;
+      eligible.push({ ...s, adjusted, bias, bias_meta: meta });
     }
+    // Re-rank by learning-adjusted score
+    eligible.sort((a, b) => b.adjusted - a.adjusted);
 
     // Mix: 60% safe winners (top), 40% experiments (mid-tier)
     const safeCount = Math.ceil(maxPicks * 0.6);
@@ -85,7 +122,7 @@ Deno.serve(async (req) => {
     const safe = eligible.slice(0, safeCount);
     const midPool = eligible.slice(safeCount, safeCount + 50);
     // randomize experiments
-    const experiments: typeof eligible = [];
+    const experiments: typeof safe = [];
     const pool = [...midPool];
     while (experiments.length < expCount && pool.length > 0) {
       const idx = Math.floor(Math.random() * pool.length);
@@ -105,13 +142,16 @@ Deno.serve(async (req) => {
           product_slug: p.slug,
           category: p.category,
           opportunity_score: s.opportunity_score,
+          adjusted_score: Number(s.adjusted.toFixed(2)),
+          learning_bias: Number(s.bias.toFixed(2)),
+          bias_meta: s.bias_meta,
           confidence_score: s.confidence_score,
           recommended_channel: s.recommended_channel,
           recommended_angle: s.recommended_angle,
           recommended_hook: s.recommended_hook,
           bucket: safe.includes(s) ? "safe_winner" : "experiment",
         },
-        reason: `Score ${Math.round(Number(s.opportunity_score))} · ${s.recommended_angle} · ${safe.includes(s) ? "safe winner" : "experiment"}`,
+        reason: `Score ${Math.round(Number(s.opportunity_score))}${s.bias ? ` (${s.bias >= 0 ? "+" : ""}${s.bias.toFixed(1)} learn)` : ""} · ${s.recommended_angle} · ${safe.includes(s) ? "safe winner" : "experiment"}`,
         status: cfg?.mode === "auto" ? "approved" : "pending",
       };
     });
@@ -124,7 +164,7 @@ Deno.serve(async (req) => {
     await sb.from("growth_events").insert({
       event_type: "daily_selection",
       trace_id: traceId,
-      payload: { day: today, picked: inserts.length, mode: cfg?.mode ?? "manual" },
+      payload: { day: today, picked: inserts.length, mode: cfg?.mode ?? "manual", strategies_applied: stratMap.size },
     });
 
     return new Response(
