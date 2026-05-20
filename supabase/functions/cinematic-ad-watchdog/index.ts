@@ -433,6 +433,11 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
           trace_id: traceId, recovery_result: "success",
           payload: { reason, attempts },
         });
+        await diagnoseAndAlert(admin, result, {
+          id: row.id, status: "needs_admin_review",
+          error_message: null, status_message: `Quarantined after ${MAX_RETRIES} retries: ${reason}`,
+          render_attempts: attempts,
+        }, `max retries: ${reason}`, traceId);
       } else {
         result.recovered.push({ job_id: row.id, reason });
         await logEvent(admin, {
@@ -506,6 +511,11 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
           trace_id: traceId, recovery_result: "success",
           error_message: row.error_message, payload: { hard_stop: hardReason },
         });
+        await diagnoseAndAlert(admin, result, {
+          id: row.id, status: "needs_admin_review",
+          error_message: row.error_message, status_message: `Hard stop: ${hardReason}`,
+          render_attempts: attempts,
+        }, `hard_stop:${hardReason}`, traceId);
       }
       result.detections.failed_max_attempts++;
       continue;
@@ -528,6 +538,11 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
           trace_id: traceId, recovery_result: "success",
           error_message: row.error_message, payload: { attempts },
         });
+        await diagnoseAndAlert(admin, result, {
+          id: row.id, status: "needs_admin_review",
+          error_message: row.error_message, status_message: `Quarantined after ${attempts} retries`,
+          render_attempts: attempts,
+        }, `max retries (${attempts})`, traceId);
       }
       continue;
     }
