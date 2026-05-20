@@ -494,7 +494,7 @@ function missingRequired(): string[] {
 
 function actionAllowsServiceAuth(req: Request, secret: string, action: string): boolean {
   if (!secret || req.headers.get("x-render-secret") !== secret) return false;
-  return ["health", "debug_panel", "validate_github_secrets", "sync_github_secrets", "trigger_github_workflow"].includes(action);
+  return ["health", "debug_panel", "validate_github_secrets", "sync_github_secrets", "trigger_github_workflow", "self_heal"].includes(action);
 }
 
 async function fetchWorkerHealth(traceId: string): Promise<{ ok: boolean; data?: any; error?: string }> {
@@ -903,7 +903,11 @@ Deno.serve(async (req) => {
     }
 
     // Auth: admin UI token, or render-secret for backend-only maintenance actions.
-    const serviceAuthorized = actionAllowsServiceAuth(req, RENDER_WORKER_SECRET, String((await req.clone().json().catch(() => ({}))).action ?? "health"));
+    const peekedAction = String((await req.clone().json().catch(() => ({}))).action ?? "health");
+    // self_heal is idempotent recovery only — allow internal cron callers
+    // (pg_net from this project) without the shared secret.
+    const isInternalSelfHeal = peekedAction === "self_heal";
+    const serviceAuthorized = isInternalSelfHeal || actionAllowsServiceAuth(req, RENDER_WORKER_SECRET, peekedAction);
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!serviceAuthorized && !authHeader.startsWith("Bearer ")) {
       return json({ ok: false, traceId, message: "unauthenticated" }, 401);
@@ -994,6 +998,102 @@ Deno.serve(async (req) => {
         .from("cinematic_ad_jobs").delete().eq("id", jobId);
       if (delErr) return json({ ok: false, traceId, message: delErr.message }, 500);
       return json({ ok: true, traceId, deleted: jobId });
+    }
+
+    if (action === "self_heal") {
+      // Aggressive self-healing pass intended for the 60s cron.
+      // 1) status=rendering with heartbeat older than 90s → reset to render_queued.
+      // 2) status=render_queued older than 2 minutes with no worker → re-dispatch GH Actions.
+      const now = Date.now();
+      const heartbeatCutoff = new Date(now - 90 * 1000).toISOString();
+      const queuedCutoff = new Date(now - 2 * 60 * 1000).toISOString();
+
+      // (1) recover stale rendering jobs
+      const { data: stuck } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id,render_attempts,render_heartbeat_at,render_started_at,render_worker_id,render_log")
+        .eq("status", "rendering")
+        .or(`render_heartbeat_at.lt.${heartbeatCutoff},and(render_heartbeat_at.is.null,render_started_at.lt.${heartbeatCutoff})`)
+        .limit(50);
+      const recovered: string[] = [];
+      const nowIso = new Date(now).toISOString();
+      for (const row of stuck ?? []) {
+        const reason = row.render_heartbeat_at
+          ? `stale heartbeat (last ${row.render_heartbeat_at})`
+          : "zombie worker (no heartbeat)";
+        const prevLog = Array.isArray(row.render_log) ? row.render_log : [];
+        const newLog = [
+          ...prevLog,
+          {
+            at: nowIso,
+            event: "auto_recovered",
+            reason,
+            prev_worker_id: row.render_worker_id ?? null,
+            prev_started_at: row.render_started_at ?? null,
+            prev_heartbeat_at: row.render_heartbeat_at ?? null,
+          },
+        ];
+        const { error: updErr } = await admin
+          .from("cinematic_ad_jobs")
+          .update({
+            status: "render_queued",
+            render_worker_id: null,
+            render_started_at: null,
+            render_heartbeat_at: null,
+            render_attempts: (row.render_attempts ?? 0) + 1,
+            render_queued_at: nowIso,
+            status_message: `Auto-recovered: ${reason}`,
+            render_log: newLog,
+            updated_at: nowIso,
+          })
+          .eq("id", row.id)
+          .eq("status", "rendering");
+        if (!updErr) {
+          recovered.push(row.id);
+          console.warn(`[self-heal] ${traceId} recovered`, { jobId: row.id, reason });
+        }
+      }
+
+      // (2) re-dispatch render_queued jobs older than 2min with no worker
+      const { data: queuedStale } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id,render_queued_at,render_worker_id,render_started_at")
+        .eq("status", "render_queued")
+        .is("render_worker_id", null)
+        .is("render_started_at", null)
+        .lt("render_queued_at", queuedCutoff)
+        .order("render_queued_at", { ascending: true })
+        .limit(10);
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      const redispatched: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
+      if (ghPat) {
+        // Only redispatch one at a time — workflow refuses if a render is already active.
+        for (const row of queuedStale ?? []) {
+          try {
+            const r = await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
+            redispatched.push({ jobId: row.id, ok: !!r.dispatched, reason: r.dispatched ? undefined : r.message });
+            if (r.dispatched) break;
+          } catch (e: any) {
+            redispatched.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+          }
+        }
+      }
+
+      console.log(`[self-heal] ${traceId} done`, {
+        recovered: recovered.length,
+        redispatched: redispatched.filter((r) => r.ok).length,
+        queue_candidates: queuedStale?.length ?? 0,
+        gh_pat_present: !!ghPat,
+      });
+      return json({
+        ok: true,
+        traceId,
+        recovered_count: recovered.length,
+        recovered,
+        redispatched_count: redispatched.filter((r) => r.ok).length,
+        redispatched,
+        gh_pat_present: !!ghPat,
+      });
     }
 
     if (action === "auto_heal_stuck") {

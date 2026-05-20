@@ -54,6 +54,7 @@ const FILTERS: Array<{ key: FilterKey; label: string }> = [
 ];
 
 const STUCK_MS = 10 * 60 * 1000;
+const STALE_HEARTBEAT_MS = 90 * 1000;
 
 function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   if (status === "failed" || status === "cancelled") return "destructive";
@@ -67,6 +68,25 @@ function isStuck(j: Job): boolean {
   const ref = j.render_heartbeat_at ?? j.render_started_at;
   if (!ref) return true;
   return Date.now() - new Date(ref).getTime() > STUCK_MS;
+}
+
+function isStale(j: Job): boolean {
+  if (j.status !== "rendering") return false;
+  const ref = j.render_heartbeat_at;
+  if (!ref) return false;
+  return Date.now() - new Date(ref).getTime() > STALE_HEARTBEAT_MS;
+}
+
+function isZombieWorker(j: Job): boolean {
+  if (j.status !== "rendering") return false;
+  if (j.render_heartbeat_at) return false;
+  if (!j.render_started_at) return false;
+  return Date.now() - new Date(j.render_started_at).getTime() > STALE_HEARTBEAT_MS;
+}
+
+function isAutoRecovered(j: Job): boolean {
+  if ((j.render_attempts ?? 0) < 1) return false;
+  return typeof j.status_message === "string" && j.status_message.startsWith("Auto-recovered");
 }
 
 function fmt(ts: string | null) {
@@ -512,6 +532,19 @@ export default function CinematicAdsControlCenterPage() {
                           <Badge variant="destructive" className="gap-1">
                             <AlertTriangle className="h-3 w-3" /> Stuck
                           </Badge>
+                        )}
+                        {!stuck && isStale(j) && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Stale
+                          </Badge>
+                        )}
+                        {isZombieWorker(j) && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Zombie worker
+                          </Badge>
+                        )}
+                        {isAutoRecovered(j) && (
+                          <Badge variant="secondary">Auto recovered</Badge>
                         )}
                         {j.pinterest_pin_url && <Badge variant="secondary">Pinned</Badge>}
                         {j.render_attempts ? (
