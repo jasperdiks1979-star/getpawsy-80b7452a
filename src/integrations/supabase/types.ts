@@ -1057,6 +1057,7 @@ export type Database = {
       }
       cinematic_ad_jobs: {
         Row: {
+          admin_review_reason: string | null
           ai_decisions: Json
           approved_at: string | null
           approved_by: string | null
@@ -1066,12 +1067,15 @@ export type Database = {
           autopilot_log: Json
           autopilot_threshold: number
           caption_variants: Json
+          classification_confidence: number | null
           confidence_scores: Json
           created_at: string
           created_by: string | null
           cta_text: string | null
           cta_variants_meta: Json
           error_message: string | null
+          expected_impact: string | null
+          failure_category: string | null
           hashtags: string[]
           hook_text: string | null
           hook_variant: string
@@ -1081,6 +1085,7 @@ export type Database = {
           media_warnings: Json
           motion_score: number | null
           music_url: string | null
+          needs_admin_review: boolean
           output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
@@ -1106,20 +1111,28 @@ export type Database = {
           product_slug: string
           published_at: string | null
           pushed_to_pinterest_at: string | null
+          qa_report: Json
+          qa_score: number | null
+          recommended_fix: string | null
+          recoverable: boolean | null
           render_attempts: number
           render_complete_at: string | null
           render_dispatched_at: string | null
           render_heartbeat_at: string | null
           render_log: Json
+          render_priority_score: number | null
           render_queued_at: string | null
           render_started_at: string | null
           render_token: string | null
           render_worker_id: string | null
           rendered_at: string | null
+          risk_level: string | null
+          root_cause: string | null
           scene_assets: Json
           scene_specs: Json
           selected_cta_index: number
           selected_hook_index: number
+          smart_retry_count: number
           status: string
           status_message: string | null
           storyboard: Json
@@ -1134,6 +1147,7 @@ export type Database = {
           voice_style: string | null
         }
         Insert: {
+          admin_review_reason?: string | null
           ai_decisions?: Json
           approved_at?: string | null
           approved_by?: string | null
@@ -1143,12 +1157,15 @@ export type Database = {
           autopilot_log?: Json
           autopilot_threshold?: number
           caption_variants?: Json
+          classification_confidence?: number | null
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
           cta_text?: string | null
           cta_variants_meta?: Json
           error_message?: string | null
+          expected_impact?: string | null
+          failure_category?: string | null
           hashtags?: string[]
           hook_text?: string | null
           hook_variant?: string
@@ -1158,6 +1175,7 @@ export type Database = {
           media_warnings?: Json
           motion_score?: number | null
           music_url?: string | null
+          needs_admin_review?: boolean
           output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
@@ -1183,20 +1201,28 @@ export type Database = {
           product_slug: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
+          qa_report?: Json
+          qa_score?: number | null
+          recommended_fix?: string | null
+          recoverable?: boolean | null
           render_attempts?: number
           render_complete_at?: string | null
           render_dispatched_at?: string | null
           render_heartbeat_at?: string | null
           render_log?: Json
+          render_priority_score?: number | null
           render_queued_at?: string | null
           render_started_at?: string | null
           render_token?: string | null
           render_worker_id?: string | null
           rendered_at?: string | null
+          risk_level?: string | null
+          root_cause?: string | null
           scene_assets?: Json
           scene_specs?: Json
           selected_cta_index?: number
           selected_hook_index?: number
+          smart_retry_count?: number
           status?: string
           status_message?: string | null
           storyboard?: Json
@@ -1211,6 +1237,7 @@ export type Database = {
           voice_style?: string | null
         }
         Update: {
+          admin_review_reason?: string | null
           ai_decisions?: Json
           approved_at?: string | null
           approved_by?: string | null
@@ -1220,12 +1247,15 @@ export type Database = {
           autopilot_log?: Json
           autopilot_threshold?: number
           caption_variants?: Json
+          classification_confidence?: number | null
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
           cta_text?: string | null
           cta_variants_meta?: Json
           error_message?: string | null
+          expected_impact?: string | null
+          failure_category?: string | null
           hashtags?: string[]
           hook_text?: string | null
           hook_variant?: string
@@ -1235,6 +1265,7 @@ export type Database = {
           media_warnings?: Json
           motion_score?: number | null
           music_url?: string | null
+          needs_admin_review?: boolean
           output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
@@ -1260,20 +1291,28 @@ export type Database = {
           product_slug?: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
+          qa_report?: Json
+          qa_score?: number | null
+          recommended_fix?: string | null
+          recoverable?: boolean | null
           render_attempts?: number
           render_complete_at?: string | null
           render_dispatched_at?: string | null
           render_heartbeat_at?: string | null
           render_log?: Json
+          render_priority_score?: number | null
           render_queued_at?: string | null
           render_started_at?: string | null
           render_token?: string | null
           render_worker_id?: string | null
           rendered_at?: string | null
+          risk_level?: string | null
+          root_cause?: string | null
           scene_assets?: Json
           scene_specs?: Json
           selected_cta_index?: number
           selected_hook_index?: number
+          smart_retry_count?: number
           status?: string
           status_message?: string | null
           storyboard?: Json
@@ -14213,6 +14252,17 @@ export type Database = {
       }
     }
     Views: {
+      cinematic_ad_failure_breakdown: {
+        Row: {
+          category: string | null
+          last_seen_at: string | null
+          needs_review: number | null
+          recoverable: number | null
+          total: number | null
+          unrecoverable: number | null
+        }
+        Relationships: []
+      }
       pinterest_failure_analytics_v: {
         Row: {
           avg_score: number | null
@@ -15157,6 +15207,7 @@ export type Database = {
       reset_cinematic_ad_job_to_queued: {
         Args: { p_job_id: string }
         Returns: {
+          admin_review_reason: string | null
           ai_decisions: Json
           approved_at: string | null
           approved_by: string | null
@@ -15166,12 +15217,15 @@ export type Database = {
           autopilot_log: Json
           autopilot_threshold: number
           caption_variants: Json
+          classification_confidence: number | null
           confidence_scores: Json
           created_at: string
           created_by: string | null
           cta_text: string | null
           cta_variants_meta: Json
           error_message: string | null
+          expected_impact: string | null
+          failure_category: string | null
           hashtags: string[]
           hook_text: string | null
           hook_variant: string
@@ -15181,6 +15235,7 @@ export type Database = {
           media_warnings: Json
           motion_score: number | null
           music_url: string | null
+          needs_admin_review: boolean
           output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
@@ -15206,20 +15261,28 @@ export type Database = {
           product_slug: string
           published_at: string | null
           pushed_to_pinterest_at: string | null
+          qa_report: Json
+          qa_score: number | null
+          recommended_fix: string | null
+          recoverable: boolean | null
           render_attempts: number
           render_complete_at: string | null
           render_dispatched_at: string | null
           render_heartbeat_at: string | null
           render_log: Json
+          render_priority_score: number | null
           render_queued_at: string | null
           render_started_at: string | null
           render_token: string | null
           render_worker_id: string | null
           rendered_at: string | null
+          risk_level: string | null
+          root_cause: string | null
           scene_assets: Json
           scene_specs: Json
           selected_cta_index: number
           selected_hook_index: number
+          smart_retry_count: number
           status: string
           status_message: string | null
           storyboard: Json
