@@ -288,6 +288,25 @@ export default function CinematicAdsControlCenterPage() {
     }
   };
 
+  const publishableCount = useMemo(
+    () => rows.filter((r) => !!r.output_mp4_url && !r.pinterest_pin_url).length,
+    [rows],
+  );
+
+  const publishAllCompleted = async () => {
+    if (!confirm(`Publish all ${publishableCount} completed job(s) to Pinterest?`)) return;
+    setBulkBusy("publish_all");
+    try {
+      const r = await call("publish_all_completed", {});
+      toast.success(`Published ${r.published_count ?? 0} / ${r.completed_count ?? 0} to Pinterest`);
+      fetchRows();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Bulk publish failed");
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
   const autoHealNow = async () => {
     setBulkBusy("auto_heal");
     try {
