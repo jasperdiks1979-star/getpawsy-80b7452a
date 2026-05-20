@@ -154,6 +154,174 @@ async function dispatchRender(admin: any, jobId: string, traceId: string): Promi
   return { ok: false, reason: data?.message ?? `status ${res.status}` };
 }
 
+type AiDiagnosis = {
+  classification: string;
+  root_cause: string;
+  retryable: boolean;
+  suggested_action: string;
+  admin_action_required: boolean;
+  confidence: number;
+};
+
+async function aiDiagnose(args: {
+  job_id: string;
+  status: string;
+  error_message: string | null;
+  status_message: string | null;
+  attempts: number;
+}): Promise<AiDiagnosis | null> {
+  if (!LOVABLE_API_KEY) return null;
+  const prompt = `You are an SRE assistant diagnosing a failed cinematic ad render job. Classify the failure and recommend the next action.
+
+Job ${args.job_id}
+Status: ${args.status}
+Render attempts: ${args.attempts}
+Error message: ${args.error_message ?? "(none)"}
+Status message: ${args.status_message ?? "(none)"}
+
+Respond with a JSON object only, no prose, with keys:
+- classification: one of [billing_blocked, auth_expired, quota_exhausted, github_dispatch_failed, worker_zombie, ffmpeg_error, asset_missing, validation_failed, network_transient, unknown]
+- root_cause: 1 short sentence
+- retryable: boolean
+- suggested_action: 1 short sentence with concrete next step
+- admin_action_required: boolean (true if human must intervene)
+- confidence: number 0..1`;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: AI_DIAG_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) {
+      console.warn("[watchdog] ai diagnose failed", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+    const data = await res.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) return null;
+    const parsed = JSON.parse(content);
+    return parsed as AiDiagnosis;
+  } catch (e) {
+    console.warn("[watchdog] ai diagnose error", e);
+    return null;
+  }
+}
+
+async function sendAdminEmail(admin: any, args: {
+  job_id: string | null;
+  alert_type: string;
+  severity: "warning" | "critical";
+  summary: string;
+  details: Record<string, unknown>;
+  dedupe_key: string;
+}): Promise<{ sent: boolean; error?: string }> {
+  try {
+    const { data: settings } = await admin
+      .from("cinematic_ad_alert_settings")
+      .select("enabled,recipient_email")
+      .eq("id", 1).maybeSingle();
+    if (!settings?.enabled || !settings?.recipient_email) {
+      return { sent: false, error: "alerts disabled or no recipient" };
+    }
+    // Dedupe via cinematic_ad_alert_log if present.
+    const { data: existing } = await admin
+      .from("cinematic_ad_alert_log")
+      .select("id").eq("dedupe_key", args.dedupe_key).maybeSingle();
+    if (existing) return { sent: false, error: "deduped" };
+
+    const { error } = await admin.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "cinematic-ad-alert",
+        recipientEmail: settings.recipient_email,
+        idempotencyKey: `cinematic-alert-${args.dedupe_key}`,
+        templateData: {
+          alertType: args.alert_type,
+          severity: args.severity,
+          summary: args.summary,
+          jobId: args.job_id,
+          details: args.details,
+        },
+      },
+    });
+    await admin.from("cinematic_ad_alert_log").insert({
+      alert_type: args.alert_type,
+      severity: args.severity,
+      job_id: args.job_id,
+      summary: args.summary,
+      details: args.details,
+      dedupe_key: args.dedupe_key,
+      email_sent: !error,
+      email_error: error?.message ?? null,
+    });
+    if (error) return { sent: false, error: error.message };
+    return { sent: true };
+  } catch (e) {
+    return { sent: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+async function diagnoseAndAlert(
+  admin: any,
+  result: WatchdogResult,
+  job: { id: string; status?: string | null; error_message?: string | null; status_message?: string | null; render_attempts?: number | null },
+  reason: string,
+  traceId: string,
+) {
+  const diag = await aiDiagnose({
+    job_id: job.id,
+    status: job.status ?? "needs_admin_review",
+    error_message: job.error_message ?? null,
+    status_message: job.status_message ?? null,
+    attempts: job.render_attempts ?? 0,
+  });
+  if (diag) {
+    result.diagnosed.push({ job_id: job.id, classification: diag.classification });
+    await logEvent(admin, {
+      job_id: job.id,
+      event_type: "ai_diagnosis",
+      action_taken: "classify",
+      trace_id: traceId,
+      recovery_result: "success",
+      payload: { ...diag, reason },
+    });
+  }
+  const dedupe = `quarantine-${job.id}-${(job.render_attempts ?? 0)}`;
+  const summary = diag
+    ? `[${diag.classification}] ${diag.root_cause}`
+    : `Cinematic job ${job.id.slice(0, 8)} quarantined: ${reason}`;
+  const email = await sendAdminEmail(admin, {
+    job_id: job.id,
+    alert_type: "auto_quarantined",
+    severity: "critical",
+    summary,
+    details: {
+      reason,
+      error_message: job.error_message ?? null,
+      status_message: job.status_message ?? null,
+      attempts: job.render_attempts ?? 0,
+      ai_diagnosis: diag,
+    },
+    dedupe_key: dedupe,
+  });
+  result.emailed.push({ job_id: job.id, alert: "auto_quarantined", ok: email.sent });
+  await logEvent(admin, {
+    job_id: job.id,
+    event_type: "alert_dispatched",
+    action_taken: "email_admin",
+    trace_id: traceId,
+    recovery_result: email.sent ? "success" : "failed",
+    error_message: email.error,
+    payload: { dedupe_key: dedupe, classification: diag?.classification ?? null },
+  });
+}
+
 async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean } = {}): Promise<WatchdogResult> {
   const now = Date.now();
   const result: WatchdogResult = {
