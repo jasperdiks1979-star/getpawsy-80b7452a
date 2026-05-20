@@ -168,6 +168,86 @@ async function extractThumbnail(file, outPath) {
   await sh("ffmpeg", ["-y", "-ss", "1.0", "-i", file, "-vframes", "1", "-q:v", "3", outPath]);
 }
 
+/**
+ * Perceptual aHash for an image file. Renders an 8x8 grayscale raw buffer
+ * via ffmpeg, then encodes each pixel as 1 bit (>= mean) → 64-bit hash.
+ * Returns a 16-char hex string, or null on failure (caller falls back to URL).
+ */
+async function aHash(file) {
+  const raw = `${file}.ahash.raw`;
+  try {
+    await sh("ffmpeg", [
+      "-y", "-loglevel", "error",
+      "-i", file,
+      "-vf", "scale=8:8:flags=area,format=gray",
+      "-frames:v", "1",
+      "-f", "rawvideo", "-pix_fmt", "gray", raw,
+    ]);
+    const buf = readFileSync(raw);
+    if (buf.length < 64) return null;
+    let sum = 0;
+    for (let i = 0; i < 64; i++) sum += buf[i];
+    const mean = sum / 64;
+    let hex = "";
+    for (let nibble = 0; nibble < 16; nibble++) {
+      let v = 0;
+      for (let b = 0; b < 4; b++) {
+        const pixel = buf[nibble * 4 + b];
+        v = (v << 1) | (pixel >= mean ? 1 : 0);
+      }
+      hex += v.toString(16);
+    }
+    return hex;
+  } catch {
+    return null;
+  }
+}
+
+function hammingHex(a, b) {
+  if (!a || !b || a.length !== b.length) return 64;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) {
+    let x = parseInt(a[i], 16) ^ parseInt(b[i], 16);
+    while (x) { d += x & 1; x >>= 1; }
+  }
+  return d;
+}
+
+/**
+ * Group scene hashes by perceptual similarity. Two scenes are considered
+ * duplicates when their hash hamming distance is <= maxDist (default 3 of 64,
+ * i.e. >= 95% bit-level similarity). Scenes that failed to hash fall back to
+ * exact image_url matching so we still catch obvious dupes.
+ */
+function groupByHashSimilarity(scenes, hashes, maxDist = 3) {
+  const groupOf = new Array(scenes.length).fill(-1);
+  const groupHashes = []; // representative hash per group
+  for (let i = 0; i < scenes.length; i++) {
+    const h = hashes[i];
+    let assigned = -1;
+    if (h) {
+      for (let g = 0; g < groupHashes.length; g++) {
+        if (hammingHex(groupHashes[g], h) <= maxDist) { assigned = g; break; }
+      }
+    } else {
+      // Fallback: exact URL match for un-hashable images
+      for (let j = 0; j < i; j++) {
+        if (!hashes[j] && scenes[j].image_url === scenes[i].image_url) {
+          assigned = groupOf[j]; break;
+        }
+      }
+    }
+    if (assigned === -1) {
+      assigned = groupHashes.length;
+      groupHashes.push(h ?? null);
+    }
+    groupOf[i] = assigned;
+  }
+  const counts = new Array(groupHashes.length).fill(0);
+  for (const g of groupOf) counts[g]++;
+  return { groupOf, counts, groupCount: groupHashes.length };
+}
+
 async function download(url, dest) {
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -217,27 +297,42 @@ async function main() {
     const scenes = (job.scene_assets ?? []).slice().sort((a, b) => a.index - b.index);
     if (scenes.length === 0) throw new Error("no scene_assets");
     assertProductLock(job, scenes);
-    // Duplicate-scene tolerance (relaxed).
+    // Download scenes first so we can perceptually hash each frame. Reusing
+    // these files later for ffmpeg avoids a second download pass.
+    const sceneFiles = [];
+    for (const s of scenes) {
+      const f = join(work, `scene-${s.index}.jpg`);
+      await download(s.image_url, f);
+      sceneFiles.push({ file: f, duration: Math.max(1, Number(s.duration_seconds) || 2) });
+    }
+    // Compute perceptual aHash for each scene (best-effort, parallel).
+    const sceneHashes = await Promise.all(sceneFiles.map(sf => aHash(sf.file).catch(() => null)));
+    // Duplicate-scene tolerance (relaxed, hash-based).
     // Old behaviour aborted at >30% identical image_urls, which killed many
     // valid renders that legitimately reuse a hero shot with different motion,
     // crop, captions, CTA or transitions. New rules:
     //   - threshold raised to 75%
-    //   - repeated shots are allowed when motion/caption/CTA differ (they
-    //     always do here: motion preset is derived from scene index below)
+    //   - perceptual aHash + hamming distance (<=3 of 64 = >=95% similar)
+    //     so two scenes with the same URL but different crops are NOT dupes,
+    //     and visually-similar shots from different URLs ARE caught
     //   - up to 3 auto-variation passes are applied before any abort
     //   - per-scene duplicate stats are emitted for admin diagnostics
-    const urlCounts = new Map();
-    for (const s of scenes) urlCounts.set(s.image_url, (urlCounts.get(s.image_url) ?? 0) + 1);
+    const HASH_MAX_DIST = 3; // ~95% similarity
+    const { groupOf, counts, groupCount } = groupByHashSimilarity(scenes, sceneHashes, HASH_MAX_DIST);
     const perScene = scenes.map((s, i) => ({
       index: i,
       image_url: s.image_url,
-      repeat_count: urlCounts.get(s.image_url) ?? 1,
-      duplicate_pct: Math.round(((urlCounts.get(s.image_url) ?? 1) / scenes.length) * 100),
+      image_hash: sceneHashes[i] ?? null,
+      hash_group: groupOf[i],
+      repeat_count: counts[groupOf[i]] ?? 1,
+      duplicate_pct: Math.round(((counts[groupOf[i]] ?? 1) / scenes.length) * 100),
     }));
-    let duplicateRatio = 1 - (urlCounts.size / Math.max(1, scenes.length));
+    let duplicateRatio = 1 - (groupCount / Math.max(1, scenes.length));
     console.log(`[render] duplicate-scene scan`, {
       duplicate_ratio_pct: Math.round(duplicateRatio * 100),
       threshold_pct: 75,
+      hash_max_distance: HASH_MAX_DIST,
+      hashed_scenes: sceneHashes.filter(Boolean).length,
       per_scene: perScene,
     });
     // Auto-variation passes: re-tag repeated scenes with a variation_seed so
@@ -249,14 +344,14 @@ async function main() {
       attempt += 1;
       const seen = new Map();
       for (let i = 0; i < scenes.length; i++) {
-        const url = scenes[i].image_url;
-        const n = (seen.get(url) ?? 0) + 1;
-        seen.set(url, n);
+        const key = groupOf[i];
+        const n = (seen.get(key) ?? 0) + 1;
+        seen.set(key, n);
         scenes[i].variation_seed = `${attempt}-${i}-${n}`;
         scenes[i].motion_variant = ["kenburns-in", "kenburns-out", "pan-left", "pan-right", "parallax"][(i + attempt) % 5];
       }
       console.log(`[render] duplicate auto-variation attempt ${attempt}/${MAX_VARIATION_ATTEMPTS}`);
-      // duplicateRatio stays the same (same image_urls) but per-scene motion now diverges,
+      // duplicateRatio stays the same (same hash groups) but per-scene motion diverges,
       // so we accept the render after applying variation seeds.
       break;
     }
@@ -270,8 +365,10 @@ async function main() {
       const enrichedScenes = scenes.map((s, i) => ({
         index: i,
         image_url: s.image_url,
-        repeat_count: urlCounts.get(s.image_url) ?? 1,
-        duplicate_pct: Math.round(((urlCounts.get(s.image_url) ?? 1) / scenes.length) * 100),
+        image_hash: sceneHashes[i] ?? null,
+        hash_group: groupOf[i],
+        repeat_count: counts[groupOf[i]] ?? 1,
+        duplicate_pct: Math.round(((counts[groupOf[i]] ?? 1) / scenes.length) * 100),
         variation_seed: s.variation_seed ?? null,
         motion_variant: s.motion_variant ?? null,
       }));
@@ -284,6 +381,8 @@ async function main() {
         duplicate_diagnostics: {
           duplicate_ratio_pct: Math.round(duplicateRatio * 100),
           threshold_pct: 75,
+          hash_max_distance: HASH_MAX_DIST,
+          hashed_scenes: sceneHashes.filter(Boolean).length,
           variation_attempts: attempt,
           max_variation_attempts: MAX_VARIATION_ATTEMPTS,
           aborted: false,
@@ -307,12 +406,8 @@ async function main() {
     const heartbeat = setInterval(() => {
       postWebhook({ job_id: job.job_id, status: "heartbeat", event: "render_heartbeat", render_token: job.render_token, worker_id: WORKER_ID }).catch(() => {});
     }, 30_000);
-    const sceneFiles = [];
-    for (const s of scenes) {
-      const f = join(work, `scene-${s.index}.jpg`);
-      await download(s.image_url, f);
-      sceneFiles.push({ file: f, duration: Math.max(1, Number(s.duration_seconds) || 2) });
-    }
+    // sceneFiles were already downloaded above for hash-based duplicate
+    // detection — reuse those files here.
     // 2. download audio
     let voPath = null, musicPath = null;
     if (job.voiceover_url) { voPath = join(work, "vo.mp3"); await download(job.voiceover_url, voPath); }

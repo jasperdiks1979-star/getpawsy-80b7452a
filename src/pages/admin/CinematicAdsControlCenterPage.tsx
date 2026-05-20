@@ -767,6 +767,8 @@ function JobLogsViewer({ job, onRefresh }: { job: Job; onRefresh: () => Promise<
           per_scene: Array<{
             index: number;
             image_url: string;
+            image_hash?: string | null;
+            hash_group?: number;
             repeat_count: number;
             duplicate_pct: number;
             variation_seed: string | null;
