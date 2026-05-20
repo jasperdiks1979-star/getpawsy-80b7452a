@@ -404,6 +404,7 @@ const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"))
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const CinematicAdsPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsPage"));
 const CinematicAdsControlCenterPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsControlCenterPage"));
+const CinematicAdQaSummaryPage = lazyWithRetry(() => import("./pages/admin/CinematicAdQaSummaryPage"));
 const CinematicAdsDashboardPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsDashboardPage"));
 const CinematicAdPreviewPage = lazyWithRetry(() => import("./pages/admin/CinematicAdPreviewPage"));
 const CinematicOneJobVerifyPage = lazyWithRetry(() => import("./pages/admin/CinematicOneJobVerifyPage"));
@@ -1912,6 +1913,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CinematicAdsControlCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-ads/:jobId/qa"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicAdQaSummaryPage />
                                 </Suspense>
                               }
                             />

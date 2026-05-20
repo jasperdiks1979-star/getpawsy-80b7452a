@@ -604,6 +604,9 @@ export default function CinematicAdsControlCenterPage() {
                       <SheetTrigger asChild>
                         <Button size="sm" variant="ghost" onClick={() => setDiagJob(j)}>Diagnostics</Button>
                       </SheetTrigger>
+                      <a href={`/admin/cinematic-ads/${j.id}/qa`} target="_blank" rel="noreferrer">
+                        <Button size="sm" variant="ghost">QA</Button>
+                      </a>
                       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
                         <SheetHeader>
                           <SheetTitle>Job diagnostics</SheetTitle>
