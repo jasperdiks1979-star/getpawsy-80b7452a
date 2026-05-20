@@ -540,7 +540,7 @@ const handler = async (req: Request): Promise<Response> => {
   let body: any = {};
   try { body = await req.json(); } catch { /* allow empty */ }
 
-  const product_slug: string = body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top";
+  const product_slug: string = String(body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top").trim();
   const hook_variant: string = body.hook_variant ?? "default";
   const voiceStyle = resolveVoiceStyle(body.voice_style);
   const voice_id: string = body.voice_id ?? voiceStyle.voice_id;
@@ -561,6 +561,24 @@ const handler = async (req: Request): Promise<Response> => {
   if (!product?.image_url) {
     return json(404, { ok: false, traceId, message: `product not found or has no image_url: ${product_slug}${prodErr ? ` (${prodErr.message})` : ""}` });
   }
+  const { data: activeDuplicate } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id,status,created_at,render_queued_at,render_started_at")
+    .eq("product_slug", product_slug)
+    .in("status", ["pending", "preparing", "prepared", "render_queued", "rendering"])
+    .neq("id", body.job_id ?? "00000000-0000-0000-0000-000000000000")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (activeDuplicate && !body.force_new) {
+    return json(409, {
+      ok: false,
+      traceId,
+      message: `active cinematic job already exists for ${product_slug}; wait for completion/failure before creating another`,
+      existing_job_id: activeDuplicate.id,
+      existing_status: activeDuplicate.status,
+    });
+  }
   const productName: string = product.name ?? product_slug;
   const heroUrl: string = product.image_url;
   const productImages: string[] = Array.isArray((product as any).images) ? (product as any).images.filter(Boolean) : [];
@@ -576,6 +594,9 @@ const handler = async (req: Request): Promise<Response> => {
       .from("cinematic_ad_jobs")
       .insert({
         product_slug,
+        product_id: product.id,
+        product_name: productName,
+        product_price: product.price != null ? String(product.price) : null,
         hook_variant,
         voice_id,
         voice_style: voiceStyle.id,
@@ -585,6 +606,16 @@ const handler = async (req: Request): Promise<Response> => {
         media_warnings: mediaWarnings,
         approved_for_render: false,
         pin_destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,
+        product_lock: {
+          product_id: product.id,
+          product_slug,
+          product_name: productName,
+          product_price: product.price != null ? String(product.price) : null,
+          category: product.category ?? null,
+          image_url: heroUrl,
+          image_count: Math.max(1, productImages.length),
+          destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,
+        },
       })
       .select("id")
       .single();
@@ -599,6 +630,9 @@ const handler = async (req: Request): Promise<Response> => {
       voice_id,
       media_warnings: mediaWarnings,
       approved_for_render: false,
+      product_id: product.id,
+      product_name: productName,
+      product_price: product.price != null ? String(product.price) : null,
     }).eq("id", jobId);
   }
 
