@@ -26,6 +26,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 
 const HEARTBEAT_STALE_MS = 90 * 1000;
 const QUEUE_STALE_MS = 2 * 60 * 1000;
@@ -134,15 +135,13 @@ async function callWorkerControl(action: string, body: Record<string, unknown> =
 }
 
 async function dispatchRender(admin: any, jobId: string, traceId: string): Promise<{ ok: boolean; reason?: string }> {
-  // Reuse worker-control trigger_github_workflow logic. Internal call uses anon
-  // header; worker-control allows self_heal without secret but trigger_github_workflow
-  // still requires admin/service auth. We call it directly via REST with service key.
+  // worker-control allows trigger_github_workflow via x-render-secret header.
   const res = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-worker-control`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${SERVICE_KEY}`,
-      "apikey": SERVICE_KEY,
+      "apikey": ANON_KEY,
+      "x-render-secret": RENDER_WORKER_SECRET,
     },
     body: JSON.stringify({ action: "trigger_github_workflow", job_id: jobId }),
   });
