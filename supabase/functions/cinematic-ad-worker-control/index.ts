@@ -494,7 +494,7 @@ function missingRequired(): string[] {
 
 function actionAllowsServiceAuth(req: Request, secret: string, action: string): boolean {
   if (!secret || req.headers.get("x-render-secret") !== secret) return false;
-  return ["health", "debug_panel", "validate_github_secrets", "sync_github_secrets", "trigger_github_workflow"].includes(action);
+  return ["health", "debug_panel", "validate_github_secrets", "sync_github_secrets", "trigger_github_workflow", "self_heal"].includes(action);
 }
 
 async function fetchWorkerHealth(traceId: string): Promise<{ ok: boolean; data?: any; error?: string }> {
