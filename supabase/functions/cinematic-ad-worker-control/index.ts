@@ -968,6 +968,86 @@ Deno.serve(async (req) => {
       return json({ ok: true, traceId, ...result });
     }
 
+    if (action === "cancel_render") {
+      const jobId = String(body.job_id ?? "");
+      if (!jobId) return json({ ok: false, traceId, message: "job_id required" }, 400);
+      const { data: updated, error: updErr } = await admin
+        .from("cinematic_ad_jobs")
+        .update({
+          status: "cancelled",
+          status_message: "cancelled by admin",
+          render_worker_id: null,
+          render_heartbeat_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", jobId)
+        .select("id,status")
+        .maybeSingle();
+      if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
+      return json({ ok: true, traceId, job: updated });
+    }
+
+    if (action === "delete_job") {
+      const jobId = String(body.job_id ?? "");
+      if (!jobId) return json({ ok: false, traceId, message: "job_id required" }, 400);
+      const { error: delErr } = await admin
+        .from("cinematic_ad_jobs").delete().eq("id", jobId);
+      if (delErr) return json({ ok: false, traceId, message: delErr.message }, 500);
+      return json({ ok: true, traceId, deleted: jobId });
+    }
+
+    if (action === "auto_heal_stuck") {
+      // Jobs are stuck if status='rendering' and heartbeat older than 10 minutes.
+      const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: stuck } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id,render_heartbeat_at,render_started_at")
+        .eq("status", "rendering")
+        .or(`render_heartbeat_at.lt.${cutoff},and(render_heartbeat_at.is.null,render_started_at.lt.${cutoff})`)
+        .limit(50);
+      const healed: string[] = [];
+      const dispatched: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      for (const row of stuck ?? []) {
+        try {
+          await retryRender(admin, row.id, traceId);
+          healed.push(row.id);
+          if (ghPat) {
+            try {
+              const r = await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
+              dispatched.push({ jobId: row.id, ok: true });
+            } catch (e: any) {
+              dispatched.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+            }
+          }
+        } catch (e) {
+          console.error(`[auto-heal] ${traceId} reset failed`, row.id, e);
+        }
+      }
+      return json({ ok: true, traceId, healed_count: healed.length, healed, dispatched });
+    }
+
+    if (action === "render_all_queued") {
+      const { data: queued } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id")
+        .eq("status", "render_queued")
+        .order("render_queued_at", { ascending: true })
+        .limit(25);
+      const ghPat = (await getEffectiveGhPat(admin)).token;
+      if (!ghPat) return json({ ok: false, traceId, code: "GH_SECRETS_MISSING", message: "GH_PAT not configured" }, 412);
+      const dispatched: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
+      for (const row of queued ?? []) {
+        try {
+          await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
+          dispatched.push({ jobId: row.id, ok: true });
+        } catch (e: any) {
+          dispatched.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+        }
+      }
+      return json({ ok: true, traceId, queued_count: queued?.length ?? 0, dispatched });
+    }
+
     if (action === "reset_stale") {
       const ids = Array.isArray(body.ids) ? body.ids.map((x: unknown) => String(x)) : undefined;
       const result = await resetStale(admin, traceId, ids);
