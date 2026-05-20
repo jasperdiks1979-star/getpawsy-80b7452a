@@ -1049,11 +1049,18 @@ export type Database = {
           pinterest_uploaded_at: string | null
           prepared_at: string | null
           preset: string
+          product_id: string | null
+          product_lock: Json
+          product_name: string | null
+          product_price: string | null
           product_slug: string
           published_at: string | null
           pushed_to_pinterest_at: string | null
           render_attempts: number
           render_complete_at: string | null
+          render_dispatched_at: string | null
+          render_heartbeat_at: string | null
+          render_log: Json
           render_queued_at: string | null
           render_started_at: string | null
           render_token: string | null
@@ -1119,11 +1126,18 @@ export type Database = {
           pinterest_uploaded_at?: string | null
           prepared_at?: string | null
           preset?: string
+          product_id?: string | null
+          product_lock?: Json
+          product_name?: string | null
+          product_price?: string | null
           product_slug: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
           render_attempts?: number
           render_complete_at?: string | null
+          render_dispatched_at?: string | null
+          render_heartbeat_at?: string | null
+          render_log?: Json
           render_queued_at?: string | null
           render_started_at?: string | null
           render_token?: string | null
@@ -1189,11 +1203,18 @@ export type Database = {
           pinterest_uploaded_at?: string | null
           prepared_at?: string | null
           preset?: string
+          product_id?: string | null
+          product_lock?: Json
+          product_name?: string | null
+          product_price?: string | null
           product_slug?: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
           render_attempts?: number
           render_complete_at?: string | null
+          render_dispatched_at?: string | null
+          render_heartbeat_at?: string | null
+          render_log?: Json
           render_queued_at?: string | null
           render_started_at?: string | null
           render_token?: string | null
@@ -13360,19 +13381,34 @@ export type Database = {
           reset_at: string
         }[]
       }
+      cinematic_queue_health: { Args: never; Returns: Json }
       cinematic_recover_stuck_jobs: { Args: never; Returns: Json }
       claim_cinematic_ad_job: {
         Args: { p_job_id?: string; p_worker_id: string }
         Returns: {
+          cta_text: string
+          hashtags: string[]
+          hook_text: string
           hook_variant: string
           id: string
           music_url: string
+          pin_description: string
+          pin_destination_url: string
+          pin_title: string
+          preset: string
           previous_status: string
+          product_id: string
+          product_lock: Json
+          product_name: string
+          product_price: string
           product_slug: string
           render_attempts: number
           render_token: string
           render_worker_id: string
           scene_assets: Json
+          subhook_text: string
+          validation_report: Json
+          vo_script: string
           vo_url: string
         }[]
       }
@@ -13380,6 +13416,7 @@ export type Database = {
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_old_web_vitals: { Args: never; Returns: undefined }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
+      clear_stale_cinematic_duplicates: { Args: never; Returns: Json }
       count_rejected_events: {
         Args: { window_hours?: number }
         Returns: {

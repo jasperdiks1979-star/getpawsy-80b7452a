@@ -8,10 +8,14 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: cinematic-render-${{ github.event.inputs.job_id }}
+  cancel-in-progress: false
+
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 90
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       FUNCTIONS_BASE_URL: ${{ secrets.SUPABASE_URL }}/functions/v1
@@ -70,7 +74,7 @@ jobs:
           fi
 
           if ! echo "${JOB_ID}" | grep -Eiq '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
-            echo "Error: job_id must be a full UUID. Do not use the shortened display id."
+            echo "Full UUID required. Do not use shortened display id."
             echo "got: ${JOB_ID}"
             exit 1
           fi

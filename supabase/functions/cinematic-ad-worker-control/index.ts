@@ -624,6 +624,7 @@ async function buildHealthSnapshot(admin: any, traceId: string) {
     flaggedStale: flaggedStale ?? [],
     staleThresholdMs: STALE_AFTER_MS,
     workerLiveWindowMs: STALE_AFTER_MS,
+    queueHealth: (await admin.rpc("cinematic_queue_health")).data ?? null,
   };
 }
 
@@ -811,6 +812,13 @@ async function triggerGithubWorkflow(
   }
 
   let jobId = opts.job_id ?? "";
+  const { count: activeRendering } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "rendering");
+  if ((activeRendering ?? 0) > 0) {
+    return { ok: true, dispatched: false, message: "render already active — next job will dispatch after render_complete" };
+  }
   if (!jobId && opts.claim_next) {
     const { data: next, error: nextErr } = await admin
       .from("cinematic_ad_jobs")
@@ -836,6 +844,7 @@ async function triggerGithubWorkflow(
     .update({
       status: "render_queued",
       render_queued_at: nowIso,
+      render_dispatched_at: nowIso,
       render_started_at: null,
       render_worker_id: null,
       status_message: `Dispatching to GitHub Actions (${GH_WORKFLOW}@${GH_REF}) at ${nowIso}`,
@@ -963,6 +972,12 @@ Deno.serve(async (req) => {
       const ids = Array.isArray(body.ids) ? body.ids.map((x: unknown) => String(x)) : undefined;
       const result = await resetStale(admin, traceId, ids);
       return json({ ok: true, traceId, ...result });
+    }
+
+    if (action === "clear_stale_duplicates") {
+      const { data, error } = await admin.rpc("clear_stale_cinematic_duplicates");
+      if (error) throw error;
+      return json({ ok: true, traceId, ...(data ?? {}) });
     }
 
     if (action === "trigger_github_workflow") {

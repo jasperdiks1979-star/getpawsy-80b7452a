@@ -5,6 +5,7 @@ import { PRESETS, getPreset, durationFrames, type CinematicPresetId } from "../_
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+const MAX_ACTIVE_QUEUED = 5;
 
 function traceId() { return crypto.randomUUID().slice(0, 8); }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -43,6 +44,32 @@ Deno.serve(async (req) => {
       return json({ ok: false, traceId: trace, message: "job not approved for render — call cinematic-ad-approve first" }, 412);
     }
 
+    const { count: activeQueuedCount } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "render_queued");
+    if ((activeQueuedCount ?? 0) >= MAX_ACTIVE_QUEUED && job.status !== "render_queued") {
+      return json({ ok: false, traceId: trace, message: `render queue limit reached (${MAX_ACTIVE_QUEUED}); wait for current jobs to complete` }, 429);
+    }
+
+    const { data: sameProductActive } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id,status,render_queued_at,render_started_at")
+      .eq("product_slug", job.product_slug)
+      .in("status", ["preparing", "prepared", "render_queued", "rendering"])
+      .neq("id", jobId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (sameProductActive) {
+      return json({
+        ok: false,
+        traceId: trace,
+        message: `duplicate active job exists for ${job.product_slug}: ${sameProductActive.id} (${sameProductActive.status})`,
+        duplicate_job_id: sameProductActive.id,
+      }, 409);
+    }
+
     // Resolve preset: explicit body > job row > default.
     const effectivePreset = getPreset(presetId || job.preset);
     const totalFrames = durationFrames(effectivePreset);
@@ -54,6 +81,9 @@ Deno.serve(async (req) => {
         status: "render_queued",
         render_token: renderToken,
         render_queued_at: new Date().toISOString(),
+        render_started_at: null,
+        render_heartbeat_at: null,
+        render_dispatched_at: null,
         preset: effectivePreset.id,
         error_message: null,
         validation_report: null,
@@ -66,13 +96,28 @@ Deno.serve(async (req) => {
     if (updErr) return json({ ok: false, traceId: trace, message: updErr.message }, 500);
 
     const webhookUrl = `${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`;
+    const productLock = job.product_lock && typeof job.product_lock === "object" && Object.keys(job.product_lock).length > 0
+      ? job.product_lock
+      : {
+          product_id: job.product_id ?? null,
+          product_slug: job.product_slug,
+          product_name: job.product_name ?? job.product_slug,
+          destination_url: job.pin_destination_url ?? `https://getpawsy.pet/products/${job.product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${effectivePreset.id}`,
+        };
     const payload = {
       job_id: jobId,
+      product_id: job.product_id ?? null,
       product_slug: job.product_slug,
       hook_variant: job.hook_variant,
       scene_assets: job.scene_assets,
       voiceover_url: job.vo_url,
       music_url: job.music_url,
+      pin_title: job.pin_title,
+      pin_description: job.pin_description,
+      pin_destination_url: job.pin_destination_url,
+      hashtags: job.hashtags,
+      vo_script: job.vo_script,
+      product_lock: productLock,
       output_target: `cinematic-ads/${job.product_slug}/${jobId}.mp4`,
       render_token: renderToken,
       webhook_url: webhookUrl,
@@ -88,8 +133,9 @@ Deno.serve(async (req) => {
         hook: job.hook_text ?? job.hook_variant ?? "Stop scrolling. Look at this.",
         subhook: job.subhook_text ?? undefined,
         cta: job.cta_text ?? "Tap to Shop →",
-        ctaUrl: `https://getpawsy.pet/products/${job.product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${effectivePreset.id}`,
+        ctaUrl: job.pin_destination_url ?? `https://getpawsy.pet/products/${job.product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${effectivePreset.id}`,
         product: {
+          id: job.product_id ?? undefined,
           name: job.product_name ?? job.product_slug,
           price: job.product_price ?? "",
           slug: job.product_slug,

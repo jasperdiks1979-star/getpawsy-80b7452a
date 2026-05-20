@@ -68,6 +68,23 @@ async function postWebhook(payload) {
   }
 }
 
+function escapeDrawtext(text = "") {
+  return String(text).replace(/\\/g, "\\\\").replace(/:/g, "\\:").replace(/'/g, "\\'").replace(/\n/g, " ").slice(0, 90);
+}
+
+function assertProductLock(job, scenes) {
+  const lock = job.product_lock || {};
+  const slug = String(lock.product_slug || job.product_slug || "");
+  const pid = lock.product_id || job.product_id || null;
+  const bad = scenes.filter((s) => (s.product_slug && s.product_slug !== slug) || (pid && s.product_id && s.product_id !== pid));
+  const dest = String(job.pin_destination_url || job.input_props?.ctaUrl || "");
+  if (!slug || bad.length > 0 || (dest && !dest.includes(`/products/${slug}`))) {
+    throw new Error(`wrong product mapping detected; render aborted for job=${job.job_id} slug=${slug}`);
+  }
+  if (!job.input_props?.hook && !job.hook_variant) throw new Error("captions/hooks missing; render aborted");
+  if (!job.input_props?.cta) throw new Error("CTA missing; render aborted");
+}
+
 async function claimJob() {
   console.log(`[claim] POST ${FUNCTIONS_BASE_URL}/cinematic-ad-claim-job host=${SUPABASE_HOST} worker=${WORKER_ID}`);
   const r = await fetchWithTimeout(`${FUNCTIONS_BASE_URL}/cinematic-ad-claim-job`, {
@@ -199,6 +216,9 @@ async function main() {
     // 1. download scenes
     const scenes = (job.scene_assets ?? []).slice().sort((a, b) => a.index - b.index);
     if (scenes.length === 0) throw new Error("no scene_assets");
+    assertProductLock(job, scenes);
+    const duplicateRatio = 1 - (new Set(scenes.map((s) => s.image_url)).size / Math.max(1, scenes.length));
+    if (duplicateRatio > 0.30) throw new Error(`duplicate scenes > 30% (${Math.round(duplicateRatio * 100)}%); render aborted`);
     // Viral-vertical contract — fall back to safe defaults if claim payload
     // is from an older queue function.
     const W = Number(job.width) || 1080;
@@ -209,6 +229,9 @@ async function main() {
     const COMPOSITION = job.composition_id || "viral-vertical";
     const MOTION_FLOOR = Number(job.motion_score_floor) || 0.012;
     console.log(`[render] contract`, { COMPOSITION, PRESET, W, H, FPS, TOTAL_FRAMES, scenes: scenes.length });
+    const heartbeat = setInterval(() => {
+      postWebhook({ job_id: job.job_id, status: "heartbeat", event: "render_heartbeat", render_token: job.render_token, worker_id: WORKER_ID }).catch(() => {});
+    }, 30_000);
     const sceneFiles = [];
     for (const s of scenes) {
       const f = join(work, `scene-${s.index}.jpg`);
@@ -227,21 +250,22 @@ async function main() {
     const segs = [];
     for (let i = 0; i < sceneFiles.length; i++) {
       const seg = join(work, `seg-${i}.mp4`);
-      const dur = sceneFiles[i].duration;
+      const dur = Math.max(1.5, Math.min(3, sceneFiles[i].duration));
       const frames = Math.round(dur * FPS);
-      // Upscale source first so zoompan has pixels to work with, then crop.
-      const zoomIn = i % 2 === 0;
-      const zoomExpr = zoomIn
-        ? `min(zoom+0.0015,1.25)`
-        : `if(eq(on,0),1.25,max(zoom-0.0015,1.0))`;
-      const xExpr = `iw/2-(iw/zoom/2)+sin(on/${frames}*PI)*30`;
-      const yExpr = `ih/2-(ih/zoom/2)+cos(on/${frames}*PI)*30`;
+      const cap = escapeDrawtext(scenes[i]?.caption || job.input_props?.hook || job.hook_variant || "Pet owners are obsessed with this.");
+      const isHook = i === 0;
+      const zoomExpr = i % 3 === 0 ? `if(eq(on,0),1.02,min(zoom+0.006,1.38))` : i % 3 === 1 ? `if(eq(on,0),1.36,max(zoom-0.004,1.06))` : `1.20+0.05*sin(on/4)`;
+      const xExpr = `iw/2-(iw/zoom/2)+sin(on/5)*70+${i % 2 === 0 ? "on*1.8" : "-on*1.4"}`;
+      const yExpr = `ih/2-(ih/zoom/2)+cos(on/6)*46+sin(on/2)*10`;
       const vf = [
         `scale=${W * 2}:${H * 2}:force_original_aspect_ratio=increase`,
         `crop=${W * 2}:${H * 2}`,
         `zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${W}x${H}:fps=${FPS}`,
+        `unsharp=5:5:0.35:3:3:0.15`,
+        `drawtext=fontfile=/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf:text='${cap}':fontcolor=white:fontsize=${isHook ? 86 : 64}:line_spacing=8:x=(w-text_w)/2:y=${isHook ? 190 : "h-430"}:box=1:boxcolor=black@0.46:boxborderw=28:alpha='if(lt(t\\,0.15)\\,t/0.15\\,1)'`,
         `format=yuv420p`,
       ].join(",");
+      console.log(`[render] encode_started segment=${i} duration=${dur}s caption="${cap}"`);
       await sh("ffmpeg", [
         "-y", "-loop", "1", "-t", String(dur),
         "-i", sceneFiles[i].file,
@@ -250,15 +274,18 @@ async function main() {
         "-pix_fmt", "yuv420p",
         seg,
       ]);
+      console.log(`[render] encode_completed segment=${i}`);
       segs.push(seg);
     }
     const listPath = join(work, "list.txt");
     writeFileSync(listPath, segs.map(p => `file '${p}'`).join("\n"));
     const silentVideo = join(work, "video.mp4");
     // Re-encode on concat so the bitstream is uniform (zoompan outputs vary).
+    console.log("[render] encode_started concat");
     await sh("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
       "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
       "-r", String(FPS), silentVideo]);
+    console.log("[render] encode_completed concat");
 
     // 4. mix audio
     const finalPath = join(work, "final.mp4");
@@ -316,8 +343,10 @@ async function main() {
 
     // 6. upload MP4
     const objectPath = job.output_target; // already cinematic-ads/...
-    console.log(`[render] uploading -> ${objectPath} (${size} bytes)`);
+    console.log(`[render] upload_started -> ${objectPath} (${size} bytes)`);
     const publicUrl = await uploadToStorage(finalPath, objectPath);
+    console.log(`[render] upload_completed -> ${publicUrl}`);
+    clearInterval(heartbeat);
 
     const webhookPayload = {
       job_id: job.job_id,
