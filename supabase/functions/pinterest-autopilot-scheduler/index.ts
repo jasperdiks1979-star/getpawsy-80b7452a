@@ -56,11 +56,28 @@ Deno.serve(async (req) => {
       .order("scheduled_at")
       .limit(5);
 
+    // Dispatch each due row via pinterest-autopilot-run-one (service secret).
+    const dispatched: any[] = [];
+    for (const row of due ?? []) {
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-autopilot-run-one`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-render-secret": WORKER_SECRET },
+          body: JSON.stringify({ schedule_id: row.id }),
+        });
+        const j = await r.json().catch(() => ({}));
+        dispatched.push({ id: row.id, ok: !!j?.ok, message: j?.message });
+      } catch (e) {
+        dispatched.push({ id: row.id, ok: false, message: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
     return json({
       ok: true, traceId,
       enabled: true,
       due_now: due ?? [],
-      message: due?.length ? `${due.length} rows due — call pinterest-autopilot-run-one from admin to dispatch` : "no rows due",
+      dispatched,
+      message: due?.length ? `dispatched ${dispatched.filter(d => d.ok).length}/${due.length} due rows` : "no rows due",
     });
   } catch (e) {
     return json({ ok: false, traceId, message: e instanceof Error ? e.message : String(e) }, 500);
