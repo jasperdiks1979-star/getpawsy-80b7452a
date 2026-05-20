@@ -406,12 +406,8 @@ async function main() {
     const heartbeat = setInterval(() => {
       postWebhook({ job_id: job.job_id, status: "heartbeat", event: "render_heartbeat", render_token: job.render_token, worker_id: WORKER_ID }).catch(() => {});
     }, 30_000);
-    const sceneFiles = [];
-    for (const s of scenes) {
-      const f = join(work, `scene-${s.index}.jpg`);
-      await download(s.image_url, f);
-      sceneFiles.push({ file: f, duration: Math.max(1, Number(s.duration_seconds) || 2) });
-    }
+    // sceneFiles were already downloaded above for hash-based duplicate
+    // detection — reuse those files here.
     // 2. download audio
     let voPath = null, musicPath = null;
     if (job.voiceover_url) { voPath = join(work, "vo.mp3"); await download(job.voiceover_url, voPath); }
