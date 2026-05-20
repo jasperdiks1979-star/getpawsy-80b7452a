@@ -5300,6 +5300,60 @@ export type Database = {
         }
         Relationships: []
       }
+      market_product_priority: {
+        Row: {
+          composite_score: number
+          created_at: string
+          day: string
+          factors: Json
+          id: string
+          product_id: string
+          rank: number
+          rationale: string | null
+          recommended_channels: string[]
+          updated_at: string
+        }
+        Insert: {
+          composite_score?: number
+          created_at?: string
+          day?: string
+          factors?: Json
+          id?: string
+          product_id: string
+          rank: number
+          rationale?: string | null
+          recommended_channels?: string[]
+          updated_at?: string
+        }
+        Update: {
+          composite_score?: number
+          created_at?: string
+          day?: string
+          factors?: Json
+          id?: string
+          product_id?: string
+          rank?: number
+          rationale?: string | null
+          recommended_channels?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_product_priority_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_product_priority_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_product_scores: {
         Row: {
           competition_quality: number | null

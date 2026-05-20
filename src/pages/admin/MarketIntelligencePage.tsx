@@ -3,6 +3,7 @@ import { MarketIntelligenceEngine } from "@/components/admin/market-intelligence
 import { MarketCompetitorPanel } from "@/components/admin/market-intelligence/MarketCompetitorPanel";
 import { MarketSignalPanel } from "@/components/admin/market-intelligence/MarketSignalPanel";
 import { MarketTrendsPanel } from "@/components/admin/market-intelligence/MarketTrendsPanel";
+import { MarketRecommendationsPanel } from "@/components/admin/market-intelligence/MarketRecommendationsPanel";
 
 export default function MarketIntelligencePage() {
   return (
@@ -15,6 +16,7 @@ export default function MarketIntelligencePage() {
         <MarketSignalPanel />
         <MarketCompetitorPanel />
         <MarketTrendsPanel />
+        <MarketRecommendationsPanel />
         <MarketIntelligenceEngine />
       </div>
     </>
