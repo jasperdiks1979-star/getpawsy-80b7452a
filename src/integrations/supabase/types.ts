@@ -5018,6 +5018,300 @@ export type Database = {
         }
         Relationships: []
       }
+      market_ai_recommendations: {
+        Row: {
+          action: string
+          confidence: number | null
+          created_at: string
+          id: string
+          payload: Json
+          reasoning: string | null
+          status: string
+          target_id: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          reasoning?: string | null
+          status?: string
+          target_id?: string | null
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          reasoning?: string | null
+          status?: string
+          target_id?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_alerts: {
+        Row: {
+          category: string
+          cooldown_until: string | null
+          created_at: string
+          dedup_key: string
+          detail: string | null
+          id: string
+          occurrences: number
+          payload: Json
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          cooldown_until?: string | null
+          created_at?: string
+          dedup_key: string
+          detail?: string | null
+          id?: string
+          occurrences?: number
+          payload?: Json
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          cooldown_until?: string | null
+          created_at?: string
+          dedup_key?: string
+          detail?: string | null
+          id?: string
+          occurrences?: number
+          payload?: Json
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_competitor_insights: {
+        Row: {
+          captured_at: string
+          competitor: string
+          created_at: string
+          id: string
+          image_url: string | null
+          insights: Json
+          price: number | null
+          product_handle: string
+          rating: number | null
+          review_count: number | null
+          title: string | null
+        }
+        Insert: {
+          captured_at?: string
+          competitor: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          insights?: Json
+          price?: number | null
+          product_handle: string
+          rating?: number | null
+          review_count?: number | null
+          title?: string | null
+        }
+        Update: {
+          captured_at?: string
+          competitor?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          insights?: Json
+          price?: number | null
+          product_handle?: string
+          rating?: number | null
+          review_count?: number | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      market_creative_patterns: {
+        Row: {
+          created_at: string
+          ewma_score: number
+          examples: Json
+          id: string
+          pattern_type: string
+          sample_size: number
+          signature: string
+          status: string
+          updated_at: string
+          win_rate: number
+        }
+        Insert: {
+          created_at?: string
+          ewma_score?: number
+          examples?: Json
+          id?: string
+          pattern_type: string
+          sample_size?: number
+          signature: string
+          status?: string
+          updated_at?: string
+          win_rate?: number
+        }
+        Update: {
+          created_at?: string
+          ewma_score?: number
+          examples?: Json
+          id?: string
+          pattern_type?: string
+          sample_size?: number
+          signature?: string
+          status?: string
+          updated_at?: string
+          win_rate?: number
+        }
+        Relationships: []
+      }
+      market_growth_predictions: {
+        Row: {
+          computed_at: string
+          confidence: number | null
+          created_at: string
+          horizon: string
+          id: string
+          momentum: number | null
+          predicted_conversions: number | null
+          predicted_revenue: number | null
+          predicted_traffic: number | null
+          product_id: string | null
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number | null
+          created_at?: string
+          horizon: string
+          id?: string
+          momentum?: number | null
+          predicted_conversions?: number | null
+          predicted_revenue?: number | null
+          predicted_traffic?: number | null
+          product_id?: string | null
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number | null
+          created_at?: string
+          horizon?: string
+          id?: string
+          momentum?: number | null
+          predicted_conversions?: number | null
+          predicted_revenue?: number | null
+          predicted_traffic?: number | null
+          product_id?: string | null
+        }
+        Relationships: []
+      }
+      market_opportunity_gaps: {
+        Row: {
+          competitor: string | null
+          created_at: string
+          evidence: Json
+          gap_type: string
+          id: string
+          matched_product_id: string | null
+          opportunity_score: number
+          status: string
+          target: string
+          updated_at: string
+        }
+        Insert: {
+          competitor?: string | null
+          created_at?: string
+          evidence?: Json
+          gap_type: string
+          id?: string
+          matched_product_id?: string | null
+          opportunity_score?: number
+          status?: string
+          target: string
+          updated_at?: string
+        }
+        Update: {
+          competitor?: string | null
+          created_at?: string
+          evidence?: Json
+          gap_type?: string
+          id?: string
+          matched_product_id?: string | null
+          opportunity_score?: number
+          status?: string
+          target?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_product_scores: {
+        Row: {
+          competition_quality: number | null
+          created_at: string
+          day: string
+          factors: Json
+          id: string
+          margin_score: number | null
+          market_score: number
+          pinterest_potential: number | null
+          priority: string
+          product_id: string
+          search_demand: number | null
+          tiktok_potential: number | null
+          trend_velocity: number | null
+          updated_at: string
+        }
+        Insert: {
+          competition_quality?: number | null
+          created_at?: string
+          day?: string
+          factors?: Json
+          id?: string
+          margin_score?: number | null
+          market_score?: number
+          pinterest_potential?: number | null
+          priority?: string
+          product_id: string
+          search_demand?: number | null
+          tiktok_potential?: number | null
+          trend_velocity?: number | null
+          updated_at?: string
+        }
+        Update: {
+          competition_quality?: number | null
+          created_at?: string
+          day?: string
+          factors?: Json
+          id?: string
+          margin_score?: number | null
+          market_score?: number
+          pinterest_potential?: number | null
+          priority?: string
+          product_id?: string
+          search_demand?: number | null
+          tiktok_potential?: number | null
+          trend_velocity?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_share_simulations: {
         Row: {
           cluster_expansion_growth: number | null
@@ -5073,6 +5367,239 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      market_signal_failures: {
+        Row: {
+          created_at: string
+          error: string
+          id: string
+          next_retry_at: string | null
+          payload: Json
+          resolved: boolean
+          retry_count: number
+          source_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          resolved?: boolean
+          retry_count?: number
+          source_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          resolved?: boolean
+          retry_count?: number
+          source_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_signal_failures_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "market_signal_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_signal_logs: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          message: string
+          payload: Json
+          source_id: string | null
+          trace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string
+          message: string
+          payload?: Json
+          source_id?: string | null
+          trace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          payload?: Json
+          source_id?: string | null
+          trace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_signal_logs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "market_signal_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_signal_recovery_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          payload: Json
+          result: string | null
+          source_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          result?: string | null
+          source_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          result?: string | null
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_signal_recovery_events_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "market_signal_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_signal_snapshots: {
+        Row: {
+          captured_at: string
+          created_at: string
+          hash: string | null
+          id: string
+          payload: Json
+          source_id: string | null
+        }
+        Insert: {
+          captured_at?: string
+          created_at?: string
+          hash?: string | null
+          id?: string
+          payload?: Json
+          source_id?: string | null
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          hash?: string | null
+          id?: string
+          payload?: Json
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_signal_snapshots_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "market_signal_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_signal_sources: {
+        Row: {
+          base_url: string | null
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          kind: string
+          last_run_at: string | null
+          last_status: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          base_url?: string | null
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          last_run_at?: string | null
+          last_status?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          base_url?: string | null
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          last_run_at?: string | null
+          last_status?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_trending_products: {
+        Row: {
+          captured_at: string
+          category: string | null
+          created_at: string
+          external_id: string | null
+          id: string
+          matched_product_id: string | null
+          metadata: Json
+          rank: number | null
+          source: string
+          title: string
+          velocity: number | null
+        }
+        Insert: {
+          captured_at?: string
+          category?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          matched_product_id?: string | null
+          metadata?: Json
+          rank?: number | null
+          source: string
+          title: string
+          velocity?: number | null
+        }
+        Update: {
+          captured_at?: string
+          category?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          matched_product_id?: string | null
+          metadata?: Json
+          rank?: number | null
+          source?: string
+          title?: string
+          velocity?: number | null
+        }
+        Relationships: []
       }
       marketing_events: {
         Row: {
