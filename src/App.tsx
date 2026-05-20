@@ -1939,6 +1939,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-ads/queue-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicQueueHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="github-sync"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
