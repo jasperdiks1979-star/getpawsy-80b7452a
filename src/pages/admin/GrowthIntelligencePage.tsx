@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { GrowthIntelligenceEngine } from "@/components/admin/growth-engine/GrowthIntelligenceEngine";
 import { GrowthAutopilotConsole } from "@/components/admin/growth-intelligence/GrowthAutopilotConsole";
 import { GrowthLearningPanel } from "@/components/admin/growth-intelligence/GrowthLearningPanel";
+import { GrowthSchedulePanel } from "@/components/admin/growth-intelligence/GrowthSchedulePanel";
 
 export default function GrowthIntelligencePage() {
   return (
@@ -12,6 +13,7 @@ export default function GrowthIntelligencePage() {
       </Helmet>
       <div className="space-y-8">
         <GrowthAutopilotConsole />
+        <GrowthSchedulePanel />
         <GrowthLearningPanel />
         <GrowthIntelligenceEngine />
       </div>
