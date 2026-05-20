@@ -469,7 +469,7 @@ export default function CinematicAdsControlCenterPage() {
           placeholder="Search product or job id…"
           className="h-8 max-w-xs"
         />
-        <Button size="sm" variant="outline" onClick={exportToCsv} disabled={filtered.length === 1} className="h-8 gap-1.5">
+        <Button size="sm" variant="outline" onClick={exportToCsv} disabled={filtered.length === 0} className="h-8 gap-1.5">
           <FileDown className="h-4 w-4" />
           Export CSV
         </Button>
