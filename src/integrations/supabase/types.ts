@@ -3678,6 +3678,87 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_channel_budget: {
+        Row: {
+          allocated: number
+          autopilot: boolean
+          channel: string
+          daily_budget: number
+          last_allocation_at: string | null
+          meta: Json
+          share_pct: number
+          updated_at: string
+        }
+        Insert: {
+          allocated?: number
+          autopilot?: boolean
+          channel: string
+          daily_budget?: number
+          last_allocation_at?: string | null
+          meta?: Json
+          share_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated?: number
+          autopilot?: boolean
+          channel?: string
+          daily_budget?: number
+          last_allocation_at?: string | null
+          meta?: Json
+          share_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      growth_channel_signals: {
+        Row: {
+          channel: string
+          clicks: number
+          conversions: number
+          created_at: string
+          day: string
+          id: string
+          impressions: number
+          meta: Json
+          product_id: string | null
+          product_slug: string | null
+          revenue: number
+          score: number
+          spend: number
+        }
+        Insert: {
+          channel: string
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          day?: string
+          id?: string
+          impressions?: number
+          meta?: Json
+          product_id?: string | null
+          product_slug?: string | null
+          revenue?: number
+          score?: number
+          spend?: number
+        }
+        Update: {
+          channel?: string
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          day?: string
+          id?: string
+          impressions?: number
+          meta?: Json
+          product_id?: string | null
+          product_slug?: string | null
+          revenue?: number
+          score?: number
+          spend?: number
+        }
+        Relationships: []
+      }
       growth_competitor_insights: {
         Row: {
           created_at: string
