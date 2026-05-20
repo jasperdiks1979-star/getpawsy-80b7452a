@@ -13701,6 +13701,92 @@ export type Database = {
       pinterest_publish_health: { Args: never; Returns: Json }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_old_monitoring_runs: { Args: never; Returns: number }
+      reset_cinematic_ad_job_to_queued: {
+        Args: { p_job_id: string }
+        Returns: {
+          ai_decisions: Json
+          approved_at: string | null
+          approved_by: string | null
+          approved_for_render: boolean
+          auto_publish: boolean
+          autopilot: boolean
+          autopilot_log: Json
+          autopilot_threshold: number
+          caption_variants: Json
+          confidence_scores: Json
+          created_at: string
+          created_by: string | null
+          cta_text: string | null
+          cta_variants_meta: Json
+          error_message: string | null
+          hashtags: string[]
+          hook_text: string | null
+          hook_variant: string
+          hook_variants_meta: Json
+          id: string
+          last_pinterest_attempt_at: string | null
+          media_warnings: Json
+          motion_score: number | null
+          music_url: string | null
+          output_black_bars: boolean | null
+          output_duration_seconds: number | null
+          output_file_size_bytes: number | null
+          output_height: number | null
+          output_mp4_url: string | null
+          output_thumbnail_url: string | null
+          output_width: number | null
+          pin_description: string | null
+          pin_destination_url: string | null
+          pin_title: string | null
+          pinterest_asset_id: string | null
+          pinterest_pin_id: string | null
+          pinterest_pin_url: string | null
+          pinterest_publish_attempts: number
+          pinterest_publish_error: string | null
+          pinterest_uploaded_at: string | null
+          prepared_at: string | null
+          preset: string
+          product_id: string | null
+          product_lock: Json
+          product_name: string | null
+          product_price: string | null
+          product_slug: string
+          published_at: string | null
+          pushed_to_pinterest_at: string | null
+          render_attempts: number
+          render_complete_at: string | null
+          render_dispatched_at: string | null
+          render_heartbeat_at: string | null
+          render_log: Json
+          render_queued_at: string | null
+          render_started_at: string | null
+          render_token: string | null
+          render_worker_id: string | null
+          rendered_at: string | null
+          scene_assets: Json
+          scene_specs: Json
+          selected_cta_index: number
+          selected_hook_index: number
+          status: string
+          status_message: string | null
+          storyboard: Json
+          subhook_text: string | null
+          updated_at: string
+          validation_report: Json | null
+          variant_index: number
+          vo_script: string | null
+          vo_script_variants: Json
+          vo_url: string | null
+          voice_id: string
+          voice_style: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cinematic_ad_jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       test_tiktok_exclusion_fixtures: {
         Args: { p_prefix: string }
         Returns: Json
