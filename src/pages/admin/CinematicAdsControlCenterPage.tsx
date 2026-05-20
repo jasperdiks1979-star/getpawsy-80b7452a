@@ -533,6 +533,19 @@ export default function CinematicAdsControlCenterPage() {
                             <AlertTriangle className="h-3 w-3" /> Stuck
                           </Badge>
                         )}
+                        {!stuck && isStale(j) && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Stale
+                          </Badge>
+                        )}
+                        {isZombieWorker(j) && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Zombie worker
+                          </Badge>
+                        )}
+                        {isAutoRecovered(j) && (
+                          <Badge variant="secondary">Auto recovered</Badge>
+                        )}
                         {j.pinterest_pin_url && <Badge variant="secondary">Pinned</Badge>}
                         {j.render_attempts ? (
                           <span className="text-[10px] text-muted-foreground">×{j.render_attempts}</span>
