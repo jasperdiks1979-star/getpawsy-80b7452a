@@ -96,13 +96,28 @@ Deno.serve(async (req) => {
     if (updErr) return json({ ok: false, traceId: trace, message: updErr.message }, 500);
 
     const webhookUrl = `${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`;
+    const productLock = job.product_lock && typeof job.product_lock === "object" && Object.keys(job.product_lock).length > 0
+      ? job.product_lock
+      : {
+          product_id: job.product_id ?? null,
+          product_slug: job.product_slug,
+          product_name: job.product_name ?? job.product_slug,
+          destination_url: job.pin_destination_url ?? `https://getpawsy.pet/products/${job.product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${effectivePreset.id}`,
+        };
     const payload = {
       job_id: jobId,
+      product_id: job.product_id ?? null,
       product_slug: job.product_slug,
       hook_variant: job.hook_variant,
       scene_assets: job.scene_assets,
       voiceover_url: job.vo_url,
       music_url: job.music_url,
+      pin_title: job.pin_title,
+      pin_description: job.pin_description,
+      pin_destination_url: job.pin_destination_url,
+      hashtags: job.hashtags,
+      vo_script: job.vo_script,
+      product_lock: productLock,
       output_target: `cinematic-ads/${job.product_slug}/${jobId}.mp4`,
       render_token: renderToken,
       webhook_url: webhookUrl,
@@ -118,8 +133,9 @@ Deno.serve(async (req) => {
         hook: job.hook_text ?? job.hook_variant ?? "Stop scrolling. Look at this.",
         subhook: job.subhook_text ?? undefined,
         cta: job.cta_text ?? "Tap to Shop →",
-        ctaUrl: `https://getpawsy.pet/products/${job.product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${effectivePreset.id}`,
+        ctaUrl: job.pin_destination_url ?? `https://getpawsy.pet/products/${job.product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${effectivePreset.id}`,
         product: {
+          id: job.product_id ?? undefined,
           name: job.product_name ?? job.product_slug,
           price: job.product_price ?? "",
           slug: job.product_slug,
