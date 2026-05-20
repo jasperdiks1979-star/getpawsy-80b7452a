@@ -3905,6 +3905,51 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_forecasts: {
+        Row: {
+          computed_at: string
+          confidence: number
+          entity_key: string
+          entity_type: string
+          forecast_revenue: number
+          forecast_reward: number
+          horizon_days: number
+          id: string
+          meta: Json
+          rising: boolean
+          sample_size: number
+          trend_slope: number
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number
+          entity_key: string
+          entity_type: string
+          forecast_revenue?: number
+          forecast_reward?: number
+          horizon_days: number
+          id?: string
+          meta?: Json
+          rising?: boolean
+          sample_size?: number
+          trend_slope?: number
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number
+          entity_key?: string
+          entity_type?: string
+          forecast_revenue?: number
+          forecast_reward?: number
+          horizon_days?: number
+          id?: string
+          meta?: Json
+          rising?: boolean
+          sample_size?: number
+          trend_slope?: number
+        }
+        Relationships: []
+      }
       growth_keyword_opportunities: {
         Row: {
           created_at: string
