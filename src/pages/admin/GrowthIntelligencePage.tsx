@@ -3,6 +3,7 @@ import { GrowthIntelligenceEngine } from "@/components/admin/growth-engine/Growt
 import { GrowthAutopilotConsole } from "@/components/admin/growth-intelligence/GrowthAutopilotConsole";
 import { GrowthLearningPanel } from "@/components/admin/growth-intelligence/GrowthLearningPanel";
 import { GrowthSchedulePanel } from "@/components/admin/growth-intelligence/GrowthSchedulePanel";
+import { GrowthStrategyDashboard } from "@/components/admin/growth-intelligence/GrowthStrategyDashboard";
 
 export default function GrowthIntelligencePage() {
   return (
@@ -13,6 +14,7 @@ export default function GrowthIntelligencePage() {
       </Helmet>
       <div className="space-y-8">
         <GrowthAutopilotConsole />
+        <GrowthStrategyDashboard />
         <GrowthSchedulePanel />
         <GrowthLearningPanel />
         <GrowthIntelligenceEngine />
