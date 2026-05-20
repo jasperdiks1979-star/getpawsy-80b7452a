@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
     const since = new Date(Date.now() - 30 * 86400_000).toISOString();
     const { data: perfRows } = await sb
       .from("pinterest_pin_performance")
-      .select("product_id, saves, outbound_clicks, impressions")
+      .select("product_id, saves, clicks, impressions")
       .gte("created_at", since)
       .limit(5000);
 
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       if (!id) continue;
       const cur = perfByProduct.get(id) ?? { saves: 0, clicks: 0, impressions: 0 };
       cur.saves += Number((r as { saves?: number }).saves ?? 0);
-      cur.clicks += Number((r as { outbound_clicks?: number }).outbound_clicks ?? 0);
+      cur.clicks += Number((r as { clicks?: number }).clicks ?? 0);
       cur.impressions += Number((r as { impressions?: number }).impressions ?? 0);
       perfByProduct.set(id, cur);
     }
