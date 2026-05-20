@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
     const status = String(body.status ?? "");
     const renderToken = String(body.render_token ?? "");
     if (!jobId || !status) return json({ ok: false, traceId, message: "job_id and status required" }, 400);
-    if (!["rendering", "rendered", "uploaded", "failed"].includes(status)) {
+    if (!["rendering", "heartbeat", "rendered", "uploaded", "failed"].includes(status)) {
       return json({ ok: false, traceId, message: "invalid status" }, 400);
     }
 
@@ -225,16 +225,25 @@ Deno.serve(async (req) => {
     }
 
     const patch: Record<string, unknown> = { status_message: `worker: ${status}` };
+    const event = String(body.event ?? status);
+    const logPatch = (job.render_log ?? []).concat([{ event, at: new Date().toISOString(), worker_id: body.worker_id ?? null }]).slice(-100);
+    patch.render_log = logPatch;
 
     if (status === "rendering") {
       patch.status = "rendering";
       patch.render_started_at = new Date().toISOString();
+      patch.render_heartbeat_at = new Date().toISOString();
       patch.render_worker_id = body.worker_id ?? null;
       patch.render_attempts = (job.render_attempts ?? 0) + 1;
+    } else if (status === "heartbeat") {
+      patch.render_heartbeat_at = new Date().toISOString();
+      patch.render_worker_id = body.worker_id ?? job.render_worker_id ?? null;
+      patch.status_message = `worker heartbeat: ${event}`;
     } else if (status === "rendered" || status === "uploaded") {
       patch.status = "render_complete";
       patch.rendered_at = new Date().toISOString();
       patch.render_complete_at = new Date().toISOString();
+      patch.render_heartbeat_at = new Date().toISOString();
       if (body.mp4_url) patch.output_mp4_url = String(body.mp4_url);
       if (body.duration != null) patch.output_duration_seconds = Number(body.duration);
       if (body.file_size != null) patch.output_file_size_bytes = Number(body.file_size);
@@ -260,6 +269,8 @@ Deno.serve(async (req) => {
 
     // On render success: run validator, then either auto-publish (if explicitly
     // approved upstream) or hold for admin approval in the preview panel.
+    if (status === "heartbeat") return json({ ok: true, traceId, message: "heartbeat recorded" });
+
     if ((status === "rendered" || status === "uploaded") && (body.mp4_url || job.output_mp4_url)) {
       try {
         const valRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-validate`, {
@@ -283,13 +294,14 @@ Deno.serve(async (req) => {
       // Validation passed. Hold for admin approval unless either:
       //   - the worker explicitly signals auto_approve=true (backfill/smoke), or
       //   - the job was queued by the autopilot orchestrator (auto_publish=true).
-      const { data: freshJob } = await admin
-        .from("cinematic_ad_jobs").select("auto_publish, autopilot, confidence_scores, autopilot_threshold")
+        const { data: freshJob } = await admin
+        .from("cinematic_ad_jobs").select("auto_publish, autopilot, approved_for_render, confidence_scores, autopilot_threshold")
         .eq("id", jobId).maybeSingle();
       const autoApprove =
         Boolean(body.auto_approve) ||
-        Boolean(freshJob?.auto_publish) ||
+        (Boolean(freshJob?.auto_publish) && Boolean(freshJob?.approved_for_render)) ||
         (Boolean(freshJob?.autopilot) &&
+          Boolean(freshJob?.approved_for_render) &&
           Number(freshJob?.confidence_scores?.overall ?? 0) >=
             Number(freshJob?.autopilot_threshold ?? 100));
       if (!autoApprove) {
