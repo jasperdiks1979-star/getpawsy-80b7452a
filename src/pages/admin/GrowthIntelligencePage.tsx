@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { GrowthIntelligenceEngine } from "@/components/admin/growth-engine/GrowthIntelligenceEngine";
 import { GrowthAutopilotConsole } from "@/components/admin/growth-intelligence/GrowthAutopilotConsole";
 import { GrowthChannelPanel } from "@/components/admin/growth-intelligence/GrowthChannelPanel";
+import { GrowthDnaPanel } from "@/components/admin/growth-intelligence/GrowthDnaPanel";
 import { GrowthForecastPanel } from "@/components/admin/growth-intelligence/GrowthForecastPanel";
 import { GrowthHealthPanel } from "@/components/admin/growth-intelligence/GrowthHealthPanel";
 import { GrowthLearningPanel } from "@/components/admin/growth-intelligence/GrowthLearningPanel";
@@ -19,6 +20,7 @@ export default function GrowthIntelligencePage() {
         <GrowthAutopilotConsole />
         <GrowthChannelPanel />
         <GrowthForecastPanel />
+        <GrowthDnaPanel />
         <GrowthStrategyDashboard />
         <GrowthSchedulePanel />
         <GrowthLearningPanel />
