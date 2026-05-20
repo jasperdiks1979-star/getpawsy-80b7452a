@@ -8,10 +8,14 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: cinematic-render-${{ github.event.inputs.job_id }}
+  cancel-in-progress: false
+
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 90
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       FUNCTIONS_BASE_URL: ${{ secrets.SUPABASE_URL }}/functions/v1
