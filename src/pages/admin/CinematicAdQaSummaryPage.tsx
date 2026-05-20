@@ -19,6 +19,8 @@ type DuplicateDiag = {
   per_scene: Array<{
     index: number;
     image_url: string;
+    image_hash?: string | null;
+    hash_group?: number;
     repeat_count: number;
     duplicate_pct: number;
     variation_seed: string | null;
@@ -226,6 +228,7 @@ export default function CinematicAdQaSummaryPage() {
                       <th className="py-1 pr-2">repeat</th>
                       <th className="py-1 pr-2">variation seed</th>
                       <th className="py-1 pr-2">motion</th>
+                      <th className="py-1 pr-2">aHash</th>
                       <th className="py-1">image</th>
                     </tr>
                   </thead>
@@ -239,6 +242,7 @@ export default function CinematicAdQaSummaryPage() {
                         <td className="py-1 pr-2">{s.repeat_count}×</td>
                         <td className="py-1 pr-2 font-mono">{s.variation_seed ?? "—"}</td>
                         <td className="py-1 pr-2">{s.motion_variant ?? "—"}</td>
+                        <td className="py-1 pr-2 font-mono text-muted-foreground">{s.image_hash ?? "—"}</td>
                         <td className="py-1 max-w-[200px] truncate text-muted-foreground">
                           <a className="hover:underline" href={s.image_url} target="_blank" rel="noreferrer">{s.image_url.split("/").pop()}</a>
                         </td>
