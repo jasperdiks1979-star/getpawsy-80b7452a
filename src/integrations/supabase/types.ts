@@ -3642,6 +3642,381 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_autopilot_config: {
+        Row: {
+          category_whitelist: string[]
+          emergency_stop: boolean
+          enabled: boolean
+          id: number
+          max_pins_per_day: number
+          min_product_score: number
+          mode: string
+          paused_publishing: boolean
+          updated_at: string
+        }
+        Insert: {
+          category_whitelist?: string[]
+          emergency_stop?: boolean
+          enabled?: boolean
+          id?: number
+          max_pins_per_day?: number
+          min_product_score?: number
+          mode?: string
+          paused_publishing?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category_whitelist?: string[]
+          emergency_stop?: boolean
+          enabled?: boolean
+          id?: number
+          max_pins_per_day?: number
+          min_product_score?: number
+          mode?: string
+          paused_publishing?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      growth_competitor_insights: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          meta: Json
+          observed_at: string
+          pattern_type: string
+          summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          meta?: Json
+          observed_at?: string
+          pattern_type: string
+          summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          meta?: Json
+          observed_at?: string
+          pattern_type?: string
+          summary?: string | null
+        }
+        Relationships: []
+      }
+      growth_decisions: {
+        Row: {
+          created_at: string
+          day: string
+          decision_type: string
+          id: string
+          payload: Json
+          product_id: string | null
+          reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day?: string
+          decision_type: string
+          id?: string
+          payload?: Json
+          product_id?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          decision_type?: string
+          id?: string
+          payload?: Json
+          product_id?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      growth_events: {
+        Row: {
+          created_at: string
+          decision_id: string | null
+          event_type: string
+          id: string
+          payload: Json
+          product_id: string | null
+          trace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          decision_id?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          product_id?: string | null
+          trace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          product_id?: string | null
+          trace_id?: string | null
+        }
+        Relationships: []
+      }
+      growth_keyword_opportunities: {
+        Row: {
+          created_at: string
+          fit_category: string | null
+          id: string
+          intent: string | null
+          keyword: string
+          meta: Json
+          score: number
+          updated_at: string
+          volume: number | null
+        }
+        Insert: {
+          created_at?: string
+          fit_category?: string | null
+          id?: string
+          intent?: string | null
+          keyword: string
+          meta?: Json
+          score?: number
+          updated_at?: string
+          volume?: number | null
+        }
+        Update: {
+          created_at?: string
+          fit_category?: string | null
+          id?: string
+          intent?: string | null
+          keyword?: string
+          meta?: Json
+          score?: number
+          updated_at?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      growth_market_trends: {
+        Row: {
+          captured_at: string
+          category: string | null
+          created_at: string
+          id: string
+          market: string
+          meta: Json
+          momentum: number
+          score: number
+          season: string | null
+          source: string
+          term: string
+        }
+        Insert: {
+          captured_at?: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          market?: string
+          meta?: Json
+          momentum?: number
+          score?: number
+          season?: string | null
+          source: string
+          term: string
+        }
+        Update: {
+          captured_at?: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          market?: string
+          meta?: Json
+          momentum?: number
+          score?: number
+          season?: string | null
+          source?: string
+          term?: string
+        }
+        Relationships: []
+      }
+      growth_product_scores: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          day: string
+          id: string
+          opportunity_score: number
+          product_id: string
+          reasons: Json
+          recommended_angle: string | null
+          recommended_channel: string | null
+          recommended_hook: string | null
+          signals: Json
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string
+          day?: string
+          id?: string
+          opportunity_score?: number
+          product_id: string
+          reasons?: Json
+          recommended_angle?: string | null
+          recommended_channel?: string | null
+          recommended_hook?: string | null
+          signals?: Json
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          day?: string
+          id?: string
+          opportunity_score?: number
+          product_id?: string
+          reasons?: Json
+          recommended_angle?: string | null
+          recommended_channel?: string | null
+          recommended_hook?: string | null
+          signals?: Json
+        }
+        Relationships: []
+      }
+      growth_seasonal_opportunities: {
+        Row: {
+          active_from: string | null
+          active_to: string | null
+          categories: string[]
+          created_at: string
+          id: string
+          lift_score: number
+          meta: Json
+          period: string
+          theme: string
+        }
+        Insert: {
+          active_from?: string | null
+          active_to?: string | null
+          categories?: string[]
+          created_at?: string
+          id?: string
+          lift_score?: number
+          meta?: Json
+          period: string
+          theme: string
+        }
+        Update: {
+          active_from?: string | null
+          active_to?: string | null
+          categories?: string[]
+          created_at?: string
+          id?: string
+          lift_score?: number
+          meta?: Json
+          period?: string
+          theme?: string
+        }
+        Relationships: []
+      }
+      growth_strategy_scores: {
+        Row: {
+          dimension: string
+          id: string
+          key: string
+          meta: Json
+          samples: number
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          dimension: string
+          id?: string
+          key: string
+          meta?: Json
+          samples?: number
+          score?: number
+          updated_at?: string
+        }
+        Update: {
+          dimension?: string
+          id?: string
+          key?: string
+          meta?: Json
+          samples?: number
+          score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      growth_viral_hook_patterns: {
+        Row: {
+          created_at: string
+          family: string | null
+          hook: string
+          id: string
+          meta: Json
+          performance_score: number
+          samples: number
+          structure: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          family?: string | null
+          hook: string
+          id?: string
+          meta?: Json
+          performance_score?: number
+          samples?: number
+          structure?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          family?: string | null
+          hook?: string
+          id?: string
+          meta?: Json
+          performance_score?: number
+          samples?: number
+          structure?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      growth_weekly_reports: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          week_start?: string
+        }
+        Relationships: []
+      }
       gsc_keywords: {
         Row: {
           clicks: number
