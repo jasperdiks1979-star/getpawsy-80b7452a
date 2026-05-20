@@ -80,7 +80,7 @@ export default function AutopilotHealthPanel() {
       const r = (data as any)?.result;
       toast.success("Autopilot ran", {
         description: r
-          ? `recovered ${r.recovered?.length ?? 0} · redispatched ${r.redispatched?.filter((x: any) => x.ok).length ?? 0} · retried ${r.retried?.length ?? 0} · quarantined ${r.quarantined?.length ?? 0}`
+          ? `recovered ${r.recovered?.length ?? 0} · redispatched ${r.redispatched?.filter((x: any) => x.ok).length ?? 0} · retried ${r.retried?.length ?? 0} · quarantined ${r.quarantined?.length ?? 0} · diagnosed ${r.diagnosed?.length ?? 0} · emailed ${r.emailed?.filter((x: any) => x.ok).length ?? 0}`
           : "no detail",
       });
       await fetchSnap();
