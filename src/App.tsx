@@ -406,6 +406,7 @@ const CinematicAdsPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsP
 const CinematicAdsDashboardPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsDashboardPage"));
 const CinematicAdPreviewPage = lazyWithRetry(() => import("./pages/admin/CinematicAdPreviewPage"));
 const CinematicOneJobVerifyPage = lazyWithRetry(() => import("./pages/admin/CinematicOneJobVerifyPage"));
+const CinematicQueueHealthPage = lazyWithRetry(() => import("./pages/admin/CinematicQueueHealthPage"));
 const GitHubSyncStatusPage = lazyWithRetry(() => import("./pages/admin/GitHubSyncStatusPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
@@ -1934,6 +1935,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CinematicOneJobVerifyPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-ads/queue-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicQueueHealthPage />
                                 </Suspense>
                               }
                             />
