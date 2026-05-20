@@ -5222,6 +5222,68 @@ export type Database = {
           },
         ]
       }
+      market_gap_action_items: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          created_at: string
+          gap_id: string | null
+          id: string
+          priority_score: number
+          rationale: string | null
+          recommended_channels: Json
+          recommended_creatives: Json
+          routed_at: string | null
+          status: string
+          suggested_products: Json
+          target_keywords: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          created_at?: string
+          gap_id?: string | null
+          id?: string
+          priority_score?: number
+          rationale?: string | null
+          recommended_channels?: Json
+          recommended_creatives?: Json
+          routed_at?: string | null
+          status?: string
+          suggested_products?: Json
+          target_keywords?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          created_at?: string
+          gap_id?: string | null
+          id?: string
+          priority_score?: number
+          rationale?: string | null
+          recommended_channels?: Json
+          recommended_creatives?: Json
+          routed_at?: string | null
+          status?: string
+          suggested_products?: Json
+          target_keywords?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_gap_action_items_gap_id_fkey"
+            columns: ["gap_id"]
+            isOneToOne: false
+            referencedRelation: "market_opportunity_gaps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_growth_predictions: {
         Row: {
           computed_at: string
