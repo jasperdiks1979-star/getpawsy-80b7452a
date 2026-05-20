@@ -467,8 +467,12 @@ export default function CinematicAdsControlCenterPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search product or job id…"
-          className="ml-auto h-8 max-w-xs"
+          className="h-8 max-w-xs"
         />
+        <Button size="sm" variant="outline" onClick={exportToCsv} disabled={filtered.length === 1} className="h-8 gap-1.5">
+          <FileDown className="h-4 w-4" />
+          Export CSV
+        </Button>
       </div>
 
       {/* Table / Cards */}
