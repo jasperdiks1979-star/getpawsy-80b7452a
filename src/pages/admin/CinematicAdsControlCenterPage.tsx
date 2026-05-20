@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import AutopilotHealthPanel from "@/components/admin/AutopilotHealthPanel";
+import CinematicIntelligencePanel from "@/components/admin/cinematic/CinematicIntelligencePanel";
 
 type Job = {
   id: string;
@@ -450,6 +451,8 @@ export default function CinematicAdsControlCenterPage() {
       </header>
 
       <AutopilotHealthPanel />
+
+      <CinematicIntelligencePanel />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
