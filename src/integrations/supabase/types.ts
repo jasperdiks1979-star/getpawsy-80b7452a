@@ -3708,6 +3708,56 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_decision_metrics: {
+        Row: {
+          clicks: number
+          created_at: string
+          ctr: number
+          decision_id: string
+          id: string
+          impressions: number
+          meta: Json
+          pin_count: number
+          reward: number
+          saves: number
+          snapshot_day: string
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          decision_id: string
+          id?: string
+          impressions?: number
+          meta?: Json
+          pin_count?: number
+          reward?: number
+          saves?: number
+          snapshot_day?: string
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          decision_id?: string
+          id?: string
+          impressions?: number
+          meta?: Json
+          pin_count?: number
+          reward?: number
+          saves?: number
+          snapshot_day?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_decision_metrics_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "growth_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       growth_decisions: {
         Row: {
           created_at: string
