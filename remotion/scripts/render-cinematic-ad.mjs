@@ -261,7 +261,7 @@ async function main() {
         `scale=${W * 2}:${H * 2}:force_original_aspect_ratio=increase`,
         `crop=${W * 2}:${H * 2}`,
         `zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=${frames}:s=${W}x${H}:fps=${FPS}`,
-        `boxblur=luma_radius='if(lt(mod(n\\,18)\\,2)\\,1.8\\,0)':luma_power=1`,
+        `unsharp=5:5:0.35:3:3:0.15`,
         `drawtext=fontfile=/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf:text='${cap}':fontcolor=white:fontsize=${isHook ? 86 : 64}:line_spacing=8:x=(w-text_w)/2:y=${isHook ? 190 : "h-430"}:box=1:boxcolor=black@0.46:boxborderw=28:alpha='if(lt(t\\,0.15)\\,t/0.15\\,1)'`,
         `format=yuv420p`,
       ].join(",");
