@@ -52,6 +52,7 @@ export default function CinematicOneJobVerifyPage() {
   const [job, setJob] = useState<JobRow | null>(null);
   const [starting, setStarting] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const pollRef = useRef<number | null>(null);
 
   // Load a short list of in-stock products to pick from
@@ -134,6 +135,26 @@ export default function CinematicOneJobVerifyPage() {
       toast.error(e?.message ?? "Approve failed");
     } finally {
       setApproving(false);
+    }
+  };
+
+  const resetToQueued = async () => {
+    if (!jobId) return;
+    if (!confirm("Reset this job to render_queued? This clears worker, started_at and error.")) return;
+    setResetting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-worker-control", {
+        body: { action: "retry_render", job_id: jobId },
+      });
+      if (error) throw error;
+      if (data && data.ok === false) throw new Error(data.message ?? "reset failed");
+      toast.success("Job reset to render_queued");
+      refresh(jobId);
+    } catch (e: any) {
+      console.error("[one-job] reset failed", e);
+      toast.error(e?.message ?? "Reset failed");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -238,6 +259,16 @@ export default function CinematicOneJobVerifyPage() {
               {job?.status_message && (
                 <span className="text-xs text-muted-foreground">{job.status_message}</span>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto h-7"
+                onClick={resetToQueued}
+                disabled={resetting || !jobId}
+              >
+                {resetting && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                Reset to render_queued
+              </Button>
             </div>
 
             <ol className="space-y-2">

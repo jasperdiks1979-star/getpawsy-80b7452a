@@ -40,6 +40,49 @@ Deno.serve(async (req) => {
     }
     console.log(`[claim-job] ${traceId} host=${supabaseHost} queued_count=${queuedCount} worker=${workerId}`);
 
+    const CLAIMABLE_STATUSES = ["render_queued", "rendering", "awaiting_render", "approved", "queued"];
+
+    // When a specific job_id is requested, do a detailed pre-flight diagnostic
+    // so callers (GitHub Actions) know exactly why a claim is refused.
+    if (explicitJobId) {
+      const { data: row, error: rowErr } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id,status,approved_at,render_worker_id,render_started_at,updated_at,approved_for_render,error_message")
+        .eq("id", explicitJobId)
+        .maybeSingle();
+      if (rowErr) {
+        console.error(`[claim-job] ${traceId} lookup error`, rowErr);
+        return json({ ok: false, traceId, message: rowErr.message, supabase_host: supabaseHost }, 500);
+      }
+      if (!row) {
+        return json({
+          ok: false, traceId,
+          reason: "job_not_found",
+          found: false,
+          job_id: explicitJobId,
+          expected_statuses: CLAIMABLE_STATUSES,
+          supabase_host: supabaseHost,
+        }, 404);
+      }
+      if (!CLAIMABLE_STATUSES.includes(row.status)) {
+        return json({
+          ok: false, traceId,
+          reason: "job_not_claimable_status",
+          found: true,
+          job_id: row.id,
+          current_status: row.status,
+          approved_at: row.approved_at,
+          approved_for_render: row.approved_for_render,
+          render_worker_id: row.render_worker_id,
+          started_at: row.render_started_at,
+          updated_at: row.updated_at,
+          error_message: row.error_message,
+          expected_statuses: CLAIMABLE_STATUSES,
+          supabase_host: supabaseHost,
+        }, 409);
+      }
+    }
+
     // Refuse if something already rendering (1 job at a time globally)
     const { count: activeCount } = await admin
       .from("cinematic_ad_jobs").select("id", { count: "exact", head: true }).eq("status", "rendering");
@@ -57,6 +100,29 @@ Deno.serve(async (req) => {
       return json({ ok: false, traceId, message: lockErr.message, supabase_host: supabaseHost }, 500);
     }
     if (!locked) {
+      // For explicit jobs, re-read current row to give actionable diagnostics
+      // (e.g., another worker grabbed it between pre-flight and RPC).
+      if (explicitJobId) {
+        const { data: row2 } = await admin
+          .from("cinematic_ad_jobs")
+          .select("id,status,approved_at,render_worker_id,render_started_at,updated_at,error_message")
+          .eq("id", explicitJobId)
+          .maybeSingle();
+        return json({
+          ok: false, traceId,
+          reason: "job_not_claimable_status",
+          found: Boolean(row2),
+          job_id: explicitJobId,
+          current_status: row2?.status ?? null,
+          approved_at: row2?.approved_at ?? null,
+          render_worker_id: row2?.render_worker_id ?? null,
+          started_at: row2?.render_started_at ?? null,
+          updated_at: row2?.updated_at ?? null,
+          error_message: row2?.error_message ?? null,
+          expected_statuses: CLAIMABLE_STATUSES,
+          supabase_host: supabaseHost,
+        }, 409);
+      }
       console.warn(`[claim-job] ${traceId} no atomic claim explicit=${Boolean(explicitJobId)} requested_job=${explicitJobId ?? "auto"}`);
       return json({ ok: true, traceId, job: null, reason: "no claimable job", queued_count: queuedCount, supabase_host: supabaseHost });
     }
