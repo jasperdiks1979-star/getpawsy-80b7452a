@@ -1005,6 +1005,56 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_ad_job_events: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          job_id: string | null
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          recovery_result: string | null
+          trace_id: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          job_id?: string | null
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          recovery_result?: string | null
+          trace_id?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          job_id?: string | null
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          recovery_result?: string | null
+          trace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cinematic_ad_job_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cinematic_ad_jobs: {
         Row: {
           ai_decisions: Json
@@ -1253,6 +1303,42 @@ export type Database = {
             referencedColumns: ["asset_id"]
           },
         ]
+      }
+      cinematic_autopilot_state: {
+        Row: {
+          hard_stop_reasons: string[]
+          id: number
+          last_watchdog_result: Json
+          last_watchdog_run_at: string | null
+          paused: boolean
+          paused_at: string | null
+          paused_by: string | null
+          paused_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          hard_stop_reasons?: string[]
+          id?: number
+          last_watchdog_result?: Json
+          last_watchdog_run_at?: string | null
+          paused?: boolean
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          hard_stop_reasons?: string[]
+          id?: number
+          last_watchdog_result?: Json
+          last_watchdog_run_at?: string | null
+          paused?: boolean
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       cinematic_worker_heartbeats: {
         Row: {
@@ -13380,6 +13466,21 @@ export type Database = {
           remaining: number
           reset_at: string
         }[]
+      }
+      cinematic_autopilot_dashboard: { Args: never; Returns: Json }
+      cinematic_autopilot_log_event: {
+        Args: {
+          _action_taken?: string
+          _error_message?: string
+          _event_type: string
+          _job_id: string
+          _new_status?: string
+          _payload?: Json
+          _previous_status?: string
+          _recovery_result?: string
+          _trace_id?: string
+        }
+        Returns: string
       }
       cinematic_queue_health: { Args: never; Returns: Json }
       cinematic_recover_stuck_jobs: { Args: never; Returns: Json }
