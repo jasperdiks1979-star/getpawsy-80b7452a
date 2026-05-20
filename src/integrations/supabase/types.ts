@@ -5183,6 +5183,45 @@ export type Database = {
         }
         Relationships: []
       }
+      market_dna_promotions: {
+        Row: {
+          cluster_id: string | null
+          created_at: string
+          gene_id: string | null
+          id: string
+          reason: string
+        }
+        Insert: {
+          cluster_id?: string | null
+          created_at?: string
+          gene_id?: string | null
+          id?: string
+          reason: string
+        }
+        Update: {
+          cluster_id?: string | null
+          created_at?: string
+          gene_id?: string | null
+          id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_dna_promotions_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "market_trend_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_dna_promotions_gene_id_fkey"
+            columns: ["gene_id"]
+            isOneToOne: false
+            referencedRelation: "growth_creative_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_growth_predictions: {
         Row: {
           computed_at: string
@@ -5556,6 +5595,60 @@ export type Database = {
           last_status?: string | null
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      market_trend_clusters: {
+        Row: {
+          cluster_key: string
+          created_at: string
+          examples: Json
+          first_seen_at: string
+          id: string
+          keywords: string[]
+          label: string
+          last_seen_at: string
+          meta: Json
+          sample_size: number
+          signal_score: number
+          source: string
+          status: string
+          updated_at: string
+          velocity: number
+        }
+        Insert: {
+          cluster_key: string
+          created_at?: string
+          examples?: Json
+          first_seen_at?: string
+          id?: string
+          keywords?: string[]
+          label: string
+          last_seen_at?: string
+          meta?: Json
+          sample_size?: number
+          signal_score?: number
+          source: string
+          status?: string
+          updated_at?: string
+          velocity?: number
+        }
+        Update: {
+          cluster_key?: string
+          created_at?: string
+          examples?: Json
+          first_seen_at?: string
+          id?: string
+          keywords?: string[]
+          label?: string
+          last_seen_at?: string
+          meta?: Json
+          sample_size?: number
+          signal_score?: number
+          source?: string
+          status?: string
+          updated_at?: string
+          velocity?: number
         }
         Relationships: []
       }

@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { MarketIntelligenceEngine } from "@/components/admin/market-intelligence/MarketIntelligenceEngine";
 import { MarketCompetitorPanel } from "@/components/admin/market-intelligence/MarketCompetitorPanel";
 import { MarketSignalPanel } from "@/components/admin/market-intelligence/MarketSignalPanel";
+import { MarketTrendsPanel } from "@/components/admin/market-intelligence/MarketTrendsPanel";
 
 export default function MarketIntelligencePage() {
   return (
@@ -13,6 +14,7 @@ export default function MarketIntelligencePage() {
       <div className="space-y-6">
         <MarketSignalPanel />
         <MarketCompetitorPanel />
+        <MarketTrendsPanel />
         <MarketIntelligenceEngine />
       </div>
     </>
