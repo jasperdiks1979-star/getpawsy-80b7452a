@@ -263,6 +263,37 @@ async function main() {
     if (duplicateRatio > 0.75 && attempt >= MAX_VARIATION_ATTEMPTS) {
       console.warn(`[render] duplicate ratio ${Math.round(duplicateRatio * 100)}% exceeds 75% after ${attempt} variation attempts — continuing with forced motion/caption divergence (no abort).`);
     }
+    // Report a structured duplicate-scene diagnostic up to the webhook so the
+    // admin diagnostics drawer can show per-scene duplicate% and the selected
+    // variation pass. Best-effort — never blocks the render.
+    try {
+      const enrichedScenes = scenes.map((s, i) => ({
+        index: i,
+        image_url: s.image_url,
+        repeat_count: urlCounts.get(s.image_url) ?? 1,
+        duplicate_pct: Math.round(((urlCounts.get(s.image_url) ?? 1) / scenes.length) * 100),
+        variation_seed: s.variation_seed ?? null,
+        motion_variant: s.motion_variant ?? null,
+      }));
+      await postWebhook({
+        job_id: job.job_id,
+        render_token: job.render_token,
+        status: "heartbeat",
+        event: "duplicate-scan",
+        worker_id: process.env.HOSTNAME ?? null,
+        duplicate_diagnostics: {
+          duplicate_ratio_pct: Math.round(duplicateRatio * 100),
+          threshold_pct: 75,
+          variation_attempts: attempt,
+          max_variation_attempts: MAX_VARIATION_ATTEMPTS,
+          aborted: false,
+          accepted_after_variation: duplicateRatio > 0.75,
+          per_scene: enrichedScenes,
+        },
+      });
+    } catch (e) {
+      console.warn("[render] duplicate-scan webhook failed", e?.message ?? e);
+    }
     // Viral-vertical contract — fall back to safe defaults if claim payload
     // is from an older queue function.
     const W = Number(job.width) || 1080;
