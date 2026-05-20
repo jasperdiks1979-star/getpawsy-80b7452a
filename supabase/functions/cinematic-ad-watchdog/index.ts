@@ -27,6 +27,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
+const AI_DIAG_MODEL = "google/gemini-2.5-flash";
 
 const HEARTBEAT_STALE_MS = 90 * 1000;
 const QUEUE_STALE_MS = 2 * 60 * 1000;
@@ -70,6 +72,8 @@ type WatchdogResult = {
   quarantined: Array<{ job_id: string; reason: string }>;
   hard_stop_reasons: string[];
   detections: Record<string, number>;
+  diagnosed: Array<{ job_id: string; classification: string }>;
+  emailed: Array<{ job_id: string | null; alert: string; ok: boolean }>;
 };
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
@@ -168,6 +172,8 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
       failed_max_attempts: 0,
       hard_stop_jobs: 0,
     },
+    diagnosed: [],
+    emailed: [],
   };
 
   // Read autopilot state
