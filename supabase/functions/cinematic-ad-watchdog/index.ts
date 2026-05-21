@@ -74,6 +74,12 @@ type WatchdogResult = {
   detections: Record<string, number>;
   diagnosed: Array<{ job_id: string; classification: string }>;
   emailed: Array<{ job_id: string | null; alert: string; ok: boolean }>;
+  intelligence?: {
+    classified: number;
+    smart_retried: number;
+    qa_scored: number;
+    error?: string;
+  };
 };
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
@@ -601,6 +607,61 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
       updated_at: new Date(now).toISOString(),
     })
     .eq("id", 1);
+
+  // === (4) Active recovery: chain the intelligence engine ===
+  //
+  // The detection loop above only handles structural drift (stale heartbeats,
+  // stuck queue items, retryable failures within MAX_RETRIES). Real failures
+  // (ffmpeg 234, duplicate scenes, missing assets, low QA) live in `failed`
+  // with `recoverable=true` and never advance without an admin click. Calling
+  // the intelligence function here is what turns the autopilot from passive
+  // monitoring into an autonomous self-healing loop — it classifies the
+  // failure category, mutates scenes / downgrades preset on retry, and scores
+  // QA so high-quality renders become eligible for publish.
+  if (!paused && result.hard_stop_reasons.length === 0) {
+    const intel: WatchdogResult["intelligence"] = { classified: 0, smart_retried: 0, qa_scored: 0 };
+    try {
+      const classifyRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-intelligence`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": ANON_KEY, "Authorization": `Bearer ${SERVICE_KEY}` },
+        body: JSON.stringify({ action: "classify_failures" }),
+      });
+      const classifyJson = await classifyRes.json().catch(() => ({}));
+      intel.classified = Number(classifyJson?.classified ?? 0);
+
+      const retryRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-intelligence`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": ANON_KEY, "Authorization": `Bearer ${SERVICE_KEY}` },
+        body: JSON.stringify({ action: "smart_retry" }),
+      });
+      const retryJson = await retryRes.json().catch(() => ({}));
+      intel.smart_retried = Number(retryJson?.retried ?? 0);
+      // Fold into top-level so the dashboard "retried" tile reflects real action.
+      for (const it of (retryJson?.items ?? []) as Array<{ id?: string }>) {
+        if (it?.id) result.retried.push({ job_id: it.id, attempt: 0 });
+      }
+
+      const qaRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-intelligence`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": ANON_KEY, "Authorization": `Bearer ${SERVICE_KEY}` },
+        body: JSON.stringify({ action: "score_qa" }),
+      });
+      const qaJson = await qaRes.json().catch(() => ({}));
+      intel.qa_scored = Number(qaJson?.scored ?? qaJson?.items?.length ?? 0);
+    } catch (e) {
+      intel.error = e instanceof Error ? e.message : String(e);
+      console.warn("[watchdog] intelligence chain failed", intel.error);
+    }
+    result.intelligence = intel;
+    await logEvent(admin, {
+      job_id: null,
+      event_type: "intelligence_chain_complete",
+      trace_id: traceId,
+      recovery_result: intel.error ? "failed" : "success",
+      error_message: intel.error ?? null,
+      payload: intel as unknown as Record<string, unknown>,
+    });
+  }
 
   await logEvent(admin, {
     job_id: null,
