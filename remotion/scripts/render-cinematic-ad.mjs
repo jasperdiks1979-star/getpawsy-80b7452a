@@ -618,9 +618,11 @@ async function main() {
     console.log("[render] done", publicUrl);
   } catch (e) {
     console.error("[render] failed", e);
+    const stderrTail = e?.ffmpegStderr ? `\n--- ffmpeg stderr (tail) ---\n${String(e.ffmpegStderr).slice(-2000)}` : "";
+    const errorMessage = `${e?.message ?? String(e)}${stderrTail}`.slice(0, 6000);
     await postWebhook({
       job_id: JOB_ID, status: "failed", render_token: undefined,
-      error_message: e?.message ?? String(e), worker_id: WORKER_ID,
+      error_message: errorMessage, worker_id: WORKER_ID,
     });
     process.exit(1);
   }
