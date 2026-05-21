@@ -92,6 +92,23 @@ export default function CinematicIntelligencePanel() {
     }
   };
 
+  const forceRepair = async (jobId: string) => {
+    setBusy(`repair:${jobId}`);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-intelligence", {
+        body: { action: "force_repair", job_id: jobId },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "repair failed");
+      toast.success("Force repair triggered", { description: "Job reset and re-queued with smart retry." });
+      await load();
+    } catch (e) {
+      toast.error("Force repair failed", { description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -216,6 +233,17 @@ export default function CinematicIntelligencePanel() {
                       </Button>
                     </div>
                   )}
+                  <div className="mt-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => forceRepair(r.id)}
+                      disabled={busy === `repair:${r.id}`}
+                    >
+                      {busy === `repair:${r.id}` ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Wand2 className="mr-1 h-3 w-3" />}
+                      Force repair & re-render
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
