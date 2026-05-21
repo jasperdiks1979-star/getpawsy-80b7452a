@@ -107,6 +107,59 @@ function sh(cmd, args, opts = {}) {
   });
 }
 
+/**
+ * ffmpeg wrapper: captures stderr so failures surface the real reason
+ * (e.g. "Conversion failed", filter graph errors, missing fonts) instead of
+ * a bare "ffmpeg exited 234". The last ~3KB of stderr is included in the
+ * thrown Error message and ultimately stored in cinematic_ad_jobs.error_message,
+ * which lets the intelligence classifier pick the right recovery strategy.
+ */
+function shFfmpeg(args, opts = {}) {
+  return new Promise((res, rej) => {
+    const p = spawn("ffmpeg", args, { stdio: ["ignore", "pipe", "pipe"], ...opts });
+    let stderr = "";
+    p.stdout.on("data", (d) => process.stdout.write(d));
+    p.stderr.on("data", (d) => { stderr += d.toString(); process.stderr.write(d); });
+    p.on("exit", (code) => {
+      if (code === 0) return res();
+      const tail = stderr.slice(-3000).trim();
+      const err = new Error(`ffmpeg exited ${code}: ${tail.split("\n").slice(-12).join(" | ").slice(0, 1500)}`);
+      err.ffmpegExit = code;
+      err.ffmpegStderr = tail;
+      rej(err);
+    });
+    p.on("error", rej);
+  });
+}
+
+/**
+ * Run an ffmpeg pipeline with a "safe fallback" retry. If the first attempt
+ * (rich filter graph) crashes, retry once with the fallback builder which uses
+ * the simplest possible graph: scale, pad, yuv420p, CFR 30fps, no zoompan,
+ * no drawtext, no unsharp. This recovers from filter_complex crashes
+ * (the dominant cause of ffmpeg exit 234) without quarantining the job.
+ */
+async function ffmpegWithFallback(primaryArgs, fallbackArgsBuilder, label) {
+  try {
+    await shFfmpeg(primaryArgs);
+  } catch (e) {
+    console.warn(`[render] ${label} primary ffmpeg failed (${e.ffmpegExit ?? "?"}); attempting safe fallback`);
+    console.warn(`[render] ${label} stderr tail: ${(e.ffmpegStderr || "").slice(-500)}`);
+    const fallbackArgs = fallbackArgsBuilder();
+    try {
+      await shFfmpeg(fallbackArgs);
+      console.log(`[render] ${label} safe fallback succeeded`);
+    } catch (e2) {
+      // Surface both attempts so admin diagnostics show what was tried.
+      const combined = new Error(
+        `${label} failed both primary and fallback. primary=${e.message} | fallback=${e2.message}`,
+      );
+      combined.ffmpegStderr = (e.ffmpegStderr || "") + "\n---fallback---\n" + (e2.ffmpegStderr || "");
+      throw combined;
+    }
+  }
+}
+
 function shCapture(cmd, args) {
   return new Promise((res, rej) => {
     const p = spawn(cmd, args);
