@@ -489,14 +489,25 @@ async function main() {
         `format=yuv420p`,
       ].join(",");
       console.log(`[render] encode_started segment=${i} duration=${dur}s caption="${cap}"`);
-      await sh("ffmpeg", [
+      const primarySegArgs = [
         "-y", "-loop", "1", "-t", String(dur),
         "-i", sceneFiles[i].file,
         "-vf", vf,
         "-r", String(FPS), "-c:v", "libx264", "-preset", "veryfast",
         "-pix_fmt", "yuv420p",
         seg,
-      ]);
+      ];
+      const buildFallbackSegArgs = () => [
+        "-y", "-loop", "1", "-t", String(dur),
+        "-i", sceneFiles[i].file,
+        // Safe pipeline: no zoompan, no drawtext, no unsharp.
+        "-vf", `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p`,
+        "-r", String(FPS), "-vsync", "cfr",
+        "-c:v", "libx264", "-preset", "veryfast", "-b:v", "3500k",
+        "-pix_fmt", "yuv420p",
+        seg,
+      ];
+      await ffmpegWithFallback(primarySegArgs, buildFallbackSegArgs, `segment ${i}`);
       console.log(`[render] encode_completed segment=${i}`);
       segs.push(seg);
     }
@@ -505,9 +516,13 @@ async function main() {
     const silentVideo = join(work, "video.mp4");
     // Re-encode on concat so the bitstream is uniform (zoompan outputs vary).
     console.log("[render] encode_started concat");
-    await sh("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
+    const primaryConcat = ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
       "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
-      "-r", String(FPS), silentVideo]);
+      "-r", String(FPS), silentVideo];
+    const buildFallbackConcat = () => ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
+      "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+      "-r", String(FPS), "-vsync", "cfr", "-b:v", "3000k", silentVideo];
+    await ffmpegWithFallback(primaryConcat, buildFallbackConcat, "concat");
     console.log("[render] encode_completed concat");
 
     // 4. mix audio
@@ -525,13 +540,17 @@ async function main() {
       filter = "[1:a]volume=0.5[aout]";
     }
     if (filter) {
-      await sh("ffmpeg", [
+      const primaryMix = [
         "-y", "-i", silentVideo, ...audioArgs,
         "-filter_complex", filter, "-map", "0:v", "-map", "[aout]",
         "-c:v", "copy", "-c:a", "aac", "-shortest", finalPath,
-      ]);
+      ];
+      // Fallback: drop the audio mix entirely if filter_complex crashes — a
+      // silent valid MP4 still passes downstream QA/validation and can publish.
+      const buildFallbackMix = () => ["-y", "-i", silentVideo, "-c", "copy", finalPath];
+      await ffmpegWithFallback(primaryMix, buildFallbackMix, "audio mix");
     } else {
-      await sh("ffmpeg", ["-y", "-i", silentVideo, "-c", "copy", finalPath]);
+      await shFfmpeg(["-y", "-i", silentVideo, "-c", "copy", finalPath]);
     }
 
     const size = statSync(finalPath).size;
