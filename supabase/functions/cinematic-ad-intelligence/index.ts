@@ -476,6 +476,49 @@ Deno.serve(async (req) => {
       return json({ ok: true, traceId, approved: results.length, ids });
     }
 
+    if (action === "force_repair") {
+      // Admin override: take a job out of needs_admin_review, reset its
+      // smart-retry counter, mark it recoverable, then immediately re-queue
+      // it via the normal smart_retry path so the same mutation/preset
+      // logic applies. Reversible: status_message records the override.
+      const jobId = body.job_id ? String(body.job_id) : null;
+      if (!jobId) return json({ ok: false, traceId, message: "job_id required" }, 400);
+      const { data: job } = await admin.from("cinematic_ad_jobs")
+        .select("id,status,needs_admin_review,admin_review_reason,smart_retry_count,failure_category")
+        .eq("id", jobId).maybeSingle();
+      if (!job) return json({ ok: false, traceId, message: "job not found" }, 404);
+      await admin.from("cinematic_ad_jobs").update({
+        needs_admin_review: false,
+        recoverable: true,
+        smart_retry_count: 0,
+        status: "failed", // smart_retry path requires status=failed
+        admin_review_reason: null,
+        status_message: `Force repair by admin (was: ${job.admin_review_reason ?? "n/a"})`,
+      }).eq("id", jobId);
+      await logEvent(admin, jobId, {
+        event_type: "force_repair",
+        action_taken: "admin_override",
+        previous_status: job.status,
+        new_status: "failed",
+        trace_id: traceId,
+        recovery_result: "reset_for_retry",
+        payload: { prior_reason: job.admin_review_reason, prior_category: job.failure_category },
+      });
+      // Chain straight into smart_retry for this single job so the admin
+      // doesn't need a second click.
+      const retryRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-intelligence`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          "Authorization": `Bearer ${SERVICE_KEY}`,
+        },
+        body: JSON.stringify({ action: "smart_retry", job_id: jobId }),
+      });
+      const retryJson = await retryRes.json().catch(() => ({}));
+      return json({ ok: true, traceId, force_repair: true, retry: retryJson });
+    }
+
     return json({ ok: false, traceId, message: `unknown action: ${action}` }, 400);
   } catch (e) {
     console.error("[cinematic-ad-intelligence]", e);

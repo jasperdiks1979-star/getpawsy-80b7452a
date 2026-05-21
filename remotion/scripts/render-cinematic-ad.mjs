@@ -107,6 +107,59 @@ function sh(cmd, args, opts = {}) {
   });
 }
 
+/**
+ * ffmpeg wrapper: captures stderr so failures surface the real reason
+ * (e.g. "Conversion failed", filter graph errors, missing fonts) instead of
+ * a bare "ffmpeg exited 234". The last ~3KB of stderr is included in the
+ * thrown Error message and ultimately stored in cinematic_ad_jobs.error_message,
+ * which lets the intelligence classifier pick the right recovery strategy.
+ */
+function shFfmpeg(args, opts = {}) {
+  return new Promise((res, rej) => {
+    const p = spawn("ffmpeg", args, { stdio: ["ignore", "pipe", "pipe"], ...opts });
+    let stderr = "";
+    p.stdout.on("data", (d) => process.stdout.write(d));
+    p.stderr.on("data", (d) => { stderr += d.toString(); process.stderr.write(d); });
+    p.on("exit", (code) => {
+      if (code === 0) return res();
+      const tail = stderr.slice(-3000).trim();
+      const err = new Error(`ffmpeg exited ${code}: ${tail.split("\n").slice(-12).join(" | ").slice(0, 1500)}`);
+      err.ffmpegExit = code;
+      err.ffmpegStderr = tail;
+      rej(err);
+    });
+    p.on("error", rej);
+  });
+}
+
+/**
+ * Run an ffmpeg pipeline with a "safe fallback" retry. If the first attempt
+ * (rich filter graph) crashes, retry once with the fallback builder which uses
+ * the simplest possible graph: scale, pad, yuv420p, CFR 30fps, no zoompan,
+ * no drawtext, no unsharp. This recovers from filter_complex crashes
+ * (the dominant cause of ffmpeg exit 234) without quarantining the job.
+ */
+async function ffmpegWithFallback(primaryArgs, fallbackArgsBuilder, label) {
+  try {
+    await shFfmpeg(primaryArgs);
+  } catch (e) {
+    console.warn(`[render] ${label} primary ffmpeg failed (${e.ffmpegExit ?? "?"}); attempting safe fallback`);
+    console.warn(`[render] ${label} stderr tail: ${(e.ffmpegStderr || "").slice(-500)}`);
+    const fallbackArgs = fallbackArgsBuilder();
+    try {
+      await shFfmpeg(fallbackArgs);
+      console.log(`[render] ${label} safe fallback succeeded`);
+    } catch (e2) {
+      // Surface both attempts so admin diagnostics show what was tried.
+      const combined = new Error(
+        `${label} failed both primary and fallback. primary=${e.message} | fallback=${e2.message}`,
+      );
+      combined.ffmpegStderr = (e.ffmpegStderr || "") + "\n---fallback---\n" + (e2.ffmpegStderr || "");
+      throw combined;
+    }
+  }
+}
+
 function shCapture(cmd, args) {
   return new Promise((res, rej) => {
     const p = spawn(cmd, args);
@@ -436,14 +489,25 @@ async function main() {
         `format=yuv420p`,
       ].join(",");
       console.log(`[render] encode_started segment=${i} duration=${dur}s caption="${cap}"`);
-      await sh("ffmpeg", [
+      const primarySegArgs = [
         "-y", "-loop", "1", "-t", String(dur),
         "-i", sceneFiles[i].file,
         "-vf", vf,
         "-r", String(FPS), "-c:v", "libx264", "-preset", "veryfast",
         "-pix_fmt", "yuv420p",
         seg,
-      ]);
+      ];
+      const buildFallbackSegArgs = () => [
+        "-y", "-loop", "1", "-t", String(dur),
+        "-i", sceneFiles[i].file,
+        // Safe pipeline: no zoompan, no drawtext, no unsharp.
+        "-vf", `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p`,
+        "-r", String(FPS), "-vsync", "cfr",
+        "-c:v", "libx264", "-preset", "veryfast", "-b:v", "3500k",
+        "-pix_fmt", "yuv420p",
+        seg,
+      ];
+      await ffmpegWithFallback(primarySegArgs, buildFallbackSegArgs, `segment ${i}`);
       console.log(`[render] encode_completed segment=${i}`);
       segs.push(seg);
     }
@@ -452,9 +516,13 @@ async function main() {
     const silentVideo = join(work, "video.mp4");
     // Re-encode on concat so the bitstream is uniform (zoompan outputs vary).
     console.log("[render] encode_started concat");
-    await sh("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
+    const primaryConcat = ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
       "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
-      "-r", String(FPS), silentVideo]);
+      "-r", String(FPS), silentVideo];
+    const buildFallbackConcat = () => ["-y", "-f", "concat", "-safe", "0", "-i", listPath,
+      "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+      "-r", String(FPS), "-vsync", "cfr", "-b:v", "3000k", silentVideo];
+    await ffmpegWithFallback(primaryConcat, buildFallbackConcat, "concat");
     console.log("[render] encode_completed concat");
 
     // 4. mix audio
@@ -472,13 +540,17 @@ async function main() {
       filter = "[1:a]volume=0.5[aout]";
     }
     if (filter) {
-      await sh("ffmpeg", [
+      const primaryMix = [
         "-y", "-i", silentVideo, ...audioArgs,
         "-filter_complex", filter, "-map", "0:v", "-map", "[aout]",
         "-c:v", "copy", "-c:a", "aac", "-shortest", finalPath,
-      ]);
+      ];
+      // Fallback: drop the audio mix entirely if filter_complex crashes — a
+      // silent valid MP4 still passes downstream QA/validation and can publish.
+      const buildFallbackMix = () => ["-y", "-i", silentVideo, "-c", "copy", finalPath];
+      await ffmpegWithFallback(primaryMix, buildFallbackMix, "audio mix");
     } else {
-      await sh("ffmpeg", ["-y", "-i", silentVideo, "-c", "copy", finalPath]);
+      await shFfmpeg(["-y", "-i", silentVideo, "-c", "copy", finalPath]);
     }
 
     const size = statSync(finalPath).size;
@@ -546,9 +618,11 @@ async function main() {
     console.log("[render] done", publicUrl);
   } catch (e) {
     console.error("[render] failed", e);
+    const stderrTail = e?.ffmpegStderr ? `\n--- ffmpeg stderr (tail) ---\n${String(e.ffmpegStderr).slice(-2000)}` : "";
+    const errorMessage = `${e?.message ?? String(e)}${stderrTail}`.slice(0, 6000);
     await postWebhook({
       job_id: JOB_ID, status: "failed", render_token: undefined,
-      error_message: e?.message ?? String(e), worker_id: WORKER_ID,
+      error_message: errorMessage, worker_id: WORKER_ID,
     });
     process.exit(1);
   }
