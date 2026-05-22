@@ -1059,9 +1059,14 @@ export type Database = {
         Row: {
           admin_review_reason: string | null
           ai_decisions: Json
+          approval_confidence: number | null
+          approval_source: string | null
           approved_at: string | null
           approved_by: string | null
           approved_for_render: boolean
+          auto_approval_blocked_reason: string | null
+          auto_approval_reason: string | null
+          auto_approved_at: string | null
           auto_publish: boolean
           autopilot: boolean
           autopilot_log: Json
@@ -1149,9 +1154,14 @@ export type Database = {
         Insert: {
           admin_review_reason?: string | null
           ai_decisions?: Json
+          approval_confidence?: number | null
+          approval_source?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approved_for_render?: boolean
+          auto_approval_blocked_reason?: string | null
+          auto_approval_reason?: string | null
+          auto_approved_at?: string | null
           auto_publish?: boolean
           autopilot?: boolean
           autopilot_log?: Json
@@ -1239,9 +1249,14 @@ export type Database = {
         Update: {
           admin_review_reason?: string | null
           ai_decisions?: Json
+          approval_confidence?: number | null
+          approval_source?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approved_for_render?: boolean
+          auto_approval_blocked_reason?: string | null
+          auto_approval_reason?: string | null
+          auto_approved_at?: string | null
           auto_publish?: boolean
           autopilot?: boolean
           autopilot_log?: Json
@@ -1342,6 +1357,39 @@ export type Database = {
             referencedColumns: ["asset_id"]
           },
         ]
+      }
+      cinematic_ad_settings: {
+        Row: {
+          approval_confidence_threshold: number
+          auto_approve_enabled: boolean
+          id: boolean
+          max_duplicate_threshold: number
+          max_retry_threshold: number
+          min_unique_media_assets: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          approval_confidence_threshold?: number
+          auto_approve_enabled?: boolean
+          id?: boolean
+          max_duplicate_threshold?: number
+          max_retry_threshold?: number
+          min_unique_media_assets?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          approval_confidence_threshold?: number
+          auto_approve_enabled?: boolean
+          id?: boolean
+          max_duplicate_threshold?: number
+          max_retry_threshold?: number
+          min_unique_media_assets?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       cinematic_autopilot_state: {
         Row: {
@@ -14034,12 +14082,16 @@ export type Database = {
       visitor_activity: {
         Row: {
           activity_type: string
+          bot_suspect_reason: string | null
           browser: string | null
           city: string | null
           country: string | null
           created_at: string
           device_type: string | null
+          geo_confidence: string
           id: string
+          is_admin_path: boolean
+          is_bot_suspect: boolean
           is_internal: boolean | null
           last_seen_at: string | null
           latitude: number | null
@@ -14047,6 +14099,7 @@ export type Database = {
           order_id: string | null
           order_value: number | null
           page_path: string | null
+          product_category: string | null
           product_id: string | null
           product_name: string | null
           product_price: number | null
@@ -14056,9 +14109,13 @@ export type Database = {
           screen_height: number | null
           screen_width: number | null
           session_id: string
+          traffic_quality: string
           updated_at: string
           utm_campaign: string | null
           utm_content: string | null
+          utm_first_campaign: string | null
+          utm_first_medium: string | null
+          utm_first_source: string | null
           utm_medium: string | null
           utm_source: string | null
           utm_term: string | null
@@ -14066,12 +14123,16 @@ export type Database = {
         }
         Insert: {
           activity_type: string
+          bot_suspect_reason?: string | null
           browser?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
           device_type?: string | null
+          geo_confidence?: string
           id?: string
+          is_admin_path?: boolean
+          is_bot_suspect?: boolean
           is_internal?: boolean | null
           last_seen_at?: string | null
           latitude?: number | null
@@ -14079,6 +14140,7 @@ export type Database = {
           order_id?: string | null
           order_value?: number | null
           page_path?: string | null
+          product_category?: string | null
           product_id?: string | null
           product_name?: string | null
           product_price?: number | null
@@ -14088,9 +14150,13 @@ export type Database = {
           screen_height?: number | null
           screen_width?: number | null
           session_id: string
+          traffic_quality?: string
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
+          utm_first_campaign?: string | null
+          utm_first_medium?: string | null
+          utm_first_source?: string | null
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
@@ -14098,12 +14164,16 @@ export type Database = {
         }
         Update: {
           activity_type?: string
+          bot_suspect_reason?: string | null
           browser?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
           device_type?: string | null
+          geo_confidence?: string
           id?: string
+          is_admin_path?: boolean
+          is_bot_suspect?: boolean
           is_internal?: boolean | null
           last_seen_at?: string | null
           latitude?: number | null
@@ -14111,6 +14181,7 @@ export type Database = {
           order_id?: string | null
           order_value?: number | null
           page_path?: string | null
+          product_category?: string | null
           product_id?: string | null
           product_name?: string | null
           product_price?: number | null
@@ -14120,9 +14191,13 @@ export type Database = {
           screen_height?: number | null
           screen_width?: number | null
           session_id?: string
+          traffic_quality?: string
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
+          utm_first_campaign?: string | null
+          utm_first_medium?: string | null
+          utm_first_source?: string | null
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
@@ -14260,6 +14335,80 @@ export type Database = {
           recoverable: number | null
           total: number | null
           unrecoverable: number | null
+        }
+        Relationships: []
+      }
+      clean_channel_performance: {
+        Row: {
+          add_to_carts: number | null
+          channel: string | null
+          pdp_views: number | null
+          purchases: number | null
+          revenue: number | null
+          sessions: number | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Relationships: []
+      }
+      clean_conversion_funnel: {
+        Row: {
+          atc_sessions: number | null
+          checkout_sessions: number | null
+          pdp_sessions: number | null
+          purchase_sessions: number | null
+          revenue: number | null
+          sessions: number | null
+        }
+        Relationships: []
+      }
+      clean_product_performance: {
+        Row: {
+          add_to_carts: number | null
+          product_category: string | null
+          product_id: string | null
+          product_name: string | null
+          purchases: number | null
+          revenue: number | null
+          views: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clean_us_sessions: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          duration_seconds: number | null
+          event_count: number | null
+          has_atc: boolean | null
+          has_checkout: boolean | null
+          has_pdp: boolean | null
+          has_purchase: boolean | null
+          referrer_category: string | null
+          session_end: string | null
+          session_id: string | null
+          session_start: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          visitor_id: string | null
         }
         Relationships: []
       }
@@ -15209,9 +15358,14 @@ export type Database = {
         Returns: {
           admin_review_reason: string | null
           ai_decisions: Json
+          approval_confidence: number | null
+          approval_source: string | null
           approved_at: string | null
           approved_by: string | null
           approved_for_render: boolean
+          auto_approval_blocked_reason: string | null
+          auto_approval_reason: string | null
+          auto_approved_at: string | null
           auto_publish: boolean
           autopilot: boolean
           autopilot_log: Json
