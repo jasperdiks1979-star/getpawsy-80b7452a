@@ -1,0 +1,1 @@
+ALTER TABLE public.cinematic_ad_jobs ALTER COLUMN engine_version SET DEFAULT 'v3';
