@@ -9984,6 +9984,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pin_deletion_verifications: {
+        Row: {
+          created_at: string
+          error: string | null
+          http_status: number | null
+          id: string
+          pinterest_pin_id: string
+          queue_id: string | null
+          status: string
+          verified_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          pinterest_pin_id: string
+          queue_id?: string | null
+          status: string
+          verified_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          pinterest_pin_id?: string
+          queue_id?: string | null
+          status?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       pinterest_pin_performance: {
         Row: {
           clicks: number | null
