@@ -214,16 +214,16 @@ export default function PinterestRecoveryStatusPage() {
               {settings.pinterest_publish_recovery_mode ? (
                 <Badge className="bg-amber-500 hover:bg-amber-500/90 gap-1">
                   <ShieldAlert className="h-3 w-3" />
-                  Active — {settings.recovery_tier_progression?.tier1 ?? 2}/hr cap
+                  Active — {tierProg.tier1 ?? 2}/hr cap
                 </Badge>
               ) : (
                 <Badge className="bg-emerald-500 hover:bg-emerald-500/90 gap-1">
                   <ShieldCheck className="h-3 w-3" />
-                  Normal — {settings.pinterest_publish_max_per_hour}/hr cap
+                  Normal — {settings.pinterest_publish_max_per_hour ?? 3}/hr cap
                 </Badge>
               )}
               <p className="text-[11px] text-muted-foreground mt-1">
-                Auto-exits after {settings.recovery_auto_exit_days} clean days
+                Auto-exits after {settings.recovery_auto_exit_days ?? 0} clean days
               </p>
             </Card>
 
@@ -289,17 +289,17 @@ export default function PinterestRecoveryStatusPage() {
           <Card className="p-4 mb-4">
             <h2 className="font-semibold mb-3 text-sm">PinterestQualityGateV2</h2>
             <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <Row label="QA floor" value={`≥ ${settings.pinterest_publish_quality_floor}`} />
-              <Row label="Slug cooldown" value={`${settings.pinterest_publish_min_slug_gap_minutes} min`} />
+              <Row label="QA floor" value={`≥ ${settings.pinterest_publish_quality_floor ?? "—"}`} />
+              <Row label="Slug cooldown" value={`${settings.pinterest_publish_min_slug_gap_minutes ?? "—"} min`} />
               <Row label="Hourly cap" value={`${tierCap} / hr`} />
-              <Row label="Hook cooldown" value={`${settings.hook_cooldown_days} days`} />
+              <Row label="Hook cooldown" value={`${settings.hook_cooldown_days ?? "—"} days`} />
               <Row
                 label="Thumbnail pHash distance"
-                value={`≤ ${settings.thumbnail_phash_distance_threshold} → reject`}
+                value={`≤ ${settings.thumbnail_phash_distance_threshold ?? "—"} → reject`}
               />
               <Row
                 label="Board diversification"
-                value={`max ${settings.board_max_pins_per_window} pins / ${settings.board_recent_window_minutes}min`}
+                value={`max ${settings.board_max_pins_per_window ?? "—"} pins / ${settings.board_recent_window_minutes ?? "—"}min`}
               />
             </dl>
           </Card>
@@ -308,7 +308,7 @@ export default function PinterestRecoveryStatusPage() {
           <Card className="p-4">
             <h2 className="font-semibold mb-3 text-sm">Recovery Tier Ladder</h2>
             <div className="flex gap-3 flex-wrap">
-              {Object.entries(settings.recovery_tier_progression ?? {}).map(([k, v]) => {
+              {Object.entries(tierProg).map(([k, v]) => {
                 const isCurrent =
                   settings.pinterest_publish_recovery_mode && k === "tier1";
                 return (
@@ -324,9 +324,14 @@ export default function PinterestRecoveryStatusPage() {
                 );
               })}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2">
-              Settings last updated: {new Date(settings.updated_at).toLocaleString()}
-            </p>
+            {settings.updated_at && (
+              <p className="text-[11px] text-muted-foreground mt-2">
+                Settings last updated:{" "}
+                {(() => {
+                  try { return new Date(settings.updated_at).toLocaleString(); } catch { return "—"; }
+                })()}
+              </p>
+            )}
           </Card>
         </>
       )}
