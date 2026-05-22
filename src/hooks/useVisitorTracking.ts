@@ -451,11 +451,11 @@ export const useVisitorTracking = () => {
     trackCart: () => trackActivity("cart"),
     trackCheckout: () => trackActivity("checkout"),
     trackBeginCheckout: () => trackActivity("begin_checkout"),
-    trackProductView: (productId: string, productName: string, productPrice?: number) => 
-      trackActivity("product_view", { productId, productName, productPrice }),
+    trackProductView: (productId: string, productName: string, productPrice?: number, productCategory?: string) =>
+      trackActivity("product_view", { productId, productName, productPrice, productCategory }),
     // New funnel events
-    trackAddToCart: (productId: string, productName: string, productPrice: number, quantity: number = 1) =>
-      trackActivity("add_to_cart", { productId, productName, productPrice, productQuantity: quantity }),
+    trackAddToCart: (productId: string, productName: string, productPrice: number, quantity: number = 1, productCategory?: string) =>
+      trackActivity("add_to_cart", { productId, productName, productPrice, productQuantity: quantity, productCategory }),
     trackViewCart: () => trackActivity("view_cart"),
     trackPurchase: (orderId: string, orderValue: number) =>
       trackActivity("purchase", { orderId, orderValue }),
