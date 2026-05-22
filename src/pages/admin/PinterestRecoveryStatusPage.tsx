@@ -386,6 +386,51 @@ export default function PinterestRecoveryStatusPage() {
               </p>
             )}
           </Card>
+
+          {/* Remote deletion verification */}
+          <Card className="p-4 mt-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+              <div>
+                <h2 className="font-semibold text-sm">Remote Deletion Verification</h2>
+                <p className="text-[11px] text-muted-foreground">
+                  Confirms previously deleted pins are actually gone from Pinterest.
+                </p>
+              </div>
+              <Button size="sm" variant="outline" onClick={runVerify} disabled={verifyRunning}>
+                {verifyRunning ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                )}
+                Run verification
+              </Button>
+            </div>
+
+            {!verify.counts ? (
+              <p className="text-xs text-muted-foreground">
+                No verification run yet. Click “Run verification” to query the Pinterest API.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                  <Stat label="Active live" value={verify.counts.active_live} tone="emerald" />
+                  <Stat label="Archived (DB)" value={verify.counts.archived} tone="muted" />
+                  <Stat label="Remotely deleted" value={verify.counts.remotely_deleted} tone="emerald" />
+                  <Stat label="Orphaned" value={verify.counts.orphaned} tone="amber" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Stat label="Deleted ok" value={verify.counts.deleted} tone="emerald" />
+                  <Stat label="Still exists" value={verify.counts.still_exists} tone="destructive" />
+                  <Stat label="Inaccessible" value={verify.counts.inaccessible} tone="amber" />
+                  <Stat label="Cached only" value={verify.counts.cached_only} tone="muted" />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3">
+                  Last verification:{" "}
+                  {verify.verified_at ? new Date(verify.verified_at).toLocaleString() : "—"}
+                </p>
+              </>
+            )}
+          </Card>
         </>
       )}
     </div>
@@ -397,6 +442,31 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between gap-3 border-b border-border/40 py-1">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="font-mono">{value}</dd>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "emerald" | "amber" | "destructive" | "muted";
+}) {
+  const toneCls =
+    tone === "emerald"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : tone === "amber"
+        ? "text-amber-600 dark:text-amber-400"
+        : tone === "destructive"
+          ? "text-destructive"
+          : "text-foreground";
+  return (
+    <div className="rounded-md border border-border/60 p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-xl font-bold leading-tight ${toneCls}`}>{value}</div>
     </div>
   );
 }
