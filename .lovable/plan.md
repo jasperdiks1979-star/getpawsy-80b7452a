@@ -1,98 +1,103 @@
-## Cinematic Ads Autopilot V3 — Production Hardening Plan
+# Cinematic V3 — Final Stabilization Pass
 
-This is a large, multi-system overhaul. I'll ship it in coordinated additive passes — no breaking removals, all gated behind `engine_version='v3'` on `cinematic_ad_settings` with safe fallback to v2.
+Additive hardening of the existing `cinematic-ad-autopublish` + `cinematic-ad-validate` + `cinematic-ad-storyboard` pipeline. No weakening of any existing gate; all new logic stacks on top.
 
-### 1. Safe Area Engine (hard validator)
-- Extend `remotion/src/lib/safeZone.ts` with `safeAreaValidator(caption, fontSize, lineCount)` → returns `{ ok, fixedText, fixedFontSize, fixedY }`.
-- Caption auto-shortens (truncate to 2 lines max), auto-scales font (binary search), auto-repositions away from subject bbox.
-- Enforce: top margin ≥12%, bottom CTA margin ≥15%, side 6%.
-- Pre-render `validateScenePlanCaptions()` rewrites any unsafe caption — never fails render.
+## 1. Schema (single additive migration)
 
-### 2. Cinematic Motion Engine v2
-- New `remotion/src/motion/` primitives: `dollyIn`, `dollyOut`, `parallaxLayers`, `depthBlurPulse`, `kineticType`, `speedRamp`, `lightingPulse`, `floatingParticles`, `animatedMask`, `crossFadeMotion`.
-- Each scene gets `{ primary, secondary }` motion pair; planner rejects any static scene >2s.
-- Motion intensity curve: hook=high, problem=medium, benefit=high, cta=ramp-up.
+`cinematic_ad_settings` — add:
+- `publish_windows_est jsonb default '[{"start":7,"end":9},{"start":12,"end":14},{"start":19,"end":23}]'`
+- `publish_jitter_min_seconds int default 420`, `publish_jitter_max_seconds int default 2700`
+- `recovery_auto_exit_days int default 7`
+- `recovery_tier_progression jsonb default '{"tier1":2,"tier2":3,"tier3":4}'`
+- `hook_cooldown_days int default 7`
+- `thumbnail_phash_distance_threshold int default 6`
+- `board_recent_window_minutes int default 720`
+- `board_max_pins_per_window int default 2`
 
-### 3. Scene Uniqueness AI
-- `SceneUniquenessAI`: hash by `crop|motion|caption-shape|imageIndex|zoom-bucket`; reject any plan with duplicates; mutate zoom/crop until unique (max 5 attempts).
-- Enforce story arc: HOOK → PROBLEM → EMOTION → FEATURE → BENEFIT → PROOF → CTA (7 scenes minimum, 9 ideal).
+`cinematic_ad_jobs` — add:
+- `thumbnail_phash text` (64-bit perceptual hash hex)
+- `first3s_phash text`
+- `overlay_text_hash text`
+- `hook_archetype text` (curiosity|problem_solution|before_after|emotional|generic)
+- `scheduled_publish_at timestamptz`
+- `humanization_seed text`
+- `qa_breakdown jsonb` (per-axis scores)
 
-### 4. AI Storyboard Planner
-- New edge function `cinematic-ad-storyboard` calls Lovable AI (gemini-3-flash-preview) to produce:
-  - 5 hook variants (pick best by hook-strength heuristic)
-  - per-scene caption (≤6 words)
-  - pacing map (frame budget per scene)
-  - emotional curve
-- Stored on `cinematic_ad_jobs.storyboard` JSONB.
+New tables:
+- `cinematic_pin_performance` — `pin_id, asset_id, hook_archetype, board_id, outbound_clicks, saves, impressions, watch_seconds_p50, engagement_rate, collected_at`
+- `cinematic_quarantine_patterns` — `pattern_type (hook|storyboard|thumbnail_phash|board), pattern_value, reason, quarantined_until, created_at`
+- `cinematic_humanization_pools` — `pool_type (caption_template|cta|hashtag_group|opener), variants jsonb, weights jsonb`
 
-### 5. Conversion Psychology Layer
-- Storyboard prompt injects: curiosity gaps, pain amplification, pattern interrupts, before/after, urgency CTA.
-- Hook taxonomy expanded to 12 types (question, shock, payoff, social_proof, transformation, urgency, curiosity, problem_call_out, relief, comparison, emotion, command).
+All admin-only RLS, service-role full access. All fields nullable with defaults — existing jobs untouched.
 
-### 6. QA v3 — Advanced Creative QA
-- Update `cinematic-ad-validate`:
-  - New auto-thresholds: ≥55 = auto-approve+publish, 40–54 = auto-repair, <40 = quarantine asset (NOT full job).
-  - `needs_admin_review` ONLY for: corrupted MP4, render crash, missing assets, moderation flag.
-- Wire `cinematic-ad-auto-approve` to use new thresholds.
+## 2. Edge function changes
 
-### 7. Self-Healing Render Orchestrator
-- Update `cinematic-ad-watchdog`: structured 5-step recovery ladder
-  1. retry simplified transitions
-  2. reduce concurrency/memory
-  3. swap problematic asset (from QA telemetry)
-  4. rebuild scene timing (regenerate plan)
-  5. fallback render mode (`render_mode='safe'`)
-- Hard cap 5 attempts; quarantine asset on persistent failure, never the job.
+### `cinematic-ad-autopublish` (updated)
+Pre-publish gate adds, in order, BEFORE existing QA/cooldown checks:
+1. **Window gate** — convert now→EST; if outside `publish_windows_est`, skip job and set `scheduled_publish_at` to next window start + random jitter.
+2. **Jitter gate** — if `last_publish_at + jitter < now`, skip.
+3. **Perceptual dedupe** — compute Hamming distance to last 100 `thumbnail_phash`; reject if ≤ threshold. Same for `first3s_phash` and exact match on `overlay_text_hash`.
+4. **Hook cooldown** — reject if `hook_archetype` was used in last 7 days.
+5. **Board diversification** — pick the eligible board with the lowest pin-count in the last 12h, capped at 2/board/window. Never repeat product slug within 240min (existing).
+6. **Quarantine filter** — reject if job matches any active row in `cinematic_quarantine_patterns`.
+7. **Recovery tier** — compute current tier from clean-streak days: 0–6 = tier1 (2/hr), 7–13 = tier2 (3/hr), 14+ = tier3 (4/hr). Auto-flip `pinterest_publish_recovery_mode=false` after 7 clean days (0 QA fails, 0 dedupe violations).
 
-### 8. FFmpeg Exit 234 Fix — preRenderMediaValidation
-- New `remotion/src/lib/preRenderValidator.mjs`:
-  - probe every asset (ffprobe), validate dimensions divisible by 2, normalize to 1080×1920, normalize fps to 30
-  - convert unsupported formats (gif/heic/avif → png)
-  - reject corrupt assets → request replacement via `cinematic-ad-asset-swap` edge fn
-  - estimate frame memory; throttle concurrency when high
-- Called from `render-cinematic-ad.mjs` BEFORE composition build.
+### `cinematic-ad-storyboard` (updated)
+- Inject humanization pools from `cinematic_humanization_pools` (random pick per render using `humanization_seed`).
+- Bias hook selection: weighted sample from `cinematic_pin_performance` top-3 archetypes (70%) + explore (30%). Deprioritize `generic` archetype to ≤10% weight.
+- Output `hook_archetype` to job row.
 
-### 9. Pinterest Publishing Engine (reliable)
-- Update/create `cinematic-pinterest-autopublish` edge fn:
-  - auto-generate SEO title (hook + product), description (benefit-led, 200 char), 8 hashtags, board match by category, destination URL with UTM
-  - max 2 retries with structured error logging
-  - publish only when: status='completed' AND mp4 valid AND qa≥55 AND validation_passed AND not duplicate pin
-- Pin title library: emotional + searchable variants stored in `cinematic_pin_title_templates` table.
+### `cinematic-ad-validate` (updated QA weights)
+New composite formula (max 100):
+- caption_readability 15, safe_margins 15, scene_change_count 12, motion_entropy 12, hook_strength 12, thumb_uniqueness 10, mobile_framing 8, audio_pacing 6, brand_safety 10
+- Penalties: slideshow_flag -25, static_zoom_only -15, unreadable_caption -20, duplicate_scene_composition -15, repeated_product_angle -10
+- Hard-reject (set status=quarantined_asset) when: text outside safe area OR >35% static frames OR subtitle cutoff OR repeated scene loop OR hook reused in 7d.
+- Write per-axis to `qa_breakdown`.
 
-### 10. Creative DNA Learning
-- Activate `cinematic-ad-dna-bias`: nightly cron pulls Pinterest analytics (saves, outbound clicks, impressions) into `cinematic_creative_dna.performance`.
-- Bias planner: 70% sample from top-3 DNA, 30% explore.
+### New: `cinematic-pin-performance-sync` (cron, daily 04:00 UTC)
+- Pulls Pinterest analytics (impressions, saves, outbound, video_avg_watch_time) for last 30d into `cinematic_pin_performance`.
+- Computes per-hook + per-board engagement_rate.
+- Quarantines patterns where engagement_rate < 0.5% AND impressions ≥ 500: inserts `cinematic_quarantine_patterns` row (hook + thumbnail_phash + storyboard signature) for 14 days.
+- Reduces frequency cap for matched patterns.
 
-### 11. Admin UI Enhancements
-- `CinematicAdsControlCenterPage` adds tabs/sections:
-  - Render Log Live (subscribe to `cinematic_ad_render_logs`)
-  - Scene Timeline preview (renders `scene_plan` as horizontal track)
-  - Motion Diagnostics card
-  - Duplicate Detection viewer
-  - Safe-area Overlay toggle on preview
-  - Pinterest Publish Log
-  - QA Breakdown drilldown
-  - One-click "Rerender with new storyboard" button
-- Mobile responsive throughout.
+### Cron
+Use `supabase insert` (not migration) to register two pg_cron jobs:
+- `cinematic-ad-autopublish` every 5 min (existing — verify)
+- `cinematic-pin-performance-sync` daily
 
-### 12. Database (additive migration)
-- `cinematic_ad_jobs` adds: `storyboard JSONB`, `hook_variants JSONB`, `render_mode TEXT DEFAULT 'standard'`, `quarantined_assets JSONB DEFAULT '[]'`, `pin_publish_attempts INT DEFAULT 0`, `pin_last_error TEXT`.
-- New tables: `cinematic_pin_title_templates`, `cinematic_ad_render_logs` (live tail).
-- `cinematic_ad_settings`: add `engine_version` ('v3' default), `auto_approve_threshold` (55), `auto_repair_threshold` (40), `max_render_attempts` (5).
-- RLS: admin-only writes, service-role full access.
+## 3. Files
 
-### 13. Files (new/edited)
-- New: `remotion/src/lib/preRenderValidator.mjs`, `remotion/src/motion/index.ts` (10 primitives), `supabase/functions/cinematic-ad-storyboard/index.ts`, `supabase/functions/cinematic-ad-asset-swap/index.ts`, `supabase/functions/cinematic-pinterest-autopublish/index.ts`, `src/components/admin/cinematic/RenderLogLive.tsx`, `SceneTimelinePreview.tsx`, `PinterestPublishLog.tsx`.
-- Edited: `remotion/src/lib/safeZone.ts`, `remotion/src/lib/scenePlanner.ts`, `remotion/scripts/render-cinematic-ad.mjs`, `supabase/functions/cinematic-ad-validate/index.ts`, `cinematic-ad-watchdog/index.ts`, `cinematic-ad-auto-approve/index.ts`, `src/pages/admin/CinematicAdsControlCenterPage.tsx`.
-- New migration with all schema + seeds.
+New:
+- `supabase/functions/cinematic-pin-performance-sync/index.ts`
+- `supabase/functions/_shared/phash.ts` (8x8 DCT pHash, Hamming distance)
+- `supabase/functions/_shared/humanization.ts` (pool sampler, archetype router, seeded RNG)
+- `supabase/functions/_shared/publish-window.ts` (EST window + jitter calculator)
 
-### Safety
-- All additive — no drops, all new fields nullable with defaults.
-- v3 gated behind `engine_version`; v2 remains operational on fallback.
-- QA auto-quarantine flags assets, never deletes jobs.
-- Pinterest publish guarded by 4-check gate.
+Edited:
+- `supabase/functions/cinematic-ad-autopublish/index.ts` — window/jitter/phash/hook/board/quarantine/tier gates
+- `supabase/functions/cinematic-ad-storyboard/index.ts` — humanization pool injection + DNA bias
+- `supabase/functions/cinematic-ad-validate/index.ts` — new QA weights + breakdown
+- `src/integrations/supabase/types.ts` — auto-regen
+- `mem/features/cinematic/video-engine-v3.md` — append stabilization notes
 
-### Self-test
-- After deploy: invoke `cinematic-ad-watchdog --force`, verify dashboard counters move (recovered/redispatched/quarantined), then call `cinematic-ad-auto-approve --dry` and report.
+## 4. Seed data (via insert tool)
 
-Reply **go** to execute.
+Seed `cinematic_humanization_pools` with: 8 caption templates, 6 CTA variants, 5 hashtag groups, 7 opener patterns — all merchant-safe, US-native, no banned terms.
+
+## 5. Self-test output
+
+After deploy, invoke `cinematic-ad-autopublish?dryRun=true&audit=true` and report:
+- system_health_score (gates passing / total)
+- trust_recovery_status (clean-streak days, recovery tier)
+- uniqueness_score (avg phash distance over last 50 pins)
+- automation_footprint_score (publishes/hour vs human baseline 0.3/hr)
+- viral_readiness_score (avg hook DNA weight × QA composite)
+
+## 6. Safety guarantees
+
+- All new gates ADD to existing checks — QA floor 70, slug 240min cooldown, hourly cap, slideshow rejection, caption safety all preserved.
+- Recovery mode can auto-exit but cannot be lowered below current floor manually.
+- Quarantine inserts only, never deletes pins or assets.
+- Admin allowlist + service-role on every edge fn unchanged.
+
+Reply **go** to execute (single migration + 4 new files + 3 edits + 1 insert seed + 1 cron registration).
