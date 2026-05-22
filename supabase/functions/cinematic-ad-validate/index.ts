@@ -136,6 +136,12 @@ Deno.serve(async (req) => {
     const patch: Record<string, unknown> = {
       validation_report: report,
       motion_score: report.motion_score,
+      validation_passed: report.passed,
+      captions_visible: Boolean(job.hook_text || job.pin_title || job.cta_text || job.vo_script),
+      duration_valid: report.checks.find((c) => c.name === "duration_within_tolerance")?.passed ?? false,
+      motion_exists: report.checks.find((c) => c.name === "motion_score_above_floor")?.passed ?? (Number(report.motion_score ?? 0) > 0),
+      video_corrupted: !report.checks.find((c) => c.name === "mp4_present")?.passed,
+      pipeline_stage: report.passed ? "qa_passed" : "qa_needs_review",
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.
