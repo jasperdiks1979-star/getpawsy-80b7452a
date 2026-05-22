@@ -469,6 +469,8 @@ export const trackVisitorEvent = async (
   options?: TrackingOptions
 ) => {
   if (!isProductionDomain() || isBot()) return;
+  const path = options?.pagePath || window.location.pathname;
+  if (isExcludedPath(path)) return;
 
   const sessionId = getSessionId();
   const visitorId = getVisitorId();
@@ -476,6 +478,9 @@ export const trackVisitorEvent = async (
   const referrer = getReferrer();
   const deviceInfo = getDeviceInfo();
   const referrerCategory = categorizeReferrer(referrer, utmParams);
+  const botSuspect = detectBotSuspect(deviceInfo);
+  const isPreview = isPreviewHost();
+  const firstTouch = getFirstTouchUtm(utmParams);
 
   // Try to get cached location
   const cachedLocation = sessionStorage.getItem("visitor_location");
@@ -489,6 +494,13 @@ export const trackVisitorEvent = async (
   }
 
   const isInternal = isInternalTraffic(location?.country);
+  const quality = classifyTrafficQuality({
+    isAdminPath: false,
+    isInternal,
+    isBotSuspect: botSuspect.suspect,
+    isPreview,
+    country: location?.country,
+  });
 
   const clean = sanitizeTrackingFields({
     page_path: options?.pagePath || window.location.pathname,
@@ -517,11 +529,15 @@ export const trackVisitorEvent = async (
       utm_campaign: clean.utm_campaign,
       utm_term: clean.utm_term,
       utm_content: clean.utm_content,
+      utm_first_source: firstTouch.first_source,
+      utm_first_medium: firstTouch.first_medium,
+      utm_first_campaign: firstTouch.first_campaign,
       page_path: clean.page_path,
       product_id: options?.productId || null,
       product_name: options?.productName || null,
       product_price: options?.productPrice || null,
       product_quantity: options?.productQuantity || null,
+      product_category: options?.productCategory || null,
       order_id: options?.orderId || null,
       order_value: options?.orderValue || null,
       device_type: deviceInfo.device_type,
@@ -530,6 +546,11 @@ export const trackVisitorEvent = async (
       screen_height: deviceInfo.screen_height,
       referrer_category: referrerCategory,
       is_internal: isInternal,
+      is_admin_path: false,
+      is_bot_suspect: botSuspect.suspect,
+      bot_suspect_reason: botSuspect.reason,
+      traffic_quality: quality,
+      geo_confidence: geoConfidenceFor(location?.country),
     });
 
   if (error) {
