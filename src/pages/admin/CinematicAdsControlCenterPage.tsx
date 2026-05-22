@@ -16,6 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import AutopilotHealthPanel from "@/components/admin/AutopilotHealthPanel";
 import CinematicIntelligencePanel from "@/components/admin/cinematic/CinematicIntelligencePanel";
+import AutoApprovalSettingsCard from "@/components/admin/cinematic/AutoApprovalSettingsCard";
 
 type Job = {
   id: string;
