@@ -26,16 +26,31 @@ type Settings = {
   updated_at: string;
 };
 
+const DEFAULT_WINDOWS: Window[] = [
+  { start: 7, end: 9 },
+  { start: 12, end: 14 },
+  { start: 19, end: 23 },
+];
+const DEFAULT_TIERS: Record<string, number> = { tier1: 2, tier2: 3, tier3: 4 };
+
 function estHourNow(now: Date) {
   return (now.getUTCHours() + 24 - 5) % 24;
 }
+function safeWindows(windows: Window[] | undefined | null): Window[] {
+  const w = Array.isArray(windows)
+    ? windows.filter((x) => x && typeof x.start === "number" && typeof x.end === "number")
+    : [];
+  return w.length > 0 ? w : DEFAULT_WINDOWS;
+}
 function isInWindow(now: Date, windows: Window[]) {
   const h = estHourNow(now);
-  return windows.some((w) => h >= w.start && h < w.end);
+  return safeWindows(windows).some((w) => h >= w.start && h < w.end);
 }
-function nextWindowStartUtc(now: Date, windows: Window[]): Date {
+function nextWindowStartUtc(now: Date, windows: Window[]): Date | null {
+  const ws = safeWindows(windows);
+  if (ws.length === 0) return null;
   const h = estHourNow(now);
-  const sorted = [...windows].sort((a, b) => a.start - b.start);
+  const sorted = [...ws].sort((a, b) => a.start - b.start);
   for (const w of sorted) {
     if (h < w.start) {
       const next = new Date(now);
