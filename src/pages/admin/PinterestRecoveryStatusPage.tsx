@@ -231,9 +231,11 @@ export default function PinterestRecoveryStatusPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
                 <Clock className="h-3 w-3" /> Publish Window
               </div>
-              {inWindow ? (
+              {inWindow || !nextWindow ? (
                 <>
-                  <Badge className="bg-emerald-500 hover:bg-emerald-500/90">In window</Badge>
+                  <Badge className={inWindow ? "bg-emerald-500 hover:bg-emerald-500/90" : "bg-muted"}>
+                    {inWindow ? "In window" : "—"}
+                  </Badge>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     EST hour: {estHourNow(now)}:00
                   </p>
