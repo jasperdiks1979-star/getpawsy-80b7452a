@@ -1,70 +1,98 @@
-## Cinematic Video Engine Overhaul — Implementation Plan
+## Cinematic Ads Autopilot V3 — Production Hardening Plan
 
-This is a large overhaul touching the render pipeline, QA engine, scene generator, and creative DNA tracking. I'll ship it in one pass as additive changes (no breaking removals).
+This is a large, multi-system overhaul. I'll ship it in coordinated additive passes — no breaking removals, all gated behind `engine_version='v3'` on `cinematic_ad_settings` with safe fallback to v2.
 
-### 1. Mobile Safe Zone System
-- New module `remotion/src/lib/safeZone.ts` with constants: top 12%, bottom 22% (CTA), side 6% horizontal padding for 1080×1920.
-- New `<SafeZoneFrame>` component wrapping every scene; auto-clamps caption position.
-- Caption component (`SafeCaption.tsx`): auto-scales font (binary search fit), multiline balance, max 3 lines, auto-center.
-- Debug overlay toggled by `render_safe_zone_debug=true` env/prop showing red boundary rectangles.
+### 1. Safe Area Engine (hard validator)
+- Extend `remotion/src/lib/safeZone.ts` with `safeAreaValidator(caption, fontSize, lineCount)` → returns `{ ok, fixedText, fixedFontSize, fixedY }`.
+- Caption auto-shortens (truncate to 2 lines max), auto-scales font (binary search), auto-repositions away from subject bbox.
+- Enforce: top margin ≥12%, bottom CTA margin ≥15%, side 6%.
+- Pre-render `validateScenePlanCaptions()` rewrites any unsafe caption — never fails render.
 
-### 2. Multi-Scene Video Engine
-- Refactor `remotion/scripts/render-cinematic-ad.mjs` scene planner to require 5–12 unique scenes.
-- New scene category enum: `product_hero`, `closeup_detail`, `lifestyle`, `pet_interaction`, `owner_interaction`, `before_after`, `problem`, `comfort`, `cta`.
-- Planner rejects identical framing back-to-back (compare crop+motion hash).
+### 2. Cinematic Motion Engine v2
+- New `remotion/src/motion/` primitives: `dollyIn`, `dollyOut`, `parallaxLayers`, `depthBlurPulse`, `kineticType`, `speedRamp`, `lightingPulse`, `floatingParticles`, `animatedMask`, `crossFadeMotion`.
+- Each scene gets `{ primary, secondary }` motion pair; planner rejects any static scene >2s.
+- Motion intensity curve: hook=high, problem=medium, benefit=high, cta=ramp-up.
 
-### 3. Advanced Motion System
-- New `remotion/src/motion/` directory with motion primitives: `pushIn`, `whipPan`, `parallaxLayers`, `rackFocus`, `cropShift`, `speedRamp`, `handheldJitter`, `motionBlurTransition`.
-- Each scene assigned 1 primary + 1 secondary motion (no repeat in adjacent scenes).
+### 3. Scene Uniqueness AI
+- `SceneUniquenessAI`: hash by `crop|motion|caption-shape|imageIndex|zoom-bucket`; reject any plan with duplicates; mutate zoom/crop until unique (max 5 attempts).
+- Enforce story arc: HOOK → PROBLEM → EMOTION → FEATURE → BENEFIT → PROOF → CTA (7 scenes minimum, 9 ideal).
 
-### 4. Short-Form Retention Editing
-- Scene timing planner: scene 1 = 1.0–1.5s hook, scenes 2–N = 1.5–2.5s with pattern interrupts.
-- Caption timing follows scene cuts; CTA escalation in final 3s.
-- Reject scenes >2.5s in plan validation.
+### 4. AI Storyboard Planner
+- New edge function `cinematic-ad-storyboard` calls Lovable AI (gemini-3-flash-preview) to produce:
+  - 5 hook variants (pick best by hook-strength heuristic)
+  - per-scene caption (≤6 words)
+  - pacing map (frame budget per scene)
+  - emotional curve
+- Stored on `cinematic_ad_jobs.storyboard` JSONB.
 
-### 5. AI Hook Engine
-- New edge function `cinematic-ad-hook-generator` calling Lovable AI (google/gemini-3-flash-preview) to produce 3 hook variants from 10 hook types, pick highest scoring.
-- Stored on `cinematic_ad_jobs.hook_text` + `hook_type`.
+### 5. Conversion Psychology Layer
+- Storyboard prompt injects: curiosity gaps, pain amplification, pattern interrupts, before/after, urgency CTA.
+- Hook taxonomy expanded to 12 types (question, shock, payoff, social_proof, transformation, urgency, curiosity, problem_call_out, relief, comparison, emotion, command).
 
-### 6. Pinterest/TikTok Style Matching
-- Style preset table `cinematic_ad_style_presets` (pinterest_native, tiktok_native) with pacing JSON.
-- Scene planner consumes preset to drive cut density + caption cadence.
+### 6. QA v3 — Advanced Creative QA
+- Update `cinematic-ad-validate`:
+  - New auto-thresholds: ≥55 = auto-approve+publish, 40–54 = auto-repair, <40 = quarantine asset (NOT full job).
+  - `needs_admin_review` ONLY for: corrupted MP4, render crash, missing assets, moderation flag.
+- Wire `cinematic-ad-auto-approve` to use new thresholds.
 
-### 7. Scene Uniqueness Engine
-- Pre-render: compute hash per scene (crop bbox + motion type + caption text).
-- Reject plan if any 2 scenes share hash; regenerate up to 3 times.
-- Store entropy score on job (`scene_entropy_score`).
+### 7. Self-Healing Render Orchestrator
+- Update `cinematic-ad-watchdog`: structured 5-step recovery ladder
+  1. retry simplified transitions
+  2. reduce concurrency/memory
+  3. swap problematic asset (from QA telemetry)
+  4. rebuild scene timing (regenerate plan)
+  5. fallback render mode (`render_mode='safe'`)
+- Hard cap 5 attempts; quarantine asset on persistent failure, never the job.
 
-### 8. Smart Asset Expansion
-- New `remotion/src/lib/assetExpansion.ts`: from 1 source image, derive synthetic variants via crop regions (center, top-detail, bottom-detail, left-third, right-third) + zoom levels.
-- Use these as distinct "scenes" when product has <3 images.
+### 8. FFmpeg Exit 234 Fix — preRenderMediaValidation
+- New `remotion/src/lib/preRenderValidator.mjs`:
+  - probe every asset (ffprobe), validate dimensions divisible by 2, normalize to 1080×1920, normalize fps to 30
+  - convert unsupported formats (gif/heic/avif → png)
+  - reject corrupt assets → request replacement via `cinematic-ad-asset-swap` edge fn
+  - estimate frame memory; throttle concurrency when high
+- Called from `render-cinematic-ad.mjs` BEFORE composition build.
 
-### 9. Quality-First QA Engine
-- Extend `cinematic-ad-validate` with new dimensions: `mobile_readability`, `caption_visibility`, `hook_strength`, `pacing_quality`, `motion_diversity`, `scene_diversity`, `visual_energy`, `retention_likelihood`, `cta_clarity` (each 0–100).
-- Auto-reject if `motion_diversity < 40` OR `scene_diversity < 40` OR `caption_visibility < 70`.
+### 9. Pinterest Publishing Engine (reliable)
+- Update/create `cinematic-pinterest-autopublish` edge fn:
+  - auto-generate SEO title (hook + product), description (benefit-led, 200 char), 8 hashtags, board match by category, destination URL with UTM
+  - max 2 retries with structured error logging
+  - publish only when: status='completed' AND mp4 valid AND qa≥55 AND validation_passed AND not duplicate pin
+- Pin title library: emotional + searchable variants stored in `cinematic_pin_title_templates` table.
 
-### 10. Creative DNA Memory
-- New table `cinematic_creative_dna` storing structure fingerprint + performance metrics (pinterest_saves, clicks, retention, ctr).
-- Edge function `cinematic-ad-dna-bias` returns top-3 winning DNA patterns; planner samples from these 70% of the time.
+### 10. Creative DNA Learning
+- Activate `cinematic-ad-dna-bias`: nightly cron pulls Pinterest analytics (saves, outbound clicks, impressions) into `cinematic_creative_dna.performance`.
+- Bias planner: 70% sample from top-3 DNA, 30% explore.
 
-### Database migrations (additive)
-- ADD columns to `cinematic_ad_jobs`: `hook_text TEXT`, `hook_type TEXT`, `scene_entropy_score NUMERIC`, `motion_diversity_score NUMERIC`, `caption_visibility_score NUMERIC`, `style_preset TEXT DEFAULT 'pinterest_native'`, `scene_plan JSONB`.
-- CREATE `cinematic_ad_style_presets` (preset_name, pacing_config, caption_config, motion_config).
-- CREATE `cinematic_creative_dna` (id, dna_fingerprint, scene_sequence, motion_sequence, hook_type, performance JSONB, sample_count, score).
-- Seed 2 style presets and the hook taxonomy.
+### 11. Admin UI Enhancements
+- `CinematicAdsControlCenterPage` adds tabs/sections:
+  - Render Log Live (subscribe to `cinematic_ad_render_logs`)
+  - Scene Timeline preview (renders `scene_plan` as horizontal track)
+  - Motion Diagnostics card
+  - Duplicate Detection viewer
+  - Safe-area Overlay toggle on preview
+  - Pinterest Publish Log
+  - QA Breakdown drilldown
+  - One-click "Rerender with new storyboard" button
+- Mobile responsive throughout.
 
-### Files (new/edited)
-- New: `remotion/src/lib/safeZone.ts`, `remotion/src/components/SafeZoneFrame.tsx`, `remotion/src/components/SafeCaption.tsx`, `remotion/src/motion/*.ts`, `remotion/src/lib/assetExpansion.ts`
-- Edited: `remotion/scripts/render-cinematic-ad.mjs` (planner + scene loop)
-- New edge functions: `cinematic-ad-hook-generator/index.ts`, `cinematic-ad-dna-bias/index.ts`
-- Edited: `supabase/functions/cinematic-ad-validate/index.ts`
-- New migration with all schema additions + seeds
-- New admin UI card: `src/components/admin/cinematic/CreativeDNAPanel.tsx` mounted into `CinematicAdsControlCenterPage`
+### 12. Database (additive migration)
+- `cinematic_ad_jobs` adds: `storyboard JSONB`, `hook_variants JSONB`, `render_mode TEXT DEFAULT 'standard'`, `quarantined_assets JSONB DEFAULT '[]'`, `pin_publish_attempts INT DEFAULT 0`, `pin_last_error TEXT`.
+- New tables: `cinematic_pin_title_templates`, `cinematic_ad_render_logs` (live tail).
+- `cinematic_ad_settings`: add `engine_version` ('v3' default), `auto_approve_threshold` (55), `auto_repair_threshold` (40), `max_render_attempts` (5).
+- RLS: admin-only writes, service-role full access.
+
+### 13. Files (new/edited)
+- New: `remotion/src/lib/preRenderValidator.mjs`, `remotion/src/motion/index.ts` (10 primitives), `supabase/functions/cinematic-ad-storyboard/index.ts`, `supabase/functions/cinematic-ad-asset-swap/index.ts`, `supabase/functions/cinematic-pinterest-autopublish/index.ts`, `src/components/admin/cinematic/RenderLogLive.tsx`, `SceneTimelinePreview.tsx`, `PinterestPublishLog.tsx`.
+- Edited: `remotion/src/lib/safeZone.ts`, `remotion/src/lib/scenePlanner.ts`, `remotion/scripts/render-cinematic-ad.mjs`, `supabase/functions/cinematic-ad-validate/index.ts`, `cinematic-ad-watchdog/index.ts`, `cinematic-ad-auto-approve/index.ts`, `src/pages/admin/CinematicAdsControlCenterPage.tsx`.
+- New migration with all schema + seeds.
 
 ### Safety
-- All migrations additive; no drops.
-- All new fields nullable with defaults.
-- Existing render path remains operational; new planner activated behind `engine_version='v2'` flag on `cinematic_ad_settings` (defaults to v2 but can fall back to v1).
-- QA auto-reject only blocks publish; does not delete jobs.
+- All additive — no drops, all new fields nullable with defaults.
+- v3 gated behind `engine_version`; v2 remains operational on fallback.
+- QA auto-quarantine flags assets, never deletes jobs.
+- Pinterest publish guarded by 4-check gate.
+
+### Self-test
+- After deploy: invoke `cinematic-ad-watchdog --force`, verify dashboard counters move (recovered/redispatched/quarantined), then call `cinematic-ad-auto-approve --dry` and report.
 
 Reply **go** to execute.
