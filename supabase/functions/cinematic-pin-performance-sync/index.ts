@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
   const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const { data: metrics, error: mErr } = await admin
     .from("pinterest_video_metrics")
-    .select("pin_id, day, impressions, saves, outbound_clicks, video_avg_watch_time")
+    .select("pin_id, day, impressions, saves, outbound_clicks, engagement_rate")
     .gte("day", cutoff)
     .limit(5000);
   if (mErr) return json(200, { ok: false, traceId, message: mErr.message });
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       outbound_clicks: Number(m.outbound_clicks ?? 0),
       saves: Number(m.saves ?? 0),
       impressions: imp,
-      watch_seconds_p50: m.video_avg_watch_time ?? null,
+      watch_seconds_p50: null,
       engagement_rate: eng,
       collected_at: new Date(m.day).toISOString(),
     });
