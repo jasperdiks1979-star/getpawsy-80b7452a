@@ -14,6 +14,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { Link as RouterLink } from "react-router-dom";
+import { ShieldCheck, BarChart3 } from "lucide-react";
 import AutopilotHealthPanel from "@/components/admin/AutopilotHealthPanel";
 import CinematicIntelligencePanel from "@/components/admin/cinematic/CinematicIntelligencePanel";
 import AutoApprovalSettingsCard from "@/components/admin/cinematic/AutoApprovalSettingsCard";
@@ -427,6 +429,18 @@ export default function CinematicAdsControlCenterPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Cinematic Ads Control Center</h1>
           <p className="text-sm text-muted-foreground">One-click rendering, retries and Pinterest publishing.</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Button asChild size="sm" variant="outline">
+              <RouterLink to="/admin/pinterest-recovery">
+                <ShieldCheck className="mr-2 h-4 w-4" /> Pinterest Recovery Status
+              </RouterLink>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <RouterLink to="/admin/cinematic-performance">
+                <BarChart3 className="mr-2 h-4 w-4" /> Performance Metrics
+              </RouterLink>
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" onClick={fetchRows}>
