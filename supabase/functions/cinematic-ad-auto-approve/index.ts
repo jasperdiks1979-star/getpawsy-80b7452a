@@ -36,14 +36,14 @@ interface Settings {
 
 const DEFAULT_SETTINGS: Settings = {
   auto_approve_enabled: true,
-  approval_confidence_threshold: 80,
-  max_duplicate_threshold: 70,
+  approval_confidence_threshold: 55,
+  max_duplicate_threshold: 85,
   max_retry_threshold: 3,
-  min_unique_media_assets: 3,
+  min_unique_media_assets: 2,
 };
 
-const REVIEWABLE_STATUSES = ["awaiting_approval", "needs_admin_review", "prepared", "queued"];
-const HARD_BLOCK_REASONS = new Set(["corrupted_media", "missing_assets", "pinterest_policy_risk"]);
+const REVIEWABLE_STATUSES = ["awaiting_approval", "needs_admin_review", "prepared", "queued", "render_complete", "completed", "approved", "publishable"];
+const HARD_BLOCK_REASONS = new Set(["corrupted_media", "missing_assets", "pinterest_policy_risk", "wrong_link", "out_of_stock"]);
 
 function uniqueMediaCount(job: Job): number {
   const assets = Array.isArray(job.scene_assets) ? job.scene_assets : [];
@@ -58,7 +58,37 @@ function uniqueMediaCount(job: Job): number {
 function duplicateRisk(job: Job): number {
   // QA report may carry duplicate_score from intelligence pipeline.
   const r = job.qa_report ?? {};
-  return Number(r.duplicate_score ?? r.duplicate_risk ?? 0) || 0;
+  return Number(job.duplicate_risk_score ?? r.duplicate_score ?? r.duplicate_risk ?? 0) || 0;
+}
+
+function categoryThreshold(job: Job, base: number): number {
+  const hay = `${job.product_slug ?? ""} ${job.product_name ?? ""} ${job.product_category ?? ""}`.toLowerCase();
+  if (/litter|cat tree|carrier|stroller/.test(hay)) return Math.max(50, base - 5);
+  if (/supplement|medical|health|collar/.test(hay)) return Math.min(70, base + 10);
+  return base;
+}
+
+function validationPassed(job: Job): boolean {
+  const report = job.validation_report ?? {};
+  return job.validation_passed === true || report.passed === true;
+}
+
+function safeRenderSignals(job: Job): { ok: boolean; reasons: string[]; blocks: string[] } {
+  const reasons: string[] = [];
+  const blocks: string[] = [];
+  const dur = Number(job.output_duration_seconds ?? 0);
+  const motion = Number(job.motion_score ?? 0);
+  const captionsVisible = job.captions_visible === true || Boolean(job.hook_text || job.pin_title || job.cta_text);
+  const durationValid = job.duration_valid === true || (dur >= 8 && dur <= 35);
+  const motionExists = job.motion_exists === true || motion > 0 || Boolean(job.output_mp4_url);
+
+  if (!job.output_mp4_url) blocks.push("mp4_missing"); else reasons.push("mp4_present");
+  if (job.video_corrupted === true) blocks.push("video_corrupted"); else reasons.push("not_corrupted");
+  if (!captionsVisible) blocks.push("captions_not_visible"); else reasons.push("captions_visible");
+  if (!durationValid) blocks.push(`duration_invalid(${dur || "unknown"})`); else reasons.push("duration_valid");
+  if (!motionExists) blocks.push("zero_motion"); else reasons.push("motion_exists");
+  if (job.output_mp4_url && !validationPassed(job)) blocks.push("validation_not_passed");
+  return { ok: blocks.length === 0, reasons, blocks };
 }
 
 function isTrustedProductSource(job: Job): boolean {
@@ -92,18 +122,24 @@ function evaluate(job: Job, settings: Settings, recentFfmpegFails: number): {
   const reasons: string[] = [];
   const blocks: string[] = [];
 
-  const qa = Number(job.qa_score ?? 0);
-  if (qa < settings.approval_confidence_threshold) {
-    blocks.push(`qa_below_threshold(${qa}<${settings.approval_confidence_threshold})`);
+  const safeSignals = safeRenderSignals(job);
+  reasons.push(...safeSignals.reasons);
+  blocks.push(...safeSignals.blocks);
+
+  const threshold = categoryThreshold(job, settings.approval_confidence_threshold);
+  const qa = Number(job.qa_score ?? (safeSignals.ok ? threshold : 0));
+  if (qa < threshold) {
+    blocks.push(`qa_below_adaptive_threshold(${qa}<${threshold})`);
   } else {
     reasons.push(`qa_ok(${qa})`);
   }
 
   const dup = duplicateRisk(job);
-  if (dup > settings.max_duplicate_threshold) {
-    blocks.push(`duplicate_risk(${dup}>${settings.max_duplicate_threshold})`);
+  const exactDuplicate = dup >= 98 || Boolean(job.qa_report?.exact_repeated_timeline);
+  if (exactDuplicate) {
+    blocks.push(`exact_duplicate(${dup})`);
   } else {
-    reasons.push(`duplicate_ok(${dup})`);
+    reasons.push(`duplicate_tolerated(${dup}/${settings.max_duplicate_threshold})`);
   }
 
   const retries = Number(job.render_attempts ?? 0) + Number(job.smart_retry_count ?? 0);
@@ -114,17 +150,15 @@ function evaluate(job: Job, settings: Settings, recentFfmpegFails: number): {
   }
 
   const assets = uniqueMediaCount(job);
-  if (assets < settings.min_unique_media_assets) {
+  if (!job.output_mp4_url && assets < settings.min_unique_media_assets) {
     blocks.push(`assets_insufficient(${assets}<${settings.min_unique_media_assets})`);
   } else {
     reasons.push(`assets_ok(${assets})`);
   }
 
-  if (recentFfmpegFails >= 5) {
-    blocks.push(`recent_ffmpeg_failures(${recentFfmpegFails})`);
-  }
+  if (recentFfmpegFails >= 8 && !job.output_mp4_url) blocks.push(`recent_ffmpeg_failures(${recentFfmpegFails})`);
 
-  if (!isTrustedProductSource(job)) blocks.push("untrusted_product_source");
+  if (!job.output_mp4_url && !isTrustedProductSource(job)) blocks.push("untrusted_product_source");
   if (!safeTemplate(job)) blocks.push("unsafe_template");
 
   const adminReason = String(job.admin_review_reason ?? "").toLowerCase();
@@ -201,10 +235,11 @@ Deno.serve(async (req) => {
   for (const job of jobs ?? []) {
     const verdict = evaluate(job as Job, settings, recentFfmpegFails);
     if (verdict.approve) {
+      const completed = Boolean(job.output_mp4_url) || ["render_complete", "completed", "approved", "publishable"].includes(String(job.status));
       const { error: updErr } = await admin
         .from("cinematic_ad_jobs")
         .update({
-          status: "render_queued",
+          status: completed ? "publishable" : "render_queued",
           approved_at: new Date().toISOString(),
           approved_for_render: true,
           auto_approved_at: new Date().toISOString(),
@@ -212,8 +247,11 @@ Deno.serve(async (req) => {
           approval_confidence: verdict.confidence,
           approval_source: isServiceCall ? "autopilot" : "admin_manual",
           needs_admin_review: false,
-          render_queued_at: job.render_queued_at ?? new Date().toISOString(),
-          status_message: "auto-approved",
+          qa_threshold_applied: categoryThreshold(job as Job, settings.approval_confidence_threshold),
+          qa_decision_reason: verdict.reason,
+          pipeline_stage: completed ? "approved" : "approved_for_render",
+          render_queued_at: completed ? job.render_queued_at : (job.render_queued_at ?? new Date().toISOString()),
+          status_message: completed ? "auto-approved for Pinterest publish" : "auto-approved for render",
         })
         .eq("id", job.id)
         .in("status", REVIEWABLE_STATUSES);
