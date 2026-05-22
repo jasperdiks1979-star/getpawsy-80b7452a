@@ -608,6 +608,15 @@ async function main() {
       composition_id: COMPOSITION,
       preset: PRESET,
       wall_clock_seconds: Number(durationSec.toFixed(2)),
+      // v2 engine: structured scene plan for QA scoring (motion/scene diversity).
+      scene_plan: scenes.map((s, i) => ({
+        index: i,
+        category: s.category ?? (i === 0 ? "product_hero" : i === scenes.length - 1 ? "cta" : "lifestyle"),
+        motion: s.motion_variant ?? "kenburns-in",
+        crop: s.crop ?? "center",
+        durationFrames: Math.round((Number(s.duration_seconds) || 2) * 30),
+        image_hash: sceneHashes[i] ?? null,
+      })),
     };
     console.log("[render] webhook payload", {
       ...webhookPayload,
