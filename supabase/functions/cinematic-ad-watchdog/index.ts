@@ -648,6 +648,22 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
       });
       const qaJson = await qaRes.json().catch(() => ({}));
       intel.qa_scored = Number(qaJson?.scored ?? qaJson?.items?.length ?? 0);
+
+      // === Self-heal approval deadlocks ===
+      // Jobs stuck in awaiting_approval / needs_admin_review / prepared
+      // are evaluated and safely auto-approved when they pass all gates.
+      try {
+        const approveRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-auto-approve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": ANON_KEY, "Authorization": `Bearer ${SERVICE_KEY}` },
+          body: JSON.stringify({ limit: 30 }),
+        });
+        const approveJson = await approveRes.json().catch(() => ({}));
+        (intel as any).auto_approved = Number(approveJson?.auto_approved ?? 0);
+        (intel as any).manual_review = Number(approveJson?.manual_review ?? 0);
+      } catch (e) {
+        (intel as any).auto_approval_error = e instanceof Error ? e.message : String(e);
+      }
     } catch (e) {
       intel.error = e instanceof Error ? e.message : String(e);
       console.warn("[watchdog] intelligence chain failed", intel.error);
