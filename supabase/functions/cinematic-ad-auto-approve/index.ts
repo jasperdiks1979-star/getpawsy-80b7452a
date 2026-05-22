@@ -235,10 +235,11 @@ Deno.serve(async (req) => {
   for (const job of jobs ?? []) {
     const verdict = evaluate(job as Job, settings, recentFfmpegFails);
     if (verdict.approve) {
+      const completed = Boolean(job.output_mp4_url) || ["render_complete", "completed", "approved", "publishable"].includes(String(job.status));
       const { error: updErr } = await admin
         .from("cinematic_ad_jobs")
         .update({
-          status: "render_queued",
+          status: completed ? "publishable" : "render_queued",
           approved_at: new Date().toISOString(),
           approved_for_render: true,
           auto_approved_at: new Date().toISOString(),
@@ -246,8 +247,11 @@ Deno.serve(async (req) => {
           approval_confidence: verdict.confidence,
           approval_source: isServiceCall ? "autopilot" : "admin_manual",
           needs_admin_review: false,
-          render_queued_at: job.render_queued_at ?? new Date().toISOString(),
-          status_message: "auto-approved",
+          qa_threshold_applied: categoryThreshold(job as Job, settings.approval_confidence_threshold),
+          qa_decision_reason: verdict.reason,
+          pipeline_stage: completed ? "approved" : "approved_for_render",
+          render_queued_at: completed ? job.render_queued_at : (job.render_queued_at ?? new Date().toISOString()),
+          status_message: completed ? "auto-approved for Pinterest publish" : "auto-approved for render",
         })
         .eq("id", job.id)
         .in("status", REVIEWABLE_STATUSES);
