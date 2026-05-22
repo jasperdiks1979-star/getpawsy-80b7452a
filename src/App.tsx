@@ -1966,6 +1966,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-recovery"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestRecoveryStatusPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="github-sync"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
