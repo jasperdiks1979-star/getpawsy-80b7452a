@@ -260,6 +260,8 @@ Deno.serve(async (req) => {
       if (body.motion_score != null) patch.motion_score = Number(body.motion_score);
       if (body.black_bars != null) patch.output_black_bars = Boolean(body.black_bars);
       if (body.thumbnail_url) patch.output_thumbnail_url = String(body.thumbnail_url);
+      // v2: persist structured scene plan for QA scoring
+      if (Array.isArray(body.scene_plan)) patch.scene_plan = body.scene_plan;
       patch.error_message = null;
       patch.status_message = "render complete — validating output";
     } else if (status === "failed") {

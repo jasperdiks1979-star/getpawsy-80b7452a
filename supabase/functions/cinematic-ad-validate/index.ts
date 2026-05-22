@@ -25,6 +25,86 @@ interface ValidationReport {
   motion_score: number | null;
   validated_at: string;
   preset: string;
+  v2_scores?: {
+    mobile_readability: number;
+    caption_visibility: number;
+    hook_strength: number;
+    pacing_quality: number;
+    motion_diversity: number;
+    scene_diversity: number;
+    visual_energy: number;
+    retention_likelihood: number;
+    cta_clarity: number;
+    composite: number;
+  };
+}
+
+/**
+ * V2 QA scoring: derives readability/diversity/energy scores from the
+ * stored scene_plan + render report fields. Pure heuristics, no external calls.
+ */
+function scoreV2(job: any): NonNullable<ValidationReport["v2_scores"]> {
+  const plan: any[] = Array.isArray(job.scene_plan) ? job.scene_plan : [];
+  const motions = new Set(plan.map((s) => s?.motion).filter(Boolean));
+  const crops = new Set(plan.map((s) => s?.crop).filter(Boolean));
+  const cats = new Set(plan.map((s) => s?.category).filter(Boolean));
+  const sceneCount = plan.length;
+
+  const motion_diversity = sceneCount
+    ? Math.min(100, Math.round((motions.size / Math.min(sceneCount, 8)) * 100))
+    : Math.min(100, Math.round(Number(job.motion_score ?? 0) * 4));
+
+  const scene_diversity = sceneCount
+    ? Math.min(100, Math.round(((crops.size + cats.size) / Math.max(2, sceneCount * 1.4)) * 100))
+    : 40;
+
+  // Caption visibility: heuristic — needs hook + cta text, within length limits.
+  const hook = String(job.hook_text ?? "").trim();
+  const cta = String(job.cta_text ?? "").trim();
+  const hookOk = hook.length > 0 && hook.length <= 60;
+  const ctaOk = cta.length > 0 && cta.length <= 30;
+  const caption_visibility = (hookOk ? 60 : 0) + (ctaOk ? 40 : 0);
+
+  const mobile_readability = Math.round(
+    (caption_visibility * 0.5) +
+    (Number(job.output_width) === 1080 && Number(job.output_height) === 1920 ? 50 : 10),
+  );
+
+  const hook_strength = Number(job.hook_strength_score ?? (hookOk ? 65 : 30));
+
+  // Pacing quality: prefer 5–10 scenes, none > 90 frames
+  let pacing_quality = 50;
+  if (sceneCount >= 5 && sceneCount <= 12) pacing_quality += 30;
+  if (plan.every((s) => Number(s?.durationFrames ?? 0) <= 90)) pacing_quality += 20;
+  pacing_quality = Math.min(100, pacing_quality);
+
+  const visual_energy = Math.round((motion_diversity * 0.6) + (Number(job.motion_score ?? 0) * 4));
+  const visual_energy_clamped = Math.min(100, visual_energy);
+
+  const retention_likelihood = Math.round(
+    hook_strength * 0.35 + pacing_quality * 0.25 + visual_energy_clamped * 0.2 + scene_diversity * 0.2,
+  );
+
+  const cta_clarity = ctaOk ? 85 : 35;
+
+  const composite = Math.round(
+    motion_diversity * 0.15 +
+    scene_diversity * 0.15 +
+    caption_visibility * 0.15 +
+    mobile_readability * 0.1 +
+    hook_strength * 0.15 +
+    pacing_quality * 0.1 +
+    visual_energy_clamped * 0.1 +
+    retention_likelihood * 0.05 +
+    cta_clarity * 0.05,
+  );
+
+  return {
+    motion_diversity, scene_diversity, caption_visibility,
+    mobile_readability, hook_strength, pacing_quality,
+    visual_energy: visual_energy_clamped, retention_likelihood,
+    cta_clarity, composite,
+  };
 }
 
 function evaluate(job: any): ValidationReport {
@@ -132,6 +212,38 @@ Deno.serve(async (req) => {
     if (error || !job) return json({ ok: false, traceId, message: "job not found" }, 404);
 
     const report = evaluate(job);
+  const v2 = scoreV2(job);
+  report.v2_scores = v2;
+
+  // V2 auto-reject thresholds — pulled from settings (with safe defaults).
+  let minMotion = 40, minScene = 40, minCaption = 70;
+  try {
+    const { data: settings } = await admin
+      .from("cinematic_ad_settings")
+      .select("min_motion_diversity, min_scene_diversity, min_caption_visibility")
+      .limit(1)
+      .maybeSingle();
+    if (settings) {
+      minMotion = Number(settings.min_motion_diversity ?? minMotion);
+      minScene = Number(settings.min_scene_diversity ?? minScene);
+      minCaption = Number(settings.min_caption_visibility ?? minCaption);
+    }
+  } catch (_) { /* ignore — use defaults */ }
+
+  const v2Pass =
+    v2.motion_diversity >= minMotion &&
+    v2.scene_diversity >= minScene &&
+    v2.caption_visibility >= minCaption;
+  if (!v2Pass) {
+    report.passed = false;
+    report.checks.push({
+      name: "v2_quality_floor",
+      passed: false,
+      observed: `motion=${v2.motion_diversity} scene=${v2.scene_diversity} caption=${v2.caption_visibility}`,
+      expected: `motion>=${minMotion} scene>=${minScene} caption>=${minCaption}`,
+      message: "Render did not meet v2 quality floors (likely slideshow or unreadable captions).",
+    });
+  }
 
     const patch: Record<string, unknown> = {
       validation_report: report,
@@ -142,6 +254,15 @@ Deno.serve(async (req) => {
       motion_exists: report.checks.find((c) => c.name === "motion_score_above_floor")?.passed ?? (Number(report.motion_score ?? 0) > 0),
       video_corrupted: !report.checks.find((c) => c.name === "mp4_present")?.passed,
       pipeline_stage: report.passed ? "qa_passed" : "qa_needs_review",
+      motion_diversity_score: v2.motion_diversity,
+      caption_visibility_score: v2.caption_visibility,
+      mobile_readability_score: v2.mobile_readability,
+      hook_strength_score: v2.hook_strength,
+      pacing_quality_score: v2.pacing_quality,
+      visual_energy_score: v2.visual_energy,
+      retention_likelihood_score: v2.retention_likelihood,
+      cta_clarity_score: v2.cta_clarity,
+      scene_entropy_score: v2.scene_diversity,
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.

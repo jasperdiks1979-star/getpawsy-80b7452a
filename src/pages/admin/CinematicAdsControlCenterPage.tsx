@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import AutopilotHealthPanel from "@/components/admin/AutopilotHealthPanel";
 import CinematicIntelligencePanel from "@/components/admin/cinematic/CinematicIntelligencePanel";
 import AutoApprovalSettingsCard from "@/components/admin/cinematic/AutoApprovalSettingsCard";
+import { CreativeDNAPanel } from "@/components/admin/cinematic/CreativeDNAPanel";
 
 type Job = {
   id: string;
@@ -456,6 +457,8 @@ export default function CinematicAdsControlCenterPage() {
       <CinematicIntelligencePanel />
 
       <AutoApprovalSettingsCard />
+
+      <CreativeDNAPanel />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
