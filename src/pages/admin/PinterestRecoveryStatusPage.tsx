@@ -142,15 +142,19 @@ export default function PinterestRecoveryStatusPage() {
     };
   }, []);
 
-  const windows = settings?.publish_windows_est ?? [];
+  const windows = safeWindows(settings?.publish_windows_est);
   const inWindow = useMemo(() => isInWindow(now, windows), [now, windows]);
   const nextWindow = useMemo(() => nextWindowStartUtc(now, windows), [now, windows]);
-  const jitterRangeMin = settings ? Math.round(settings.publish_jitter_min_seconds / 60) : 0;
-  const jitterRangeMax = settings ? Math.round(settings.publish_jitter_max_seconds / 60) : 0;
+  const jitterRangeMin = settings ? Math.round((settings.publish_jitter_min_seconds ?? 0) / 60) : 0;
+  const jitterRangeMax = settings ? Math.round((settings.publish_jitter_max_seconds ?? 0) / 60) : 0;
 
   // Effective hourly cap based on recovery tier
+  const tierProg: Record<string, number> =
+    settings?.recovery_tier_progression && typeof settings.recovery_tier_progression === "object"
+      ? (settings.recovery_tier_progression as Record<string, number>)
+      : DEFAULT_TIERS;
   const tierCap = settings?.pinterest_publish_recovery_mode
-    ? settings.recovery_tier_progression?.tier1 ?? 2
+    ? tierProg.tier1 ?? 2
     : settings?.pinterest_publish_max_per_hour ?? 3;
 
   return (
@@ -171,12 +175,18 @@ export default function PinterestRecoveryStatusPage() {
         </Button>
       </header>
 
-      {loading && !settings ? (
+      {error === "AUTH" ? (
+        <Card className="p-6 text-sm">Admin login required to view recovery status.</Card>
+      ) : error ? (
+        <Card className="p-6 text-sm text-destructive">
+          Error loading recovery status: {error}
+        </Card>
+      ) : loading && !settings ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : !settings ? (
-        <Card className="p-6 text-sm text-muted-foreground">No settings row found.</Card>
+        <Card className="p-6 text-sm text-muted-foreground">No recovery data yet.</Card>
       ) : (
         <>
           {/* Top status grid */}
