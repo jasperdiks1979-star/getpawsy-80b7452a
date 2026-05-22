@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, ShieldCheck, ShieldAlert, Clock, Gauge } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { toast } from "sonner";
 
 type Window = { start: number; end: number };
 type Settings = {
@@ -83,6 +84,57 @@ export default function PinterestRecoveryStatusPage() {
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
 
+  type VerifyCounts = {
+    deleted: number;
+    still_exists: number;
+    inaccessible: number;
+    cached_only: number;
+    active_live: number;
+    archived: number;
+    remotely_deleted: number;
+    orphaned: number;
+  };
+  const [verify, setVerify] = useState<{
+    verified_at: string | null;
+    counts: VerifyCounts | null;
+  }>({ verified_at: null, counts: null });
+  const [verifyRunning, setVerifyRunning] = useState(false);
+
+  const loadVerify = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-pin-deletion-verify", {
+        method: "GET",
+      });
+      if (error) throw error;
+      if (data?.ok) {
+        setVerify({ verified_at: data.verified_at, counts: data.counts });
+      }
+    } catch (e) {
+      console.error("[PinterestRecovery] loadVerify failed", e);
+    }
+  };
+
+  const runVerify = async () => {
+    setVerifyRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-pin-deletion-verify", {
+        method: "POST",
+        body: { limit: 200, onlyStale: true },
+      });
+      if (error) throw error;
+      if (data?.ok) {
+        setVerify({ verified_at: data.verified_at, counts: data.counts });
+        toast.success(`Verified ${data.checked ?? 0} pins`);
+      } else {
+        toast.error(data?.message || "Verification failed");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Verification failed");
+    } finally {
+      setVerifyRunning(false);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -134,6 +186,7 @@ export default function PinterestRecoveryStatusPage() {
 
   useEffect(() => {
     load();
+    loadVerify();
     const t = setInterval(() => setNow(new Date()), 1000);
     const r = setInterval(load, 15000);
     return () => {
