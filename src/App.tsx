@@ -1975,6 +1975,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicPerformanceMetricsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="github-sync"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
