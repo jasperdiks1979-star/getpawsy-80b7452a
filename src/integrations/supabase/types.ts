@@ -1106,6 +1106,7 @@ export type Database = {
           hook_text: string | null
           hook_type: string | null
           hook_variant: string
+          hook_variants: Json | null
           hook_variants_meta: Json
           id: string
           last_pinterest_attempt_at: string | null
@@ -1127,6 +1128,8 @@ export type Database = {
           pacing_quality_score: number | null
           pin_description: string | null
           pin_destination_url: string | null
+          pin_last_error: string | null
+          pin_publish_attempts: number | null
           pin_title: string | null
           pinterest_asset_id: string | null
           pinterest_live_pin_url: string | null
@@ -1144,12 +1147,15 @@ export type Database = {
           product_name: string | null
           product_price: string | null
           product_slug: string
+          publish_blocked_reason: string | null
           published_at: string | null
           pushed_to_pinterest_at: string | null
+          qa_composite_score: number | null
           qa_decision_reason: string | null
           qa_report: Json
           qa_score: number | null
           qa_threshold_applied: number | null
+          quarantined_assets: Json | null
           recommended_fix: string | null
           recoverable: boolean | null
           render_attempts: number
@@ -1157,6 +1163,7 @@ export type Database = {
           render_dispatched_at: string | null
           render_heartbeat_at: string | null
           render_log: Json
+          render_mode: string | null
           render_priority_score: number | null
           render_queued_at: string | null
           render_started_at: string | null
@@ -1226,6 +1233,7 @@ export type Database = {
           hook_text?: string | null
           hook_type?: string | null
           hook_variant?: string
+          hook_variants?: Json | null
           hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
@@ -1247,6 +1255,8 @@ export type Database = {
           pacing_quality_score?: number | null
           pin_description?: string | null
           pin_destination_url?: string | null
+          pin_last_error?: string | null
+          pin_publish_attempts?: number | null
           pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_live_pin_url?: string | null
@@ -1264,12 +1274,15 @@ export type Database = {
           product_name?: string | null
           product_price?: string | null
           product_slug: string
+          publish_blocked_reason?: string | null
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
+          qa_composite_score?: number | null
           qa_decision_reason?: string | null
           qa_report?: Json
           qa_score?: number | null
           qa_threshold_applied?: number | null
+          quarantined_assets?: Json | null
           recommended_fix?: string | null
           recoverable?: boolean | null
           render_attempts?: number
@@ -1277,6 +1290,7 @@ export type Database = {
           render_dispatched_at?: string | null
           render_heartbeat_at?: string | null
           render_log?: Json
+          render_mode?: string | null
           render_priority_score?: number | null
           render_queued_at?: string | null
           render_started_at?: string | null
@@ -1346,6 +1360,7 @@ export type Database = {
           hook_text?: string | null
           hook_type?: string | null
           hook_variant?: string
+          hook_variants?: Json | null
           hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
@@ -1367,6 +1382,8 @@ export type Database = {
           pacing_quality_score?: number | null
           pin_description?: string | null
           pin_destination_url?: string | null
+          pin_last_error?: string | null
+          pin_publish_attempts?: number | null
           pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_live_pin_url?: string | null
@@ -1384,12 +1401,15 @@ export type Database = {
           product_name?: string | null
           product_price?: string | null
           product_slug?: string
+          publish_blocked_reason?: string | null
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
+          qa_composite_score?: number | null
           qa_decision_reason?: string | null
           qa_report?: Json
           qa_score?: number | null
           qa_threshold_applied?: number | null
+          quarantined_assets?: Json | null
           recommended_fix?: string | null
           recoverable?: boolean | null
           render_attempts?: number
@@ -1397,6 +1417,7 @@ export type Database = {
           render_dispatched_at?: string | null
           render_heartbeat_at?: string | null
           render_log?: Json
+          render_mode?: string | null
           render_priority_score?: number | null
           render_queued_at?: string | null
           render_started_at?: string | null
@@ -1541,9 +1562,12 @@ export type Database = {
         Row: {
           approval_confidence_threshold: number
           auto_approve_enabled: boolean
+          auto_publish_enabled: boolean | null
+          auto_repair_threshold: number | null
           engine_version: string | null
           id: boolean
           max_duplicate_threshold: number
+          max_render_attempts: number | null
           max_retry_threshold: number
           max_scenes: number | null
           min_caption_visibility: number | null
@@ -1551,6 +1575,7 @@ export type Database = {
           min_scene_diversity: number | null
           min_scenes: number | null
           min_unique_media_assets: number
+          pinterest_publish_quality_floor: number | null
           safe_zone_debug: boolean | null
           updated_at: string
           updated_by: string | null
@@ -1558,9 +1583,12 @@ export type Database = {
         Insert: {
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
+          auto_publish_enabled?: boolean | null
+          auto_repair_threshold?: number | null
           engine_version?: string | null
           id?: boolean
           max_duplicate_threshold?: number
+          max_render_attempts?: number | null
           max_retry_threshold?: number
           max_scenes?: number | null
           min_caption_visibility?: number | null
@@ -1568,6 +1596,7 @@ export type Database = {
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_unique_media_assets?: number
+          pinterest_publish_quality_floor?: number | null
           safe_zone_debug?: boolean | null
           updated_at?: string
           updated_by?: string | null
@@ -1575,9 +1604,12 @@ export type Database = {
         Update: {
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
+          auto_publish_enabled?: boolean | null
+          auto_repair_threshold?: number | null
           engine_version?: string | null
           id?: boolean
           max_duplicate_threshold?: number
+          max_render_attempts?: number | null
           max_retry_threshold?: number
           max_scenes?: number | null
           min_caption_visibility?: number | null
@@ -1585,6 +1617,7 @@ export type Database = {
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_unique_media_assets?: number
+          pinterest_publish_quality_floor?: number | null
           safe_zone_debug?: boolean | null
           updated_at?: string
           updated_by?: string | null
@@ -15702,6 +15735,7 @@ export type Database = {
           hook_text: string | null
           hook_type: string | null
           hook_variant: string
+          hook_variants: Json | null
           hook_variants_meta: Json
           id: string
           last_pinterest_attempt_at: string | null
@@ -15723,6 +15757,8 @@ export type Database = {
           pacing_quality_score: number | null
           pin_description: string | null
           pin_destination_url: string | null
+          pin_last_error: string | null
+          pin_publish_attempts: number | null
           pin_title: string | null
           pinterest_asset_id: string | null
           pinterest_live_pin_url: string | null
@@ -15740,12 +15776,15 @@ export type Database = {
           product_name: string | null
           product_price: string | null
           product_slug: string
+          publish_blocked_reason: string | null
           published_at: string | null
           pushed_to_pinterest_at: string | null
+          qa_composite_score: number | null
           qa_decision_reason: string | null
           qa_report: Json
           qa_score: number | null
           qa_threshold_applied: number | null
+          quarantined_assets: Json | null
           recommended_fix: string | null
           recoverable: boolean | null
           render_attempts: number
@@ -15753,6 +15792,7 @@ export type Database = {
           render_dispatched_at: string | null
           render_heartbeat_at: string | null
           render_log: Json
+          render_mode: string | null
           render_priority_score: number | null
           render_queued_at: string | null
           render_started_at: string | null
