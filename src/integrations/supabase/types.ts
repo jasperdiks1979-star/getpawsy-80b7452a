@@ -970,6 +970,13 @@ export type Database = {
             referencedRelation: "cinematic_ad_jobs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cinematic_ad_alert_log_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_pipeline_tracking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cinematic_ad_alert_settings: {
@@ -1053,6 +1060,13 @@ export type Database = {
             referencedRelation: "cinematic_ad_jobs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cinematic_ad_job_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_pipeline_tracking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cinematic_ad_jobs: {
@@ -1072,12 +1086,15 @@ export type Database = {
           autopilot_log: Json
           autopilot_threshold: number
           caption_variants: Json
+          captions_visible: boolean | null
           classification_confidence: number | null
           confidence_scores: Json
           created_at: string
           created_by: string | null
           cta_text: string | null
           cta_variants_meta: Json
+          duplicate_risk_score: number
+          duration_valid: boolean | null
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
@@ -1087,7 +1104,9 @@ export type Database = {
           hook_variants_meta: Json
           id: string
           last_pinterest_attempt_at: string | null
+          last_publish_queue_at: string | null
           media_warnings: Json
+          motion_exists: boolean | null
           motion_score: number | null
           music_url: string | null
           needs_admin_review: boolean
@@ -1102,11 +1121,14 @@ export type Database = {
           pin_destination_url: string | null
           pin_title: string | null
           pinterest_asset_id: string | null
+          pinterest_live_pin_url: string | null
           pinterest_pin_id: string | null
           pinterest_pin_url: string | null
           pinterest_publish_attempts: number
           pinterest_publish_error: string | null
+          pinterest_publish_status: string
           pinterest_uploaded_at: string | null
+          pipeline_stage: string | null
           prepared_at: string | null
           preset: string
           product_id: string | null
@@ -1116,8 +1138,10 @@ export type Database = {
           product_slug: string
           published_at: string | null
           pushed_to_pinterest_at: string | null
+          qa_decision_reason: string | null
           qa_report: Json
           qa_score: number | null
+          qa_threshold_applied: number | null
           recommended_fix: string | null
           recoverable: boolean | null
           render_attempts: number
@@ -1143,8 +1167,10 @@ export type Database = {
           storyboard: Json
           subhook_text: string | null
           updated_at: string
+          validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
+          video_corrupted: boolean
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
@@ -1167,12 +1193,15 @@ export type Database = {
           autopilot_log?: Json
           autopilot_threshold?: number
           caption_variants?: Json
+          captions_visible?: boolean | null
           classification_confidence?: number | null
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
           cta_text?: string | null
           cta_variants_meta?: Json
+          duplicate_risk_score?: number
+          duration_valid?: boolean | null
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
@@ -1182,7 +1211,9 @@ export type Database = {
           hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
+          last_publish_queue_at?: string | null
           media_warnings?: Json
+          motion_exists?: boolean | null
           motion_score?: number | null
           music_url?: string | null
           needs_admin_review?: boolean
@@ -1197,11 +1228,14 @@ export type Database = {
           pin_destination_url?: string | null
           pin_title?: string | null
           pinterest_asset_id?: string | null
+          pinterest_live_pin_url?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
           pinterest_publish_attempts?: number
           pinterest_publish_error?: string | null
+          pinterest_publish_status?: string
           pinterest_uploaded_at?: string | null
+          pipeline_stage?: string | null
           prepared_at?: string | null
           preset?: string
           product_id?: string | null
@@ -1211,8 +1245,10 @@ export type Database = {
           product_slug: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
+          qa_decision_reason?: string | null
           qa_report?: Json
           qa_score?: number | null
+          qa_threshold_applied?: number | null
           recommended_fix?: string | null
           recoverable?: boolean | null
           render_attempts?: number
@@ -1238,8 +1274,10 @@ export type Database = {
           storyboard?: Json
           subhook_text?: string | null
           updated_at?: string
+          validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
+          video_corrupted?: boolean
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
@@ -1262,12 +1300,15 @@ export type Database = {
           autopilot_log?: Json
           autopilot_threshold?: number
           caption_variants?: Json
+          captions_visible?: boolean | null
           classification_confidence?: number | null
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
           cta_text?: string | null
           cta_variants_meta?: Json
+          duplicate_risk_score?: number
+          duration_valid?: boolean | null
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
@@ -1277,7 +1318,9 @@ export type Database = {
           hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
+          last_publish_queue_at?: string | null
           media_warnings?: Json
+          motion_exists?: boolean | null
           motion_score?: number | null
           music_url?: string | null
           needs_admin_review?: boolean
@@ -1292,11 +1335,14 @@ export type Database = {
           pin_destination_url?: string | null
           pin_title?: string | null
           pinterest_asset_id?: string | null
+          pinterest_live_pin_url?: string | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
           pinterest_publish_attempts?: number
           pinterest_publish_error?: string | null
+          pinterest_publish_status?: string
           pinterest_uploaded_at?: string | null
+          pipeline_stage?: string | null
           prepared_at?: string | null
           preset?: string
           product_id?: string | null
@@ -1306,8 +1352,10 @@ export type Database = {
           product_slug?: string
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
+          qa_decision_reason?: string | null
           qa_report?: Json
           qa_score?: number | null
+          qa_threshold_applied?: number | null
           recommended_fix?: string | null
           recoverable?: boolean | null
           render_attempts?: number
@@ -1333,8 +1381,10 @@ export type Database = {
           storyboard?: Json
           subhook_text?: string | null
           updated_at?: string
+          validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
+          video_corrupted?: boolean
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
@@ -1355,6 +1405,96 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pinterest_video_winners"
             referencedColumns: ["asset_id"]
+          },
+        ]
+      }
+      cinematic_ad_publish_queue: {
+        Row: {
+          asset_id: string | null
+          attempt_count: number
+          created_at: string
+          id: string
+          job_id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          max_attempts: number
+          metadata: Json
+          next_attempt_at: string
+          pin_id: string | null
+          pin_url: string | null
+          pinterest_video_queue_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id?: string | null
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          job_id: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          max_attempts?: number
+          metadata?: Json
+          next_attempt_at?: string
+          pin_id?: string | null
+          pin_url?: string | null
+          pinterest_video_queue_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string | null
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          job_id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          max_attempts?: number
+          metadata?: Json
+          next_attempt_at?: string
+          pin_id?: string | null
+          pin_url?: string | null
+          pinterest_video_queue_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cinematic_ad_publish_queue_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_publish_queue_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_winners"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_publish_queue_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_publish_queue_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_pipeline_tracking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_publish_queue_pinterest_video_queue_id_fkey"
+            columns: ["pinterest_video_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_queue"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -8729,6 +8869,13 @@ export type Database = {
             referencedRelation: "cinematic_ad_jobs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pinterest_autopilot_schedule_cinematic_ad_job_id_fkey"
+            columns: ["cinematic_ad_job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_pipeline_tracking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pinterest_autopilot_settings: {
@@ -14338,6 +14485,29 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_ad_pipeline_tracking: {
+        Row: {
+          approved_at: string | null
+          id: string | null
+          live_pin_url: string | null
+          pinterest_publish_status: string | null
+          pipeline_stage: string | null
+          product_name: string | null
+          product_slug: string | null
+          publish_attempt_count: number | null
+          publish_last_error: string | null
+          publish_next_attempt_at: string | null
+          publish_queue_status: string | null
+          qa_score: number | null
+          qa_threshold_applied: number | null
+          render_complete_at: string | null
+          render_started_at: string | null
+          status: string | null
+          updated_at: string | null
+          validation_passed: boolean | null
+        }
+        Relationships: []
+      }
       clean_channel_performance: {
         Row: {
           add_to_carts: number | null
@@ -15371,12 +15541,15 @@ export type Database = {
           autopilot_log: Json
           autopilot_threshold: number
           caption_variants: Json
+          captions_visible: boolean | null
           classification_confidence: number | null
           confidence_scores: Json
           created_at: string
           created_by: string | null
           cta_text: string | null
           cta_variants_meta: Json
+          duplicate_risk_score: number
+          duration_valid: boolean | null
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
@@ -15386,7 +15559,9 @@ export type Database = {
           hook_variants_meta: Json
           id: string
           last_pinterest_attempt_at: string | null
+          last_publish_queue_at: string | null
           media_warnings: Json
+          motion_exists: boolean | null
           motion_score: number | null
           music_url: string | null
           needs_admin_review: boolean
@@ -15401,11 +15576,14 @@ export type Database = {
           pin_destination_url: string | null
           pin_title: string | null
           pinterest_asset_id: string | null
+          pinterest_live_pin_url: string | null
           pinterest_pin_id: string | null
           pinterest_pin_url: string | null
           pinterest_publish_attempts: number
           pinterest_publish_error: string | null
+          pinterest_publish_status: string
           pinterest_uploaded_at: string | null
+          pipeline_stage: string | null
           prepared_at: string | null
           preset: string
           product_id: string | null
@@ -15415,8 +15593,10 @@ export type Database = {
           product_slug: string
           published_at: string | null
           pushed_to_pinterest_at: string | null
+          qa_decision_reason: string | null
           qa_report: Json
           qa_score: number | null
+          qa_threshold_applied: number | null
           recommended_fix: string | null
           recoverable: boolean | null
           render_attempts: number
@@ -15442,8 +15622,10 @@ export type Database = {
           storyboard: Json
           subhook_text: string | null
           updated_at: string
+          validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
+          video_corrupted: boolean
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
