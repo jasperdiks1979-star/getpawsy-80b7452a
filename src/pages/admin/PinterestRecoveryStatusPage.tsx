@@ -81,32 +81,55 @@ export default function PinterestRecoveryStatusPage() {
   const [recent24h, setRecent24h] = useState(0);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [{ data: s }, { data: last }, { count: c1h }, { count: c24h }] = await Promise.all([
-      supabase.from("cinematic_ad_settings").select("*").eq("id", true).maybeSingle(),
-      supabase
-        .from("pinterest_video_assets")
-        .select("last_publish_at")
-        .not("last_publish_at", "is", null)
-        .order("last_publish_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("pinterest_video_assets")
-        .select("id", { count: "exact", head: true })
-        .gte("last_publish_at", new Date(Date.now() - 3600_000).toISOString()),
-      supabase
-        .from("pinterest_video_assets")
-        .select("id", { count: "exact", head: true })
-        .gte("last_publish_at", new Date(Date.now() - 86400_000).toISOString()),
-    ]);
-    setSettings((s as unknown) as Settings | null);
-    setLastPublishAt((last as any)?.last_publish_at ?? null);
-    setRecentCount1h(c1h ?? 0);
-    setRecent24h(c24h ?? 0);
-    setLoading(false);
+    setError(null);
+    try {
+      const results = await Promise.allSettled([
+        supabase.from("cinematic_ad_settings").select("*").eq("id", true).maybeSingle(),
+        supabase
+          .from("pinterest_video_assets")
+          .select("last_publish_at")
+          .not("last_publish_at", "is", null)
+          .order("last_publish_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("pinterest_video_assets")
+          .select("id", { count: "exact", head: true })
+          .gte("last_publish_at", new Date(Date.now() - 3600_000).toISOString()),
+        supabase
+          .from("pinterest_video_assets")
+          .select("id", { count: "exact", head: true })
+          .gte("last_publish_at", new Date(Date.now() - 86400_000).toISOString()),
+      ]);
+      const [sR, lastR, c1R, c24R] = results;
+      const sVal: any = sR.status === "fulfilled" ? sR.value : null;
+      const s = sVal?.data ?? null;
+      const sErr = sVal?.error ?? (sR.status === "rejected" ? sR.reason : null);
+      const last = lastR.status === "fulfilled" ? (lastR.value as any)?.data : null;
+      const c1h = c1R.status === "fulfilled" ? (c1R.value as any)?.count ?? 0 : 0;
+      const c24h = c24R.status === "fulfilled" ? (c24R.value as any)?.count ?? 0 : 0;
+      if (sErr && !s) {
+        const msg = String(sErr?.message ?? sErr ?? "");
+        if (/jwt|auth|permission|rls/i.test(msg)) {
+          setError("AUTH");
+        } else {
+          setError(msg || "Failed to load settings");
+        }
+      }
+      setSettings((s as unknown) as Settings | null);
+      setLastPublishAt((last as any)?.last_publish_at ?? null);
+      setRecentCount1h(c1h);
+      setRecent24h(c24h);
+    } catch (e: any) {
+      console.error("[PinterestRecovery] load failed", e);
+      setError(e?.message || "Unknown error loading recovery status");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
