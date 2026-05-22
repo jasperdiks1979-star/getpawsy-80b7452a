@@ -1575,7 +1575,10 @@ export type Database = {
           min_scene_diversity: number | null
           min_scenes: number | null
           min_unique_media_assets: number
+          pinterest_publish_max_per_hour: number
+          pinterest_publish_min_slug_gap_minutes: number
           pinterest_publish_quality_floor: number | null
+          pinterest_publish_recovery_mode: boolean
           safe_zone_debug: boolean | null
           updated_at: string
           updated_by: string | null
@@ -1596,7 +1599,10 @@ export type Database = {
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_unique_media_assets?: number
+          pinterest_publish_max_per_hour?: number
+          pinterest_publish_min_slug_gap_minutes?: number
           pinterest_publish_quality_floor?: number | null
+          pinterest_publish_recovery_mode?: boolean
           safe_zone_debug?: boolean | null
           updated_at?: string
           updated_by?: string | null
@@ -1617,7 +1623,10 @@ export type Database = {
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_unique_media_assets?: number
+          pinterest_publish_max_per_hour?: number
+          pinterest_publish_min_slug_gap_minutes?: number
           pinterest_publish_quality_floor?: number | null
+          pinterest_publish_recovery_mode?: boolean
           safe_zone_debug?: boolean | null
           updated_at?: string
           updated_by?: string | null

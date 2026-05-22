@@ -57,6 +57,38 @@ Deno.serve(async (req) => {
 
   const qaFloor = Number(settings?.pinterest_publish_quality_floor ?? 55);
   const maxAttempts = Math.min(MAX_PUBLISH_ATTEMPTS, Number(settings?.max_render_attempts ?? 5));
+  // V3 PinterestQualityGateV2 — rate/diversity guards. Pulled from settings
+  // so admins can tune live without redeploys.
+  const { data: gateSettings } = await admin
+    .from("cinematic_ad_settings")
+    .select("pinterest_publish_max_per_hour, pinterest_publish_min_slug_gap_minutes, pinterest_publish_recovery_mode")
+    .eq("id", true).maybeSingle();
+  const maxPerHour = Math.max(1, Number(gateSettings?.pinterest_publish_max_per_hour ?? 3));
+  const slugGapMin = Math.max(0, Number(gateSettings?.pinterest_publish_min_slug_gap_minutes ?? 240));
+  const recoveryMode = Boolean(gateSettings?.pinterest_publish_recovery_mode ?? true);
+  const effectiveMaxPerHour = recoveryMode ? Math.min(maxPerHour, 2) : maxPerHour;
+
+  // Count pins already published in the last hour
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count: publishedLastHour } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .not("pushed_to_pinterest_at", "is", null)
+    .gte("pushed_to_pinterest_at", hourAgo);
+  const remainingHourBudget = Math.max(0, effectiveMaxPerHour - Number(publishedLastHour ?? 0));
+  if (remainingHourBudget <= 0) {
+    return json(200, { ok: true, traceId, scanned: 0, published: 0,
+      message: `hourly cap reached (${publishedLastHour}/${effectiveMaxPerHour})`, qaFloor, maxAttempts });
+  }
+
+  // Recently published slugs (for per-product cooldown)
+  const slugCutoff = new Date(Date.now() - slugGapMin * 60 * 1000).toISOString();
+  const { data: recentSlugs } = await admin
+    .from("cinematic_ad_jobs")
+    .select("product_slug")
+    .not("pushed_to_pinterest_at", "is", null)
+    .gte("pushed_to_pinterest_at", slugCutoff);
+  const cooldownSlugs = new Set((recentSlugs ?? []).map((r: any) => r.product_slug));
 
   // Find eligible jobs
   const { data: jobs, error } = await admin
@@ -71,8 +103,20 @@ Deno.serve(async (req) => {
 
   const results: Array<{ job_id: string; ok: boolean; reason?: string }> = [];
   let publishedCount = 0;
+  const publishedSlugsThisRun = new Set<string>();
 
   for (const job of jobs ?? []) {
+    if (publishedCount >= remainingHourBudget) {
+      results.push({ job_id: job.id, ok: false, reason: "hourly_budget_consumed" });
+      continue;
+    }
+    if (cooldownSlugs.has(job.product_slug) || publishedSlugsThisRun.has(job.product_slug)) {
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `slug_cooldown(${slugGapMin}m)`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "slug_cooldown" });
+      continue;
+    }
     const attempts = Number(job.pin_publish_attempts ?? 0);
     if (attempts >= maxAttempts) {
       results.push({ job_id: job.id, ok: false, reason: `max_publish_attempts(${attempts})` });
@@ -155,6 +199,7 @@ Deno.serve(async (req) => {
 
       results.push({ job_id: job.id, ok: true });
       publishedCount++;
+      publishedSlugsThisRun.add(job.product_slug);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await admin.from("cinematic_ad_jobs").update({
