@@ -1,121 +1,70 @@
+## Cinematic Video Engine Overhaul — Implementation Plan
 
-# GetPawsy Autonomous Growth Intelligence — Build Plan
+This is a large overhaul touching the render pipeline, QA engine, scene generator, and creative DNA tracking. I'll ship it in one pass as additive changes (no breaking removals).
 
-This is a large, multi-system build. I'll ship it in 6 phases, each independently deployable and reversible. Existing pipelines (cinematic ads watchdog, Pinterest creative director, autopilot scheduler, video publisher) stay intact — this layer sits on top and feeds them.
+### 1. Mobile Safe Zone System
+- New module `remotion/src/lib/safeZone.ts` with constants: top 12%, bottom 22% (CTA), side 6% horizontal padding for 1080×1920.
+- New `<SafeZoneFrame>` component wrapping every scene; auto-clamps caption position.
+- Caption component (`SafeCaption.tsx`): auto-scales font (binary search fit), multiline balance, max 3 lines, auto-center.
+- Debug overlay toggled by `render_safe_zone_debug=true` env/prop showing red boundary rectangles.
 
-## Architecture overview
+### 2. Multi-Scene Video Engine
+- Refactor `remotion/scripts/render-cinematic-ad.mjs` scene planner to require 5–12 unique scenes.
+- New scene category enum: `product_hero`, `closeup_detail`, `lifestyle`, `pet_interaction`, `owner_interaction`, `before_after`, `problem`, `comfort`, `cta`.
+- Planner rejects identical framing back-to-back (compare crop+motion hash).
 
-```text
- ┌─────────────────────────────────────────────────────────────────┐
- │  Market Intelligence (trends, competitors, keywords, hooks)     │
- └───────────────┬─────────────────────────────────────────────────┘
-                 ▼
- ┌─────────────────────────────────────────────────────────────────┐
- │  Product Opportunity Scoring  (daily score per product)         │
- └───────────────┬─────────────────────────────────────────────────┘
-                 ▼
- ┌─────────────────────────────────────────────────────────────────┐
- │  Daily Decision Engine  → picks 4–5 products + angles           │
- └───────────────┬─────────────────────────────────────────────────┘
-                 ▼
- ┌─────────────────────────────────────────────────────────────────┐
- │  Creative Strategy + Variant Generator (hooks, copy, scenes)    │
- └───────────────┬─────────────────────────────────────────────────┘
-                 ▼
- ┌─────────────────────────────────────────────────────────────────┐
- │  Video / Pin Production  (reuses cinematic + creative director) │
- └───────────────┬─────────────────────────────────────────────────┘
-                 ▼
- ┌─────────────────────────────────────────────────────────────────┐
- │  Pinterest Autopilot Publisher (reuses existing scheduler)      │
- └───────────────┬─────────────────────────────────────────────────┘
-                 ▼
- ┌─────────────────────────────────────────────────────────────────┐
- │  Performance Tracking + Learning Loop → updates scores          │
- └─────────────────────────────────────────────────────────────────┘
-```
+### 3. Advanced Motion System
+- New `remotion/src/motion/` directory with motion primitives: `pushIn`, `whipPan`, `parallaxLayers`, `rackFocus`, `cropShift`, `speedRamp`, `handheldJitter`, `motionBlurTransition`.
+- Each scene assigned 1 primary + 1 secondary motion (no repeat in adjacent scenes).
 
-All decisions are written to `growth_decisions` for full auditability. All controls live in one new admin page: **Growth Intelligence Console**.
+### 4. Short-Form Retention Editing
+- Scene timing planner: scene 1 = 1.0–1.5s hook, scenes 2–N = 1.5–2.5s with pattern interrupts.
+- Caption timing follows scene cuts; CTA escalation in final 3s.
+- Reject scenes >2.5s in plan validation.
 
-## Phase 1 — Scoring + Daily Product Selection (ship first)
+### 5. AI Hook Engine
+- New edge function `cinematic-ad-hook-generator` calling Lovable AI (google/gemini-3-flash-preview) to produce 3 hook variants from 10 hook types, pick highest scoring.
+- Stored on `cinematic_ad_jobs.hook_text` + `hook_type`.
 
-**New tables (additive only):**
-- `growth_market_trends` — term, source, market=US, score, momentum, season, captured_at
-- `growth_keyword_opportunities` — keyword, volume, intent, fit_category, score
-- `growth_viral_hook_patterns` — hook, family, structure, performance_score
-- `growth_competitor_insights` — domain, pattern_type, summary, observed_at
-- `growth_seasonal_opportunities` — period, theme, categories, lift_score
-- `growth_product_scores` — product_id, day, opportunity_score, reasons jsonb, recommended_channel, recommended_angle, recommended_hook, confidence
-- `growth_decisions` — day, decision_type, product_id, payload jsonb, reason, status
-- `growth_autopilot_config` (singleton) — enabled, paused_publishing, max_pins_per_day, min_product_score, category_whitelist, mode (manual/auto), emergency_stop
-- `growth_strategy_scores` — dimension (hook/angle/style/time/board/keyword/category), key, score, samples, updated_at
-- `growth_weekly_reports` — week_start, payload jsonb
+### 6. Pinterest/TikTok Style Matching
+- Style preset table `cinematic_ad_style_presets` (pinterest_native, tiktok_native) with pacing JSON.
+- Scene planner consumes preset to drive cut density + caption cadence.
 
-**Edge functions:**
-- `growth-score-products` — runs daily, scores all active US products (image quality, price, demand, Pinterest/TikTok fit, prior performance, availability, page quality) → writes `growth_product_scores`
-- `growth-select-daily` — picks 4–5 products honoring rules (no OOS, no 7-day repeat, mix of safe winners + experiments, respects `min_product_score` and category filters) → writes `growth_decisions`
+### 7. Scene Uniqueness Engine
+- Pre-render: compute hash per scene (crop bbox + motion type + caption text).
+- Reject plan if any 2 scenes share hash; regenerate up to 3 times.
+- Store entropy score on job (`scene_entropy_score`).
 
-**Admin UI:** `/admin/growth-intelligence` page with: today's selected products, opportunity scores w/ reasons, "Run scoring now", "Re-select today", autopilot ON/OFF + mode controls.
+### 8. Smart Asset Expansion
+- New `remotion/src/lib/assetExpansion.ts`: from 1 source image, derive synthetic variants via crop regions (center, top-detail, bottom-detail, left-third, right-third) + zoom levels.
+- Use these as distinct "scenes" when product has <3 images.
 
-**Cron:** daily 06:00 UTC scoring → 06:15 UTC selection.
+### 9. Quality-First QA Engine
+- Extend `cinematic-ad-validate` with new dimensions: `mobile_readability`, `caption_visibility`, `hook_strength`, `pacing_quality`, `motion_diversity`, `scene_diversity`, `visual_energy`, `retention_likelihood`, `cta_clarity` (each 0–100).
+- Auto-reject if `motion_diversity < 40` OR `scene_diversity < 40` OR `caption_visibility < 70`.
 
-## Phase 2 — Creative Strategy + Variant Generator
+### 10. Creative DNA Memory
+- New table `cinematic_creative_dna` storing structure fingerprint + performance metrics (pinterest_saves, clicks, retention, ctr).
+- Edge function `cinematic-ad-dna-bias` returns top-3 winning DNA patterns; planner samples from these 70% of the time.
 
-- `growth-creative-strategy` edge function: for each selected product, call Lovable AI (gemini-2.5-flash) with strict JSON schema to produce {hook×3, voiceover, scene_plan, captions, pin_title×2, pin_description×2, hashtags, CTA×2, audience_angle, pain_point, benefit_stack, emotional_trigger, visual_styles×2}
-- Stored in `growth_creative_variants` (product_id, decision_id, variants jsonb, status)
-- Controlled rotation: variant_selector picks one combo per scheduled slot, marks others queued
-- Pre-flight safety: merchant-policy banned terms scrub (reuses `src/config/merchant-policy.ts` patterns)
+### Database migrations (additive)
+- ADD columns to `cinematic_ad_jobs`: `hook_text TEXT`, `hook_type TEXT`, `scene_entropy_score NUMERIC`, `motion_diversity_score NUMERIC`, `caption_visibility_score NUMERIC`, `style_preset TEXT DEFAULT 'pinterest_native'`, `scene_plan JSONB`.
+- CREATE `cinematic_ad_style_presets` (preset_name, pacing_config, caption_config, motion_config).
+- CREATE `cinematic_creative_dna` (id, dna_fingerprint, scene_sequence, motion_sequence, hook_type, performance JSONB, sample_count, score).
+- Seed 2 style presets and the hook taxonomy.
 
-## Phase 3 — Video Production + Pinterest Autopilot Scheduling
+### Files (new/edited)
+- New: `remotion/src/lib/safeZone.ts`, `remotion/src/components/SafeZoneFrame.tsx`, `remotion/src/components/SafeCaption.tsx`, `remotion/src/motion/*.ts`, `remotion/src/lib/assetExpansion.ts`
+- Edited: `remotion/scripts/render-cinematic-ad.mjs` (planner + scene loop)
+- New edge functions: `cinematic-ad-hook-generator/index.ts`, `cinematic-ad-dna-bias/index.ts`
+- Edited: `supabase/functions/cinematic-ad-validate/index.ts`
+- New migration with all schema additions + seeds
+- New admin UI card: `src/components/admin/cinematic/CreativeDNAPanel.tsx` mounted into `CinematicAdsControlCenterPage`
 
-- `growth-produce-video` dispatches existing cinematic ad render with selected variant + product → existing watchdog handles failures
-- On render success, inserts into `pinterest_pin_queue` (draft) via existing `pinterest-creative-director` contract (draft-only, no `backdrop_*` fields per memory)
-- `growth-schedule-pins` populates `pinterest_autopilot_schedule` rows across 4 US prime windows (8–10/12–2/5–7/8–10 ET), randomized, respecting max-per-day and 1-pin-per-product-per-week
-- Pre-publish guardrails (gate inside scheduler): stock check, URL check, video metadata check, dup-title 14d check, token freshness
+### Safety
+- All migrations additive; no drops.
+- All new fields nullable with defaults.
+- Existing render path remains operational; new planner activated behind `engine_version='v2'` flag on `cinematic_ad_settings` (defaults to v2 but can fall back to v1).
+- QA auto-reject only blocks publish; does not delete jobs.
 
-## Phase 4 — Performance Tracking
-
-- `growth-perf-snapshot` daily edge function: pulls Pinterest analytics (reuses existing pinterest video/metrics sync where applicable) + GA4-style internal metrics from `visitor_activity` → writes `growth_performance_snapshots` (pin_id, product_id, day, impressions, saves, outbound_clicks, ctr, watch_time, sessions, atc, checkout, purchases, revenue)
-- Attribution: joins on UTM `utm_source=pinterest&utm_campaign=growth_<decision_id>`
-
-## Phase 5 — Learning Loop + Dashboard
-
-- `growth-learning-loop` daily: aggregates last 14/30d performance per dimension → updates `growth_strategy_scores` with EWMA → feeds back into Phase 1 scorer and Phase 2 variant selector
-- Dashboard expands: winners/losers, hook leaderboard, best times, best boards, current AI confidence, manual approval queue, emergency stop button, autopilot health (reuses existing `AutopilotHealthPanel`)
-
-## Phase 6 — Self-Healing Integration + Weekly Reports
-
-- Wire growth decisions into existing `cinematic-ad-watchdog`: on `needs_admin_review` for a growth-originated job, mark the `growth_decisions` row as `blocked`, surface in dashboard with AI-suggested next action
-- `growth-weekly-report` Sunday 23:00 UTC → writes `growth_weekly_reports` row + sends admin email via existing `cinematic-ad-alert` template fork
-
-## Safety / Compliance (applies all phases)
-
-- No publish if: OOS, broken URL, missing image, video validation fails, Pinterest token missing/expired, GitHub billing blocked, non-pet category, title/category mismatch
-- All edge functions: standard `{ok, traceId, message}` contract, append-only event log to `growth_events`
-- All AI prompts forbid: vet-approved, eco-friendly, dropshipping terms, price anchoring, fake reviews (per project memory)
-- US-only product filter throughout
-
-## Files to create / modify (Phase 1 only — kept tight)
-
-**New:**
-- `supabase/migrations/<ts>_growth_intelligence_phase1.sql`
-- `supabase/functions/growth-score-products/index.ts`
-- `supabase/functions/growth-select-daily/index.ts`
-- `src/pages/admin/GrowthIntelligenceConsolePage.tsx`
-- `src/components/admin/growth-intelligence/DailySelectionPanel.tsx`
-- `src/components/admin/growth-intelligence/AutopilotControls.tsx`
-
-**Modified:**
-- `src/App.tsx` (route)
-- Admin nav
-
-Phases 2–6 each add ~2–4 edge functions, 1–3 tables, and 1 dashboard section. No existing tables are modified; no existing functions are broken.
-
-## Confirmation before I start
-
-Shipping all 6 phases in one go is a lot of code and review surface. Two options:
-
-1. **Phase 1 now, then iterate** — I build scoring + daily selection + console scaffold + autopilot controls, you verify scores look right on your real catalog, then I proceed phase-by-phase.
-2. **All phases sequentially without pausing** — I build straight through; higher risk of misaligned assumptions on creative format or attribution.
-
-I recommend **option 1**. Reply "go phase 1" (or "go all phases") and I'll start.
+Reply **go** to execute.
