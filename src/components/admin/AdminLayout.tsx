@@ -64,6 +64,8 @@ const navItems = [
   { to: '/admin/tiktok-funnel-report', label: 'TikTok Funnel Report', icon: TrendingUp },
   { to: '/admin/tiktok-cta-ctr', label: 'TikTok CTA CTR', icon: TrendingUp },
   { to: '/admin/cinematic-ads', label: 'Cinematic Ads', icon: Video },
+  { to: '/admin/pinterest-recovery', label: 'Pinterest Recovery', icon: ShieldAlert },
+  { to: '/admin/cinematic-performance', label: 'Cinematic Perf', icon: Gauge },
   { to: '/admin/placement-overview', label: 'Placement Overview', icon: Gauge },
   { to: '/admin/job-retry-policies', label: 'Job Retry Policies', icon: Wrench },
   { to: '/admin/job-retry-metrics', label: 'Job Retry Metrics', icon: Activity },
