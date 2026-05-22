@@ -55,34 +55,52 @@ export default function CinematicPerformanceMetricsPage() {
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [window, setWindow] = useState<Window>("7d");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const since = new Date(Date.now() - WINDOW_MS[window]).toISOString();
-    const [{ data: perf }, { data: latest }, { data: quar }] = await Promise.all([
-      supabase
-        .from("cinematic_pin_performance" as any)
-        .select("*")
-        .gte("collected_at", since)
-        .order("collected_at", { ascending: false })
-        .limit(1000),
-      supabase
-        .from("cinematic_pin_performance" as any)
-        .select("collected_at")
-        .order("collected_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("cinematic_quarantine_patterns" as any)
-        .select("*")
-        .gt("quarantined_until", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
-    setRows(((perf as unknown) as PerfRow[]) || []);
-    setLastSync(((latest as any)?.collected_at as string) ?? null);
-    setQuarantine(((quar as unknown) as QuarantineRow[]) || []);
-    setLoading(false);
+    setError(null);
+    try {
+      const since = new Date(Date.now() - WINDOW_MS[window]).toISOString();
+      const results = await Promise.allSettled([
+        supabase
+          .from("cinematic_pin_performance" as any)
+          .select("*")
+          .gte("collected_at", since)
+          .order("collected_at", { ascending: false })
+          .limit(1000),
+        supabase
+          .from("cinematic_pin_performance" as any)
+          .select("collected_at")
+          .order("collected_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("cinematic_quarantine_patterns" as any)
+          .select("*")
+          .gt("quarantined_until", new Date().toISOString())
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
+      const [perfR, latestR, quarR] = results;
+      const perf = perfR.status === "fulfilled" ? (perfR.value as any)?.data : null;
+      const latest = latestR.status === "fulfilled" ? (latestR.value as any)?.data : null;
+      const quar = quarR.status === "fulfilled" ? (quarR.value as any)?.data : null;
+      const perfErr = perfR.status === "fulfilled" ? (perfR.value as any)?.error : perfR.reason;
+      if (perfErr) {
+        const msg = String(perfErr?.message ?? perfErr ?? "");
+        if (/jwt|auth|permission|rls/i.test(msg)) setError("AUTH");
+        else if (!perf) setError(msg);
+      }
+      setRows(Array.isArray(perf) ? (perf as PerfRow[]) : []);
+      setLastSync(((latest as any)?.collected_at as string) ?? null);
+      setQuarantine(Array.isArray(quar) ? (quar as QuarantineRow[]) : []);
+    } catch (e: any) {
+      console.error("[CinematicPerformance] load failed", e);
+      setError(e?.message || "Unknown error loading performance metrics");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, [window]);
@@ -174,7 +192,11 @@ export default function CinematicPerformanceMetricsPage() {
         </div>
       </header>
 
-      {loading && !hasData ? (
+      {error === "AUTH" ? (
+        <Card className="p-6 text-sm">Admin login required to view performance metrics.</Card>
+      ) : error ? (
+        <Card className="p-6 text-sm text-destructive">Error loading metrics: {error}</Card>
+      ) : loading && !hasData ? (
         <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
       ) : !hasData ? (
         <Card className="p-8 text-center">

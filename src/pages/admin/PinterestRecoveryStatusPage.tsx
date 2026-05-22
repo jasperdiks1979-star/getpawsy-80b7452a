@@ -26,16 +26,31 @@ type Settings = {
   updated_at: string;
 };
 
+const DEFAULT_WINDOWS: Window[] = [
+  { start: 7, end: 9 },
+  { start: 12, end: 14 },
+  { start: 19, end: 23 },
+];
+const DEFAULT_TIERS: Record<string, number> = { tier1: 2, tier2: 3, tier3: 4 };
+
 function estHourNow(now: Date) {
   return (now.getUTCHours() + 24 - 5) % 24;
 }
+function safeWindows(windows: Window[] | undefined | null): Window[] {
+  const w = Array.isArray(windows)
+    ? windows.filter((x) => x && typeof x.start === "number" && typeof x.end === "number")
+    : [];
+  return w.length > 0 ? w : DEFAULT_WINDOWS;
+}
 function isInWindow(now: Date, windows: Window[]) {
   const h = estHourNow(now);
-  return windows.some((w) => h >= w.start && h < w.end);
+  return safeWindows(windows).some((w) => h >= w.start && h < w.end);
 }
-function nextWindowStartUtc(now: Date, windows: Window[]): Date {
+function nextWindowStartUtc(now: Date, windows: Window[]): Date | null {
+  const ws = safeWindows(windows);
+  if (ws.length === 0) return null;
   const h = estHourNow(now);
-  const sorted = [...windows].sort((a, b) => a.start - b.start);
+  const sorted = [...ws].sort((a, b) => a.start - b.start);
   for (const w of sorted) {
     if (h < w.start) {
       const next = new Date(now);
@@ -66,32 +81,55 @@ export default function PinterestRecoveryStatusPage() {
   const [recent24h, setRecent24h] = useState(0);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [{ data: s }, { data: last }, { count: c1h }, { count: c24h }] = await Promise.all([
-      supabase.from("cinematic_ad_settings").select("*").eq("id", true).maybeSingle(),
-      supabase
-        .from("pinterest_video_assets")
-        .select("last_publish_at")
-        .not("last_publish_at", "is", null)
-        .order("last_publish_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("pinterest_video_assets")
-        .select("id", { count: "exact", head: true })
-        .gte("last_publish_at", new Date(Date.now() - 3600_000).toISOString()),
-      supabase
-        .from("pinterest_video_assets")
-        .select("id", { count: "exact", head: true })
-        .gte("last_publish_at", new Date(Date.now() - 86400_000).toISOString()),
-    ]);
-    setSettings((s as unknown) as Settings | null);
-    setLastPublishAt((last as any)?.last_publish_at ?? null);
-    setRecentCount1h(c1h ?? 0);
-    setRecent24h(c24h ?? 0);
-    setLoading(false);
+    setError(null);
+    try {
+      const results = await Promise.allSettled([
+        supabase.from("cinematic_ad_settings").select("*").eq("id", true).maybeSingle(),
+        supabase
+          .from("pinterest_video_assets")
+          .select("last_publish_at")
+          .not("last_publish_at", "is", null)
+          .order("last_publish_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("pinterest_video_assets")
+          .select("id", { count: "exact", head: true })
+          .gte("last_publish_at", new Date(Date.now() - 3600_000).toISOString()),
+        supabase
+          .from("pinterest_video_assets")
+          .select("id", { count: "exact", head: true })
+          .gte("last_publish_at", new Date(Date.now() - 86400_000).toISOString()),
+      ]);
+      const [sR, lastR, c1R, c24R] = results;
+      const sVal: any = sR.status === "fulfilled" ? sR.value : null;
+      const s = sVal?.data ?? null;
+      const sErr = sVal?.error ?? (sR.status === "rejected" ? sR.reason : null);
+      const last = lastR.status === "fulfilled" ? (lastR.value as any)?.data : null;
+      const c1h = c1R.status === "fulfilled" ? (c1R.value as any)?.count ?? 0 : 0;
+      const c24h = c24R.status === "fulfilled" ? (c24R.value as any)?.count ?? 0 : 0;
+      if (sErr && !s) {
+        const msg = String(sErr?.message ?? sErr ?? "");
+        if (/jwt|auth|permission|rls/i.test(msg)) {
+          setError("AUTH");
+        } else {
+          setError(msg || "Failed to load settings");
+        }
+      }
+      setSettings((s as unknown) as Settings | null);
+      setLastPublishAt((last as any)?.last_publish_at ?? null);
+      setRecentCount1h(c1h);
+      setRecent24h(c24h);
+    } catch (e: any) {
+      console.error("[PinterestRecovery] load failed", e);
+      setError(e?.message || "Unknown error loading recovery status");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -104,15 +142,19 @@ export default function PinterestRecoveryStatusPage() {
     };
   }, []);
 
-  const windows = settings?.publish_windows_est ?? [];
+  const windows = safeWindows(settings?.publish_windows_est);
   const inWindow = useMemo(() => isInWindow(now, windows), [now, windows]);
   const nextWindow = useMemo(() => nextWindowStartUtc(now, windows), [now, windows]);
-  const jitterRangeMin = settings ? Math.round(settings.publish_jitter_min_seconds / 60) : 0;
-  const jitterRangeMax = settings ? Math.round(settings.publish_jitter_max_seconds / 60) : 0;
+  const jitterRangeMin = settings ? Math.round((settings.publish_jitter_min_seconds ?? 0) / 60) : 0;
+  const jitterRangeMax = settings ? Math.round((settings.publish_jitter_max_seconds ?? 0) / 60) : 0;
 
   // Effective hourly cap based on recovery tier
+  const tierProg: Record<string, number> =
+    settings?.recovery_tier_progression && typeof settings.recovery_tier_progression === "object"
+      ? (settings.recovery_tier_progression as Record<string, number>)
+      : DEFAULT_TIERS;
   const tierCap = settings?.pinterest_publish_recovery_mode
-    ? settings.recovery_tier_progression?.tier1 ?? 2
+    ? tierProg.tier1 ?? 2
     : settings?.pinterest_publish_max_per_hour ?? 3;
 
   return (
@@ -133,12 +175,18 @@ export default function PinterestRecoveryStatusPage() {
         </Button>
       </header>
 
-      {loading && !settings ? (
+      {error === "AUTH" ? (
+        <Card className="p-6 text-sm">Admin login required to view recovery status.</Card>
+      ) : error ? (
+        <Card className="p-6 text-sm text-destructive">
+          Error loading recovery status: {error}
+        </Card>
+      ) : loading && !settings ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : !settings ? (
-        <Card className="p-6 text-sm text-muted-foreground">No settings row found.</Card>
+        <Card className="p-6 text-sm text-muted-foreground">No recovery data yet.</Card>
       ) : (
         <>
           {/* Top status grid */}
@@ -166,16 +214,16 @@ export default function PinterestRecoveryStatusPage() {
               {settings.pinterest_publish_recovery_mode ? (
                 <Badge className="bg-amber-500 hover:bg-amber-500/90 gap-1">
                   <ShieldAlert className="h-3 w-3" />
-                  Active — {settings.recovery_tier_progression?.tier1 ?? 2}/hr cap
+                  Active — {tierProg.tier1 ?? 2}/hr cap
                 </Badge>
               ) : (
                 <Badge className="bg-emerald-500 hover:bg-emerald-500/90 gap-1">
                   <ShieldCheck className="h-3 w-3" />
-                  Normal — {settings.pinterest_publish_max_per_hour}/hr cap
+                  Normal — {settings.pinterest_publish_max_per_hour ?? 3}/hr cap
                 </Badge>
               )}
               <p className="text-[11px] text-muted-foreground mt-1">
-                Auto-exits after {settings.recovery_auto_exit_days} clean days
+                Auto-exits after {settings.recovery_auto_exit_days ?? 0} clean days
               </p>
             </Card>
 
@@ -183,9 +231,11 @@ export default function PinterestRecoveryStatusPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
                 <Clock className="h-3 w-3" /> Publish Window
               </div>
-              {inWindow ? (
+              {inWindow || !nextWindow ? (
                 <>
-                  <Badge className="bg-emerald-500 hover:bg-emerald-500/90">In window</Badge>
+                  <Badge className={inWindow ? "bg-emerald-500 hover:bg-emerald-500/90" : "bg-muted"}>
+                    {inWindow ? "In window" : "—"}
+                  </Badge>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     EST hour: {estHourNow(now)}:00
                   </p>
@@ -239,17 +289,17 @@ export default function PinterestRecoveryStatusPage() {
           <Card className="p-4 mb-4">
             <h2 className="font-semibold mb-3 text-sm">PinterestQualityGateV2</h2>
             <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <Row label="QA floor" value={`≥ ${settings.pinterest_publish_quality_floor}`} />
-              <Row label="Slug cooldown" value={`${settings.pinterest_publish_min_slug_gap_minutes} min`} />
+              <Row label="QA floor" value={`≥ ${settings.pinterest_publish_quality_floor ?? "—"}`} />
+              <Row label="Slug cooldown" value={`${settings.pinterest_publish_min_slug_gap_minutes ?? "—"} min`} />
               <Row label="Hourly cap" value={`${tierCap} / hr`} />
-              <Row label="Hook cooldown" value={`${settings.hook_cooldown_days} days`} />
+              <Row label="Hook cooldown" value={`${settings.hook_cooldown_days ?? "—"} days`} />
               <Row
                 label="Thumbnail pHash distance"
-                value={`≤ ${settings.thumbnail_phash_distance_threshold} → reject`}
+                value={`≤ ${settings.thumbnail_phash_distance_threshold ?? "—"} → reject`}
               />
               <Row
                 label="Board diversification"
-                value={`max ${settings.board_max_pins_per_window} pins / ${settings.board_recent_window_minutes}min`}
+                value={`max ${settings.board_max_pins_per_window ?? "—"} pins / ${settings.board_recent_window_minutes ?? "—"}min`}
               />
             </dl>
           </Card>
@@ -258,7 +308,7 @@ export default function PinterestRecoveryStatusPage() {
           <Card className="p-4">
             <h2 className="font-semibold mb-3 text-sm">Recovery Tier Ladder</h2>
             <div className="flex gap-3 flex-wrap">
-              {Object.entries(settings.recovery_tier_progression ?? {}).map(([k, v]) => {
+              {Object.entries(tierProg).map(([k, v]) => {
                 const isCurrent =
                   settings.pinterest_publish_recovery_mode && k === "tier1";
                 return (
@@ -274,9 +324,14 @@ export default function PinterestRecoveryStatusPage() {
                 );
               })}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2">
-              Settings last updated: {new Date(settings.updated_at).toLocaleString()}
-            </p>
+            {settings.updated_at && (
+              <p className="text-[11px] text-muted-foreground mt-2">
+                Settings last updated:{" "}
+                {(() => {
+                  try { return new Date(settings.updated_at).toLocaleString(); } catch { return "—"; }
+                })()}
+              </p>
+            )}
           </Card>
         </>
       )}
