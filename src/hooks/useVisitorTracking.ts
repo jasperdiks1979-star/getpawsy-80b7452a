@@ -34,6 +34,29 @@ import { PRODUCTION_DOMAINS } from '@/lib/constants';
 // Countries to mark as internal traffic
 const INTERNAL_COUNTRIES = ['Netherlands', 'The Netherlands', 'NL'];
 
+// Paths that must NEVER appear in commercial analytics
+const EXCLUDED_PATH_PREFIXES = [
+  '/admin', '/auth', '/login', '/signup', '/reset-password',
+  '/diagnostics', '/healthz', '/health', '/founder-mode',
+  '/merchant-oauth-callback', '/payment-success',
+];
+
+const isExcludedPath = (path: string): boolean => {
+  const p = (path || '').toLowerCase();
+  return EXCLUDED_PATH_PREFIXES.some(prefix => p === prefix || p.startsWith(prefix + '/') || p.startsWith(prefix + '?'));
+};
+
+const isPreviewHost = (): boolean => {
+  try {
+    const h = window.location.hostname.toLowerCase();
+    return h.includes('localhost') ||
+      h.includes('lovableproject.com') ||
+      h.includes('lovable.app') && h.includes('preview') ||
+      h.includes('127.0.0.1') ||
+      h.endsWith('.local');
+  } catch { return false; }
+};
+
 // Known bot user agent patterns
 const BOT_PATTERNS = [
   'googlebot', 'bingbot', 'yandexbot', 'duckduckbot', 'slurp', 'baiduspider',
@@ -57,6 +80,61 @@ const isProductionDomain = (): boolean => {
   const hostname = window.location.hostname;
   return PRODUCTION_DOMAINS.includes(hostname);
 };
+
+// Heuristic: is this likely a bot/test session?
+// Common bot signature: desktop Chrome at exactly 800x600 (Lighthouse/headless default).
+const detectBotSuspect = (deviceInfo: DeviceInfo): { suspect: boolean; reason: string | null } => {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('headless') || ua.includes('phantom') || ua.includes('puppeteer') || ua.includes('playwright')) {
+    return { suspect: true, reason: 'headless_ua' };
+  }
+  if (deviceInfo.device_type === 'desktop' && deviceInfo.browser === 'Chrome' &&
+      deviceInfo.screen_width <= 1024 && deviceInfo.screen_height <= 768 &&
+      deviceInfo.screen_width >= 600) {
+    return { suspect: true, reason: 'lighthouse_viewport' };
+  }
+  if (deviceInfo.screen_width < 320 || deviceInfo.screen_height < 240) {
+    return { suspect: true, reason: 'tiny_viewport' };
+  }
+  return { suspect: false, reason: null };
+};
+
+// First-touch UTM persistence (across whole session)
+const UTM_FIRST_KEY = 'gp_utm_first';
+const getFirstTouchUtm = (current: UTMParams): { first_source: string | null; first_medium: string | null; first_campaign: string | null } => {
+  try {
+    const cached = sessionStorage.getItem(UTM_FIRST_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return { first_source: parsed.s ?? null, first_medium: parsed.m ?? null, first_campaign: parsed.c ?? null };
+    }
+    const payload = { s: current.utm_source, m: current.utm_medium, c: current.utm_campaign };
+    sessionStorage.setItem(UTM_FIRST_KEY, JSON.stringify(payload));
+    return { first_source: payload.s, first_medium: payload.m, first_campaign: payload.c };
+  } catch {
+    return { first_source: current.utm_source, first_medium: current.utm_medium, first_campaign: current.utm_campaign };
+  }
+};
+
+function classifyTrafficQuality(args: {
+  isAdminPath: boolean;
+  isInternal: boolean;
+  isBotSuspect: boolean;
+  isPreview: boolean;
+  country?: string | null;
+}): string {
+  if (args.isAdminPath) return 'admin';
+  if (args.isPreview) return 'preview';
+  if (args.isBotSuspect) return 'bot';
+  if (args.isInternal) return 'internal';
+  if (!args.country) return 'unknown';
+  return 'clean';
+}
+
+function geoConfidenceFor(country?: string | null): string {
+  if (!country) return 'none';
+  return 'high';
+}
 
 // Generate a unique session ID
 const getSessionId = (): string => {
@@ -203,6 +281,7 @@ export interface TrackingOptions {
   productName?: string;
   productPrice?: number;
   productQuantity?: number;
+  productCategory?: string;
   pagePath?: string;
   orderId?: string;
   orderValue?: number;
