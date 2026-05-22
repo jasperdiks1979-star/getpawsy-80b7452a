@@ -5,6 +5,7 @@ import { MarketSignalPanel } from "@/components/admin/market-intelligence/Market
 import { MarketTrendsPanel } from "@/components/admin/market-intelligence/MarketTrendsPanel";
 import { MarketRecommendationsPanel } from "@/components/admin/market-intelligence/MarketRecommendationsPanel";
 import { MarketGapActionsPanel } from "@/components/admin/market-intelligence/MarketGapActionsPanel";
+import DataQualityWarning from "@/components/admin/analytics/DataQualityWarning";
 
 export default function MarketIntelligencePage() {
   return (
@@ -14,6 +15,7 @@ export default function MarketIntelligencePage() {
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
       <div className="space-y-6">
+        <DataQualityWarning />
         <MarketSignalPanel />
         <MarketCompetitorPanel />
         <MarketGapActionsPanel />
