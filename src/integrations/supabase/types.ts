@@ -1086,26 +1086,33 @@ export type Database = {
           autopilot_log: Json
           autopilot_threshold: number
           caption_variants: Json
+          caption_visibility_score: number | null
           captions_visible: boolean | null
           classification_confidence: number | null
           confidence_scores: Json
           created_at: string
           created_by: string | null
+          cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
           duplicate_risk_score: number
           duration_valid: boolean | null
+          engine_version: string | null
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
           hashtags: string[]
+          hook_strength_score: number | null
           hook_text: string | null
+          hook_type: string | null
           hook_variant: string
           hook_variants_meta: Json
           id: string
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
           media_warnings: Json
+          mobile_readability_score: number | null
+          motion_diversity_score: number | null
           motion_exists: boolean | null
           motion_score: number | null
           music_url: string | null
@@ -1117,6 +1124,7 @@ export type Database = {
           output_mp4_url: string | null
           output_thumbnail_url: string | null
           output_width: number | null
+          pacing_quality_score: number | null
           pin_description: string | null
           pin_destination_url: string | null
           pin_title: string | null
@@ -1155,9 +1163,12 @@ export type Database = {
           render_token: string | null
           render_worker_id: string | null
           rendered_at: string | null
+          retention_likelihood_score: number | null
           risk_level: string | null
           root_cause: string | null
           scene_assets: Json
+          scene_entropy_score: number | null
+          scene_plan: Json | null
           scene_specs: Json
           selected_cta_index: number
           selected_hook_index: number
@@ -1165,12 +1176,14 @@ export type Database = {
           status: string
           status_message: string | null
           storyboard: Json
+          style_preset: string | null
           subhook_text: string | null
           updated_at: string
           validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
           video_corrupted: boolean
+          visual_energy_score: number | null
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
@@ -1193,26 +1206,33 @@ export type Database = {
           autopilot_log?: Json
           autopilot_threshold?: number
           caption_variants?: Json
+          caption_visibility_score?: number | null
           captions_visible?: boolean | null
           classification_confidence?: number | null
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
+          cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
           duplicate_risk_score?: number
           duration_valid?: boolean | null
+          engine_version?: string | null
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
           hashtags?: string[]
+          hook_strength_score?: number | null
           hook_text?: string | null
+          hook_type?: string | null
           hook_variant?: string
           hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
           media_warnings?: Json
+          mobile_readability_score?: number | null
+          motion_diversity_score?: number | null
           motion_exists?: boolean | null
           motion_score?: number | null
           music_url?: string | null
@@ -1224,6 +1244,7 @@ export type Database = {
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           output_width?: number | null
+          pacing_quality_score?: number | null
           pin_description?: string | null
           pin_destination_url?: string | null
           pin_title?: string | null
@@ -1262,9 +1283,12 @@ export type Database = {
           render_token?: string | null
           render_worker_id?: string | null
           rendered_at?: string | null
+          retention_likelihood_score?: number | null
           risk_level?: string | null
           root_cause?: string | null
           scene_assets?: Json
+          scene_entropy_score?: number | null
+          scene_plan?: Json | null
           scene_specs?: Json
           selected_cta_index?: number
           selected_hook_index?: number
@@ -1272,12 +1296,14 @@ export type Database = {
           status?: string
           status_message?: string | null
           storyboard?: Json
+          style_preset?: string | null
           subhook_text?: string | null
           updated_at?: string
           validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
           video_corrupted?: boolean
+          visual_energy_score?: number | null
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
@@ -1300,26 +1326,33 @@ export type Database = {
           autopilot_log?: Json
           autopilot_threshold?: number
           caption_variants?: Json
+          caption_visibility_score?: number | null
           captions_visible?: boolean | null
           classification_confidence?: number | null
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
+          cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
           duplicate_risk_score?: number
           duration_valid?: boolean | null
+          engine_version?: string | null
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
           hashtags?: string[]
+          hook_strength_score?: number | null
           hook_text?: string | null
+          hook_type?: string | null
           hook_variant?: string
           hook_variants_meta?: Json
           id?: string
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
           media_warnings?: Json
+          mobile_readability_score?: number | null
+          motion_diversity_score?: number | null
           motion_exists?: boolean | null
           motion_score?: number | null
           music_url?: string | null
@@ -1331,6 +1364,7 @@ export type Database = {
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           output_width?: number | null
+          pacing_quality_score?: number | null
           pin_description?: string | null
           pin_destination_url?: string | null
           pin_title?: string | null
@@ -1369,9 +1403,12 @@ export type Database = {
           render_token?: string | null
           render_worker_id?: string | null
           rendered_at?: string | null
+          retention_likelihood_score?: number | null
           risk_level?: string | null
           root_cause?: string | null
           scene_assets?: Json
+          scene_entropy_score?: number | null
+          scene_plan?: Json | null
           scene_specs?: Json
           selected_cta_index?: number
           selected_hook_index?: number
@@ -1379,12 +1416,14 @@ export type Database = {
           status?: string
           status_message?: string | null
           storyboard?: Json
+          style_preset?: string | null
           subhook_text?: string | null
           updated_at?: string
           validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
           video_corrupted?: boolean
+          visual_energy_score?: number | null
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
@@ -1502,32 +1541,89 @@ export type Database = {
         Row: {
           approval_confidence_threshold: number
           auto_approve_enabled: boolean
+          engine_version: string | null
           id: boolean
           max_duplicate_threshold: number
           max_retry_threshold: number
+          max_scenes: number | null
+          min_caption_visibility: number | null
+          min_motion_diversity: number | null
+          min_scene_diversity: number | null
+          min_scenes: number | null
           min_unique_media_assets: number
+          safe_zone_debug: boolean | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
+          engine_version?: string | null
           id?: boolean
           max_duplicate_threshold?: number
           max_retry_threshold?: number
+          max_scenes?: number | null
+          min_caption_visibility?: number | null
+          min_motion_diversity?: number | null
+          min_scene_diversity?: number | null
+          min_scenes?: number | null
           min_unique_media_assets?: number
+          safe_zone_debug?: boolean | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
+          engine_version?: string | null
           id?: boolean
           max_duplicate_threshold?: number
           max_retry_threshold?: number
+          max_scenes?: number | null
+          min_caption_visibility?: number | null
+          min_motion_diversity?: number | null
+          min_scene_diversity?: number | null
+          min_scenes?: number | null
           min_unique_media_assets?: number
+          safe_zone_debug?: boolean | null
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      cinematic_ad_style_presets: {
+        Row: {
+          active: boolean
+          caption_config: Json
+          created_at: string
+          display_name: string
+          id: string
+          motion_config: Json
+          pacing_config: Json
+          preset_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          caption_config?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          motion_config?: Json
+          pacing_config?: Json
+          preset_name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          caption_config?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          motion_config?: Json
+          pacing_config?: Json
+          preset_name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1563,6 +1659,51 @@ export type Database = {
           paused_at?: string | null
           paused_by?: string | null
           paused_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cinematic_creative_dna: {
+        Row: {
+          created_at: string
+          dna_fingerprint: string
+          hook_type: string | null
+          id: string
+          last_used_at: string | null
+          motion_sequence: Json
+          performance: Json
+          sample_count: number
+          scene_sequence: Json
+          score: number
+          style_preset: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dna_fingerprint: string
+          hook_type?: string | null
+          id?: string
+          last_used_at?: string | null
+          motion_sequence?: Json
+          performance?: Json
+          sample_count?: number
+          scene_sequence?: Json
+          score?: number
+          style_preset?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dna_fingerprint?: string
+          hook_type?: string | null
+          id?: string
+          last_used_at?: string | null
+          motion_sequence?: Json
+          performance?: Json
+          sample_count?: number
+          scene_sequence?: Json
+          score?: number
+          style_preset?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -15541,26 +15682,33 @@ export type Database = {
           autopilot_log: Json
           autopilot_threshold: number
           caption_variants: Json
+          caption_visibility_score: number | null
           captions_visible: boolean | null
           classification_confidence: number | null
           confidence_scores: Json
           created_at: string
           created_by: string | null
+          cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
           duplicate_risk_score: number
           duration_valid: boolean | null
+          engine_version: string | null
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
           hashtags: string[]
+          hook_strength_score: number | null
           hook_text: string | null
+          hook_type: string | null
           hook_variant: string
           hook_variants_meta: Json
           id: string
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
           media_warnings: Json
+          mobile_readability_score: number | null
+          motion_diversity_score: number | null
           motion_exists: boolean | null
           motion_score: number | null
           music_url: string | null
@@ -15572,6 +15720,7 @@ export type Database = {
           output_mp4_url: string | null
           output_thumbnail_url: string | null
           output_width: number | null
+          pacing_quality_score: number | null
           pin_description: string | null
           pin_destination_url: string | null
           pin_title: string | null
@@ -15610,9 +15759,12 @@ export type Database = {
           render_token: string | null
           render_worker_id: string | null
           rendered_at: string | null
+          retention_likelihood_score: number | null
           risk_level: string | null
           root_cause: string | null
           scene_assets: Json
+          scene_entropy_score: number | null
+          scene_plan: Json | null
           scene_specs: Json
           selected_cta_index: number
           selected_hook_index: number
@@ -15620,12 +15772,14 @@ export type Database = {
           status: string
           status_message: string | null
           storyboard: Json
+          style_preset: string | null
           subhook_text: string | null
           updated_at: string
           validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
           video_corrupted: boolean
+          visual_energy_score: number | null
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
