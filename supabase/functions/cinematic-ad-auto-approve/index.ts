@@ -1,0 +1,253 @@
+/**
+ * cinematic-ad-auto-approve
+ *
+ * Self-heal approval engine. Walks jobs in `awaiting_approval` /
+ * `needs_admin_review` / `prepared` and decides — based on QA score,
+ * duplicate risk, retry history, asset count, recent ffmpeg failures
+ * and product source — whether to:
+ *   • auto_approve → transition to `render_queued`
+ *   • leave alone (manual review required)
+ *
+ * Tracks metrics in cinematic_ad_job_events. Safe to call from cron,
+ * watchdog and admin UI.
+ *
+ * Auth: admin JWT OR service role (for cron). No anon access.
+ */
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+const trace = () => `aa_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+
+type Job = Record<string, any>;
+
+interface Settings {
+  auto_approve_enabled: boolean;
+  approval_confidence_threshold: number;
+  max_duplicate_threshold: number;
+  max_retry_threshold: number;
+  min_unique_media_assets: number;
+}
+
+const DEFAULT_SETTINGS: Settings = {
+  auto_approve_enabled: true,
+  approval_confidence_threshold: 80,
+  max_duplicate_threshold: 70,
+  max_retry_threshold: 3,
+  min_unique_media_assets: 3,
+};
+
+const REVIEWABLE_STATUSES = ["awaiting_approval", "needs_admin_review", "prepared", "queued"];
+const HARD_BLOCK_REASONS = new Set(["corrupted_media", "missing_assets", "pinterest_policy_risk"]);
+
+function uniqueMediaCount(job: Job): number {
+  const assets = Array.isArray(job.scene_assets) ? job.scene_assets : [];
+  const urls = new Set<string>();
+  for (const a of assets) {
+    const u = a?.url ?? a?.image_url ?? a?.video_url ?? a?.asset_url;
+    if (typeof u === "string" && u.length > 0) urls.add(u);
+  }
+  return urls.size;
+}
+
+function duplicateRisk(job: Job): number {
+  // QA report may carry duplicate_score from intelligence pipeline.
+  const r = job.qa_report ?? {};
+  return Number(r.duplicate_score ?? r.duplicate_risk ?? 0) || 0;
+}
+
+function isTrustedProductSource(job: Job): boolean {
+  // We treat any job that has product_lock (curated, immutable product
+  // snapshot at prepare-time) as trusted source.
+  return Boolean(job.product_lock && Object.keys(job.product_lock).length > 0);
+}
+
+function safeTemplate(job: Job): boolean {
+  const preset = String(job.preset ?? "");
+  return preset.length > 0 && !preset.includes("experimental");
+}
+
+async function recentFfmpegFailures(admin: ReturnType<typeof createClient>): Promise<number> {
+  const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "failed")
+    .eq("failure_category", "ffmpeg_error")
+    .gte("updated_at", since);
+  return count ?? 0;
+}
+
+function evaluate(job: Job, settings: Settings, recentFfmpegFails: number): {
+  approve: boolean;
+  confidence: number;
+  reason: string;
+  blocked_reason?: string;
+} {
+  const reasons: string[] = [];
+  const blocks: string[] = [];
+
+  const qa = Number(job.qa_score ?? 0);
+  if (qa < settings.approval_confidence_threshold) {
+    blocks.push(`qa_below_threshold(${qa}<${settings.approval_confidence_threshold})`);
+  } else {
+    reasons.push(`qa_ok(${qa})`);
+  }
+
+  const dup = duplicateRisk(job);
+  if (dup > settings.max_duplicate_threshold) {
+    blocks.push(`duplicate_risk(${dup}>${settings.max_duplicate_threshold})`);
+  } else {
+    reasons.push(`duplicate_ok(${dup})`);
+  }
+
+  const retries = Number(job.render_attempts ?? 0) + Number(job.smart_retry_count ?? 0);
+  if (retries > settings.max_retry_threshold) {
+    blocks.push(`retry_loop(${retries}>${settings.max_retry_threshold})`);
+  } else {
+    reasons.push(`retries_ok(${retries})`);
+  }
+
+  const assets = uniqueMediaCount(job);
+  if (assets < settings.min_unique_media_assets) {
+    blocks.push(`assets_insufficient(${assets}<${settings.min_unique_media_assets})`);
+  } else {
+    reasons.push(`assets_ok(${assets})`);
+  }
+
+  if (recentFfmpegFails >= 5) {
+    blocks.push(`recent_ffmpeg_failures(${recentFfmpegFails})`);
+  }
+
+  if (!isTrustedProductSource(job)) blocks.push("untrusted_product_source");
+  if (!safeTemplate(job)) blocks.push("unsafe_template");
+
+  const adminReason = String(job.admin_review_reason ?? "").toLowerCase();
+  for (const tag of HARD_BLOCK_REASONS) {
+    if (adminReason.includes(tag)) blocks.push(`hard_block:${tag}`);
+  }
+
+  const passed = reasons.length;
+  const failed = blocks.length;
+  const total = passed + failed || 1;
+  const confidence = Math.round((passed / total) * 100);
+
+  if (blocks.length === 0) {
+    return { approve: true, confidence, reason: reasons.join("; ") };
+  }
+  return { approve: false, confidence, reason: reasons.join("; "), blocked_reason: blocks.join("; ") };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const traceId = trace();
+
+  // Auth: admin OR service role (cron passes service role as bearer).
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const isServiceCall = authHeader.includes(SERVICE_KEY);
+  let actor = "service";
+  if (!isServiceCall) {
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const { data: u, error } = await userClient.auth.getUser();
+    if (error || !u?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+    const { data: roleRow } = await admin
+      .from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+    actor = u.user.id;
+  }
+
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+
+  // Load settings (singleton row, id=true)
+  const { data: settingsRow } = await admin
+    .from("cinematic_ad_settings").select("*").eq("id", true).maybeSingle();
+  const settings: Settings = { ...DEFAULT_SETTINGS, ...(settingsRow ?? {}) } as Settings;
+
+  if (!settings.auto_approve_enabled) {
+    return json(200, { ok: true, traceId, message: "auto-approval disabled", scanned: 0, auto_approved: 0, manual_review: 0 });
+  }
+
+  let body: any = {};
+  try { body = await req.json(); } catch {}
+  const limit = Math.max(1, Math.min(50, Number(body.limit ?? 20)));
+  const explicitJobId: string | null = body.job_id ?? null;
+
+  const query = admin
+    .from("cinematic_ad_jobs")
+    .select("*")
+    .order("updated_at", { ascending: true })
+    .limit(limit);
+  if (explicitJobId) query.eq("id", explicitJobId);
+  else query.in("status", REVIEWABLE_STATUSES);
+
+  const { data: jobs, error: listErr } = await query;
+  if (listErr) return json(500, { ok: false, traceId, message: listErr.message });
+
+  const recentFfmpegFails = await recentFfmpegFailures(admin);
+
+  let autoApproved = 0;
+  let manualReview = 0;
+  const results: any[] = [];
+
+  for (const job of jobs ?? []) {
+    const verdict = evaluate(job as Job, settings, recentFfmpegFails);
+    if (verdict.approve) {
+      const { error: updErr } = await admin
+        .from("cinematic_ad_jobs")
+        .update({
+          status: "render_queued",
+          approved_at: new Date().toISOString(),
+          approved_for_render: true,
+          auto_approved_at: new Date().toISOString(),
+          auto_approval_reason: verdict.reason,
+          approval_confidence: verdict.confidence,
+          approval_source: isServiceCall ? "autopilot" : "admin_manual",
+          needs_admin_review: false,
+          render_queued_at: job.render_queued_at ?? new Date().toISOString(),
+          status_message: "auto-approved",
+        })
+        .eq("id", job.id)
+        .in("status", REVIEWABLE_STATUSES);
+      if (!updErr) {
+        autoApproved++;
+        results.push({ id: job.id, action: "auto_approved", confidence: verdict.confidence, reason: verdict.reason });
+        await admin.from("cinematic_ad_job_events").insert({
+          job_id: job.id,
+          event_type: "auto_approved",
+          payload: { confidence: verdict.confidence, reason: verdict.reason, actor },
+        }).then(() => {}, () => {});
+      } else {
+        results.push({ id: job.id, action: "update_failed", error: updErr.message });
+      }
+    } else {
+      manualReview++;
+      await admin
+        .from("cinematic_ad_jobs")
+        .update({
+          auto_approval_blocked_reason: verdict.blocked_reason ?? "unknown",
+          approval_confidence: verdict.confidence,
+        })
+        .eq("id", job.id);
+      results.push({ id: job.id, action: "manual_review", confidence: verdict.confidence, blocked: verdict.blocked_reason });
+    }
+  }
+
+  return json(200, {
+    ok: true,
+    traceId,
+    scanned: jobs?.length ?? 0,
+    auto_approved: autoApproved,
+    manual_review: manualReview,
+    settings,
+    results,
+  });
+});
