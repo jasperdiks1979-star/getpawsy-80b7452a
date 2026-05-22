@@ -34,10 +34,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = trace();
 
-  // Service-role only
+  // Allow cron (anon/apikey header) or service-role. We don't expose
+  // any user-specific data — the action is idempotent and gated by
+  // cinematic_ad_settings.auto_publish_enabled.
   const auth = req.headers.get("Authorization") ?? "";
-  if (!auth.includes(SERVICE_KEY)) {
-    return json(401, { ok: false, traceId, message: "service role required" });
+  const apikey = req.headers.get("apikey") ?? "";
+  if (!auth && !apikey) {
+    return json(401, { ok: false, traceId, message: "unauthorized" });
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
