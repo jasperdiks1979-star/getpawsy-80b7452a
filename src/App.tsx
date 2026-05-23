@@ -411,6 +411,7 @@ const CinematicOneJobVerifyPage = lazyWithRetry(() => import("./pages/admin/Cine
 const CinematicQueueHealthPage = lazyWithRetry(() => import("./pages/admin/CinematicQueueHealthPage"));
 const PinterestRecoveryStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryStatusPage"));
 const CinematicPerformanceMetricsPage = lazyWithRetry(() => import("./pages/admin/CinematicPerformanceMetricsPage"));
+const PinterestCleanupPage = lazyWithRetry(() => import("./pages/admin/PinterestCleanupPage"));
 const GitHubSyncStatusPage = lazyWithRetry(() => import("./pages/admin/GitHubSyncStatusPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
@@ -1979,6 +1980,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CinematicPerformanceMetricsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-cleanup"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCleanupPage />
                                 </Suspense>
                               }
                             />
