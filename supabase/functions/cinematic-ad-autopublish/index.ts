@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
     .from("cinematic_ad_settings")
-    .select("pinterest_publish_max_per_hour, pinterest_publish_min_slug_gap_minutes, pinterest_publish_recovery_mode, publish_windows_est, publish_jitter_min_seconds, publish_jitter_max_seconds, recovery_auto_exit_days, recovery_tier_progression, hook_cooldown_days, thumbnail_phash_distance_threshold, board_recent_window_minutes, board_max_pins_per_window")
+    .select("pinterest_publish_max_per_hour, pinterest_publish_min_slug_gap_minutes, pinterest_publish_recovery_mode, publish_windows_est, publish_jitter_min_seconds, publish_jitter_max_seconds, recovery_auto_exit_days, recovery_tier_progression, hook_cooldown_days, thumbnail_phash_distance_threshold, board_recent_window_minutes, board_max_pins_per_window, min_days_between_same_product, allowed_creative_categories")
     .eq("id", true).maybeSingle();
   const maxPerHour = Math.max(1, Number(gateSettings?.pinterest_publish_max_per_hour ?? 3));
   const slugGapMin = Math.max(0, Number(gateSettings?.pinterest_publish_min_slug_gap_minutes ?? 240));
@@ -75,6 +75,8 @@ Deno.serve(async (req) => {
   const boardWinMin = Number(gateSettings?.board_recent_window_minutes ?? 720);
   const boardMaxPerWin = Number(gateSettings?.board_max_pins_per_window ?? 2);
   const tiers = (gateSettings?.recovery_tier_progression ?? {tier1:2,tier2:3,tier3:4}) as Record<string,number>;
+  const productCooldownDays = Math.max(0, Number(gateSettings?.min_days_between_same_product ?? 14));
+  const allowedCategories = new Set(((gateSettings?.allowed_creative_categories ?? []) as string[]) || []);
 
   // ----- V3 Window gate -----
   const now = new Date();
@@ -125,6 +127,18 @@ Deno.serve(async (req) => {
     .gte("pushed_to_pinterest_at", slugCutoff);
   const cooldownSlugs = new Set((recentSlugs ?? []).map((r: any) => r.product_slug));
 
+  // ----- Premium pivot: 14-day per-product cooldown -----
+  let productCooldownSlugs = new Set<string>();
+  if (productCooldownDays > 0) {
+    const productCutoff = new Date(Date.now() - productCooldownDays * 86400000).toISOString();
+    const { data: recentProducts } = await admin
+      .from("cinematic_ad_jobs")
+      .select("product_slug")
+      .not("pushed_to_pinterest_at", "is", null)
+      .gte("pushed_to_pinterest_at", productCutoff);
+    productCooldownSlugs = new Set((recentProducts ?? []).map((r: any) => r.product_slug));
+  }
+
   // ----- V3 Hook cooldown -----
   const hookCutoff = new Date(Date.now() - hookCooldownDays * 86400000).toISOString();
   const { data: recentHooks } = await admin
@@ -157,7 +171,7 @@ Deno.serve(async (req) => {
   // Find eligible jobs
   const { data: jobs, error } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets")
+    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score")
     .in("status", ELIGIBLE_STATUSES)
     .is("pinterest_asset_id", null)
     .not("output_mp4_url", "is", null)
@@ -179,6 +193,27 @@ Deno.serve(async (req) => {
         publish_blocked_reason: `slug_cooldown(${slugGapMin}m)`,
       }).eq("id", job.id);
       results.push({ job_id: job.id, ok: false, reason: "slug_cooldown" });
+      continue;
+    }
+    // Premium pivot: 14-day per-product cooldown (stricter than minute-level slug gap)
+    if (productCooldownSlugs.has(job.product_slug)) {
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `product_cooldown_${productCooldownDays}d`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: `product_cooldown_${productCooldownDays}d` });
+      continue;
+    }
+    // Premium pivot: pre-flagged style rejection
+    if (job.style_rejection_reason) {
+      results.push({ job_id: job.id, ok: false, reason: `style_rejected:${job.style_rejection_reason}` });
+      continue;
+    }
+    // Premium pivot: creative category must be in allowlist (when categories defined)
+    if (allowedCategories.size > 0 && job.creative_category && !allowedCategories.has(job.creative_category)) {
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `category_not_allowed(${job.creative_category})`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "category_not_allowed" });
       continue;
     }
     // V3 hook cooldown
