@@ -1092,6 +1092,7 @@ export type Database = {
           confidence_scores: Json
           created_at: string
           created_by: string | null
+          creative_category: string | null
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
@@ -1101,12 +1102,14 @@ export type Database = {
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
+          first_frame_originality_score: number | null
           first3s_phash: string | null
           hashtags: string[]
           hook_archetype: string | null
           hook_strength_score: number | null
           hook_text: string | null
           hook_type: string | null
+          hook_uniqueness_score: number | null
           hook_variant: string
           hook_variants: Json | null
           hook_variants_meta: Json
@@ -1190,7 +1193,9 @@ export type Database = {
           status_message: string | null
           storyboard: Json
           style_preset: string | null
+          style_rejection_reason: string | null
           subhook_text: string | null
+          thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
           updated_at: string
           validation_passed: boolean | null
@@ -1198,6 +1203,7 @@ export type Database = {
           variant_index: number
           video_corrupted: boolean
           visual_energy_score: number | null
+          visual_uniqueness_score: number | null
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
@@ -1226,6 +1232,7 @@ export type Database = {
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
+          creative_category?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
@@ -1235,12 +1242,14 @@ export type Database = {
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
+          first_frame_originality_score?: number | null
           first3s_phash?: string | null
           hashtags?: string[]
           hook_archetype?: string | null
           hook_strength_score?: number | null
           hook_text?: string | null
           hook_type?: string | null
+          hook_uniqueness_score?: number | null
           hook_variant?: string
           hook_variants?: Json | null
           hook_variants_meta?: Json
@@ -1324,7 +1333,9 @@ export type Database = {
           status_message?: string | null
           storyboard?: Json
           style_preset?: string | null
+          style_rejection_reason?: string | null
           subhook_text?: string | null
+          thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
           updated_at?: string
           validation_passed?: boolean | null
@@ -1332,6 +1343,7 @@ export type Database = {
           variant_index?: number
           video_corrupted?: boolean
           visual_energy_score?: number | null
+          visual_uniqueness_score?: number | null
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
@@ -1360,6 +1372,7 @@ export type Database = {
           confidence_scores?: Json
           created_at?: string
           created_by?: string | null
+          creative_category?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
@@ -1369,12 +1382,14 @@ export type Database = {
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
+          first_frame_originality_score?: number | null
           first3s_phash?: string | null
           hashtags?: string[]
           hook_archetype?: string | null
           hook_strength_score?: number | null
           hook_text?: string | null
           hook_type?: string | null
+          hook_uniqueness_score?: number | null
           hook_variant?: string
           hook_variants?: Json | null
           hook_variants_meta?: Json
@@ -1458,7 +1473,9 @@ export type Database = {
           status_message?: string | null
           storyboard?: Json
           style_preset?: string | null
+          style_rejection_reason?: string | null
           subhook_text?: string | null
+          thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
           updated_at?: string
           validation_passed?: boolean | null
@@ -1466,6 +1483,7 @@ export type Database = {
           variant_index?: number
           video_corrupted?: boolean
           visual_energy_score?: number | null
+          visual_uniqueness_score?: number | null
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
@@ -1581,10 +1599,12 @@ export type Database = {
       }
       cinematic_ad_settings: {
         Row: {
+          allowed_creative_categories: Json
           approval_confidence_threshold: number
           auto_approve_enabled: boolean
           auto_publish_enabled: boolean | null
           auto_repair_threshold: number | null
+          blocked_creative_styles: Json
           board_max_pins_per_window: number
           board_recent_window_minutes: number
           engine_version: string | null
@@ -1595,10 +1615,15 @@ export type Database = {
           max_retry_threshold: number
           max_scenes: number | null
           min_caption_visibility: number | null
+          min_days_between_same_product: number
+          min_first_frame_originality_score: number
+          min_hook_uniqueness_score: number
           min_motion_diversity: number | null
           min_scene_diversity: number | null
           min_scenes: number | null
+          min_thumbnail_entropy_score: number
           min_unique_media_assets: number
+          min_visual_uniqueness_score: number
           pinterest_publish_max_per_hour: number
           pinterest_publish_min_slug_gap_minutes: number
           pinterest_publish_quality_floor: number | null
@@ -1608,16 +1633,21 @@ export type Database = {
           publish_windows_est: Json
           recovery_auto_exit_days: number
           recovery_tier_progression: Json
+          reject_aggressive_cta: boolean
+          reject_orange_title_bar: boolean
+          reject_white_background: boolean
           safe_zone_debug: boolean | null
           thumbnail_phash_distance_threshold: number
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          allowed_creative_categories?: Json
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
           auto_publish_enabled?: boolean | null
           auto_repair_threshold?: number | null
+          blocked_creative_styles?: Json
           board_max_pins_per_window?: number
           board_recent_window_minutes?: number
           engine_version?: string | null
@@ -1628,10 +1658,15 @@ export type Database = {
           max_retry_threshold?: number
           max_scenes?: number | null
           min_caption_visibility?: number | null
+          min_days_between_same_product?: number
+          min_first_frame_originality_score?: number
+          min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
           min_scene_diversity?: number | null
           min_scenes?: number | null
+          min_thumbnail_entropy_score?: number
           min_unique_media_assets?: number
+          min_visual_uniqueness_score?: number
           pinterest_publish_max_per_hour?: number
           pinterest_publish_min_slug_gap_minutes?: number
           pinterest_publish_quality_floor?: number | null
@@ -1641,16 +1676,21 @@ export type Database = {
           publish_windows_est?: Json
           recovery_auto_exit_days?: number
           recovery_tier_progression?: Json
+          reject_aggressive_cta?: boolean
+          reject_orange_title_bar?: boolean
+          reject_white_background?: boolean
           safe_zone_debug?: boolean | null
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          allowed_creative_categories?: Json
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
           auto_publish_enabled?: boolean | null
           auto_repair_threshold?: number | null
+          blocked_creative_styles?: Json
           board_max_pins_per_window?: number
           board_recent_window_minutes?: number
           engine_version?: string | null
@@ -1661,10 +1701,15 @@ export type Database = {
           max_retry_threshold?: number
           max_scenes?: number | null
           min_caption_visibility?: number | null
+          min_days_between_same_product?: number
+          min_first_frame_originality_score?: number
+          min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
           min_scene_diversity?: number | null
           min_scenes?: number | null
+          min_thumbnail_entropy_score?: number
           min_unique_media_assets?: number
+          min_visual_uniqueness_score?: number
           pinterest_publish_max_per_hour?: number
           pinterest_publish_min_slug_gap_minutes?: number
           pinterest_publish_quality_floor?: number | null
@@ -1674,6 +1719,9 @@ export type Database = {
           publish_windows_est?: Json
           recovery_auto_exit_days?: number
           recovery_tier_progression?: Json
+          reject_aggressive_cta?: boolean
+          reject_orange_title_bar?: boolean
+          reject_white_background?: boolean
           safe_zone_debug?: boolean | null
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
@@ -9403,6 +9451,87 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_cleanup_actions: {
+        Row: {
+          action: string
+          executed_at: string
+          executed_by: string | null
+          id: string
+          pin_id: string
+          pre_action_snapshot: Json | null
+          result: Json | null
+        }
+        Insert: {
+          action: string
+          executed_at?: string
+          executed_by?: string | null
+          id?: string
+          pin_id: string
+          pre_action_snapshot?: Json | null
+          result?: Json | null
+        }
+        Update: {
+          action?: string
+          executed_at?: string
+          executed_by?: string | null
+          id?: string
+          pin_id?: string
+          pre_action_snapshot?: Json | null
+          result?: Json | null
+        }
+        Relationships: []
+      }
+      pinterest_cleanup_audit: {
+        Row: {
+          audited_at: string
+          composite_quality_score: number
+          creative_category: string | null
+          engagement_rate: number
+          hook_repeat_count: number
+          hook_text: string | null
+          is_slideshow_spam: boolean
+          pin_id: string
+          reasons: Json
+          recommendation: string
+          slug: string | null
+          slug_repeat_count: number
+          thumbnail_phash: string | null
+          visual_dup_count: number
+        }
+        Insert: {
+          audited_at?: string
+          composite_quality_score?: number
+          creative_category?: string | null
+          engagement_rate?: number
+          hook_repeat_count?: number
+          hook_text?: string | null
+          is_slideshow_spam?: boolean
+          pin_id: string
+          reasons?: Json
+          recommendation?: string
+          slug?: string | null
+          slug_repeat_count?: number
+          thumbnail_phash?: string | null
+          visual_dup_count?: number
+        }
+        Update: {
+          audited_at?: string
+          composite_quality_score?: number
+          creative_category?: string | null
+          engagement_rate?: number
+          hook_repeat_count?: number
+          hook_text?: string | null
+          is_slideshow_spam?: boolean
+          pin_id?: string
+          reasons?: Json
+          recommendation?: string
+          slug?: string | null
+          slug_repeat_count?: number
+          thumbnail_phash?: string | null
+          visual_dup_count?: number
+        }
+        Relationships: []
+      }
       pinterest_connection: {
         Row: {
           access_token: string | null
@@ -15916,6 +16045,7 @@ export type Database = {
           confidence_scores: Json
           created_at: string
           created_by: string | null
+          creative_category: string | null
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
@@ -15925,12 +16055,14 @@ export type Database = {
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
+          first_frame_originality_score: number | null
           first3s_phash: string | null
           hashtags: string[]
           hook_archetype: string | null
           hook_strength_score: number | null
           hook_text: string | null
           hook_type: string | null
+          hook_uniqueness_score: number | null
           hook_variant: string
           hook_variants: Json | null
           hook_variants_meta: Json
@@ -16014,7 +16146,9 @@ export type Database = {
           status_message: string | null
           storyboard: Json
           style_preset: string | null
+          style_rejection_reason: string | null
           subhook_text: string | null
+          thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
           updated_at: string
           validation_passed: boolean | null
@@ -16022,6 +16156,7 @@ export type Database = {
           variant_index: number
           video_corrupted: boolean
           visual_energy_score: number | null
+          visual_uniqueness_score: number | null
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
