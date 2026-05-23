@@ -440,6 +440,11 @@ export default function CinematicAdsControlCenterPage() {
                 <BarChart3 className="mr-2 h-4 w-4" /> Performance Metrics
               </RouterLink>
             </Button>
+            <Button asChild size="sm" variant="outline">
+              <RouterLink to="/admin/pinterest-cleanup">
+                <BarChart3 className="mr-2 h-4 w-4" /> Pinterest Cleanup
+              </RouterLink>
+            </Button>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
