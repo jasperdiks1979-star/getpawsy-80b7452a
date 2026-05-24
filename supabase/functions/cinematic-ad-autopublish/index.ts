@@ -62,9 +62,11 @@ Deno.serve(async (req) => {
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
     .from("cinematic_ad_settings")
-    .select("pinterest_publish_max_per_hour, pinterest_publish_min_slug_gap_minutes, pinterest_publish_recovery_mode, publish_windows_est, publish_jitter_min_seconds, publish_jitter_max_seconds, recovery_auto_exit_days, recovery_tier_progression, hook_cooldown_days, thumbnail_phash_distance_threshold, board_recent_window_minutes, board_max_pins_per_window, min_days_between_same_product, allowed_creative_categories")
+    .select("pinterest_publish_max_per_hour, pinterest_publish_min_slug_gap_minutes, pinterest_publish_recovery_mode, publish_windows_est, publish_jitter_min_seconds, publish_jitter_max_seconds, recovery_auto_exit_days, recovery_tier_progression, hook_cooldown_days, thumbnail_phash_distance_threshold, board_recent_window_minutes, board_max_pins_per_window, min_days_between_same_product, allowed_creative_categories, pinterest_publish_max_per_day, pinterest_publish_premium_cap_per_hour")
     .eq("id", true).maybeSingle();
   const maxPerHour = Math.max(1, Number(gateSettings?.pinterest_publish_max_per_hour ?? 3));
+  const premiumHourCap = Math.max(1, Number(gateSettings?.pinterest_publish_premium_cap_per_hour ?? 2));
+  const dailyCap = Math.max(1, Number(gateSettings?.pinterest_publish_max_per_day ?? 8));
   const slugGapMin = Math.max(0, Number(gateSettings?.pinterest_publish_min_slug_gap_minutes ?? 240));
   const recoveryMode = Boolean(gateSettings?.pinterest_publish_recovery_mode ?? true);
   const windows = (gateSettings?.publish_windows_est ?? [{start:7,end:9},{start:12,end:14},{start:19,end:23}]) as {start:number,end:number}[];
@@ -103,7 +105,20 @@ Deno.serve(async (req) => {
   if (recoveryMode && cleanStreak) {
     await admin.from("cinematic_ad_settings").update({ pinterest_publish_recovery_mode: false }).eq("id", true);
   }
-  const effectiveMaxPerHour = Math.min(maxPerHour, tierCap);
+  // Premium pivot: hard-cap hourly publish to premiumHourCap (default 2)
+  const effectiveMaxPerHour = Math.min(maxPerHour, tierCap, premiumHourCap);
+
+  // Premium pivot: daily cap (rolling 24h)
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: publishedLastDay } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .not("pushed_to_pinterest_at", "is", null)
+    .gte("pushed_to_pinterest_at", dayAgo);
+  if (Number(publishedLastDay ?? 0) >= dailyCap) {
+    return json(200, { ok: true, traceId, scanned: 0, published: 0,
+      message: `daily cap reached (${publishedLastDay}/${dailyCap})`, dailyCap });
+  }
 
   // Count pins already published in the last hour
   const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();

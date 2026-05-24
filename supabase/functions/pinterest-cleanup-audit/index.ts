@@ -33,6 +33,11 @@ const PHASH_DUP_THRESHOLD = 10;
 const HOOK_DUP_JACCARD = 0.6;
 const BATCH_CAP = 50;
 
+// Chunked scan limits (Phase 3 — emergency stabilization)
+const SCAN_BATCH_SIZE = 25;            // pins per invocation
+const SCAN_RUNTIME_BUDGET_MS = 18_000; // abort before 25s edge timeout
+const SCAN_API_RATE_PER_MIN = 60;      // rate limiter ceiling
+
 type Pin = {
   pinterest_pin_id: string | null;
   product_slug: string | null;
@@ -44,6 +49,22 @@ type Pin = {
   status: string | null;
   posted_at: string | null;
   created_at: string | null;
+};
+
+type ScanSession = {
+  id: string;
+  status: "running" | "paused" | "completed" | "failed";
+  cursor: string | null;
+  processed_count: number;
+  remaining_count: number | null;
+  total_estimate: number | null;
+  mode: "light" | "full";
+  options: Record<string, unknown>;
+  partial_summary: { counts?: Record<string, number>; avg_ms_per_pin?: number };
+  api_calls_used: number;
+  last_error: string | null;
+  started_at: string;
+  completed_at: string | null;
 };
 
 async function authorize(req: Request): Promise<{ ok: true; admin: ReturnType<typeof createClient>; userId: string | null } | { ok: false; status: number; message: string }> {
@@ -83,6 +104,208 @@ function styleQuality(p: Pin): { score: number; isSlideshow: boolean } {
   const isSlideshow = /slideshow|montage/i.test(text);
   if (isSlideshow) score -= 15;
   return { score: Math.max(0, score), isSlideshow };
+}
+
+// ---------- chunked scan helpers ----------
+
+async function getOrCreateSession(
+  admin: ReturnType<typeof createClient>,
+  userId: string | null,
+  mode: "light" | "full",
+  options: Record<string, unknown>,
+): Promise<ScanSession> {
+  // Idempotent: return active running session if one exists.
+  const { data: existing } = await admin
+    .from("pinterest_cleanup_scan_sessions")
+    .select("*")
+    .eq("status", "running")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) return existing as unknown as ScanSession;
+
+  const { count: total } = await admin
+    .from("pinterest_pin_queue")
+    .select("pinterest_pin_id", { count: "exact", head: true })
+    .not("pinterest_pin_id", "is", null);
+
+  const { data, error } = await admin
+    .from("pinterest_cleanup_scan_sessions")
+    .insert({
+      status: "running",
+      mode,
+      options,
+      cursor: null,
+      processed_count: 0,
+      total_estimate: total ?? null,
+      remaining_count: total ?? null,
+      created_by: userId,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as unknown as ScanSession;
+}
+
+async function loadSession(
+  admin: ReturnType<typeof createClient>,
+  id: string,
+): Promise<ScanSession | null> {
+  const { data } = await admin
+    .from("pinterest_cleanup_scan_sessions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as unknown as ScanSession) ?? null;
+}
+
+async function persistSession(
+  admin: ReturnType<typeof createClient>,
+  id: string,
+  patch: Partial<ScanSession>,
+) {
+  await admin
+    .from("pinterest_cleanup_scan_sessions")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", id);
+}
+
+/**
+ * Process a single chunk of up to SCAN_BATCH_SIZE pins. Honors a wall-clock
+ * budget and returns early with cursor persisted. Cheap "light" mode only
+ * uses local DB data — no Pinterest API calls.
+ */
+async function runChunk(
+  admin: ReturnType<typeof createClient>,
+  session: ScanSession,
+): Promise<{ processed: number; nextCursor: string | null; done: boolean }> {
+  const startedMs = Date.now();
+  const cursor = session.cursor; // ISO timestamp of created_at (descending pagination)
+
+  let q = admin
+    .from("pinterest_pin_queue")
+    .select("pinterest_pin_id, product_slug, pin_title, pin_description, overlay_text, image_hash, hook_group, status, posted_at, created_at")
+    .not("pinterest_pin_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(SCAN_BATCH_SIZE);
+  if (cursor) q = q.lt("created_at", cursor);
+
+  const { data: pins, error } = await q;
+  if (error) throw error;
+  const list = (pins ?? []) as Pin[];
+  if (list.length === 0) {
+    return { processed: 0, nextCursor: null, done: true };
+  }
+
+  // Slug repeat counts — pulled aggregated from the audit table so we don't
+  // re-scan all pins each chunk.
+  const slugs = Array.from(new Set(list.map((p) => p.product_slug).filter(Boolean))) as string[];
+  const slugCount: Record<string, number> = {};
+  if (slugs.length) {
+    const { data: slugRows } = await admin
+      .from("pinterest_pin_queue")
+      .select("product_slug")
+      .in("product_slug", slugs)
+      .not("pinterest_pin_id", "is", null);
+    for (const r of slugRows ?? []) {
+      const s = (r as { product_slug: string }).product_slug;
+      slugCount[s] = (slugCount[s] ?? 0) + 1;
+    }
+  }
+
+  // Engagement lookup (cached per chunk). Light mode skips this.
+  const engMap: Record<string, number> = {};
+  if (session.mode === "full") {
+    const ids = list.map((p) => p.pinterest_pin_id!).filter(Boolean);
+    if (ids.length) {
+      const { data: perf } = await admin
+        .from("cinematic_pin_performance")
+        .select("pin_id, engagement_rate, collected_at")
+        .in("pin_id", ids)
+        .order("collected_at", { ascending: false });
+      for (const row of perf ?? []) {
+        if (!engMap[row.pin_id]) engMap[row.pin_id] = Number(row.engagement_rate ?? 0);
+      }
+    }
+  }
+
+  const rows = list.map((p, idx) => {
+    // Light mode: skip phash & hook similarity (expensive in-memory loops
+    // across the whole pin set). Use slug repeat + age + engagement only.
+    const otherInBatch = list.filter((_, j) => j !== idx);
+    const otherHashes = session.mode === "full"
+      ? otherInBatch.map((x) => x.image_hash).filter(Boolean) as string[]
+      : [];
+    const otherHooks = session.mode === "full"
+      ? otherInBatch.map((x) => `${x.pin_title ?? ""} ${x.overlay_text ?? ""}`.trim()).filter(Boolean)
+      : [];
+    const visualUniqueness = session.mode === "full"
+      ? scoreVisualUniqueness(p.image_hash, otherHashes) : 80;
+    const hookText = `${p.pin_title ?? ""} ${p.overlay_text ?? ""}`.trim();
+    const hookUniqueness = session.mode === "full"
+      ? scoreHookUniqueness(hookText, otherHooks) : 80;
+    const visualDup = session.mode === "full" && p.image_hash
+      ? otherHashes.filter((h) => hammingHex(h, p.image_hash!) <= PHASH_DUP_THRESHOLD).length : 0;
+    const hookRepeat = session.mode === "full" ? otherHooks.filter((h) => {
+      const a = new Set(hookText.toLowerCase().split(/\s+/).filter((t) => t.length > 2));
+      const b = new Set(h.toLowerCase().split(/\s+/).filter((t) => t.length > 2));
+      let inter = 0; for (const t of a) if (b.has(t)) inter++;
+      const union = a.size + b.size - inter;
+      return union > 0 && inter / union >= HOOK_DUP_JACCARD;
+    }).length : 0;
+    const eng = engMap[p.pinterest_pin_id!] ?? 0;
+    const days = daysSince(p.posted_at ?? p.created_at);
+    const sq = styleQuality(p);
+    const composite = compositeCleanupScore({
+      visualUniqueness,
+      engagementRate: eng,
+      daysSincePublish: days,
+      styleQuality: sq.score,
+    });
+    const recommendation = recommendAction({
+      composite,
+      slugRepeat: (slugCount[p.product_slug ?? ""] ?? 1) - 1,
+      engagementRate: eng,
+      isSlideshow: sq.isSlideshow,
+      daysSincePublish: days,
+    });
+    const reasons: string[] = [];
+    if (visualDup >= 2) reasons.push(`visual_duplicate(${visualDup})`);
+    if ((slugCount[p.product_slug ?? ""] ?? 1) >= 4) reasons.push(`slug_repeat(${slugCount[p.product_slug ?? ""]})`);
+    if (hookRepeat >= 2) reasons.push(`hook_repeat(${hookRepeat})`);
+    if (sq.isSlideshow) reasons.push("slideshow_spam");
+    if (eng < 0.003 && days >= 14) reasons.push("low_engagement");
+    if (eng >= 0.015) reasons.push("high_performer_protected");
+    return {
+      pin_id: p.pinterest_pin_id!,
+      slug: p.product_slug,
+      thumbnail_phash: p.image_hash,
+      hook_text: hookText.slice(0, 280),
+      creative_category: null,
+      composite_quality_score: composite,
+      visual_dup_count: visualDup,
+      slug_repeat_count: (slugCount[p.product_slug ?? ""] ?? 1) - 1,
+      hook_repeat_count: hookRepeat,
+      is_slideshow_spam: sq.isSlideshow,
+      engagement_rate: eng,
+      recommendation,
+      reasons,
+      audited_at: new Date().toISOString(),
+    };
+  });
+
+  // Persist partial results immediately (idempotent upsert).
+  if (rows.length) {
+    await admin.from("pinterest_cleanup_audit").upsert(rows, { onConflict: "pin_id" });
+  }
+
+  const lastCreatedAt = list[list.length - 1].created_at!;
+  const elapsed = Date.now() - startedMs;
+  // If we burned more than the budget, stop here even if more pins exist.
+  if (elapsed > SCAN_RUNTIME_BUDGET_MS) {
+    return { processed: rows.length, nextCursor: lastCreatedAt, done: false };
+  }
+  return { processed: rows.length, nextCursor: lastCreatedAt, done: list.length < SCAN_BATCH_SIZE };
 }
 
 async function runScan(admin: ReturnType<typeof createClient>) {
@@ -270,6 +493,90 @@ Deno.serve(async (req) => {
   const mode = (url.searchParams.get("mode") ?? "scan").toLowerCase();
 
   try {
+    // ----- Chunked resumable scan modes (emergency stabilization) -----
+    if (mode === "start" || mode === "continue" || mode === "status" || mode === "finalize") {
+      const sessionId = url.searchParams.get("session_id");
+      const scanMode = (url.searchParams.get("scan_mode") ?? "light").toLowerCase() === "full" ? "full" : "light";
+
+      if (mode === "status") {
+        if (!sessionId) {
+          // Return latest session
+          const { data } = await admin
+            .from("pinterest_cleanup_scan_sessions")
+            .select("*")
+            .order("started_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          return json(200, { ok: true, traceId, session: data });
+        }
+        const s = await loadSession(admin, sessionId);
+        return json(200, { ok: true, traceId, session: s });
+      }
+
+      if (mode === "finalize") {
+        if (!sessionId) return json(400, { ok: false, traceId, message: "session_id required" });
+        await persistSession(admin, sessionId, {
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        });
+        const t = await trustRecoveryScore(admin);
+        return json(200, { ok: true, traceId, finalized: true, trust: t });
+      }
+
+      // start | continue
+      let session: ScanSession;
+      if (mode === "start") {
+        session = await getOrCreateSession(admin, userId, scanMode, {});
+      } else {
+        if (!sessionId) return json(400, { ok: false, traceId, message: "session_id required" });
+        const s = await loadSession(admin, sessionId);
+        if (!s) return json(404, { ok: false, traceId, message: "session not found" });
+        if (s.status !== "running") return json(200, { ok: true, traceId, session: s, message: `session already ${s.status}` });
+        session = s;
+      }
+
+      const tStart = Date.now();
+      try {
+        const result = await runChunk(admin, session);
+        const newProcessed = (session.processed_count ?? 0) + result.processed;
+        const newRemaining = session.total_estimate != null
+          ? Math.max(0, session.total_estimate - newProcessed)
+          : null;
+        const elapsedMs = Date.now() - tStart;
+        const avgMs = result.processed > 0 ? Math.round(elapsedMs / result.processed) : null;
+
+        const finished = result.done || result.nextCursor === null;
+        await persistSession(admin, session.id, {
+          cursor: result.nextCursor,
+          processed_count: newProcessed,
+          remaining_count: newRemaining,
+          status: finished ? "completed" : "running",
+          completed_at: finished ? new Date().toISOString() : null,
+          partial_summary: {
+            ...(session.partial_summary ?? {}),
+            avg_ms_per_pin: avgMs ?? session.partial_summary?.avg_ms_per_pin,
+          },
+        });
+
+        // Refresh session for response
+        const fresh = await loadSession(admin, session.id);
+        return json(200, {
+          ok: true,
+          traceId,
+          session: fresh,
+          chunk: { processed: result.processed, nextCursor: result.nextCursor, done: finished, elapsedMs },
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Persist partial state on crash so the UI can resume.
+        await persistSession(admin, session.id, {
+          status: "failed",
+          last_error: msg.slice(0, 500),
+        });
+        return json(500, { ok: false, traceId, session_id: session.id, message: msg });
+      }
+    }
+
     if (mode === "trust") {
       const t = await trustRecoveryScore(admin);
       return json(200, { ok: true, traceId, ...t });

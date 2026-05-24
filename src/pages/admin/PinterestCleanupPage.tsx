@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, RefreshCw, Archive, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Sparkles, RefreshCw, Archive, Trash2, ShieldCheck, AlertTriangle, Play, Pause } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 
 type AuditRow = {
   pin_id: string;
@@ -32,6 +34,20 @@ type Trust = {
   distribution: Record<string, number>;
 };
 
+type ScanSession = {
+  id: string;
+  status: "running" | "paused" | "completed" | "failed";
+  cursor: string | null;
+  processed_count: number;
+  remaining_count: number | null;
+  total_estimate: number | null;
+  mode: "light" | "full";
+  last_error: string | null;
+  started_at: string;
+  completed_at: string | null;
+  partial_summary?: { avg_ms_per_pin?: number };
+};
+
 const REC_FILTERS = ["DELETE", "ARCHIVE", "KEEP", "ALL"] as const;
 type RecFilter = (typeof REC_FILTERS)[number];
 
@@ -41,6 +57,9 @@ export default function PinterestCleanupPage() {
   const [tab, setTab] = useState<RecFilter>("DELETE");
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
+  const [session, setSession] = useState<ScanSession | null>(null);
+  const [lightMode, setLightMode] = useState(true);
+  const [paused, setPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [authMissing, setAuthMissing] = useState(false);
@@ -82,22 +101,71 @@ export default function PinterestCleanupPage() {
   useEffect(() => { void loadTrust(); }, []);
   useEffect(() => { void loadRows(); }, [tab]);
 
+  // Load latest session on mount so users can resume after a crash/refresh.
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = (await supabase.auth.getSession()).data.session;
+        if (!s) return;
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-cleanup-audit?mode=status`;
+        const r = await fetch(url, { headers: { Authorization: `Bearer ${s.access_token}` } });
+        const j = await r.json();
+        if (j?.ok && j.session) setSession(j.session as ScanSession);
+      } catch {}
+    })();
+  }, []);
+
+  async function callScanFn(mode: "start" | "continue" | "finalize", sessionId?: string): Promise<ScanSession | null> {
+    const s = (await supabase.auth.getSession()).data.session;
+    if (!s) { setAuthMissing(true); return null; }
+    const params = new URLSearchParams({ mode });
+    if (sessionId) params.set("session_id", sessionId);
+    if (mode === "start") params.set("scan_mode", lightMode ? "light" : "full");
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-cleanup-audit?${params}`;
+    const r = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${s.access_token}` } });
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.message ?? `${mode} failed`);
+    return (j.session as ScanSession) ?? null;
+  }
+
   async function runScan() {
-    setScanning(true);
+    setScanning(true); setPaused(false);
     try {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session) { setAuthMissing(true); return; }
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pinterest-cleanup-audit?mode=scan`;
-      const r = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } });
-      const j = await r.json();
-      if (!j?.ok) throw new Error(j?.message ?? "scan failed");
-      toast({ title: "Scan complete", description: `Audited ${j.scanned} pins` });
-      await Promise.all([loadRows(), loadTrust()]);
+      // Start (or resume an existing running session via idempotent start)
+      let s = await callScanFn("start");
+      setSession(s);
+      // Loop chunks until completed/failed/paused.
+      while (s && s.status === "running" && !paused) {
+        s = await callScanFn("continue", s.id);
+        setSession(s);
+        // Refresh visible rows so users see live updates.
+        void loadRows();
+      }
+      await loadTrust();
+      if (s?.status === "completed") {
+        toast({ title: "Scan complete", description: `Audited ${s.processed_count} pins` });
+      }
     } catch (e) {
       toast({ title: "Scan failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     } finally {
       setScanning(false);
     }
+  }
+
+  async function resumeScan() {
+    if (!session) return;
+    setScanning(true); setPaused(false);
+    try {
+      let s: ScanSession | null = session;
+      while (s && s.status === "running" && !paused) {
+        s = await callScanFn("continue", s.id);
+        setSession(s);
+        void loadRows();
+      }
+      await loadTrust();
+    } catch (e) {
+      toast({ title: "Resume failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    } finally { setScanning(false); }
   }
 
   async function executeBatch(action: "archive" | "delete") {
@@ -143,6 +211,16 @@ export default function PinterestCleanupPage() {
     return "text-rose-600";
   }, [trust?.score]);
 
+  const progressPct = useMemo(() => {
+    if (!session?.total_estimate) return 0;
+    return Math.min(100, Math.round((session.processed_count / session.total_estimate) * 100));
+  }, [session?.processed_count, session?.total_estimate]);
+
+  const etaSeconds = useMemo(() => {
+    if (!session?.partial_summary?.avg_ms_per_pin || !session.remaining_count) return null;
+    return Math.round((session.partial_summary.avg_ms_per_pin * session.remaining_count) / 1000);
+  }, [session?.partial_summary?.avg_ms_per_pin, session?.remaining_count]);
+
   if (authMissing) {
     return (
       <div className="p-6">
@@ -160,11 +238,51 @@ export default function PinterestCleanupPage() {
         <h1 className="text-2xl font-semibold flex items-center gap-2">
           <Sparkles className="h-5 w-5" /> Pinterest Cleanup
         </h1>
-        <Button onClick={runScan} disabled={scanning} size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${scanning ? "animate-spin" : ""}`} />
-          {scanning ? "Scanning…" : "Run scan"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            Light scan
+            <Switch checked={lightMode} onCheckedChange={setLightMode} disabled={scanning} />
+          </label>
+          {session && session.status === "running" && !scanning ? (
+            <Button onClick={resumeScan} size="sm" variant="secondary">
+              <Play className="h-4 w-4 mr-2" /> Resume
+            </Button>
+          ) : null}
+          {scanning ? (
+            <Button onClick={() => setPaused(true)} size="sm" variant="outline">
+              <Pause className="h-4 w-4 mr-2" /> Pause
+            </Button>
+          ) : (
+            <Button onClick={runScan} disabled={scanning} size="sm">
+              <RefreshCw className={`h-4 w-4 mr-2 ${scanning ? "animate-spin" : ""}`} />
+              Run scan
+            </Button>
+          )}
+        </div>
       </div>
+
+      {session ? (
+        <Card>
+          <CardContent className="py-3 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium">
+                Scan {session.status} · {session.mode} mode
+              </span>
+              <span className="text-muted-foreground">
+                {session.processed_count}
+                {session.total_estimate ? ` / ${session.total_estimate}` : ""} pins
+                {etaSeconds != null ? ` · ETA ~${etaSeconds}s` : ""}
+              </span>
+            </div>
+            <Progress value={progressPct} />
+            {session.last_error ? (
+              <div className="text-xs text-rose-600 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> {session.last_error}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Trust Recovery Score */}
       <Card>

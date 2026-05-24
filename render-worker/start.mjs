@@ -31,6 +31,14 @@ const REQUIRED = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "RENDER_WORKER_SE
 const missing = REQUIRED.filter(k => !process.env[k]);
 if (missing.length) {
   log("fatal", "missing required env", { missing });
+  // Crash-loop guard: write fatal log, sleep so Render doesn't fast-restart.
+  try {
+    const fs = await import("node:fs/promises");
+    await fs.writeFile("/tmp/worker-fatal.json", JSON.stringify({
+      ts: new Date().toISOString(), reason: "missing_env", missing,
+    }, null, 2));
+  } catch {}
+  await new Promise(r => setTimeout(r, 30_000));
   process.exit(2);
 }
 
@@ -55,6 +63,12 @@ const PORT = Number(process.env.PORT || 10000);
 const MAX_CONSECUTIVE_FAILURES = Number(process.env.MAX_CONSECUTIVE_FAILURES || 5);
 const CLAIM_TIMEOUT_MS = Number(process.env.CLAIM_TIMEOUT_MS || 15_000);
 const RENDER_TIMEOUT_MS = Number(process.env.RENDER_TIMEOUT_MS || 20 * 60 * 1000);
+// Emergency stabilization: SAFE MODE (default ON).
+// In safe mode the worker only does: claim → render → upload. No cleanup,
+// no audit, no Pinterest publish, no autopilot recursion.
+const SAFE_MODE = process.env.WORKER_SAFE_MODE !== "0";
+const STARTUP_TIMEOUT_MS = Number(process.env.STARTUP_TIMEOUT_MS || 20_000);
+const MAX_RETRIES = Number(process.env.MAX_RETRIES || 1);
 
 // ---------- runtime state ----------
 const STARTED_AT = Date.now();
@@ -70,7 +84,30 @@ const state = {
   totalClaimed: 0,
   totalSucceeded: 0,
   totalFailed: 0,
+  bootPhase: "init",
+  bootCompleted: false,
+  crashReason: null,
+  subsystems: {
+    render: { enabled: true, healthy: true, lastError: null },
+    pinterest: { enabled: !SAFE_MODE, healthy: true, disabledReason: SAFE_MODE ? "safe_mode" : null, lastError: null },
+    cleanup: { enabled: !SAFE_MODE, healthy: true, disabledReason: SAFE_MODE ? "safe_mode" : null, lastError: null },
+    audit: { enabled: !SAFE_MODE, healthy: true, disabledReason: SAFE_MODE ? "safe_mode" : null, lastError: null },
+  },
 };
+
+function setBootPhase(phase, extra = {}) {
+  state.bootPhase = phase;
+  log("info", "boot_phase", { phase, safeMode: SAFE_MODE, ...extra });
+}
+
+function disableSubsystem(name, err) {
+  if (!state.subsystems[name]) return;
+  state.subsystems[name].enabled = false;
+  state.subsystems[name].healthy = false;
+  state.subsystems[name].lastError = String(err?.message ?? err);
+  state.subsystems[name].disabledReason = "runtime_error";
+  log("warn", "subsystem disabled", { name, err: state.subsystems[name].lastError });
+}
 
 // ---------- fetch with timeout + retry ----------
 async function fetchWithRetry(url, opts = {}, { timeoutMs = 15_000, retries = 2 } = {}) {
@@ -246,12 +283,20 @@ function startHealthServer() {
         return send(200, { ok: true, worker: true, timestamp: Date.now(), workerId: WORKER_ID, uptimeSec: Math.round((Date.now()-STARTED_AT)/1000) });
       }
       if (req.url === "/health/worker" || req.url === "/api/health/worker") {
+        const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
         return send(200, {
           ok: state.consecutiveFailures < MAX_CONSECUTIVE_FAILURES,
           worker: true,
           timestamp: Date.now(),
           workerId: WORKER_ID,
           busy: state.busy,
+          safeMode: SAFE_MODE,
+          bootPhase: state.bootPhase,
+          bootCompleted: state.bootCompleted,
+          crashReason: state.crashReason,
+          subsystems: state.subsystems,
+          memMb,
+          uptimeSec: Math.round((Date.now()-STARTED_AT)/1000),
           currentJobId: state.currentJobId,
           lastPollAt: state.lastPollAt,
           lastPollOk: state.lastPollOk,
@@ -299,21 +344,42 @@ process.on("uncaughtException", (e) => log("error", "uncaughtException", { err: 
 async function main() {
   console.log("[CINEMATIC WORKER] started from render-worker/start.mjs");
   console.log("[CINEMATIC WORKER] started");
-  console.log(`[CINEMATIC WORKER] config host=${SUPABASE_HOST} table=cinematic_ad_jobs filter=status='render_queued' pollMs=${POLL} workerId=${WORKER_ID}`);
+  console.log(`[CINEMATIC WORKER] config host=${SUPABASE_HOST} pollMs=${POLL} workerId=${WORKER_ID} safeMode=${SAFE_MODE}`);
   console.log(`[CINEMATIC WORKER] env: SUPABASE_URL set=${!!SUPABASE_URL} SERVICE_KEY set=${!!SERVICE_KEY} RENDER_WORKER_SECRET set=${!!SECRET}`);
-  log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE });
+  setBootPhase("env_validated", { node: process.version, memMb: Math.round(process.memoryUsage().rss/1024/1024) });
+  log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE, safeMode: SAFE_MODE, maxRetries: MAX_RETRIES });
+  // Hard startup-timeout guard
+  const startupTimer = setTimeout(() => {
+    state.crashReason = "startup_timeout";
+    log("error", "startup timeout — forcing exit so platform restarts", { ms: STARTUP_TIMEOUT_MS });
+    process.exit(1);
+  }, STARTUP_TIMEOUT_MS);
+  setBootPhase("starting_health_server");
   startHealthServer();
   console.log(`[worker-health] HTTP server bound on port ${PORT}`);
+  setBootPhase("pinging_supabase");
+  const ping = await pingSupabase().catch(e => ({ ok: false, error: String(e?.message ?? e) }));
+  setBootPhase("supabase_checked", { ok: ping.ok, status: ping.status ?? null });
+  if (!ping.ok) {
+    state.subsystems.render.healthy = false;
+    state.subsystems.render.lastError = `supabase_unreachable: ${ping.error ?? ping.status}`;
+    log("warn", "supabase unreachable at boot — entering degraded mode (will retry on poll)", ping);
+  }
+  setBootPhase("ready");
+  state.bootCompleted = true;
+  clearTimeout(startupTimer);
   if (!ONCE) {
     setInterval(() => {
       log("info", "heartbeat", {
         workerId: WORKER_ID,
         uptimeSec: Math.round((Date.now()-STARTED_AT)/1000),
+        safeMode: SAFE_MODE,
         busy: state.busy,
         currentJobId: state.currentJobId,
         lastPollAt: state.lastPollAt,
         lastPollOk: state.lastPollOk,
         lastPollReason: state.lastPollReason,
+        memMb: Math.round(process.memoryUsage().rss/1024/1024),
         totals: { claimed: state.totalClaimed, succeeded: state.totalSucceeded, failed: state.totalFailed },
         consecutiveFailures: state.consecutiveFailures,
       });
@@ -323,4 +389,16 @@ async function main() {
   if (ONCE) { log("info", "once mode complete"); return; }
   setInterval(tick, POLL);
 }
-main();
+main().catch(async (e) => {
+  state.crashReason = String(e?.message ?? e);
+  log("fatal", "main crashed", { err: state.crashReason });
+  try {
+    const fs = await import("node:fs/promises");
+    await fs.writeFile("/tmp/worker-fatal.json", JSON.stringify({
+      ts: new Date().toISOString(), reason: state.crashReason, bootPhase: state.bootPhase,
+    }, null, 2));
+  } catch {}
+  // Anti crash-loop: sleep 30s before exit so Render doesn't fast-restart.
+  await new Promise(r => setTimeout(r, 30_000));
+  process.exit(1);
+});
