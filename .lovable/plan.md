@@ -1,177 +1,76 @@
-# Pinterest Premium Pivot + Deep Cleanup Mode
 
-Two tightly-scoped, additive changes. No existing gate is weakened — all new constraints stack on top of the V3 stabilization layer already shipped (`publish_windows_est`, hook cooldown, phash dedupe, quarantine, recovery tier ladder).
+# Emergency Stabilization Plan
 
----
+This is a large multi-phase request. Given the Render worker is currently suspended, I'm prioritizing stabilization (Phases 1–3, 8) and the chunked cleanup refactor first. The creative-quality + funnel work (Phases 4–7 of the second brief) becomes a follow-up once the worker stays up.
 
-## Part 1 — Premium Creative Pivot (publish-side)
+## Priority order (what I will ship now)
 
-Tighten the existing pre-publish gates in `cinematic-ad-autopublish` and the Pinterest queue guard in `pinterest-viral-batch` so the account *cannot* emit catalog-style spam.
+### 1. Render worker SAFE MODE (kills crash loop)
+File: `render-worker/start.mjs` (and any orchestrator modules it imports).
 
-### 1A. Settings (one additive migration)
+- Add `WORKER_SAFE_MODE=1` env flag (default ON until we explicitly disable).
+- In safe mode the worker only does: claim 1 job → render → upload → report → idle. No Pinterest publish, no cleanup, no audit, no autopilot, no AI rescoring, no repair loop, no auto-retry beyond `MAX_RETRIES=1`.
+- Hard limits: `RENDER_CONCURRENCY=1`, `BATCH=1`, `STARTUP_TIMEOUT_MS=20000`, `RENDER_TIMEOUT_MS=1200000`.
+- Boot diagnostics: structured JSON log at each phase (`env_check`, `supabase_connect`, `pinterest_auth_skipped_safe_mode`, `queue_connect`, `ready`). Memory + node version printed once.
+- Crash-loop guard: if startup fails, write `/tmp/worker-fatal.json`, sleep 30s, exit with code 0 (so Render restarts politely instead of fast-looping).
+- Subsystem isolation: every non-render subsystem call wrapped in `try/catch` that logs and disables the subsystem for the rest of the process — never crashes render.
 
-Add to `cinematic_ad_settings` (all defaults safe; existing rows untouched):
-- `min_days_between_same_product int default 14`
-- `hook_cooldown_days int default 30` (raise from 7)
-- `thumbnail_phash_distance_threshold int default 10` (raise from 6)
-- `reject_white_background bool default true`
-- `reject_aggressive_cta bool default true`
-- `reject_orange_title_bar bool default true`
-- `min_visual_uniqueness_score int default 75`
-- `min_hook_uniqueness_score int default 75`
-- `min_thumbnail_entropy_score int default 70`
-- `min_first_frame_originality_score int default 70`
-- `allowed_creative_categories jsonb` — default to the 9 categories listed below
-- `blocked_creative_styles jsonb` — `["catalog_white_bg","aggressive_cta_bar","orange_title_bar","template_spam","slideshow_montage"]`
+### 2. Health/observability endpoint
+File: `render-worker/start.mjs` health server.
 
-Add to `cinematic_ad_jobs`:
-- `creative_category text` (cat_parent_struggles | odor_free_home | clean_lifestyle | cozy_pet_living | emotional_relief | funny_cat_moments | before_after | aesthetic_home | ugc_vertical)
-- `visual_uniqueness_score int`
-- `hook_uniqueness_score int`
-- `thumbnail_entropy_score int`
-- `first_frame_originality_score int`
-- `style_rejection_reason text`
+- `/api/health/worker` returns `{ uptime, safe_mode, queue_depth, last_job_at, last_render_ms, mem_mb, subsystems: {pinterest, cleanup, audit}, crash_reason }`.
+- Also mirrored to `public/api/health/worker` static stub for the frontend probe (already exists).
 
-### 1B. New shared module: `_shared/creative-quality.ts`
+### 3. Pinterest cleanup → chunked resumable scans (kills compute exhaustion)
+DB migration: new table `pinterest_cleanup_scan_sessions` with columns:
+`id uuid pk, started_at, completed_at, status (running|paused|completed|failed), cursor text, processed_count int, remaining_count int, last_error text, mode text, options jsonb, created_by uuid`.
+Plus index on `(status, started_at desc)`. RLS: admin-only via `has_role`.
 
-Pure functions, no Lovable AI call required (deterministic + cheap):
-- `computeEntropy(phashHex)` — Shannon entropy over hex nibbles, 0–100.
-- `detectWhiteBackground(thumbnailUrl)` — sample 9 corners + edges, flag if avg luminance > 240 over >55% of pixels.
-- `detectOrangeTitleBar(thumbnailUrl)` — scan top 18% of image for saturated orange band (#ff5a1f ± 30 hue).
-- `detectAggressiveCta(overlayText)` — regex against banned patterns: ALL CAPS >4 words, "BUY NOW", "SHOP NOW!!", "🔥SALE🔥", "CLICK HERE", arrows.
-- `scoreVisualUniqueness(phash, recentPhashes[])` — min Hamming distance / 64 → 0–100.
-- `scoreHookUniqueness(hookText, recentHooks[])` — token Jaccard, lowest similarity → 100 - sim*100.
-- `scoreFirstFrameOriginality(first3sPhash, recentFirst3s[])` — same as visual.
+Edge function rewrite: `supabase/functions/pinterest-cleanup-audit/index.ts`
+- New modes: `start` | `continue` | `finalize` | `status` (keeps existing `recommend`/`execute`/`trust`).
+- Per invocation: max 25 pins, hard 18s wall-clock budget, abort cleanly and persist cursor before timeout.
+- Cache pin metadata + engagement in a request-scoped `Map`; dedupe Pinterest API calls.
+- Rate limiter: token bucket, max 60 Pinterest GETs/min across the session row.
+- "Light scan" option (`mode: light`): only duplicate slug frequency, age, low-engagement — skip phash/OCR/deep similarity.
+- Idempotent: `start` returns existing running session if one exists for this admin instead of restarting.
+- On crash: partial results already persisted; `status` endpoint exposes resume token.
 
-### 1C. `cinematic-ad-autopublish` updated gate order
+### 4. Cleanup UI: progressive scan
+File: `src/pages/admin/PinterestCleanupPage.tsx`
+- Add "Start scan" / "Resume" buttons that call `start`/`continue` until `status=completed`.
+- Progress bar (`processed_count / (processed_count+remaining_count)`), ETA based on rolling avg ms/pin, live partial recommendations table.
+- Toggle: Light scan vs Full scan.
+- Polls every 2s while running.
 
-After existing window/jitter gates, before publish:
-1. `min_days_between_same_product` — query last publish per `product_slug`; reject if <14d.
-2. Hook cooldown 30d (already wired, raise default).
-3. Phash threshold 10 (raise default).
-4. **New:** white-bg / orange-bar / aggressive-cta detection on thumbnail + overlay text.
-5. **New:** all 4 uniqueness scores must clear floors. Write scores to `cinematic_ad_jobs`.
-6. **New:** require `creative_category` ∈ `allowed_creative_categories`.
+### 5. Premium creative pivot — enforcement only (no new AI)
+The autopublish gate already enforces 14-day product / 30-day hook / phash / score floors / blocked styles (shipped last turn). I will tighten the publish cadence:
+- `cinematic_ad_settings` defaults: `max_publishes_per_hour=2`, `max_publishes_per_day=8`.
+- `cinematic-ad-autopublish` reads those caps before claiming a job. If exceeded, no-op (does not crash).
 
-Rejected jobs get `style_rejection_reason` and stay in queue (no delete) so the cleanup admin can review.
+I will NOT in this turn build: Creative DNA Memory store, full funnel event taxonomy expansion, PDP rewrite, hero-product allocator. Those are tracked as follow-ups so we don't repeat the over-expansion that caused this incident.
 
-### 1D. `pinterest-viral-batch` queue guard
+## Files touched
 
-Mirror the same checks at queue-insert time so manual/AI-creative-director drafts also pass.
+- `render-worker/start.mjs` (safe mode + boot diagnostics + health)
+- `render-worker/lib/*` as needed (subsystem isolation)
+- `supabase/migrations/<ts>_cleanup_scan_sessions.sql` (new table + RLS)
+- `supabase/migrations/<ts>_publish_caps.sql` (cinematic_ad_settings columns)
+- `supabase/functions/pinterest-cleanup-audit/index.ts` (chunked modes + rate limit + cache)
+- `supabase/functions/cinematic-ad-autopublish/index.ts` (hourly/daily cap check)
+- `src/pages/admin/PinterestCleanupPage.tsx` (progressive UI)
+- `mem/marketing/pinterest-premium-pivot.md` (note caps + scan-session contract)
+- `.lovable/plan.md` (carry remaining Phases 4–7 of creative brief as backlog)
 
-### 1E. Storyboard bias
+## Explicit deferrals (called out so they aren't lost)
 
-`cinematic-ad-storyboard` already samples humanization pools. Add:
-- Bias hook generation toward 9 allowed creative categories.
-- Strip prompt language like "product hero", "white background", "studio packshot".
-- Inject mandatory style directive: "premium Pinterest-native pet lifestyle, cozy warm interior, golden hour, UGC handheld feel, emotional storytelling, no floating product card, no orange CTA bar".
+- Workers B/C/D split (publish/audit/cleanup) — Render only has one worker today; splitting requires new services and env. Filed as backlog. Subsystem isolation inside the single worker covers the crash-safety requirement immediately.
+- Funnel events expansion (`rage_click`, `session_quality_score`, etc.), PDP conversion upgrade, Creative DNA Memory — backlog after 72h stable.
 
----
+## Success check before I report done
 
-## Part 2 — Deep Pinterest Cleanup Mode
+- `render-worker/start.mjs` boots in safe mode locally without crashing when Pinterest creds are missing.
+- `pinterest-cleanup-audit` `start` + `continue` round-trip processes a 25-pin window and persists cursor.
+- `/admin/pinterest-cleanup` shows progress and resumes.
+- Migrations apply clean; types regenerate.
 
-Audit and prune the historical pin library. Read-only by default; deletes require explicit confirmation per batch.
-
-### 2A. Schema (same migration as Part 1)
-
-New tables (admin-only RLS, service-role full):
-- `pinterest_cleanup_audit`
-  - `pin_id text pk`
-  - `slug text`
-  - `thumbnail_phash text`
-  - `hook_text text`
-  - `creative_category text`
-  - `composite_quality_score int` (0–100)
-  - `visual_dup_count int` (count of near-duplicates within distance ≤ threshold)
-  - `slug_repeat_count int`
-  - `hook_repeat_count int`
-  - `is_slideshow_spam bool`
-  - `engagement_rate numeric`
-  - `recommendation text` — KEEP | ARCHIVE | DELETE
-  - `reasons jsonb` (array of detected issues)
-  - `audited_at timestamptz`
-- `pinterest_cleanup_actions`
-  - `pin_id text`, `action text` (archive|delete), `executed_at`, `executed_by uuid`, `pre_action_snapshot jsonb`
-
-### 2B. New edge function: `pinterest-cleanup-audit`
-
-Modes (via `?mode=`):
-- `scan` — paginate `pinterest_pin_queue` + Pinterest analytics; for every published pin compute:
-  - phash dup count vs all other pins
-  - slug repeat count
-  - hook Jaccard against all other hooks (>0.6 = repeat)
-  - slideshow signature flag (low motion entropy from `cinematic_pin_performance`)
-  - engagement_rate from `cinematic_pin_performance` (if no data, neutral 50)
-  - composite score: weighted sum (uniqueness 35 + engagement 35 + recency 10 + style_quality 20)
-  - recommendation rule:
-    - composite < 35 OR (slug_repeat ≥ 4 AND engagement < 0.3%) → **DELETE**
-    - composite 35–60 OR slideshow_spam → **ARCHIVE**
-    - else → **KEEP**
-- `recommend` — return top N delete/archive candidates, paginated.
-- `execute` — body `{action, pin_ids[]}`; archive sets local archived flag + writes `pinterest_cleanup_actions`; delete additionally calls Pinterest `DELETE /v5/pins/{id}` (rate-limit 4 concurrent, jitter), then writes deletion-verification row reusing the existing pipeline.
-
-### 2C. New shared computed view-style RPC
-
-`get_trust_recovery_score()` returns:
-- avg composite score of last 100 published pins
-- % within last 14d that passed all new gates
-- duplicate density (pins per cluster ≥ threshold)
-- engagement_rate avg last 30d
-- final score 0–100 (weighted), updated whenever audit runs.
-
-### 2D. Admin UI — `/admin/pinterest-cleanup`
-
-New lazy-loaded page under `AdminRouteGuard`:
-- Header card: **Trust Recovery Score** big number + last-audit timestamp + "Run scan" button.
-- Tabs: All audited / Recommended DELETE / Recommended ARCHIVE / KEEP.
-- Each row: thumbnail, slug, hook, composite score, reasons chips, individual KEEP / ARCHIVE / DELETE buttons.
-- Batch mode: multi-select + "Archive selected" / "Delete selected" with a typed confirmation modal ("type DELETE 12 pins").
-- Filter by visual_dup_count, slug, hook similarity, engagement_rate.
-- "Old V2 patterns first" sort = composite ASC + slug_repeat DESC + non-V3 engine_version.
-- Mobile-friendly stacked layout.
-- Empty state ("No audit yet — run scan"), loading state, error inline.
-- Add link from Cinematic Ads Control Center + sidebar entry "Pinterest Cleanup".
-
-### 2E. Safety guarantees
-
-- Delete action always:
-  1. Snapshots row to `pinterest_cleanup_actions.pre_action_snapshot`
-  2. Calls remote Pinterest delete
-  3. Triggers `pinterest-pin-deletion-verify` for that ID
-  4. Marks local archived (never hard-deletes the DB row)
-- Hard floor: never delete a pin with engagement_rate ≥ 1.5% regardless of duplication (high-performing protection).
-- Hard floor: never delete pins published in the last 7 days (cold-start protection).
-- Batch cap: 50 pins per execute call.
-
----
-
-## Files
-
-New:
-- `supabase/functions/_shared/creative-quality.ts`
-- `supabase/functions/pinterest-cleanup-audit/index.ts`
-- `src/pages/admin/PinterestCleanupPage.tsx`
-- `supabase/migrations/<ts>_premium_pivot_and_cleanup.sql`
-
-Edited:
-- `supabase/functions/cinematic-ad-autopublish/index.ts` — new gates
-- `supabase/functions/cinematic-ad-storyboard/index.ts` — premium bias + banned-style strip
-- `supabase/functions/pinterest-viral-batch/index.ts` — queue-side mirror checks
-- `src/App.tsx` — register `/admin/pinterest-cleanup`
-- `src/components/admin/AdminLayout.tsx` — sidebar link
-- `src/pages/admin/CinematicAdsControlCenterPage.tsx` — header link to cleanup
-- `src/integrations/supabase/types.ts` — auto-regen
-- `mem/features/cinematic/video-engine-v3.md` — append premium-pivot notes
-- New `mem/marketing/pinterest-premium-pivot.md` — codify the new creative law (no white bg / no orange bar / no aggressive CTA / 14d slug / 30d hook / 9 categories / KPIs = saves+watch+CTR not throughput)
-
----
-
-## Verification
-
-After deploy:
-1. `pinterest-cleanup-audit?mode=scan` (dry) — confirm rows populate.
-2. `cinematic-ad-autopublish?dryRun=true&audit=true` — confirm 4 new uniqueness scores + reject reasons appear in response.
-3. Open `/admin/pinterest-cleanup` and `/admin/pinterest-recovery` — both load, Trust Recovery Score visible.
-4. Run a small batch archive (5 pins) end-to-end.
-
-Reply **go** to execute.
+Ready to execute on approval.
