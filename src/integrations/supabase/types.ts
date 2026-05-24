@@ -1624,8 +1624,10 @@ export type Database = {
           min_thumbnail_entropy_score: number
           min_unique_media_assets: number
           min_visual_uniqueness_score: number
+          pinterest_publish_max_per_day: number
           pinterest_publish_max_per_hour: number
           pinterest_publish_min_slug_gap_minutes: number
+          pinterest_publish_premium_cap_per_hour: number
           pinterest_publish_quality_floor: number | null
           pinterest_publish_recovery_mode: boolean
           publish_jitter_max_seconds: number
@@ -1667,8 +1669,10 @@ export type Database = {
           min_thumbnail_entropy_score?: number
           min_unique_media_assets?: number
           min_visual_uniqueness_score?: number
+          pinterest_publish_max_per_day?: number
           pinterest_publish_max_per_hour?: number
           pinterest_publish_min_slug_gap_minutes?: number
+          pinterest_publish_premium_cap_per_hour?: number
           pinterest_publish_quality_floor?: number | null
           pinterest_publish_recovery_mode?: boolean
           publish_jitter_max_seconds?: number
@@ -1710,8 +1714,10 @@ export type Database = {
           min_thumbnail_entropy_score?: number
           min_unique_media_assets?: number
           min_visual_uniqueness_score?: number
+          pinterest_publish_max_per_day?: number
           pinterest_publish_max_per_hour?: number
           pinterest_publish_min_slug_gap_minutes?: number
+          pinterest_publish_premium_cap_per_hour?: number
           pinterest_publish_quality_floor?: number | null
           pinterest_publish_recovery_mode?: boolean
           publish_jitter_max_seconds?: number
@@ -9529,6 +9535,60 @@ export type Database = {
           slug_repeat_count?: number
           thumbnail_phash?: string | null
           visual_dup_count?: number
+        }
+        Relationships: []
+      }
+      pinterest_cleanup_scan_sessions: {
+        Row: {
+          api_calls_used: number
+          completed_at: string | null
+          created_by: string | null
+          cursor: string | null
+          id: string
+          last_error: string | null
+          mode: string
+          options: Json
+          partial_summary: Json
+          processed_count: number
+          remaining_count: number | null
+          started_at: string
+          status: string
+          total_estimate: number | null
+          updated_at: string
+        }
+        Insert: {
+          api_calls_used?: number
+          completed_at?: string | null
+          created_by?: string | null
+          cursor?: string | null
+          id?: string
+          last_error?: string | null
+          mode?: string
+          options?: Json
+          partial_summary?: Json
+          processed_count?: number
+          remaining_count?: number | null
+          started_at?: string
+          status?: string
+          total_estimate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          api_calls_used?: number
+          completed_at?: string | null
+          created_by?: string | null
+          cursor?: string | null
+          id?: string
+          last_error?: string | null
+          mode?: string
+          options?: Json
+          partial_summary?: Json
+          processed_count?: number
+          remaining_count?: number | null
+          started_at?: string
+          status?: string
+          total_estimate?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
