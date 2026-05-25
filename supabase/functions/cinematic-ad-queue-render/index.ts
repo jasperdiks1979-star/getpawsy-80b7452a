@@ -14,19 +14,22 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const trace = traceId();
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) {
-      return json({ ok: false, traceId: trace, message: "unauthenticated" }, 401);
-    }
-
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: roleRow } = await admin
-      .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) return json({ ok: false, traceId: trace, message: "forbidden" }, 403);
+    const internalToken = req.headers.get("x-internal-token") ?? "";
+    const workerSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+    if (!(workerSecret && internalToken && internalToken === workerSecret)) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData.user) {
+        return json({ ok: false, traceId: trace, message: "unauthenticated" }, 401);
+      }
+      const { data: roleRow } = await admin
+        .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
+      if (!roleRow) return json({ ok: false, traceId: trace, message: "forbidden" }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const jobId = String(body.job_id ?? "");
