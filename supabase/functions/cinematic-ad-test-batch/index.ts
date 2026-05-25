@@ -49,6 +49,8 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("Authorization") ?? "";
   if (!auth) return json(401, { ok: false, traceId, message: "unauthorized" });
 
+  const body: any = await req.json().catch(() => ({}));
+
   const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
   // Auth: admin role required
