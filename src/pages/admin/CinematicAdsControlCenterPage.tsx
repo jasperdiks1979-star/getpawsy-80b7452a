@@ -472,6 +472,8 @@ export default function CinematicAdsControlCenterPage() {
         </div>
       </header>
 
+      <SystemTruthPanel />
+
       <AutopilotHealthPanel />
 
       <CinematicIntelligencePanel />
