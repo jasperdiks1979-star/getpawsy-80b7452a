@@ -209,6 +209,19 @@ Deno.serve(async (req) => {
     .not("hook_archetype", "is", null);
   const cooldownHooks = new Set((recentHooks ?? []).map((r: any) => r.hook_archetype));
 
+  // ----- V3.1 Content-type consecutive-repeat guard -----
+  // Block publishing a content_type if the same type was published in the last 2 pins.
+  // Keeps the Pinterest feed visually varied (spotlight, compilation, lifestyle, ugc, slideshow).
+  const { data: recentTypes } = await admin
+    .from("cinematic_ad_jobs")
+    .select("content_type")
+    .not("pushed_to_pinterest_at", "is", null)
+    .order("pushed_to_pinterest_at", { ascending: false })
+    .limit(2);
+  const last2Types = new Set(
+    (recentTypes ?? []).map((r: any) => r.content_type).filter(Boolean),
+  );
+
   // ----- V3 Perceptual dedupe pool -----
   const { data: recentHashes } = await admin
     .from("cinematic_ad_jobs")
