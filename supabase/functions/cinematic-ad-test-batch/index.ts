@@ -113,6 +113,34 @@ Deno.serve(async (req) => {
     .select("id, product_slug, content_type, hook_variant, status");
   if (iErr) return json(500, { ok: false, traceId, message: iErr.message });
 
+  // Mark all seeded rows for publish-window bypass so they publish immediately.
+  if (inserted?.length) {
+    await admin.from("cinematic_ad_jobs")
+      .update({ publish_window_bypass: true })
+      .in("id", inserted.map((r: any) => r.id));
+  }
+
+  // Optional auto-kick: chain through prepare → approve → render_queued.
+  const autoKick = Boolean(body?.auto_kick ?? true);
+  let kickResult: any = null;
+  if (autoKick && inserted?.length) {
+    try {
+      const workerSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+      const kickRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-kick-pending`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: ANON_KEY,
+          "x-internal-token": workerSecret,
+        },
+        body: JSON.stringify({ job_ids: inserted.map((r: any) => r.id) }),
+      });
+      kickResult = await kickRes.json().catch(() => ({}));
+    } catch (e) {
+      kickResult = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   // Audit
   await admin.from("cinematic_ad_audit_events").insert(
     (inserted ?? []).map((j: any) => ({
@@ -129,6 +157,8 @@ Deno.serve(async (req) => {
     traceId,
     message: `seeded ${inserted?.length ?? 0} jobs across ${chosen.length} products`,
     products: chosen.map((p) => ({ slug: p.slug, name: p.name })),
+    auto_kick: autoKick,
+    kick_result: kickResult,
     jobs: (inserted ?? []).map((j: any) => ({
       job_id: j.id,
       content_type: j.content_type,
