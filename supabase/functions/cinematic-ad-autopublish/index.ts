@@ -450,6 +450,15 @@ Deno.serve(async (req) => {
       if (job.thumbnail_phash) recentThumbs.unshift(job.thumbnail_phash);
       if (job.first3s_phash) recentFirst3.unshift(job.first3s_phash);
       if (job.overlay_text_hash) recentOverlays.add(job.overlay_text_hash);
+      if (job.media_hash) recentMediaHashes.add(job.media_hash);
+      // Update category rotation tracker
+      await admin.from("pinterest_category_rotation").upsert({
+        product_slug: job.product_slug,
+        category: job.creative_category ?? null,
+        last_published_at: new Date().toISOString(),
+        publish_count: 1,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "product_slug" }).then(() => {}, () => {});
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await admin.from("cinematic_ad_jobs").update({
