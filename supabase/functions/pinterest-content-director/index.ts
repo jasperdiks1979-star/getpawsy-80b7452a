@@ -18,23 +18,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 type Archetype =
-  | "product_spotlight"
+  | "cinematic_product_demo"
   | "multi_product_compilation"
   | "lifestyle_scene"
   | "ugc_pov"
   | "animated_slideshow";
 
 // Desired 7-day distribution. Director picks the archetype furthest from target.
+// V4 Cinematic-first: zero share for legacy static/infographic templates.
+// Slideshow capped at 10% as an MP4 fallback only.
 const TARGET_MIX: Record<Archetype, number> = {
-  product_spotlight: 0.4,
-  multi_product_compilation: 0.2,
+  cinematic_product_demo: 0.30,
+  multi_product_compilation: 0.25,
+  ugc_pov: 0.20,
   lifestyle_scene: 0.15,
-  ugc_pov: 0.15,
-  animated_slideshow: 0.1,
+  animated_slideshow: 0.10,
 };
 
 const HOOK_POOL: Record<Archetype, string[]> = {
-  product_spotlight: [
+  cinematic_product_demo: [
     "your cat needs this",
     "this changed our routine",
     "viral but actually worth it",
@@ -137,7 +139,7 @@ Deno.serve(async (req) => {
     const total = Math.max(1, (weekly ?? []).length);
 
     const archetypes: Archetype[] = [
-      "product_spotlight",
+      "cinematic_product_demo",
       "multi_product_compilation",
       "lifestyle_scene",
       "ugc_pov",
@@ -155,7 +157,11 @@ Deno.serve(async (req) => {
       })
       .sort((x, y) => y.deficit - x.deficit);
 
-    const chosen: Archetype = forced ?? (candidates[0]?.a ?? "product_spotlight");
+    // Map deprecated archetype alias (product_spotlight) for back-compat callers.
+    const forcedNormalized: Archetype | null = forced === ("product_spotlight" as Archetype)
+      ? "cinematic_product_demo"
+      : forced;
+    const chosen: Archetype = forcedNormalized ?? (candidates[0]?.a ?? "cinematic_product_demo");
 
     // --- 4. Pick products honoring the 7-day cooldown -------------------
     const { data: pool = [] } = await supabase
