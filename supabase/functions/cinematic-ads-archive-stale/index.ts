@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   // Pull active (non-archived) jobs.
   const { data: jobs, error } = await sb
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, status, engine_version, thumbnail_phash, output_mp4_url, pinterest_pin_id, pinterest_pin_url, pin_publish_attempts, remote_exists, archived_at, created_at")
+    .select("id, product_slug, status, engine_version, thumbnail_phash, output_mp4_url, pinterest_pin_id, pinterest_pin_url, pin_publish_attempts, remote_exists, archived_at, created_at, content_type, media_type")
     .is("archived_at", null)
     .order("created_at", { ascending: false })
     .limit(2000);
@@ -52,6 +52,17 @@ Deno.serve(async (req) => {
 
     // Rule A: pre-V3/V4 engine
     if (j.engine_version && /^v[12]/i.test(j.engine_version)) reason = "pre_v3_engine";
+
+    // Rule A2 (V4): legacy static / infographic_static jobs are deprecated.
+    // Archive when not yet published and older than 1 day, OR any unpublished
+    // static job that lost to a cinematic MP4 (no pinterest_pin_id and no MP4).
+    if (!reason) {
+      const ct = (j as any).content_type;
+      const mt = (j as any).media_type;
+      const ageHrs = (Date.now() - new Date(j.created_at as string).getTime()) / 3.6e6;
+      const isStatic = ct === "infographic_static" || ct === "static" || mt === "static";
+      if (isStatic && !j.pinterest_pin_id && ageHrs >= 24) reason = "legacy_static_deprecated";
+    }
 
     // Rule B: same slug + same phash dupe (keep newest, archive older)
     if (!reason && j.thumbnail_phash && slug) {
