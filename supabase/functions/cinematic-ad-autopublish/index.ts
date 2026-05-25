@@ -266,17 +266,58 @@ Deno.serve(async (req) => {
     .is("pinterest_asset_id", null)
     .not("output_mp4_url", "is", null)
     .order("updated_at", { ascending: true })
-    .limit(10);
+    .limit(25);
   if (error) return json(500, { ok: false, traceId, message: error.message });
+
+  // V4 cinematic-first priority sort: prefer high-impact MP4 content types,
+  // push static / slideshow / unknown to the bottom of the queue.
+  const CT_PRIORITY: Record<string, number> = {
+    cinematic_product_demo: 100,
+    multi_product_compilation: 95,
+    lifestyle_scene: 90,
+    ugc_pov: 90,
+    product_spotlight: 80, // legacy alias of cinematic_product_demo
+    animated_slideshow: 40,
+    infographic_static: 5,
+    static: 5,
+  };
+  const prioritized = (jobs ?? []).slice().sort((a: any, b: any) => {
+    const pa = CT_PRIORITY[a.content_type ?? ""] ?? 50;
+    const pb = CT_PRIORITY[b.content_type ?? ""] ?? 50;
+    if (pa !== pb) return pb - pa;
+    return 0; // keep updated_at order otherwise
+  }).slice(0, 10);
 
   const results: Array<{ job_id: string; ok: boolean; reason?: string }> = [];
   let publishedCount = 0;
   const publishedSlugsThisRun = new Set<string>();
 
-  for (const job of jobs ?? []) {
+  for (const job of prioritized) {
     if (publishedCount >= remainingHourBudget) {
       results.push({ job_id: job.id, ok: false, reason: "hourly_budget_consumed" });
       continue;
+    }
+    // V4 HARD RULE: if a cinematic MP4 already exists (publishable / approved /
+    // completed) for this product_slug, NEVER publish a static fallback for
+    // the same slug — even when allow_static_fallback is true.
+    const ctIsStaticLike = job.content_type === "infographic_static" ||
+      job.content_type === "static" || (job.media_type === "static");
+    if (ctIsStaticLike) {
+      const { data: rivalMp4 } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id")
+        .eq("product_slug", job.product_slug)
+        .in("status", ELIGIBLE_STATUSES)
+        .not("output_mp4_url", "is", null)
+        .neq("id", job.id)
+        .limit(1);
+      if (rivalMp4 && rivalMp4.length > 0) {
+        await admin.from("cinematic_ad_jobs").update({
+          publish_blocked_reason: "cinematic_mp4_exists_static_blocked",
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: "cinematic_mp4_exists_static_blocked" });
+        continue;
+      }
     }
     // ---- Video-first priority gate ----
     const mediaType = (job.media_type ?? "video") as string; // default to video since output_mp4_url is required
