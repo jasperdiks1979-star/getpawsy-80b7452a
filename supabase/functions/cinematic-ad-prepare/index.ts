@@ -521,21 +521,27 @@ const handler = async (req: Request): Promise<Response> => {
   if (!elevenKey) return json(500, { ok: false, traceId, message: "ELEVENLABS_API_KEY not configured" });
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
-
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const { data: roleRow } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userData.user.id)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+  const internalToken = req.headers.get("x-internal-token") ?? "";
+  const workerSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+  let userData: { user: { id: string } } | null = null;
+  if (workerSecret && internalToken && internalToken === workerSecret) {
+    const { data: adminRow } = await admin
+      .from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+    if (!adminRow?.user_id) return json(500, { ok: false, traceId, message: "no admin user available for internal call" });
+    userData = { user: { id: adminRow.user_id } };
+  } else {
+    const userClient = createClient(url, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const { data: u, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !u?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
+    const { data: roleRow } = await admin
+      .from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+    userData = { user: { id: u.user.id } };
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch { /* allow empty */ }
