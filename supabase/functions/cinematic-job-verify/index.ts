@@ -53,6 +53,8 @@ Deno.serve(async (req) => {
 
   const body: any = await req.json().catch(() => ({}));
   const limit = Math.min(Math.max(Number(body?.limit) || 50, 1), 200);
+  // dryRun=true → check remote state and return the would-be corrections without writing.
+  const dryRun = body?.dryRun === true || body?.dry_run === true;
 
   let q = sb.from("cinematic_ad_jobs")
     .select("id, status, pinterest_pin_id, pinterest_pin_url, archived_at")
@@ -78,9 +80,12 @@ Deno.serve(async (req) => {
   for (const j of jobs) {
     if (!j.pinterest_pin_id) {
       const newStatus = j.status === "pinterest_uploaded" ? "publish_failed" : j.status;
-      await sb.from("cinematic_ad_jobs").update({ verified_at: nowIso, remote_exists: false, status: newStatus, publishable_reason: "no_pin_id" }).eq("id", j.id);
-      await sb.from("pinterest_publish_verifications").insert({ job_id: j.id, pin_id: null, pin_url: null, remote_exists: false, error: "no_pin_id" });
-      results.push({ id: j.id, outcome: "no_pin_id" });
+      const wouldCorrect = newStatus !== j.status;
+      if (!dryRun) {
+        await sb.from("cinematic_ad_jobs").update({ verified_at: nowIso, remote_exists: false, status: newStatus, publishable_reason: "no_pin_id" }).eq("id", j.id);
+        await sb.from("pinterest_publish_verifications").insert({ job_id: j.id, pin_id: null, pin_url: null, remote_exists: false, error: "no_pin_id" });
+      }
+      results.push({ id: j.id, outcome: "no_pin_id", current_status: j.status, next_status: newStatus, would_correct: wouldCorrect });
       continue;
     }
     if (!token) {
@@ -93,6 +98,7 @@ Deno.serve(async (req) => {
       verified_at: nowIso,
       remote_exists: exists,
     };
+    const prevStatus = j.status;
     if (exists) {
       updates.pinterest_pin_url = r.pin_url ?? j.pinterest_pin_url;
       updates.status = "pinterest_uploaded";
@@ -104,17 +110,22 @@ Deno.serve(async (req) => {
     } else {
       updates.publishable_reason = "verification_inaccessible";
     }
-    await sb.from("cinematic_ad_jobs").update(updates).eq("id", j.id);
-    await sb.from("pinterest_publish_verifications").insert({
-      job_id: j.id,
-      pin_id: j.pinterest_pin_id,
-      pin_url: r.pin_url ?? j.pinterest_pin_url,
-      remote_exists: exists,
-      error: r.error ?? null,
-    });
-    results.push({ id: j.id, outcome: r.outcome, pin_url: r.pin_url });
+    const nextStatus = (updates.status as string | undefined) ?? prevStatus;
+    const wouldCorrect = nextStatus !== prevStatus;
+    if (!dryRun) {
+      await sb.from("cinematic_ad_jobs").update(updates).eq("id", j.id);
+      await sb.from("pinterest_publish_verifications").insert({
+        job_id: j.id,
+        pin_id: j.pinterest_pin_id,
+        pin_url: r.pin_url ?? j.pinterest_pin_url,
+        remote_exists: exists,
+        error: r.error ?? null,
+      });
+    }
+    results.push({ id: j.id, outcome: r.outcome, pin_url: r.pin_url, current_status: prevStatus, next_status: nextStatus, would_correct: wouldCorrect });
     await new Promise((rs) => setTimeout(rs, 80));
   }
 
-  return json({ ok: true, verified_at: nowIso, checked: results.length, results });
+  const corrections = results.filter((r) => r.would_correct).length;
+  return json({ ok: true, dryRun, verified_at: nowIso, checked: results.length, corrections, results });
 });
