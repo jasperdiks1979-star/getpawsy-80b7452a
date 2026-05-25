@@ -39,6 +39,7 @@ interface Storyboard {
     intent: string;
     motionIntensity: "high" | "medium" | "low";
     durationFrames: number;
+    vo?: string;
   }>;
   emotionalCurve: number[]; // 0–100 per scene
   totalFrames: number;
@@ -61,13 +62,13 @@ Rules:
 function fallbackStoryboard(productName: string): Storyboard {
   const safeName = productName || "this";
   const scenes = [
-    { role: "HOOK" as const, caption: `Tired of the daily mess?`, intent: "pain-callout", motionIntensity: "high" as const, durationFrames: 36 },
-    { role: "PROBLEM" as const, caption: `Smells. Scooping. Stress.`, intent: "amplify-pain", motionIntensity: "medium" as const, durationFrames: 45 },
-    { role: "EMOTION" as const, caption: `Your pet deserves better.`, intent: "emotional-pull", motionIntensity: "medium" as const, durationFrames: 45 },
-    { role: "FEATURE" as const, caption: `${safeName} changes everything.`, intent: "product-reveal", motionIntensity: "high" as const, durationFrames: 60 },
-    { role: "BENEFIT" as const, caption: `Cleaner. Calmer. Easier.`, intent: "benefit-stack", motionIntensity: "medium" as const, durationFrames: 54 },
-    { role: "PROOF" as const, caption: `Pet owners are obsessed.`, intent: "social-proof", motionIntensity: "high" as const, durationFrames: 54 },
-    { role: "CTA" as const, caption: `Shop the upgrade.`, intent: "cta-command", motionIntensity: "high" as const, durationFrames: 60 },
+    { role: "HOOK" as const, caption: `Tired of the daily mess?`, intent: "pain-callout", motionIntensity: "high" as const, durationFrames: 36, vo: "Okay, if you have a cat, you genuinely need to see this." },
+    { role: "PROBLEM" as const, caption: `Smells. Scooping. Stress.`, intent: "amplify-pain", motionIntensity: "medium" as const, durationFrames: 45, vo: "The smell, the scooping, the daily routine. It adds up." },
+    { role: "EMOTION" as const, caption: `Your pet deserves better.`, intent: "emotional-pull", motionIntensity: "medium" as const, durationFrames: 45, vo: "And honestly, your cat deserves a better setup than this." },
+    { role: "FEATURE" as const, caption: `${safeName} changes everything.`, intent: "product-reveal", motionIntensity: "high" as const, durationFrames: 60, vo: `So we tried ${safeName}, and it changed our whole routine.` },
+    { role: "BENEFIT" as const, caption: `Cleaner. Calmer. Easier.`, intent: "benefit-stack", motionIntensity: "medium" as const, durationFrames: 54, vo: "Cleaner home, calmer cat, way less work every single day." },
+    { role: "PROOF" as const, caption: `Pet owners are obsessed.`, intent: "social-proof", motionIntensity: "high" as const, durationFrames: 54, vo: "Thousands of pet parents have already made the switch." },
+    { role: "CTA" as const, caption: `Shop the upgrade.`, intent: "cta-command", motionIntensity: "high" as const, durationFrames: 60, vo: "Tap the link and grab yours before it sells out." },
   ];
   return {
     scenes,
@@ -97,7 +98,7 @@ Return ONLY valid JSON matching this schema:
   "hookVariants": [{"text": "string ≤6 words", "type": "one of: ${HOOK_TYPES.join(", ")}", "score": 0-100}], // exactly 5
   "selectedHookIndex": number (0-4, highest scoring),
   "scenes": [
-    {"role": "HOOK|PROBLEM|EMOTION|FEATURE|BENEFIT|PROOF|CTA", "caption": "≤6 words", "intent": "1 phrase", "motionIntensity": "high|medium|low", "durationFrames": 30-66}
+    {"role": "HOOK|PROBLEM|EMOTION|FEATURE|BENEFIT|PROOF|CTA", "caption": "≤6 words", "intent": "1 phrase", "motionIntensity": "high|medium|low", "durationFrames": 30-66, "vo": "1-2 spoken sentences (12-25 words) US-native conversational voice-over for this beat"}
   ], // exactly 7 in arc order
   "emotionalCurve": [number, ...] // 7 values 0-100
 }`;
