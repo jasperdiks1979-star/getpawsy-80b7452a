@@ -10924,6 +10924,7 @@ export type Database = {
           pin_id: string | null
           pin_url: string | null
           remote_exists: boolean | null
+          run_id: string | null
         }
         Insert: {
           checked_at?: string
@@ -10933,6 +10934,7 @@ export type Database = {
           pin_id?: string | null
           pin_url?: string | null
           remote_exists?: boolean | null
+          run_id?: string | null
         }
         Update: {
           checked_at?: string
@@ -10942,8 +10944,17 @@ export type Database = {
           pin_id?: string | null
           pin_url?: string | null
           remote_exists?: boolean | null
+          run_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_publish_verifications_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_verification_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_render_attempts: {
         Row: {
@@ -11195,6 +11206,39 @@ export type Database = {
           trend_label?: string
           updated_at?: string
           weight?: number
+        }
+        Relationships: []
+      }
+      pinterest_verification_runs: {
+        Row: {
+          checked: number
+          corrections: number
+          dry_run: boolean
+          finished_at: string | null
+          id: string
+          notes: string | null
+          started_at: string
+          triggered_by: string | null
+        }
+        Insert: {
+          checked?: number
+          corrections?: number
+          dry_run?: boolean
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          started_at?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          checked?: number
+          corrections?: number
+          dry_run?: boolean
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          started_at?: string
+          triggered_by?: string | null
         }
         Relationships: []
       }
