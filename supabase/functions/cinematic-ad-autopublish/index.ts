@@ -377,7 +377,8 @@ Deno.serve(async (req) => {
       results.push({ job_id: job.id, ok: false, reason: "media_hash_duplicate_30d" });
       continue;
     }
-    if (cooldownSlugs.has(job.product_slug) || publishedSlugsThisRun.has(job.product_slug)) {
+    const bypass = (job as any).publish_window_bypass === true;
+    if (!bypass && (cooldownSlugs.has(job.product_slug) || publishedSlugsThisRun.has(job.product_slug))) {
       await admin.from("cinematic_ad_jobs").update({
         publish_blocked_reason: `slug_cooldown(${slugGapMin}m)`,
       }).eq("id", job.id);
@@ -385,7 +386,7 @@ Deno.serve(async (req) => {
       continue;
     }
     // Premium pivot: 14-day per-product cooldown (stricter than minute-level slug gap)
-    if (productCooldownSlugs.has(job.product_slug)) {
+    if (!bypass && productCooldownSlugs.has(job.product_slug)) {
       await admin.from("cinematic_ad_jobs").update({
         publish_blocked_reason: `product_cooldown_${productCooldownDays}d`,
       }).eq("id", job.id);
@@ -406,7 +407,7 @@ Deno.serve(async (req) => {
       continue;
     }
     // V3 hook cooldown
-    if (job.hook_archetype && cooldownHooks.has(job.hook_archetype)) {
+    if (!bypass && job.hook_archetype && cooldownHooks.has(job.hook_archetype)) {
       await admin.from("cinematic_ad_jobs").update({ publish_blocked_reason: `hook_cooldown(${hookCooldownDays}d)` }).eq("id", job.id);
       results.push({ job_id: job.id, ok: false, reason: "hook_cooldown" });
       continue;
