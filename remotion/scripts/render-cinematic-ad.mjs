@@ -342,6 +342,37 @@ async function main() {
   console.log(`[render] claiming job ${JOB_ID} as ${WORKER_ID}`, { supabase_host: SUPABASE_HOST, functions_base_url: FUNCTIONS_BASE_URL });
   const job = await claimJob();
   console.log(`[render] claimed`, { job_id: job.job_id, scenes: job.scene_assets?.length });
+
+  // ---------------- Cinematic v4 dispatch ----------------
+  // For motion-first content types, delegate to the Remotion renderer
+  // (real cinematic compositions with captions, voice-over, ducked music)
+  // instead of the legacy ffmpeg slideshow pipeline.
+  const REMOTION_TYPES = new Set([
+    "cinematic_product_demo",
+    "compilation",
+    "ugc_pov",
+    "lifestyle_scene",
+  ]);
+  if (REMOTION_TYPES.has(job.content_type)) {
+    console.log(`[render] dispatching to remotion cinematic renderer for content_type=${job.content_type}`);
+    const remScript = new URL("./render-cinematic-remotion.mjs", import.meta.url).pathname;
+    await new Promise((resolve, reject) => {
+      const p = spawn(process.execPath, [remScript, `--job=${job.job_id}`], {
+        stdio: "inherit",
+        env: {
+          ...process.env,
+          JOB_ID: job.job_id,
+          JOB_PAYLOAD_JSON: JSON.stringify(job),
+          RENDER_WORKER_ID: WORKER_ID,
+        },
+      });
+      p.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`remotion renderer exited ${code}`))));
+      p.on("error", reject);
+    });
+    console.log(`[render] remotion cinematic render complete job=${job.job_id}`);
+    return;
+  }
+
   await postWebhook({ job_id: job.job_id, status: "rendering", render_token: job.render_token, worker_id: WORKER_ID });
 
   const work = mkdtempSync(join(tmpdir(), "cinema-"));
