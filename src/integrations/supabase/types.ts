@@ -1177,6 +1177,7 @@ export type Database = {
           caption_variants: Json
           caption_visibility_score: number | null
           captions_visible: boolean | null
+          cinematic_quality_score: number | null
           classification_confidence: number | null
           confidence_scores: Json
           content_type: string | null
@@ -1215,6 +1216,7 @@ export type Database = {
           motion_diversity_score: number | null
           motion_exists: boolean | null
           motion_score: number | null
+          music_track_id: string | null
           music_url: string | null
           needs_admin_review: boolean
           output_black_bars: boolean | null
@@ -1305,6 +1307,7 @@ export type Database = {
           validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
+          variation_signature: string | null
           verified_at: string | null
           video_corrupted: boolean
           visual_energy_score: number | null
@@ -1314,6 +1317,9 @@ export type Database = {
           vo_url: string | null
           voice_id: string
           voice_style: string | null
+          voiceover_script: Json | null
+          voiceover_url: string | null
+          voiceover_voice_id: string | null
           worker_last_error: string | null
         }
         Insert: {
@@ -1336,6 +1342,7 @@ export type Database = {
           caption_variants?: Json
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
+          cinematic_quality_score?: number | null
           classification_confidence?: number | null
           confidence_scores?: Json
           content_type?: string | null
@@ -1374,6 +1381,7 @@ export type Database = {
           motion_diversity_score?: number | null
           motion_exists?: boolean | null
           motion_score?: number | null
+          music_track_id?: string | null
           music_url?: string | null
           needs_admin_review?: boolean
           output_black_bars?: boolean | null
@@ -1464,6 +1472,7 @@ export type Database = {
           validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
+          variation_signature?: string | null
           verified_at?: string | null
           video_corrupted?: boolean
           visual_energy_score?: number | null
@@ -1473,6 +1482,9 @@ export type Database = {
           vo_url?: string | null
           voice_id?: string
           voice_style?: string | null
+          voiceover_script?: Json | null
+          voiceover_url?: string | null
+          voiceover_voice_id?: string | null
           worker_last_error?: string | null
         }
         Update: {
@@ -1495,6 +1507,7 @@ export type Database = {
           caption_variants?: Json
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
+          cinematic_quality_score?: number | null
           classification_confidence?: number | null
           confidence_scores?: Json
           content_type?: string | null
@@ -1533,6 +1546,7 @@ export type Database = {
           motion_diversity_score?: number | null
           motion_exists?: boolean | null
           motion_score?: number | null
+          music_track_id?: string | null
           music_url?: string | null
           needs_admin_review?: boolean
           output_black_bars?: boolean | null
@@ -1623,6 +1637,7 @@ export type Database = {
           validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
+          variation_signature?: string | null
           verified_at?: string | null
           video_corrupted?: boolean
           visual_energy_score?: number | null
@@ -1632,6 +1647,9 @@ export type Database = {
           vo_url?: string | null
           voice_id?: string
           voice_style?: string | null
+          voiceover_script?: Json | null
+          voiceover_url?: string | null
+          voiceover_voice_id?: string | null
           worker_last_error?: string | null
         }
         Relationships: [
@@ -1786,9 +1804,12 @@ export type Database = {
           reject_orange_title_bar: boolean
           reject_white_background: boolean
           safe_zone_debug: boolean | null
+          static_share_cap: number
           thumbnail_phash_distance_threshold: number
           updated_at: string
           updated_by: string | null
+          video_share_floor: number
+          voiceover_required: boolean
           worker_health_url: string | null
         }
         Insert: {
@@ -1835,9 +1856,12 @@ export type Database = {
           reject_orange_title_bar?: boolean
           reject_white_background?: boolean
           safe_zone_debug?: boolean | null
+          static_share_cap?: number
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
+          video_share_floor?: number
+          voiceover_required?: boolean
           worker_health_url?: string | null
         }
         Update: {
@@ -1884,9 +1908,12 @@ export type Database = {
           reject_orange_title_bar?: boolean
           reject_white_background?: boolean
           safe_zone_debug?: boolean | null
+          static_share_cap?: number
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
+          video_share_floor?: number
+          voiceover_required?: boolean
           worker_health_url?: string | null
         }
         Relationships: []
@@ -2038,6 +2065,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_music_tracks: {
+        Row: {
+          active: boolean
+          bpm: number | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          license: string
+          mood: string
+          url: string
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          bpm?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          license?: string
+          mood: string
+          url: string
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          bpm?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          license?: string
+          mood?: string
+          url?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       cinematic_pin_performance: {
         Row: {
           asset_id: string | null
@@ -2110,6 +2173,69 @@ export type Database = {
           pattern_value?: string
           quarantined_until?: string
           reason?: string | null
+        }
+        Relationships: []
+      }
+      cinematic_voice_profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          gender: string
+          id: string
+          label: string
+          tone: string
+          voice_id: string
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          gender: string
+          id?: string
+          label: string
+          tone: string
+          voice_id: string
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          gender?: string
+          id?: string
+          label?: string
+          tone?: string
+          voice_id?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      cinematic_voiceover_lines: {
+        Row: {
+          active: boolean
+          archetype: string
+          beat: string
+          created_at: string
+          id: string
+          text: string
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          archetype: string
+          beat: string
+          created_at?: string
+          id?: string
+          text: string
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          archetype?: string
+          beat?: string
+          created_at?: string
+          id?: string
+          text?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -16512,6 +16638,7 @@ export type Database = {
           caption_variants: Json
           caption_visibility_score: number | null
           captions_visible: boolean | null
+          cinematic_quality_score: number | null
           classification_confidence: number | null
           confidence_scores: Json
           content_type: string | null
@@ -16550,6 +16677,7 @@ export type Database = {
           motion_diversity_score: number | null
           motion_exists: boolean | null
           motion_score: number | null
+          music_track_id: string | null
           music_url: string | null
           needs_admin_review: boolean
           output_black_bars: boolean | null
@@ -16640,6 +16768,7 @@ export type Database = {
           validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
+          variation_signature: string | null
           verified_at: string | null
           video_corrupted: boolean
           visual_energy_score: number | null
@@ -16649,6 +16778,9 @@ export type Database = {
           vo_url: string | null
           voice_id: string
           voice_style: string | null
+          voiceover_script: Json | null
+          voiceover_url: string | null
+          voiceover_voice_id: string | null
           worker_last_error: string | null
         }
         SetofOptions: {
