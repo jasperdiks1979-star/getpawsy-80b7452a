@@ -1171,8 +1171,10 @@ export type Database = {
           pacing_quality_score: number | null
           pin_description: string | null
           pin_destination_url: string | null
+          pin_finished_at: string | null
           pin_last_error: string | null
           pin_publish_attempts: number | null
+          pin_started_at: string | null
           pin_title: string | null
           pinterest_asset_id: string | null
           pinterest_live_pin_url: string | null
@@ -1191,6 +1193,7 @@ export type Database = {
           product_name: string | null
           product_price: string | null
           product_slug: string
+          product_url: string | null
           publish_blocked_reason: string | null
           publishable_reason: string | null
           published_at: string | null
@@ -1320,8 +1323,10 @@ export type Database = {
           pacing_quality_score?: number | null
           pin_description?: string | null
           pin_destination_url?: string | null
+          pin_finished_at?: string | null
           pin_last_error?: string | null
           pin_publish_attempts?: number | null
+          pin_started_at?: string | null
           pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_live_pin_url?: string | null
@@ -1340,6 +1345,7 @@ export type Database = {
           product_name?: string | null
           product_price?: string | null
           product_slug: string
+          product_url?: string | null
           publish_blocked_reason?: string | null
           publishable_reason?: string | null
           published_at?: string | null
@@ -1469,8 +1475,10 @@ export type Database = {
           pacing_quality_score?: number | null
           pin_description?: string | null
           pin_destination_url?: string | null
+          pin_finished_at?: string | null
           pin_last_error?: string | null
           pin_publish_attempts?: number | null
+          pin_started_at?: string | null
           pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_live_pin_url?: string | null
@@ -1489,6 +1497,7 @@ export type Database = {
           product_name?: string | null
           product_price?: string | null
           product_slug?: string
+          product_url?: string | null
           publish_blocked_reason?: string | null
           publishable_reason?: string | null
           published_at?: string | null
@@ -1702,6 +1711,7 @@ export type Database = {
           thumbnail_phash_distance_threshold: number
           updated_at: string
           updated_by: string | null
+          worker_health_url: string | null
         }
         Insert: {
           allowed_creative_categories?: Json
@@ -1747,6 +1757,7 @@ export type Database = {
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
+          worker_health_url?: string | null
         }
         Update: {
           allowed_creative_categories?: Json
@@ -1792,6 +1803,7 @@ export type Database = {
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
+          worker_health_url?: string | null
         }
         Relationships: []
       }
@@ -16268,8 +16280,10 @@ export type Database = {
           pacing_quality_score: number | null
           pin_description: string | null
           pin_destination_url: string | null
+          pin_finished_at: string | null
           pin_last_error: string | null
           pin_publish_attempts: number | null
+          pin_started_at: string | null
           pin_title: string | null
           pinterest_asset_id: string | null
           pinterest_live_pin_url: string | null
@@ -16288,6 +16302,7 @@ export type Database = {
           product_name: string | null
           product_price: string | null
           product_slug: string
+          product_url: string | null
           publish_blocked_reason: string | null
           publishable_reason: string | null
           published_at: string | null
