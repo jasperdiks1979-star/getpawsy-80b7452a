@@ -6,10 +6,36 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader2, ShieldCheck, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Outcome = "verified" | "not_found" | "inaccessible" | "no_pin_id";
-type Result = { id: string; outcome: Outcome; pin_url?: string; error?: string };
-type Response = { ok: boolean; verified_at?: string; checked: number; results: Result[]; message?: string };
+type Result = {
+  id: string;
+  outcome: Outcome;
+  pin_url?: string;
+  error?: string;
+  current_status?: string;
+  next_status?: string;
+  would_correct?: boolean;
+};
+type Response = {
+  ok: boolean;
+  dryRun?: boolean;
+  verified_at?: string;
+  checked: number;
+  corrections?: number;
+  results: Result[];
+  message?: string;
+};
 
 const OUTCOME_VARIANT: Record<Outcome, "secondary" | "destructive" | "outline" | "default"> = {
   verified: "secondary",
@@ -22,6 +48,8 @@ export default function VerifyPinsPanel() {
   const [busy, setBusy] = useState(false);
   const [limit, setLimit] = useState(50);
   const [data, setData] = useState<Response | null>(null);
+  const [preview, setPreview] = useState<Response | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const counts = useMemo(() => {
     const c = { verified: 0, not_found: 0, inaccessible: 0, no_pin_id: 0, fixes: 0 };
@@ -33,7 +61,27 @@ export default function VerifyPinsPanel() {
     return c;
   }, [data]);
 
-  const run = async () => {
+  // Step 1: dry run — count remote-state corrections without writing.
+  const runPreview = async () => {
+    setBusy(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke("cinematic-job-verify", {
+        body: { limit, dryRun: true },
+      });
+      if (error) throw error;
+      const r = res as Response;
+      setPreview(r);
+      setConfirmOpen(true);
+    } catch (e) {
+      toast.error((e as Error).message ?? "Preview failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Step 2: apply — only after confirmation.
+  const applyCorrections = async () => {
+    setConfirmOpen(false);
     setBusy(true);
     try {
       const { data: res, error } = await supabase.functions.invoke("cinematic-job-verify", {
@@ -42,8 +90,10 @@ export default function VerifyPinsPanel() {
       if (error) throw error;
       const r = res as Response;
       setData(r);
-      if (r.ok) toast.success(`Verified ${r.checked} pin${r.checked === 1 ? "" : "s"}`);
-      else toast.error(r.message ?? "Verification failed");
+      if (r.ok) {
+        const corrections = r.corrections ?? r.results.filter((x) => x.would_correct).length;
+        toast.success(`Verified ${r.checked} · corrected ${corrections}`);
+      } else toast.error(r.message ?? "Verification failed");
     } catch (e) {
       toast.error((e as Error).message ?? "Verification failed");
     } finally {
@@ -54,9 +104,9 @@ export default function VerifyPinsPanel() {
   const downloadReport = () => {
     if (!data) return;
     const ts = (data.verified_at ?? new Date().toISOString()).replace(/[:.]/g, "-");
-    const header = ["job_id", "outcome", "pin_url", "error"];
+    const header = ["job_id", "outcome", "current_status", "next_status", "would_correct", "pin_url", "error"];
     const rows = data.results.map((r) =>
-      [r.id, r.outcome, r.pin_url ?? "", (r.error ?? "").replace(/"/g, '""')]
+      [r.id, r.outcome, r.current_status ?? "", r.next_status ?? "", r.would_correct ? "yes" : "no", r.pin_url ?? "", (r.error ?? "").replace(/"/g, '""')]
         .map((v) => `"${v}"`)
         .join(","),
     );
@@ -88,15 +138,21 @@ export default function VerifyPinsPanel() {
             className="h-9 w-20"
             aria-label="Limit"
           />
-          <Button size="sm" variant="outline" onClick={run} disabled={busy}>
+          <Button size="sm" variant="outline" onClick={runPreview} disabled={busy}>
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Run verification
+            Preview corrections
           </Button>
           <Button size="sm" variant="outline" onClick={downloadReport} disabled={!data?.results?.length}>
             <Download className="mr-2 h-4 w-4" /> Download report
           </Button>
         </div>
       </CardHeader>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        preview={preview}
+        onConfirm={applyCorrections}
+      />
       <CardContent className="space-y-3">
         {!data ? (
           <p className="text-xs text-muted-foreground">
@@ -127,6 +183,11 @@ export default function VerifyPinsPanel() {
                       <td className="px-2 py-1.5 font-mono text-[11px]">{r.id.slice(0, 8)}…</td>
                       <td className="px-2 py-1.5">
                         <Badge variant={OUTCOME_VARIANT[r.outcome]}>{r.outcome}</Badge>
+                        {r.would_correct ? (
+                          <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400">
+                            {r.current_status} → {r.next_status}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-2 py-1.5">
                         {r.pin_url ? (
