@@ -34,17 +34,27 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-  const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
-    auth: { persistSession: false },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
-
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const { data: roleRow } = await admin
-    .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-  if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+  const internalToken = req.headers.get("x-internal-token") ?? "";
+  const workerSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+  let userData: { user: { id: string } };
+  if (workerSecret && internalToken && internalToken === workerSecret) {
+    const { data: adminRow } = await admin
+      .from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+    if (!adminRow?.user_id) return json(500, { ok: false, traceId, message: "no admin user available for internal call" });
+    userData = { user: { id: adminRow.user_id } };
+  } else {
+    const userClient = createClient(url, anonKey, {
+      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+      auth: { persistSession: false },
+    });
+    const { data: u, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !u?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
+    const { data: roleRow } = await admin
+      .from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+    userData = { user: { id: u.user.id } };
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch {}
@@ -80,6 +90,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       Authorization: req.headers.get("Authorization") ?? "",
       apikey: anonKey,
+      "x-internal-token": req.headers.get("x-internal-token") ?? "",
     },
     body: JSON.stringify({ job_id: jobId, preset: body.preset }),
   });

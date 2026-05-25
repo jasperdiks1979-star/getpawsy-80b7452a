@@ -1257,6 +1257,7 @@ export type Database = {
           product_slug: string
           product_url: string | null
           publish_blocked_reason: string | null
+          publish_window_bypass: boolean
           publishable_reason: string | null
           published_at: string | null
           pushed_to_pinterest_at: string | null
@@ -1422,6 +1423,7 @@ export type Database = {
           product_slug: string
           product_url?: string | null
           publish_blocked_reason?: string | null
+          publish_window_bypass?: boolean
           publishable_reason?: string | null
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
@@ -1587,6 +1589,7 @@ export type Database = {
           product_slug?: string
           product_url?: string | null
           publish_blocked_reason?: string | null
+          publish_window_bypass?: boolean
           publishable_reason?: string | null
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
@@ -16718,6 +16721,7 @@ export type Database = {
           product_slug: string
           product_url: string | null
           publish_blocked_reason: string | null
+          publish_window_bypass: boolean
           publishable_reason: string | null
           published_at: string | null
           pushed_to_pinterest_at: string | null

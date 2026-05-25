@@ -1,0 +1,2 @@
+ALTER TABLE public.cinematic_ad_jobs ADD COLUMN IF NOT EXISTS publish_window_bypass BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_cinematic_ad_jobs_publish_bypass ON public.cinematic_ad_jobs (publish_window_bypass) WHERE publish_window_bypass = true;
