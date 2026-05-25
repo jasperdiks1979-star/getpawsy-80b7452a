@@ -57,6 +57,17 @@ async function postWebhook(payload) {
 }
 
 async function claimJob() {
+  // If the caller (render-cinematic-ad.mjs) already claimed the job,
+  // it forwards the payload here via env to avoid a double-claim race.
+  const inline = process.env.JOB_PAYLOAD_JSON;
+  if (inline) {
+    try {
+      const parsed = JSON.parse(inline);
+      if (parsed?.job_id) return parsed;
+    } catch (e) {
+      log("inline JOB_PAYLOAD_JSON parse failed, falling back to claim", e?.message);
+    }
+  }
   const r = await fetch(`${FUNCTIONS_BASE_URL}/cinematic-ad-claim-job`, {
     method: "POST", headers: HEADERS,
     body: JSON.stringify({ worker_id: WORKER_ID, job_id: JOB_ID }),
