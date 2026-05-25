@@ -34,6 +34,13 @@ type Row = {
   product_slug: string;
   product_ids: string[] | null;
   output_thumbnail_url: string | null;
+  output_mp4_url: string | null;
+  output_duration_seconds: number | null;
+  voiceover_url: string | null;
+  voiceover_voice_id: string | null;
+  variation_signature: string | null;
+  cinematic_quality_score: number | null;
+  qa_composite_score: number | null;
   scheduled_publish_at: string | null;
   published_at: string | null;
   predicted_engagement: number | null;
@@ -55,13 +62,13 @@ export function PinterestContentEnginePanel() {
       const [{ data: q }, { data: w }] = await Promise.all([
         supabase
           .from("cinematic_ad_jobs")
-          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
+          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, output_mp4_url, output_duration_seconds, voiceover_url, voiceover_voice_id, variation_signature, cinematic_quality_score, qa_composite_score, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
           .or("status.eq.publishable,status.eq.approved,scheduled_publish_at.not.is.null")
           .order("scheduled_publish_at", { ascending: true, nullsFirst: false })
           .limit(25),
         supabase
           .from("cinematic_ad_jobs")
-          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
+          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, output_mp4_url, output_duration_seconds, voiceover_url, voiceover_voice_id, variation_signature, cinematic_quality_score, qa_composite_score, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
           .not("published_at", "is", null)
           .gte("published_at", new Date(Date.now() - 7 * 86400000).toISOString())
           .limit(200),
@@ -93,6 +100,19 @@ export function PinterestContentEnginePanel() {
         body: { force_archetype: a },
       });
       setLastDirector(error ? `Error: ${error.message}` : JSON.stringify(data, null, 2));
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const generateVoiceover = async (jobId: string) => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.functions.invoke("cinematic-voiceover-generate", {
+        body: { job_id: jobId },
+      });
+      if (error) setLastDirector(`VO error: ${error.message}`);
       await load();
     } finally {
       setBusy(false);
