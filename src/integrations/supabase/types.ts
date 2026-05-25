@@ -618,6 +618,60 @@ export type Database = {
         }
         Relationships: []
       }
+      background_jobs: {
+        Row: {
+          cancel_requested: boolean
+          completed: number
+          created_at: string
+          created_by: string | null
+          error: string | null
+          failed: number
+          finished_at: string | null
+          id: string
+          kind: string
+          params: Json
+          results: Json
+          started_at: string | null
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          cancel_requested?: boolean
+          completed?: number
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          kind: string
+          params?: Json
+          results?: Json
+          started_at?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          cancel_requested?: boolean
+          completed?: number
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          params?: Json
+          results?: Json
+          started_at?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       backlink_outreach_scores: {
         Row: {
           authority_score: number | null
