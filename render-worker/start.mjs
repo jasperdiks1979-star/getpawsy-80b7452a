@@ -299,7 +299,8 @@ function startHealthServer() {
       if (req.url === "/health/worker" || req.url === "/api/health/worker") {
         const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
         return send(200, {
-          ok: state.consecutiveFailures < MAX_CONSECUTIVE_FAILURES,
+          ok: !HOST_MISMATCH && state.consecutiveFailures < MAX_CONSECUTIVE_FAILURES,
+          ready: state.bootCompleted && !HOST_MISMATCH,
           worker: true,
           timestamp: Date.now(),
           workerId: WORKER_ID,
@@ -308,6 +309,14 @@ function startHealthServer() {
           bootPhase: state.bootPhase,
           bootCompleted: state.bootCompleted,
           crashReason: state.crashReason,
+          supabaseHost: SUPABASE_HOST,
+          expectedSupabaseHost: EXPECTED_SUPABASE_HOST,
+          lastHeartbeatAt: state.lastHeartbeatAt,
+          queueDepth: state.queueDepth,
+          activeJobs: state.busy ? 1 : 0,
+          renderAvailable: state.subsystems.render.enabled && state.subsystems.render.healthy,
+          pinterestPublishAvailable: state.subsystems.pinterest.enabled && state.subsystems.pinterest.healthy,
+          errors: state.errors.slice(-10),
           subsystems: state.subsystems,
           memMb,
           uptimeSec: Math.round((Date.now()-STARTED_AT)/1000),
