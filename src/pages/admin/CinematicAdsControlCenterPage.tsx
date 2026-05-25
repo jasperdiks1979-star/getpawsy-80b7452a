@@ -22,6 +22,7 @@ import AutoApprovalSettingsCard from "@/components/admin/cinematic/AutoApprovalS
 import { CreativeDNAPanel } from "@/components/admin/cinematic/CreativeDNAPanel";
 import SystemTruthPanel from "@/components/admin/cinematic/SystemTruthPanel";
 import OperatorPanel from "@/components/admin/cinematic/OperatorPanel";
+import VerifyPinsPanel from "@/components/admin/cinematic/VerifyPinsPanel";
 
 type Job = {
   id: string;
@@ -476,6 +477,8 @@ export default function CinematicAdsControlCenterPage() {
       <SystemTruthPanel />
 
       <OperatorPanel />
+
+      <VerifyPinsPanel />
 
       <AutopilotHealthPanel />
 
