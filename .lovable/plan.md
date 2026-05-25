@@ -1,76 +1,129 @@
 
-# Emergency Stabilization Plan
+# Cinematic Ads + Pinterest Autopilot — End-to-End Stabilization
 
-This is a large multi-phase request. Given the Render worker is currently suspended, I'm prioritizing stabilization (Phases 1–3, 8) and the chunked cleanup refactor first. The creative-quality + funnel work (Phases 4–7 of the second brief) becomes a follow-up once the worker stays up.
+This is a large, multi-system change. I'll ship it in one coherent pass, but flag what's deferred so we don't repeat last week's over-expansion.
 
-## Priority order (what I will ship now)
+Expected Supabase host (hardcoded check): `nojvgfbcjgipjxpfatmm.supabase.co`.
 
-### 1. Render worker SAFE MODE (kills crash loop)
-File: `render-worker/start.mjs` (and any orchestrator modules it imports).
+---
 
-- Add `WORKER_SAFE_MODE=1` env flag (default ON until we explicitly disable).
-- In safe mode the worker only does: claim 1 job → render → upload → report → idle. No Pinterest publish, no cleanup, no audit, no autopilot, no AI rescoring, no repair loop, no auto-retry beyond `MAX_RETRIES=1`.
-- Hard limits: `RENDER_CONCURRENCY=1`, `BATCH=1`, `STARTUP_TIMEOUT_MS=20000`, `RENDER_TIMEOUT_MS=1200000`.
-- Boot diagnostics: structured JSON log at each phase (`env_check`, `supabase_connect`, `pinterest_auth_skipped_safe_mode`, `queue_connect`, `ready`). Memory + node version printed once.
-- Crash-loop guard: if startup fails, write `/tmp/worker-fatal.json`, sleep 30s, exit with code 0 (so Render restarts politely instead of fast-looping).
-- Subsystem isolation: every non-render subsystem call wrapped in `try/catch` that logs and disables the subsystem for the rest of the process — never crashes render.
+## 1. Render worker hardening (`render-worker/start.mjs`)
 
-### 2. Health/observability endpoint
-File: `render-worker/start.mjs` health server.
+- New `validateEnv()` runs before anything else:
+  - Required: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RENDER_WORKER_SECRET`.
+  - If `VITE_SUPABASE_URL` missing → fall back to `SUPABASE_URL` server-side (no crash).
+  - If `new URL(SUPABASE_URL).host !== "nojvgfbcjgipjxpfatmm.supabase.co"` → log fatal with the wrong host, keep health server up, set `bootPhase=fatal_wrong_supabase_host`.
+- Health server starts FIRST (before Supabase / queue) so `/api/health/worker` always answers JSON.
+- `/api/health/worker` returns: `ok, ready, bootPhase, supabaseHost, expectedSupabaseHost, safeMode, lastHeartbeatAt, queueDepth, activeJobs, renderAvailable, pinterestPublishAvailable, errors[]`.
+- 60s heartbeat → upserts `render_worker_heartbeats(worker_id, last_seen_at, queue_depth, supabase_host, safe_mode)`.
+- Subsystem isolation preserved: render/publish failure never kills health server.
+- Structured boot logs: `env_validated`, `health_server_started`, `supabase_connected`, `queue_poll_started`, `job_claimed`, `job_completed`, `job_failed_recoverable`, `job_failed_fatal`.
+- Pinterest publish only attempted if `PINTEREST_*` creds + connection row present; otherwise job marked `blocked` with reason.
 
-- `/api/health/worker` returns `{ uptime, safe_mode, queue_depth, last_job_at, last_render_ms, mem_mb, subsystems: {pinterest, cleanup, audit}, crash_reason }`.
-- Also mirrored to `public/api/health/worker` static stub for the frontend probe (already exists).
+## 2. Database migration (idempotent)
 
-### 3. Pinterest cleanup → chunked resumable scans (kills compute exhaustion)
-DB migration: new table `pinterest_cleanup_scan_sessions` with columns:
-`id uuid pk, started_at, completed_at, status (running|paused|completed|failed), cursor text, processed_count int, remaining_count int, last_error text, mode text, options jsonb, created_by uuid`.
-Plus index on `(status, started_at desc)`. RLS: admin-only via `has_role`.
+New columns on `cinematic_ad_jobs` (all `IF NOT EXISTS`):
+`archived_at, archive_reason, pinterest_pin_id, pinterest_url, verified_at, remote_exists, qa_score, motion_score, uniqueness_score, duplicate_risk, publishable_reason, product_cooldown_until, hook_cooldown_until, worker_last_error, hook_score, caption_score`.
 
-Edge function rewrite: `supabase/functions/pinterest-cleanup-audit/index.ts`
-- New modes: `start` | `continue` | `finalize` | `status` (keeps existing `recommend`/`execute`/`trust`).
-- Per invocation: max 25 pins, hard 18s wall-clock budget, abort cleanly and persist cursor before timeout.
-- Cache pin metadata + engagement in a request-scoped `Map`; dedupe Pinterest API calls.
-- Rate limiter: token bucket, max 60 Pinterest GETs/min across the session row.
-- "Light scan" option (`mode: light`): only duplicate slug frequency, age, low-engagement — skip phash/OCR/deep similarity.
-- Idempotent: `start` returns existing running session if one exists for this admin instead of restarting.
-- On crash: partial results already persisted; `status` endpoint exposes resume token.
+New tables:
+- `cinematic_ad_audit_events(id, job_id, action, actor, reason, before_json, after_json, created_at)` — RLS admin-only via `has_role`.
+- `pinterest_publish_verifications(id, job_id, pin_id, pin_url, remote_exists, checked_at, error)` — RLS admin-only.
+- `render_worker_heartbeats(worker_id pk, last_seen_at, queue_depth, supabase_host, safe_mode, payload jsonb)` — RLS admin read, service-role write.
 
-### 4. Cleanup UI: progressive scan
-File: `src/pages/admin/PinterestCleanupPage.tsx`
-- Add "Start scan" / "Resume" buttons that call `start`/`continue` until `status=completed`.
-- Progress bar (`processed_count / (processed_count+remaining_count)`), ETA based on rolling avg ms/pin, live partial recommendations table.
-- Toggle: Light scan vs Full scan.
-- Polls every 2s while running.
+## 3. Truthful Pinterest status
 
-### 5. Premium creative pivot — enforcement only (no new AI)
-The autopublish gate already enforces 14-day product / 30-day hook / phash / score floors / blocked styles (shipped last turn). I will tighten the publish cadence:
-- `cinematic_ad_settings` defaults: `max_publishes_per_hour=2`, `max_publishes_per_day=8`.
-- `cinematic-ad-autopublish` reads those caps before claiming a job. If exceeded, no-op (does not crash).
+Edge function `pinterest-pin-deletion-verify` (already exists) extended with `verify_job` mode:
+- Input: `job_id` or batch `job_ids[]`.
+- Calls `GET /v5/pins/{pin_id}` with active token; classifies `verified | not_found | inaccessible | no_pin_id`.
+- Writes to `pinterest_publish_verifications` + updates `cinematic_ad_jobs.verified_at, remote_exists, status`.
+- Status rule enforced server-side:
+  - `Pinterest Uploaded` only if `remote_exists=true`.
+  - Else recompute to one of: `Publish failed | Archived | Needs rerender | Ready to publish`.
 
-I will NOT in this turn build: Creative DNA Memory store, full funnel event taxonomy expansion, PDP rewrite, hero-product allocator. Those are tracked as follow-ups so we don't repeat the over-expansion that caused this incident.
+## 4. Stale-duplicate archive
 
-## Files touched
+New edge function `cinematic-ads-archive-stale`:
+- Admin-only (`has_role(uid,'admin')`).
+- Selects jobs matching ANY of:
+  - engine_version pre-V3/V4,
+  - same `product_slug` + same `thumbnail_phash` (within Hamming ≤4) duplicates beyond the newest,
+  - `pin_publish_attempts >= 3` AND no `pinterest_pin_id`,
+  - status `pinterest_uploaded` AND (`pinterest_pin_id` null OR last verification `remote_exists=false`),
+  - repeated identical static-image MP4s of `enclosed-cat-litter-box*` slugs.
+- Sets `archived_at=now()`, `archive_reason=<rule>`, `status='archived'`. Logs to `cinematic_ad_audit_events`.
+- NEVER calls Pinterest delete unless `confirm: "DELETE"` typed by admin (separate explicit action, not part of archive).
 
-- `render-worker/start.mjs` (safe mode + boot diagnostics + health)
-- `render-worker/lib/*` as needed (subsystem isolation)
-- `supabase/migrations/<ts>_cleanup_scan_sessions.sql` (new table + RLS)
-- `supabase/migrations/<ts>_publish_caps.sql` (cinematic_ad_settings columns)
-- `supabase/functions/pinterest-cleanup-audit/index.ts` (chunked modes + rate limit + cache)
-- `supabase/functions/cinematic-ad-autopublish/index.ts` (hourly/daily cap check)
-- `src/pages/admin/PinterestCleanupPage.tsx` (progressive UI)
-- `mem/marketing/pinterest-premium-pivot.md` (note caps + scan-session contract)
-- `.lovable/plan.md` (carry remaining Phases 4–7 of creative brief as backlog)
+## 5. QA / motion gate
 
-## Explicit deferrals (called out so they aren't lost)
+In `cinematic-ad-autopublish` and on render completion:
+- Compute `motion_score` from frame-difference proxy (already-stored scene plan length × scene transitions; if `<3 unique scenes`, motion_score auto = 30).
+- Compute `uniqueness_score` from pHash distance vs last 100 published.
+- Compute `duplicate_risk` = inverse of uniqueness.
+- Publish gate: `qa_score>=70 AND motion_score>=60 AND uniqueness_score>=70 AND duplicate_risk<=25`. Else mark `publishable_reason="qa_below_threshold:<which>"` and skip — surface in UI.
 
-- Workers B/C/D split (publish/audit/cleanup) — Render only has one worker today; splitting requires new services and env. Filed as backlog. Subsystem isolation inside the single worker covers the crash-safety requirement immediately.
-- Funnel events expansion (`rage_click`, `session_quality_score`, etc.), PDP conversion upgrade, Creative DNA Memory — backlog after 72h stable.
+## 6. Diversification (autopublish)
 
-## Success check before I report done
+Already enforces 14-day product cooldown / 30-day hook cooldown. Add:
+- `max 1 pin per product per day` check.
+- `max 2 pins per product per 14 days` check.
+- Category rotation: select next eligible job whose `creative_category` differs from the last 3 published categories (litter box, cat tree, dog bed, pet harness, feeding, grooming, toys, carriers).
+- If nothing eligible, do NOT publish duplicates — record `publishable_reason="no_diverse_assets"` on settings row and surface in UI.
 
-- `render-worker/start.mjs` boots in safe mode locally without crashing when Pinterest creds are missing.
-- `pinterest-cleanup-audit` `start` + `continue` round-trip processes a 25-pin window and persists cursor.
-- `/admin/pinterest-cleanup` shows progress and resumes.
-- Migrations apply clean; types regenerate.
+## 7. Discovery improvements (`pinterest-video-discovery`)
+
+- Per-bucket counts in response: `{bucket, scanned, mime_skipped, size_skipped, dedupe_skipped, inserted}`.
+- Admin-only `force_register` mode (still validates dedupe).
+- If 0 usable across all buckets → autopilot kicks `cinematic-ad-storyboard` to draft a fresh video from a product image instead of being silent.
+
+## 8. Admin UI — Cinematic Ads Control Center
+
+Top-of-page **System Truth Panel** showing live values (calls health endpoint + reads DB):
+- Render worker health, Supabase host expected vs actual, heartbeat age, queue depth, publishable jobs, blocked jobs, last successful render, last verified pin, last error, current blocker.
+- Buttons: Run health check, Verify Pinterest pins (batch), Archive stale duplicates, Generate fresh diverse batch, Render next safe job, Publish next verified high-QA pin.
+- "Why nothing is happening?" box: derives reason from settings + queue + caps.
+
+Per-job row:
+- Show truthful status (post-verification).
+- "Verify on Pinterest" + "Rerender improved video" buttons.
+- Block "Publish selected" client-side AND server-side if any selected job is `archived` / no longer publishable.
+
+## 9. Acceptance — surfaced in dashboard
+
+Each check renders pass/fail in a panel:
+- health JSON ok+ready
+- supabase host match
+- no recent worker fatal events
+- stale jobs archived count
+- selected-archived publish blocked test
+- fresh job has motion + passes QA before publish
+- one verified test pin URL
+
+## Files to touch
+
+- `render-worker/start.mjs` — env validator, host check, health-first boot, heartbeat, expanded health JSON
+- `supabase/migrations/<ts>_cinematic_truth_layer.sql` — new columns + 3 tables + RLS
+- `supabase/functions/cinematic-ads-archive-stale/index.ts` — NEW
+- `supabase/functions/pinterest-pin-deletion-verify/index.ts` — extend with `verify_job` / batch
+- `supabase/functions/cinematic-ad-autopublish/index.ts` — daily/14d caps, category rotation, QA gate, blocker reason
+- `supabase/functions/pinterest-video-discovery/index.ts` — per-bucket counters, force_register
+- `supabase/functions/cinematic-ad-worker-control/index.ts` — `system_truth` action aggregating panel data
+- `src/pages/admin/CinematicAdsControlCenterPage.tsx` — System Truth Panel + new buttons + safe Publish
+- `src/integrations/supabase/types.ts` — regenerated by migration
+- `mem/features/cinematic/video-engine-v3.md` — note caps + truth layer
+- `.lovable/plan.md` — update
+
+## Explicit deferrals
+
+- True FFmpeg frame-diff motion analyzer (heavy, runs in worker). I'll ship the scene-plan proxy now and file FFmpeg analyzer as backlog so we don't reintroduce worker crashes.
+- Splitting publish/audit/cleanup into separate Render services — still one worker; subsystem isolation covers the safety requirement.
+- Auto-deletion of remote Pinterest pins — kept behind explicit typed-DELETE confirmation flow only.
+
+## Success check before reporting done
+
+1. `render-worker/start.mjs` passes env validator with the correct host; logs `env_validated` + `health_server_started`.
+2. Migration applies cleanly; types regenerate; no RLS warnings on new tables.
+3. `system_truth` action returns expected shape; UI panel renders without crash.
+4. Archive function dry-run on staging dataset returns expected candidate counts.
+5. Publish-of-archived blocked end-to-end (server enforces).
 
 Ready to execute on approval.
