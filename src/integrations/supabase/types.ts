@@ -1153,6 +1153,8 @@ export type Database = {
           id: string
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
+          media_hash: string | null
+          media_type: string | null
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
@@ -1167,6 +1169,7 @@ export type Database = {
           output_mp4_url: string | null
           output_thumbnail_url: string | null
           output_width: number | null
+          overlay_text: string[] | null
           overlay_text_hash: string | null
           pacing_quality_score: number | null
           pin_description: string | null
@@ -1305,6 +1308,8 @@ export type Database = {
           id?: string
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
+          media_hash?: string | null
+          media_type?: string | null
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
@@ -1319,6 +1324,7 @@ export type Database = {
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           output_width?: number | null
+          overlay_text?: string[] | null
           overlay_text_hash?: string | null
           pacing_quality_score?: number | null
           pin_description?: string | null
@@ -1457,6 +1463,8 @@ export type Database = {
           id?: string
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
+          media_hash?: string | null
+          media_type?: string | null
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
@@ -1471,6 +1479,7 @@ export type Database = {
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
           output_width?: number | null
+          overlay_text?: string[] | null
           overlay_text_hash?: string | null
           pacing_quality_score?: number | null
           pin_description?: string | null
@@ -1668,6 +1677,7 @@ export type Database = {
       }
       cinematic_ad_settings: {
         Row: {
+          allow_static_fallback: boolean
           allowed_creative_categories: Json
           approval_confidence_threshold: number
           auto_approve_enabled: boolean
@@ -1680,6 +1690,7 @@ export type Database = {
           hook_cooldown_days: number
           id: boolean
           max_duplicate_threshold: number
+          max_pins_per_day: number
           max_render_attempts: number | null
           max_retry_threshold: number
           max_scenes: number | null
@@ -1688,6 +1699,7 @@ export type Database = {
           min_first_frame_originality_score: number
           min_hook_uniqueness_score: number
           min_motion_diversity: number | null
+          min_publish_gap_minutes: number
           min_scene_diversity: number | null
           min_scenes: number | null
           min_thumbnail_entropy_score: number
@@ -1714,6 +1726,7 @@ export type Database = {
           worker_health_url: string | null
         }
         Insert: {
+          allow_static_fallback?: boolean
           allowed_creative_categories?: Json
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
@@ -1726,6 +1739,7 @@ export type Database = {
           hook_cooldown_days?: number
           id?: boolean
           max_duplicate_threshold?: number
+          max_pins_per_day?: number
           max_render_attempts?: number | null
           max_retry_threshold?: number
           max_scenes?: number | null
@@ -1734,6 +1748,7 @@ export type Database = {
           min_first_frame_originality_score?: number
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
+          min_publish_gap_minutes?: number
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_thumbnail_entropy_score?: number
@@ -1760,6 +1775,7 @@ export type Database = {
           worker_health_url?: string | null
         }
         Update: {
+          allow_static_fallback?: boolean
           allowed_creative_categories?: Json
           approval_confidence_threshold?: number
           auto_approve_enabled?: boolean
@@ -1772,6 +1788,7 @@ export type Database = {
           hook_cooldown_days?: number
           id?: boolean
           max_duplicate_threshold?: number
+          max_pins_per_day?: number
           max_render_attempts?: number | null
           max_retry_threshold?: number
           max_scenes?: number | null
@@ -1780,6 +1797,7 @@ export type Database = {
           min_first_frame_originality_score?: number
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
+          min_publish_gap_minutes?: number
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_thumbnail_entropy_score?: number
@@ -9529,6 +9547,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_category_rotation: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          last_published_at: string | null
+          product_slug: string
+          publish_count: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          last_published_at?: string | null
+          product_slug: string
+          publish_count?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          last_published_at?: string | null
+          product_slug?: string
+          publish_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_cleanup_actions: {
         Row: {
           action: string
@@ -9778,6 +9826,33 @@ export type Database = {
           pin_queue_id?: string | null
           product_id?: string | null
           visual_style?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_creative_pools: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          pool_type: string
+          value: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pool_type: string
+          value: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pool_type?: string
+          value?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -15281,6 +15356,17 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_product_cooldown_v: {
+        Row: {
+          last_pushed_at: string | null
+          product_slug: string | null
+          pushes_last_30d: number | null
+          slideshows_last_7d: number | null
+          statics_last_7d: number | null
+          videos_last_7d: number | null
+        }
+        Relationships: []
+      }
       pinterest_retry_outcomes_v: {
         Row: {
           all_rejected: boolean | null
@@ -16262,6 +16348,8 @@ export type Database = {
           id: string
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
+          media_hash: string | null
+          media_type: string | null
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
@@ -16276,6 +16364,7 @@ export type Database = {
           output_mp4_url: string | null
           output_thumbnail_url: string | null
           output_width: number | null
+          overlay_text: string[] | null
           overlay_text_hash: string | null
           pacing_quality_score: number | null
           pin_description: string | null

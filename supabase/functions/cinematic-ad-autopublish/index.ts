@@ -80,6 +80,48 @@ Deno.serve(async (req) => {
   const productCooldownDays = Math.max(0, Number(gateSettings?.min_days_between_same_product ?? 14));
   const allowedCategories = new Set(((gateSettings?.allowed_creative_categories ?? []) as string[]) || []);
 
+  // ----- Video-first quality settings -----
+  const { data: vfSettings } = await admin
+    .from("cinematic_ad_settings")
+    .select("allow_static_fallback, max_pins_per_day, min_publish_gap_minutes")
+    .eq("id", true).maybeSingle();
+  const allowStaticFallback = Boolean(vfSettings?.allow_static_fallback ?? false);
+  const maxPinsPerDay = Math.max(1, Number(vfSettings?.max_pins_per_day ?? 6));
+  const minGapMinutes = Math.max(0, Number(vfSettings?.min_publish_gap_minutes ?? 75));
+
+  // Enforce stricter daily cap when video-first cap is lower
+  const effectiveDailyCap = Math.min(dailyCap, maxPinsPerDay);
+
+  // Burst guard: most recent publish must be > minGapMinutes ago
+  if (minGapMinutes > 0) {
+    const { data: lastPub } = await admin
+      .from("cinematic_ad_jobs")
+      .select("pushed_to_pinterest_at")
+      .not("pushed_to_pinterest_at", "is", null)
+      .order("pushed_to_pinterest_at", { ascending: false }).limit(1);
+    const lastAt = lastPub?.[0]?.pushed_to_pinterest_at;
+    if (lastAt) {
+      const ageMin = (Date.now() - new Date(lastAt as string).getTime()) / 60000;
+      if (ageMin < minGapMinutes) {
+        return json(200, { ok: true, traceId, scanned: 0, published: 0,
+          skipped: "burst_guard", min_gap_minutes: minGapMinutes, age_minutes: Math.round(ageMin) });
+      }
+    }
+  }
+
+  // ----- 30-day media_hash dedupe pool -----
+  const mediaCutoff30d = new Date(Date.now() - 30 * 86400000).toISOString();
+  const { data: recentMedia } = await admin
+    .from("cinematic_ad_jobs")
+    .select("media_hash")
+    .not("pushed_to_pinterest_at", "is", null)
+    .gte("pushed_to_pinterest_at", mediaCutoff30d)
+    .not("media_hash", "is", null);
+  const recentMediaHashes = new Set((recentMedia ?? []).map((r: any) => r.media_hash));
+
+  // ----- Per-slug static-spam pattern (last 5 publishes for slug all static) -----
+  // Computed lazily inside the loop.
+
   // ----- V3 Window gate -----
   const now = new Date();
   if (!isInWindowEst(now, windows)) {
@@ -118,6 +160,10 @@ Deno.serve(async (req) => {
   if (Number(publishedLastDay ?? 0) >= dailyCap) {
     return json(200, { ok: true, traceId, scanned: 0, published: 0,
       message: `daily cap reached (${publishedLastDay}/${dailyCap})`, dailyCap });
+  }
+  if (Number(publishedLastDay ?? 0) >= effectiveDailyCap) {
+    return json(200, { ok: true, traceId, scanned: 0, published: 0,
+      message: `video-first daily cap reached (${publishedLastDay}/${effectiveDailyCap})`, maxPinsPerDay });
   }
 
   // Count pins already published in the last hour
@@ -186,7 +232,7 @@ Deno.serve(async (req) => {
   // Find eligible jobs
   const { data: jobs, error } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score")
+    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash")
     .in("status", ELIGIBLE_STATUSES)
     .is("pinterest_asset_id", null)
     .not("output_mp4_url", "is", null)
@@ -201,6 +247,54 @@ Deno.serve(async (req) => {
   for (const job of jobs ?? []) {
     if (publishedCount >= remainingHourBudget) {
       results.push({ job_id: job.id, ok: false, reason: "hourly_budget_consumed" });
+      continue;
+    }
+    // ---- Video-first priority gate ----
+    const mediaType = (job.media_type ?? "video") as string; // default to video since output_mp4_url is required
+    if (mediaType === "static") {
+      if (!allowStaticFallback) {
+        await admin.from("cinematic_ad_jobs").update({
+          publish_blocked_reason: "static_spam_guard_disabled",
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: "static_disabled" });
+        continue;
+      }
+      // If allowed: still block if a video/slideshow exists for this slug in last 7d
+      const { data: vfRecent } = await admin
+        .from("pinterest_product_cooldown_v")
+        .select("videos_last_7d, slideshows_last_7d")
+        .eq("product_slug", job.product_slug).maybeSingle();
+      const richExists = Number(vfRecent?.videos_last_7d ?? 0) + Number(vfRecent?.slideshows_last_7d ?? 0) > 0;
+      if (richExists) {
+        await admin.from("cinematic_ad_jobs").update({
+          publish_blocked_reason: "static_spam_guard_rich_exists",
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: "rich_creative_exists" });
+        continue;
+      }
+      // Block static streak: if last 5 publishes for slug were also static
+      const { data: last5 } = await admin
+        .from("cinematic_ad_jobs")
+        .select("media_type")
+        .eq("product_slug", job.product_slug)
+        .not("pushed_to_pinterest_at", "is", null)
+        .order("pushed_to_pinterest_at", { ascending: false }).limit(5);
+      const allStatic = (last5 ?? []).length >= 3 && (last5 ?? []).every((r: any) => r.media_type === "static");
+      if (allStatic) {
+        await admin.from("cinematic_ad_jobs").update({
+          publish_blocked_reason: "static_streak_blocked",
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: "static_streak" });
+        continue;
+      }
+    }
+    // ---- 30-day media_hash duplicate guard ----
+    if (job.media_hash && recentMediaHashes.has(job.media_hash)) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed_duplicate",
+        publish_blocked_reason: "media_hash_duplicate_30d",
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "media_hash_duplicate_30d" });
       continue;
     }
     if (cooldownSlugs.has(job.product_slug) || publishedSlugsThisRun.has(job.product_slug)) {
@@ -356,6 +450,15 @@ Deno.serve(async (req) => {
       if (job.thumbnail_phash) recentThumbs.unshift(job.thumbnail_phash);
       if (job.first3s_phash) recentFirst3.unshift(job.first3s_phash);
       if (job.overlay_text_hash) recentOverlays.add(job.overlay_text_hash);
+      if (job.media_hash) recentMediaHashes.add(job.media_hash);
+      // Update category rotation tracker
+      await admin.from("pinterest_category_rotation").upsert({
+        product_slug: job.product_slug,
+        category: job.creative_category ?? null,
+        last_published_at: new Date().toISOString(),
+        publish_count: 1,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "product_slug" }).then(() => {}, () => {});
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await admin.from("cinematic_ad_jobs").update({
