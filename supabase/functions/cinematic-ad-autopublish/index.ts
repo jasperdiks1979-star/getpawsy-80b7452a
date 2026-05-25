@@ -233,6 +233,22 @@ Deno.serve(async (req) => {
   const recentFirst3 = (recentHashes ?? []).map((r: any) => r.first3s_phash).filter(Boolean);
   const recentOverlays = new Set((recentHashes ?? []).map((r: any) => r.overlay_text_hash).filter(Boolean));
 
+  // ----- Cinematic v4 variation signature gate -----
+  // Reject any job whose variation_signature matches one of the last 50
+  // published pins. variation_signature = hash(hook + voice + scene_order +
+  // thumbnail_phash + music). This stops the feed from looking repetitive
+  // even when individual sub-signals (hook OR thumb) would pass.
+  const { data: recentSignatures } = await admin
+    .from("cinematic_ad_jobs")
+    .select("variation_signature")
+    .not("pushed_to_pinterest_at", "is", null)
+    .not("variation_signature", "is", null)
+    .order("pushed_to_pinterest_at", { ascending: false })
+    .limit(50);
+  const recentSigSet = new Set(
+    (recentSignatures ?? []).map((r: any) => r.variation_signature).filter(Boolean),
+  );
+
   // ----- V3 Quarantine patterns -----
   const { data: quarantines } = await admin
     .from("cinematic_quarantine_patterns")
@@ -245,7 +261,7 @@ Deno.serve(async (req) => {
   // Find eligible jobs
   const { data: jobs, error } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash, content_type")
+    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash, content_type, variation_signature")
     .in("status", ELIGIBLE_STATUSES)
     .is("pinterest_asset_id", null)
     .not("output_mp4_url", "is", null)
@@ -350,6 +366,14 @@ Deno.serve(async (req) => {
         publish_blocked_reason: `content_type_repeat(${job.content_type})`,
       }).eq("id", job.id);
       results.push({ job_id: job.id, ok: false, reason: "content_type_repeat" });
+      continue;
+    }
+    // Variation signature gate (last-50 dedupe).
+    if (job.variation_signature && recentSigSet.has(job.variation_signature)) {
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `variation_signature_repeat`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "variation_signature_repeat" });
       continue;
     }
     // V3 quarantine match
