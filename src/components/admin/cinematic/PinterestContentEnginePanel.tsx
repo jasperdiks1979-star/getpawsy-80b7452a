@@ -34,6 +34,13 @@ type Row = {
   product_slug: string;
   product_ids: string[] | null;
   output_thumbnail_url: string | null;
+  output_mp4_url: string | null;
+  output_duration_seconds: number | null;
+  voiceover_url: string | null;
+  voiceover_voice_id: string | null;
+  variation_signature: string | null;
+  cinematic_quality_score: number | null;
+  qa_composite_score: number | null;
   scheduled_publish_at: string | null;
   published_at: string | null;
   predicted_engagement: number | null;
@@ -55,13 +62,13 @@ export function PinterestContentEnginePanel() {
       const [{ data: q }, { data: w }] = await Promise.all([
         supabase
           .from("cinematic_ad_jobs")
-          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
+          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, output_mp4_url, output_duration_seconds, voiceover_url, voiceover_voice_id, variation_signature, cinematic_quality_score, qa_composite_score, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
           .or("status.eq.publishable,status.eq.approved,scheduled_publish_at.not.is.null")
           .order("scheduled_publish_at", { ascending: true, nullsFirst: false })
           .limit(25),
         supabase
           .from("cinematic_ad_jobs")
-          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
+          .select("id, content_type, hook_archetype, product_slug, product_ids, output_thumbnail_url, output_mp4_url, output_duration_seconds, voiceover_url, voiceover_voice_id, variation_signature, cinematic_quality_score, qa_composite_score, scheduled_publish_at, published_at, predicted_engagement, status, publish_blocked_reason")
           .not("published_at", "is", null)
           .gte("published_at", new Date(Date.now() - 7 * 86400000).toISOString())
           .limit(200),
@@ -93,6 +100,19 @@ export function PinterestContentEnginePanel() {
         body: { force_archetype: a },
       });
       setLastDirector(error ? `Error: ${error.message}` : JSON.stringify(data, null, 2));
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const generateVoiceover = async (jobId: string) => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.functions.invoke("cinematic-voiceover-generate", {
+        body: { job_id: jobId },
+      });
+      if (error) setLastDirector(`VO error: ${error.message}`);
       await load();
     } finally {
       setBusy(false);
@@ -154,29 +174,49 @@ export function PinterestContentEnginePanel() {
             )}
             {queue.map((r) => (
               <div key={r.id} className="flex gap-3 border rounded-md p-2">
-                {r.output_thumbnail_url ? (
-                  <img src={r.output_thumbnail_url} alt="" className="h-16 w-16 object-cover rounded" loading="lazy" />
+                {r.output_mp4_url ? (
+                  <video src={r.output_mp4_url} poster={r.output_thumbnail_url ?? undefined}
+                    controls muted playsInline preload="metadata"
+                    className="h-28 w-16 object-cover rounded bg-black" />
+                ) : r.output_thumbnail_url ? (
+                  <img src={r.output_thumbnail_url} alt="" className="h-28 w-16 object-cover rounded" loading="lazy" />
                 ) : (
-                  <div className="h-16 w-16 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">no media</div>
+                  <div className="h-28 w-16 bg-muted rounded flex items-center justify-center text-[10px] text-muted-foreground text-center px-1">no media</div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-xs">
                     <Badge variant="outline">{r.content_type ?? "unknown"}</Badge>
                     {r.hook_archetype && <Badge variant="secondary">{r.hook_archetype}</Badge>}
+                    {!r.output_mp4_url && <Badge variant="destructive" className="text-[10px]">no MP4</Badge>}
+                    {r.output_mp4_url && !r.voiceover_url && <Badge variant="destructive" className="text-[10px]">no VO</Badge>}
                     <span className="text-muted-foreground truncate">{r.product_slug}</span>
                   </div>
                   {r.product_ids && r.product_ids.length > 1 && (
                     <div className="text-[11px] text-muted-foreground mt-0.5">+{r.product_ids.length - 1} more products</div>
                   )}
-                  <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
+                  {r.voiceover_url && (
+                    <audio src={r.voiceover_url} controls preload="none" className="mt-1 h-7 w-full" />
+                  )}
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground flex-wrap">
                     <span>status: {r.status}</span>
                     {r.scheduled_publish_at && (
                       <span>scheduled: {new Date(r.scheduled_publish_at).toLocaleString()}</span>
                     )}
                     {r.predicted_engagement != null && <span>est. {r.predicted_engagement}</span>}
+                    {r.output_duration_seconds != null && <span>{Math.round(r.output_duration_seconds)}s</span>}
+                    {r.qa_composite_score != null && <span>QA {Math.round(r.qa_composite_score)}</span>}
+                    {r.cinematic_quality_score != null && <span>cine {Math.round(r.cinematic_quality_score)}</span>}
+                    {r.voiceover_voice_id && <span>voice {r.voiceover_voice_id.slice(0, 6)}</span>}
+                    {r.variation_signature && <span>sig {r.variation_signature.slice(0, 8)}</span>}
                   </div>
                   {r.publish_blocked_reason && (
                     <div className="text-[11px] text-destructive mt-0.5">blocked: {r.publish_blocked_reason}</div>
+                  )}
+                  {r.output_mp4_url && !r.voiceover_url && (
+                    <Button size="sm" variant="outline" className="h-6 text-[11px] mt-1"
+                      onClick={() => generateVoiceover(r.id)} disabled={busy}>
+                      Generate voice-over
+                    </Button>
                   )}
                 </div>
               </div>
