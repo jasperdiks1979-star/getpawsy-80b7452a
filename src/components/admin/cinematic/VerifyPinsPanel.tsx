@@ -234,3 +234,99 @@ function Stat({ label, value, tone = "neutral" }: { label: string; value: number
     </div>
   );
 }
+
+function ConfirmDialog({
+  open,
+  onOpenChange,
+  preview,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  preview: Response | null;
+  onConfirm: () => void;
+}) {
+  const counts = (() => {
+    const c = { verified: 0, not_found: 0, inaccessible: 0, no_pin_id: 0, corrections: 0 };
+    for (const r of preview?.results ?? []) {
+      c[r.outcome] += 1;
+      if (r.would_correct) c.corrections += 1;
+    }
+    return c;
+  })();
+  const transitions = (preview?.results ?? []).filter((r) => r.would_correct);
+  const apiCorrections = preview?.corrections ?? counts.corrections;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Apply status corrections?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Checked <strong>{preview?.checked ?? 0}</strong> pins against Pinterest.
+            <br />
+            <strong>{apiCorrections}</strong> job{apiCorrections === 1 ? "" : "s"} will have their status changed if you continue.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="grid grid-cols-4 gap-2 text-xs">
+          <div className="rounded border p-2 text-center">
+            <div className="text-muted-foreground">Verified</div>
+            <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400">{counts.verified}</div>
+          </div>
+          <div className="rounded border p-2 text-center">
+            <div className="text-muted-foreground">Not found</div>
+            <div className="text-base font-semibold text-destructive">{counts.not_found}</div>
+          </div>
+          <div className="rounded border p-2 text-center">
+            <div className="text-muted-foreground">No pin id</div>
+            <div className="text-base font-semibold text-destructive">{counts.no_pin_id}</div>
+          </div>
+          <div className="rounded border p-2 text-center">
+            <div className="text-muted-foreground">Inaccessible</div>
+            <div className="text-base font-semibold">{counts.inaccessible}</div>
+          </div>
+        </div>
+
+        {transitions.length > 0 ? (
+          <div className="max-h-60 overflow-auto rounded-md border text-xs">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-muted/60 text-left">
+                <tr>
+                  <th className="px-2 py-1.5">Job</th>
+                  <th className="px-2 py-1.5">From</th>
+                  <th className="px-2 py-1.5">To</th>
+                  <th className="px-2 py-1.5">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transitions.slice(0, 100).map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="px-2 py-1 font-mono text-[11px]">{r.id.slice(0, 8)}…</td>
+                    <td className="px-2 py-1">{r.current_status ?? "—"}</td>
+                    <td className="px-2 py-1 text-amber-700 dark:text-amber-400">{r.next_status ?? "—"}</td>
+                    <td className="px-2 py-1 text-muted-foreground">{r.outcome}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {transitions.length > 100 ? (
+              <div className="border-t p-1 text-center text-[11px] text-muted-foreground">
+                +{transitions.length - 100} more not shown
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No status changes needed — everything is already in the correct state.</p>
+        )}
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={apiCorrections === 0}>
+            Apply {apiCorrections} correction{apiCorrections === 1 ? "" : "s"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
