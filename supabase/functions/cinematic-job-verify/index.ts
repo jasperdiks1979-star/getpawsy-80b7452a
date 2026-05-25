@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
 
   const { data: jobs, error } = await q;
   if (error) return json({ ok: false, message: error.message }, 500);
-  if (!jobs?.length) return json({ ok: true, checked: 0, results: [] });
+  if (!jobs?.length) return json({ ok: true, checked: 0, results: [], run_id: null });
 
   // Active Pinterest connection
   const { data: settings } = await sb.from("pinterest_runtime_settings").select("active_pinterest_connection_id").eq("id", 1).maybeSingle();
@@ -114,13 +114,34 @@ Deno.serve(async (req) => {
   const nowIso = new Date().toISOString();
   const results: any[] = [];
 
+  // Persist a run header for non-dryRun executions so admins can browse
+  // history. dryRun previews stay ephemeral by design.
+  let runId: string | null = null;
+  if (!dryRun) {
+    const { data: runRow } = await sb
+      .from("pinterest_verification_runs")
+      .insert({
+        started_at: nowIso,
+        dry_run: false,
+        triggered_by: uid,
+        notes: body?.job_id
+          ? `single:${body.job_id}`
+          : Array.isArray(body?.job_ids) && body.job_ids.length
+          ? `ids:${body.job_ids.length}`
+          : `batch:${limit}`,
+      })
+      .select("id")
+      .maybeSingle();
+    runId = runRow?.id ?? null;
+  }
+
   for (const j of jobs) {
     if (!j.pinterest_pin_id) {
       const newStatus = j.status === "pinterest_uploaded" ? "publish_failed" : j.status;
       const wouldCorrect = newStatus !== j.status;
       if (!dryRun) {
         await sb.from("cinematic_ad_jobs").update({ verified_at: nowIso, remote_exists: false, status: newStatus, publishable_reason: "no_pin_id" }).eq("id", j.id);
-        await sb.from("pinterest_publish_verifications").insert({ job_id: j.id, pin_id: null, pin_url: null, remote_exists: false, error: "no_pin_id" });
+        await sb.from("pinterest_publish_verifications").insert({ job_id: j.id, pin_id: null, pin_url: null, remote_exists: false, error: "no_pin_id", run_id: runId });
       }
       results.push({ id: j.id, outcome: "no_pin_id", current_status: j.status, next_status: newStatus, would_correct: wouldCorrect });
       continue;
@@ -157,6 +178,7 @@ Deno.serve(async (req) => {
         pin_url: r.pin_url ?? j.pinterest_pin_url,
         remote_exists: exists,
         error: r.error ?? null,
+        run_id: runId,
       });
     }
     results.push({ id: j.id, outcome: r.outcome, pin_url: r.pin_url, error: r.error, attempts: r.attempts, current_status: prevStatus, next_status: nextStatus, would_correct: wouldCorrect });
@@ -164,5 +186,15 @@ Deno.serve(async (req) => {
   }
 
   const corrections = results.filter((r) => r.would_correct).length;
-  return json({ ok: true, dryRun, verified_at: nowIso, checked: results.length, corrections, results });
+  if (runId) {
+    await sb
+      .from("pinterest_verification_runs")
+      .update({
+        finished_at: new Date().toISOString(),
+        checked: results.length,
+        corrections,
+      })
+      .eq("id", runId);
+  }
+  return json({ ok: true, dryRun, run_id: runId, verified_at: nowIso, checked: results.length, corrections, results });
 });
