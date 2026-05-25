@@ -21,6 +21,7 @@ import CinematicIntelligencePanel from "@/components/admin/cinematic/CinematicIn
 import AutoApprovalSettingsCard from "@/components/admin/cinematic/AutoApprovalSettingsCard";
 import { CreativeDNAPanel } from "@/components/admin/cinematic/CreativeDNAPanel";
 import SystemTruthPanel from "@/components/admin/cinematic/SystemTruthPanel";
+import OperatorPanel from "@/components/admin/cinematic/OperatorPanel";
 
 type Job = {
   id: string;
@@ -473,6 +474,8 @@ export default function CinematicAdsControlCenterPage() {
       </header>
 
       <SystemTruthPanel />
+
+      <OperatorPanel />
 
       <AutopilotHealthPanel />
 
