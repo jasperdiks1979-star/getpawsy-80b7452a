@@ -49,9 +49,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 let SUPABASE_HOST = "unknown";
 try { SUPABASE_HOST = new URL(SUPABASE_URL).host; } catch { /* noop */ }
 const EXPECTED_SUPABASE_HOST = process.env.EXPECTED_SUPABASE_HOST || "nojvgfbcjgipjxpfatmm.supabase.co";
-if (SUPABASE_HOST !== EXPECTED_SUPABASE_HOST) {
-  log("fatal", "SUPABASE_URL points to the wrong backend", { supabaseHost: SUPABASE_HOST, expected: EXPECTED_SUPABASE_HOST });
-  process.exit(2);
+const HOST_MISMATCH = SUPABASE_HOST !== EXPECTED_SUPABASE_HOST;
+if (HOST_MISMATCH) {
+  log("fatal", "SUPABASE_URL points to the wrong backend — keeping health server up so admin UI can see the mismatch", {
+    supabaseHost: SUPABASE_HOST,
+    expected: EXPECTED_SUPABASE_HOST,
+  });
 }
 const SECRET = process.env.RENDER_WORKER_SECRET;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -93,7 +96,18 @@ const state = {
     cleanup: { enabled: !SAFE_MODE, healthy: true, disabledReason: SAFE_MODE ? "safe_mode" : null, lastError: null },
     audit: { enabled: !SAFE_MODE, healthy: true, disabledReason: SAFE_MODE ? "safe_mode" : null, lastError: null },
   },
+  errors: [],
+  lastHeartbeatAt: null,
+  queueDepth: null,
 };
+
+if (HOST_MISMATCH) {
+  state.crashReason = "fatal_wrong_supabase_host";
+  state.subsystems.render.enabled = false;
+  state.subsystems.render.healthy = false;
+  state.subsystems.render.lastError = `wrong_host:${SUPABASE_HOST}`;
+  state.errors.push({ ts: new Date().toISOString(), code: "wrong_supabase_host", host: SUPABASE_HOST, expected: EXPECTED_SUPABASE_HOST });
+}
 
 function setBootPhase(phase, extra = {}) {
   state.bootPhase = phase;
