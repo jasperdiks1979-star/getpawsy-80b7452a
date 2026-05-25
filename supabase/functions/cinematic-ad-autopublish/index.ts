@@ -125,10 +125,20 @@ Deno.serve(async (req) => {
   // ----- V3 Window gate -----
   const now = new Date();
   if (!isInWindowEst(now, windows)) {
-    const next = nextWindowStartUtc(now, windows);
-    const jitter = jitterSeconds(jitterMin, jitterMax);
-    const scheduledAt = new Date(next.getTime() + jitter * 1000).toISOString();
-    return json(200, { ok: true, traceId, scanned: 0, published: 0, skipped: "outside_publish_window", next_window_at: scheduledAt });
+    // Check if any bypass jobs are eligible — they ignore the publish window.
+    const { count: bypassCount } = await admin
+      .from("cinematic_ad_jobs").select("id", { count: "exact", head: true })
+      .eq("publish_window_bypass", true)
+      .eq("approved_for_render", true)
+      .is("pushed_to_pinterest_at", null)
+      .not("output_mp4_url", "is", null);
+    if (!bypassCount || bypassCount === 0) {
+      const next = nextWindowStartUtc(now, windows);
+      const jitter = jitterSeconds(jitterMin, jitterMax);
+      const scheduledAt = new Date(next.getTime() + jitter * 1000).toISOString();
+      return json(200, { ok: true, traceId, scanned: 0, published: 0, skipped: "outside_publish_window", next_window_at: scheduledAt });
+    }
+    console.log(`[autopublish] ${traceId} outside window but ${bypassCount} bypass job(s) eligible — continuing`);
   }
 
   // ----- V3 Recovery tier ladder -----
