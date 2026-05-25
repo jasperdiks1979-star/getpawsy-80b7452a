@@ -1012,6 +1012,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_ad_audit_events: {
+        Row: {
+          action: string
+          actor: string | null
+          after_json: Json | null
+          before_json: Json | null
+          created_at: string
+          id: string
+          job_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          after_json?: Json | null
+          before_json?: Json | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          after_json?: Json | null
+          before_json?: Json | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       cinematic_ad_job_events: {
         Row: {
           action_taken: string | null
@@ -1078,6 +1111,8 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           approved_for_render: boolean
+          archive_reason: string | null
+          archived_at: string | null
           auto_approval_blocked_reason: string | null
           auto_approval_reason: string | null
           auto_approved_at: string | null
@@ -1106,6 +1141,7 @@ export type Database = {
           first3s_phash: string | null
           hashtags: string[]
           hook_archetype: string | null
+          hook_cooldown_until: string | null
           hook_strength_score: number | null
           hook_text: string | null
           hook_type: string | null
@@ -1149,12 +1185,14 @@ export type Database = {
           pipeline_stage: string | null
           prepared_at: string | null
           preset: string
+          product_cooldown_until: string | null
           product_id: string | null
           product_lock: Json
           product_name: string | null
           product_price: string | null
           product_slug: string
           publish_blocked_reason: string | null
+          publishable_reason: string | null
           published_at: string | null
           pushed_to_pinterest_at: string | null
           qa_breakdown: Json | null
@@ -1166,6 +1204,7 @@ export type Database = {
           quarantined_assets: Json | null
           recommended_fix: string | null
           recoverable: boolean | null
+          remote_exists: boolean | null
           render_attempts: number
           render_complete_at: string | null
           render_dispatched_at: string | null
@@ -1197,10 +1236,12 @@ export type Database = {
           subhook_text: string | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
+          uniqueness_score: number | null
           updated_at: string
           validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
+          verified_at: string | null
           video_corrupted: boolean
           visual_energy_score: number | null
           visual_uniqueness_score: number | null
@@ -1209,6 +1250,7 @@ export type Database = {
           vo_url: string | null
           voice_id: string
           voice_style: string | null
+          worker_last_error: string | null
         }
         Insert: {
           admin_review_reason?: string | null
@@ -1218,6 +1260,8 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           approved_for_render?: boolean
+          archive_reason?: string | null
+          archived_at?: string | null
           auto_approval_blocked_reason?: string | null
           auto_approval_reason?: string | null
           auto_approved_at?: string | null
@@ -1246,6 +1290,7 @@ export type Database = {
           first3s_phash?: string | null
           hashtags?: string[]
           hook_archetype?: string | null
+          hook_cooldown_until?: string | null
           hook_strength_score?: number | null
           hook_text?: string | null
           hook_type?: string | null
@@ -1289,12 +1334,14 @@ export type Database = {
           pipeline_stage?: string | null
           prepared_at?: string | null
           preset?: string
+          product_cooldown_until?: string | null
           product_id?: string | null
           product_lock?: Json
           product_name?: string | null
           product_price?: string | null
           product_slug: string
           publish_blocked_reason?: string | null
+          publishable_reason?: string | null
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
           qa_breakdown?: Json | null
@@ -1306,6 +1353,7 @@ export type Database = {
           quarantined_assets?: Json | null
           recommended_fix?: string | null
           recoverable?: boolean | null
+          remote_exists?: boolean | null
           render_attempts?: number
           render_complete_at?: string | null
           render_dispatched_at?: string | null
@@ -1337,10 +1385,12 @@ export type Database = {
           subhook_text?: string | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
+          uniqueness_score?: number | null
           updated_at?: string
           validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
+          verified_at?: string | null
           video_corrupted?: boolean
           visual_energy_score?: number | null
           visual_uniqueness_score?: number | null
@@ -1349,6 +1399,7 @@ export type Database = {
           vo_url?: string | null
           voice_id?: string
           voice_style?: string | null
+          worker_last_error?: string | null
         }
         Update: {
           admin_review_reason?: string | null
@@ -1358,6 +1409,8 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           approved_for_render?: boolean
+          archive_reason?: string | null
+          archived_at?: string | null
           auto_approval_blocked_reason?: string | null
           auto_approval_reason?: string | null
           auto_approved_at?: string | null
@@ -1386,6 +1439,7 @@ export type Database = {
           first3s_phash?: string | null
           hashtags?: string[]
           hook_archetype?: string | null
+          hook_cooldown_until?: string | null
           hook_strength_score?: number | null
           hook_text?: string | null
           hook_type?: string | null
@@ -1429,12 +1483,14 @@ export type Database = {
           pipeline_stage?: string | null
           prepared_at?: string | null
           preset?: string
+          product_cooldown_until?: string | null
           product_id?: string | null
           product_lock?: Json
           product_name?: string | null
           product_price?: string | null
           product_slug?: string
           publish_blocked_reason?: string | null
+          publishable_reason?: string | null
           published_at?: string | null
           pushed_to_pinterest_at?: string | null
           qa_breakdown?: Json | null
@@ -1446,6 +1502,7 @@ export type Database = {
           quarantined_assets?: Json | null
           recommended_fix?: string | null
           recoverable?: boolean | null
+          remote_exists?: boolean | null
           render_attempts?: number
           render_complete_at?: string | null
           render_dispatched_at?: string | null
@@ -1477,10 +1534,12 @@ export type Database = {
           subhook_text?: string | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
+          uniqueness_score?: number | null
           updated_at?: string
           validation_passed?: boolean | null
           validation_report?: Json | null
           variant_index?: number
+          verified_at?: string | null
           video_corrupted?: boolean
           visual_energy_score?: number | null
           visual_uniqueness_score?: number | null
@@ -1489,6 +1548,7 @@ export type Database = {
           vo_url?: string | null
           voice_id?: string
           voice_style?: string | null
+          worker_last_error?: string | null
         }
         Relationships: [
           {
@@ -10618,6 +10678,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_publish_verifications: {
+        Row: {
+          checked_at: string
+          error: string | null
+          id: string
+          job_id: string | null
+          pin_id: string | null
+          pin_url: string | null
+          remote_exists: boolean | null
+        }
+        Insert: {
+          checked_at?: string
+          error?: string | null
+          id?: string
+          job_id?: string | null
+          pin_id?: string | null
+          pin_url?: string | null
+          remote_exists?: boolean | null
+        }
+        Update: {
+          checked_at?: string
+          error?: string | null
+          id?: string
+          job_id?: string | null
+          pin_id?: string | null
+          pin_url?: string | null
+          remote_exists?: boolean | null
+        }
+        Relationships: []
+      }
       pinterest_render_attempts: {
         Row: {
           attempt_no: number
@@ -12698,6 +12788,33 @@ export type Database = {
           threshold_rate?: number
           updated_at?: string
           window_days?: number
+        }
+        Relationships: []
+      }
+      render_worker_heartbeats: {
+        Row: {
+          last_seen_at: string
+          payload: Json
+          queue_depth: number | null
+          safe_mode: boolean | null
+          supabase_host: string | null
+          worker_id: string
+        }
+        Insert: {
+          last_seen_at?: string
+          payload?: Json
+          queue_depth?: number | null
+          safe_mode?: boolean | null
+          supabase_host?: string | null
+          worker_id: string
+        }
+        Update: {
+          last_seen_at?: string
+          payload?: Json
+          queue_depth?: number | null
+          safe_mode?: boolean | null
+          supabase_host?: string | null
+          worker_id?: string
         }
         Relationships: []
       }
@@ -16091,6 +16208,8 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           approved_for_render: boolean
+          archive_reason: string | null
+          archived_at: string | null
           auto_approval_blocked_reason: string | null
           auto_approval_reason: string | null
           auto_approved_at: string | null
@@ -16119,6 +16238,7 @@ export type Database = {
           first3s_phash: string | null
           hashtags: string[]
           hook_archetype: string | null
+          hook_cooldown_until: string | null
           hook_strength_score: number | null
           hook_text: string | null
           hook_type: string | null
@@ -16162,12 +16282,14 @@ export type Database = {
           pipeline_stage: string | null
           prepared_at: string | null
           preset: string
+          product_cooldown_until: string | null
           product_id: string | null
           product_lock: Json
           product_name: string | null
           product_price: string | null
           product_slug: string
           publish_blocked_reason: string | null
+          publishable_reason: string | null
           published_at: string | null
           pushed_to_pinterest_at: string | null
           qa_breakdown: Json | null
@@ -16179,6 +16301,7 @@ export type Database = {
           quarantined_assets: Json | null
           recommended_fix: string | null
           recoverable: boolean | null
+          remote_exists: boolean | null
           render_attempts: number
           render_complete_at: string | null
           render_dispatched_at: string | null
@@ -16210,10 +16333,12 @@ export type Database = {
           subhook_text: string | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
+          uniqueness_score: number | null
           updated_at: string
           validation_passed: boolean | null
           validation_report: Json | null
           variant_index: number
+          verified_at: string | null
           video_corrupted: boolean
           visual_energy_score: number | null
           visual_uniqueness_score: number | null
@@ -16222,6 +16347,7 @@ export type Database = {
           vo_url: string | null
           voice_id: string
           voice_style: string | null
+          worker_last_error: string | null
         }
         SetofOptions: {
           from: "*"
