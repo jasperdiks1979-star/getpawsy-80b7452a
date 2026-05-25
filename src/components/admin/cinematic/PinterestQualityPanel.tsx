@@ -64,7 +64,7 @@ export default function PinterestQualityPanel() {
         .select("*")
         .limit(200);
       const map: Record<string, CooldownRow> = {};
-      for (const r of (cd ?? []) as CooldownRow[]) map[r.product_slug] = r;
+      for (const r of ((cd ?? []) as unknown as CooldownRow[])) map[r.product_slug] = r;
       setCooldowns(map);
     } finally {
       setLoading(false);
