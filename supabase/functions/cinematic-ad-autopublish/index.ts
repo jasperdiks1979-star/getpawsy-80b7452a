@@ -209,6 +209,19 @@ Deno.serve(async (req) => {
     .not("hook_archetype", "is", null);
   const cooldownHooks = new Set((recentHooks ?? []).map((r: any) => r.hook_archetype));
 
+  // ----- V3.1 Content-type consecutive-repeat guard -----
+  // Block publishing a content_type if the same type was published in the last 2 pins.
+  // Keeps the Pinterest feed visually varied (spotlight, compilation, lifestyle, ugc, slideshow).
+  const { data: recentTypes } = await admin
+    .from("cinematic_ad_jobs")
+    .select("content_type")
+    .not("pushed_to_pinterest_at", "is", null)
+    .order("pushed_to_pinterest_at", { ascending: false })
+    .limit(2);
+  const last2Types = new Set(
+    (recentTypes ?? []).map((r: any) => r.content_type).filter(Boolean),
+  );
+
   // ----- V3 Perceptual dedupe pool -----
   const { data: recentHashes } = await admin
     .from("cinematic_ad_jobs")
@@ -232,7 +245,7 @@ Deno.serve(async (req) => {
   // Find eligible jobs
   const { data: jobs, error } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash")
+    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash, content_type")
     .in("status", ELIGIBLE_STATUSES)
     .is("pinterest_asset_id", null)
     .not("output_mp4_url", "is", null)
@@ -329,6 +342,14 @@ Deno.serve(async (req) => {
     if (job.hook_archetype && cooldownHooks.has(job.hook_archetype)) {
       await admin.from("cinematic_ad_jobs").update({ publish_blocked_reason: `hook_cooldown(${hookCooldownDays}d)` }).eq("id", job.id);
       results.push({ job_id: job.id, ok: false, reason: "hook_cooldown" });
+      continue;
+    }
+    // V3.1 content-type consecutive-repeat guard (no two pins in a row of the same type)
+    if (job.content_type && last2Types.has(job.content_type)) {
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `content_type_repeat(${job.content_type})`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "content_type_repeat" });
       continue;
     }
     // V3 quarantine match
