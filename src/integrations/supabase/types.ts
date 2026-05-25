@@ -1125,6 +1125,7 @@ export type Database = {
           captions_visible: boolean | null
           classification_confidence: number | null
           confidence_scores: Json
+          content_type: string | null
           created_at: string
           created_by: string | null
           creative_category: string | null
@@ -1188,10 +1189,12 @@ export type Database = {
           pinterest_publish_status: string
           pinterest_uploaded_at: string | null
           pipeline_stage: string | null
+          predicted_engagement: number | null
           prepared_at: string | null
           preset: string
           product_cooldown_until: string | null
           product_id: string | null
+          product_ids: string[] | null
           product_lock: Json
           product_name: string | null
           product_price: string | null
@@ -1230,6 +1233,7 @@ export type Database = {
           scene_entropy_score: number | null
           scene_plan: Json | null
           scene_specs: Json
+          scene_template: string | null
           scheduled_publish_at: string | null
           selected_cta_index: number
           selected_hook_index: number
@@ -1280,6 +1284,7 @@ export type Database = {
           captions_visible?: boolean | null
           classification_confidence?: number | null
           confidence_scores?: Json
+          content_type?: string | null
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
@@ -1343,10 +1348,12 @@ export type Database = {
           pinterest_publish_status?: string
           pinterest_uploaded_at?: string | null
           pipeline_stage?: string | null
+          predicted_engagement?: number | null
           prepared_at?: string | null
           preset?: string
           product_cooldown_until?: string | null
           product_id?: string | null
+          product_ids?: string[] | null
           product_lock?: Json
           product_name?: string | null
           product_price?: string | null
@@ -1385,6 +1392,7 @@ export type Database = {
           scene_entropy_score?: number | null
           scene_plan?: Json | null
           scene_specs?: Json
+          scene_template?: string | null
           scheduled_publish_at?: string | null
           selected_cta_index?: number
           selected_hook_index?: number
@@ -1435,6 +1443,7 @@ export type Database = {
           captions_visible?: boolean | null
           classification_confidence?: number | null
           confidence_scores?: Json
+          content_type?: string | null
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
@@ -1498,10 +1507,12 @@ export type Database = {
           pinterest_publish_status?: string
           pinterest_uploaded_at?: string | null
           pipeline_stage?: string | null
+          predicted_engagement?: number | null
           prepared_at?: string | null
           preset?: string
           product_cooldown_until?: string | null
           product_id?: string | null
+          product_ids?: string[] | null
           product_lock?: Json
           product_name?: string | null
           product_price?: string | null
@@ -1540,6 +1551,7 @@ export type Database = {
           scene_entropy_score?: number | null
           scene_plan?: Json | null
           scene_specs?: Json
+          scene_template?: string | null
           scheduled_publish_at?: string | null
           selected_cta_index?: number
           selected_hook_index?: number
@@ -9094,6 +9106,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_archetype_cooldown: {
+        Row: {
+          archetype: string
+          cooldown_minutes: number
+          last_published_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          archetype: string
+          cooldown_minutes?: number
+          last_published_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archetype?: string
+          cooldown_minutes?: number
+          last_published_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_attribution_sessions: {
         Row: {
           events_seen: number
@@ -9712,6 +9745,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_compilation_themes: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          cta: string
+          id: string
+          max_products: number
+          min_products: number
+          title_template: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          cta?: string
+          id?: string
+          max_products?: number
+          min_products?: number
+          title_template: string
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          cta?: string
+          id?: string
+          max_products?: number
+          min_products?: number
+          title_template?: string
+        }
+        Relationships: []
+      }
       pinterest_connection: {
         Row: {
           access_token: string | null
@@ -10101,6 +10167,36 @@ export type Database = {
           transformation_before?: string | null
           trust_block_variant?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_lifestyle_scenes: {
+        Row: {
+          active: boolean
+          backdrop_prompt: string
+          created_at: string
+          id: string
+          music_mood: string
+          overlay_hook: string
+          scene_name: string
+        }
+        Insert: {
+          active?: boolean
+          backdrop_prompt: string
+          created_at?: string
+          id?: string
+          music_mood?: string
+          overlay_hook: string
+          scene_name: string
+        }
+        Update: {
+          active?: boolean
+          backdrop_prompt?: string
+          created_at?: string
+          id?: string
+          music_mood?: string
+          overlay_hook?: string
+          scene_name?: string
         }
         Relationships: []
       }
@@ -16320,6 +16416,7 @@ export type Database = {
           captions_visible: boolean | null
           classification_confidence: number | null
           confidence_scores: Json
+          content_type: string | null
           created_at: string
           created_by: string | null
           creative_category: string | null
@@ -16383,10 +16480,12 @@ export type Database = {
           pinterest_publish_status: string
           pinterest_uploaded_at: string | null
           pipeline_stage: string | null
+          predicted_engagement: number | null
           prepared_at: string | null
           preset: string
           product_cooldown_until: string | null
           product_id: string | null
+          product_ids: string[] | null
           product_lock: Json
           product_name: string | null
           product_price: string | null
@@ -16425,6 +16524,7 @@ export type Database = {
           scene_entropy_score: number | null
           scene_plan: Json | null
           scene_specs: Json
+          scene_template: string | null
           scheduled_publish_at: string | null
           selected_cta_index: number
           selected_hook_index: number
