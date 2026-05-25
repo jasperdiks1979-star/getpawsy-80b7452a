@@ -229,6 +229,10 @@ function runRender(jobId) {
 // ---------- poll loop ----------
 async function tick() {
   if (state.busy) return;
+  if (HOST_MISMATCH) {
+    log("warn", "tick skipped — supabase host mismatch", { supabaseHost: SUPABASE_HOST, expected: EXPECTED_SUPABASE_HOST });
+    return;
+  }
   state.busy = true;
   state.lastPollAt = new Date().toISOString();
   console.log(`[CINEMATIC WORKER] polling queue table=cinematic_ad_jobs filter=status='render_queued' host=${SUPABASE_HOST} workerId=${WORKER_ID} at=${state.lastPollAt}`);
@@ -237,6 +241,7 @@ async function tick() {
     const data = await claimJob();
     state.lastPollOk = !!data?.ok;
     state.lastPollReason = data?.reason ?? null;
+    if (typeof data?.queued_count === "number") state.queueDepth = data.queued_count;
     console.log(`[CINEMATIC WORKER] claim response ok=${data?.ok} reason=${data?.reason ?? "-"} queued_count=${data?.queued_count ?? "?"} server_host=${data?.supabase_host ?? "?"} message=${data?.message ?? "-"}`);
     if (data?.supabase_host && data.supabase_host !== SUPABASE_HOST) {
       throw new Error(`backend mismatch: worker=${SUPABASE_HOST} claim_function=${data.supabase_host}`);
