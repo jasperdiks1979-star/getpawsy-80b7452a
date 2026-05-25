@@ -49,9 +49,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 let SUPABASE_HOST = "unknown";
 try { SUPABASE_HOST = new URL(SUPABASE_URL).host; } catch { /* noop */ }
 const EXPECTED_SUPABASE_HOST = process.env.EXPECTED_SUPABASE_HOST || "nojvgfbcjgipjxpfatmm.supabase.co";
-if (SUPABASE_HOST !== EXPECTED_SUPABASE_HOST) {
-  log("fatal", "SUPABASE_URL points to the wrong backend", { supabaseHost: SUPABASE_HOST, expected: EXPECTED_SUPABASE_HOST });
-  process.exit(2);
+const HOST_MISMATCH = SUPABASE_HOST !== EXPECTED_SUPABASE_HOST;
+if (HOST_MISMATCH) {
+  log("fatal", "SUPABASE_URL points to the wrong backend — keeping health server up so admin UI can see the mismatch", {
+    supabaseHost: SUPABASE_HOST,
+    expected: EXPECTED_SUPABASE_HOST,
+  });
 }
 const SECRET = process.env.RENDER_WORKER_SECRET;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -93,7 +96,18 @@ const state = {
     cleanup: { enabled: !SAFE_MODE, healthy: true, disabledReason: SAFE_MODE ? "safe_mode" : null, lastError: null },
     audit: { enabled: !SAFE_MODE, healthy: true, disabledReason: SAFE_MODE ? "safe_mode" : null, lastError: null },
   },
+  errors: [],
+  lastHeartbeatAt: null,
+  queueDepth: null,
 };
+
+if (HOST_MISMATCH) {
+  state.crashReason = "fatal_wrong_supabase_host";
+  state.subsystems.render.enabled = false;
+  state.subsystems.render.healthy = false;
+  state.subsystems.render.lastError = `wrong_host:${SUPABASE_HOST}`;
+  state.errors.push({ ts: new Date().toISOString(), code: "wrong_supabase_host", host: SUPABASE_HOST, expected: EXPECTED_SUPABASE_HOST });
+}
 
 function setBootPhase(phase, extra = {}) {
   state.bootPhase = phase;
@@ -175,6 +189,36 @@ async function writeHeartbeat({ claimed = false, jobId = null } = {}) {
       const txt = await r.text().catch(() => "");
       log("warn", "heartbeat upsert non-2xx", { status: r.status, body: txt.slice(0, 200) });
     }
+    // Mirror to new render_worker_heartbeats truth table (idempotent upsert).
+    try {
+      await fetchWithRetry(
+        `${SUPABASE_URL}/rest/v1/render_worker_heartbeats?on_conflict=worker_id`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SERVICE_KEY,
+            Authorization: `Bearer ${SERVICE_KEY}`,
+            Prefer: "resolution=merge-duplicates,return=minimal",
+          },
+          body: JSON.stringify({
+            worker_id: WORKER_ID,
+            last_seen_at: nowIso,
+            queue_depth: state.queueDepth,
+            supabase_host: SUPABASE_HOST,
+            safe_mode: SAFE_MODE,
+            payload: {
+              bootPhase: state.bootPhase,
+              busy: state.busy,
+              currentJobId: state.currentJobId,
+              consecutiveFailures: state.consecutiveFailures,
+            },
+          }),
+        },
+        { timeoutMs: 5_000, retries: 1 },
+      );
+    } catch {}
+    state.lastHeartbeatAt = nowIso;
   } catch (e) {
     log("warn", "heartbeat upsert failed", { err: String(e?.message ?? e) });
   }
@@ -215,6 +259,10 @@ function runRender(jobId) {
 // ---------- poll loop ----------
 async function tick() {
   if (state.busy) return;
+  if (HOST_MISMATCH) {
+    log("warn", "tick skipped — supabase host mismatch", { supabaseHost: SUPABASE_HOST, expected: EXPECTED_SUPABASE_HOST });
+    return;
+  }
   state.busy = true;
   state.lastPollAt = new Date().toISOString();
   console.log(`[CINEMATIC WORKER] polling queue table=cinematic_ad_jobs filter=status='render_queued' host=${SUPABASE_HOST} workerId=${WORKER_ID} at=${state.lastPollAt}`);
@@ -223,6 +271,7 @@ async function tick() {
     const data = await claimJob();
     state.lastPollOk = !!data?.ok;
     state.lastPollReason = data?.reason ?? null;
+    if (typeof data?.queued_count === "number") state.queueDepth = data.queued_count;
     console.log(`[CINEMATIC WORKER] claim response ok=${data?.ok} reason=${data?.reason ?? "-"} queued_count=${data?.queued_count ?? "?"} server_host=${data?.supabase_host ?? "?"} message=${data?.message ?? "-"}`);
     if (data?.supabase_host && data.supabase_host !== SUPABASE_HOST) {
       throw new Error(`backend mismatch: worker=${SUPABASE_HOST} claim_function=${data.supabase_host}`);
@@ -285,7 +334,8 @@ function startHealthServer() {
       if (req.url === "/health/worker" || req.url === "/api/health/worker") {
         const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
         return send(200, {
-          ok: state.consecutiveFailures < MAX_CONSECUTIVE_FAILURES,
+          ok: !HOST_MISMATCH && state.consecutiveFailures < MAX_CONSECUTIVE_FAILURES,
+          ready: state.bootCompleted && !HOST_MISMATCH,
           worker: true,
           timestamp: Date.now(),
           workerId: WORKER_ID,
@@ -294,6 +344,14 @@ function startHealthServer() {
           bootPhase: state.bootPhase,
           bootCompleted: state.bootCompleted,
           crashReason: state.crashReason,
+          supabaseHost: SUPABASE_HOST,
+          expectedSupabaseHost: EXPECTED_SUPABASE_HOST,
+          lastHeartbeatAt: state.lastHeartbeatAt,
+          queueDepth: state.queueDepth,
+          activeJobs: state.busy ? 1 : 0,
+          renderAvailable: state.subsystems.render.enabled && state.subsystems.render.healthy,
+          pinterestPublishAvailable: state.subsystems.pinterest.enabled && state.subsystems.pinterest.healthy,
+          errors: state.errors.slice(-10),
           subsystems: state.subsystems,
           memMb,
           uptimeSec: Math.round((Date.now()-STARTED_AT)/1000),
