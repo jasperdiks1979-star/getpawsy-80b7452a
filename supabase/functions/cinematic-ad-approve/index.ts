@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       Authorization: req.headers.get("Authorization") ?? "",
       apikey: anonKey,
+      "x-internal-token": req.headers.get("x-internal-token") ?? "",
     },
     body: JSON.stringify({ job_id: jobId, preset: body.preset }),
   });
