@@ -16,21 +16,58 @@ const PINTEREST_API = "https://api.pinterest.com/v5";
 
 type Outcome = "verified" | "not_found" | "inaccessible" | "no_pin_id";
 
-async function checkPin(token: string, pinId: string): Promise<{ outcome: Outcome; pin_url?: string; error?: string }> {
-  try {
-    const r = await fetch(`${PINTEREST_API}/pins/${pinId}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (r.status === 404 || r.status === 410) return { outcome: "not_found" };
-    if (r.status === 200) {
-      const b = await r.json().catch(() => ({} as any));
-      if (!b?.id || !b?.board_id) return { outcome: "not_found" };
-      const pin_url = b?.link || `https://www.pinterest.com/pin/${pinId}/`;
-      return { outcome: "verified", pin_url };
-    }
-    const txt = await r.text().catch(() => "");
-    return { outcome: "inaccessible", error: `${r.status}:${txt.slice(0, 120)}` };
-  } catch (e) {
-    return { outcome: "inaccessible", error: (e as Error).message };
+// Transient statuses we retry with exponential backoff. 429 is Pinterest's
+// documented rate-limit signal; 5xx covers upstream blips. Everything else
+// (200/404/410/401/403) is terminal and short-circuits.
+const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const MAX_ATTEMPTS = 4; // 1 try + 3 retries
+const BASE_DELAY_MS = 500;
+const MAX_DELAY_MS = 8000;
+
+function backoffDelay(attempt: number, retryAfterHeader: string | null): number {
+  // Honor `Retry-After` (seconds, per RFC 7231) if Pinterest sends it.
+  if (retryAfterHeader) {
+    const secs = Number(retryAfterHeader);
+    if (Number.isFinite(secs) && secs > 0) return Math.min(secs * 1000, MAX_DELAY_MS);
   }
+  // Exponential with full jitter: rand(0, min(cap, base * 2^attempt)).
+  const exp = Math.min(MAX_DELAY_MS, BASE_DELAY_MS * 2 ** attempt);
+  return Math.floor(Math.random() * exp);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function checkPin(
+  token: string,
+  pinId: string,
+): Promise<{ outcome: Outcome; pin_url?: string; error?: string; attempts?: number }> {
+  let lastError = "";
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      const r = await fetch(`${PINTEREST_API}/pins/${pinId}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (r.status === 404 || r.status === 410) return { outcome: "not_found", attempts: attempt + 1 };
+      if (r.status === 200) {
+        const b = await r.json().catch(() => ({} as any));
+        if (!b?.id || !b?.board_id) return { outcome: "not_found", attempts: attempt + 1 };
+        const pin_url = b?.link || `https://www.pinterest.com/pin/${pinId}/`;
+        return { outcome: "verified", pin_url, attempts: attempt + 1 };
+      }
+      const txt = await r.text().catch(() => "");
+      lastError = `${r.status}:${txt.slice(0, 120)}`;
+      if (!TRANSIENT_STATUSES.has(r.status) || attempt === MAX_ATTEMPTS - 1) {
+        return { outcome: "inaccessible", error: lastError, attempts: attempt + 1 };
+      }
+      await sleep(backoffDelay(attempt, r.headers.get("retry-after")));
+    } catch (e) {
+      // Network-level failures (DNS, TLS, abort) — always retryable.
+      lastError = (e as Error).message;
+      if (attempt === MAX_ATTEMPTS - 1) {
+        return { outcome: "inaccessible", error: lastError, attempts: attempt + 1 };
+      }
+      await sleep(backoffDelay(attempt, null));
+    }
+  }
+  return { outcome: "inaccessible", error: lastError, attempts: MAX_ATTEMPTS };
 }
 
 Deno.serve(async (req) => {
@@ -122,7 +159,7 @@ Deno.serve(async (req) => {
         error: r.error ?? null,
       });
     }
-    results.push({ id: j.id, outcome: r.outcome, pin_url: r.pin_url, current_status: prevStatus, next_status: nextStatus, would_correct: wouldCorrect });
+    results.push({ id: j.id, outcome: r.outcome, pin_url: r.pin_url, error: r.error, attempts: r.attempts, current_status: prevStatus, next_status: nextStatus, would_correct: wouldCorrect });
     await new Promise((rs) => setTimeout(rs, 80));
   }
 
