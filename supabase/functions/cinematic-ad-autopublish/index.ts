@@ -344,6 +344,14 @@ Deno.serve(async (req) => {
       results.push({ job_id: job.id, ok: false, reason: "hook_cooldown" });
       continue;
     }
+    // V3.1 content-type consecutive-repeat guard (no two pins in a row of the same type)
+    if (job.content_type && last2Types.has(job.content_type)) {
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `content_type_repeat(${job.content_type})`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "content_type_repeat" });
+      continue;
+    }
     // V3 quarantine match
     if (job.hook_archetype && qHooks.has(job.hook_archetype)) {
       results.push({ job_id: job.id, ok: false, reason: "quarantined_hook" }); continue;
