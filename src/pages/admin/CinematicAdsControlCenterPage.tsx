@@ -25,6 +25,7 @@ import OperatorPanel from "@/components/admin/cinematic/OperatorPanel";
 import VerifyPinsPanel from "@/components/admin/cinematic/VerifyPinsPanel";
 import PinterestQualityPanel from "@/components/admin/cinematic/PinterestQualityPanel";
 import PinterestContentEnginePanel from "@/components/admin/cinematic/PinterestContentEnginePanel";
+import BackgroundBatchPanel from "@/components/admin/cinematic/BackgroundBatchPanel";
 
 type Job = {
   id: string;
@@ -485,6 +486,8 @@ export default function CinematicAdsControlCenterPage() {
       <PinterestQualityPanel />
 
       <PinterestContentEnginePanel />
+
+      <BackgroundBatchPanel />
 
       <AutopilotHealthPanel />
 
