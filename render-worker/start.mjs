@@ -189,6 +189,36 @@ async function writeHeartbeat({ claimed = false, jobId = null } = {}) {
       const txt = await r.text().catch(() => "");
       log("warn", "heartbeat upsert non-2xx", { status: r.status, body: txt.slice(0, 200) });
     }
+    // Mirror to new render_worker_heartbeats truth table (idempotent upsert).
+    try {
+      await fetchWithRetry(
+        `${SUPABASE_URL}/rest/v1/render_worker_heartbeats?on_conflict=worker_id`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SERVICE_KEY,
+            Authorization: `Bearer ${SERVICE_KEY}`,
+            Prefer: "resolution=merge-duplicates,return=minimal",
+          },
+          body: JSON.stringify({
+            worker_id: WORKER_ID,
+            last_seen_at: nowIso,
+            queue_depth: state.queueDepth,
+            supabase_host: SUPABASE_HOST,
+            safe_mode: SAFE_MODE,
+            payload: {
+              bootPhase: state.bootPhase,
+              busy: state.busy,
+              currentJobId: state.currentJobId,
+              consecutiveFailures: state.consecutiveFailures,
+            },
+          }),
+        },
+        { timeoutMs: 5_000, retries: 1 },
+      );
+    } catch {}
+    state.lastHeartbeatAt = nowIso;
   } catch (e) {
     log("warn", "heartbeat upsert failed", { err: String(e?.message ?? e) });
   }
