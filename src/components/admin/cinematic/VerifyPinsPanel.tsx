@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, ShieldCheck, Download, RefreshCw } from "lucide-react";
+import { Loader2, ShieldCheck, Download, RefreshCw, FileJson } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -101,25 +101,91 @@ export default function VerifyPinsPanel() {
     }
   };
 
-  const downloadReport = () => {
-    if (!data) return;
-    const ts = (data.verified_at ?? new Date().toISOString()).replace(/[:.]/g, "-");
-    const header = ["job_id", "outcome", "current_status", "next_status", "would_correct", "pin_url", "error"];
-    const rows = data.results.map((r) =>
-      [r.id, r.outcome, r.current_status ?? "", r.next_status ?? "", r.would_correct ? "yes" : "no", r.pin_url ?? "", (r.error ?? "").replace(/"/g, '""')]
-        .map((v) => `"${v}"`)
-        .join(","),
-    );
-    const csv = [header.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  // Build a normalized record per pin so CSV and JSON share the exact same
+  // shape. Status-change columns are explicit (`job_status_before` →
+  // `job_status_after`) and `status_changed` is true when the verifier
+  // actually applied a transition (would_correct on the non-dryRun run).
+  const buildRecords = () => {
+    if (!data) return [];
+    const verifiedAt = data.verified_at ?? new Date().toISOString();
+    return data.results.map((r) => {
+      const before = r.current_status ?? null;
+      const after = r.next_status ?? before;
+      return {
+        job_id: r.id,
+        outcome: r.outcome,
+        job_status_before: before,
+        job_status_after: after,
+        status_changed: Boolean(r.would_correct),
+        verified_at: verifiedAt,
+        pin_url: r.pin_url ?? null,
+        error: r.error ?? null,
+      };
+    });
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `pinterest-verification-${ts}.csv`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const downloadCsv = () => {
+    const records = buildRecords();
+    if (!data || !records.length) return;
+    const ts = (data.verified_at ?? new Date().toISOString()).replace(/[:.]/g, "-");
+    const header = [
+      "job_id",
+      "outcome",
+      "job_status_before",
+      "job_status_after",
+      "status_changed",
+      "verified_at",
+      "pin_url",
+      "error",
+    ];
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const rows = records.map((r) =>
+      [
+        r.job_id,
+        r.outcome,
+        r.job_status_before ?? "",
+        r.job_status_after ?? "",
+        r.status_changed ? "yes" : "no",
+        r.verified_at,
+        r.pin_url ?? "",
+        r.error ?? "",
+      ]
+        .map(esc)
+        .join(","),
+    );
+    const csv = [header.join(","), ...rows].join("\n");
+    triggerDownload(
+      new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }),
+      `pinterest-verification-${ts}.csv`,
+    );
+  };
+
+  const downloadJson = () => {
+    const records = buildRecords();
+    if (!data || !records.length) return;
+    const verifiedAt = data.verified_at ?? new Date().toISOString();
+    const ts = verifiedAt.replace(/[:.]/g, "-");
+    const payload = {
+      verified_at: verifiedAt,
+      checked: data.checked,
+      corrections: data.corrections ?? records.filter((r) => r.status_changed).length,
+      pins: records,
+    };
+    triggerDownload(
+      new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
+      `pinterest-verification-${ts}.json`,
+    );
   };
 
   return (
@@ -142,8 +208,11 @@ export default function VerifyPinsPanel() {
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Preview corrections
           </Button>
-          <Button size="sm" variant="outline" onClick={downloadReport} disabled={!data?.results?.length}>
-            <Download className="mr-2 h-4 w-4" /> Download report
+          <Button size="sm" variant="outline" onClick={downloadCsv} disabled={!data?.results?.length}>
+            <Download className="mr-2 h-4 w-4" /> CSV
+          </Button>
+          <Button size="sm" variant="outline" onClick={downloadJson} disabled={!data?.results?.length}>
+            <FileJson className="mr-2 h-4 w-4" /> JSON
           </Button>
         </div>
       </CardHeader>
