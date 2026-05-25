@@ -23,6 +23,7 @@ import { CreativeDNAPanel } from "@/components/admin/cinematic/CreativeDNAPanel"
 import SystemTruthPanel from "@/components/admin/cinematic/SystemTruthPanel";
 import OperatorPanel from "@/components/admin/cinematic/OperatorPanel";
 import VerifyPinsPanel from "@/components/admin/cinematic/VerifyPinsPanel";
+import VerificationHistoryPanel from "@/components/admin/cinematic/VerificationHistoryPanel";
 import PinterestQualityPanel from "@/components/admin/cinematic/PinterestQualityPanel";
 import PinterestContentEnginePanel from "@/components/admin/cinematic/PinterestContentEnginePanel";
 import BackgroundBatchPanel from "@/components/admin/cinematic/BackgroundBatchPanel";
@@ -482,6 +483,7 @@ export default function CinematicAdsControlCenterPage() {
       <OperatorPanel />
 
       <VerifyPinsPanel />
+      <VerificationHistoryPanel />
 
       <PinterestQualityPanel />
 
