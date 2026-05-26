@@ -16,6 +16,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const expectedSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+  if (expectedSecret) {
+    const provided = req.headers.get("x-internal-secret") ?? "";
+    if (provided !== expectedSecret) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   try {
     const { orderId, customerEmail, customerName }: DeliveryNotificationRequest = await req.json();
 
