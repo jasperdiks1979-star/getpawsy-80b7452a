@@ -390,22 +390,6 @@ Deno.serve(async (req) => {
           await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
           return json({ ok: false, traceId, message: patch.status_message, rejected: true });
         }
-      } else if (false) {
-        const attempts = (job.render_attempts ?? 0);
-        const willRetry = attempts < MAX_ATTEMPTS;
-        patch.status = willRetry ? "render_queued" : "failed";
-        patch.error_message = `duration_overrun:${reportedDuration.toFixed(1)}s>${cap}s`;
-        patch.status_message = willRetry
-          ? `render rejected (duration ${reportedDuration.toFixed(1)}s > ${cap}s) — re-queued ${attempts}/${MAX_ATTEMPTS}`
-          : `render rejected (duration ${reportedDuration.toFixed(1)}s > ${cap}s) after ${attempts} attempts`;
-        if (body.duration != null) patch.output_duration_seconds = reportedDuration;
-        if (body.mp4_url) patch.output_mp4_url = String(body.mp4_url);
-        patch.duration_valid = false;
-        patch.validation_passed = false;
-        const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
-        if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
-        console.warn(`[webhook] ${traceId} rejected oversize mp4`, { jobId, reportedDuration, cap });
-        return json({ ok: true, traceId, message: patch.status_message, rejected: true });
       }
       patch.status = "render_complete";
       patch.rendered_at = new Date().toISOString();
