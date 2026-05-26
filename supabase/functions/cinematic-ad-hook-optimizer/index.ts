@@ -33,6 +33,7 @@ interface HookVariant {
   hook_type: HookType;
   predicted_ctr: number;
   predicted_ctr_rationale: string;
+  emotional_register?: string;
 }
 
 const SYSTEM_PROMPT = `You are a senior short-form video creative strategist for US TikTok and Pinterest pet brands.
@@ -91,6 +92,8 @@ Generate exactly 5 variants, one per archetype, in this order: curiosity, emotio
         hook_type: type as HookType,
         predicted_ctr: Math.max(0, Math.min(100, Number(v?.predicted_ctr ?? 50))),
         predicted_ctr_rationale: String(v?.predicted_ctr_rationale ?? "").slice(0, 280),
+        emotional_register: ["tender","surprise","relatable_pain","aspirational","funny"].includes(String(v?.emotional_register ?? ""))
+          ? String(v.emotional_register) : inferRegister(type as HookType),
       });
     }
     return valid.length === 5 ? valid : fallback(productName, valid);
@@ -163,6 +166,7 @@ Deno.serve(async (req) => {
             predicted_ctr_rationale: v.predicted_ctr_rationale,
             product_category: t.category,
             archived: false,
+            emotional_register: v.emotional_register ?? inferRegister(v.hook_type),
           }).eq("id", existing.id);
           updated++;
         } else {
@@ -173,6 +177,7 @@ Deno.serve(async (req) => {
             hook_type: v.hook_type,
             predicted_ctr: v.predicted_ctr,
             predicted_ctr_rationale: v.predicted_ctr_rationale,
+            emotional_register: v.emotional_register ?? inferRegister(v.hook_type),
           });
           inserted++;
         }
