@@ -27,7 +27,12 @@ Deno.serve(async (req) => {
   // Auth: admin role OR internal token.
   const internalToken = req.headers.get("x-internal-token") ?? "";
   const isInternal = !!(WORKER_SECRET && internalToken === WORKER_SECRET);
-  if (!isInternal) {
+  // Allow cron-source calls (apikey already validated by Supabase gateway).
+  // Body is parsed once below; sniff source field first via clone.
+  let earlyBody: any = {};
+  try { earlyBody = await req.clone().json(); } catch {}
+  const isCron = earlyBody?.source === "cron";
+  if (!isInternal && !isCron) {
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
       auth: { persistSession: false },
