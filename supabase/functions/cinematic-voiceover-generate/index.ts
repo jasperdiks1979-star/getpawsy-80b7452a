@@ -288,6 +288,12 @@ Deno.serve(async (req) => {
           trace_id: traceId,
           at,
         });
+        if (code === "invalid_api_key") {
+          await recordInvalidKeyAndMaybeAlert(
+            admin,
+            `${e.message} :: ${e.body.slice(0, 300)}`,
+          );
+        }
         return j(502, {
           ok: false,
           traceId,
