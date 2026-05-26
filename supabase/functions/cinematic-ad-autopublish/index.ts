@@ -67,6 +67,12 @@ Deno.serve(async (req) => {
   const motionMin = Number(cQa?.motion_score_min_threshold ?? 8);
   const catRequired = cQa?.category_match_required !== false;
   const safeRequired = cQa?.text_safe_area_required !== false;
+  // V4 gate: require validation_v4_passed when engine v4 is enabled.
+  const { data: v4Gate } = await admin
+    .from("cinematic_ad_settings")
+    .select("cinematic_v4_enabled")
+    .eq("id", true).maybeSingle();
+  const v4Enabled = v4Gate?.cinematic_v4_enabled !== false;
   // V3 PinterestQualityGateV2 — rate/diversity guards. Pulled from settings
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
@@ -440,6 +446,16 @@ Deno.serve(async (req) => {
     // V3 quarantine match
     if (job.hook_archetype && qHooks.has(job.hook_archetype)) {
       results.push({ job_id: job.id, ok: false, reason: "quarantined_hook" }); continue;
+    }
+    // V4 gate: hard-block any job that did not pass v4 validation (slideshow-feel,
+    // missing scene roles, low realism / camera motion / pacing).
+    if (v4Enabled && (job as any).validation_v4_passed === false) {
+      const reasons = Array.isArray((job as any).v4_reject_reasons) ? (job as any).v4_reject_reasons.join("|") : "v4_failed";
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `v4_reject:${String(reasons).slice(0, 180)}`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "v4_reject" });
+      continue;
     }
     if (job.overlay_text_hash && qOverlays.has(job.overlay_text_hash)) {
       results.push({ job_id: job.id, ok: false, reason: "quarantined_overlay" }); continue;

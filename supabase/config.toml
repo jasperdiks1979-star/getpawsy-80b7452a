@@ -3,6 +3,12 @@ project_id = "nojvgfbcjgipjxpfatmm"
 [functions.cj-dropshipping]
 verify_jwt = false
 
+[functions.cinematic-ad-hook-optimizer]
+verify_jwt = false
+
+[functions.cinematic-style-performance-rollup]
+verify_jwt = false
+
 [functions.sync-stock]
 verify_jwt = false
 

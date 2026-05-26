@@ -328,6 +328,104 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── V4 Native short-form scoring ──
+  // 1. scene_change_count from scene_plan
+  // 2. camera_motion_score = variance of motion types across the plan
+  // 3. engagement_pacing_score from pacing validator
+  // 4. realism_score: heuristic proxy (motion + diversity + non-static); if
+  //    a Gemini multimodal scorer is added later, swap this proxy out.
+  // 5. scene_roles required: hook+problem+benefit+cta
+  let v4Enabled = true, minCamMotion = 65, minRealism = 70, minPacing = 65;
+  let requiredRoles: string[] = ["hook", "problem", "benefit", "cta"];
+  let staticHoldMax = 60, hookChangeMax = 24, sceneMinV4 = 36, sceneMaxV4 = 60, piMax = 150;
+  try {
+    const { data: v4s } = await admin.from("cinematic_ad_settings")
+      .select("cinematic_v4_enabled, min_camera_motion_score, min_realism_score, min_engagement_pacing_score, required_scene_roles, static_hold_max_frames, hook_change_max_frames, scene_min_frames_v4, scene_max_frames_v4, pattern_interrupt_every_max_frames")
+      .eq("id", true).maybeSingle();
+    if (v4s) {
+      v4Enabled = v4s.cinematic_v4_enabled !== false;
+      minCamMotion = Number(v4s.min_camera_motion_score ?? minCamMotion);
+      minRealism = Number(v4s.min_realism_score ?? minRealism);
+      minPacing = Number(v4s.min_engagement_pacing_score ?? minPacing);
+      requiredRoles = Array.isArray(v4s.required_scene_roles) ? v4s.required_scene_roles as string[] : requiredRoles;
+      staticHoldMax = Number(v4s.static_hold_max_frames ?? staticHoldMax);
+      hookChangeMax = Number(v4s.hook_change_max_frames ?? hookChangeMax);
+      sceneMinV4 = Number(v4s.scene_min_frames_v4 ?? sceneMinV4);
+      sceneMaxV4 = Number(v4s.scene_max_frames_v4 ?? sceneMaxV4);
+      piMax = Number(v4s.pattern_interrupt_every_max_frames ?? piMax);
+    }
+  } catch (_) { /* defaults */ }
+
+  const plan: any[] = Array.isArray(job.scene_plan) ? job.scene_plan : [];
+  const scene_change_count = plan.length;
+
+  // camera_motion_score: distinct motions × 12 + zoom variance + crop diversity
+  const motionsSet = new Set(plan.map((s) => s?.motion).filter(Boolean));
+  const cropsSet = new Set(plan.map((s) => s?.crop).filter(Boolean));
+  const zooms = plan.map((s) => Number(s?.zoom ?? 1)).filter((z) => !Number.isNaN(z));
+  const zoomMean = zooms.reduce((a, z) => a + z, 0) / Math.max(1, zooms.length);
+  const zoomVar = zooms.reduce((a, z) => a + (z - zoomMean) ** 2, 0) / Math.max(1, zooms.length);
+  const camera_motion_score = Math.min(100, Math.round(
+    motionsSet.size * 12 + cropsSet.size * 6 + Math.min(40, zoomVar * 400) + Math.min(20, scene_change_count * 2),
+  ));
+
+  // engagement_pacing_score via pacing validator (inline-port; Remotion lib not callable from edge)
+  const firstDur = Number(plan[0]?.durationFrames ?? 9999);
+  const staticHoldMaxObs = plan.reduce((m, s) => Math.max(m, Number(s?.durationFrames ?? 0)), 0);
+  const rolesPresent = new Set((Array.isArray(job.scene_roles) ? job.scene_roles : []).map((r: any) => String(r)));
+  const missingRoles = requiredRoles.filter((r) => !rolesPresent.has(r));
+
+  const sceneCountScore = Math.min(100, (scene_change_count / 6) * 80);
+  const hookScore = firstDur <= hookChangeMax ? 100 : Math.max(0, 100 - (firstDur - hookChangeMax) * 5);
+  const staticScore = Math.max(0, 100 - Math.max(0, staticHoldMaxObs - staticHoldMax) * 2);
+  const roleScore = ((requiredRoles.length - missingRoles.length) / requiredRoles.length) * 100;
+  const engagement_pacing_score = Math.round(
+    sceneCountScore * 0.25 + hookScore * 0.25 + staticScore * 0.25 + roleScore * 0.25,
+  );
+
+  // realism_score: proxy = weighted combo of motion floor + diversity + non-static + creativeQuality
+  const realism_score = Math.round(
+    Math.min(100, motionVal * 6) * 0.3 +
+    camera_motion_score * 0.3 +
+    Math.min(100, scene_change_count * 12) * 0.2 +
+    creativeQuality * 0.2,
+  );
+
+  const v4_reject_reasons: string[] = [];
+  if (v4Enabled) {
+    if (missingRoles.length) v4_reject_reasons.push(`missing_scene_role:${missingRoles.join("|")}`);
+    if (camera_motion_score < minCamMotion) v4_reject_reasons.push(`camera_motion(${camera_motion_score}<${minCamMotion})`);
+    if (realism_score < minRealism) v4_reject_reasons.push(`realism(${realism_score}<${minRealism})`);
+    if (engagement_pacing_score < minPacing) v4_reject_reasons.push(`pacing(${engagement_pacing_score}<${minPacing})`);
+    if (staticHoldMaxObs > staticHoldMax * 1.5) v4_reject_reasons.push(`slideshow_feel(hold=${staticHoldMaxObs})`);
+  }
+  const validation_v4_passed = v4Enabled ? v4_reject_reasons.length === 0 : true;
+
+  report.checks.push({
+    name: "v4_camera_motion",
+    passed: camera_motion_score >= minCamMotion,
+    observed: camera_motion_score,
+    expected: `>= ${minCamMotion}`,
+  });
+  report.checks.push({
+    name: "v4_realism",
+    passed: realism_score >= minRealism,
+    observed: realism_score,
+    expected: `>= ${minRealism}`,
+  });
+  report.checks.push({
+    name: "v4_engagement_pacing",
+    passed: engagement_pacing_score >= minPacing,
+    observed: engagement_pacing_score,
+    expected: `>= ${minPacing}`,
+  });
+  report.checks.push({
+    name: "v4_scene_roles_complete",
+    passed: missingRoles.length === 0,
+    observed: missingRoles.length ? `missing: ${missingRoles.join(",")}` : "all present",
+    expected: requiredRoles.join("+"),
+  });
+
     const patch: Record<string, unknown> = {
       validation_report: report,
       motion_score: report.motion_score,
@@ -350,6 +448,12 @@ Deno.serve(async (req) => {
       retention_likelihood_score: v2.retention_likelihood,
       cta_clarity_score: v2.cta_clarity,
       scene_entropy_score: v2.scene_diversity,
+      scene_change_count,
+      camera_motion_score,
+      realism_score,
+      engagement_pacing_score,
+      validation_v4_passed,
+      v4_reject_reasons,
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.
@@ -360,9 +464,10 @@ Deno.serve(async (req) => {
     }
 
     // Flip status to 'creative_rejected' when any hard creative gate fails.
-    if (rejectReasons.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
+    const combinedRejects = [...rejectReasons, ...v4_reject_reasons];
+    if (combinedRejects.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
       patch.status = "creative_rejected";
-      patch.status_message = `creative rejected: ${rejectReasons.slice(0, 2).join(" ; ")}`;
+      patch.status_message = `creative rejected: ${combinedRejects.slice(0, 3).join(" ; ")}`;
     }
 
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);

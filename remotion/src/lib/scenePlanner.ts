@@ -40,6 +40,10 @@ export interface ScenePlanItem {
   isHook?: boolean;
   isCta?: boolean;
   hash: string;            // for uniqueness comparison
+  /** v4: explicit role for scene-structure enforcement. */
+  role?: 'hook' | 'problem' | 'benefit' | 'cta' | 'pattern_interrupt' | 'beat';
+  /** v4: pattern interrupt flag — whip pan / speed ramp / crop flip. */
+  isPatternInterrupt?: boolean;
 }
 
 export interface PacingConfig {
@@ -177,6 +181,108 @@ export function scoreDiversity(plan: ScenePlanItem[]): {
       100,
   );
   return { scene_entropy, motion_diversity };
+}
+
+/**
+ * V4 native short-form pacing validator. Returns scores + diagnostic flags.
+ * Rules (defaults — engine can override from cinematic_ad_settings):
+ *   - First cut must land within `hookChangeMaxFrames` (default 24 @ 30fps = 0.8s).
+ *   - No scene > `staticHoldMaxFrames` (default 60 = 2s) unless tagged isPatternInterrupt.
+ *   - At least one pattern_interrupt every `patternInterruptMaxFrames` (default 150 = 5s).
+ *   - Min scene count `minSceneCount` (default 6).
+ *   - All required roles present (default hook+problem+benefit+cta).
+ */
+export interface PacingValidationOpts {
+  hookChangeMaxFrames?: number;        // default 24
+  sceneMinFrames?: number;             // default 36
+  sceneMaxFrames?: number;             // default 60
+  staticHoldMaxFrames?: number;        // default 60
+  patternInterruptMaxFrames?: number;  // default 150
+  minSceneCount?: number;              // default 6
+  requiredRoles?: Array<'hook' | 'problem' | 'benefit' | 'cta'>;
+}
+
+export interface PacingValidationResult {
+  ok: boolean;
+  scene_change_count: number;
+  static_hold_max: number;
+  pattern_interrupt_gap_max: number;
+  engagement_pacing_score: number;     // 0-100
+  missing_roles: string[];
+  violations: string[];
+}
+
+export function validatePacing(plan: ScenePlanItem[], opts: PacingValidationOpts = {}): PacingValidationResult {
+  const hookMax = opts.hookChangeMaxFrames ?? 24;
+  const sceneMin = opts.sceneMinFrames ?? 36;
+  const sceneMax = opts.sceneMaxFrames ?? 60;
+  const staticMax = opts.staticHoldMaxFrames ?? 60;
+  const piMax = opts.patternInterruptMaxFrames ?? 150;
+  const minScenes = opts.minSceneCount ?? 6;
+  const requiredRoles = opts.requiredRoles ?? ['hook', 'problem', 'benefit', 'cta'];
+
+  const violations: string[] = [];
+  const scene_change_count = plan.length;
+
+  if (scene_change_count < minScenes) {
+    violations.push(`scene_count<${minScenes}(${scene_change_count})`);
+  }
+
+  // Hook cut check
+  const firstDur = plan[0]?.durationFrames ?? 9999;
+  if (firstDur > hookMax) violations.push(`hook_change_late(${firstDur}>${hookMax})`);
+
+  // Static hold + scene window
+  let static_hold_max = 0;
+  for (const s of plan) {
+    const d = s.durationFrames ?? 0;
+    if (d > static_hold_max) static_hold_max = d;
+    if (!s.isPatternInterrupt && d > staticMax) violations.push(`static_hold(${d}>${staticMax})`);
+    if (d < sceneMin && !s.isHook && !s.isPatternInterrupt) violations.push(`scene_too_short(${d}<${sceneMin})`);
+    if (d > sceneMax && !s.isPatternInterrupt) violations.push(`scene_too_long(${d}>${sceneMax})`);
+  }
+
+  // Pattern interrupt gap
+  let pattern_interrupt_gap_max = 0;
+  let runningFrames = 0;
+  let lastInterruptAt = 0;
+  for (const s of plan) {
+    runningFrames += s.durationFrames ?? 0;
+    if (s.isPatternInterrupt) {
+      const gap = runningFrames - lastInterruptAt;
+      if (gap > pattern_interrupt_gap_max) pattern_interrupt_gap_max = gap;
+      lastInterruptAt = runningFrames;
+    }
+  }
+  const tailGap = runningFrames - lastInterruptAt;
+  if (tailGap > pattern_interrupt_gap_max) pattern_interrupt_gap_max = tailGap;
+  if (pattern_interrupt_gap_max > piMax) violations.push(`pattern_interrupt_gap(${pattern_interrupt_gap_max}>${piMax})`);
+
+  // Role coverage
+  const roles = new Set(plan.map((s) => s.role).filter(Boolean) as string[]);
+  const missing_roles: string[] = [];
+  for (const r of requiredRoles) if (!roles.has(r)) missing_roles.push(r);
+  if (missing_roles.length) violations.push(`missing_roles:${missing_roles.join(",")}`);
+
+  // Engagement pacing score (0-100)
+  const sceneCountScore = Math.min(100, (scene_change_count / Math.max(minScenes, 6)) * 80);
+  const hookScore = firstDur <= hookMax ? 100 : Math.max(0, 100 - (firstDur - hookMax) * 5);
+  const staticScore = Math.max(0, 100 - Math.max(0, static_hold_max - staticMax) * 2);
+  const piScore = Math.max(0, 100 - Math.max(0, pattern_interrupt_gap_max - piMax) * 0.7);
+  const roleScore = ((requiredRoles.length - missing_roles.length) / requiredRoles.length) * 100;
+  const engagement_pacing_score = Math.round(
+    sceneCountScore * 0.2 + hookScore * 0.25 + staticScore * 0.2 + piScore * 0.15 + roleScore * 0.2,
+  );
+
+  return {
+    ok: violations.length === 0,
+    scene_change_count,
+    static_hold_max,
+    pattern_interrupt_gap_max,
+    engagement_pacing_score,
+    missing_roles,
+    violations,
+  };
 }
 
 /**

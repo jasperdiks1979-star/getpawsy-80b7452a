@@ -1,113 +1,136 @@
-# Pinterest AI Analytics & Optimization Engine
+# Native Short-Form Video Upgrade (v4)
 
-A self-learning growth system that ingests Pinterest performance + GA4 + order data, scores winners/losers per category and creative axis, and feeds the publisher with trend-aware, attribution-backed decisions.
+Goal: lift the cinematic ad engine from "AI slideshow" feel to native TikTok/Pinterest pet-creator quality. Layer on top of v3 (autopublish, storyboard, safe-area, QA floor 55) without weakening existing gates.
 
-## Scope & sequencing
+---
 
-This is a large build. I'll deliver in **4 phases**, each independently shippable. After each phase you can pause, inspect, or redirect. Estimated 8–12 migrations + 10 edge functions + 1 admin route with 6 panels.
+## 1. Engine version bump → v4
 
-```text
-Phase 1  Data layer + metrics ingestion
-Phase 2  Winner/loser engine + auto-cloning
-Phase 3  Trends, competitor intel, dynamic scheduling
-Phase 4  Executive dashboard + attribution + safety
-```
+Add `engine_version='v4'` default in `cinematic_ad_settings` with new tunables:
+- `hook_change_max_frames` (24 @ 30fps = 0.8s)
+- `scene_min_frames`/`scene_max_frames` (36–60 = 1.2–2.0s)
+- `static_hold_max_frames` (60 = 2s hard cap)
+- `pattern_interrupt_every_frames` (90–150 = 3–5s)
+- `min_scene_count` (6), `required_scene_roles` (`['hook','problem','benefit','cta']`)
+- `min_camera_motion_score`, `min_realism_score`, `min_engagement_pacing_score` (defaults 65/70/65)
+- `human_realism_required` (bool), `human_realism_min` (70)
 
-## Phase 1 — Data foundation
+## 2. Native pacing engine
 
-**New tables (all admin-RLS):**
-- `pinterest_analytics_daily` — `(pin_id, day, impressions, outbound_clicks, saves, pin_clicks, video_views, ctr, engagement_rate, quality_score)` — daily snapshots from Pinterest Analytics API.
-- `pinterest_pin_dimensions` — denormalized lookup `(pin_id, asset_id, product_slug, category_key, hook_variant, copy_variant, cta_variant, niche_key, board_id, published_at)` — single join target for all analytics queries.
-- `pinterest_category_benchmarks` — rolling 14d/30d averages per `category_key` (CTR, save rate, engagement) used as thresholds.
-- `pinterest_pin_verdicts` — `(pin_id, verdict 'winner'|'loser'|'neutral', reason, scored_at, action_taken)` — append-only audit of every classification.
+Extend `remotion/src/lib/scenePlanner.ts`:
+- Enforce first-cut ≤ 24 frames (hook swap).
+- Per-scene duration sampled 36–60 frames; no scene > 60 unless tagged `pattern_interrupt_hold` (max 90).
+- Inject `pattern_interrupt` every 3–5s: whip-pan, speed-ramp, crop-flip, or flash-cut.
+- New `validatePacing(plan)` returns scores: `scene_change_count`, `engagement_pacing_score`, `static_hold_max`.
+
+## 3. Real camera simulation
+
+New `remotion/src/lib/cameraSim.ts`:
+- `HandheldMicroMotion` (sub-pixel jitter via `noise2D(frame)`).
+- `PushInZoom`, `RackFocusSim` (CSS `filter: blur()` ramp on bg layer), `ParallaxStack` (already exists in `viralShared`).
+- `WhipPan`, `SpeedRamp`, `CinematicCrop` transitions.
+- `LightingShift` overlay (color-grade gradient lerp).
+Apply via scene `camera_track` field on each `ScenePlanItem`.
+
+## 4. Scene structure enforcement
+
+In `cinematic-ad-storyboard`:
+- Force LLM output to include the 4 roles `hook|problem|benefit|cta`.
+- Persist `scene_roles[]` on `cinematic_ad_jobs`.
+- `cinematic-ad-validate` rejects with `reason='missing_scene_role:<role>'` if any required role absent.
+
+## 5. Motion realism scoring
+
+Extend `cinematic-ad-validate`:
+- `scene_change_count` (from plan).
+- `camera_motion_score` (variance of frame-diff hashes across 0/15/30/45/60/75/90).
+- `realism_score` (Gemini multimodal: 6-frame grid → "rate as native TikTok 0-100, flag slideshow/static/fake-loop/frozen-human").
+- `engagement_pacing_score` (pacing validator).
+- Reject if any below floor → `creative_reject_reason='slideshow_feel'|'static_motion'|'fake_loop'|'frozen_subject'`.
+
+## 6. Human realism gate
+
+When `has_human_subject=true` (detected via Gemini classifier on frame 30):
+- Run blink/sway/breath check: sample 5 frames, compute `mediapipe`-style landmark drift via Gemini ("is this human alive 0-100, list mannequin/uncanny flags").
+- Reject < `human_realism_min`.
+- Store `human_flags[]` (frozen_eyes, no_blink, mannequin_pose, uncanny).
+
+## 7. Overlay animation polish
+
+Update `remotion/src/lib/overlay.ts`:
+- All text uses `spring()` fade+slide (12-frame in, 8-frame out), never opacity-pop.
+- Overlay sync: caption changes must land within 4 frames of a scene cut (validator check).
+- Bounding-box check vs detected product focal box (`focal_bbox` on job) — overlays must stay outside.
+
+## 8. Pinterest-native style presets
+
+Seed `cinematic_ad_style_presets` with 6 new presets:
+- `emotional_pet_owner`, `satisfying_cleaning`, `luxury_pet_lifestyle`, `cozy_indoor_cat`, `problem_solution`, `funny_relatable_pet`.
+Each preset = pacing config + camera_tracks pool + color grade + caption style + music_mood tag. Niche detector picks default per product category.
+
+## 9. Hook optimization
+
+New edge `cinematic-ad-hook-optimizer`:
+- Generates 5 hook variants per product across types: `curiosity`, `emotional`, `transformation`, `problem_solution`, `authority_social_proof`.
+- Predicts CTR via Lovable AI scorer trained on `cinematic_pin_performance` (prompt-based, top-k examples retrieval).
+- Stores in `cinematic_hook_variants` table; storyboard picks top-scored not in `hook_cooldown_days`.
+
+## 10. Render QA preview grid
+
+New action `qa_preview` in `cinematic-ad-validate`:
+- Use ffmpeg to extract frames 1/30/60/90/last → 3x2 PNG grid → upload to `cinematic-qa/{job_id}.png`.
+- Run Gemini grid check: text overflow, awkward pose, blur, contrast, dead frame, duplicate frame.
+- Persist `qa_preview_url`, `qa_preview_flags[]`. Hard-block publish on any flag.
+
+## 11. Metrics feedback loop
+
+Cron `cinematic-style-performance-rollup` (daily 05:30 UTC):
+- Joins `cinematic_pin_performance` × `cinematic_ad_jobs.style_preset` × `hook_variant_id`.
+- Computes 14d rolling CTR/save/hold/completion per (preset, hook_type, niche).
+- Writes `cinematic_style_weights` (used by storyboard's preset+hook picker via epsilon-greedy).
+- Auto-suppresses presets with bottom-quartile composite for `style_suppression_days=7`.
+
+## 12. Affected files / migrations
 
 **New edge functions:**
-- `pinterest-analytics-sync` — pulls `/v5/pin_analytics` for last 7 days, upserts `pinterest_analytics_daily`, refreshes `pinterest_pin_dimensions` from `pinterest_video_queue` + `pinterest_pin_queue`.
-- `pinterest-benchmarks-rollup` — refreshes `pinterest_category_benchmarks` (14d window, min 30 pins per category).
+- `cinematic-ad-hook-optimizer`
+- `cinematic-style-performance-rollup`
 
-**Cron:** analytics-sync hourly, benchmarks-rollup every 6h.
+**Edited edge functions:**
+- `cinematic-ad-storyboard` (4-role enforcement, hook picker)
+- `cinematic-ad-validate` (motion scores, human realism, qa_preview action)
+- `cinematic-ad-autopublish` (new gates: realism, pacing, qa_preview_flags empty)
+- `_shared/pinterest-video-meta.ts` (overlay sync helper)
 
-## Phase 2 — Self-learning winner/loser engine
+**Edited Remotion code:**
+- `remotion/src/lib/scenePlanner.ts` (pacing rules)
+- `remotion/src/lib/cameraSim.ts` (new)
+- `remotion/src/lib/overlay.ts` (new/extend)
+- `remotion/src/MainVideo.tsx` (apply camera tracks + lighting shift)
 
-**New edge functions:**
-- `pinterest-winner-detector` — for each pin with impressions ≥1000: compare CTR vs category benchmark, saves vs threshold. Writes verdict to `pinterest_pin_verdicts`. On `winner`: enqueue 3 variant drafts via existing `pinterest-video-clone-top-performers` + raises `priority` on `pinterest_video_queue`. On `loser`: sets `archived=true`, blocks future cloning (`pinterest_loser_blocklist`).
-- Extend `pinterest_video_queue` with `priority int default 50`, `archived bool default false`, `winner_score numeric`.
-- Update existing `pinterest-video-publisher` to ORDER BY `priority desc, created_at asc` and skip `archived=true`.
+**Migrations:**
+- v4 settings + scoring columns on `cinematic_ad_jobs` (`scene_change_count`, `camera_motion_score`, `realism_score`, `engagement_pacing_score`, `scene_roles`, `human_flags`, `qa_preview_url`, `qa_preview_flags`, `focal_bbox`, `style_preset`, `hook_variant_id`).
+- New tables: `cinematic_hook_variants`, `cinematic_style_weights`.
+- Seed 6 new style presets in `cinematic_ad_style_presets`.
 
-**Cron:** winner-detector every 2h.
+**Crons:**
+- `cinematic-style-performance-rollup` daily 05:30 UTC.
+- `cinematic-ad-hook-optimizer` daily 03:30 UTC (refreshes hook bank per active product).
 
-## Phase 3 — Trends + competitor intel + dynamic scheduling
+## 13. Backward compatibility
 
-**New tables:**
-- `pinterest_trend_signals` — `(keyword, source 'pinterest_trends'|'seasonal'|'viral', strength, valid_from, valid_to, category_key)`.
-- `pinterest_competitor_pins` — periodic scrape sample: `(pin_external_id, title, description, save_rate_est, visual_hash, pattern_tags[])` used as inspiration tokens for the creative director.
-- `pinterest_posting_windows` — per `(category_key, timezone)` best hours rolled up from `pinterest_analytics_daily` engagement by hour-of-day.
+All v4 columns nullable with defaults. `engine_version` switch — v3 jobs still validate against v3 gates; new jobs default to v4. Feature flag `cinematic_v4_enabled` in settings allows instant rollback.
 
-**New edge functions:**
-- `pinterest-trend-harvester` — fetches Pinterest Trends API (where available) + a curated US holiday calendar + seasonal pet topics (summer cooling, winter coats, etc.). Writes to `pinterest_trend_signals`.
-- `pinterest-competitor-scan` — uses existing Firecrawl/websearch + a vetted list of top US pet pinners; classifies hooks/CTAs with `google/gemini-3-flash-preview`.
-- `pinterest-schedule-optimizer` — rolls up engagement by hour × timezone, populates `pinterest_posting_windows`. The publisher then dequeues only when current time falls inside a top window for the pin's target timezone.
+## 14. Rollout
 
-**Cron:** trend-harvester daily 04:00, competitor-scan daily 05:00, schedule-optimizer daily 06:00.
+1. Migration + seed presets.
+2. Ship Remotion `cameraSim` + scene planner upgrade (no behavior change until v4 flag flips).
+3. Ship hook-optimizer + storyboard 4-role enforcement.
+4. Ship validate scoring + qa_preview.
+5. Ship autopublish gates.
+6. Flip `cinematic_v4_enabled=true`; monitor 24h; flip back if reject-rate > 60%.
 
-## Phase 4 — Attribution, executive dashboard, safety
+## Out of scope (this pass)
 
-**Attribution (extends existing `pinterest_attribution_sessions` + `pinterest_capi_outbox`):**
-- New view `pinterest_revenue_attribution` joining `pinterest_attribution_sessions` → `orders` on `session_key` → first-touch pin → revenue. Stored as a security-definer function for admin-only reads.
-- New table `pinterest_funnel_events` capturing view/atc/checkout/purchase per pin_id for funnel math.
-
-**Safety systems:**
-- `pinterest_publish_governor` — single-row config: `max_pins_per_hour`, `max_per_board_per_day`, `cooldown_minutes_per_product`, `trust_score`.
-- Publisher pre-flight check enforces these + dedups by visual hash (already in `pinterest-queue-visual-duplicate-guard` memory).
-- `pinterest-domain-health-check` cron pings `https://getpawsy.pet` + Pinterest pin sample; writes trust_score 0–100.
-
-**Executive dashboard — `/admin/pinterest-intelligence`:**
-Lazy-loaded route, 6 panels:
-1. **Headline KPIs** — impressions, outbound clicks, saves, CTR, est. revenue (last 7d vs prior 7d).
-2. **Category leaderboard** — cat litter / catio / dog bed / pet tech / toys: CTR, saves, revenue, ROAS estimate.
-3. **Hook × Copy × CTA matrix** — heatmap of variants by CTR.
-4. **Winners & losers feed** — latest verdicts with one-click "republish 3 variants" or "archive permanently".
-5. **Best publishing windows** — heatmap hour × timezone.
-6. **Trend radar + competitor patterns** — signals expiring soon, dominant competitor hook archetypes.
-
-All panels query views/RPCs; no client-side joins of >1k rows.
-
-## Cron schedule plan
-
-```text
-hourly        pinterest-analytics-sync
-every  2h     pinterest-winner-detector
-every  6h     pinterest-benchmarks-rollup
-daily 04:00   pinterest-trend-harvester
-daily 05:00   pinterest-competitor-scan
-daily 06:00   pinterest-schedule-optimizer
-daily 06:30   pinterest-domain-health-check
-```
-
-## Affected/new files (high level)
-
-**New migrations** (~6, one per phase + indexes/views).
-**New edge functions** (8): analytics-sync, benchmarks-rollup, winner-detector, trend-harvester, competitor-scan, schedule-optimizer, domain-health-check, intelligence-api.
-**Edited:** `pinterest-video-publisher` (priority + window gating + governor), `pinterest-video-clone-top-performers` (uses verdicts table), `supabase/config.toml`.
-**New admin UI:** `src/pages/admin/PinterestIntelligence.tsx` + 6 panel components under `src/components/admin/pinterest-intel/`, route registered in `src/App.tsx`.
-
-## Migration plan
-
-1. Phase 1 migration → deploy 2 functions → schedule crons → wait one cycle, verify data flowing.
-2. Phase 2 migration → deploy detector → manually run once on backfill → review verdicts before enabling auto-clone.
-3. Phase 3 migration → deploy 3 functions + crons.
-4. Phase 4 migration + dashboard ships last (read-only on already-populated tables).
-
-## Future scaling recommendations
-
-- Move `pinterest_analytics_daily` to monthly partitions once >1M rows.
-- Swap the Gemini classifier for a fine-tuned embedding model once we have >10k labeled pins.
-- Add a Pinterest Ads bridge so the same winner signal drives paid amplification automatically (requires Pinterest Ads API key — out of scope here).
-- Cross-channel: feed the same winner verdicts into TikTok queue scoring for unified creative DNA.
-
-## What I need from you before building
-
-This is ~2–3 hours of build time across migrations, functions, and UI. Two quick decisions:
-
-1. **Start with all 4 phases**, or ship Phase 1+2 first and review before Phase 3+4?
-2. **Pinterest Trends API:** the official endpoint is gated. OK to fall back to a curated seasonal calendar + competitor-derived trending terms if the API isn't accessible?
+- Music/SFX (placeholder field reserved on presets).
+- TikTok-side analytics ingestion (Pinterest only for now per current memory: TikTok organic-only).

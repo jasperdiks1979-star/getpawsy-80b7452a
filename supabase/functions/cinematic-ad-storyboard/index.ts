@@ -200,6 +200,7 @@ Deno.serve(async (req) => {
         hook_variants: storyboard.hookVariants as any,
         hook_text: storyboard.selectedHook.text,
         hook_type: storyboard.hookType,
+        scene_roles: deriveSceneRoles(storyboard) as any,
       })
       .eq("id", jobId);
     if (updErr) return json(500, { ok: false, traceId, message: updErr.message });
@@ -209,3 +210,27 @@ Deno.serve(async (req) => {
     return json(500, { ok: false, traceId, message: e instanceof Error ? e.message : String(e) });
   }
 });
+
+/**
+ * V4: derive the four required short-form scene roles (hook|problem|benefit|cta)
+ * from the existing 7-beat storyboard so cinematic-ad-validate can enforce
+ * scene-structure coverage. Maps HOOK→hook, PROBLEM/EMOTION→problem,
+ * FEATURE/BENEFIT/PROOF→benefit, CTA→cta.
+ */
+function deriveSceneRoles(sb: Storyboard): string[] {
+  const map: Record<string, string> = {
+    HOOK: "hook",
+    PROBLEM: "problem",
+    EMOTION: "problem",
+    FEATURE: "benefit",
+    BENEFIT: "benefit",
+    PROOF: "benefit",
+    CTA: "cta",
+  };
+  const seen = new Set<string>();
+  for (const s of sb.scenes ?? []) {
+    const r = map[String(s.role ?? "").toUpperCase()];
+    if (r) seen.add(r);
+  }
+  return Array.from(seen);
+}
