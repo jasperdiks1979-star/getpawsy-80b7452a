@@ -426,6 +426,96 @@ Deno.serve(async (req) => {
     expected: requiredRoles.join("+"),
   });
 
+  // ── V5 Native Human UGC scoring ──
+  // Layered ON TOP of v4 — never weakens existing gates.
+  let v5Enabled = true;
+  let minMotionEntropy = 6, minRealismConsistency = 7, minUgcAuth = 7;
+  let minEmotionalArc = 6, minThumbStop = 7;
+  let humanPresenceRatioMin = 0.5, sceneChangeMinV5 = 4, banShowroom = true;
+  let staticHoldMaxV5 = 54;
+  try {
+    const { data: v5s } = await admin.from("cinematic_ad_settings")
+      .select("cinematic_v5_enabled, min_motion_entropy, min_realism_consistency, min_ugc_authenticity, min_emotional_arc, min_thumb_stop_score, human_presence_required_ratio, scene_change_min_v5, ban_showroom, max_static_duration_frames_v5")
+      .eq("id", true).maybeSingle();
+    if (v5s) {
+      v5Enabled = v5s.cinematic_v5_enabled !== false;
+      minMotionEntropy = Number(v5s.min_motion_entropy ?? minMotionEntropy);
+      minRealismConsistency = Number(v5s.min_realism_consistency ?? minRealismConsistency);
+      minUgcAuth = Number(v5s.min_ugc_authenticity ?? minUgcAuth);
+      minEmotionalArc = Number(v5s.min_emotional_arc ?? minEmotionalArc);
+      minThumbStop = Number(v5s.min_thumb_stop_score ?? minThumbStop);
+      humanPresenceRatioMin = Number(v5s.human_presence_required_ratio ?? humanPresenceRatioMin);
+      sceneChangeMinV5 = Number(v5s.scene_change_min_v5 ?? sceneChangeMinV5);
+      banShowroom = v5s.ban_showroom !== false;
+      staticHoldMaxV5 = Number(v5s.max_static_duration_frames_v5 ?? staticHoldMaxV5);
+    }
+  } catch (_) { /* defaults */ }
+
+  const beatsV5: any[] = Array.isArray((job as any).beats_v5) ? (job as any).beats_v5 : [];
+
+  // motion_entropy_score: blends camera_motion variance + crop/motion type
+  // diversity into a 0-10 scale. Cheap, deterministic, no extra LLM calls.
+  const motion_entropy_score = Math.min(10, Math.round(
+    (motionsSet.size * 1.4 + cropsSet.size * 1.0 + Math.min(3, scene_change_count / 3) + Math.min(2, zoomVar * 10)) * 0.85,
+  ));
+
+  // realism_consistency_score: proxy on motion+composite scores until a
+  // Gemini multimodal scorer is added — high motion + high creative quality
+  // implies consistent realistic capture.
+  const realism_consistency_score = Math.min(10, Math.round((motionVal * 0.5 + creativeQuality / 12)));
+
+  // ugc_authenticity_score: penalises showroom-style flags + high uniformity
+  // (low scene/motion diversity reads as "rendered" rather than "captured").
+  const envFlagsV5: string[] = [];
+  const captionStr = `${String(job.hook_text ?? "")} ${String(job.pin_title ?? "")} ${String(job.pin_description ?? "")}`.toLowerCase();
+  if (banShowroom) {
+    if (/showroom|studio|magazine|sterile/.test(captionStr)) envFlagsV5.push("showroom_copy");
+  }
+  if (motionsSet.size <= 1) envFlagsV5.push("low_motion_variety");
+  if (cropsSet.size <= 1) envFlagsV5.push("uniform_framing");
+  const ugc_authenticity_score = Math.max(0, Math.min(10,
+    Math.round(8 - envFlagsV5.length * 1.5 + (motionsSet.size > 2 ? 1 : 0) + (camera_motion_score > 70 ? 1 : 0)),
+  ));
+
+  // emotional_arc_score from beats valence escalation (tension→relief).
+  const valences = beatsV5.map((b) => Number(b?.valence ?? 60));
+  const peakIdx = valences.indexOf(Math.max(...valences));
+  const endValence = valences[valences.length - 1] ?? 60;
+  const hasEscalation = valences.length >= 4 && peakIdx > 0 && endValence >= 70;
+  const emotional_arc_score = Math.max(0, Math.min(10,
+    Math.round((hasEscalation ? 8 : 5) + (valences.length >= 6 ? 1 : 0) + (endValence >= 90 ? 1 : 0)),
+  ));
+
+  // thumb_stop_score: blends hook_strength + visual_energy + contrast proxy.
+  const thumb_stop_score = Math.max(0, Math.min(10, Math.round(
+    (v2.hook_strength * 0.04) + (v2.visual_energy * 0.03) + (v2.caption_visibility * 0.02) + 1,
+  )));
+
+  // human_presence_ratio
+  const humanBeats = beatsV5.filter((b) => b?.human_presence === true).length;
+  const human_presence_ratio = beatsV5.length > 0 ? +(humanBeats / beatsV5.length).toFixed(2) : 0;
+
+  const v5_reject_reasons: string[] = [];
+  if (v5Enabled) {
+    if (beatsV5.length > 0 && beatsV5.length < sceneChangeMinV5) v5_reject_reasons.push(`scene_change_count(${beatsV5.length}<${sceneChangeMinV5})`);
+    if (motion_entropy_score < minMotionEntropy) v5_reject_reasons.push(`motion_entropy(${motion_entropy_score}<${minMotionEntropy})`);
+    if (realism_consistency_score < minRealismConsistency) v5_reject_reasons.push(`realism_consistency(${realism_consistency_score}<${minRealismConsistency})`);
+    if (ugc_authenticity_score < minUgcAuth) v5_reject_reasons.push(`ugc_authenticity(${ugc_authenticity_score}<${minUgcAuth})`);
+    if (emotional_arc_score < minEmotionalArc) v5_reject_reasons.push(`emotional_arc(${emotional_arc_score}<${minEmotionalArc})`);
+    if (thumb_stop_score < minThumbStop) v5_reject_reasons.push(`thumb_stop(${thumb_stop_score}<${minThumbStop})`);
+    if (beatsV5.length > 0 && human_presence_ratio < humanPresenceRatioMin) v5_reject_reasons.push(`human_presence(${human_presence_ratio}<${humanPresenceRatioMin})`);
+    if (staticHoldMaxObs > staticHoldMaxV5 * 1.5) v5_reject_reasons.push(`static_hold(${staticHoldMaxObs}>${staticHoldMaxV5})`);
+    if (banShowroom && envFlagsV5.includes("showroom_copy")) v5_reject_reasons.push("showroom_copy");
+  }
+  const validation_v5_passed = v5Enabled ? v5_reject_reasons.length === 0 : true;
+
+  report.checks.push({ name: "v5_motion_entropy", passed: motion_entropy_score >= minMotionEntropy, observed: motion_entropy_score, expected: `>= ${minMotionEntropy}` });
+  report.checks.push({ name: "v5_realism_consistency", passed: realism_consistency_score >= minRealismConsistency, observed: realism_consistency_score, expected: `>= ${minRealismConsistency}` });
+  report.checks.push({ name: "v5_ugc_authenticity", passed: ugc_authenticity_score >= minUgcAuth, observed: ugc_authenticity_score, expected: `>= ${minUgcAuth}` });
+  report.checks.push({ name: "v5_emotional_arc", passed: emotional_arc_score >= minEmotionalArc, observed: emotional_arc_score, expected: `>= ${minEmotionalArc}` });
+  report.checks.push({ name: "v5_thumb_stop", passed: thumb_stop_score >= minThumbStop, observed: thumb_stop_score, expected: `>= ${minThumbStop}` });
+  report.checks.push({ name: "v5_human_presence", passed: beatsV5.length === 0 || human_presence_ratio >= humanPresenceRatioMin, observed: human_presence_ratio, expected: `>= ${humanPresenceRatioMin}` });
+
     const patch: Record<string, unknown> = {
       validation_report: report,
       motion_score: report.motion_score,
@@ -454,6 +544,15 @@ Deno.serve(async (req) => {
       engagement_pacing_score,
       validation_v4_passed,
       v4_reject_reasons,
+      motion_entropy_score,
+      realism_consistency_score,
+      ugc_authenticity_score,
+      emotional_arc_score,
+      thumb_stop_score,
+      human_presence_ratio,
+      environment_flags: envFlagsV5,
+      validation_v5_passed,
+      v5_reject_reasons,
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.
@@ -464,7 +563,7 @@ Deno.serve(async (req) => {
     }
 
     // Flip status to 'creative_rejected' when any hard creative gate fails.
-    const combinedRejects = [...rejectReasons, ...v4_reject_reasons];
+    const combinedRejects = [...rejectReasons, ...v4_reject_reasons, ...v5_reject_reasons];
     if (combinedRejects.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
       patch.status = "creative_rejected";
       patch.status_message = `creative rejected: ${combinedRejects.slice(0, 3).join(" ; ")}`;
