@@ -23,9 +23,58 @@ import {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+const GH_PAT = Deno.env.get("GH_PAT") ?? "";
+const GH_REPO = Deno.env.get("GH_REPO") ?? "";
+const TRIM_WORKFLOW_FILE = Deno.env.get("TRIM_WORKFLOW_FILE") ?? "trim-cinematic-ad.yml";
+const GH_REF = Deno.env.get("GH_REF") ?? "main";
 
 const MAX_ATTEMPTS = 2;
 const MAX_PUBLISH_ATTEMPTS = 3;
+
+/**
+ * Dispatch the trim-cinematic-ad GitHub Actions workflow. The workflow
+ * downloads the oversize MP4, runs ffmpeg to clamp to target_seconds,
+ * uploads the trimmed asset back to storage, and POSTs a follow-up call
+ * to this webhook with duration_auto_trimmed=true.
+ */
+async function dispatchTrimWorkflow(
+  jobId: string,
+  mp4Url: string,
+  targetSec: number,
+  renderToken: string | null,
+  traceId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (!GH_PAT || !GH_REPO) {
+    return { ok: false, message: "GH_PAT/GH_REPO not configured — cannot auto-trim" };
+  }
+  const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${TRIM_WORKFLOW_FILE}/dispatches`;
+  const payload = {
+    ref: GH_REF,
+    inputs: {
+      job_id: jobId,
+      mp4_url: mp4Url,
+      target_seconds: String(targetSec),
+      render_token: renderToken ?? "",
+    },
+  };
+  console.log(`[auto-trim] ${traceId} dispatching trim workflow`, { jobId, mp4Url, targetSec });
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GH_PAT}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    console.error(`[auto-trim] ${traceId} dispatch failed`, { status: res.status, body: txt.slice(0, 400) });
+    return { ok: false, message: `gh dispatch ${res.status}: ${txt.slice(0, 200)}` };
+  }
+  return { ok: true };
+}
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
 function json(obj: unknown, status = 200) {
@@ -256,9 +305,92 @@ Deno.serve(async (req) => {
       // than DURATION_OVERRUN_SLACK_SEC. Pinterest/TikTok reject these and
       // we will not pay to publish them.
       const presetForJob = getPreset(job.preset);
-      const cap = Math.min(presetForJob.durationSec, HARD_MAX_DURATION_SEC) + DURATION_OVERRUN_SLACK_SEC;
+      const targetDuration = Math.min(presetForJob.durationSec, HARD_MAX_DURATION_SEC);
+      const cap = targetDuration + DURATION_OVERRUN_SLACK_SEC;
       const reportedDuration = Number(body.duration ?? job.output_duration_seconds ?? 0);
-      if (Number.isFinite(reportedDuration) && reportedDuration > cap) {
+      const isTrimmedCallback = Boolean(body.duration_auto_trimmed);
+      if (Number.isFinite(reportedDuration) && reportedDuration > cap && !isTrimmedCallback) {
+        // ----- Emergency server-side ffmpeg clamp -----
+        // Instead of hard-failing, dispatch a GH Actions worker that downloads
+        // the oversize MP4, trims to HARD_MAX_DURATION_SEC, re-uploads, and
+        // calls this webhook back with duration_auto_trimmed=true.
+        const incomingMp4 = String(body.mp4_url ?? job.output_mp4_url ?? "");
+        console.warn(`[auto-trim] ${traceId} oversize detected`, {
+          jobId,
+          original_duration: reportedDuration,
+          target_duration: targetDuration,
+          trim_applied: false,
+          ffmpeg_exit_code: null,
+        });
+        if (!incomingMp4) {
+          patch.status = "failed";
+          patch.error_message = `duration_overrun_no_mp4:${reportedDuration.toFixed(1)}s>${cap}s`;
+          patch.status_message = "auto-trim impossible: no mp4_url on payload";
+          patch.duration_valid = false;
+          patch.validation_passed = false;
+          await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
+          return json({ ok: false, traceId, message: patch.status_message }, 500);
+        }
+        const dispatch = await dispatchTrimWorkflow(jobId, incomingMp4, targetDuration, job.render_token ?? null, traceId);
+        if (!dispatch.ok) {
+          // Trim dispatch itself failed — only now do we hard-fail.
+          const attempts = (job.render_attempts ?? 0);
+          patch.status = "failed";
+          patch.error_message = `auto_trim_dispatch_failed:${dispatch.message}`;
+          patch.status_message = `auto-trim could not be scheduled (${dispatch.message})`;
+          patch.original_duration_seconds = reportedDuration;
+          patch.trim_attempted_at = new Date().toISOString();
+          patch.output_mp4_url = incomingMp4;
+          patch.output_duration_seconds = reportedDuration;
+          patch.duration_valid = false;
+          patch.validation_passed = false;
+          await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
+          console.error(`[auto-trim] ${traceId} dispatch failed; marking job failed`, { jobId, attempts });
+          return json({ ok: false, traceId, message: patch.status_message, rejected: true }, 500);
+        }
+        // Dispatched OK — park the job in 'trimming' until the callback fires.
+        patch.status = "trimming";
+        patch.status_message = `auto-trim dispatched (${reportedDuration.toFixed(1)}s → ${targetDuration}s)`;
+        patch.original_duration_seconds = reportedDuration;
+        patch.output_duration_seconds = reportedDuration;
+        patch.output_mp4_url = incomingMp4;
+        patch.trim_attempted_at = new Date().toISOString();
+        patch.error_message = null;
+        await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
+        console.log(`[auto-trim] ${traceId} dispatched; awaiting trimmed callback`, { jobId, original_duration: reportedDuration, target_duration: targetDuration });
+        return json({ ok: true, traceId, message: patch.status_message, auto_trim: "dispatched" });
+      }
+
+      // Trimmed callback path: store trim metadata and continue normal flow.
+      if (isTrimmedCallback) {
+        const exit = body.trim_ffmpeg_exit_code != null ? Number(body.trim_ffmpeg_exit_code) : null;
+        const origDur = body.original_duration_seconds != null
+          ? Number(body.original_duration_seconds)
+          : (job.original_duration_seconds ?? null);
+        patch.duration_auto_trimmed = true;
+        patch.trim_ffmpeg_exit_code = exit;
+        if (origDur != null) patch.original_duration_seconds = origDur;
+        console.log(`[auto-trim] ${traceId} trimmed callback`, {
+          jobId,
+          original_duration: origDur,
+          trimmed_duration: reportedDuration,
+          trim_applied: true,
+          ffmpeg_exit_code: exit,
+        });
+        // Defensive second gate: if even the trimmed file is still over cap,
+        // refuse rather than publish.
+        if (Number.isFinite(reportedDuration) && reportedDuration > cap) {
+          patch.status = "failed";
+          patch.error_message = `auto_trim_still_overrun:${reportedDuration.toFixed(1)}s>${cap}s`;
+          patch.status_message = "auto-trim ran but output is still over cap";
+          patch.duration_valid = false;
+          patch.validation_passed = false;
+          if (body.mp4_url) patch.output_mp4_url = String(body.mp4_url);
+          if (body.duration != null) patch.output_duration_seconds = reportedDuration;
+          await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
+          return json({ ok: false, traceId, message: patch.status_message, rejected: true });
+        }
+      } else if (false) {
         const attempts = (job.render_attempts ?? 0);
         const willRetry = attempts < MAX_ATTEMPTS;
         patch.status = willRetry ? "render_queued" : "failed";
