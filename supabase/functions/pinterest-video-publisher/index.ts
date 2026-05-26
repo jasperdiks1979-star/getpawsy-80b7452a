@@ -3,7 +3,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import { getPinterestApiBase } from "../_shared/pinterest-config.ts";
-import { generateVideoMeta, buildDestinationUrl, type ProductContext } from "../_shared/pinterest-video-meta.ts";
+import { generateVideoMeta, buildDestinationUrl, validateCategoryMatch, validateTextSafeArea, type ProductContext } from "../_shared/pinterest-video-meta.ts";
 import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
 import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
@@ -486,6 +486,22 @@ serve(async (req) => {
         for (let attempt = 0; attempt < 8 && !inserted; attempt++) {
           const meta = generateVideoMeta({ asset_id, hook: asset.hook_type as VideoHook, attempt, product });
           if (await isCopyUsedRecently(sb, meta.variation_hash)) continue;
+          // Category-match hard gate — block mismatched copy from ever entering the queue.
+          if (product) {
+            const cm = validateCategoryMatch({ product, title: meta.title, description: meta.description });
+            if (!cm.ok) {
+              await logStage(sb, null, "queue_draft_category_mismatch", "fail",
+                { asset_id, attempt, title: meta.title, reason: cm.reason }, trace_id);
+              continue; // try next variation
+            }
+          }
+          // Text safe-area hard gate
+          const sa = validateTextSafeArea({ pin_title: meta.title, cta_text: meta.cta_text });
+          if (!sa.ok) {
+            await logStage(sb, null, "queue_draft_safe_area_fail", "fail",
+              { asset_id, attempt, violations: sa.violations }, trace_id);
+            continue;
+          }
           const destination_url = buildDestinationUrl(asset.product_slug);
           const { data, error } = await sb.from("pinterest_video_queue").insert({
             asset_id,
