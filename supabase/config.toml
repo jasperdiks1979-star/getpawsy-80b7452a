@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.generate-blog-image]
 verify_jwt = false
 
+[functions.pinterest-video-clone-top-performers]
+verify_jwt = false
+
 [functions.sync-cj-tracking]
 verify_jwt = false
 
