@@ -511,6 +511,8 @@ export default function CinematicAdsControlCenterPage() {
         </div>
       </header>
 
+      <CampaignProgressPanel />
+
       <SystemTruthPanel />
 
       <OperatorPanel />
