@@ -11653,6 +11653,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_video_copy_history: {
+        Row: {
+          asset_id: string
+          clone_reason: string | null
+          cloned_from_asset_id: string | null
+          copy_variant: string | null
+          cta_variant: string | null
+          description: string
+          hook_variant: string | null
+          id: string
+          title: string
+          used_at: string
+          variation_hash: string
+        }
+        Insert: {
+          asset_id: string
+          clone_reason?: string | null
+          cloned_from_asset_id?: string | null
+          copy_variant?: string | null
+          cta_variant?: string | null
+          description: string
+          hook_variant?: string | null
+          id?: string
+          title: string
+          used_at?: string
+          variation_hash: string
+        }
+        Update: {
+          asset_id?: string
+          clone_reason?: string | null
+          cloned_from_asset_id?: string | null
+          copy_variant?: string | null
+          cta_variant?: string | null
+          description?: string
+          hook_variant?: string | null
+          id?: string
+          title?: string
+          used_at?: string
+          variation_hash?: string
+        }
+        Relationships: []
+      }
       pinterest_video_discovery_skips: {
         Row: {
           bucket: string
@@ -11736,6 +11778,7 @@ export type Database = {
           impressions: number
           outbound_clicks: number
           pin_id: string
+          pin_quality_score: number | null
           saves: number
         }
         Insert: {
@@ -11748,6 +11791,7 @@ export type Database = {
           impressions?: number
           outbound_clicks?: number
           pin_id: string
+          pin_quality_score?: number | null
           saves?: number
         }
         Update: {
@@ -11760,6 +11804,7 @@ export type Database = {
           impressions?: number
           outbound_clicks?: number
           pin_id?: string
+          pin_quality_score?: number | null
           saves?: number
         }
         Relationships: [
@@ -11822,15 +11867,18 @@ export type Database = {
           asset_id: string
           attempt_count: number
           board_id: string | null
+          copy_variant: string | null
           cover_frame_seconds: number | null
           created_at: string
           cta_text: string | null
+          cta_variant: string | null
           description: string
           destination_url: string
           error_message: string | null
           external_url: string | null
           failure_payload: Json | null
           hashtags: string[]
+          hook_variant: string | null
           id: string
           last_retry_at: string | null
           max_retries: number
@@ -11845,15 +11893,18 @@ export type Database = {
           asset_id: string
           attempt_count?: number
           board_id?: string | null
+          copy_variant?: string | null
           cover_frame_seconds?: number | null
           created_at?: string
           cta_text?: string | null
+          cta_variant?: string | null
           description: string
           destination_url: string
           error_message?: string | null
           external_url?: string | null
           failure_payload?: Json | null
           hashtags?: string[]
+          hook_variant?: string | null
           id?: string
           last_retry_at?: string | null
           max_retries?: number
@@ -11868,15 +11919,18 @@ export type Database = {
           asset_id?: string
           attempt_count?: number
           board_id?: string | null
+          copy_variant?: string | null
           cover_frame_seconds?: number | null
           created_at?: string
           cta_text?: string | null
+          cta_variant?: string | null
           description?: string
           destination_url?: string
           error_message?: string | null
           external_url?: string | null
           failure_payload?: Json | null
           hashtags?: string[]
+          hook_variant?: string | null
           id?: string
           last_retry_at?: string | null
           max_retries?: number
