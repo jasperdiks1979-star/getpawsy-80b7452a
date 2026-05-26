@@ -438,6 +438,10 @@ serve(async (req) => {
         let inserted = false;
         for (let attempt = 0; attempt < 5 && !inserted; attempt++) {
           const meta = generateVideoMeta({ asset_id, hook: asset.hook_type as VideoHook, attempt });
+          const slug = (asset.product_slug || "").trim();
+          const destination_url = slug
+            ? `https://getpawsy.pet/products/${slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${slug}`
+            : DEFAULT_DESTINATION_URL;
           const { data, error } = await sb.from("pinterest_video_queue").insert({
             asset_id,
             status: "draft",
@@ -445,7 +449,7 @@ serve(async (req) => {
             description: meta.description,
             hashtags: meta.hashtags,
             cta_text: meta.cta_text,
-            destination_url: DEFAULT_DESTINATION_URL,
+            destination_url,
             variation_hash: meta.variation_hash,
           }).select("id").maybeSingle();
           if (!error && data) { created.push(data.id); inserted = true; }
