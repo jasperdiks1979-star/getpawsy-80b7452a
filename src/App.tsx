@@ -2353,6 +2353,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestIntelligence />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-generic-niche"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
