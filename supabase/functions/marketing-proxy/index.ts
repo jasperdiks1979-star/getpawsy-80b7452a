@@ -7,6 +7,23 @@ const corsHeaders = {
 
 type Provider = 'pinterest' | 'google' | 'meta';
 
+// Allowlist of Pinterest API paths admins may proxy. Keep tight.
+const PINTEREST_ACTION_ALLOWLIST: RegExp[] = [
+  /^user_account$/,
+  /^boards(\?.*)?$/,
+  /^boards\/[A-Za-z0-9_-]+(\?.*)?$/,
+  /^boards\/[A-Za-z0-9_-]+\/pins(\?.*)?$/,
+  /^pins(\?.*)?$/,
+  /^pins\/[A-Za-z0-9_-]+(\?.*)?$/,
+  /^pins\/[A-Za-z0-9_-]+\/analytics(\?.*)?$/,
+  /^user_account\/analytics(\?.*)?$/,
+  /^ad_accounts(\?.*)?$/,
+];
+
+function isAllowedPinterestAction(action: string): boolean {
+  return PINTEREST_ACTION_ALLOWLIST.some((re) => re.test(action));
+}
+
 interface ProxyResult {
   ok: boolean;
   data?: unknown;
@@ -72,12 +89,59 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ---- AuthN/AuthZ: admins only ----
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const jwt = authHeader.toLowerCase().startsWith('bearer ')
+      ? authHeader.slice(7).trim()
+      : '';
+    if (!jwt) {
+      return new Response(
+        JSON.stringify({ ok: false, reason: 'UNAUTHORIZED' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: `Bearer ${jwt}` } } },
+    );
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ ok: false, reason: 'UNAUTHORIZED' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { data: roleRow } = await admin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userData.user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    if (!roleRow) {
+      return new Response(
+        JSON.stringify({ ok: false, reason: 'FORBIDDEN' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const { provider, action, payload } = body as { provider?: Provider; action?: string; payload?: unknown };
 
     if (!provider || !PROVIDERS[provider]) {
       return new Response(
         JSON.stringify({ ok: false, reason: 'INVALID_PROVIDER' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    if (provider === 'pinterest' && !isAllowedPinterestAction(action || '')) {
+      return new Response(
+        JSON.stringify({ ok: false, reason: 'ACTION_NOT_ALLOWED' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }

@@ -14,21 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _tmp_vault_probe: {
-        Row: {
-          len: number | null
-          name: string | null
-        }
-        Insert: {
-          len?: number | null
-          name?: string | null
-        }
-        Update: {
-          len?: number | null
-          name?: string | null
-        }
-        Relationships: []
-      }
       abandoned_carts: {
         Row: {
           cart_items: Json
