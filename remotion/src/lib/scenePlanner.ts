@@ -40,6 +40,10 @@ export interface ScenePlanItem {
   isHook?: boolean;
   isCta?: boolean;
   hash: string;            // for uniqueness comparison
+  /** v4: explicit role for scene-structure enforcement. */
+  role?: 'hook' | 'problem' | 'benefit' | 'cta' | 'pattern_interrupt' | 'beat';
+  /** v4: pattern interrupt flag — whip pan / speed ramp / crop flip. */
+  isPatternInterrupt?: boolean;
 }
 
 export interface PacingConfig {
