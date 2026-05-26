@@ -153,7 +153,11 @@ export interface TimelineCheck {
 
 export function validateTimeline(
   preset: CinematicPreset,
-  storyboard: { scenes?: Array<{ durationFrames?: number }> } | null | undefined,
+  storyboard:
+    | { scenes?: Array<{ durationFrames?: number; duration_s?: number }> }
+    | Array<{ durationFrames?: number; duration_s?: number }>
+    | null
+    | undefined,
   scenePlan: Array<{ durationFrames?: number }> | null | undefined,
   voScript: { beats?: Array<{ text?: string }> } | null | undefined,
 ): TimelineCheck {
@@ -162,9 +166,16 @@ export function validateTimeline(
   const maxScene = maxSceneFramesFor(preset);
   const minScene = minSceneFramesFor(preset);
 
+  const sbScenes = Array.isArray(storyboard)
+    ? storyboard
+    : (storyboard?.scenes ?? []);
+  // Storyboard may use `duration_s` (seconds) instead of `durationFrames`.
+  const normalizedSb = sbScenes.map((s: any) => ({
+    durationFrames: Number(s?.durationFrames ?? Math.round(Number(s?.duration_s ?? 0) * preset.fps)),
+  }));
   const scenes = (Array.isArray(scenePlan) && scenePlan.length > 0)
     ? scenePlan
-    : (storyboard?.scenes ?? []);
+    : normalizedSb;
 
   if (!Array.isArray(scenes) || scenes.length < 3) {
     reasons.push(`scene_count_invalid(${scenes?.length ?? 0}<3)`);
