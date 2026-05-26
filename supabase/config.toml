@@ -290,3 +290,24 @@ verify_jwt = false
 
 [functions.cinematic-force-approve-batch]
 verify_jwt = false
+
+[functions.pinterest-analytics-sync]
+verify_jwt = false
+
+[functions.pinterest-benchmarks-rollup]
+verify_jwt = false
+
+[functions.pinterest-winner-detector]
+verify_jwt = false
+
+[functions.pinterest-trend-harvester]
+verify_jwt = false
+
+[functions.pinterest-schedule-optimizer]
+verify_jwt = false
+
+[functions.pinterest-domain-health-check]
+verify_jwt = false
+
+[functions.pinterest-intelligence-api]
+verify_jwt = false
