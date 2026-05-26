@@ -67,6 +67,12 @@ Deno.serve(async (req) => {
   const motionMin = Number(cQa?.motion_score_min_threshold ?? 8);
   const catRequired = cQa?.category_match_required !== false;
   const safeRequired = cQa?.text_safe_area_required !== false;
+  // V4 gate: require validation_v4_passed when engine v4 is enabled.
+  const { data: v4Gate } = await admin
+    .from("cinematic_ad_settings")
+    .select("cinematic_v4_enabled")
+    .eq("id", true).maybeSingle();
+  const v4Enabled = v4Gate?.cinematic_v4_enabled !== false;
   // V3 PinterestQualityGateV2 — rate/diversity guards. Pulled from settings
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
