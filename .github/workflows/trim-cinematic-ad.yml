@@ -1,0 +1,141 @@
+name: Trim Cinematic Ad MP4
+
+# Emergency server-side ffmpeg clamp for oversize cinematic renders.
+# Dispatched by cinematic-ad-render-webhook when output_duration_seconds > HARD_MAX.
+#
+# Inputs:
+#   job_id          — cinematic_ad_jobs.id (UUID)
+#   mp4_url         — public URL of the oversize MP4
+#   target_seconds  — hard cap (default "15")
+#   render_token    — token to pass back to the webhook
+#
+# Flow:
+#   1. download MP4
+#   2. ffmpeg trim to target_seconds (re-encode for keyframe safety, keep audio)
+#   3. upload to storage as <job_id>/output-trimmed.mp4 (cinematic-ads bucket)
+#   4. POST callback to cinematic-ad-render-webhook with status=uploaded,
+#      duration=<trimmed>, mp4_url=<new>, duration_auto_trimmed=true,
+#      original_duration=<orig>, trim_ffmpeg_exit_code=<code>
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:        { description: "cinematic_ad_jobs.id (UUID)", required: true, type: string }
+      mp4_url:       { description: "Oversize MP4 public URL",       required: true, type: string }
+      target_seconds:{ description: "Hard duration cap (seconds)",   required: false, type: string, default: "15" }
+      render_token:  { description: "render_token of the job",       required: false, type: string, default: "" }
+
+concurrency:
+  group: cinematic-trim-${{ github.event.inputs.job_id }}
+  cancel-in-progress: false
+
+jobs:
+  trim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RENDER_WORKER_SECRET: ${{ secrets.RENDER_WORKER_SECRET }}
+      JOB_ID:        ${{ inputs.job_id }}
+      MP4_URL:       ${{ inputs.mp4_url }}
+      TARGET_SEC:    ${{ inputs.target_seconds }}
+      RENDER_TOKEN:  ${{ inputs.render_token }}
+      WORKER_ID:     gh-trim-${{ github.run_id }}
+    steps:
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg jq curl
+
+      - name: Preflight
+        run: |
+          set -euo pipefail
+          for v in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY RENDER_WORKER_SECRET JOB_ID MP4_URL; do
+            test -n "${!v}" || { echo "missing $v"; exit 1; }
+          done
+          echo "TARGET_SEC=${TARGET_SEC}"
+          echo "JOB_ID=${JOB_ID}"
+
+      - name: Download original
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "${MP4_URL}" -o /tmp/in.mp4
+          ls -lh /tmp/in.mp4
+
+      - name: Probe original duration
+        id: probe
+        run: |
+          set -euo pipefail
+          ORIG=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/in.mp4 | awk '{printf "%.2f", $1}')
+          echo "orig=${ORIG}" >> "$GITHUB_OUTPUT"
+          echo "[trim] original_duration=${ORIG}"
+
+      - name: ffmpeg trim
+        id: trim
+        run: |
+          set +e
+          # Re-encode video to guarantee a clean keyframe at t=TARGET_SEC; keep audio.
+          ffmpeg -y -hide_banner -loglevel error \
+            -i /tmp/in.mp4 \
+            -t "${TARGET_SEC}" \
+            -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -ac 2 -ar 44100 \
+            -movflags +faststart \
+            /tmp/out.mp4
+          EC=$?
+          echo "exit_code=${EC}" >> "$GITHUB_OUTPUT"
+          echo "[trim] ffmpeg_exit_code=${EC}"
+          set -e
+          test "${EC}" = "0" || exit "${EC}"
+          ls -lh /tmp/out.mp4
+          TRIM=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/out.mp4 | awk '{printf "%.2f", $1}')
+          echo "trimmed=${TRIM}" >> "$GITHUB_OUTPUT"
+          echo "[trim] trimmed_duration=${TRIM}"
+
+      - name: Upload trimmed MP4 to storage
+        id: upload
+        run: |
+          set -euo pipefail
+          PATH_KEY="${JOB_ID}/output-trimmed.mp4"
+          UPLOAD_URL="${SUPABASE_URL}/storage/v1/object/cinematic-ads/${PATH_KEY}"
+          # Use upsert via x-upsert true
+          HTTP=$(curl -s -o /tmp/upload.json -w "%{http_code}" -X POST "${UPLOAD_URL}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: video/mp4" \
+            -H "x-upsert: true" \
+            --data-binary @/tmp/out.mp4)
+          echo "upload http=${HTTP}"
+          cat /tmp/upload.json || true
+          test "${HTTP}" = "200" -o "${HTTP}" = "201" || exit 1
+          PUB_URL="${SUPABASE_URL}/storage/v1/object/public/cinematic-ads/${PATH_KEY}"
+          echo "url=${PUB_URL}" >> "$GITHUB_OUTPUT"
+          echo "[trim] trimmed_url=${PUB_URL}"
+
+      - name: Callback to render webhook
+        run: |
+          set -euo pipefail
+          PAYLOAD=$(jq -n \
+            --arg job_id "${JOB_ID}" \
+            --arg url    "${{ steps.upload.outputs.url }}" \
+            --arg tok    "${RENDER_TOKEN}" \
+            --arg wid    "${WORKER_ID}" \
+            --argjson dur $(echo "${{ steps.trim.outputs.trimmed }}" | awk '{printf "%s", $1}') \
+            --argjson orig $(echo "${{ steps.probe.outputs.orig }}" | awk '{printf "%s", $1}') \
+            --argjson ec   ${{ steps.trim.outputs.exit_code }} \
+            '{job_id:$job_id, status:"uploaded", event:"auto_trim_complete",
+              mp4_url:$url, duration:$dur, render_token:$tok, worker_id:$wid,
+              duration_auto_trimmed:true, original_duration_seconds:$orig,
+              trim_ffmpeg_exit_code:$ec, auto_approve:true}')
+          echo "$PAYLOAD"
+          curl -fsS -X POST "${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook" \
+            -H "Content-Type: application/json" \
+            -H "x-render-secret: ${RENDER_WORKER_SECRET}" \
+            --data "$PAYLOAD"
+
+      - name: Failure callback
+        if: failure()
+        run: |
+          curl -fsS -X POST "${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook" \
+            -H "Content-Type: application/json" \
+            -H "x-render-secret: ${RENDER_WORKER_SECRET}" \
+            -d "{\"job_id\":\"${JOB_ID}\",\"status\":\"failed\",\"event\":\"auto_trim_failed\",\"error_message\":\"ffmpeg auto-trim failed (see GH run ${{ github.run_id }})\",\"worker_id\":\"${WORKER_ID}\"}" || true
