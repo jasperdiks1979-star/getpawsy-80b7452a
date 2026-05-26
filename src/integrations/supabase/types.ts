@@ -1188,6 +1188,7 @@ export type Database = {
           cta_text: string | null
           cta_variants_meta: Json
           duplicate_risk_score: number
+          duration_auto_trimmed: boolean
           duration_valid: boolean | null
           engine_version: string | null
           error_message: string | null
@@ -1220,6 +1221,7 @@ export type Database = {
           music_track_id: string | null
           music_url: string | null
           needs_admin_review: boolean
+          original_duration_seconds: number | null
           output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
@@ -1304,6 +1306,9 @@ export type Database = {
           subhook_text: string | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
+          trim_attempted_at: string | null
+          trim_ffmpeg_exit_code: number | null
+          trim_workflow_run_id: string | null
           uniqueness_score: number | null
           updated_at: string
           validation_passed: boolean | null
@@ -1357,6 +1362,7 @@ export type Database = {
           cta_text?: string | null
           cta_variants_meta?: Json
           duplicate_risk_score?: number
+          duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
           engine_version?: string | null
           error_message?: string | null
@@ -1389,6 +1395,7 @@ export type Database = {
           music_track_id?: string | null
           music_url?: string | null
           needs_admin_review?: boolean
+          original_duration_seconds?: number | null
           output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
@@ -1473,6 +1480,9 @@ export type Database = {
           subhook_text?: string | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
+          trim_attempted_at?: string | null
+          trim_ffmpeg_exit_code?: number | null
+          trim_workflow_run_id?: string | null
           uniqueness_score?: number | null
           updated_at?: string
           validation_passed?: boolean | null
@@ -1526,6 +1536,7 @@ export type Database = {
           cta_text?: string | null
           cta_variants_meta?: Json
           duplicate_risk_score?: number
+          duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
           engine_version?: string | null
           error_message?: string | null
@@ -1558,6 +1569,7 @@ export type Database = {
           music_track_id?: string | null
           music_url?: string | null
           needs_admin_review?: boolean
+          original_duration_seconds?: number | null
           output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
@@ -1642,6 +1654,9 @@ export type Database = {
           subhook_text?: string | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
+          trim_attempted_at?: string | null
+          trim_ffmpeg_exit_code?: number | null
+          trim_workflow_run_id?: string | null
           uniqueness_score?: number | null
           updated_at?: string
           validation_passed?: boolean | null
@@ -16769,6 +16784,7 @@ export type Database = {
           cta_text: string | null
           cta_variants_meta: Json
           duplicate_risk_score: number
+          duration_auto_trimmed: boolean
           duration_valid: boolean | null
           engine_version: string | null
           error_message: string | null
@@ -16801,6 +16817,7 @@ export type Database = {
           music_track_id: string | null
           music_url: string | null
           needs_admin_review: boolean
+          original_duration_seconds: number | null
           output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
@@ -16885,6 +16902,9 @@ export type Database = {
           subhook_text: string | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
+          trim_attempted_at: string | null
+          trim_ffmpeg_exit_code: number | null
+          trim_workflow_run_id: string | null
           uniqueness_score: number | null
           updated_at: string
           validation_passed: boolean | null
