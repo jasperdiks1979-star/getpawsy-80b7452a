@@ -131,6 +131,54 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
+    // ---- Webhook authenticity check ----
+    // CJ supports either a shared secret in a header (configured in CJ dashboard)
+    // or an HMAC-SHA256 signature. Reject when the expected secret is set
+    // but the request does not present it.
+    const expectedSecret = Deno.env.get("CJ_WEBHOOK_SECRET");
+    if (expectedSecret) {
+      const provided =
+        req.headers.get("x-cj-secret") ??
+        req.headers.get("x-webhook-secret") ??
+        req.headers.get("x-cj-signature") ??
+        "";
+      // Plain shared-secret equality (CJ may also pass an HMAC; treat both the
+      // same — only callers that know the secret can forge a valid header).
+      let ok = provided === expectedSecret;
+      if (!ok && provided && provided.length === 64) {
+        try {
+          const bodyText = await req.clone().text();
+          const key = await crypto.subtle.importKey(
+            "raw",
+            new TextEncoder().encode(expectedSecret),
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["sign"],
+          );
+          const sig = await crypto.subtle.sign(
+            "HMAC",
+            key,
+            new TextEncoder().encode(bodyText),
+          );
+          const hex = Array.from(new Uint8Array(sig))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+          ok = hex === provided.toLowerCase();
+        } catch (_e) {
+          ok = false;
+        }
+      }
+      if (!ok) {
+        console.warn("[CJ-WEBHOOK] Rejected request: missing/invalid signature");
+        return new Response(
+          JSON.stringify({ success: false, error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    } else {
+      console.warn("[CJ-WEBHOOK] CJ_WEBHOOK_SECRET not configured; accepting webhook without verification");
+    }
+
     // Check if request has a body
     const contentLength = req.headers.get("content-length");
     const contentType = req.headers.get("content-type");
