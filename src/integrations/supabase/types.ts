@@ -1192,6 +1192,7 @@ export type Database = {
           caption_variants: Json
           caption_visibility_score: number | null
           captions_visible: boolean | null
+          category_match_passed: boolean | null
           cinematic_quality_score: number | null
           classification_confidence: number | null
           confidence_scores: Json
@@ -1199,6 +1200,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           creative_category: string | null
+          creative_quality_score: number | null
+          creative_reject_reason: string | null
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
@@ -1319,6 +1322,7 @@ export type Database = {
           style_preset: string | null
           style_rejection_reason: string | null
           subhook_text: string | null
+          text_safe_area_passed: boolean | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
           trim_attempted_at: string | null
@@ -1366,6 +1370,7 @@ export type Database = {
           caption_variants?: Json
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
+          category_match_passed?: boolean | null
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
           confidence_scores?: Json
@@ -1373,6 +1378,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
+          creative_quality_score?: number | null
+          creative_reject_reason?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
@@ -1493,6 +1500,7 @@ export type Database = {
           style_preset?: string | null
           style_rejection_reason?: string | null
           subhook_text?: string | null
+          text_safe_area_passed?: boolean | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
           trim_attempted_at?: string | null
@@ -1540,6 +1548,7 @@ export type Database = {
           caption_variants?: Json
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
+          category_match_passed?: boolean | null
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
           confidence_scores?: Json
@@ -1547,6 +1556,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
+          creative_quality_score?: number | null
+          creative_reject_reason?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
@@ -1667,6 +1678,7 @@ export type Database = {
           style_preset?: string | null
           style_rejection_reason?: string | null
           subhook_text?: string | null
+          text_safe_area_passed?: boolean | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
           trim_attempted_at?: string | null
@@ -1812,6 +1824,8 @@ export type Database = {
           blocked_creative_styles: Json
           board_max_pins_per_window: number
           board_recent_window_minutes: number
+          category_match_required: boolean
+          creative_quality_min_score: number
           engine_version: string | null
           hook_cooldown_days: number
           id: boolean
@@ -1831,6 +1845,7 @@ export type Database = {
           min_thumbnail_entropy_score: number
           min_unique_media_assets: number
           min_visual_uniqueness_score: number
+          motion_score_min_threshold: number
           pinterest_publish_max_per_day: number
           pinterest_publish_max_per_hour: number
           pinterest_publish_min_slug_gap_minutes: number
@@ -1847,6 +1862,7 @@ export type Database = {
           reject_white_background: boolean
           safe_zone_debug: boolean | null
           static_share_cap: number
+          text_safe_area_required: boolean
           thumbnail_phash_distance_threshold: number
           updated_at: string
           updated_by: string | null
@@ -1864,6 +1880,8 @@ export type Database = {
           blocked_creative_styles?: Json
           board_max_pins_per_window?: number
           board_recent_window_minutes?: number
+          category_match_required?: boolean
+          creative_quality_min_score?: number
           engine_version?: string | null
           hook_cooldown_days?: number
           id?: boolean
@@ -1883,6 +1901,7 @@ export type Database = {
           min_thumbnail_entropy_score?: number
           min_unique_media_assets?: number
           min_visual_uniqueness_score?: number
+          motion_score_min_threshold?: number
           pinterest_publish_max_per_day?: number
           pinterest_publish_max_per_hour?: number
           pinterest_publish_min_slug_gap_minutes?: number
@@ -1899,6 +1918,7 @@ export type Database = {
           reject_white_background?: boolean
           safe_zone_debug?: boolean | null
           static_share_cap?: number
+          text_safe_area_required?: boolean
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
@@ -1916,6 +1936,8 @@ export type Database = {
           blocked_creative_styles?: Json
           board_max_pins_per_window?: number
           board_recent_window_minutes?: number
+          category_match_required?: boolean
+          creative_quality_min_score?: number
           engine_version?: string | null
           hook_cooldown_days?: number
           id?: boolean
@@ -1935,6 +1957,7 @@ export type Database = {
           min_thumbnail_entropy_score?: number
           min_unique_media_assets?: number
           min_visual_uniqueness_score?: number
+          motion_score_min_threshold?: number
           pinterest_publish_max_per_day?: number
           pinterest_publish_max_per_hour?: number
           pinterest_publish_min_slug_gap_minutes?: number
@@ -1951,6 +1974,7 @@ export type Database = {
           reject_white_background?: boolean
           safe_zone_debug?: boolean | null
           static_share_cap?: number
+          text_safe_area_required?: boolean
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
@@ -17208,6 +17232,7 @@ export type Database = {
           caption_variants: Json
           caption_visibility_score: number | null
           captions_visible: boolean | null
+          category_match_passed: boolean | null
           cinematic_quality_score: number | null
           classification_confidence: number | null
           confidence_scores: Json
@@ -17215,6 +17240,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           creative_category: string | null
+          creative_quality_score: number | null
+          creative_reject_reason: string | null
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
@@ -17335,6 +17362,7 @@ export type Database = {
           style_preset: string | null
           style_rejection_reason: string | null
           subhook_text: string | null
+          text_safe_area_passed: boolean | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
           trim_attempted_at: string | null

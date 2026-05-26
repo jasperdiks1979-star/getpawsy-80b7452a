@@ -58,6 +58,15 @@ Deno.serve(async (req) => {
 
   const qaFloor = Number(settings?.pinterest_publish_quality_floor ?? 55);
   const maxAttempts = Math.min(MAX_PUBLISH_ATTEMPTS, Number(settings?.max_render_attempts ?? 5));
+  // V4 Creative QA gate thresholds
+  const { data: cQa } = await admin
+    .from("cinematic_ad_settings")
+    .select("creative_quality_min_score, motion_score_min_threshold, category_match_required, text_safe_area_required")
+    .eq("id", true).maybeSingle();
+  const creativeMin = Number(cQa?.creative_quality_min_score ?? 70);
+  const motionMin = Number(cQa?.motion_score_min_threshold ?? 8);
+  const catRequired = cQa?.category_match_required !== false;
+  const safeRequired = cQa?.text_safe_area_required !== false;
   // V3 PinterestQualityGateV2 — rate/diversity guards. Pulled from settings
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
@@ -271,7 +280,7 @@ Deno.serve(async (req) => {
   // Find eligible jobs
   const { data: jobs, error } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash, content_type, variation_signature")
+    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash, content_type, variation_signature, text_safe_area_passed, category_match_passed, motion_score, creative_quality_score, creative_reject_reason, output_duration_seconds")
     .in("status", ELIGIBLE_STATUSES)
     .is("pinterest_asset_id", null)
     .not("output_mp4_url", "is", null)
@@ -469,6 +478,53 @@ Deno.serve(async (req) => {
       results.push({ job_id: job.id, ok: false, reason: "validation_not_passed" });
       continue;
     }
+    // ── V4 Creative QA hard gates ────────────────────────────────────
+    const dur = Number(job.output_duration_seconds ?? 0);
+    if (dur > 15) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "creative_rejected",
+        creative_reject_reason: `duration_exceeds_15s(${dur.toFixed(1)})`,
+        publish_blocked_reason: "duration_exceeds_15s",
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "duration_exceeds_15s" });
+      continue;
+    }
+    if (safeRequired && job.text_safe_area_passed === false) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "creative_rejected",
+        publish_blocked_reason: "text_safe_area_failed",
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "text_safe_area_failed" });
+      continue;
+    }
+    if (catRequired && job.category_match_passed === false) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "creative_rejected",
+        publish_blocked_reason: "category_mismatch",
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "category_mismatch" });
+      continue;
+    }
+    const motionVal = Number(job.motion_score ?? 0);
+    if (motionVal > 0 && motionVal < motionMin) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "creative_rejected",
+        creative_reject_reason: `motion_below_floor(${motionVal}<${motionMin})`,
+        publish_blocked_reason: `motion_below_floor(${motionVal}<${motionMin})`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: `motion_below_floor(${motionVal})` });
+      continue;
+    }
+    const cQ = Number(job.creative_quality_score ?? 0);
+    if (cQ > 0 && cQ < creativeMin) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "creative_rejected",
+        publish_blocked_reason: `creative_quality_below_floor(${cQ}<${creativeMin})`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: `creative_quality_below_floor(${cQ})` });
+      continue;
+    }
+
     const qa = Number(job.qa_composite_score ?? 0);
     if (qa > 0 && qa < qaFloor) {
       await admin.from("cinematic_ad_jobs").update({

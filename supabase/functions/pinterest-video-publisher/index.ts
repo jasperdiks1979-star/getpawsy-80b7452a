@@ -3,7 +3,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import { getPinterestApiBase } from "../_shared/pinterest-config.ts";
-import { generateVideoMeta, buildDestinationUrl, type ProductContext } from "../_shared/pinterest-video-meta.ts";
+import { generateVideoMeta, buildDestinationUrl, validateCategoryMatch, validateTextSafeArea, type ProductContext } from "../_shared/pinterest-video-meta.ts";
 import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
 import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
@@ -486,6 +486,22 @@ serve(async (req) => {
         for (let attempt = 0; attempt < 8 && !inserted; attempt++) {
           const meta = generateVideoMeta({ asset_id, hook: asset.hook_type as VideoHook, attempt, product });
           if (await isCopyUsedRecently(sb, meta.variation_hash)) continue;
+          // Category-match hard gate — block mismatched copy from ever entering the queue.
+          if (product) {
+            const cm = validateCategoryMatch({ product, title: meta.title, description: meta.description });
+            if (!cm.ok) {
+              await logStage(sb, null, "queue_draft_category_mismatch", "fail",
+                { asset_id, attempt, title: meta.title, reason: cm.reason }, trace_id);
+              continue; // try next variation
+            }
+          }
+          // Text safe-area hard gate
+          const sa = validateTextSafeArea({ pin_title: meta.title, cta_text: meta.cta_text });
+          if (!sa.ok) {
+            await logStage(sb, null, "queue_draft_safe_area_fail", "fail",
+              { asset_id, attempt, violations: sa.violations }, trace_id);
+            continue;
+          }
           const destination_url = buildDestinationUrl(asset.product_slug);
           const { data, error } = await sb.from("pinterest_video_queue").insert({
             asset_id,
@@ -597,6 +613,31 @@ serve(async (req) => {
       if (row.pin_id) return ok({ ok: true, traceId: trace_id, pin_id: row.pin_id, pin_url: row.external_url, external_url: row.external_url, title: row.title, media_url: null, board: row.board_id, message: "already_published" });
       const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", row.asset_id).maybeSingle();
       if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
+
+      // ── Pre-publish creative QA (last line of defense) ──────────────
+      const product = await loadProductContext(sb, asset.product_slug);
+      if (product) {
+        const cm = validateCategoryMatch({ product, title: row.title, description: row.description, hook: row.hook_variant });
+        if (!cm.ok) {
+          await sb.from("pinterest_video_queue").update({
+            status: "creative_rejected",
+            error_message: `category_mismatch: ${cm.reason}`,
+          }).eq("id", queue_id);
+          await logStage(sb, queue_id, "publish_blocked_category_mismatch", "fail",
+            { product_slug: asset.product_slug, title: row.title, reason: cm.reason }, trace_id);
+          return ok({ ok: false, code: "CATEGORY_MISMATCH", traceId: trace_id, message: cm.reason });
+        }
+      }
+      const sa = validateTextSafeArea({ pin_title: row.title, cta_text: row.cta_text });
+      if (!sa.ok) {
+        await sb.from("pinterest_video_queue").update({
+          status: "creative_rejected",
+          error_message: `text_safe_area_failed: ${sa.violations.slice(0, 2).join("|")}`,
+        }).eq("id", queue_id);
+        await logStage(sb, queue_id, "publish_blocked_safe_area", "fail",
+          { violations: sa.violations }, trace_id);
+        return ok({ ok: false, code: "TEXT_SAFE_AREA_FAIL", traceId: trace_id, message: sa.violations.join("; ") });
+      }
 
       const token = await getPinterestToken(sb);
       if (!token) return ok({ ok: false, code: "PINTEREST_NOT_CONNECTED", traceId: trace_id });

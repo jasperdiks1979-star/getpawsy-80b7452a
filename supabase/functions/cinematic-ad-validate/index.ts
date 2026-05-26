@@ -7,6 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getPreset } from "../_shared/cinematic-presets.ts";
+import { validateCategoryMatch, validateTextSafeArea } from "../_shared/pinterest-video-meta.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -215,6 +216,88 @@ Deno.serve(async (req) => {
   const v2 = scoreV2(job);
   report.v2_scores = v2;
 
+  // ── V3 Creative QA: safe-area, category-match, motion floor, composite ──
+  // Load product context (for category match validation)
+  let productCtx: any = { slug: job.product_slug };
+  try {
+    const { data: prod } = await admin
+      .from("products")
+      .select("slug, name, category, primary_keyword, seo_keywords")
+      .eq("slug", job.product_slug).maybeSingle();
+    if (prod) productCtx = { ...prod, tags: Array.isArray(prod.seo_keywords) ? prod.seo_keywords : null };
+  } catch (_) { /* product may not exist; fall back to slug-only context */ }
+
+  const safeArea = validateTextSafeArea({
+    hook_text: job.hook_text,
+    pin_title: job.pin_title,
+    cta_text: job.cta_text,
+    scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
+  });
+
+  const catCheck = validateCategoryMatch({
+    product: productCtx,
+    title: String(job.pin_title ?? ""),
+    description: String(job.pin_description ?? ""),
+    hook: String(job.hook_text ?? ""),
+  });
+
+  // Settings (motion floor + creative score floor)
+  let motionMin = 8, creativeMin = 70, catRequired = true, safeRequired = true;
+  try {
+    const { data: s2 } = await admin.from("cinematic_ad_settings")
+      .select("motion_score_min_threshold, creative_quality_min_score, category_match_required, text_safe_area_required")
+      .limit(1).maybeSingle();
+    if (s2) {
+      motionMin = Number(s2.motion_score_min_threshold ?? motionMin);
+      creativeMin = Number(s2.creative_quality_min_score ?? creativeMin);
+      catRequired = s2.category_match_required !== false;
+      safeRequired = s2.text_safe_area_required !== false;
+    }
+  } catch (_) { /* defaults */ }
+
+  const motionVal = report.motion_score ?? Number(job.motion_score ?? 0);
+  const motionPass = motionVal >= motionMin;
+
+  // Composite creative_quality_score weights the most user-visible signals.
+  const creativeQuality = Math.round(
+    (safeArea.ok ? 100 : 30) * 0.25 +
+    (catCheck.ok ? 100 : 0) * 0.25 +
+    Math.min(100, motionVal * 6) * 0.2 +
+    v2.composite * 0.3,
+  );
+
+  const rejectReasons: string[] = [];
+  if (safeRequired && !safeArea.ok) rejectReasons.push(`safe_area:${safeArea.violations.slice(0, 2).join("|")}`);
+  if (catRequired && !catCheck.ok) rejectReasons.push(`category_mismatch:${catCheck.reason}`);
+  if (!motionPass) rejectReasons.push(`motion_below_floor(${motionVal}<${motionMin})`);
+  if (creativeQuality < creativeMin) rejectReasons.push(`creative_quality(${creativeQuality}<${creativeMin})`);
+
+  report.checks.push({
+    name: "text_safe_area",
+    passed: safeArea.ok,
+    observed: safeArea.violations.length ? safeArea.violations.join(" | ") : "ok",
+    expected: "all overlay text within 9:16 safe frame, ≤34ch × 2 lines",
+  });
+  report.checks.push({
+    name: "category_match",
+    passed: catCheck.ok,
+    observed: catCheck.ok ? catCheck.productCategory : `${catCheck.productCategory} vs copy=${catCheck.conflictingCategory}`,
+    expected: `copy matches product category (${catCheck.productCategory})`,
+    message: catCheck.reason,
+  });
+  report.checks.push({
+    name: "motion_floor",
+    passed: motionPass,
+    observed: motionVal,
+    expected: `>= ${motionMin}`,
+  });
+  report.checks.push({
+    name: "creative_quality_score",
+    passed: creativeQuality >= creativeMin,
+    observed: creativeQuality,
+    expected: `>= ${creativeMin}`,
+  });
+
   // V2 auto-reject thresholds — pulled from settings (with safe defaults).
   let minMotion = 40, minScene = 40, minCaption = 70;
   try {
@@ -249,6 +332,10 @@ Deno.serve(async (req) => {
       validation_report: report,
       motion_score: report.motion_score,
       validation_passed: report.passed,
+      text_safe_area_passed: safeArea.ok,
+      category_match_passed: catCheck.ok,
+      creative_quality_score: creativeQuality,
+      creative_reject_reason: rejectReasons.length ? rejectReasons.join(" ; ") : null,
       captions_visible: Boolean(job.hook_text || job.pin_title || job.cta_text || job.vo_script),
       duration_valid: report.checks.find((c) => c.name === "duration_within_tolerance")?.passed ?? false,
       motion_exists: report.checks.find((c) => c.name === "motion_score_above_floor")?.passed ?? (Number(report.motion_score ?? 0) > 0),
@@ -270,6 +357,12 @@ Deno.serve(async (req) => {
       patch.status_message = `validation failed (${report.checks.filter(c => !c.passed).map(c => c.name).join(", ")})`;
     } else {
       patch.status_message = "validation passed — awaiting approval";
+    }
+
+    // Flip status to 'creative_rejected' when any hard creative gate fails.
+    if (rejectReasons.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
+      patch.status = "creative_rejected";
+      patch.status_message = `creative rejected: ${rejectReasons.slice(0, 2).join(" ; ")}`;
     }
 
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
