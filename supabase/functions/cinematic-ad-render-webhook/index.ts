@@ -14,6 +14,11 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import {
+  getPreset,
+  HARD_MAX_DURATION_SEC,
+  DURATION_OVERRUN_SLACK_SEC,
+} from "../_shared/cinematic-presets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -247,6 +252,29 @@ Deno.serve(async (req) => {
       patch.render_worker_id = body.worker_id ?? job.render_worker_id ?? null;
       patch.status_message = `worker heartbeat: ${event}`;
     } else if (status === "rendered" || status === "uploaded") {
+      // Hard duration gate: refuse mp4s that overshoot preset cap by more
+      // than DURATION_OVERRUN_SLACK_SEC. Pinterest/TikTok reject these and
+      // we will not pay to publish them.
+      const presetForJob = getPreset(job.preset);
+      const cap = Math.min(presetForJob.durationSec, HARD_MAX_DURATION_SEC) + DURATION_OVERRUN_SLACK_SEC;
+      const reportedDuration = Number(body.duration ?? job.output_duration_seconds ?? 0);
+      if (Number.isFinite(reportedDuration) && reportedDuration > cap) {
+        const attempts = (job.render_attempts ?? 0);
+        const willRetry = attempts < MAX_ATTEMPTS;
+        patch.status = willRetry ? "render_queued" : "failed";
+        patch.error_message = `duration_overrun:${reportedDuration.toFixed(1)}s>${cap}s`;
+        patch.status_message = willRetry
+          ? `render rejected (duration ${reportedDuration.toFixed(1)}s > ${cap}s) — re-queued ${attempts}/${MAX_ATTEMPTS}`
+          : `render rejected (duration ${reportedDuration.toFixed(1)}s > ${cap}s) after ${attempts} attempts`;
+        if (body.duration != null) patch.output_duration_seconds = reportedDuration;
+        if (body.mp4_url) patch.output_mp4_url = String(body.mp4_url);
+        patch.duration_valid = false;
+        patch.validation_passed = false;
+        const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
+        if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
+        console.warn(`[webhook] ${traceId} rejected oversize mp4`, { jobId, reportedDuration, cap });
+        return json({ ok: true, traceId, message: patch.status_message, rejected: true });
+      }
       patch.status = "render_complete";
       patch.rendered_at = new Date().toISOString();
       patch.render_complete_at = new Date().toISOString();
