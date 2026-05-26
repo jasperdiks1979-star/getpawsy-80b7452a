@@ -22,6 +22,7 @@ import AutoApprovalSettingsCard from "@/components/admin/cinematic/AutoApprovalS
 import { CreativeDNAPanel } from "@/components/admin/cinematic/CreativeDNAPanel";
 import SystemTruthPanel from "@/components/admin/cinematic/SystemTruthPanel";
 import OperatorPanel from "@/components/admin/cinematic/OperatorPanel";
+import VoiceoverAlertSettings from "@/components/admin/cinematic/VoiceoverAlertSettings";
 import VerifyPinsPanel from "@/components/admin/cinematic/VerifyPinsPanel";
 import VerificationHistoryPanel from "@/components/admin/cinematic/VerificationHistoryPanel";
 import PinterestQualityPanel from "@/components/admin/cinematic/PinterestQualityPanel";
