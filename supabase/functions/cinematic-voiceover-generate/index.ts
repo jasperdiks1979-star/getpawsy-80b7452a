@@ -71,6 +71,55 @@ function requireElevenLabsApiKey(): string {
   return key;
 }
 
+async function keyFingerprint(): Promise<string> {
+  try {
+    const key = requireElevenLabsApiKey();
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
+    return Array.from(new Uint8Array(hash)).slice(0, 8)
+      .map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return "unknown";
+  }
+}
+
+// Record an invalid_api_key failure against the key state singleton and,
+// if the threshold is crossed, fire-and-forget the cinematic-voiceover-alert
+// function (email + webhook).
+async function recordInvalidKeyAndMaybeAlert(
+  admin: ReturnType<typeof createClient>,
+  lastError: string,
+) {
+  try {
+    const fp = await keyFingerprint();
+    const { data: prev } = await admin
+      .from("cinematic_voiceover_key_state")
+      .select("key_fingerprint, consecutive_failures")
+      .eq("id", 1)
+      .maybeSingle();
+    const sameKey = (prev as any)?.key_fingerprint === fp;
+    const consecutive = (sameKey ? Number((prev as any)?.consecutive_failures ?? 0) : 0) + 1;
+
+    await admin.from("cinematic_voiceover_key_state").upsert({
+      id: 1,
+      key_fingerprint: fp,
+      state: "invalid",
+      last_checked_at: new Date().toISOString(),
+      last_error: lastError.slice(0, 500),
+      consecutive_failures: consecutive,
+    }, { onConflict: "id" });
+
+    // Fire alert (alert function enforces threshold + cooldown internally).
+    admin.functions.invoke("cinematic-voiceover-alert", {
+      body: {
+        key_fingerprint: fp,
+        consecutive_failures: consecutive,
+        source: "cinematic-voiceover-generate",
+        last_error: lastError,
+      },
+    }).catch(() => {});
+  } catch (_) { /* never throw from alerting */ }
+}
+
 async function validateElevenLabsKey(): Promise<void> {
   const res = await fetch("https://api.elevenlabs.io/v1/user", {
     headers: { "xi-api-key": requireElevenLabsApiKey() },
@@ -239,6 +288,12 @@ Deno.serve(async (req) => {
           trace_id: traceId,
           at,
         });
+        if (code === "invalid_api_key") {
+          await recordInvalidKeyAndMaybeAlert(
+            admin,
+            `${e.message} :: ${e.body.slice(0, 300)}`,
+          );
+        }
         return j(502, {
           ok: false,
           traceId,

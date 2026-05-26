@@ -227,15 +227,25 @@ Deno.serve(async (req) => {
 
     if (circuitTripped) {
       // Flip breaker and stop processing remaining jobs.
+      const newConsecutive = (prevState?.consecutive_failures ?? 0) + 1;
       await admin.from("cinematic_voiceover_key_state").upsert({
         id: true,
         key_fingerprint: fp,
         state: "invalid",
         last_error: lastMsg,
         last_checked_at: new Date().toISOString(),
-        consecutive_failures: (prevState?.consecutive_failures ?? 0) + 1,
+        consecutive_failures: newConsecutive,
         updated_at: new Date().toISOString(),
       });
+      // Fire alert (alert function enforces threshold + cooldown).
+      admin.functions.invoke("cinematic-voiceover-alert", {
+        body: {
+          key_fingerprint: fp,
+          consecutive_failures: newConsecutive,
+          source: "cinematic-voiceover-backfill",
+          last_error: lastMsg,
+        },
+      }).catch(() => {});
       skipped = (jobs?.length ?? 0) - results.length;
       return j(200, {
         ok: false,

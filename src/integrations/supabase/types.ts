@@ -2221,8 +2221,82 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_voiceover_alert_log: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          email_error: string | null
+          email_sent: boolean
+          id: string
+          key_fingerprint: string
+          payload: Json | null
+          source_function: string
+          webhook_error: string | null
+          webhook_sent: boolean
+          webhook_status: number | null
+        }
+        Insert: {
+          consecutive_failures: number
+          created_at?: string
+          email_error?: string | null
+          email_sent?: boolean
+          id?: string
+          key_fingerprint: string
+          payload?: Json | null
+          source_function: string
+          webhook_error?: string | null
+          webhook_sent?: boolean
+          webhook_status?: number | null
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          email_error?: string | null
+          email_sent?: boolean
+          id?: string
+          key_fingerprint?: string
+          payload?: Json | null
+          source_function?: string
+          webhook_error?: string | null
+          webhook_sent?: boolean
+          webhook_status?: number | null
+        }
+        Relationships: []
+      }
+      cinematic_voiceover_alert_settings: {
+        Row: {
+          cooldown_minutes: number
+          enabled: boolean
+          id: number
+          recipient_email: string | null
+          threshold: number
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          cooldown_minutes?: number
+          enabled?: boolean
+          id?: number
+          recipient_email?: string | null
+          threshold?: number
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          cooldown_minutes?: number
+          enabled?: boolean
+          id?: number
+          recipient_email?: string | null
+          threshold?: number
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       cinematic_voiceover_key_state: {
         Row: {
+          alert_count: number
+          alert_sent_at: string | null
           consecutive_failures: number
           id: boolean
           key_fingerprint: string | null
@@ -2232,6 +2306,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alert_count?: number
+          alert_sent_at?: string | null
           consecutive_failures?: number
           id?: boolean
           key_fingerprint?: string | null
@@ -2241,6 +2317,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alert_count?: number
+          alert_sent_at?: string | null
           consecutive_failures?: number
           id?: boolean
           key_fingerprint?: string | null
