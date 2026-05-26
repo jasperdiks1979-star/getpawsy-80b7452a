@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
       product_slug: job.product_slug,
       hook_variant: job.hook_variant,
       scene_assets: job.scene_assets,
-      voiceover_url: job.vo_url,
+      voiceover_url: voUrl,
       music_url: job.music_url,
       pin_title: job.pin_title,
       pin_description: job.pin_description,
