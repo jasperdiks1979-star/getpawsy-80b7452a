@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Wrench, KeyRound, RotateCw } from "lucide-react";
+import { Loader2, Wrench, KeyRound, RotateCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type Envelope = {
@@ -120,6 +120,56 @@ export default function OperatorPanel() {
     }
   };
 
+  const inspectVoErrors = async () => {
+    const id = "inspect_vo_errors";
+    setBusy(id);
+    try {
+      const { data, error } = await supabase
+        .from("cinematic_ad_jobs")
+        .select("id, product_slug, status, voiceover_url, voiceover_error, voiceover_last_attempt_at")
+        .not("voiceover_error", "is", null)
+        .order("voiceover_last_attempt_at", { ascending: false, nullsFirst: false })
+        .limit(20);
+      if (error) throw error;
+      const rows = (data ?? []) as Array<{
+        id: string;
+        product_slug: string;
+        voiceover_url: string | null;
+        voiceover_error: Record<string, unknown> | null;
+        voiceover_last_attempt_at: string | null;
+      }>;
+      const env: Envelope = {
+        success: rows.length === 0,
+        status: rows.length === 0 ? "clean" : `${rows.length} jobs with errors`,
+        message: rows.length === 0
+          ? "No voiceover errors logged"
+          : `${rows.length} jobs have a voiceover_error logged`,
+        details: rows.map((r) => ({
+          job_id: r.id,
+          slug: r.product_slug,
+          has_vo: !!r.voiceover_url,
+          last_attempt: r.voiceover_last_attempt_at,
+          code: r.voiceover_error?.code,
+          message: r.voiceover_error?.message,
+          provider_status: r.voiceover_error?.provider_status,
+          provider_body: r.voiceover_error?.provider_body,
+          beat: r.voiceover_error?.beat,
+          backfill_attempts: r.voiceover_error?.backfill_attempts,
+        })),
+        timestamp: new Date().toISOString(),
+      };
+      setLast(env);
+      if (rows.length === 0) toast.success("No voiceover errors logged");
+      else toast.message(env.message);
+    } catch (e) {
+      const msg = (e as Error).message ?? "Request failed";
+      toast.error(msg);
+      setLast({ success: false, status: "client_error", message: msg, timestamp: new Date().toISOString() });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -178,6 +228,20 @@ export default function OperatorPanel() {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
             Force retry
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy === "inspect_vo_errors"}
+            onClick={inspectVoErrors}
+            title="Show the latest voiceover_error details for jobs where voiceover_url is null"
+          >
+            {busy === "inspect_vo_errors" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <AlertCircle className="mr-2 h-4 w-4" />
+            )}
+            Inspect VO errors
           </Button>
         </div>
         {last ? (
