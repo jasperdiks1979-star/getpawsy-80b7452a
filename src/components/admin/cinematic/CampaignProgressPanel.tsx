@@ -88,7 +88,7 @@ export default function CampaignProgressPanel() {
         ].join(","))
         .in("id", campaign.job_ids);
       if (error) throw error;
-      const records = (data ?? []) as Record<string, unknown>[];
+      const records = (data ?? []) as unknown as Record<string, unknown>[];
       const headers = Object.keys(records[0] ?? {
         id: "", product_slug: "", status: "", pinterest_pin_url: "",
       });
