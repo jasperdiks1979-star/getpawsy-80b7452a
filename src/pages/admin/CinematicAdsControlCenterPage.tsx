@@ -28,6 +28,7 @@ import VerificationHistoryPanel from "@/components/admin/cinematic/VerificationH
 import PinterestQualityPanel from "@/components/admin/cinematic/PinterestQualityPanel";
 import PinterestContentEnginePanel from "@/components/admin/cinematic/PinterestContentEnginePanel";
 import BackgroundBatchPanel from "@/components/admin/cinematic/BackgroundBatchPanel";
+import CampaignProgressPanel, { saveLastCampaign } from "@/components/admin/cinematic/CampaignProgressPanel";
 
 type Job = {
   id: string;
@@ -486,6 +487,15 @@ export default function CinematicAdsControlCenterPage() {
                 if (error) throw error;
                 if (data && data.ok === false) throw new Error(data.message ?? "Launch failed");
                 toast.success(`Launched 12-pack • ${data?.total_seeded ?? 0} jobs queued`);
+                const seeded = Array.isArray(data?.seeded) ? data.seeded : [];
+                const job_ids = seeded.map((s: any) => s.job_id).filter(Boolean);
+                if (data?.campaign_id && job_ids.length) {
+                  saveLastCampaign({
+                    campaign_id: data.campaign_id,
+                    launched_at: new Date().toISOString(),
+                    job_ids,
+                  });
+                }
                 fetchRows();
               } catch (e: any) {
                 toast.error(e?.message ?? "12-pack launch failed");
@@ -500,6 +510,8 @@ export default function CinematicAdsControlCenterPage() {
           </Button>
         </div>
       </header>
+
+      <CampaignProgressPanel />
 
       <SystemTruthPanel />
 
