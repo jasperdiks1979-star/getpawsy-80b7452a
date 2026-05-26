@@ -48,13 +48,13 @@ Deno.serve(async (req) => {
   if (explicit.length) {
     const { data } = await admin
       .from("cinematic_ad_jobs")
-      .select("id, product_slug, status, hook_variant, voice_style")
+      .select("id, product_slug, status, hook_variant, voice_style, storyboard")
       .in("id", explicit);
     jobs = data ?? [];
   } else {
     const { data } = await admin
       .from("cinematic_ad_jobs")
-      .select("id, product_slug, status, hook_variant, voice_style")
+      .select("id, product_slug, status, hook_variant, voice_style, storyboard")
       .in("status", ["pending", "prepared"])
       .order("created_at", { ascending: true })
       .limit(limit);
@@ -72,8 +72,13 @@ Deno.serve(async (req) => {
       }).eq("id", job.id);
     } catch { /* column may not exist yet */ }
 
-    // Step 1 — prepare (only if not yet prepared/approved/queued)
-    if (job.status === "pending" || job.status === "preparing") {
+    // Step 1 — prepare (also re-run if storyboard is empty, even when status=prepared)
+    const sbLen = Array.isArray((job as any).storyboard) ? (job as any).storyboard.length : 0;
+    const needsPrepare =
+      job.status === "pending" ||
+      job.status === "preparing" ||
+      (job.status === "prepared" && sbLen === 0);
+    if (needsPrepare) {
       const prepRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-prepare`, {
         method: "POST",
         headers: {
