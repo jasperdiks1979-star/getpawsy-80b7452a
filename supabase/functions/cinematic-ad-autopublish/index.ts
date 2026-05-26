@@ -447,6 +447,16 @@ Deno.serve(async (req) => {
     if (job.hook_archetype && qHooks.has(job.hook_archetype)) {
       results.push({ job_id: job.id, ok: false, reason: "quarantined_hook" }); continue;
     }
+    // V4 gate: hard-block any job that did not pass v4 validation (slideshow-feel,
+    // missing scene roles, low realism / camera motion / pacing).
+    if (v4Enabled && (job as any).validation_v4_passed === false) {
+      const reasons = Array.isArray((job as any).v4_reject_reasons) ? (job as any).v4_reject_reasons.join("|") : "v4_failed";
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `v4_reject:${String(reasons).slice(0, 180)}`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "v4_reject" });
+      continue;
+    }
     if (job.overlay_text_hash && qOverlays.has(job.overlay_text_hash)) {
       results.push({ job_id: job.id, ok: false, reason: "quarantined_overlay" }); continue;
     }
