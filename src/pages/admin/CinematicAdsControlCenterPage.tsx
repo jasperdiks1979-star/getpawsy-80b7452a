@@ -483,6 +483,8 @@ export default function CinematicAdsControlCenterPage() {
 
       <OperatorPanel />
 
+      <VoiceoverAlertSettings />
+
       <VerifyPinsPanel />
       <VerificationHistoryPanel />
 
