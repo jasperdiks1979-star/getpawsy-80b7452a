@@ -3,6 +3,9 @@ project_id = "nojvgfbcjgipjxpfatmm"
 [functions.cj-dropshipping]
 verify_jwt = false
 
+[functions.marketing-proxy]
+verify_jwt = true
+
 [functions.cinematic-ad-hook-optimizer]
 verify_jwt = false
 
