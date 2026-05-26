@@ -262,6 +262,18 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ---- Internal-caller guard ----
+  const expectedSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+  if (expectedSecret) {
+    const provided = req.headers.get("x-internal-secret") ?? "";
+    if (provided !== expectedSecret) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   if (!resendApiKey) {
     console.error("[SEND-ORDER-CONFIRMATION] RESEND_API_KEY not configured");
