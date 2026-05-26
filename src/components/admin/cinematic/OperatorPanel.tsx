@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Wrench } from "lucide-react";
+import { Loader2, Wrench, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 type Envelope = {
@@ -48,6 +48,32 @@ export default function OperatorPanel() {
     }
   };
 
+  const testElevenLabs = async () => {
+    const id = "test_elevenlabs";
+    setBusy(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("elevenlabs-key-test");
+      if (error) throw error;
+      const r = data as { ok: boolean; status: string; message: string; meta?: unknown; httpStatus?: number; elevenlabs?: unknown; timestamp: string };
+      const env: Envelope = {
+        success: !!r.ok,
+        status: r.status,
+        message: r.message,
+        details: { meta: r.meta, httpStatus: r.httpStatus, elevenlabs: r.elevenlabs },
+        timestamp: r.timestamp,
+      };
+      setLast(env);
+      if (env.success) toast.success(env.message);
+      else toast.error(env.message);
+    } catch (e) {
+      const msg = (e as Error).message ?? "Request failed";
+      toast.error(msg);
+      setLast({ success: false, status: "client_error", message: msg, timestamp: new Date().toISOString() });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -69,6 +95,19 @@ export default function OperatorPanel() {
               {a.label}
             </Button>
           ))}
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy === "test_elevenlabs"}
+            onClick={testElevenLabs}
+          >
+            {busy === "test_elevenlabs" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <KeyRound className="mr-2 h-4 w-4" />
+            )}
+            Test ElevenLabs key
+          </Button>
         </div>
         {last ? (
           <div className="rounded-md border bg-muted/30 p-2 text-xs">
