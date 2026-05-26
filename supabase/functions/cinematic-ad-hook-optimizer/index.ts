@@ -28,6 +28,17 @@ const json = (status: number, body: unknown) =>
 const HOOK_TYPES = ["curiosity", "emotional", "transformation", "problem_solution", "authority_social_proof"] as const;
 type HookType = typeof HOOK_TYPES[number];
 
+function inferRegister(t: HookType): string {
+  switch (t) {
+    case "emotional": return "tender";
+    case "curiosity": return "surprise";
+    case "problem_solution": return "relatable_pain";
+    case "transformation": return "aspirational";
+    case "authority_social_proof": return "aspirational";
+    default: return "relatable_pain";
+  }
+}
+
 interface HookVariant {
   hook_text: string;
   hook_type: HookType;
