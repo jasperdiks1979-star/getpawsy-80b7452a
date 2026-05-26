@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Wrench, KeyRound, RotateCw, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Wrench, KeyRound, RotateCw, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 
 type Envelope = {
@@ -27,6 +29,10 @@ const ACTIONS: { id: string; label: string }[] = [
 export default function OperatorPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [last, setLast] = useState<Envelope | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+  const [exportFrom, setExportFrom] = useState<string>(weekAgo);
+  const [exportTo, setExportTo] = useState<string>(today);
 
   const run = async (action: string) => {
     setBusy(action);
@@ -170,6 +176,119 @@ export default function OperatorPanel() {
     }
   };
 
+  const exportVoErrors = async (format: "csv" | "json") => {
+    const id = `export_vo_${format}`;
+    setBusy(id);
+    try {
+      const fromIso = new Date(`${exportFrom}T00:00:00.000Z`).toISOString();
+      const toIso = new Date(`${exportTo}T23:59:59.999Z`).toISOString();
+      const { data, error } = await supabase
+        .from("cinematic_ad_jobs")
+        .select("id, product_slug, status, voiceover_url, voiceover_error, voiceover_last_attempt_at, created_at, updated_at")
+        .not("voiceover_error", "is", null)
+        .gte("voiceover_last_attempt_at", fromIso)
+        .lte("voiceover_last_attempt_at", toIso)
+        .order("voiceover_last_attempt_at", { ascending: false, nullsFirst: false })
+        .limit(5000);
+      if (error) throw error;
+      const rows = (data ?? []) as Array<{
+        id: string;
+        product_slug: string;
+        status: string;
+        voiceover_url: string | null;
+        voiceover_error: Record<string, unknown> | null;
+        voiceover_last_attempt_at: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
+
+      const stamp = `${exportFrom}_to_${exportTo}`;
+      let blob: Blob;
+      let filename: string;
+
+      if (format === "json") {
+        blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+        filename = `vo-errors_${stamp}.json`;
+      } else {
+        const cols = [
+          "job_id",
+          "slug",
+          "status",
+          "has_voiceover",
+          "last_attempt_at",
+          "created_at",
+          "updated_at",
+          "error_code",
+          "error_message",
+          "provider_status",
+          "http_status",
+          "beat",
+          "attempt",
+          "backfill_attempts",
+          "backfill_last_status",
+          "key_fingerprint",
+          "trace_id",
+          "provider_body",
+        ];
+        const esc = (v: unknown) => {
+          if (v == null) return "";
+          const s = typeof v === "string" ? v : JSON.stringify(v);
+          return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        };
+        const lines = [cols.join(",")];
+        for (const r of rows) {
+          const e = r.voiceover_error ?? {};
+          lines.push([
+            r.id,
+            r.product_slug,
+            r.status,
+            r.voiceover_url ? "true" : "false",
+            r.voiceover_last_attempt_at ?? "",
+            r.created_at,
+            r.updated_at,
+            (e as any).code,
+            (e as any).message,
+            (e as any).provider_status,
+            (e as any).http_status,
+            (e as any).beat,
+            (e as any).attempt,
+            (e as any).backfill_attempts,
+            (e as any).backfill_last_status,
+            (e as any).key_fingerprint,
+            (e as any).trace_id,
+            (e as any).provider_body,
+          ].map(esc).join(","));
+        }
+        blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        filename = `vo-errors_${stamp}.csv`;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setLast({
+        success: true,
+        status: `exported_${format}`,
+        message: `Exported ${rows.length} VO error rows (${format.toUpperCase()})`,
+        details: { from: fromIso, to: toIso, count: rows.length, filename },
+        timestamp: new Date().toISOString(),
+      });
+      toast.success(`Downloaded ${filename}`);
+    } catch (e) {
+      const msg = (e as Error).message ?? "Export failed";
+      toast.error(msg);
+      setLast({ success: false, status: "client_error", message: msg, timestamp: new Date().toISOString() });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -242,6 +361,56 @@ export default function OperatorPanel() {
               <AlertCircle className="mr-2 h-4 w-4" />
             )}
             Inspect VO errors
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/20 p-2">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">From</Label>
+            <Input
+              type="date"
+              value={exportFrom}
+              max={exportTo}
+              onChange={(e) => setExportFrom(e.target.value)}
+              className="h-8 w-[150px] text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">To</Label>
+            <Input
+              type="date"
+              value={exportTo}
+              min={exportFrom}
+              max={today}
+              onChange={(e) => setExportTo(e.target.value)}
+              className="h-8 w-[150px] text-xs"
+            />
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy === "export_vo_csv" || !exportFrom || !exportTo}
+            onClick={() => exportVoErrors("csv")}
+            title="Download CSV of voiceover_error + attempt history in the selected date range"
+          >
+            {busy === "export_vo_csv" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Export CSV
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy === "export_vo_json" || !exportFrom || !exportTo}
+            onClick={() => exportVoErrors("json")}
+          >
+            {busy === "export_vo_json" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Export JSON
           </Button>
         </div>
         {last ? (
