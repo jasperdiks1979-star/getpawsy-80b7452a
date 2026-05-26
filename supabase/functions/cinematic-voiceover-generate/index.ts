@@ -153,7 +153,9 @@ Deno.serve(async (req) => {
   // 7. Patch job
   await admin.from("cinematic_ad_jobs").update({
     voiceover_url,
+    vo_url: voiceover_url,
     voiceover_voice_id: voiceId,
+    voice_id: voiceId,
     voiceover_script: { beats: script },
   }).eq("id", job.id);
 

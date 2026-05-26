@@ -47,6 +47,17 @@ Deno.serve(async (req) => {
       return json({ ok: false, traceId: trace, message: "job not approved for render — call cinematic-ad-approve first" }, 412);
     }
 
+    // Hard gate: voice-over must exist before we burn render minutes.
+    const voUrl = job.vo_url ?? job.voiceover_url ?? null;
+    if (!voUrl) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed",
+        status_message: "voice-over missing — cinematic-voiceover-generate did not produce a file",
+        error_message: "missing voiceover_url",
+      }).eq("id", jobId);
+      return json({ ok: false, traceId: trace, message: "voice-over missing — run cinematic-voiceover-generate before queueing render" }, 412);
+    }
+
     const { count: activeQueuedCount } = await admin
       .from("cinematic_ad_jobs")
       .select("id", { count: "exact", head: true })
