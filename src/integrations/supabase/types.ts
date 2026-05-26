@@ -1319,6 +1319,8 @@ export type Database = {
           vo_url: string | null
           voice_id: string
           voice_style: string | null
+          voiceover_error: Json | null
+          voiceover_last_attempt_at: string | null
           voiceover_script: Json | null
           voiceover_url: string | null
           voiceover_voice_id: string | null
@@ -1486,6 +1488,8 @@ export type Database = {
           vo_url?: string | null
           voice_id?: string
           voice_style?: string | null
+          voiceover_error?: Json | null
+          voiceover_last_attempt_at?: string | null
           voiceover_script?: Json | null
           voiceover_url?: string | null
           voiceover_voice_id?: string | null
@@ -1653,6 +1657,8 @@ export type Database = {
           vo_url?: string | null
           voice_id?: string
           voice_style?: string | null
+          voiceover_error?: Json | null
+          voiceover_last_attempt_at?: string | null
           voiceover_script?: Json | null
           voiceover_url?: string | null
           voiceover_voice_id?: string | null
@@ -16816,6 +16822,8 @@ export type Database = {
           vo_url: string | null
           voice_id: string
           voice_style: string | null
+          voiceover_error: Json | null
+          voiceover_last_attempt_at: string | null
           voiceover_script: Json | null
           voiceover_url: string | null
           voiceover_voice_id: string | null

@@ -31,6 +31,32 @@ const trace = () => `vo_${Date.now().toString(36)}_${Math.random().toString(36).
 const BEATS = ["hook","problem","solution","demo","benefit","proof","cta"] as const;
 type Beat = typeof BEATS[number];
 
+type VoError = {
+  code: string;
+  message: string;
+  http_status?: number;
+  provider_status?: number;
+  provider_body?: string;
+  beat?: string;
+  attempt?: number;
+  trace_id: string;
+  at: string;
+};
+
+async function logVoError(
+  admin: ReturnType<typeof createClient>,
+  jobId: string | undefined,
+  err: VoError,
+) {
+  if (!jobId) return;
+  try {
+    await admin.from("cinematic_ad_jobs").update({
+      voiceover_error: err,
+      voiceover_last_attempt_at: err.at,
+    }).eq("id", jobId);
+  } catch (_) { /* never throw from logger */ }
+}
+
 function pickWeighted<T extends { weight: number }>(rows: T[]): T | null {
   if (rows.length === 0) return null;
   const total = rows.reduce((s, r) => s + (Number(r.weight) || 1), 0);
@@ -53,7 +79,19 @@ async function validateElevenLabsKey(): Promise<void> {
   if (!res.ok) throw new Error(`elevenlabs-user ${res.status}`);
 }
 
-async function elevenSay(text: string, voiceId: string, prev?: string, next?: string): Promise<Uint8Array> {
+class ElevenLabsError extends Error {
+  status: number;
+  body: string;
+  beat?: string;
+  constructor(status: number, body: string, beat?: string) {
+    super(`elevenlabs ${status}: ${body.slice(0, 200)}`);
+    this.status = status;
+    this.body = body;
+    this.beat = beat;
+  }
+}
+
+async function elevenSay(text: string, voiceId: string, prev?: string, next?: string, beat?: string): Promise<Uint8Array> {
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
     {
@@ -70,7 +108,7 @@ async function elevenSay(text: string, voiceId: string, prev?: string, next?: st
   );
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`elevenlabs ${res.status}: ${t.slice(0, 200)}`);
+    throw new ElevenLabsError(res.status, t, beat);
   }
   return new Uint8Array(await res.arrayBuffer());
 }
@@ -91,6 +129,9 @@ Deno.serve(async (req) => {
 
   let body: { job_id?: string; voice_id?: string; validate_only?: boolean } = {};
   try { body = await req.json(); } catch {}
+
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+
   try {
     if (body.validate_only) {
       await validateElevenLabsKey();
@@ -98,11 +139,16 @@ Deno.serve(async (req) => {
     }
     requireElevenLabsApiKey();
   } catch (e) {
-    return j(502, { ok: false, traceId, message: (e as Error).message });
+    const msg = (e as Error).message;
+    await logVoError(admin, body.job_id, {
+      code: "no_api_key",
+      message: msg,
+      trace_id: traceId,
+      at: new Date().toISOString(),
+    });
+    return j(502, { ok: false, traceId, message: msg });
   }
   if (!body.job_id) return j(400, { ok: false, traceId, message: "job_id required" });
-
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
   // 1. Ensure bucket exists (idempotent)
   await admin.storage.createBucket(BUCKET, { public: true }).catch(() => {});
@@ -112,7 +158,15 @@ Deno.serve(async (req) => {
     .from("cinematic_ad_jobs")
     .select("id, product_slug, content_type, hook_archetype, storyboard, voiceover_script")
     .eq("id", body.job_id).maybeSingle();
-  if (jobErr || !job) return j(404, { ok: false, traceId, message: "job not found" });
+  if (jobErr || !job) {
+    await logVoError(admin, body.job_id, {
+      code: "job_not_found",
+      message: jobErr?.message ?? "job not found",
+      trace_id: traceId,
+      at: new Date().toISOString(),
+    });
+    return j(404, { ok: false, traceId, message: "job not found" });
+  }
 
   // 3. Build script: prefer existing storyboard.beats, fallback to seed lines
   const archetype = (job.content_type ?? "product_spotlight") as string;
@@ -140,7 +194,15 @@ Deno.serve(async (req) => {
       if (picked) script.push({ beat, text: (picked as any).text });
     }
   }
-  if (script.length === 0) return j(422, { ok: false, traceId, message: "could not assemble script" });
+  if (script.length === 0) {
+    await logVoError(admin, job.id, {
+      code: "no_script",
+      message: "could not assemble script (no storyboard beats and no seed lines for archetype)",
+      trace_id: traceId,
+      at: new Date().toISOString(),
+    });
+    return j(422, { ok: false, traceId, message: "could not assemble script" });
+  }
 
   // 4. Pick voice
   let voiceId = body.voice_id;
@@ -156,7 +218,48 @@ Deno.serve(async (req) => {
   for (let i = 0; i < script.length; i++) {
     const prev = script[i - 1]?.text;
     const next = script[i + 1]?.text;
-    parts.push(await elevenSay(script[i].text, voiceId!, prev, next));
+    try {
+      parts.push(await elevenSay(script[i].text, voiceId!, prev, next, script[i].beat));
+    } catch (e) {
+      const at = new Date().toISOString();
+      if (e instanceof ElevenLabsError) {
+        const lowered = e.body.toLowerCase();
+        let code = `elevenlabs_${e.status}`;
+        if (e.status === 401 || /invalid_api_key/.test(lowered)) code = "invalid_api_key";
+        else if (e.status === 429 || /quota|rate/.test(lowered)) code = "quota_exceeded";
+        else if (e.status === 422) code = "elevenlabs_unprocessable";
+        await logVoError(admin, job.id, {
+          code,
+          message: e.message,
+          http_status: 502,
+          provider_status: e.status,
+          provider_body: e.body.slice(0, 1000),
+          beat: e.beat,
+          attempt: i + 1,
+          trace_id: traceId,
+          at,
+        });
+        return j(502, {
+          ok: false,
+          traceId,
+          message: e.message,
+          code,
+          provider_status: e.status,
+          provider_body: e.body.slice(0, 500),
+          beat: e.beat,
+        });
+      }
+      const msg = (e as Error).message ?? "tts_failed";
+      await logVoError(admin, job.id, {
+        code: "tts_failed",
+        message: msg,
+        beat: script[i].beat,
+        attempt: i + 1,
+        trace_id: traceId,
+        at,
+      });
+      return j(500, { ok: false, traceId, message: msg, code: "tts_failed", beat: script[i].beat });
+    }
   }
   const mp3 = concatMp3s(parts);
 
@@ -165,7 +268,15 @@ Deno.serve(async (req) => {
   const { error: upErr } = await admin.storage.from(BUCKET).upload(path, mp3, {
     contentType: "audio/mpeg", upsert: true,
   });
-  if (upErr) return j(500, { ok: false, traceId, message: `upload: ${upErr.message}` });
+  if (upErr) {
+    await logVoError(admin, job.id, {
+      code: "storage_upload_failed",
+      message: upErr.message,
+      trace_id: traceId,
+      at: new Date().toISOString(),
+    });
+    return j(500, { ok: false, traceId, message: `upload: ${upErr.message}` });
+  }
 
   const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(path);
   const voiceover_url = pub.publicUrl;
@@ -177,6 +288,8 @@ Deno.serve(async (req) => {
     voiceover_voice_id: voiceId,
     voice_id: voiceId,
     voiceover_script: { beats: script },
+    voiceover_error: null,
+    voiceover_last_attempt_at: new Date().toISOString(),
   }).eq("id", job.id);
 
   return j(200, { ok: true, traceId, voiceover_url, voiceover_voice_id: voiceId, voiceover_script: { beats: script } });
