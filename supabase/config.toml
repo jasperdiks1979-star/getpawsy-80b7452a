@@ -284,3 +284,6 @@ verify_jwt = false
 
 [functions.worker-debug]
 verify_jwt = false
+
+[functions.cinematic-force-approve-batch]
+verify_jwt = false
