@@ -19,6 +19,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { getPreset, trimVoScriptToFit, HARD_MAX_DURATION_SEC } from "../_shared/cinematic-presets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -205,7 +206,7 @@ Deno.serve(async (req) => {
   // 2. Load job + storyboard
   const { data: job, error: jobErr } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, content_type, hook_archetype, storyboard, voiceover_script")
+    .select("id, product_slug, content_type, hook_archetype, storyboard, voiceover_script, preset")
     .eq("id", body.job_id).maybeSingle();
   if (jobErr || !job) {
     await logVoError(admin, body.job_id, {
@@ -252,6 +253,18 @@ Deno.serve(async (req) => {
     });
     return j(422, { ok: false, traceId, message: "could not assemble script" });
   }
+
+  // Auto-trim VO script to fit the target duration (15s hard cap). Prevents
+  // ElevenLabs from synthesizing 11-minute voiceovers that overflow the
+  // render timeline.
+  const presetForVo = getPreset((job as any).preset ?? "pin-organic");
+  const trim = trimVoScriptToFit(script, presetForVo);
+  if (trim.trimmed) {
+    console.log(`[voiceover-generate] ${traceId} trimmed script`, {
+      jobId: job.id, words: trim.words, cap_sec: Math.min(presetForVo.durationSec, HARD_MAX_DURATION_SEC),
+    });
+  }
+  script = trim.beats as typeof script;
 
   // 4. Pick voice
   let voiceId = body.voice_id;
