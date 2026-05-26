@@ -27,6 +27,52 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
   } catch (e) { console.error("[pvp] log failed", e); }
 }
 
+// ── Product context loader ────────────────────────────────────────
+async function loadProductContext(sb: any, slug: string | null | undefined): Promise<ProductContext | undefined> {
+  const s = (slug || "").trim();
+  if (!s) return undefined;
+  try {
+    const { data } = await sb.from("products")
+      .select("slug, name, category, benefit_angle, primary_keyword, seo_keywords")
+      .eq("slug", s).maybeSingle();
+    if (!data) return { slug: s };
+    return {
+      slug: data.slug,
+      name: data.name,
+      category: data.category,
+      benefit_angle: data.benefit_angle,
+      primary_keyword: data.primary_keyword,
+      tags: Array.isArray(data.seo_keywords) ? data.seo_keywords : null,
+    };
+  } catch { return { slug: s }; }
+}
+
+// ── 30-day copy de-duplication ────────────────────────────────────
+async function isCopyUsedRecently(sb: any, variation_hash: string): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    const { data } = await sb.from("pinterest_video_copy_history")
+      .select("id").eq("variation_hash", variation_hash).gte("used_at", since).limit(1).maybeSingle();
+    return !!data;
+  } catch { return false; }
+}
+
+async function recordCopyHistory(sb: any, asset_id: string, meta: {
+  variation_hash: string; title: string; description: string; hook_variant: string; copy_variant: string; cta_variant: string;
+}) {
+  try {
+    await sb.from("pinterest_video_copy_history").insert({
+      asset_id,
+      variation_hash: meta.variation_hash,
+      title: meta.title,
+      description: meta.description,
+      hook_variant: meta.hook_variant,
+      copy_variant: meta.copy_variant,
+      cta_variant: meta.cta_variant,
+    });
+  } catch (e) { console.warn("[pvp] copy history insert failed", (e as Error).message); }
+}
+
 // ── Media URL resolution + validation ─────────────────────────────────
 // Pinterest /media uploads require a real, publicly fetchable MP4. The
 // previous implementation streamed from `sb.storage.download(...)`, which
