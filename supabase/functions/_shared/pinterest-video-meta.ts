@@ -377,3 +377,117 @@ export function buildDestinationUrl(slug: string | null | undefined): string {
 
 // Deprecated — kept only to avoid breaking historical imports. Points to home, not litterbox.
 export const DEFAULT_DESTINATION_URL = buildDestinationUrl(null);
+
+// ── Category mismatch validator ───────────────────────────────────
+// Returns ok=false when title/description/hook clearly belong to a DIFFERENT
+// product category than the one detected from product data. Used as a hard
+// gate before publishing so e.g. a catio asset can never ship with a
+// "self-cleaning litter box" title.
+const CATEGORY_KEYWORDS: Partial<Record<Category, RegExp>> = {
+  cat_litter: /litter\s*box|self.?cleaning.*litter|automatic.*litter|scoop/i,
+  catio: /\bcatio\b|cat.*enclosure|outdoor.*cat|window.*box/i,
+  cat_tree: /cat.?tree|cat.?condo|cat.?tower|scratch.*post|scratching.*post/i,
+  dog_bed: /\bdog.?bed|orthopedic.*bed|pet.?cot|cooling.?bed|nap.*mat/i,
+  dog_travel: /stroller|carrier|backpack|car.?seat|travel\s*crate/i,
+  toy: /\btoy\b|chew\s*toy|puzzle\s*toy|tug\s*toy/i,
+};
+
+export function validateCategoryMatch(opts: {
+  product: ProductContext;
+  title: string;
+  description?: string;
+  hook?: string;
+}): { ok: boolean; productCategory: Category; conflictingCategory?: Category; reason?: string } {
+  const productCategory = detectCategory({
+    slug: opts.product.slug ?? undefined,
+    name: opts.product.name ?? undefined,
+    category: opts.product.category ?? undefined,
+    tags: opts.product.tags ?? undefined,
+  });
+  const hay = [opts.title, opts.description, opts.hook].filter(Boolean).join(" ");
+  for (const [cat, re] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (cat === productCategory) continue;
+    // Skip near-categories (e.g. cat_other can mention "cat") — only flag if
+    // copy uses keywords from a *specific* incompatible category.
+    if (!re) continue;
+    if (re.test(hay)) {
+      // cat_other / dog_other / generic / pet_tech tolerate any specific cat hit
+      // EXCEPT when product category is from the opposite specific pillar.
+      const productPillar = productCategory.startsWith("cat") ? "cat" : productCategory.startsWith("dog") ? "dog" : "other";
+      const conflictPillar = cat.startsWith("cat") ? "cat" : cat.startsWith("dog") ? "dog" : "other";
+      // Always block when copy claims a SPECIFIC category different from product's specific one.
+      const isSpecific = (c: string) => ["cat_litter","catio","cat_tree","dog_bed","dog_travel","toy"].includes(c);
+      if (isSpecific(productCategory) && isSpecific(cat)) {
+        return { ok: false, productCategory, conflictingCategory: cat as Category, reason: `copy mentions ${cat} but product is ${productCategory}` };
+      }
+      // For generic/other product categories: only block on cross-pillar (cat-vs-dog) confusion.
+      if (productPillar !== "other" && conflictPillar !== "other" && productPillar !== conflictPillar) {
+        return { ok: false, productCategory, conflictingCategory: cat as Category, reason: `copy is ${conflictPillar}-themed but product is ${productPillar}` };
+      }
+      // For unrelated specific copy on generic product, also block.
+      if (productCategory === "generic" || productCategory === "pet_tech") {
+        return { ok: false, productCategory, conflictingCategory: cat as Category, reason: `copy is ${cat}-specific but product category is ${productCategory}` };
+      }
+    }
+  }
+  return { ok: true, productCategory };
+}
+
+// ── Text safe-area validator (9:16 mobile Pinterest frame) ────────
+// Rules:
+//  - Max 34 chars per line
+//  - Max 2 lines
+//  - Never in top 12% or bottom 18% of frame
+// Operates on a scene_plan-like array OR on raw overlay text strings.
+export interface SafeAreaResult { ok: boolean; violations: string[]; max_line_length: number }
+
+export function validateTextSafeArea(opts: {
+  hook_text?: string | null;
+  pin_title?: string | null;
+  cta_text?: string | null;
+  scene_plan?: Array<{ caption?: string; y_pct?: number; isCta?: boolean; isHook?: boolean }> | null;
+}): SafeAreaResult {
+  const violations: string[] = [];
+  const MAX_LINE = 34;
+  const MAX_LINES = 2;
+  let maxLineLength = 0;
+
+  const checkText = (label: string, raw?: string | null) => {
+    if (!raw) return;
+    const text = raw.trim();
+    if (!text) return;
+    // Greedy wrap into lines respecting MAX_LINE
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let cur = "";
+    for (const w of words) {
+      const candidate = cur ? cur + " " + w : w;
+      if (candidate.length > MAX_LINE && cur) {
+        lines.push(cur);
+        cur = w;
+      } else {
+        cur = candidate;
+      }
+    }
+    if (cur) lines.push(cur);
+    for (const l of lines) maxLineLength = Math.max(maxLineLength, l.length);
+    if (lines.length > MAX_LINES) violations.push(`${label}: ${lines.length} lines exceeds max ${MAX_LINES}`);
+    if (lines.some((l) => l.length > MAX_LINE)) violations.push(`${label}: line over ${MAX_LINE} chars`);
+  };
+
+  checkText("hook_text", opts.hook_text);
+  checkText("pin_title", opts.pin_title);
+  checkText("cta_text", opts.cta_text);
+
+  // Scene-plan caption y-position guard
+  for (const [i, s] of (opts.scene_plan || []).entries()) {
+    if (!s?.caption) continue;
+    checkText(`scene[${i}].caption`, s.caption);
+    if (typeof s.y_pct === "number") {
+      if (s.y_pct < 12) violations.push(`scene[${i}]: y=${s.y_pct}% is in top-12% reserved zone`);
+      if (s.y_pct > 82) violations.push(`scene[${i}]: y=${s.y_pct}% is in bottom-18% reserved zone`);
+    }
+  }
+
+  return { ok: violations.length === 0, violations, max_line_length: maxLineLength };
+}
