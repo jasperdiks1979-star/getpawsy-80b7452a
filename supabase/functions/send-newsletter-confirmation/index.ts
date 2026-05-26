@@ -49,6 +49,16 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('email', email.toLowerCase())
       .single();
 
+    // Only send the confirmation to addresses that actually subscribed.
+    // Prevents abuse of this endpoint to spam arbitrary recipients.
+    if (!subscriber) {
+      console.warn(`[send-newsletter-confirmation] No subscriber row for ${email}; refusing to send.`);
+      return new Response(
+        JSON.stringify({ ok: true, skipped: true }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const preferenceToken = subscriber?.preference_token || '';
 
     console.log(`Sending newsletter confirmation to: ${email}`);
