@@ -198,8 +198,32 @@ Deno.serve(async (req) => {
     }
 
     results.push({ job_id: jobId, ok, attempts: attempt, message: lastMsg, status: lastStatus });
-    if (ok) succeeded++;
-    else failed++;
+    if (ok) {
+      succeeded++;
+    } else {
+      failed++;
+      // Annotate the existing voiceover_error row (set by generate) with the
+      // backfill attempt count + last status so operators see retry context.
+      try {
+        const { data: existing } = await admin
+          .from("cinematic_ad_jobs")
+          .select("voiceover_error")
+          .eq("id", jobId)
+          .maybeSingle();
+        const prev = (existing?.voiceover_error ?? {}) as Record<string, unknown>;
+        await admin.from("cinematic_ad_jobs").update({
+          voiceover_error: {
+            ...prev,
+            backfill_attempts: attempt,
+            backfill_last_status: lastStatus ?? null,
+            backfill_last_message: lastMsg?.slice(0, 1000) ?? null,
+            backfill_trace_id: traceId,
+            backfill_at: new Date().toISOString(),
+          },
+          voiceover_last_attempt_at: new Date().toISOString(),
+        }).eq("id", jobId);
+      } catch (_) { /* swallow */ }
+    }
 
     if (circuitTripped) {
       // Flip breaker and stop processing remaining jobs.
