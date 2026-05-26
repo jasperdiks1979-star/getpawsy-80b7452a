@@ -12,6 +12,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import {
+  getPreset,
+  enforceSceneDurations,
+  HARD_MAX_DURATION_SEC,
+} from "../_shared/cinematic-presets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -175,6 +180,18 @@ Deno.serve(async (req) => {
     if (jobErr || !job) return json(404, { ok: false, traceId, message: "job not found" });
 
     const storyboard = await generateWithAI(String(job.product_name ?? job.product_slug ?? "this product"), String(job.product_category ?? ""));
+
+    // Hard duration governance: clamp scenes to preset cap (≤15s total, ≤4s/scene).
+    const presetForJob = getPreset((job as any).preset ?? "pin-organic");
+    const enforced = enforceSceneDurations(storyboard.scenes as any[], presetForJob);
+    storyboard.scenes = enforced.scenes as any;
+    storyboard.totalFrames = enforced.totalFrames;
+    if (enforced.changed) {
+      console.log(`[storyboard] ${traceId} duration-clamped`, {
+        jobId, reasons: enforced.reasons, totalFrames: enforced.totalFrames,
+        cap_sec: HARD_MAX_DURATION_SEC,
+      });
+    }
 
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
