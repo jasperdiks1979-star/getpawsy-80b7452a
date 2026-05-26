@@ -3,7 +3,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import { getPinterestApiBase } from "../_shared/pinterest-config.ts";
-import { generateVideoMeta, DEFAULT_DESTINATION_URL } from "../_shared/pinterest-video-meta.ts";
+import { generateVideoMeta, buildDestinationUrl, type ProductContext } from "../_shared/pinterest-video-meta.ts";
 import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
 import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
@@ -25,6 +25,52 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
   try {
     await sb.from("pinterest_video_publish_log").insert({ queue_id, stage, status, payload, trace_id });
   } catch (e) { console.error("[pvp] log failed", e); }
+}
+
+// ── Product context loader ────────────────────────────────────────
+async function loadProductContext(sb: any, slug: string | null | undefined): Promise<ProductContext | undefined> {
+  const s = (slug || "").trim();
+  if (!s) return undefined;
+  try {
+    const { data } = await sb.from("products")
+      .select("slug, name, category, benefit_angle, primary_keyword, seo_keywords")
+      .eq("slug", s).maybeSingle();
+    if (!data) return { slug: s };
+    return {
+      slug: data.slug,
+      name: data.name,
+      category: data.category,
+      benefit_angle: data.benefit_angle,
+      primary_keyword: data.primary_keyword,
+      tags: Array.isArray(data.seo_keywords) ? data.seo_keywords : null,
+    };
+  } catch { return { slug: s }; }
+}
+
+// ── 30-day copy de-duplication ────────────────────────────────────
+async function isCopyUsedRecently(sb: any, variation_hash: string): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    const { data } = await sb.from("pinterest_video_copy_history")
+      .select("id").eq("variation_hash", variation_hash).gte("used_at", since).limit(1).maybeSingle();
+    return !!data;
+  } catch { return false; }
+}
+
+async function recordCopyHistory(sb: any, asset_id: string, meta: {
+  variation_hash: string; title: string; description: string; hook_variant: string; copy_variant: string; cta_variant: string;
+}) {
+  try {
+    await sb.from("pinterest_video_copy_history").insert({
+      asset_id,
+      variation_hash: meta.variation_hash,
+      title: meta.title,
+      description: meta.description,
+      hook_variant: meta.hook_variant,
+      copy_variant: meta.copy_variant,
+      cta_variant: meta.cta_variant,
+    });
+  } catch (e) { console.warn("[pvp] copy history insert failed", (e as Error).message); }
 }
 
 // ── Media URL resolution + validation ─────────────────────────────────
@@ -434,14 +480,13 @@ serve(async (req) => {
       for (const asset_id of ids) {
         const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", asset_id).maybeSingle();
         if (!asset) continue;
-        // try up to 5 variations to satisfy unique (asset_id, variation_hash)
+        const product = await loadProductContext(sb, asset.product_slug);
+        // try up to 8 variations: unique vs queue (variation_hash) + 30-day copy history
         let inserted = false;
-        for (let attempt = 0; attempt < 5 && !inserted; attempt++) {
-          const meta = generateVideoMeta({ asset_id, hook: asset.hook_type as VideoHook, attempt });
-          const slug = (asset.product_slug || "").trim();
-          const destination_url = slug
-            ? `https://getpawsy.pet/products/${slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=${slug}`
-            : DEFAULT_DESTINATION_URL;
+        for (let attempt = 0; attempt < 8 && !inserted; attempt++) {
+          const meta = generateVideoMeta({ asset_id, hook: asset.hook_type as VideoHook, attempt, product });
+          if (await isCopyUsedRecently(sb, meta.variation_hash)) continue;
+          const destination_url = buildDestinationUrl(asset.product_slug);
           const { data, error } = await sb.from("pinterest_video_queue").insert({
             asset_id,
             status: "draft",
@@ -451,8 +496,15 @@ serve(async (req) => {
             cta_text: meta.cta_text,
             destination_url,
             variation_hash: meta.variation_hash,
+            hook_variant: meta.hook_variant,
+            copy_variant: meta.copy_variant,
+            cta_variant: meta.cta_variant,
           }).select("id").maybeSingle();
-          if (!error && data) { created.push(data.id); inserted = true; }
+          if (!error && data) {
+            created.push(data.id);
+            await recordCopyHistory(sb, asset_id, meta);
+            inserted = true;
+          }
         }
       }
       return ok({ ok: true, traceId: trace_id, created_count: created.length, queue_ids: created });
@@ -466,14 +518,20 @@ serve(async (req) => {
       if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
       const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", row.asset_id).maybeSingle();
       if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
-      for (let attempt = 1; attempt < 8; attempt++) {
-        const meta = generateVideoMeta({ asset_id: row.asset_id, hook: asset.hook_type as VideoHook, attempt });
+      const product = await loadProductContext(sb, asset.product_slug);
+      for (let attempt = 1; attempt < 12; attempt++) {
+        const meta = generateVideoMeta({ asset_id: row.asset_id, hook: asset.hook_type as VideoHook, attempt, product });
         if (meta.variation_hash === row.variation_hash) continue;
+        if (await isCopyUsedRecently(sb, meta.variation_hash)) continue;
         const { error } = await sb.from("pinterest_video_queue").update({
           title: meta.title, description: meta.description, hashtags: meta.hashtags,
           cta_text: meta.cta_text, variation_hash: meta.variation_hash,
+          hook_variant: meta.hook_variant, copy_variant: meta.copy_variant, cta_variant: meta.cta_variant,
         }).eq("id", queue_id);
-        if (!error) return ok({ ok: true, traceId: trace_id, ...meta });
+        if (!error) {
+          await recordCopyHistory(sb, row.asset_id, meta);
+          return ok({ ok: true, traceId: trace_id, ...meta });
+        }
       }
       return ok({ ok: false, code: "REROLL_EXHAUSTED", traceId: trace_id });
     }
