@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Loader2, Play, RotateCcw, RefreshCw, X, Trash2, Send, Copy, Download,
-  ExternalLink, Wand2, AlertTriangle, Zap, Filter, FileDown,
+  ExternalLink, Wand2, AlertTriangle, Zap, Filter, FileDown, Rocket,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
@@ -475,6 +475,28 @@ export default function CinematicAdsControlCenterPage() {
           >
             {bulkBusy === "publish_all" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
             Publish all completed ({publishableCount})
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            onClick={async () => {
+              setBulkBusy("launch_12pack");
+              try {
+                const { data, error } = await supabase.functions.invoke("cinematic-campaign-12pack", { body: {} });
+                if (error) throw error;
+                if (data && data.ok === false) throw new Error(data.message ?? "Launch failed");
+                toast.success(`Launched 12-pack • ${data?.total_seeded ?? 0} jobs queued`);
+                fetchRows();
+              } catch (e: any) {
+                toast.error(e?.message ?? "12-pack launch failed");
+              } finally {
+                setBulkBusy(null);
+              }
+            }}
+            disabled={bulkBusy === "launch_12pack"}
+          >
+            {bulkBusy === "launch_12pack" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Rocket className="mr-2 h-4 w-4" />}
+            Launch 12-pack Pinterest campaign
           </Button>
         </div>
       </header>
