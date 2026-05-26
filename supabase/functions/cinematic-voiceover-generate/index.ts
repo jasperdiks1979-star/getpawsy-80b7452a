@@ -22,7 +22,6 @@ import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/b
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ELEVEN_KEY   = Deno.env.get("ELEVENLABS_API_KEY")!;
 const BUCKET = "cinematic-voiceovers";
 
 const j = (status: number, body: unknown) =>
@@ -40,12 +39,26 @@ function pickWeighted<T extends { weight: number }>(rows: T[]): T | null {
   return rows[rows.length - 1];
 }
 
+function requireElevenLabsApiKey(): string {
+  const key = (Deno.env.get("ELEVENLABS_API_KEY") ?? "").trim().replace(/^['"]|['"]$/g, "");
+  if (!key) throw new Error("ELEVENLABS_API_KEY not configured");
+  return key;
+}
+
+async function validateElevenLabsKey(): Promise<void> {
+  const res = await fetch("https://api.elevenlabs.io/v1/user", {
+    headers: { "xi-api-key": requireElevenLabsApiKey() },
+  });
+  await res.text();
+  if (!res.ok) throw new Error(`elevenlabs-user ${res.status}`);
+}
+
 async function elevenSay(text: string, voiceId: string, prev?: string, next?: string): Promise<Uint8Array> {
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
     {
       method: "POST",
-      headers: { "xi-api-key": ELEVEN_KEY, "Content-Type": "application/json" },
+      headers: { "xi-api-key": requireElevenLabsApiKey(), "Content-Type": "application/json" },
       body: JSON.stringify({
         text,
         model_id: "eleven_multilingual_v2",
@@ -76,10 +89,17 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = trace();
 
-  if (!ELEVEN_KEY) return j(500, { ok: false, traceId, message: "ELEVENLABS_API_KEY not configured" });
-
-  let body: { job_id?: string; voice_id?: string } = {};
+  let body: { job_id?: string; voice_id?: string; validate_only?: boolean } = {};
   try { body = await req.json(); } catch {}
+  try {
+    if (body.validate_only) {
+      await validateElevenLabsKey();
+      return j(200, { ok: true, traceId, message: "ElevenLabs key accepted by /v1/user" });
+    }
+    requireElevenLabsApiKey();
+  } catch (e) {
+    return j(502, { ok: false, traceId, message: (e as Error).message });
+  }
   if (!body.job_id) return j(400, { ok: false, traceId, message: "job_id required" });
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
