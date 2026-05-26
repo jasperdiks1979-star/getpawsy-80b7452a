@@ -9436,6 +9436,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_analytics_daily: {
+        Row: {
+          ctr: number
+          day: string
+          engagement_rate: number
+          fetched_at: string
+          id: string
+          impressions: number
+          outbound_clicks: number
+          pin_clicks: number
+          pin_id: string
+          quality_score: number | null
+          raw: Json | null
+          saves: number
+          video_views: number
+        }
+        Insert: {
+          ctr?: number
+          day: string
+          engagement_rate?: number
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_clicks?: number
+          pin_id: string
+          quality_score?: number | null
+          raw?: Json | null
+          saves?: number
+          video_views?: number
+        }
+        Update: {
+          ctr?: number
+          day?: string
+          engagement_rate?: number
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_clicks?: number
+          pin_id?: string
+          quality_score?: number | null
+          raw?: Json | null
+          saves?: number
+          video_views?: number
+        }
+        Relationships: []
+      }
       pinterest_archetype_cooldown: {
         Row: {
           archetype: string
@@ -9910,6 +9958,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_category_benchmarks: {
+        Row: {
+          avg_ctr: number
+          avg_engagement: number
+          avg_save_rate: number
+          category_key: string
+          computed_at: string
+          id: string
+          sample_size: number
+          window_days: number
+        }
+        Insert: {
+          avg_ctr?: number
+          avg_engagement?: number
+          avg_save_rate?: number
+          category_key: string
+          computed_at?: string
+          id?: string
+          sample_size?: number
+          window_days: number
+        }
+        Update: {
+          avg_ctr?: number
+          avg_engagement?: number
+          avg_save_rate?: number
+          category_key?: string
+          computed_at?: string
+          id?: string
+          sample_size?: number
+          window_days?: number
+        }
+        Relationships: []
+      }
       pinterest_category_rotation: {
         Row: {
           category: string | null
@@ -10072,6 +10153,42 @@ export type Database = {
           status?: string
           total_estimate?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_competitor_pins: {
+        Row: {
+          description: string | null
+          fetched_at: string
+          id: string
+          pattern_tags: string[] | null
+          pin_external_id: string | null
+          save_rate_est: number | null
+          source_account: string | null
+          title: string | null
+          visual_hash: string | null
+        }
+        Insert: {
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          pattern_tags?: string[] | null
+          pin_external_id?: string | null
+          save_rate_est?: number | null
+          source_account?: string | null
+          title?: string | null
+          visual_hash?: string | null
+        }
+        Update: {
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          pattern_tags?: string[] | null
+          pin_external_id?: string | null
+          save_rate_est?: number | null
+          source_account?: string | null
+          title?: string | null
+          visual_hash?: string | null
         }
         Relationships: []
       }
@@ -10344,6 +10461,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_domain_health: {
+        Row: {
+          checked_at: string
+          domain: string
+          http_status: number | null
+          id: string
+          latency_ms: number | null
+          notes: string | null
+          ok: boolean
+          pinterest_reachable: boolean | null
+        }
+        Insert: {
+          checked_at?: string
+          domain: string
+          http_status?: number | null
+          id?: string
+          latency_ms?: number | null
+          notes?: string | null
+          ok?: boolean
+          pinterest_reachable?: boolean | null
+        }
+        Update: {
+          checked_at?: string
+          domain?: string
+          http_status?: number | null
+          id?: string
+          latency_ms?: number | null
+          notes?: string | null
+          ok?: boolean
+          pinterest_reachable?: boolean | null
+        }
+        Relationships: []
+      }
       pinterest_evolution_log: {
         Row: {
           created_at: string
@@ -10377,6 +10527,39 @@ export type Database = {
           old_value?: Json | null
           rationale?: string | null
           target_dimension?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_funnel_events: {
+        Row: {
+          currency: string | null
+          event_name: string
+          id: string
+          occurred_at: string
+          pin_id: string | null
+          product_slug: string | null
+          session_key: string | null
+          value: number | null
+        }
+        Insert: {
+          currency?: string | null
+          event_name: string
+          id?: string
+          occurred_at?: string
+          pin_id?: string | null
+          product_slug?: string | null
+          session_key?: string | null
+          value?: number | null
+        }
+        Update: {
+          currency?: string | null
+          event_name?: string
+          id?: string
+          occurred_at?: string
+          pin_id?: string | null
+          product_slug?: string | null
+          session_key?: string | null
+          value?: number | null
         }
         Relationships: []
       }
@@ -10527,6 +10710,36 @@ export type Database = {
           music_mood?: string
           overlay_hook?: string
           scene_name?: string
+        }
+        Relationships: []
+      }
+      pinterest_loser_blocklist: {
+        Row: {
+          asset_id: string | null
+          blocked_until: string | null
+          created_at: string
+          hook_variant: string | null
+          id: string
+          product_slug: string | null
+          reason: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          blocked_until?: string | null
+          created_at?: string
+          hook_variant?: string | null
+          id?: string
+          product_slug?: string | null
+          reason?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          blocked_until?: string | null
+          created_at?: string
+          hook_variant?: string | null
+          id?: string
+          product_slug?: string | null
+          reason?: string | null
         }
         Relationships: []
       }
@@ -10779,6 +10992,51 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pin_dimensions: {
+        Row: {
+          asset_id: string | null
+          board_id: string | null
+          category_key: string | null
+          copy_variant: string | null
+          cta_variant: string | null
+          hook_variant: string | null
+          niche_key: string | null
+          pin_id: string
+          product_slug: string | null
+          published_at: string | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id?: string | null
+          board_id?: string | null
+          category_key?: string | null
+          copy_variant?: string | null
+          cta_variant?: string | null
+          hook_variant?: string | null
+          niche_key?: string | null
+          pin_id: string
+          product_slug?: string | null
+          published_at?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string | null
+          board_id?: string | null
+          category_key?: string | null
+          copy_variant?: string | null
+          cta_variant?: string | null
+          hook_variant?: string | null
+          niche_key?: string | null
+          pin_id?: string
+          product_slug?: string | null
+          published_at?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_pin_performance: {
         Row: {
           clicks: number | null
@@ -10992,6 +11250,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pin_verdicts: {
+        Row: {
+          action_taken: string | null
+          ctr: number | null
+          id: string
+          impressions: number | null
+          pin_id: string
+          reason: string | null
+          saves: number | null
+          scored_at: string
+          verdict: string
+          winner_score: number | null
+        }
+        Insert: {
+          action_taken?: string | null
+          ctr?: number | null
+          id?: string
+          impressions?: number | null
+          pin_id: string
+          reason?: string | null
+          saves?: number | null
+          scored_at?: string
+          verdict: string
+          winner_score?: number | null
+        }
+        Update: {
+          action_taken?: string | null
+          ctr?: number | null
+          id?: string
+          impressions?: number | null
+          pin_id?: string
+          reason?: string | null
+          saves?: number | null
+          scored_at?: string
+          verdict?: string
+          winner_score?: number | null
+        }
+        Relationships: []
+      }
       pinterest_pins: {
         Row: {
           created_at: string
@@ -11080,6 +11377,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_posting_windows: {
+        Row: {
+          category_key: string
+          computed_at: string
+          hour_of_day: number
+          id: string
+          sample_size: number
+          score: number
+          timezone: string
+        }
+        Insert: {
+          category_key: string
+          computed_at?: string
+          hour_of_day: number
+          id?: string
+          sample_size?: number
+          score?: number
+          timezone: string
+        }
+        Update: {
+          category_key?: string
+          computed_at?: string
+          hour_of_day?: number
+          id?: string
+          sample_size?: number
+          score?: number
+          timezone?: string
+        }
+        Relationships: []
+      }
+      pinterest_publish_governor: {
+        Row: {
+          cooldown_minutes_per_product: number
+          domain_healthy: boolean
+          id: string
+          max_per_board_per_day: number
+          max_pins_per_hour: number
+          trust_score: number
+          updated_at: string
+        }
+        Insert: {
+          cooldown_minutes_per_product?: number
+          domain_healthy?: boolean
+          id?: string
+          max_per_board_per_day?: number
+          max_pins_per_hour?: number
+          trust_score?: number
+          updated_at?: string
+        }
+        Update: {
+          cooldown_minutes_per_product?: number
+          domain_healthy?: boolean
+          id?: string
+          max_per_board_per_day?: number
+          max_pins_per_hour?: number
+          trust_score?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       pinterest_publish_logs: {
         Row: {
@@ -11864,6 +12221,7 @@ export type Database = {
       }
       pinterest_video_queue: {
         Row: {
+          archived: boolean
           asset_id: string
           attempt_count: number
           board_id: string | null
@@ -11883,13 +12241,16 @@ export type Database = {
           last_retry_at: string | null
           max_retries: number
           pin_id: string | null
+          priority: number
           scheduled_at: string | null
           status: string
           title: string
           updated_at: string
           variation_hash: string
+          winner_score: number | null
         }
         Insert: {
+          archived?: boolean
           asset_id: string
           attempt_count?: number
           board_id?: string | null
@@ -11909,13 +12270,16 @@ export type Database = {
           last_retry_at?: string | null
           max_retries?: number
           pin_id?: string | null
+          priority?: number
           scheduled_at?: string | null
           status?: string
           title: string
           updated_at?: string
           variation_hash: string
+          winner_score?: number | null
         }
         Update: {
+          archived?: boolean
           asset_id?: string
           attempt_count?: number
           board_id?: string | null
@@ -11935,11 +12299,13 @@ export type Database = {
           last_retry_at?: string | null
           max_retries?: number
           pin_id?: string | null
+          priority?: number
           scheduled_at?: string | null
           status?: string
           title?: string
           updated_at?: string
           variation_hash?: string
+          winner_score?: number | null
         }
         Relationships: [
           {
