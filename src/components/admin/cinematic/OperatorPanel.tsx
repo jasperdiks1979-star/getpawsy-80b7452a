@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Wrench, KeyRound } from "lucide-react";
+import { Loader2, Wrench, KeyRound, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 
 type Envelope = {
@@ -74,6 +74,52 @@ export default function OperatorPanel() {
     }
   };
 
+  const backfillVoiceovers = async (force = false) => {
+    const id = force ? "backfill_vo_force" : "backfill_vo";
+    setBusy(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-voiceover-backfill", {
+        body: { limit: 25, force },
+      });
+      if (error) throw error;
+      const r = data as {
+        ok: boolean;
+        state: string;
+        message: string;
+        processed?: number;
+        succeeded?: number;
+        failed?: number;
+        skipped?: number;
+        results?: unknown;
+        key_fingerprint?: string;
+      };
+      const env: Envelope = {
+        success: !!r.ok,
+        status: r.state,
+        message: r.message,
+        details: {
+          processed: r.processed,
+          succeeded: r.succeeded,
+          failed: r.failed,
+          skipped: r.skipped,
+          key_fingerprint: r.key_fingerprint,
+          results: r.results,
+        },
+        timestamp: new Date().toISOString(),
+      };
+      setLast(env);
+      if (env.success) toast.success(env.message);
+      else if (r.state === "circuit_open") toast.error("Breaker open — rotate ElevenLabs key");
+      else toast.error(env.message);
+    } catch (e) {
+      const msg = (e as Error).message ?? "Request failed";
+      toast.error(msg);
+      setLast({ success: false, status: "client_error", message: msg, timestamp: new Date().toISOString() });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -107,6 +153,31 @@ export default function OperatorPanel() {
               <KeyRound className="mr-2 h-4 w-4" />
             )}
             Test ElevenLabs key
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy === "backfill_vo"}
+            onClick={() => backfillVoiceovers(false)}
+          >
+            {busy === "backfill_vo" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCw className="mr-2 h-4 w-4" />
+            )}
+            Backfill voiceovers
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy === "backfill_vo_force"}
+            onClick={() => backfillVoiceovers(true)}
+            title="Bypass circuit breaker (re-validate key + retry even if previously invalid)"
+          >
+            {busy === "backfill_vo_force" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            Force retry
           </Button>
         </div>
         {last ? (
