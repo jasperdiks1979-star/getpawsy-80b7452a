@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.cinematic-style-performance-rollup]
 verify_jwt = false
 
+[functions.cinematic-performance-ingest]
+verify_jwt = false
+
 [functions.sync-stock]
 verify_jwt = false
 

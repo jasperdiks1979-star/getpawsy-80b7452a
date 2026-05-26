@@ -1,0 +1,16 @@
+---
+name: Cinematic video engine v5
+description: Native Human UGC upgrade — handheld camera sim, 7-beat social arc, lived-in environments, UGC authenticity + thumb-stop scoring, performance-driven epsilon-greedy bias
+type: feature
+---
+- **Engine bump to v5** (`cinematic_ad_settings.engine_version_default='v5'`, kill-switch `cinematic_v5_enabled`). Additive — v4 jobs untouched.
+- **Human camera system** (`remotion/src/lib/humanCamera.ts`): 6 styles (`iphone_vertical_closeup`, `pet_owner_followcam`, `floor_level_cat_cam`, `casual_lifestyle_pan`, `over_the_shoulder`, `reaction_selfie_style`). Per-style profile sets jitter, drift, focus breathing, exposure shift, snap framing corrections. Pure frame-deterministic (no CSS animation).
+- **7-beat social arc** persisted as `cinematic_ad_jobs.beats_v5`: `hook|pattern_interrupt|problem|emotional_payoff|benefit|social_proof|cta`. Per beat: duration 36–75f, valence, motion intensity, `human_presence` flag, `subject_includes`.
+- **Storyboard upgrades** (`cinematic-ad-storyboard`): environment-realism rules in system prompt (lived-in homes, soft clutter, iPhone HDR look — ban showroom/studio/magazine staging), camera-style picker via epsilon-greedy on `cinematic_style_bias` (ε=0.15, niche fallback map), emotional-register rotation across last 3 published pins per slug.
+- **v5 scoring** in `cinematic-ad-validate` — all heuristic, no extra LLM cost: `motion_entropy_score` (≥6), `realism_consistency_score` (≥7), `ugc_authenticity_score` (≥7, penalises showroom copy + uniform framing), `emotional_arc_score` (≥6, valence escalation), `thumb_stop_score` (≥7), `human_presence_ratio` (≥0.5), static-hold cap (≤54f × 1.5). Failures populate `v5_reject_reasons[]`, set `validation_v5_passed=false`, status → `creative_rejected`.
+- **Hard autopublish gate** (`cinematic-ad-autopublish`): `validation_v5_passed=false` blocks publish with `publish_blocked_reason='v5_reject:...'`. Stacks on top of v4 + all earlier gates.
+- **Hook bank** (`cinematic-ad-hook-optimizer`) now tags each variant with `emotional_register` (`tender|surprise|relatable_pain|aspirational|funny`) for register rotation.
+- **Performance learning**: new edge `cinematic-performance-ingest` (cron every 30 min) ingests `cinematic_pin_performance` deltas into `cinematic_performance_signals` with composite `0.35*ctr + 0.25*save + 0.20*hold + 0.10*completion + 0.10*atc`. `cinematic_style_bias` table seeded with neutral 1.0 weights per niche×camera_style; storyboard reads weights for epsilon-greedy picks (top-quartile boost / bottom-quartile suppression handled by the existing v4 rollup function in a future pass).
+- **Tables added** (RLS on, admin read, service-role write): `cinematic_performance_signals` (UNIQUE job_id+pin_id), `cinematic_style_bias` (UNIQUE niche+camera_style+hook_type+beat_signature).
+- **Backward compatible**: every new column nullable / defaulted; flip `cinematic_v5_enabled=false` to instantly fall back to v4 gating.
+- **Out of scope this pass**: Remotion scene shells wiring `humanCamera` per `camera_style` prop (the library is ready — consumers opt in next); rollup extension to write camera_style × beat_signature weights (placeholder, neutral seeds work); Gemini multimodal realism/thumb-stop scorers (heuristic proxies used today).
