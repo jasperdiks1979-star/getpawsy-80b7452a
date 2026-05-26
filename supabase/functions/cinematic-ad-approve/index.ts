@@ -82,6 +82,31 @@ Deno.serve(async (req) => {
   const { error: upErr } = await admin.from("cinematic_ad_jobs").update(updates).eq("id", jobId);
   if (upErr) return json(500, { ok: false, traceId, message: upErr.message });
 
+  // Ensure voice-over exists before queueing render. Auto-generate if missing.
+  let voStep: any = { skipped: true };
+  const voMissing = !job.vo_url && !job.voiceover_url;
+  if (voMissing) {
+    const voRes = await fetch(`${url}/functions/v1/cinematic-voiceover-generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    const voJson = await voRes.json().catch(() => ({}));
+    voStep = { status: voRes.status, ok: voJson?.ok ?? false, message: voJson?.message };
+    if (!voRes.ok || voJson?.ok === false || !voJson?.voiceover_url) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed",
+        status_message: `voice-over generation failed: ${voJson?.message ?? voRes.status}`,
+        error_message: `voiceover-generate: ${voJson?.message ?? voRes.status}`,
+      }).eq("id", jobId);
+      return json(502, { ok: false, traceId, message: `voice-over generation failed: ${voJson?.message ?? voRes.status}`, vo: voStep });
+    }
+  }
+
   // Forward to queue-render with the same auth context.
   const fnUrl = `${url}/functions/v1/cinematic-ad-queue-render`;
   const r = await fetch(fnUrl, {
@@ -96,8 +121,8 @@ Deno.serve(async (req) => {
   });
   const queued = await r.json().catch(() => ({}));
   if (!r.ok || queued?.ok === false) {
-    return json(500, { ok: false, traceId, message: queued?.message ?? `queue-render failed (${r.status})`, queued });
+    return json(500, { ok: false, traceId, message: queued?.message ?? `queue-render failed (${r.status})`, queued, vo: voStep });
   }
 
-  return json(200, { ok: true, traceId, message: "approved and queued for render", queued });
+  return json(200, { ok: true, traceId, message: "approved and queued for render", queued, vo: voStep });
 });
