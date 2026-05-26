@@ -2215,6 +2215,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_voiceover_key_state: {
+        Row: {
+          consecutive_failures: number
+          id: boolean
+          key_fingerprint: string | null
+          last_checked_at: string
+          last_error: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          id?: boolean
+          key_fingerprint?: string | null
+          last_checked_at?: string
+          last_error?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          id?: boolean
+          key_fingerprint?: string | null
+          last_checked_at?: string
+          last_error?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cinematic_voiceover_lines: {
         Row: {
           active: boolean
