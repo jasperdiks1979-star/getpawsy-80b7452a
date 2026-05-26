@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Rocket, ExternalLink } from "lucide-react";
+import { RefreshCw, Rocket, ExternalLink, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const STORAGE_KEY = "gp.cinematic.last12pack";
 
@@ -66,6 +67,54 @@ export default function CampaignProgressPanel() {
   const [rows, setRows] = useState<JobRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastFetch, setLastFetch] = useState<number>(0);
+  const [exporting, setExporting] = useState(false);
+
+  const exportCsv = useCallback(async () => {
+    if (!campaign || campaign.job_ids.length === 0) return;
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("cinematic_ad_jobs")
+        .select([
+          "id","product_slug","product_name","product_url","preset","style_preset",
+          "hook_variant","hook_text","hook_archetype","cta_text","emotional_register",
+          "camera_style","status","status_message","pinterest_pin_id","pinterest_pin_url",
+          "pin_destination_url","pin_title","pin_description","output_mp4_url",
+          "output_thumbnail_url","output_duration_seconds","motion_score","motion_entropy_score",
+          "realism_score","ugc_authenticity_score","emotional_arc_score","thumb_stop_score",
+          "human_presence_ratio","cinematic_quality_score","qa_composite_score",
+          "validation_v5_passed","creative_reject_reason","error_message","published_at",
+          "pinterest_uploaded_at","created_at","updated_at"
+        ].join(","))
+        .in("id", campaign.job_ids);
+      if (error) throw error;
+      const records = (data ?? []) as unknown as Record<string, unknown>[];
+      const headers = Object.keys(records[0] ?? {
+        id: "", product_slug: "", status: "", pinterest_pin_url: "",
+      });
+      const escape = (v: unknown) => {
+        if (v === null || v === undefined) return "";
+        const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+        return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const csv = [
+        headers.join(","),
+        ...records.map(r => headers.map(h => escape(r[h])).join(",")),
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${campaign.campaign_id}_report.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${records.length} rows`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "CSV export failed");
+    } finally {
+      setExporting(false);
+    }
+  }, [campaign]);
 
   const fetchRows = useCallback(async (c: LastCampaign | null) => {
     if (!c || c.job_ids.length === 0) { setRows([]); return; }
@@ -156,9 +205,15 @@ export default function CampaignProgressPanel() {
               <span className="font-mono">{campaign.campaign_id}</span> · launched {launchedAgo}s ago · {total} jobs
             </p>
           </div>
-          <Button size="sm" variant="ghost" onClick={() => fetchRows(campaign)} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={exporting}>
+              {exporting ? <Loader2Spinner /> : <FileDown className="h-3.5 w-3.5 mr-1.5" />}
+              CSV
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => fetchRows(campaign)} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -218,4 +273,8 @@ function BucketTile({ label, tone, count }: { label: string; tone: string; count
       <div className="text-xl font-semibold leading-tight">{count}</div>
     </div>
   );
+}
+
+function Loader2Spinner() {
+  return <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />;
 }
