@@ -391,6 +391,7 @@ serve(async (req) => {
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                  "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "",
                 },
                 body: JSON.stringify({
                   orderId: order.id,
@@ -429,6 +430,7 @@ serve(async (req) => {
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                  "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "",
                 },
                 body: JSON.stringify({
                   orderId: order.id,
