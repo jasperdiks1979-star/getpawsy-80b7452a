@@ -20,10 +20,24 @@ name: Trim Cinematic Ad MP4
 on:
   workflow_dispatch:
     inputs:
-      job_id:        { description: "cinematic_ad_jobs.id (UUID)", required: true, type: string }
-      mp4_url:       { description: "Oversize MP4 public URL",       required: true, type: string }
-      target_seconds:{ description: "Hard duration cap (seconds)",   required: false, type: string, default: "15" }
-      render_token:  { description: "render_token of the job",       required: false, type: string, default: "" }
+      job_id:
+        description: "cinematic_ad_jobs.id (UUID)"
+        required: true
+        type: string
+      mp4_url:
+        description: "Oversize MP4 public URL"
+        required: true
+        type: string
+      target_seconds:
+        description: "Hard duration cap (seconds)"
+        required: false
+        type: string
+        default: "15"
+      render_token:
+        description: "render_token of the job"
+        required: false
+        type: string
+        default: ""
 
 concurrency:
   group: cinematic-trim-${{ github.event.inputs.job_id }}
