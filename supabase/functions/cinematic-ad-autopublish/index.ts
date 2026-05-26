@@ -73,6 +73,12 @@ Deno.serve(async (req) => {
     .select("cinematic_v4_enabled")
     .eq("id", true).maybeSingle();
   const v4Enabled = v4Gate?.cinematic_v4_enabled !== false;
+  // V5 gate: enabled when the singleton flag is true (default).
+  const { data: v5Gate } = await admin
+    .from("cinematic_ad_settings")
+    .select("cinematic_v5_enabled")
+    .eq("id", true).maybeSingle();
+  const v5Enabled = v5Gate?.cinematic_v5_enabled !== false;
   // V3 PinterestQualityGateV2 — rate/diversity guards. Pulled from settings
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
@@ -455,6 +461,15 @@ Deno.serve(async (req) => {
         publish_blocked_reason: `v4_reject:${String(reasons).slice(0, 180)}`,
       }).eq("id", job.id);
       results.push({ job_id: job.id, ok: false, reason: "v4_reject" });
+      continue;
+    }
+    // V5 gate: native-UGC realism / authenticity / emotional arc.
+    if (v5Enabled && (job as any).validation_v5_passed === false) {
+      const reasons = Array.isArray((job as any).v5_reject_reasons) ? (job as any).v5_reject_reasons.join("|") : "v5_failed";
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `v5_reject:${String(reasons).slice(0, 180)}`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "v5_reject" });
       continue;
     }
     if (job.overlay_text_hash && qOverlays.has(job.overlay_text_hash)) {

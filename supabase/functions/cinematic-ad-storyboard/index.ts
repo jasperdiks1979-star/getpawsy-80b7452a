@@ -37,6 +37,131 @@ const HOOK_TYPES = [
   "emotion", "command",
 ];
 
+// ── v5 native short-form taxonomy ──
+const BEATS_V5 = [
+  "hook", "pattern_interrupt", "problem", "emotional_payoff",
+  "benefit", "social_proof", "cta",
+] as const;
+const CAMERA_STYLES = [
+  "iphone_vertical_closeup",
+  "pet_owner_followcam",
+  "floor_level_cat_cam",
+  "casual_lifestyle_pan",
+  "over_the_shoulder",
+  "reaction_selfie_style",
+] as const;
+const REGISTERS = ["tender", "surprise", "relatable_pain", "aspirational", "funny"] as const;
+
+function nicheFor(category: string): string {
+  const c = (category || "").toLowerCase();
+  if (c.includes("litter")) return "litter";
+  if (c.includes("groom")) return "grooming";
+  if (c.includes("toy")) return "toys";
+  if (c.includes("bed")) return "beds";
+  if (c.includes("cat")) return "cat";
+  if (c.includes("dog")) return "dog";
+  return "general";
+}
+
+/**
+ * Derive the v5 7-beat structure (lowercase) from the legacy STORY_ARC
+ * storyboard. Each beat carries minimal metadata used by validation:
+ * duration, role, valence (0-100), and whether human presence is implied.
+ */
+function deriveBeatsV5(sb: Storyboard): Array<Record<string, unknown>> {
+  const map: Record<string, typeof BEATS_V5[number]> = {
+    HOOK: "hook",
+    PROBLEM: "problem",
+    EMOTION: "emotional_payoff",
+    FEATURE: "pattern_interrupt",
+    BENEFIT: "benefit",
+    PROOF: "social_proof",
+    CTA: "cta",
+  };
+  return (sb.scenes ?? []).map((s, i) => {
+    const role = map[String(s.role ?? "").toUpperCase()] ?? "benefit";
+    const valence = sb.emotionalCurve?.[i] ?? 60;
+    const humanPresence = role === "hook" || role === "emotional_payoff" || role === "social_proof" || role === "cta";
+    return {
+      role,
+      caption: s.caption,
+      durationFrames: Math.max(36, Math.min(75, Number(s.durationFrames ?? 45))),
+      valence,
+      motion_intensity: s.motionIntensity,
+      human_presence: humanPresence,
+      subject_includes: humanPresence ? ["hand", "pet_reaction"] : ["product"],
+    };
+  });
+}
+
+/** Compute a stable signature of the beat structure for learning lookups. */
+function beatSignatureOf(beats: Array<Record<string, unknown>>): string {
+  return beats.map((b) => String(b.role)).join(">");
+}
+
+/**
+ * Pick a camera style for this product, biased by cinematic_style_bias rows
+ * via epsilon-greedy. Falls back to the default per niche when no bias rows
+ * exist or rolling exploration triggers.
+ */
+async function pickCameraStyle(admin: any, niche: string, epsilon = 0.15): Promise<string> {
+  const fallback: Record<string, string> = {
+    cat: "floor_level_cat_cam",
+    dog: "pet_owner_followcam",
+    litter: "reaction_selfie_style",
+    grooming: "iphone_vertical_closeup",
+    toys: "casual_lifestyle_pan",
+    beds: "over_the_shoulder",
+    general: "casual_lifestyle_pan",
+  };
+  if (Math.random() < epsilon) {
+    return CAMERA_STYLES[Math.floor(Math.random() * CAMERA_STYLES.length)];
+  }
+  try {
+    const { data } = await admin.from("cinematic_style_bias")
+      .select("camera_style, weight, suppressed_until")
+      .eq("niche", niche)
+      .order("weight", { ascending: false })
+      .limit(8);
+    const now = Date.now();
+    const eligible = (data ?? []).filter((r: any) =>
+      r.camera_style && (!r.suppressed_until || new Date(r.suppressed_until).getTime() < now)
+    );
+    if (eligible.length === 0) return fallback[niche] ?? "casual_lifestyle_pan";
+    // weighted sample of top entries
+    const total = eligible.reduce((a: number, r: any) => a + Math.max(0.05, Number(r.weight ?? 1)), 0);
+    let pick = Math.random() * total;
+    for (const r of eligible) {
+      pick -= Math.max(0.05, Number(r.weight ?? 1));
+      if (pick <= 0) return String(r.camera_style);
+    }
+    return String(eligible[0].camera_style);
+  } catch {
+    return fallback[niche] ?? "casual_lifestyle_pan";
+  }
+}
+
+/**
+ * Rotate emotional register: avoid using the same register as any of the
+ * last 3 published pins for the same product slug.
+ */
+async function pickEmotionalRegister(admin: any, productSlug: string): Promise<string> {
+  try {
+    const { data } = await admin.from("cinematic_ad_jobs")
+      .select("emotional_register")
+      .eq("product_slug", productSlug)
+      .not("pushed_to_pinterest_at", "is", null)
+      .order("pushed_to_pinterest_at", { ascending: false })
+      .limit(3);
+    const recent = new Set((data ?? []).map((r: any) => r.emotional_register).filter(Boolean));
+    const fresh = REGISTERS.filter((r) => !recent.has(r));
+    const pool = fresh.length > 0 ? fresh : REGISTERS;
+    return pool[Math.floor(Math.random() * pool.length)];
+  } catch {
+    return REGISTERS[Math.floor(Math.random() * REGISTERS.length)];
+  }
+}
+
 interface Storyboard {
   scenes: Array<{
     role: typeof STORY_ARC[number];
@@ -62,7 +187,13 @@ Rules:
 - No banned terms: "vet-approved", "eco-friendly", "dropship".
 - US-native voice. Warm + emotional + benefit-led.
 - CTA must be a clear command (e.g. "Get yours", "Shop now").
-- Emotional curve: hook=70, problem=85 (pain peak), emotion=90, feature=55, benefit=80, proof=75, cta=95.`;
+- Emotional curve: hook=70, problem=85 (pain peak), emotion=90, feature=55, benefit=80, proof=75, cta=95.
+
+ENVIRONMENT REALISM (v5 — Native Human UGC):
+- Imagine the footage was captured on an iPhone by a real pet owner in their actual lived-in home.
+- Picture soft clutter, blankets, pet hair, natural window light, mild lens vignette, slight motion blur, iPhone HDR look.
+- At least one scene must feature human hands or owner POV; at least one must show a real pet reaction.
+- AVOID: empty showroom, studio backdrop, perfect symmetry, plastic surfaces, magazine staging, sterile interiors, isolated product renders.`;
 
 function fallbackStoryboard(productName: string): Storyboard {
   const safeName = productName || "this";
@@ -193,6 +324,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // v5 additive layer
+    const niche = nicheFor(String(job.product_category ?? ""));
+    let cameraStyle = "casual_lifestyle_pan";
+    let emotionalRegister = "relatable_pain";
+    try {
+      cameraStyle = await pickCameraStyle(admin, niche);
+      emotionalRegister = await pickEmotionalRegister(admin, String(job.product_slug ?? ""));
+    } catch (_) { /* defaults */ }
+    const beatsV5 = deriveBeatsV5(storyboard);
+    const beatSig = beatSignatureOf(beatsV5);
+
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
       .update({
@@ -201,6 +343,10 @@ Deno.serve(async (req) => {
         hook_text: storyboard.selectedHook.text,
         hook_type: storyboard.hookType,
         scene_roles: deriveSceneRoles(storyboard) as any,
+        beats_v5: beatsV5 as any,
+        camera_style: cameraStyle,
+        emotional_register: emotionalRegister,
+        beat_signature: beatSig,
       })
       .eq("id", jobId);
     if (updErr) return json(500, { ok: false, traceId, message: updErr.message });

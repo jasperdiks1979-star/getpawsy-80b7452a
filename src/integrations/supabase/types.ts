@@ -1189,7 +1189,10 @@ export type Database = {
           autopilot: boolean
           autopilot_log: Json
           autopilot_threshold: number
+          beat_signature: string | null
+          beats_v5: Json | null
           camera_motion_score: number | null
+          camera_style: string | null
           caption_variants: Json
           caption_visibility_score: number | null
           captions_visible: boolean | null
@@ -1209,8 +1212,11 @@ export type Database = {
           duplicate_risk_score: number
           duration_auto_trimmed: boolean
           duration_valid: boolean | null
+          emotional_arc_score: number | null
+          emotional_register: string | null
           engagement_pacing_score: number | null
           engine_version: string | null
+          environment_flags: string[] | null
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
@@ -1230,6 +1236,7 @@ export type Database = {
           hook_variants: Json | null
           hook_variants_meta: Json
           human_flags: Json | null
+          human_presence_ratio: number | null
           humanization_seed: string | null
           id: string
           last_pinterest_attempt_at: string | null
@@ -1239,6 +1246,7 @@ export type Database = {
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
+          motion_entropy_score: number | null
           motion_exists: boolean | null
           motion_score: number | null
           music_track_id: string | null
@@ -1296,6 +1304,7 @@ export type Database = {
           qa_score: number | null
           qa_threshold_applied: number | null
           quarantined_assets: Json | null
+          realism_consistency_score: number | null
           realism_score: number | null
           recommended_fix: string | null
           recoverable: boolean | null
@@ -1334,17 +1343,21 @@ export type Database = {
           style_rejection_reason: string | null
           subhook_text: string | null
           text_safe_area_passed: boolean | null
+          thumb_stop_score: number | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
           trim_attempted_at: string | null
           trim_ffmpeg_exit_code: number | null
           trim_workflow_run_id: string | null
+          ugc_authenticity_score: number | null
           uniqueness_score: number | null
           updated_at: string
           v4_reject_reasons: Json | null
+          v5_reject_reasons: string[] | null
           validation_passed: boolean | null
           validation_report: Json | null
           validation_v4_passed: boolean | null
+          validation_v5_passed: boolean | null
           variant_index: number
           variation_signature: string | null
           verified_at: string | null
@@ -1380,7 +1393,10 @@ export type Database = {
           autopilot?: boolean
           autopilot_log?: Json
           autopilot_threshold?: number
+          beat_signature?: string | null
+          beats_v5?: Json | null
           camera_motion_score?: number | null
+          camera_style?: string | null
           caption_variants?: Json
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
@@ -1400,8 +1416,11 @@ export type Database = {
           duplicate_risk_score?: number
           duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
+          emotional_arc_score?: number | null
+          emotional_register?: string | null
           engagement_pacing_score?: number | null
           engine_version?: string | null
+          environment_flags?: string[] | null
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
@@ -1421,6 +1440,7 @@ export type Database = {
           hook_variants?: Json | null
           hook_variants_meta?: Json
           human_flags?: Json | null
+          human_presence_ratio?: number | null
           humanization_seed?: string | null
           id?: string
           last_pinterest_attempt_at?: string | null
@@ -1430,6 +1450,7 @@ export type Database = {
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
+          motion_entropy_score?: number | null
           motion_exists?: boolean | null
           motion_score?: number | null
           music_track_id?: string | null
@@ -1487,6 +1508,7 @@ export type Database = {
           qa_score?: number | null
           qa_threshold_applied?: number | null
           quarantined_assets?: Json | null
+          realism_consistency_score?: number | null
           realism_score?: number | null
           recommended_fix?: string | null
           recoverable?: boolean | null
@@ -1525,17 +1547,21 @@ export type Database = {
           style_rejection_reason?: string | null
           subhook_text?: string | null
           text_safe_area_passed?: boolean | null
+          thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
           trim_attempted_at?: string | null
           trim_ffmpeg_exit_code?: number | null
           trim_workflow_run_id?: string | null
+          ugc_authenticity_score?: number | null
           uniqueness_score?: number | null
           updated_at?: string
           v4_reject_reasons?: Json | null
+          v5_reject_reasons?: string[] | null
           validation_passed?: boolean | null
           validation_report?: Json | null
           validation_v4_passed?: boolean | null
+          validation_v5_passed?: boolean | null
           variant_index?: number
           variation_signature?: string | null
           verified_at?: string | null
@@ -1571,7 +1597,10 @@ export type Database = {
           autopilot?: boolean
           autopilot_log?: Json
           autopilot_threshold?: number
+          beat_signature?: string | null
+          beats_v5?: Json | null
           camera_motion_score?: number | null
+          camera_style?: string | null
           caption_variants?: Json
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
@@ -1591,8 +1620,11 @@ export type Database = {
           duplicate_risk_score?: number
           duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
+          emotional_arc_score?: number | null
+          emotional_register?: string | null
           engagement_pacing_score?: number | null
           engine_version?: string | null
+          environment_flags?: string[] | null
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
@@ -1612,6 +1644,7 @@ export type Database = {
           hook_variants?: Json | null
           hook_variants_meta?: Json
           human_flags?: Json | null
+          human_presence_ratio?: number | null
           humanization_seed?: string | null
           id?: string
           last_pinterest_attempt_at?: string | null
@@ -1621,6 +1654,7 @@ export type Database = {
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
+          motion_entropy_score?: number | null
           motion_exists?: boolean | null
           motion_score?: number | null
           music_track_id?: string | null
@@ -1678,6 +1712,7 @@ export type Database = {
           qa_score?: number | null
           qa_threshold_applied?: number | null
           quarantined_assets?: Json | null
+          realism_consistency_score?: number | null
           realism_score?: number | null
           recommended_fix?: string | null
           recoverable?: boolean | null
@@ -1716,17 +1751,21 @@ export type Database = {
           style_rejection_reason?: string | null
           subhook_text?: string | null
           text_safe_area_passed?: boolean | null
+          thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
           trim_attempted_at?: string | null
           trim_ffmpeg_exit_code?: number | null
           trim_workflow_run_id?: string | null
+          ugc_authenticity_score?: number | null
           uniqueness_score?: number | null
           updated_at?: string
           v4_reject_reasons?: Json | null
+          v5_reject_reasons?: string[] | null
           validation_passed?: boolean | null
           validation_report?: Json | null
           validation_v4_passed?: boolean | null
+          validation_v5_passed?: boolean | null
           variant_index?: number
           variation_signature?: string | null
           verified_at?: string | null
@@ -1860,16 +1899,25 @@ export type Database = {
           auto_approve_enabled: boolean
           auto_publish_enabled: boolean | null
           auto_repair_threshold: number | null
+          ban_showroom: boolean
           blocked_creative_styles: Json
           board_max_pins_per_window: number
           board_recent_window_minutes: number
+          camera_styles: Json
           category_match_required: boolean
           cinematic_v4_enabled: boolean
+          cinematic_v5_enabled: boolean
           creative_quality_min_score: number
           engine_version: string | null
           engine_version_default: string
+          environment_realism_min: number
+          exposure_drift_amp: number
+          focus_breathing_amp: number
+          framing_correction_chance: number
+          handheld_jitter_amp: number
           hook_change_max_frames: number
           hook_cooldown_days: number
+          human_presence_required_ratio: number
           human_realism_min: number
           human_realism_required: boolean
           id: boolean
@@ -1878,19 +1926,25 @@ export type Database = {
           max_render_attempts: number | null
           max_retry_threshold: number
           max_scenes: number | null
+          max_static_duration_frames_v5: number
           min_camera_motion_score: number
           min_caption_visibility: number | null
           min_days_between_same_product: number
+          min_emotional_arc: number
           min_engagement_pacing_score: number
           min_first_frame_originality_score: number
           min_hook_uniqueness_score: number
           min_motion_diversity: number | null
+          min_motion_entropy: number
           min_publish_gap_minutes: number
+          min_realism_consistency: number
           min_realism_score: number
           min_scene_count_v4: number
           min_scene_diversity: number | null
           min_scenes: number | null
+          min_thumb_stop_score: number
           min_thumbnail_entropy_score: number
+          min_ugc_authenticity: number
           min_unique_media_assets: number
           min_visual_uniqueness_score: number
           motion_score_min_threshold: number
@@ -1911,17 +1965,23 @@ export type Database = {
           reject_aggressive_cta: boolean
           reject_orange_title_bar: boolean
           reject_white_background: boolean
+          required_beats_v5: string[]
           required_scene_roles: Json
           safe_zone_debug: boolean | null
+          scene_change_min_v5: number
           scene_max_frames_v4: number
+          scene_max_frames_v5: number
           scene_min_frames_v4: number
+          scene_min_frames_v5: number
           static_hold_max_frames: number
           static_share_cap: number
+          style_bias_epsilon: number
           style_suppression_days: number
           text_safe_area_required: boolean
           thumbnail_phash_distance_threshold: number
           updated_at: string
           updated_by: string | null
+          v5_reject_rate_rollback_threshold: number
           video_share_floor: number
           voiceover_required: boolean
           worker_health_url: string | null
@@ -1933,16 +1993,25 @@ export type Database = {
           auto_approve_enabled?: boolean
           auto_publish_enabled?: boolean | null
           auto_repair_threshold?: number | null
+          ban_showroom?: boolean
           blocked_creative_styles?: Json
           board_max_pins_per_window?: number
           board_recent_window_minutes?: number
+          camera_styles?: Json
           category_match_required?: boolean
           cinematic_v4_enabled?: boolean
+          cinematic_v5_enabled?: boolean
           creative_quality_min_score?: number
           engine_version?: string | null
           engine_version_default?: string
+          environment_realism_min?: number
+          exposure_drift_amp?: number
+          focus_breathing_amp?: number
+          framing_correction_chance?: number
+          handheld_jitter_amp?: number
           hook_change_max_frames?: number
           hook_cooldown_days?: number
+          human_presence_required_ratio?: number
           human_realism_min?: number
           human_realism_required?: boolean
           id?: boolean
@@ -1951,19 +2020,25 @@ export type Database = {
           max_render_attempts?: number | null
           max_retry_threshold?: number
           max_scenes?: number | null
+          max_static_duration_frames_v5?: number
           min_camera_motion_score?: number
           min_caption_visibility?: number | null
           min_days_between_same_product?: number
+          min_emotional_arc?: number
           min_engagement_pacing_score?: number
           min_first_frame_originality_score?: number
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
+          min_motion_entropy?: number
           min_publish_gap_minutes?: number
+          min_realism_consistency?: number
           min_realism_score?: number
           min_scene_count_v4?: number
           min_scene_diversity?: number | null
           min_scenes?: number | null
+          min_thumb_stop_score?: number
           min_thumbnail_entropy_score?: number
+          min_ugc_authenticity?: number
           min_unique_media_assets?: number
           min_visual_uniqueness_score?: number
           motion_score_min_threshold?: number
@@ -1984,17 +2059,23 @@ export type Database = {
           reject_aggressive_cta?: boolean
           reject_orange_title_bar?: boolean
           reject_white_background?: boolean
+          required_beats_v5?: string[]
           required_scene_roles?: Json
           safe_zone_debug?: boolean | null
+          scene_change_min_v5?: number
           scene_max_frames_v4?: number
+          scene_max_frames_v5?: number
           scene_min_frames_v4?: number
+          scene_min_frames_v5?: number
           static_hold_max_frames?: number
           static_share_cap?: number
+          style_bias_epsilon?: number
           style_suppression_days?: number
           text_safe_area_required?: boolean
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
+          v5_reject_rate_rollback_threshold?: number
           video_share_floor?: number
           voiceover_required?: boolean
           worker_health_url?: string | null
@@ -2006,16 +2087,25 @@ export type Database = {
           auto_approve_enabled?: boolean
           auto_publish_enabled?: boolean | null
           auto_repair_threshold?: number | null
+          ban_showroom?: boolean
           blocked_creative_styles?: Json
           board_max_pins_per_window?: number
           board_recent_window_minutes?: number
+          camera_styles?: Json
           category_match_required?: boolean
           cinematic_v4_enabled?: boolean
+          cinematic_v5_enabled?: boolean
           creative_quality_min_score?: number
           engine_version?: string | null
           engine_version_default?: string
+          environment_realism_min?: number
+          exposure_drift_amp?: number
+          focus_breathing_amp?: number
+          framing_correction_chance?: number
+          handheld_jitter_amp?: number
           hook_change_max_frames?: number
           hook_cooldown_days?: number
+          human_presence_required_ratio?: number
           human_realism_min?: number
           human_realism_required?: boolean
           id?: boolean
@@ -2024,19 +2114,25 @@ export type Database = {
           max_render_attempts?: number | null
           max_retry_threshold?: number
           max_scenes?: number | null
+          max_static_duration_frames_v5?: number
           min_camera_motion_score?: number
           min_caption_visibility?: number | null
           min_days_between_same_product?: number
+          min_emotional_arc?: number
           min_engagement_pacing_score?: number
           min_first_frame_originality_score?: number
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
+          min_motion_entropy?: number
           min_publish_gap_minutes?: number
+          min_realism_consistency?: number
           min_realism_score?: number
           min_scene_count_v4?: number
           min_scene_diversity?: number | null
           min_scenes?: number | null
+          min_thumb_stop_score?: number
           min_thumbnail_entropy_score?: number
+          min_ugc_authenticity?: number
           min_unique_media_assets?: number
           min_visual_uniqueness_score?: number
           motion_score_min_threshold?: number
@@ -2057,17 +2153,23 @@ export type Database = {
           reject_aggressive_cta?: boolean
           reject_orange_title_bar?: boolean
           reject_white_background?: boolean
+          required_beats_v5?: string[]
           required_scene_roles?: Json
           safe_zone_debug?: boolean | null
+          scene_change_min_v5?: number
           scene_max_frames_v4?: number
+          scene_max_frames_v5?: number
           scene_min_frames_v4?: number
+          scene_min_frames_v5?: number
           static_hold_max_frames?: number
           static_share_cap?: number
+          style_bias_epsilon?: number
           style_suppression_days?: number
           text_safe_area_required?: boolean
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
+          v5_reject_rate_rollback_threshold?: number
           video_share_floor?: number
           voiceover_required?: boolean
           worker_health_url?: string | null
@@ -2195,6 +2297,7 @@ export type Database = {
         Row: {
           archived: boolean
           created_at: string
+          emotional_register: string | null
           hook_text: string
           hook_type: string
           id: string
@@ -2209,6 +2312,7 @@ export type Database = {
         Insert: {
           archived?: boolean
           created_at?: string
+          emotional_register?: string | null
           hook_text: string
           hook_type: string
           id?: string
@@ -2223,6 +2327,7 @@ export type Database = {
         Update: {
           archived?: boolean
           created_at?: string
+          emotional_register?: string | null
           hook_text?: string
           hook_type?: string
           id?: string
@@ -2302,6 +2407,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_performance_signals: {
+        Row: {
+          add_to_cart_rate: number | null
+          completion_rate: number | null
+          composite_score: number | null
+          created_at: string
+          hold_rate: number | null
+          id: string
+          job_id: string | null
+          outbound_ctr: number | null
+          pin_id: string | null
+          save_rate: number | null
+          updated_at: string
+          window_days: number | null
+        }
+        Insert: {
+          add_to_cart_rate?: number | null
+          completion_rate?: number | null
+          composite_score?: number | null
+          created_at?: string
+          hold_rate?: number | null
+          id?: string
+          job_id?: string | null
+          outbound_ctr?: number | null
+          pin_id?: string | null
+          save_rate?: number | null
+          updated_at?: string
+          window_days?: number | null
+        }
+        Update: {
+          add_to_cart_rate?: number | null
+          completion_rate?: number | null
+          composite_score?: number | null
+          created_at?: string
+          hold_rate?: number | null
+          id?: string
+          job_id?: string | null
+          outbound_ctr?: number | null
+          pin_id?: string | null
+          save_rate?: number | null
+          updated_at?: string
+          window_days?: number | null
+        }
+        Relationships: []
+      }
       cinematic_pin_performance: {
         Row: {
           asset_id: string | null
@@ -2374,6 +2524,45 @@ export type Database = {
           pattern_value?: string
           quarantined_until?: string
           reason?: string | null
+        }
+        Relationships: []
+      }
+      cinematic_style_bias: {
+        Row: {
+          beat_signature: string | null
+          camera_style: string | null
+          composite: number
+          hook_type: string | null
+          id: string
+          niche: string
+          sample_size: number
+          suppressed_until: string | null
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          beat_signature?: string | null
+          camera_style?: string | null
+          composite?: number
+          hook_type?: string | null
+          id?: string
+          niche: string
+          sample_size?: number
+          suppressed_until?: string | null
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          beat_signature?: string | null
+          camera_style?: string | null
+          composite?: number
+          hook_type?: string | null
+          id?: string
+          niche?: string
+          sample_size?: number
+          suppressed_until?: string | null
+          updated_at?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -17412,7 +17601,10 @@ export type Database = {
           autopilot: boolean
           autopilot_log: Json
           autopilot_threshold: number
+          beat_signature: string | null
+          beats_v5: Json | null
           camera_motion_score: number | null
+          camera_style: string | null
           caption_variants: Json
           caption_visibility_score: number | null
           captions_visible: boolean | null
@@ -17432,8 +17624,11 @@ export type Database = {
           duplicate_risk_score: number
           duration_auto_trimmed: boolean
           duration_valid: boolean | null
+          emotional_arc_score: number | null
+          emotional_register: string | null
           engagement_pacing_score: number | null
           engine_version: string | null
+          environment_flags: string[] | null
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
@@ -17453,6 +17648,7 @@ export type Database = {
           hook_variants: Json | null
           hook_variants_meta: Json
           human_flags: Json | null
+          human_presence_ratio: number | null
           humanization_seed: string | null
           id: string
           last_pinterest_attempt_at: string | null
@@ -17462,6 +17658,7 @@ export type Database = {
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
+          motion_entropy_score: number | null
           motion_exists: boolean | null
           motion_score: number | null
           music_track_id: string | null
@@ -17519,6 +17716,7 @@ export type Database = {
           qa_score: number | null
           qa_threshold_applied: number | null
           quarantined_assets: Json | null
+          realism_consistency_score: number | null
           realism_score: number | null
           recommended_fix: string | null
           recoverable: boolean | null
@@ -17557,17 +17755,21 @@ export type Database = {
           style_rejection_reason: string | null
           subhook_text: string | null
           text_safe_area_passed: boolean | null
+          thumb_stop_score: number | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
           trim_attempted_at: string | null
           trim_ffmpeg_exit_code: number | null
           trim_workflow_run_id: string | null
+          ugc_authenticity_score: number | null
           uniqueness_score: number | null
           updated_at: string
           v4_reject_reasons: Json | null
+          v5_reject_reasons: string[] | null
           validation_passed: boolean | null
           validation_report: Json | null
           validation_v4_passed: boolean | null
+          validation_v5_passed: boolean | null
           variant_index: number
           variation_signature: string | null
           verified_at: string | null
