@@ -1,6 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { PRESETS, getPreset, durationFrames, type CinematicPresetId } from "../_shared/cinematic-presets.ts";
+import {
+  PRESETS,
+  getPreset,
+  durationFrames,
+  enforceSceneDurations,
+  validateTimeline,
+  maxFramesFor,
+  maxSceneFramesFor,
+  HARD_MAX_DURATION_SEC,
+  type CinematicPresetId,
+} from "../_shared/cinematic-presets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -87,6 +97,38 @@ Deno.serve(async (req) => {
     // Resolve preset: explicit body > job row > default.
     const effectivePreset = getPreset(presetId || job.preset);
     const totalFrames = durationFrames(effectivePreset);
+    const maxTotalFrames = maxFramesFor(effectivePreset);
+    const maxSceneFrames = maxSceneFramesFor(effectivePreset);
+
+    // Pre-enqueue validation — refuse to spend render minutes on a malformed
+    // timeline. Clamp scene_plan (worker input) defensively, then verify.
+    let enforcedScenePlan: any[] | null = null;
+    if (Array.isArray(job.scene_plan) && job.scene_plan.length > 0) {
+      const r = enforceSceneDurations(job.scene_plan as any[], effectivePreset);
+      enforcedScenePlan = r.scenes;
+      if (r.changed) {
+        await admin.from("cinematic_ad_jobs").update({ scene_plan: r.scenes as any }).eq("id", jobId);
+        console.log(`[queue-render] ${trace} scene_plan clamped`, { jobId, reasons: r.reasons });
+      }
+    }
+    const check = validateTimeline(
+      effectivePreset,
+      job.storyboard as any,
+      enforcedScenePlan,
+      (job.vo_script ?? job.voiceover_script) as any,
+    );
+    if (!check.ok) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed",
+        status_message: `pre-enqueue validation failed: ${check.reasons.join("; ")}`,
+        error_message: `timeline_invalid: ${check.reasons.join("; ")}`,
+      }).eq("id", jobId);
+      return json({
+        ok: false, traceId: trace,
+        message: `timeline rejected before render: ${check.reasons.join("; ")}`,
+        check,
+      }, 422);
+    }
 
     const renderToken = crypto.randomUUID();
     const { error: updErr } = await admin
@@ -124,6 +166,7 @@ Deno.serve(async (req) => {
       product_slug: job.product_slug,
       hook_variant: job.hook_variant,
       scene_assets: job.scene_assets,
+      scene_plan: enforcedScenePlan ?? job.scene_plan ?? null,
       voiceover_url: voUrl,
       music_url: job.music_url,
       pin_title: job.pin_title,
@@ -142,6 +185,10 @@ Deno.serve(async (req) => {
       fps: effectivePreset.fps,
       duration_in_frames: totalFrames,
       preset: effectivePreset.id,
+      // Hard caps the external Remotion worker MUST honor.
+      max_duration_in_frames: maxTotalFrames,
+      max_duration_seconds: HARD_MAX_DURATION_SEC,
+      max_scene_frames: maxSceneFrames,
       input_props: {
         preset: effectivePreset.id,
         hook: job.hook_text ?? job.hook_variant ?? "Stop scrolling. Look at this.",
@@ -159,6 +206,8 @@ Deno.serve(async (req) => {
         disclosure: effectivePreset.disclosure,
         hookByFrame: effectivePreset.hookByFrame,
         ctaHoldFrames: effectivePreset.ctaHoldFrames,
+        maxDurationInFrames: maxTotalFrames,
+        maxSceneFrames: maxSceneFrames,
       },
     };
 
