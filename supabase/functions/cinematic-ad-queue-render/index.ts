@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     const maxSceneFrames = maxSceneFramesFor(effectivePreset);
 
     // Pre-enqueue validation — refuse to spend render minutes on a malformed
-    // timeline. Clamp scene_plan (worker input) defensively, then verify.
+    // timeline. Clamp scene_plan AND storyboard (worker inputs) defensively.
     let enforcedScenePlan: any[] | null = null;
     if (Array.isArray(job.scene_plan) && job.scene_plan.length > 0) {
       const r = enforceSceneDurations(job.scene_plan as any[], effectivePreset);
@@ -111,9 +111,30 @@ Deno.serve(async (req) => {
         console.log(`[queue-render] ${trace} scene_plan clamped`, { jobId, reasons: r.reasons });
       }
     }
+    // Storyboard may be either an array (legacy: { duration_s }) or an
+    // object with `scenes` (new: { durationFrames }). Normalize to frames and
+    // clamp to the 15s cap so downstream worker can't drift.
+    let enforcedStoryboard: any = job.storyboard;
+    if (job.storyboard) {
+      const isArr = Array.isArray(job.storyboard);
+      const rawScenes: any[] = isArr ? job.storyboard : (job.storyboard?.scenes ?? []);
+      if (rawScenes.length > 0) {
+        const withFrames = rawScenes.map((s: any) => ({
+          ...s,
+          durationFrames: Number(s?.durationFrames ?? Math.round(Number(s?.duration_s ?? 0) * effectivePreset.fps)) || Math.round(effectivePreset.fps * 2),
+        }));
+        const r = enforceSceneDurations(withFrames, effectivePreset);
+        const clamped = r.scenes.map((s: any) => ({ ...s, duration_s: Math.round((s.durationFrames / effectivePreset.fps) * 10) / 10 }));
+        enforcedStoryboard = isArr ? clamped : { ...(job.storyboard as any), scenes: clamped };
+        if (r.changed) {
+          await admin.from("cinematic_ad_jobs").update({ storyboard: enforcedStoryboard }).eq("id", jobId);
+          console.log(`[queue-render] ${trace} storyboard clamped`, { jobId, reasons: r.reasons });
+        }
+      }
+    }
     const check = validateTimeline(
       effectivePreset,
-      job.storyboard as any,
+      enforcedStoryboard as any,
       enforcedScenePlan,
       (job.vo_script ?? job.voiceover_script) as any,
     );
