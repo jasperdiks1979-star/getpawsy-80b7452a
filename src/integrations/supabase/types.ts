@@ -1195,6 +1195,7 @@ export type Database = {
           failure_category: string | null
           first_frame_originality_score: number | null
           first3s_phash: string | null
+          has_vo: boolean | null
           hashtags: string[]
           hook_archetype: string | null
           hook_cooldown_until: string | null
@@ -1361,6 +1362,7 @@ export type Database = {
           failure_category?: string | null
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
+          has_vo?: boolean | null
           hashtags?: string[]
           hook_archetype?: string | null
           hook_cooldown_until?: string | null
@@ -1527,6 +1529,7 @@ export type Database = {
           failure_category?: string | null
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
+          has_vo?: boolean | null
           hashtags?: string[]
           hook_archetype?: string | null
           hook_cooldown_until?: string | null
@@ -16659,6 +16662,7 @@ export type Database = {
           failure_category: string | null
           first_frame_originality_score: number | null
           first3s_phash: string | null
+          has_vo: boolean | null
           hashtags: string[]
           hook_archetype: string | null
           hook_cooldown_until: string | null
