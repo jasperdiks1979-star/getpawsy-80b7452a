@@ -187,7 +187,13 @@ Rules:
 - No banned terms: "vet-approved", "eco-friendly", "dropship".
 - US-native voice. Warm + emotional + benefit-led.
 - CTA must be a clear command (e.g. "Get yours", "Shop now").
-- Emotional curve: hook=70, problem=85 (pain peak), emotion=90, feature=55, benefit=80, proof=75, cta=95.`;
+- Emotional curve: hook=70, problem=85 (pain peak), emotion=90, feature=55, benefit=80, proof=75, cta=95.
+
+ENVIRONMENT REALISM (v5 — Native Human UGC):
+- Imagine the footage was captured on an iPhone by a real pet owner in their actual lived-in home.
+- Picture soft clutter, blankets, pet hair, natural window light, mild lens vignette, slight motion blur, iPhone HDR look.
+- At least one scene must feature human hands or owner POV; at least one must show a real pet reaction.
+- AVOID: empty showroom, studio backdrop, perfect symmetry, plastic surfaces, magazine staging, sterile interiors, isolated product renders.`;
 
 function fallbackStoryboard(productName: string): Storyboard {
   const safeName = productName || "this";
@@ -318,6 +324,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // v5 additive layer
+    const niche = nicheFor(String(job.product_category ?? ""));
+    let cameraStyle = "casual_lifestyle_pan";
+    let emotionalRegister = "relatable_pain";
+    try {
+      cameraStyle = await pickCameraStyle(admin, niche);
+      emotionalRegister = await pickEmotionalRegister(admin, String(job.product_slug ?? ""));
+    } catch (_) { /* defaults */ }
+    const beatsV5 = deriveBeatsV5(storyboard);
+    const beatSig = beatSignatureOf(beatsV5);
+
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
       .update({
@@ -326,6 +343,10 @@ Deno.serve(async (req) => {
         hook_text: storyboard.selectedHook.text,
         hook_type: storyboard.hookType,
         scene_roles: deriveSceneRoles(storyboard) as any,
+        beats_v5: beatsV5 as any,
+        camera_style: cameraStyle,
+        emotional_register: emotionalRegister,
+        beat_signature: beatSig,
       })
       .eq("id", jobId);
     if (updErr) return json(500, { ok: false, traceId, message: updErr.message });
