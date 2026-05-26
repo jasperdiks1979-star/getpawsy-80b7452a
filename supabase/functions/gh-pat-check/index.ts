@@ -43,6 +43,16 @@ Deno.serve(async (req) => {
   );
   const runsJson = await runs.json().catch(() => ({}));
 
+  // 4. Repo metadata + file presence on GH_REF
+  const repoMeta = await fetch(`https://api.github.com/repos/${GH_REPO}`, {
+    headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" },
+  }).then(r => r.json()).catch(() => ({}));
+  const fileCheck = await fetch(
+    `https://api.github.com/repos/${GH_REPO}/contents/.github/workflows/${WF}?ref=${GH_REF}`,
+    { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
+  );
+  const fileBody = await fileCheck.text();
+
   return new Response(
     JSON.stringify(
       {
@@ -53,6 +63,9 @@ Deno.serve(async (req) => {
         latest_runs: (runsJson.workflow_runs ?? []).slice(0, 3).map((r: any) => ({
           id: r.id, status: r.status, conclusion: r.conclusion, created_at: r.created_at, html_url: r.html_url,
         })),
+        ref_used: GH_REF,
+        default_branch: repoMeta?.default_branch,
+        file_on_ref: { status: fileCheck.status, body: fileBody.slice(0, 300) },
       },
       null,
       2,
