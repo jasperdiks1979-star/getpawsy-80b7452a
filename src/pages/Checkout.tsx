@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
-import { fireCheckoutClick, fireCheckoutRedirect, fireCheckoutError } from '@/lib/funnelEvents';
+import { fireCheckoutClick, fireCheckoutRedirect, fireCheckoutError, fireCheckoutEvent } from '@/lib/funnelEvents';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
