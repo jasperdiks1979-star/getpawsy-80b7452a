@@ -1096,6 +1096,7 @@ const Checkout = () => {
                 </>
               )}
             </Button>
+            </div>
           </div>
         </div>
         
