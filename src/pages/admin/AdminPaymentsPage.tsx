@@ -192,7 +192,9 @@ export default function AdminPaymentsPage() {
         void pollForRedirectSuccess(sessionId);
       }
     } catch (e) {
-      toast({ title: 'Verify failed', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Verify', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Verify failed', description: err.message, variant: 'destructive' });
     } finally {
       setVerifying(false);
     }
