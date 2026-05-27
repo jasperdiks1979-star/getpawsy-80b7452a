@@ -455,6 +455,25 @@ const Checkout = () => {
   }, []);
 
   const handleStripeCheckout = async () => {
+    // === CHECKOUT CTA DEBUG SNAPSHOT ===========================================
+    // Single-source view of *why* a click is (or isn't) reaching the funnel.
+    // Inspect this in DevTools / e2e logs before chasing missing checkout_click
+    // rows in `checkout_funnel_events`.
+    const ctaDebug = {
+      isProcessing,
+      acceptedTerms,
+      stateEmail: (email ?? '').trim(),
+      itemsCount: items.length,
+      cartValue: Number(stripeChargedTotal.toFixed(2)),
+      buttonWouldBeDisabled: isProcessing || !acceptedTerms,
+      disabledReason:
+        isProcessing
+          ? 'isProcessing'
+          : !acceptedTerms
+            ? 'terms_not_accepted'
+            : null,
+    };
+    console.info('[checkout:cta] handler invoked', ctaDebug);
     // DOM fallback: automation/mobile-safari can fill inputs or toggle
     // Radix Checkbox without triggering React's controlled handlers,
     // leaving `email` / `acceptedTerms` state stale. Read live DOM values
@@ -941,11 +960,30 @@ const Checkout = () => {
                 </p>
               )}
 
+              <div
+                className="contents"
+                onPointerDownCapture={() => {
+                  // Fires even when the Button is disabled — disabled buttons
+                  // do NOT emit onClick, so this is our only signal that a
+                  // user (or automation) attempted to click.
+                  console.info('[checkout:cta] pointerdown (desktop)', {
+                    isProcessing,
+                    acceptedTerms,
+                    disabled: isProcessing || !acceptedTerms,
+                    disabledReason: isProcessing
+                      ? 'isProcessing'
+                      : !acceptedTerms
+                        ? 'terms_not_accepted'
+                        : null,
+                  });
+                }}
+              >
               <Button
                 size="lg"
                 className="w-full mt-6 gap-2"
                 disabled={isProcessing || !acceptedTerms}
                 onClick={handleStripeCheckout}
+                data-testid="checkout-cta-desktop"
               >
                 {isProcessing ? (
                   <>
@@ -959,6 +997,7 @@ const Checkout = () => {
                   </>
                 )}
               </Button>
+              </div>
 
               {!acceptedTerms && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 text-center mt-3">
@@ -1017,6 +1056,21 @@ const Checkout = () => {
               <span className="text-xs text-muted-foreground">Total</span>
               <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
             </div>
+            <div
+              className="contents"
+              onPointerDownCapture={() => {
+                console.info('[checkout:cta] pointerdown (mobile)', {
+                  isProcessing,
+                  acceptedTerms,
+                  disabled: isProcessing || !acceptedTerms,
+                  disabledReason: isProcessing
+                    ? 'isProcessing'
+                    : !acceptedTerms
+                      ? 'terms_not_accepted'
+                      : null,
+                });
+              }}
+            >
             <Button
               size="lg"
               className="gap-2"
@@ -1028,6 +1082,7 @@ const Checkout = () => {
               }}
               disabled={isProcessing || !acceptedTerms}
               onClick={handleStripeCheckout}
+              data-testid="checkout-cta-mobile"
             >
               {isProcessing ? (
                 <>
@@ -1041,6 +1096,7 @@ const Checkout = () => {
                 </>
               )}
             </Button>
+            </div>
           </div>
         </div>
         

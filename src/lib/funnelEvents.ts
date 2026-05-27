@@ -212,8 +212,33 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       event: input.step,
       product_id: input.cart_id ?? null,
     });
-    if (env.is_bot) return;
-    if (env.deduped && input.step === 'checkout_click') return;
+    // Always log the attempt so we can see in a single test why an
+    // event was (or wasn't) inserted. No PII, only flags + keys.
+    console.info('[funnel:checkout]', {
+      step: input.step,
+      source_component: input.source_component,
+      session_id: env.session_id,
+      idempotency_key: env.idempotency_key,
+      deduped: env.deduped,
+      is_bot: env.is_bot,
+      bot_reason: env.bot_reason,
+      geo_quality: env.geo_quality,
+      traffic_quality_score: env.traffic_quality_score,
+    });
+    if (env.is_bot) {
+      console.warn('[funnel:checkout] skipped — is_bot', {
+        step: input.step,
+        bot_reason: env.bot_reason,
+      });
+      return;
+    }
+    if (env.deduped && input.step === 'checkout_click') {
+      console.warn('[funnel:checkout] skipped — deduped (idempotency window)', {
+        step: input.step,
+        idempotency_key: env.idempotency_key,
+      });
+      return;
+    }
 
     const last = getLastTouch() ?? classifySource();
     const row: Record<string, unknown> = {
