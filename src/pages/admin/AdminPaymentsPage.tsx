@@ -80,25 +80,46 @@ interface VerifyResponse {
   botFalsePositiveDetail?: string | null;
 }
 
+interface LastError {
+  action: string;
+  status: number | null;
+  body: string;
+  timestamp: string;
+}
+
+interface ExtractedError {
+  message: string;
+  status: number | null;
+  body: string;
+}
+
 /**
  * supabase.functions.invoke wraps non-2xx in FunctionsHttpError with the raw
  * Response on `.context`. Parse the JSON body so the toast shows the real
  * backend message instead of "non-2xx status code".
  */
-async function extractFnError(err: unknown): Promise<string> {
+async function extractFnError(err: unknown): Promise<ExtractedError> {
   try {
     const ctx = (err as any)?.context;
+    const status = (err as any)?.status ?? (ctx?.status ?? null);
     if (ctx && typeof ctx.json === 'function') {
       const body = await ctx.clone().json().catch(() => null);
       if (body) {
         const code = body.code ? ` [${body.code}]` : '';
-        return `${body.message ?? body.error ?? 'Edge function error'}${code}`;
+        return {
+          message: `${body.message ?? body.error ?? 'Edge function error'}${code}`,
+          status,
+          body: JSON.stringify(body, null, 2),
+        };
       }
       const text = await ctx.clone().text().catch(() => '');
-      if (text) return text;
+      if (text) {
+        return { message: text, status, body: text };
+      }
     }
   } catch { /* fall through */ }
-  return err instanceof Error ? err.message : String(err);
+  const message = err instanceof Error ? err.message : String(err);
+  return { message, status: null, body: message };
 }
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
@@ -124,6 +145,7 @@ export default function AdminPaymentsPage() {
   const [refunding, setRefunding] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerifyResponse | null>(null);
   const [autoRetry, setAutoRetry] = useState<{ active: boolean; attempt: number; secondsLeft: number } | null>(null);
+  const [lastError, setLastError] = useState<LastError | null>(null);
   const retryAbortRef = useRef(false);
 
   const fetchStatus = useCallback(async () => {
@@ -135,7 +157,9 @@ export default function AdminPaymentsPage() {
       if (error) throw error;
       setStatus(data as StatusResponse);
     } catch (e) {
-      toast({ title: 'Failed to load status', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Load status', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Failed to load status', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -168,7 +192,9 @@ export default function AdminPaymentsPage() {
         void pollForRedirectSuccess(sessionId);
       }
     } catch (e) {
-      toast({ title: 'Verify failed', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Verify', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Verify failed', description: err.message, variant: 'destructive' });
     } finally {
       setVerifying(false);
     }
@@ -233,7 +259,9 @@ export default function AdminPaymentsPage() {
       // Open Stripe Checkout in same window so the success_url callback returns here
       window.location.href = url;
     } catch (e) {
-      toast({ title: 'Smoke test failed', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Smoke test', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Smoke test failed', description: err.message, variant: 'destructive' });
       setStarting(false);
     }
   }
@@ -249,7 +277,9 @@ export default function AdminPaymentsPage() {
       toast({ title: 'Refund issued', description: `Refund ${(data as any)?.refundId?.slice(0, 12)}…` });
       await fetchStatus();
     } catch (e) {
-      toast({ title: 'Refund failed', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Refund', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Refund failed', description: err.message, variant: 'destructive' });
     } finally {
       setRefunding(false);
     }
@@ -418,6 +448,29 @@ export default function AdminPaymentsPage() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {lastError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <XCircle className="h-4 w-4" />
+                  Backend error — {lastError.action}
+                </div>
+                <div className="text-xs text-muted-foreground">{lastError.timestamp}</div>
+              </div>
+              {lastError.status != null && (
+                <div className="text-xs">
+                  HTTP status: <code className="rounded bg-destructive/10 px-1 py-0.5 text-destructive font-mono">{lastError.status}</code>
+                </div>
+              )}
+              <pre className="text-xs bg-muted/60 rounded p-2 overflow-auto max-h-40 font-mono whitespace-pre-wrap break-all">
+                {lastError.body}
+              </pre>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setLastError(null)}>
+                Dismiss
+              </Button>
             </div>
           )}
         </CardContent>
