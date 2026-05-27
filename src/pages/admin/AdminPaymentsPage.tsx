@@ -157,7 +157,9 @@ export default function AdminPaymentsPage() {
       if (error) throw error;
       setStatus(data as StatusResponse);
     } catch (e) {
-      toast({ title: 'Failed to load status', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Load status', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Failed to load status', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
