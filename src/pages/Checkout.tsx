@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
-import { fireCheckoutClick, fireCheckoutRedirect, fireCheckoutError } from '@/lib/funnelEvents';
+import { fireCheckoutClick, fireCheckoutRedirect, fireCheckoutError, fireCheckoutEvent } from '@/lib/funnelEvents';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
@@ -408,7 +408,34 @@ const Checkout = () => {
   }, []);
 
   const handleStripeCheckout = async () => {
-    if (!email || !email.includes('@')) {
+    // DOM fallback: automation/mobile-safari can fill the input without
+    // triggering React's controlled onChange, leaving `email` state empty.
+    // Always read the live DOM value as a safety net before validating.
+    let domEmail = '';
+    try {
+      const el =
+        (document.getElementById('email') as HTMLInputElement | null) ??
+        (document.querySelector('input[type="email"]') as HTMLInputElement | null);
+      domEmail = el?.value?.trim() ?? '';
+    } catch {
+      /* ignore */
+    }
+    const stateEmail = (email ?? '').trim();
+    const finalEmail = stateEmail || domEmail;
+
+    console.info('[checkout]', {
+      stateEmail,
+      domEmail,
+      finalEmail,
+      acceptedTerms,
+    });
+
+    // Sync state if DOM had the value but React didn't.
+    if (!stateEmail && domEmail) {
+      setEmail(domEmail);
+    }
+
+    if (!finalEmail || !finalEmail.includes('@')) {
       toast.error('Please enter a valid email address');
       return;
     }
@@ -420,7 +447,9 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
-    // ✅ Real user click on the Stripe checkout button.
+    // ✅ Real user click on the Stripe checkout button. Fired BEFORE any
+    // async work so the funnel event is guaranteed to be recorded even if
+    // the create-checkout invoke later fails.
     fireCheckoutClick({
       source_component: 'checkout_stripe_button',
       item_count: items.reduce((s, i) => s + i.quantity, 0),
@@ -450,6 +479,14 @@ const Checkout = () => {
     });
     
     try {
+      // Mark redirect attempt BEFORE the network call so we can measure
+      // drop-off between click and Stripe response.
+      fireCheckoutEvent({
+        step: 'checkout_redirect_attempt',
+        source_component: 'checkout_stripe_button',
+        value: Number(stripeChargedTotal.toFixed(2)),
+        currency: 'USD',
+      });
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           items: items.map(item => ({
@@ -459,7 +496,7 @@ const Checkout = () => {
             quantity: item.quantity,
             image: item.image,
           })),
-          customerEmail: email,
+          customerEmail: finalEmail,
           discountCode: discountApplied || undefined,
         },
       });
@@ -557,6 +594,12 @@ const Checkout = () => {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
+                    onInput={(e) => {
+                      // Defensive: some automation/autofill paths dispatch
+                      // `input` without React's synthetic change firing.
+                      const v = (e.target as HTMLInputElement).value;
+                      if (v !== email) handleEmailChange(v);
+                    }}
                     onBlur={() => {
                       if (email && email.includes('@')) {
                         setAbandonedCartEmail(email);
@@ -838,7 +881,7 @@ const Checkout = () => {
               <Button
                 size="lg"
                 className="w-full mt-6 gap-2"
-                disabled={isProcessing || !email || !acceptedTerms}
+                disabled={isProcessing || !acceptedTerms}
                 onClick={handleStripeCheckout}
               >
                 {isProcessing ? (
@@ -920,7 +963,7 @@ const Checkout = () => {
                 maxWidth: '100%',
                 boxSizing: 'border-box'
               }}
-              disabled={isProcessing || !email || !acceptedTerms}
+              disabled={isProcessing || !acceptedTerms}
               onClick={handleStripeCheckout}
             >
               {isProcessing ? (
