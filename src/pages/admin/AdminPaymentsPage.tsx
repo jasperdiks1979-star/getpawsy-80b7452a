@@ -401,6 +401,23 @@ export default function AdminPaymentsPage() {
                   {verifyResult.botFalsePositiveDetail}
                 </div>
               )}
+              {autoRetry && !verifyResult.checklist.redirectSuccessLogged && (
+                <div className="flex items-center justify-between gap-3 rounded-md border border-dashed p-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    {autoRetry.active && <Loader2 className="h-3 w-3 animate-spin" />}
+                    <span>
+                      {autoRetry.active
+                        ? `Waiting for redirect_success… attempt ${autoRetry.attempt}, ${Math.floor(autoRetry.secondsLeft / 60)}m ${autoRetry.secondsLeft % 60}s left`
+                        : 'Auto-retry timed out after 5 minutes.'}
+                    </span>
+                  </div>
+                  {autoRetry.active && (
+                    <Button size="sm" variant="ghost" onClick={() => { retryAbortRef.current = true; setAutoRetry((p) => p ? { ...p, active: false } : p); }}>
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
