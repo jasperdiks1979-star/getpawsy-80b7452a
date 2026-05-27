@@ -15537,6 +15537,60 @@ export type Database = {
         }
         Relationships: []
       }
+      smoke_test_runs: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string
+          currency: string
+          id: string
+          metadata: Json
+          mode: string
+          payment_intent_id: string | null
+          refund_id: string | null
+          refunded_at: string | null
+          session_url: string | null
+          status: string
+          stripe_session_id: string
+          updated_at: string
+          webhook_received_at: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          mode: string
+          payment_intent_id?: string | null
+          refund_id?: string | null
+          refunded_at?: string | null
+          session_url?: string | null
+          status?: string
+          stripe_session_id: string
+          updated_at?: string
+          webhook_received_at?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          mode?: string
+          payment_intent_id?: string | null
+          refund_id?: string | null
+          refunded_at?: string | null
+          session_url?: string | null
+          status?: string
+          stripe_session_id?: string
+          updated_at?: string
+          webhook_received_at?: string | null
+        }
+        Relationships: []
+      }
       sourcing_opportunities: {
         Row: {
           cj_product_id: string | null
