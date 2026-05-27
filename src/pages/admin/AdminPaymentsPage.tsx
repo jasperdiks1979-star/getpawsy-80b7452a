@@ -123,6 +123,8 @@ export default function AdminPaymentsPage() {
   const [verifying, setVerifying] = useState(false);
   const [refunding, setRefunding] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerifyResponse | null>(null);
+  const [autoRetry, setAutoRetry] = useState<{ active: boolean; attempt: number; secondsLeft: number } | null>(null);
+  const retryAbortRef = useRef(false);
 
   const fetchStatus = useCallback(async () => {
     setLoading(true);
@@ -152,18 +154,67 @@ export default function AdminPaymentsPage() {
 
   async function runVerify(sessionId: string) {
     setVerifying(true);
+    retryAbortRef.current = false;
     try {
       const { data, error } = await supabase.functions.invoke(
         'admin-payments?action=smoke_test_verify',
         { body: { sessionId } },
       );
       if (error) throw error;
-      setVerifyResult(data as VerifyResponse);
+      const result = data as VerifyResponse;
+      setVerifyResult(result);
       await fetchStatus();
+      if (!result.checklist?.redirectSuccessLogged) {
+        void pollForRedirectSuccess(sessionId);
+      }
     } catch (e) {
       toast({ title: 'Verify failed', description: await extractFnError(e), variant: 'destructive' });
     } finally {
       setVerifying(false);
+    }
+  }
+
+  async function pollForRedirectSuccess(sessionId: string) {
+    const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+    const INTERVAL_MS = 15 * 1000; // 15 seconds
+    const deadline = Date.now() + TIMEOUT_MS;
+    let attempt = 0;
+    setAutoRetry({ active: true, attempt: 0, secondsLeft: Math.ceil(TIMEOUT_MS / 1000) });
+    while (Date.now() < deadline && !retryAbortRef.current) {
+      const wait = Math.min(INTERVAL_MS, deadline - Date.now());
+      await new Promise((r) => setTimeout(r, wait));
+      if (retryAbortRef.current) break;
+      attempt += 1;
+      setAutoRetry({
+        active: true,
+        attempt,
+        secondsLeft: Math.max(0, Math.ceil((deadline - Date.now()) / 1000)),
+      });
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          'admin-payments?action=smoke_test_verify',
+          { body: { sessionId } },
+        );
+        if (error) throw error;
+        const result = data as VerifyResponse;
+        setVerifyResult(result);
+        if (result.checklist?.redirectSuccessLogged) {
+          toast({ title: 'Redirect success logged', description: `Confirmed after ${attempt} retr${attempt === 1 ? 'y' : 'ies'}.` });
+          await fetchStatus();
+          setAutoRetry(null);
+          return;
+        }
+      } catch (e) {
+        console.warn('[smoke-test] auto-retry verify failed:', e);
+      }
+    }
+    setAutoRetry((prev) => (prev ? { ...prev, active: false } : prev));
+    if (!retryAbortRef.current) {
+      toast({
+        title: 'Redirect success still missing',
+        description: 'Auto-retry timed out after 5 minutes. Re-verify manually if needed.',
+        variant: 'destructive',
+      });
     }
   }
 
