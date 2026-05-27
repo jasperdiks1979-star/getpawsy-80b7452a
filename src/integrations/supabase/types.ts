@@ -15551,7 +15551,7 @@ export type Database = {
           refunded_at: string | null
           session_url: string | null
           status: string
-          stripe_session_id: string
+          stripe_session_id: string | null
           updated_at: string
           webhook_received_at: string | null
         }
@@ -15568,7 +15568,7 @@ export type Database = {
           refunded_at?: string | null
           session_url?: string | null
           status?: string
-          stripe_session_id: string
+          stripe_session_id?: string | null
           updated_at?: string
           webhook_received_at?: string | null
         }
@@ -15585,7 +15585,7 @@ export type Database = {
           refunded_at?: string | null
           session_url?: string | null
           status?: string
-          stripe_session_id?: string
+          stripe_session_id?: string | null
           updated_at?: string
           webhook_received_at?: string | null
         }

@@ -30,6 +30,19 @@ interface StatusResponse {
     source: string;
     keyPrefix: string | null;
     hasWebhookSecret: boolean;
+    hasServiceRoleKey?: boolean;
+    lastStripeErrorCode?: string | null;
+    lastStripeErrorMessage?: string | null;
+    lastStripeErrorAt?: string | null;
+  };
+  diagnostics?: {
+    mode: string;
+    hasStripeLiveKey: boolean;
+    hasWebhookSecret: boolean;
+    hasServiceRoleKey: boolean;
+    lastStripeErrorCode: string | null;
+    lastStripeErrorMessage: string | null;
+    lastSmokeTestStatus: string | null;
   };
   funnel: {
     counts: Record<string, number>;
@@ -64,6 +77,27 @@ interface VerifyResponse {
   checklist: Record<string, boolean>;
 }
 
+/**
+ * supabase.functions.invoke wraps non-2xx in FunctionsHttpError with the raw
+ * Response on `.context`. Parse the JSON body so the toast shows the real
+ * backend message instead of "non-2xx status code".
+ */
+async function extractFnError(err: unknown): Promise<string> {
+  try {
+    const ctx = (err as any)?.context;
+    if (ctx && typeof ctx.json === 'function') {
+      const body = await ctx.clone().json().catch(() => null);
+      if (body) {
+        const code = body.code ? ` [${body.code}]` : '';
+        return `${body.message ?? body.error ?? 'Edge function error'}${code}`;
+      }
+      const text = await ctx.clone().text().catch(() => '');
+      if (text) return text;
+    }
+  } catch { /* fall through */ }
+  return err instanceof Error ? err.message : String(err);
+}
+
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   return (
     <div className="flex items-center gap-2 text-sm">
@@ -96,7 +130,7 @@ export default function AdminPaymentsPage() {
       if (error) throw error;
       setStatus(data as StatusResponse);
     } catch (e) {
-      toast({ title: 'Failed to load status', description: String(e), variant: 'destructive' });
+      toast({ title: 'Failed to load status', description: await extractFnError(e), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -124,7 +158,7 @@ export default function AdminPaymentsPage() {
       setVerifyResult(data as VerifyResponse);
       await fetchStatus();
     } catch (e) {
-      toast({ title: 'Verify failed', description: String(e), variant: 'destructive' });
+      toast({ title: 'Verify failed', description: await extractFnError(e), variant: 'destructive' });
     } finally {
       setVerifying(false);
     }
@@ -145,7 +179,7 @@ export default function AdminPaymentsPage() {
       // Open Stripe Checkout in same window so the success_url callback returns here
       window.location.href = url;
     } catch (e) {
-      toast({ title: 'Smoke test failed', description: String(e), variant: 'destructive' });
+      toast({ title: 'Smoke test failed', description: await extractFnError(e), variant: 'destructive' });
       setStarting(false);
     }
   }
@@ -161,7 +195,7 @@ export default function AdminPaymentsPage() {
       toast({ title: 'Refund issued', description: `Refund ${(data as any)?.refundId?.slice(0, 12)}…` });
       await fetchStatus();
     } catch (e) {
-      toast({ title: 'Refund failed', description: String(e), variant: 'destructive' });
+      toast({ title: 'Refund failed', description: await extractFnError(e), variant: 'destructive' });
     } finally {
       setRefunding(false);
     }
@@ -208,6 +242,21 @@ export default function AdminPaymentsPage() {
       </Card>
 
       {/* Key rotation instructions (native secret modal flow) */}
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Safe diagnostics</CardTitle></CardHeader>
+        <CardContent className="grid sm:grid-cols-2 gap-2 text-sm">
+          <div>mode: <strong className="uppercase">{status?.diagnostics?.mode ?? mode}</strong></div>
+          <div>hasStripeLiveKey: <strong>{String(status?.diagnostics?.hasStripeLiveKey ?? status?.stripe.hasLiveKey ?? false)}</strong></div>
+          <div>hasWebhookSecret: <strong>{String(status?.diagnostics?.hasWebhookSecret ?? status?.stripe.hasWebhookSecret ?? false)}</strong></div>
+          <div>hasServiceRoleKey: <strong>{String(status?.diagnostics?.hasServiceRoleKey ?? status?.stripe.hasServiceRoleKey ?? false)}</strong></div>
+          <div>lastSmokeTestStatus: <strong>{status?.diagnostics?.lastSmokeTestStatus ?? status?.latestSmokeTest?.status ?? '—'}</strong></div>
+          <div>lastStripeErrorCode: <strong>{status?.diagnostics?.lastStripeErrorCode ?? '—'}</strong></div>
+          <div className="sm:col-span-2 break-words">
+            lastStripeErrorMessage: <strong className="font-mono text-xs">{status?.diagnostics?.lastStripeErrorMessage ?? '—'}</strong>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle className="text-lg">Rotate or set keys</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-3">
