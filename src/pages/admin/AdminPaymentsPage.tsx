@@ -145,6 +145,7 @@ export default function AdminPaymentsPage() {
   const [refunding, setRefunding] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerifyResponse | null>(null);
   const [autoRetry, setAutoRetry] = useState<{ active: boolean; attempt: number; secondsLeft: number } | null>(null);
+  const [lastError, setLastError] = useState<LastError | null>(null);
   const retryAbortRef = useRef(false);
 
   const fetchStatus = useCallback(async () => {
