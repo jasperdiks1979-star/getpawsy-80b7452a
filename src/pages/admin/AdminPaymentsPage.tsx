@@ -130,7 +130,7 @@ export default function AdminPaymentsPage() {
       if (error) throw error;
       setStatus(data as StatusResponse);
     } catch (e) {
-      toast({ title: 'Failed to load status', description: String(e), variant: 'destructive' });
+      toast({ title: 'Failed to load status', description: await extractFnError(e), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -158,7 +158,7 @@ export default function AdminPaymentsPage() {
       setVerifyResult(data as VerifyResponse);
       await fetchStatus();
     } catch (e) {
-      toast({ title: 'Verify failed', description: String(e), variant: 'destructive' });
+      toast({ title: 'Verify failed', description: await extractFnError(e), variant: 'destructive' });
     } finally {
       setVerifying(false);
     }
@@ -179,7 +179,7 @@ export default function AdminPaymentsPage() {
       // Open Stripe Checkout in same window so the success_url callback returns here
       window.location.href = url;
     } catch (e) {
-      toast({ title: 'Smoke test failed', description: String(e), variant: 'destructive' });
+      toast({ title: 'Smoke test failed', description: await extractFnError(e), variant: 'destructive' });
       setStarting(false);
     }
   }
@@ -195,7 +195,7 @@ export default function AdminPaymentsPage() {
       toast({ title: 'Refund issued', description: `Refund ${(data as any)?.refundId?.slice(0, 12)}…` });
       await fetchStatus();
     } catch (e) {
-      toast({ title: 'Refund failed', description: String(e), variant: 'destructive' });
+      toast({ title: 'Refund failed', description: await extractFnError(e), variant: 'destructive' });
     } finally {
       setRefunding(false);
     }
