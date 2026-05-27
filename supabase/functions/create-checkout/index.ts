@@ -148,11 +148,12 @@ serve(async (req) => {
       customer_email: customerId ? undefined : userEmail,
       line_items: lineItems,
       mode: "payment",
-      // Use automatic_payment_methods so Stripe surfaces every method enabled
-      // in the dashboard (Apple Pay, Google Pay, Link, Klarna, Afterpay,
-      // Cash App Pay, etc.) — critical for high-ticket TikTok mobile traffic
-      // where wallets + BNPL meaningfully lift checkout completion.
-      automatic_payment_methods: { enabled: true },
+      // NOTE: Do NOT pass `automatic_payment_methods` here — it is a
+      // PaymentIntent-only parameter and Stripe rejects the Checkout
+      // Session with "Received unknown parameter: automatic_payment_methods".
+      // Checkout Sessions automatically surface every method enabled in the
+      // Stripe dashboard (Apple Pay, Google Pay, Link, Klarna, Afterpay,
+      // Cash App Pay, …) when `payment_method_types` is omitted.
       shipping_address_collection: {
         // US-only storefront: only accept US shipping addresses to prevent
         // accidental international orders we cannot fulfill.
@@ -222,7 +223,17 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("[CREATE-CHECKOUT] Error:", errorMessage);
+    // deno-lint-ignore no-explicit-any
+    const e = error as any;
+    console.error("[CREATE-CHECKOUT] Error:", {
+      message: errorMessage,
+      type: e?.type,
+      code: e?.code,
+      statusCode: e?.statusCode,
+      param: e?.param,
+      hasStripeKey: !!Deno.env.get("STRIPE_SECRET_KEY"),
+      hasServiceRoleKey: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    });
     return new Response(
       JSON.stringify({ error: errorMessage }), 
       {
