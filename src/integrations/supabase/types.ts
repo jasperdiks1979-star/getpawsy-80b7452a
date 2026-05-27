@@ -12036,8 +12036,11 @@ export type Database = {
           active_pinterest_connection_id: string | null
           auto_approve_queue: boolean
           daily_pin_cap: number
+          deploy_verification_window_minutes: number
+          deploy_verified_at: string | null
           domination_mode: boolean
           id: number
+          last_deploy_verification: Json | null
           last_pin_external_id: string | null
           last_pin_external_url: string | null
           last_pin_publish_at: string | null
@@ -12070,8 +12073,11 @@ export type Database = {
           active_pinterest_connection_id?: string | null
           auto_approve_queue?: boolean
           daily_pin_cap?: number
+          deploy_verification_window_minutes?: number
+          deploy_verified_at?: string | null
           domination_mode?: boolean
           id?: number
+          last_deploy_verification?: Json | null
           last_pin_external_id?: string | null
           last_pin_external_url?: string | null
           last_pin_publish_at?: string | null
@@ -12104,8 +12110,11 @@ export type Database = {
           active_pinterest_connection_id?: string | null
           auto_approve_queue?: boolean
           daily_pin_cap?: number
+          deploy_verification_window_minutes?: number
+          deploy_verified_at?: string | null
           domination_mode?: boolean
           id?: number
+          last_deploy_verification?: Json | null
           last_pin_external_id?: string | null
           last_pin_external_url?: string | null
           last_pin_publish_at?: string | null

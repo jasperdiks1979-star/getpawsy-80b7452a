@@ -506,25 +506,37 @@ Deno.serve(async (req) => {
     // has succeeded against api.pinterest.com with the active client_id.
     const { data: guardSettings } = await sb
       .from("pinterest_runtime_settings")
-      .select("production_publish_verified, production_trial_detected, verified_client_id_prefix")
+      .select("production_publish_verified, production_trial_detected, verified_client_id_prefix, deploy_verified_at, deploy_verification_window_minutes")
       .eq("id", 1)
       .maybeSingle();
     const currentPrefix = clientIdPrefix(Deno.env.get("PINTEREST_CLIENT_ID"));
     const verifiedPrefix = guardSettings?.verified_client_id_prefix || null;
     const clientIdMatches = !verifiedPrefix || verifiedPrefix === currentPrefix;
     const approvedClientActive = activeClientIdMatchesApproved();
-    const guardOk = approvedClientActive && Boolean(guardSettings?.production_publish_verified) && !guardSettings?.production_trial_detected && clientIdMatches;
+    // Post-deploy verification freshness check (added 2026-05-27): every
+    // deploy must run the `deploy-verify` edge function before cron may
+    // publish. The verified timestamp must be within the configured window.
+    const verifyWindowMin = Number(guardSettings?.deploy_verification_window_minutes ?? 60);
+    const verifiedAt = guardSettings?.deploy_verified_at ? new Date(guardSettings.deploy_verified_at as string).getTime() : 0;
+    const deployVerifyFresh = verifiedAt > 0 && (Date.now() - verifiedAt) <= verifyWindowMin * 60 * 1000;
+    const guardOk = approvedClientActive
+      && Boolean(guardSettings?.production_publish_verified)
+      && !guardSettings?.production_trial_detected
+      && clientIdMatches
+      && deployVerifyFresh;
     if (!guardOk) {
       const reason = !approvedClientActive
         ? "Active PINTEREST_CLIENT_ID does not exactly match approved Standard Access App ID 1567611 — cron publishing blocked."
         : guardSettings?.production_trial_detected
         ? "Pinterest trial-access detected — cron publishing blocked. Update PINTEREST_CLIENT_ID/SECRET to the Standard-Access app and reconnect."
+        : !deployVerifyFresh
+        ? `Post-deploy verification stale or missing (window ${verifyWindowMin}m). Call POST /functions/v1/deploy-verify to reopen the gate.`
         : "Production publishing locked — run Direct Pin Test once before cron can publish.";
       await sb.from("pinterest_post_logs").insert({
         action: "cron_tick",
         status: "skipped",
         error_message: reason,
-        response_data: { code: "PINTEREST_PRODUCTION_GUARD", approved_client_id: APPROVED_PINTEREST_CLIENT_ID, verified_client_id_prefix: verifiedPrefix, current_client_id_prefix: currentPrefix },
+        response_data: { code: "PINTEREST_PRODUCTION_GUARD", approved_client_id: APPROVED_PINTEREST_CLIENT_ID, verified_client_id_prefix: verifiedPrefix, current_client_id_prefix: currentPrefix, deploy_verified_at: guardSettings?.deploy_verified_at, deploy_verify_window_minutes: verifyWindowMin },
       });
       return await respond(
         { ok: false, error: reason, code: "PINTEREST_PRODUCTION_GUARD", publishing_disabled: true, results: [] },
