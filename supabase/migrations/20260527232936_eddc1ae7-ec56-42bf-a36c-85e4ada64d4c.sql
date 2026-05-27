@@ -1,0 +1,1 @@
+ALTER TABLE public.smoke_test_runs ADD COLUMN IF NOT EXISTS webhook_event_id TEXT;
