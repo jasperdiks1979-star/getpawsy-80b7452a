@@ -86,6 +86,7 @@ async function handleStatus(): Promise<Response> {
   const { key, mode, source } = resolveStripeKey();
   const publishable = Deno.env.get("VITE_STRIPE_PUBLISHABLE_KEY") ?? null;
   const hasWebhookSecret = !!Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  const hasServiceRoleKey = !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   const admin = svcClient();
 
@@ -123,6 +124,16 @@ async function handleStatus(): Promise<Response> {
     .limit(1)
     .maybeSingle();
 
+  // Last Stripe error (if any) — stored in metadata of failed smoke_test_runs row
+  const { data: lastErrRow } = await admin
+    .from("smoke_test_runs")
+    .select("status, metadata, created_at")
+    .eq("status", "error")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const lastErrMeta = (lastErrRow?.metadata ?? {}) as Record<string, unknown>;
+
   return jsonResponse({
     ok: true,
     stripe: {
@@ -134,6 +145,19 @@ async function handleStatus(): Promise<Response> {
       source,
       keyPrefix: key ? key.slice(0, 8) + "…" : null,
       hasWebhookSecret,
+      hasServiceRoleKey,
+      lastStripeErrorCode: (lastErrMeta.error_code as string | undefined) ?? null,
+      lastStripeErrorMessage: (lastErrMeta.error_message as string | undefined) ?? null,
+      lastStripeErrorAt: lastErrRow?.created_at ?? null,
+    },
+    diagnostics: {
+      mode,
+      hasStripeLiveKey: !!Deno.env.get("STRIPE_SECRET_KEY_LIVE"),
+      hasWebhookSecret,
+      hasServiceRoleKey,
+      lastStripeErrorCode: (lastErrMeta.error_code as string | undefined) ?? null,
+      lastStripeErrorMessage: (lastErrMeta.error_message as string | undefined) ?? null,
+      lastSmokeTestStatus: latestSmoke?.status ?? null,
     },
     funnel: {
       window: "24h",
