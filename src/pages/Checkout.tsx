@@ -881,7 +881,7 @@ const Checkout = () => {
               <Button
                 size="lg"
                 className="w-full mt-6 gap-2"
-                disabled={isProcessing || !email || !acceptedTerms}
+                disabled={isProcessing || !acceptedTerms}
                 onClick={handleStripeCheckout}
               >
                 {isProcessing ? (
@@ -963,7 +963,7 @@ const Checkout = () => {
                 maxWidth: '100%',
                 boxSizing: 'border-box'
               }}
-              disabled={isProcessing || !email || !acceptedTerms}
+              disabled={isProcessing || !acceptedTerms}
               onClick={handleStripeCheckout}
             >
               {isProcessing ? (
