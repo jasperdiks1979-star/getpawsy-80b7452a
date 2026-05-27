@@ -455,9 +455,11 @@ const Checkout = () => {
   }, []);
 
   const handleStripeCheckout = async () => {
-    // DOM fallback: automation/mobile-safari can fill the input without
-    // triggering React's controlled onChange, leaving `email` state empty.
-    // Always read the live DOM value as a safety net before validating.
+    // DOM fallback: automation/mobile-safari can fill inputs or toggle
+    // Radix Checkbox without triggering React's controlled handlers,
+    // leaving `email` / `acceptedTerms` state stale. Read live DOM values
+    // as a safety net before validating, and back-sync React state so the
+    // rest of the flow (and downstream funnel events) stays consistent.
     let domEmail = '';
     try {
       const el =
@@ -467,27 +469,41 @@ const Checkout = () => {
     } catch {
       /* ignore */
     }
+
+    let domTerms = false;
+    try {
+      const termsEl = document.getElementById('terms');
+      domTerms =
+        termsEl?.getAttribute('data-state') === 'checked' ||
+        termsEl?.getAttribute('aria-checked') === 'true' ||
+        (termsEl as HTMLInputElement | null)?.checked === true;
+    } catch {
+      /* ignore */
+    }
+
     const stateEmail = (email ?? '').trim();
     const finalEmail = stateEmail || domEmail;
+    const finalTerms = acceptedTerms || domTerms;
 
     console.info('[checkout]', {
       stateEmail,
       domEmail,
       finalEmail,
-      acceptedTerms,
+      stateTerms: acceptedTerms,
+      domTerms,
+      finalTerms,
     });
 
-    // Sync state if DOM had the value but React didn't.
-    if (!stateEmail && domEmail) {
-      setEmail(domEmail);
-    }
+    // Back-sync React state when DOM was ahead (automation path).
+    if (!stateEmail && domEmail) setEmail(domEmail);
+    if (!acceptedTerms && domTerms) setAcceptedTerms(true);
 
     if (!finalEmail || !finalEmail.includes('@')) {
       toast.error('Please enter a valid email address');
       return;
     }
 
-    if (!acceptedTerms) {
+    if (!finalTerms) {
       toast.error('Please accept the Terms of Service and Return Policy to continue');
       return;
     }
