@@ -30,6 +30,19 @@ interface StatusResponse {
     source: string;
     keyPrefix: string | null;
     hasWebhookSecret: boolean;
+    hasServiceRoleKey?: boolean;
+    lastStripeErrorCode?: string | null;
+    lastStripeErrorMessage?: string | null;
+    lastStripeErrorAt?: string | null;
+  };
+  diagnostics?: {
+    mode: string;
+    hasStripeLiveKey: boolean;
+    hasWebhookSecret: boolean;
+    hasServiceRoleKey: boolean;
+    lastStripeErrorCode: string | null;
+    lastStripeErrorMessage: string | null;
+    lastSmokeTestStatus: string | null;
   };
   funnel: {
     counts: Record<string, number>;
@@ -62,6 +75,27 @@ interface VerifyResponse {
   funnelDuplicates: number;
   botEvents: number;
   checklist: Record<string, boolean>;
+}
+
+/**
+ * supabase.functions.invoke wraps non-2xx in FunctionsHttpError with the raw
+ * Response on `.context`. Parse the JSON body so the toast shows the real
+ * backend message instead of "non-2xx status code".
+ */
+async function extractFnError(err: unknown): Promise<string> {
+  try {
+    const ctx = (err as any)?.context;
+    if (ctx && typeof ctx.json === 'function') {
+      const body = await ctx.clone().json().catch(() => null);
+      if (body) {
+        const code = body.code ? ` [${body.code}]` : '';
+        return `${body.message ?? body.error ?? 'Edge function error'}${code}`;
+      }
+      const text = await ctx.clone().text().catch(() => '');
+      if (text) return text;
+    }
+  } catch { /* fall through */ }
+  return err instanceof Error ? err.message : String(err);
 }
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
