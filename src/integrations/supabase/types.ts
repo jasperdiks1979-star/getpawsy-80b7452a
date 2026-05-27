@@ -933,44 +933,77 @@ export type Database = {
       }
       checkout_funnel_events: {
         Row: {
+          bot_reason: string | null
+          cart_id: string | null
           created_at: string
           currency: string | null
+          destination_url: string | null
+          error_reason: string | null
+          event_source: string | null
+          geo_quality: string | null
           id: string
+          idempotency_key: string | null
+          is_bot: boolean | null
           is_klarna: boolean | null
+          item_count: number | null
           metadata: Json | null
           payment_method: string | null
           session_id: string | null
           source: string | null
+          source_component: string | null
           step: string
           stripe_session_id: string | null
+          user_action_id: string | null
           user_id: string | null
           value: number | null
         }
         Insert: {
+          bot_reason?: string | null
+          cart_id?: string | null
           created_at?: string
           currency?: string | null
+          destination_url?: string | null
+          error_reason?: string | null
+          event_source?: string | null
+          geo_quality?: string | null
           id?: string
+          idempotency_key?: string | null
+          is_bot?: boolean | null
           is_klarna?: boolean | null
+          item_count?: number | null
           metadata?: Json | null
           payment_method?: string | null
           session_id?: string | null
           source?: string | null
+          source_component?: string | null
           step: string
           stripe_session_id?: string | null
+          user_action_id?: string | null
           user_id?: string | null
           value?: number | null
         }
         Update: {
+          bot_reason?: string | null
+          cart_id?: string | null
           created_at?: string
           currency?: string | null
+          destination_url?: string | null
+          error_reason?: string | null
+          event_source?: string | null
+          geo_quality?: string | null
           id?: string
+          idempotency_key?: string | null
+          is_bot?: boolean | null
           is_klarna?: boolean | null
+          item_count?: number | null
           metadata?: Json | null
           payment_method?: string | null
           session_id?: string | null
           source?: string | null
+          source_component?: string | null
           step?: string
           stripe_session_id?: string | null
+          user_action_id?: string | null
           user_id?: string | null
           value?: number | null
         }
@@ -4275,6 +4308,33 @@ export type Database = {
         }
         Relationships: []
       }
+      funnel_qa_runs: {
+        Row: {
+          id: string
+          notes: string | null
+          run_at: string
+          run_by: string | null
+          status: string
+          steps: Json
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          run_at?: string
+          run_by?: string | null
+          status: string
+          steps?: Json
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          run_at?: string
+          run_by?: string | null
+          status?: string
+          steps?: Json
+        }
+        Relationships: []
+      }
       ga4_daily_snapshots: {
         Row: {
           active_users: number | null
@@ -6336,19 +6396,25 @@ export type Database = {
       }
       lp_funnel_events: {
         Row: {
+          bot_reason: string | null
           cohort: string | null
           created_at: string
           cta_copy_label: string | null
           cta_copy_mode: string | null
           cta_copy_source: string | null
           cta_variant: string | null
+          deduped: boolean | null
           delta_ms: number | null
           dwell_ms: number | null
           event_name: string
+          event_source: string | null
           first_click_placement: string | null
           funnel: string | null
+          geo_quality: string | null
           hook_family: string | null
           id: string
+          idempotency_key: string | null
+          is_bot: boolean | null
           is_first_click: boolean | null
           is_internal: boolean | null
           is_misclick: boolean | null
@@ -6360,32 +6426,43 @@ export type Database = {
           previous_placement: string | null
           product_id: string | null
           product_name: string | null
+          raw_payload: Json | null
           repeat_index: number | null
           scroll_depth_at_click: number | null
           scroll_depth_at_visible: number | null
           session_id: string
+          source_component: string | null
           time_to_click_ms: number | null
           time_to_visible_ms: number | null
+          traffic_quality_score: number | null
+          user_action_id: string | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
           utm_source: string | null
+          validation_status: string | null
           value: number | null
         }
         Insert: {
+          bot_reason?: string | null
           cohort?: string | null
           created_at?: string
           cta_copy_label?: string | null
           cta_copy_mode?: string | null
           cta_copy_source?: string | null
           cta_variant?: string | null
+          deduped?: boolean | null
           delta_ms?: number | null
           dwell_ms?: number | null
           event_name: string
+          event_source?: string | null
           first_click_placement?: string | null
           funnel?: string | null
+          geo_quality?: string | null
           hook_family?: string | null
           id?: string
+          idempotency_key?: string | null
+          is_bot?: boolean | null
           is_first_click?: boolean | null
           is_internal?: boolean | null
           is_misclick?: boolean | null
@@ -6397,32 +6474,43 @@ export type Database = {
           previous_placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          raw_payload?: Json | null
           repeat_index?: number | null
           scroll_depth_at_click?: number | null
           scroll_depth_at_visible?: number | null
           session_id: string
+          source_component?: string | null
           time_to_click_ms?: number | null
           time_to_visible_ms?: number | null
+          traffic_quality_score?: number | null
+          user_action_id?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          validation_status?: string | null
           value?: number | null
         }
         Update: {
+          bot_reason?: string | null
           cohort?: string | null
           created_at?: string
           cta_copy_label?: string | null
           cta_copy_mode?: string | null
           cta_copy_source?: string | null
           cta_variant?: string | null
+          deduped?: boolean | null
           delta_ms?: number | null
           dwell_ms?: number | null
           event_name?: string
+          event_source?: string | null
           first_click_placement?: string | null
           funnel?: string | null
+          geo_quality?: string | null
           hook_family?: string | null
           id?: string
+          idempotency_key?: string | null
+          is_bot?: boolean | null
           is_first_click?: boolean | null
           is_internal?: boolean | null
           is_misclick?: boolean | null
@@ -6434,16 +6522,21 @@ export type Database = {
           previous_placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          raw_payload?: Json | null
           repeat_index?: number | null
           scroll_depth_at_click?: number | null
           scroll_depth_at_visible?: number | null
           session_id?: string
+          source_component?: string | null
           time_to_click_ms?: number | null
           time_to_visible_ms?: number | null
+          traffic_quality_score?: number | null
+          user_action_id?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          validation_status?: string | null
           value?: number | null
         }
         Relationships: []
@@ -15141,6 +15234,72 @@ export type Database = {
           rotation_status?: string
           service_description?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          bot_reason: string | null
+          country: string | null
+          event_count: number
+          first_touch_campaign: string | null
+          first_touch_medium: string | null
+          first_touch_source: string | null
+          geo_quality: string | null
+          is_bot: boolean | null
+          landing_page: string | null
+          last_seen_at: string
+          last_touch_campaign: string | null
+          last_touch_medium: string | null
+          last_touch_source: string | null
+          page_view_count: number
+          referrer: string | null
+          session_id: string
+          started_at: string
+          traffic_quality_score: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          bot_reason?: string | null
+          country?: string | null
+          event_count?: number
+          first_touch_campaign?: string | null
+          first_touch_medium?: string | null
+          first_touch_source?: string | null
+          geo_quality?: string | null
+          is_bot?: boolean | null
+          landing_page?: string | null
+          last_seen_at?: string
+          last_touch_campaign?: string | null
+          last_touch_medium?: string | null
+          last_touch_source?: string | null
+          page_view_count?: number
+          referrer?: string | null
+          session_id: string
+          started_at?: string
+          traffic_quality_score?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          bot_reason?: string | null
+          country?: string | null
+          event_count?: number
+          first_touch_campaign?: string | null
+          first_touch_medium?: string | null
+          first_touch_source?: string | null
+          geo_quality?: string | null
+          is_bot?: boolean | null
+          landing_page?: string | null
+          last_seen_at?: string
+          last_touch_campaign?: string | null
+          last_touch_medium?: string | null
+          last_touch_source?: string | null
+          page_view_count?: number
+          referrer?: string | null
+          session_id?: string
+          started_at?: string
+          traffic_quality_score?: number | null
+          user_agent?: string | null
         }
         Relationships: []
       }
