@@ -425,6 +425,7 @@ serve(async (req) => {
                 status: session.payment_status === "paid" ? "paid" : "pending",
                 payment_intent_id: piId,
                 webhook_received_at: new Date().toISOString(),
+                webhook_event_id: event.id,
               })
               .eq("stripe_session_id", session.id);
 
