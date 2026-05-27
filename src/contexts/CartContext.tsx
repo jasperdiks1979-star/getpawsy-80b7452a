@@ -19,6 +19,8 @@ const getTrackVisitorEvent = () => import('@/hooks/useVisitorTracking').then(m =
 // TikTok Pixel — lazy import to avoid bundle bloat
 const ttAddToCart = (params: { contentId: string; contentName: string; value: number; quantity?: number }) =>
   import('@/lib/tiktok-pixel').then(m => m.ttTrackAddToCart(params)).catch(() => {});
+const getFireUserAddToCart = () =>
+  import('@/lib/funnelEvents').then(m => m.fireUserAddToCart);
 
 export interface CartItem {
   id: string;
@@ -242,6 +244,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast(`Added to cart: ${newItem.name}`);
       return [...prev, { ...newItem, quantity: 1 }];
     });
+
+    // ✅ Verified-user add_to_cart (event_source = user_click) — the ONLY
+    // path that should count in the /admin/funnel-health dashboard. All
+    // other legacy fires (mount/hydration/sticky-sync) are tagged
+    // 'legacy_unverified' and excluded.
+    getFireUserAddToCart().then(fn => fn({
+      product_id: newItem.id,
+      product_name: newItem.name,
+      qty: 1,
+      price: newItem.price,
+      currency: 'USD',
+      source_component: 'cart_context_add_item',
+    })).catch(() => {});
     
     // GA4 Add to Cart
     trackAddToCart(newItem.id, newItem.name, newItem.price, 1);
