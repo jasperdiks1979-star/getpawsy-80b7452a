@@ -277,6 +277,53 @@ const Checkout = () => {
     }
   };
 
+  // Automation/e2e sync: ensure DOM-level fill() and programmatic checks
+  // are mirrored into React state, even when frameworks bypass React's
+  // synthetic event system. Pure listener — does not alter UI.
+  useEffect(() => {
+    const emailEl =
+      (document.getElementById('email') as HTMLInputElement | null) ??
+      (document.querySelector('input[type="email"]') as HTMLInputElement | null);
+
+    const onEmailInput = (e: Event) => {
+      const v = (e.target as HTMLInputElement)?.value ?? '';
+      setEmail((prev) => {
+        if (prev === v) return prev;
+        if (v && v.includes('@')) setAbandonedCartEmail(v);
+        return v;
+      });
+    };
+    emailEl?.addEventListener('input', onEmailInput);
+    emailEl?.addEventListener('change', onEmailInput);
+
+    // Radix Checkbox: sync from data-state / aria-checked attribute changes.
+    const termsEl = document.getElementById('terms');
+    let observer: MutationObserver | null = null;
+    const syncTerms = () => {
+      if (!termsEl) return;
+      const checked =
+        termsEl.getAttribute('data-state') === 'checked' ||
+        termsEl.getAttribute('aria-checked') === 'true';
+      setAcceptedTerms((prev) => (prev === checked ? prev : checked));
+    };
+    if (termsEl) {
+      observer = new MutationObserver(syncTerms);
+      observer.observe(termsEl, {
+        attributes: true,
+        attributeFilter: ['data-state', 'aria-checked'],
+      });
+      termsEl.addEventListener('click', syncTerms);
+      syncTerms();
+    }
+
+    return () => {
+      emailEl?.removeEventListener('input', onEmailInput);
+      emailEl?.removeEventListener('change', onEmailInput);
+      observer?.disconnect();
+      termsEl?.removeEventListener('click', syncTerms);
+    };
+  }, [setAbandonedCartEmail]);
+
   // Import shared production domains constant
 
   // Track checkout activity for visitor map
