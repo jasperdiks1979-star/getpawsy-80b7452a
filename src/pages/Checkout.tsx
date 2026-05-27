@@ -594,6 +594,12 @@ const Checkout = () => {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
+                    onInput={(e) => {
+                      // Defensive: some automation/autofill paths dispatch
+                      // `input` without React's synthetic change firing.
+                      const v = (e.target as HTMLInputElement).value;
+                      if (v !== email) handleEmailChange(v);
+                    }}
                     onBlur={() => {
                       if (email && email.includes('@')) {
                         setAbandonedCartEmail(email);
