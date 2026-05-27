@@ -80,25 +80,46 @@ interface VerifyResponse {
   botFalsePositiveDetail?: string | null;
 }
 
+interface LastError {
+  action: string;
+  status: number | null;
+  body: string;
+  timestamp: string;
+}
+
+interface ExtractedError {
+  message: string;
+  status: number | null;
+  body: string;
+}
+
 /**
  * supabase.functions.invoke wraps non-2xx in FunctionsHttpError with the raw
  * Response on `.context`. Parse the JSON body so the toast shows the real
  * backend message instead of "non-2xx status code".
  */
-async function extractFnError(err: unknown): Promise<string> {
+async function extractFnError(err: unknown): Promise<ExtractedError> {
   try {
     const ctx = (err as any)?.context;
+    const status = (err as any)?.status ?? (ctx?.status ?? null);
     if (ctx && typeof ctx.json === 'function') {
       const body = await ctx.clone().json().catch(() => null);
       if (body) {
         const code = body.code ? ` [${body.code}]` : '';
-        return `${body.message ?? body.error ?? 'Edge function error'}${code}`;
+        return {
+          message: `${body.message ?? body.error ?? 'Edge function error'}${code}`,
+          status,
+          body: JSON.stringify(body, null, 2),
+        };
       }
       const text = await ctx.clone().text().catch(() => '');
-      if (text) return text;
+      if (text) {
+        return { message: text, status, body: text };
+      }
     }
   } catch { /* fall through */ }
-  return err instanceof Error ? err.message : String(err);
+  const message = err instanceof Error ? err.message : String(err);
+  return { message, status: null, body: message };
 }
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
