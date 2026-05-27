@@ -411,6 +411,41 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log("[STRIPE-WEBHOOK] Checkout session completed:", session.id);
 
+        // ── Smoke test short-circuit ─────────────────────────────────────
+        // For admin-initiated live smoke-test sessions we DO NOT create
+        // orders, send emails, or fire marketing events. We only mark the
+        // smoke_test_runs row + write a payment_success funnel event.
+        if (session.metadata?.smoke_test === "true") {
+          try {
+            const piId = typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
+            await supabaseAdmin.from("smoke_test_runs")
+              .update({
+                status: session.payment_status === "paid" ? "paid" : "pending",
+                payment_intent_id: piId,
+                webhook_received_at: new Date().toISOString(),
+              })
+              .eq("stripe_session_id", session.id);
+
+            await supabaseAdmin.from("checkout_funnel_events").insert({
+              session_id: session.metadata?.initiator ?? "smoke_test",
+              stripe_session_id: session.id,
+              step: "payment_success",
+              value: (session.amount_total || 0) / 100,
+              currency: session.currency ?? "usd",
+              source: "stripe_webhook",
+              source_component: "smoke_test",
+              idempotency_key: `smoke_${session.id}_paid`,
+              metadata: { smoke_test: true },
+            });
+            console.log("[STRIPE-WEBHOOK] Smoke test marked paid:", session.id.slice(0, 12));
+          } catch (smokeErr) {
+            console.error("[STRIPE-WEBHOOK] Smoke test handling failed:", smokeErr);
+          }
+          break;
+        }
+
         const customerEmail = session.customer_email || session.customer_details?.email;
         const customerName = session.customer_details?.name;
         const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
