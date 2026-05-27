@@ -75,6 +75,9 @@ interface VerifyResponse {
   funnelDuplicates: number;
   botEvents: number;
   checklist: Record<string, boolean>;
+  webhookEventId?: string | null;
+  webhookEventCorrelationDetail?: string | null;
+  botFalsePositiveDetail?: string | null;
 }
 
 /**
@@ -321,10 +324,32 @@ export default function AdminPaymentsPage() {
                 <StatusPill ok={verifyResult.checklist.redirectSuccessLogged} label="Redirect success logged" />
                 <StatusPill ok={verifyResult.checklist.noDuplicateEvents} label="No duplicate events" />
                 <StatusPill ok={verifyResult.checklist.noBotClassification} label="No bot classification" />
+                <StatusPill
+                  ok={verifyResult.checklist.webhookEventCorrelated}
+                  label="Webhook event ↔ session correlated"
+                />
+                <StatusPill
+                  ok={verifyResult.checklist.noBotFalsePositive}
+                  label="No bot-detection false positive"
+                />
               </div>
               <div className="text-xs text-muted-foreground">
                 Funnel steps observed: <code>{verifyResult.funnelSteps.join(' → ') || '—'}</code>
               </div>
+              {(verifyResult.webhookEventId || verifyResult.webhookEventCorrelationDetail) && (
+                <div className="text-xs text-muted-foreground">
+                  Webhook event:{' '}
+                  <code>{verifyResult.webhookEventId ?? '—'}</code>
+                  {verifyResult.webhookEventCorrelationDetail && (
+                    <> · {verifyResult.webhookEventCorrelationDetail}</>
+                  )}
+                </div>
+              )}
+              {verifyResult.botFalsePositiveDetail && (
+                <div className="text-xs text-destructive">
+                  {verifyResult.botFalsePositiveDetail}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
