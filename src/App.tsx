@@ -1468,6 +1468,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="smoke-test-events"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AdminSmokeTestEventsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-config"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
