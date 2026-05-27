@@ -223,7 +223,17 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("[CREATE-CHECKOUT] Error:", errorMessage);
+    // deno-lint-ignore no-explicit-any
+    const e = error as any;
+    console.error("[CREATE-CHECKOUT] Error:", {
+      message: errorMessage,
+      type: e?.type,
+      code: e?.code,
+      statusCode: e?.statusCode,
+      param: e?.param,
+      hasStripeKey: !!Deno.env.get("STRIPE_SECRET_KEY"),
+      hasServiceRoleKey: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    });
     return new Response(
       JSON.stringify({ error: errorMessage }), 
       {
