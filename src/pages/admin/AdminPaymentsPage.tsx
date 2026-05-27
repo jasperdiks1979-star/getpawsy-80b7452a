@@ -450,6 +450,29 @@ export default function AdminPaymentsPage() {
               )}
             </div>
           )}
+
+          {lastError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <XCircle className="h-4 w-4" />
+                  Backend error — {lastError.action}
+                </div>
+                <div className="text-xs text-muted-foreground">{lastError.timestamp}</div>
+              </div>
+              {lastError.status != null && (
+                <div className="text-xs">
+                  HTTP status: <code className="rounded bg-destructive/10 px-1 py-0.5 text-destructive font-mono">{lastError.status}</code>
+                </div>
+              )}
+              <pre className="text-xs bg-muted/60 rounded p-2 overflow-auto max-h-40 font-mono whitespace-pre-wrap break-all">
+                {lastError.body}
+              </pre>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setLastError(null)}>
+                Dismiss
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
