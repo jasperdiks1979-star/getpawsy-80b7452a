@@ -343,7 +343,7 @@ async function handleSmokeTestVerify(body: any): Promise<Response> {
 
   const { data: funnelRows } = await admin
     .from("checkout_funnel_events")
-    .select("step, idempotency_key, is_bot, created_at")
+    .select("step, idempotency_key, is_bot, bot_reason, source, source_component, event_source, created_at")
     .eq("stripe_session_id", sessionId)
     .order("created_at", { ascending: true });
 
@@ -358,6 +358,49 @@ async function handleSmokeTestVerify(body: any): Promise<Response> {
   }
 
   const webhookReceived = !!row?.webhook_received_at;
+  const webhookEventId: string | null = (row?.webhook_event_id as string | null) ?? null;
+
+  // ── Verify webhook event correlates with this checkout session ──
+  // The webhook handler stores event.id on smoke_test_runs. We now retrieve
+  // that event from Stripe and confirm its payload's session id matches.
+  let webhookEventCorrelated = false;
+  let webhookEventCorrelationDetail: string | null = null;
+  if (webhookEventId) {
+    try {
+      const ev = await stripe.events.retrieve(webhookEventId);
+      const obj = (ev?.data?.object ?? {}) as { id?: string; object?: string };
+      if (ev?.type === "checkout.session.completed" && obj?.id === sessionId) {
+        webhookEventCorrelated = true;
+        webhookEventCorrelationDetail = `${ev.type}:${ev.id.slice(0, 12)}…`;
+      } else {
+        webhookEventCorrelationDetail =
+          `mismatch: type=${ev?.type} object.id=${obj?.id ?? "n/a"}`;
+      }
+    } catch (e) {
+      webhookEventCorrelationDetail =
+        "retrieve_failed:" + (e instanceof Error ? e.message : String(e));
+    }
+  } else if (webhookReceived) {
+    webhookEventCorrelationDetail = "webhook_event_id missing on smoke_test_runs row";
+  } else {
+    webhookEventCorrelationDetail = "webhook not yet received";
+  }
+
+  // ── Bot false-positive check ──
+  // Smoke-test traffic is server-initiated by an admin. ANY event tied to
+  // this session that is_bot=true is by definition a false positive. We
+  // also flag rows where server-sourced backfills got mis-classified.
+  const botRows = (funnelRows ?? []).filter((r) => r.is_bot === true);
+  const serverSourcedBotRows = botRows.filter(
+    (r) => r.event_source === "server" || (r.source ?? "").includes("smoke"),
+  );
+  const noBotFalsePositive = botRows.length === 0;
+  const botFalsePositiveDetail = noBotFalsePositive
+    ? null
+    : `${botRows.length} bot-flagged event(s) on smoke session` +
+      (serverSourcedBotRows.length > 0
+        ? ` (${serverSourcedBotRows.length} server-sourced)`
+        : "");
 
   return jsonResponse({
     ok: true,
@@ -384,13 +427,20 @@ async function handleSmokeTestVerify(body: any): Promise<Response> {
       redirectSuccessLogged: steps.includes("checkout_redirect_success"),
       noDuplicateEvents: dupes === 0,
       noBotClassification: (funnelRows ?? []).every((r) => !r.is_bot),
+      webhookEventCorrelated,
+      noBotFalsePositive,
       productionReady:
         mode === "live" &&
         sessionMode === "live" &&
         isPaid &&
         webhookReceived &&
+        webhookEventCorrelated &&
+        noBotFalsePositive &&
         dupes === 0,
     },
+    webhookEventId,
+    webhookEventCorrelationDetail,
+    botFalsePositiveDetail,
   });
 }
 
