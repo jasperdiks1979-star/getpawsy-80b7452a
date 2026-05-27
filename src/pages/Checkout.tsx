@@ -455,6 +455,25 @@ const Checkout = () => {
   }, []);
 
   const handleStripeCheckout = async () => {
+    // === CHECKOUT CTA DEBUG SNAPSHOT ===========================================
+    // Single-source view of *why* a click is (or isn't) reaching the funnel.
+    // Inspect this in DevTools / e2e logs before chasing missing checkout_click
+    // rows in `checkout_funnel_events`.
+    const ctaDebug = {
+      isProcessing,
+      acceptedTerms,
+      stateEmail: (email ?? '').trim(),
+      itemsCount: items.length,
+      cartValue: Number(stripeChargedTotal.toFixed(2)),
+      buttonWouldBeDisabled: isProcessing || !acceptedTerms,
+      disabledReason:
+        isProcessing
+          ? 'isProcessing'
+          : !acceptedTerms
+            ? 'terms_not_accepted'
+            : null,
+    };
+    console.info('[checkout:cta] handler invoked', ctaDebug);
     // DOM fallback: automation/mobile-safari can fill inputs or toggle
     // Radix Checkbox without triggering React's controlled handlers,
     // leaving `email` / `acceptedTerms` state stale. Read live DOM values
