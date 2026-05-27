@@ -1459,6 +1459,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="payments"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AdminPaymentsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-config"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
