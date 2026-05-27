@@ -259,7 +259,9 @@ export default function AdminPaymentsPage() {
       // Open Stripe Checkout in same window so the success_url callback returns here
       window.location.href = url;
     } catch (e) {
-      toast({ title: 'Smoke test failed', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Smoke test', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Smoke test failed', description: err.message, variant: 'destructive' });
       setStarting(false);
     }
   }
