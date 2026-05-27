@@ -57,6 +57,15 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // Detect Stripe mode from the key prefix (sk_test_* vs sk_live_*).
+    // Never log the key itself — only the derived mode.
+    const stripeMode: "test" | "live" | "unknown" = stripeKey.startsWith("sk_live_")
+      ? "live"
+      : stripeKey.startsWith("sk_test_")
+        ? "test"
+        : "unknown";
+    console.log("[CREATE-CHECKOUT] Stripe mode:", stripeMode);
+
     // Create Supabase clients
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -215,6 +224,7 @@ serve(async (req) => {
       JSON.stringify({ 
         url: session.url,
         sessionId: session.id,
+        mode: stripeMode,
       }), 
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
