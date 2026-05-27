@@ -75,6 +75,9 @@ interface VerifyResponse {
   funnelDuplicates: number;
   botEvents: number;
   checklist: Record<string, boolean>;
+  webhookEventId?: string | null;
+  webhookEventCorrelationDetail?: string | null;
+  botFalsePositiveDetail?: string | null;
 }
 
 /**
