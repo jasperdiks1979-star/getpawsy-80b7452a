@@ -183,7 +183,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
         last_touch: last,
       },
     };
-    void supabase.from('lp_funnel_events').insert(row).then(({ error }) => {
+    void supabase.from('lp_funnel_events').insert(row as never).then(({ error }) => {
       if (error && error.code !== '23505') {
         console.debug('[funnelEvents] ATC insert failed:', error.message);
       }
@@ -242,7 +242,7 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
     };
     void supabase
       .from('checkout_funnel_events')
-      .insert(row)
+      .insert(row as never)
       .then(({ error }) => {
         if (error && error.code !== '23505') {
           console.debug('[funnelEvents] checkout insert failed:', error.message);
