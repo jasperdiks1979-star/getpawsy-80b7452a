@@ -198,10 +198,14 @@ async function handleSmokeTestStart(req: Request, userId: string): Promise<Respo
       line_items: [{
         price_data: {
           currency: "usd",
-          unit_amount: 50, // $0.50
+          // Stripe requires the total to convert to ≥ 50 cents in the account's
+          // settlement currency. GetPawsy's Stripe account settles in EUR, so
+          // $0.50 USD (~€0.43) is rejected. $2.00 USD safely clears the
+          // ~€0.50 minimum even with FX drift. Still a minimal smoke test.
+          unit_amount: 200,
           product_data: {
             name: "GetPawsy Live Checkout Smoke Test",
-            description: "Internal $0.50 verification charge — refundable.",
+            description: "Internal $2.00 verification charge — refundable.",
           },
         },
         quantity: 1,
@@ -224,7 +228,7 @@ async function handleSmokeTestStart(req: Request, userId: string): Promise<Respo
       created_by: userId,
       stripe_session_id: session.id,
       mode,
-      amount_cents: 50,
+      amount_cents: 200,
       currency: "usd",
       status: "pending",
       session_url: session.url,
@@ -241,8 +245,27 @@ async function handleSmokeTestStart(req: Request, userId: string): Promise<Respo
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error("[admin-payments] smoke_test_start failed", { traceId, msg });
-    return jsonResponse({ ok: false, traceId, message: msg }, 500);
+    const code = (e as any)?.code ?? (e as any)?.raw?.code ?? null;
+    const type = (e as any)?.type ?? null;
+    console.error("[admin-payments] smoke_test_start failed", { traceId, code, type, msg });
+    // Persist last Stripe error so the UI diagnostics card can show it
+    try {
+      await svcClient().from("smoke_test_runs").insert({
+        created_by: userId,
+        mode,
+        amount_cents: 200,
+        currency: "usd",
+        status: "error",
+        metadata: {
+          trace_id: traceId,
+          source,
+          error_code: code,
+          error_type: type,
+          error_message: msg,
+        },
+      });
+    } catch (_) { /* non-fatal */ }
+    return jsonResponse({ ok: false, traceId, message: msg, code, type }, 500);
   }
 }
 
