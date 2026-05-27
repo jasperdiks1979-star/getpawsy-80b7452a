@@ -243,6 +243,21 @@ export default function AdminPaymentsPage() {
 
       {/* Key rotation instructions (native secret modal flow) */}
       <Card>
+        <CardHeader><CardTitle className="text-lg">Safe diagnostics</CardTitle></CardHeader>
+        <CardContent className="grid sm:grid-cols-2 gap-2 text-sm">
+          <div>mode: <strong className="uppercase">{status?.diagnostics?.mode ?? mode}</strong></div>
+          <div>hasStripeLiveKey: <strong>{String(status?.diagnostics?.hasStripeLiveKey ?? status?.stripe.hasLiveKey ?? false)}</strong></div>
+          <div>hasWebhookSecret: <strong>{String(status?.diagnostics?.hasWebhookSecret ?? status?.stripe.hasWebhookSecret ?? false)}</strong></div>
+          <div>hasServiceRoleKey: <strong>{String(status?.diagnostics?.hasServiceRoleKey ?? status?.stripe.hasServiceRoleKey ?? false)}</strong></div>
+          <div>lastSmokeTestStatus: <strong>{status?.diagnostics?.lastSmokeTestStatus ?? status?.latestSmokeTest?.status ?? '—'}</strong></div>
+          <div>lastStripeErrorCode: <strong>{status?.diagnostics?.lastStripeErrorCode ?? '—'}</strong></div>
+          <div className="sm:col-span-2 break-words">
+            lastStripeErrorMessage: <strong className="font-mono text-xs">{status?.diagnostics?.lastStripeErrorMessage ?? '—'}</strong>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle className="text-lg">Rotate or set keys</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-3">
           <p className="text-muted-foreground">
