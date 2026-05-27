@@ -299,6 +299,42 @@ async function handleSmokeTestVerify(body: any): Promise<Response> {
       .eq("stripe_session_id", sessionId);
   }
 
+  // ── Backfill checkout_redirect_success for the smoke test ───────────────
+  // The admin smoke-test flow bypasses the Checkout.tsx page (which is what
+  // normally fires `checkout_redirect_success` client-side), so the funnel
+  // mirror would otherwise never see this step for smoke sessions. Insert
+  // it server-side, idempotently keyed on the Stripe session ID so re-runs
+  // of `smoke_test_verify` don't create duplicates.
+  try {
+    const { data: existing } = await admin
+      .from("checkout_funnel_events")
+      .select("id")
+      .eq("stripe_session_id", sessionId)
+      .eq("step", "checkout_redirect_success")
+      .limit(1)
+      .maybeSingle();
+    if (!existing) {
+      await admin.from("checkout_funnel_events").insert({
+        step: "checkout_redirect_success",
+        stripe_session_id: sessionId,
+        source: "admin_smoke_test",
+        source_component: "admin_payments_smoke_test",
+        event_source: "server",
+        idempotency_key: `smoke_redirect_${sessionId}`,
+        is_bot: false,
+        currency: (session.currency || "usd").toLowerCase(),
+        value: typeof session.amount_total === "number" ? session.amount_total / 100 : null,
+        metadata: {
+          smoke_test: true,
+          payment_status: session.payment_status,
+          session_status: session.status,
+        },
+      });
+    }
+  } catch (e) {
+    console.warn("[admin-payments] redirect_success backfill failed", e instanceof Error ? e.message : e);
+  }
+
   const { data: row } = await admin
     .from("smoke_test_runs")
     .select("*")
