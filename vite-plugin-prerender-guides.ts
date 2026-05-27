@@ -43,8 +43,10 @@ interface GuideJson {
 
 const SITE = 'https://getpawsy.pet';
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function escapeHtml(s: unknown): string {
+  if (s === null || s === undefined) return '';
+  const str = typeof s === 'string' ? s : String(s);
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function markdownToHtml(md: string): string {
@@ -59,9 +61,10 @@ function markdownToHtml(md: string): string {
 }
 
 function buildArticleBody(guide: GuideJson): string {
+  const rawContent = typeof guide.content === 'string' ? guide.content : '';
   // If guide has raw HTML content field, use it directly
-  if (guide.content && guide.content.trim().startsWith('<')) {
-    return guide.content;
+  if (rawContent && rawContent.trim().startsWith('<')) {
+    return rawContent;
   }
 
   // Otherwise build from structured fields
@@ -109,8 +112,8 @@ function buildArticleBody(guide: GuideJson): string {
   }
 
   // Fallback: if content is plain text (not HTML), wrap it
-  if (guide.content && !guide.content.trim().startsWith('<')) {
-    parts.push(`<section>${markdownToHtml(guide.content)}</section>`);
+  if (rawContent && !rawContent.trim().startsWith('<')) {
+    parts.push(`<section>${markdownToHtml(rawContent)}</section>`);
   }
 
   return parts.join('\n');
