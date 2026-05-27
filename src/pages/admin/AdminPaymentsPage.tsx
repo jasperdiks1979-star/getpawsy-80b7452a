@@ -277,7 +277,9 @@ export default function AdminPaymentsPage() {
       toast({ title: 'Refund issued', description: `Refund ${(data as any)?.refundId?.slice(0, 12)}…` });
       await fetchStatus();
     } catch (e) {
-      toast({ title: 'Refund failed', description: await extractFnError(e), variant: 'destructive' });
+      const err = await extractFnError(e);
+      setLastError({ action: 'Refund', status: err.status, body: err.body, timestamp: new Date().toLocaleTimeString() });
+      toast({ title: 'Refund failed', description: err.message, variant: 'destructive' });
     } finally {
       setRefunding(false);
     }
