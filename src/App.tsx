@@ -2594,6 +2594,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="funnel-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FunnelHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="conversion-dashboard"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
