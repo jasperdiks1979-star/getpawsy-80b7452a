@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
+import { fireCheckoutClick, fireCheckoutRedirect, fireCheckoutError } from '@/lib/funnelEvents';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
@@ -419,6 +420,14 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
+    // ✅ Real user click on the Stripe checkout button.
+    fireCheckoutClick({
+      source_component: 'checkout_stripe_button',
+      item_count: items.reduce((s, i) => s + i.quantity, 0),
+      value: Number(stripeChargedTotal.toFixed(2)),
+      currency: 'USD',
+    });
+
     // Track that the user proceeded to Stripe Checkout while Klarna was an
     // available option — proxy for "Klarna placement shown at checkout step".
     if (klarna.eligible) {
@@ -461,13 +470,26 @@ const Checkout = () => {
 
       if (data?.url) {
         // Redirect to Stripe Checkout
+        fireCheckoutRedirect({
+          source_component: 'checkout_stripe_button',
+          value: Number(stripeChargedTotal.toFixed(2)),
+          currency: 'USD',
+          destination_url: data.url,
+        });
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      toast.error('Something went wrong. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      fireCheckoutError({
+        source_component: 'checkout_stripe_button',
+        value: Number(stripeChargedTotal.toFixed(2)),
+        currency: 'USD',
+        error_reason: msg,
+      });
+      toast.error("Checkout couldn't open. Please try again or contact support.");
       setIsProcessing(false);
     }
   };
