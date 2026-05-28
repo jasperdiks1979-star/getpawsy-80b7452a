@@ -32,6 +32,8 @@ export type ConversionFlagKey =
   | 'premiumNotFound'
   | 'premiumSkeleton'
   | 'premiumSearchEmpty'
+  | 'premiumFooter'
+  | 'premiumAuth'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -118,6 +120,14 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // category chips, and a clear browse-all CTA. Only triggers when the user
   // has an active search query; category empty state is unchanged.
   premiumSearchEmpty: true,
+  // CI-16: footer polish — denser link hierarchy, hairline dividers between
+  // bottom rows, calmer trust micro-row, tighter column typography. Pure
+  // presentation; all link targets, social URLs, and reset behavior unchanged.
+  premiumFooter: true,
+  // CI-16: auth page polish — calmer card (hairline border, no soft shadow),
+  // micro-caps eyebrow, tighter spacing, English labels on password divider
+  // + remember-me. Auth flow, validation, and OAuth handlers untouched.
+  premiumAuth: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
