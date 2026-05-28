@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 interface SoftEmailCaptureProps {
   /** The context where this capture appears */
@@ -35,6 +36,7 @@ export function SoftEmailCapture({
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const premium = getConversionFlag('premiumNewsletter');
 
   // Default copy based on variant
   const defaultContent = {
@@ -122,11 +124,11 @@ export function SoftEmailCapture({
 
   if (isSuccess) {
     return (
-      <div className={`rounded-2xl bg-primary/5 border border-primary/10 p-6 md:p-8 text-center ${className}`}>
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mb-4">
+      <div className={`${premium ? 'border border-border/60' : 'rounded-2xl bg-primary/5 border border-primary/10'} p-6 md:p-8 text-center ${className}`}>
+        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 ${premium ? 'border border-border/60 text-foreground/70' : 'bg-primary/10 text-primary'}`}>
           <Sparkles className="w-6 h-6" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">You're all set!</h3>
+        <h3 className={`mb-2 ${premium ? 'font-display text-[17px] tracking-tight' : 'text-lg font-semibold'}`}>You're all set!</h3>
         <p className="text-muted-foreground text-sm">
           We'll send you helpful tips and updates — no spam, ever.
         </p>
@@ -135,19 +137,24 @@ export function SoftEmailCapture({
   }
 
   return (
-    <div className={`rounded-2xl bg-muted/40 border p-6 md:p-8 ${className}`}>
+    <div className={`${premium ? 'border border-border/60' : 'rounded-2xl bg-muted/40 border'} p-6 md:p-8 ${className}`}>
       <div className="flex flex-col md:flex-row md:items-center gap-6">
         {/* Icon */}
-        <div className="flex-shrink-0 hidden md:flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary">
+        <div className={`flex-shrink-0 hidden md:flex items-center justify-center w-14 h-14 rounded-full ${premium ? 'border border-border/60 text-foreground/70' : 'bg-primary/10 text-primary'}`}>
           <Mail className="w-7 h-7" />
         </div>
 
         {/* Content */}
         <div className="flex-grow">
-          <h3 className="text-lg font-semibold mb-1">
+          {premium && (
+            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground block mb-1.5">
+              Join the pack
+            </span>
+          )}
+          <h3 className={`mb-1 ${premium ? 'font-display text-[17px] tracking-tight' : 'text-lg font-semibold'}`}>
             {content.headline}
           </h3>
-          <p className="text-muted-foreground text-sm">
+          <p className={`${premium ? 'text-[13px] text-muted-foreground/85' : 'text-muted-foreground text-sm'}`}>
             {content.description}
           </p>
         </div>
@@ -157,10 +164,10 @@ export function SoftEmailCapture({
           <div className="flex gap-2">
             <Input
               type="email"
-              placeholder="Your email"
+              placeholder={premium ? 'Enter your email' : 'Your email'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="min-w-[200px] md:min-w-[240px]"
+              className={`min-w-[200px] md:min-w-[240px] ${premium ? 'border-border/60' : ''}`}
               disabled={isLoading}
               required
             />
