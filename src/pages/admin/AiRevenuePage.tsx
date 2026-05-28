@@ -284,7 +284,7 @@ export default function AiRevenuePage() {
 
   function buildExportPayload() {
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source, thresholds } } };
+    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source, thresholds, prior_mode: priorMode, prior_from: priorFrom, prior_to: priorTo } } };
   }
 
   async function loadSummary(r: Range) {
