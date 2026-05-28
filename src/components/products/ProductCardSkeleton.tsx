@@ -1,11 +1,21 @@
 import { memo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 export const ProductCardSkeleton = memo(() => {
+  const calm = getConversionFlag('premiumSkeleton');
   return (
-    <div className="bg-card rounded-2xl overflow-hidden shadow-card">
+    <div className={
+      calm
+        ? "bg-card rounded-2xl overflow-hidden border border-border/40"
+        : "bg-card rounded-2xl overflow-hidden shadow-card"
+    }>
       {/* Image skeleton — exact match: aspect-square with bg-muted like OptimizedImage */}
-      <div className="aspect-square w-full bg-muted skeleton-pulse" />
+      <div className={
+        calm
+          ? "aspect-square w-full bg-muted/60 skeleton-pulse"
+          : "aspect-square w-full bg-muted skeleton-pulse"
+      } />
       
       {/* Content — matches ProductCard p-5 space-y-3 exactly */}
       <div className="p-5 space-y-3">
