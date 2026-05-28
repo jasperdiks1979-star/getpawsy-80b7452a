@@ -1071,6 +1071,14 @@ const ProductDetail = () => {
                 {adIntent.subline || generateClarityIntro(product.name, product.category || "")}
               </p>
 
+              {/* CI-2: Emotional hook — deterministic per category, gated by flag. */}
+              <div className="mt-3">
+                <EmotionalHook
+                  category={product.category || undefined}
+                  productName={product.name}
+                />
+              </div>
+
               {/* Rating — only shown when real verified reviews exist */}
               {reviews.length > 0 && (
                 <div className="flex items-center gap-2 mt-3">
