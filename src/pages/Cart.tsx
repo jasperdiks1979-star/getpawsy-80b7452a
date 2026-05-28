@@ -38,6 +38,7 @@ const Cart = () => {
   const premium = getConversionFlag('premiumCheckoutCart');
   const premiumV3 = getConversionFlag('premiumCartV3');
   const premiumV4 = getConversionFlag('premiumCartCheckoutV4');
+  const premiumV5 = getConversionFlag('premiumCartCheckoutV5');
   const scrollDir = useScrollDirection(8);
   const hideMobileBar =
     premiumV3 &&
@@ -151,9 +152,18 @@ const Cart = () => {
         </Breadcrumb>
 
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Shopping Cart</h1>
-          <Button variant="ghost" onClick={() => clearCart()} className="text-muted-foreground">
-            Clear Cart
+          <div>
+            {premiumV5 && (
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-2">
+                Your cart · {items.length} {items.length === 1 ? 'item' : 'items'}
+              </p>
+            )}
+            <h1 className={premiumV5 ? 'font-display text-2xl md:text-3xl font-semibold tracking-tight' : 'text-3xl font-bold'}>
+              {premiumV5 ? 'Shopping cart' : 'Shopping Cart'}
+            </h1>
+          </div>
+          <Button variant="ghost" onClick={() => clearCart()} className={premiumV5 ? 'text-[12px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground' : 'text-muted-foreground'}>
+            {premiumV5 ? 'Clear' : 'Clear Cart'}
           </Button>
         </div>
 
@@ -165,7 +175,7 @@ const Cart = () => {
                 key={item.id}
                 className={
                   premiumV4
-                    ? 'flex gap-4 p-4 bg-card rounded-2xl border border-border/50'
+                    ? `flex gap-4 p-4 bg-card rounded-2xl border ${premiumV5 ? 'border-border/60' : 'border-border/50'}`
                     : premium
                     ? 'flex gap-4 p-4 bg-card rounded-2xl border border-border/60'
                     : 'flex gap-4 p-4 bg-card rounded-xl shadow-card'
@@ -208,7 +218,7 @@ const Cart = () => {
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                  <div className={premiumV4 ? 'flex items-center border border-border/50 rounded-full' : 'flex items-center border rounded-lg'}>
+                  <div className={premiumV4 ? `flex items-center border ${premiumV5 ? 'border-border/60' : 'border-border/50'} rounded-full` : 'flex items-center border rounded-lg'}>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -243,10 +253,15 @@ const Cart = () => {
           <div className="lg:col-span-1">
             <div className={
               premium
-                ? 'bg-card rounded-2xl border border-border/60 p-6 sticky top-24'
+                ? `bg-card rounded-2xl border border-border/60 p-6 sticky top-24 ${premiumV5 ? 'shadow-none' : ''}`
                 : 'bg-card rounded-xl shadow-card p-6 sticky top-24'
             }>
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+              {premiumV5 && (
+                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-1.5">Order summary</p>
+              )}
+              <h2 className={premiumV5 ? 'font-display text-[19px] font-semibold tracking-tight mb-4' : 'text-xl font-bold mb-4'}>
+                {premiumV5 ? 'Review your order' : 'Order Summary'}
+              </h2>
               
               {/* Tiered Incentive Progress */}
               <div className="mb-4">
