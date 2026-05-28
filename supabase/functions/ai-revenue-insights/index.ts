@@ -341,9 +341,10 @@ Deno.serve(async (req) => {
     // --- end drilldown mode -----------------------------------------------
 
     // 1. Pull current + prior funnel events in parallel
-    const [currentEvents, priorEvents] = await Promise.all([
+    const [currentEvents, priorEvents, botEventCount] = await Promise.all([
       fetchEvents(since, until),
       fetchEvents(priorSince, priorUntil),
+      countBotEvents(since, until).catch(() => 0),
     ]);
     const events = currentEvents;
 
