@@ -1013,7 +1013,7 @@ const ProductDetail = () => {
               */}
               {isLitterBoxProduct && !showTikTokVariant && (
                 <LitterBoxConversionBoost
-                  images={safeArray(product.images, []) as string[]}
+                  images={safeArray<string>(product.images)}
                   productName={product.name}
                   inStock={inStock}
                   reviewCount={reviews.length}
