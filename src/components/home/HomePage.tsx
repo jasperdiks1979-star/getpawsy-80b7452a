@@ -214,8 +214,14 @@ const HomePage = () => {
       <SocialProofSection />
 
       {/* 4b. Email Capture — vang elke bezoeker */}
-      <section className="py-10 md:py-14 bg-muted/20" aria-label="Newsletter signup">
+      <section className={getConversionFlag('premiumNewsletter') ? 'py-10 md:py-14 border-t border-border/30' : 'py-10 md:py-14 bg-muted/20'} aria-label="Newsletter signup">
         <div className="container px-4 md:px-6 max-w-3xl mx-auto">
+          {getConversionFlag('premiumNewsletter') && (
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <Mail className="w-3.5 h-3.5 text-muted-foreground/70" />
+              <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Newsletter</span>
+            </div>
+          )}
           <SoftEmailCapture
             variant="collection"
             headline="Get $5 off your first order"
