@@ -2422,6 +2422,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="bot-traffic"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <BotTrafficDrilldownPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-backdrop-preview"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
