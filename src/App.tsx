@@ -1753,6 +1753,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="ai-executive"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AiExecutivePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="momentum"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
