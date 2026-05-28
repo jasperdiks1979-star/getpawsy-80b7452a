@@ -178,8 +178,9 @@ export default function AiRevenuePage() {
     if (source && source !== 'all') params.set('source', source);
     // Pass classification thresholds through to the edge function so winner /
     // breakout / rising / falling cutoffs are tunable per request.
-    for (const [k, v] of Object.entries(thresholds)) {
-      if (v !== (DEFAULT_THRESHOLDS as Record<string, number>)[k]) {
+    const defaults = DEFAULT_THRESHOLDS as unknown as Record<string, number>;
+    for (const [k, v] of Object.entries(thresholds as unknown as Record<string, number>)) {
+      if (v !== defaults[k]) {
         params.set(k, String(v));
       }
     }
