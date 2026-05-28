@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
+import { trackHomepageVariant } from '@/lib/homepagePersonalization';
 
 // Public-dir hero images so index.html preload tags still hit (no Vite hash).
 const heroDesktop = '/hero/cat-litter-box-hero.webp';
@@ -23,14 +24,30 @@ const heroMobile = '/hero/cat-litter-box-hero-mobile.webp';
  * Flipping `premiumHero` to false in conversionFlags reverts to the legacy
  * <HeroSection /> with zero side-effects.
  */
-export function HeroSectionPremium() {
+export interface HeroSectionPremiumProps {
+  headline?: string | null;
+  subheadline?: string | null;
+  primaryCta?: string | null;
+  /** Category slug for the primary CTA destination. */
+  category?: string | null;
+}
+
+export function HeroSectionPremium({
+  headline,
+  subheadline,
+  primaryCta,
+  category,
+}: HeroSectionPremiumProps = {}) {
+  const heroCategory = category || 'cat-litter-boxes';
+  const heroHref = `/collections/${heroCategory}`;
   const handlePrimary = () => {
     trackEvent('hero_cta_click', {
       cta_id: 'shop_litter_boxes',
-      destination: '/collections/cat-litter-boxes',
+      destination: heroHref,
       location: 'homepage_hero',
       variant: 'premium',
     });
+    trackHomepageVariant('hero_click');
   };
 
   return (
@@ -60,15 +77,21 @@ export function HeroSectionPremium() {
         </p>
 
         {/* H1 — calm, emotional, two-beat cadence. Single H1 on the page. */}
-        <h1 className="mt-4 text-[30px] leading-[1.1] sm:text-5xl md:text-6xl lg:text-[64px] font-display font-semibold text-white max-w-2xl mx-auto tracking-tight">
-          A cleaner home.
-          <span className="block text-white/90 font-normal">A happier cat.</span>
-        </h1>
+        {headline ? (
+          <h1 className="mt-4 text-[30px] leading-[1.1] sm:text-5xl md:text-6xl lg:text-[64px] font-display font-semibold text-white max-w-2xl mx-auto tracking-tight">
+            {headline}
+          </h1>
+        ) : (
+          <h1 className="mt-4 text-[30px] leading-[1.1] sm:text-5xl md:text-6xl lg:text-[64px] font-display font-semibold text-white max-w-2xl mx-auto tracking-tight">
+            A cleaner home.
+            <span className="block text-white/90 font-normal">A happier cat.</span>
+          </h1>
+        )}
 
         {/* Sub — solution + outcome, one sentence, generous line-height. */}
         <p className="mt-5 text-[15px] md:text-lg text-white/85 max-w-lg mx-auto leading-relaxed">
-          Self-cleaning litter boxes designed for the way you live —
-          quiet, modern, and made to disappear into your home.
+          {subheadline ||
+            'Self-cleaning litter boxes designed for the way you live — quiet, modern, and made to disappear into your home.'}
         </p>
 
         {/* Single primary CTA. Generous tap target, calm shadow, no scale bounce. */}
@@ -79,11 +102,11 @@ export function HeroSectionPremium() {
             className="w-full sm:w-auto min-h-[54px] rounded-full px-8 text-base font-semibold bg-white text-foreground hover:bg-white/95 shadow-[0_8px_28px_-8px_rgba(0,0,0,0.45)] transition-colors duration-200"
           >
             <Link
-              to="/collections/cat-litter-boxes"
+              to={heroHref}
               className="inline-flex items-center gap-2"
               onClick={handlePrimary}
             >
-              Shop Litter Boxes
+              {primaryCta || 'Shop Litter Boxes'}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
