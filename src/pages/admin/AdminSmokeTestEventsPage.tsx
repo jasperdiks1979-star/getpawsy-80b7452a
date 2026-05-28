@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle2, XCircle, RefreshCw, ChevronDown, ChevronRight, ExternalLink, Loader2, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { CheckCircle2, XCircle, RefreshCw, ChevronDown, ChevronRight, ExternalLink, Loader2, AlertTriangle, FileSpreadsheet, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 
@@ -77,6 +77,7 @@ export default function AdminSmokeTestEventsPage() {
   const [eventsByRun, setEventsByRun] = useState<Record<string, FunnelEvent[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [generating, setGenerating] = useState(false);
+  const [csvGenerating, setCsvGenerating] = useState(false);
   // Filters — date range (local YYYY-MM-DD) and max number of runs.
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -265,6 +266,65 @@ export default function AdminSmokeTestEventsPage() {
     }
   }, [runs, eventsByRun, toast, fromDate, toDate, maxRuns]);
 
+  const generateCsvReport = useCallback(() => {
+    setCsvGenerating(true);
+    try {
+      const summaryRows = runs.map((run) => {
+        const sessionId = run.stripe_session_id ?? '';
+        const events = eventsByRun[sessionId] ?? [];
+        const keyCounts = new Map<string, number>();
+        for (const e of events) {
+          if (!e.idempotency_key) continue;
+          keyCounts.set(e.idempotency_key, (keyCounts.get(e.idempotency_key) ?? 0) + 1);
+        }
+        const dupGroups = [...keyCounts.values()].filter((c) => c > 1).length;
+        const distinctKeys = keyCounts.size;
+        const nullKeys = events.filter((e) => !e.idempotency_key).length;
+        const seen = new Set(events.map((e) => e.step));
+        const missing = EXPECTED_STEPS.filter((s) => !seen.has(s));
+        const botEvents = events.filter((e) => e.is_bot === true).length;
+        return {
+          stripe_session_id: sessionId,
+          mode: run.mode ?? '',
+          status: run.status ?? '',
+          created_at: run.created_at,
+          total_events: events.length,
+          distinct_idempotency_keys: distinctKeys,
+          null_keys: nullKeys,
+          duplicate_groups: dupGroups,
+          bot_events: botEvents,
+          missing_steps: missing.join(','),
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(summaryRows);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `smoke-test-summary-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'CSV gedownload',
+        description: `${summaryRows.length} runs geëxporteerd als CSV`,
+      });
+    } catch (e: any) {
+      toast({
+        title: 'CSV export mislukt',
+        description: e?.message ?? String(e),
+        variant: 'destructive',
+      });
+    } finally {
+      setCsvGenerating(false);
+    }
+  }, [runs, eventsByRun, toast]);
+
   const summaries = useMemo(() => {
     return runs.map((run) => {
       const sessionId = run.stripe_session_id ?? '';
@@ -324,6 +384,19 @@ export default function AdminSmokeTestEventsPage() {
               <FileSpreadsheet className="h-4 w-4 mr-2" />
             )}
             Genereer rapport (XLSX)
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={generateCsvReport}
+            disabled={csvGenerating || loading || runs.length === 0}
+          >
+            {csvGenerating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4 mr-2" />
+            )}
+            Download CSV
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/payments">
