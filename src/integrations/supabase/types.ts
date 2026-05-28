@@ -537,6 +537,90 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_content_drafts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          model: string | null
+          output: string
+          product_id: string | null
+          product_name: string | null
+          prompt: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          model?: string | null
+          output: string
+          product_id?: string | null
+          product_name?: string | null
+          prompt?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          model?: string | null
+          output?: string
+          product_id?: string | null
+          product_name?: string | null
+          prompt?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      ai_revenue_recommendations: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          id: string
+          metric_snapshot: Json | null
+          page_path: string | null
+          product_id: string | null
+          severity: string
+          source: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category: string
+          created_at?: string
+          id?: string
+          metric_snapshot?: Json | null
+          page_path?: string | null
+          product_id?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          metric_snapshot?: Json | null
+          page_path?: string | null
+          product_id?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analytics_quarantine: {
         Row: {
           created_at: string
