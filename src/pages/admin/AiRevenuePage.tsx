@@ -379,7 +379,7 @@ export default function AiRevenuePage() {
     loadSummary(range);
     // re-fetch when any filter changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range, fromDate, toDate, source, thresholds]);
+  }, [range, fromDate, toDate, source, thresholds, priorMode, priorFrom, priorTo]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
   const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
