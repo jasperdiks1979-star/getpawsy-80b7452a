@@ -1790,6 +1790,9 @@ const ProductDetail = () => {
           />
         )}
 
+        {/* Litter Box-only emotional reinforcement before reviews */}
+        {isLitterBoxProduct && <LitterBoxLovedSection />}
+
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
           initial={{ opacity: 0, y: 40 }}
