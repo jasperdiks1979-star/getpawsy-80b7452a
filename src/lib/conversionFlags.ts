@@ -23,6 +23,8 @@ export type ConversionFlagKey =
   | 'premiumCollection'
   | 'premiumCheckoutV2'
   | 'premiumNav'
+  | 'premiumCartV3'
+  | 'premiumThankYou'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -71,6 +73,16 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // height, hairline border. Pure presentation; nav links + routes
   // unchanged. Flip to false to restore the always-visible legacy nav.
   premiumNav: true,
+  // CI-12: cart polish v3 — mobile sticky checkout bar uses transform-hide
+  // on scroll-down (matches CI-11 PDP/checkout), shipping-info pill becomes
+  // a hairline micro-caps line, and the order-summary card border tightens.
+  // Pure presentation; pricing, shipping math, and Stripe untouched.
+  premiumCartV3: true,
+  // CI-12: premium thank-you page — calmer typography (no emoji in H1),
+  // semantic success token instead of hard-coded green, hairline "what
+  // happens next" panel. Tracking, conversion events, and post-purchase
+  // offer untouched.
+  premiumThankYou: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
