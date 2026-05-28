@@ -455,7 +455,7 @@ export function firePaymentSuccess(input: {
   stripe_session_id?: string;
 }): void {
   fireLpEvent({
-    event_name: 'payment_success_view',
+    event_name: 'payment_success',
     source_component: 'payment_success_page',
     value: input.order_total ?? null,
     extra: {
