@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, RefreshCw, ChevronDown, ChevronRight, ExternalLink, Loader2, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
@@ -75,15 +77,29 @@ export default function AdminSmokeTestEventsPage() {
   const [eventsByRun, setEventsByRun] = useState<Record<string, FunnelEvent[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [generating, setGenerating] = useState(false);
+  // Filters — date range (local YYYY-MM-DD) and max number of runs.
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [maxRuns, setMaxRuns] = useState(30);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: runRows, error: runErr } = await supabase
+      let q = supabase
         .from('smoke_test_runs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(30);
+        .limit(Math.max(1, Math.min(500, maxRuns || 30)));
+      if (fromDate) {
+        const fromIso = new Date(`${fromDate}T00:00:00`).toISOString();
+        q = q.gte('created_at', fromIso);
+      }
+      if (toDate) {
+        // Inclusive end-of-day
+        const toIso = new Date(`${toDate}T23:59:59.999`).toISOString();
+        q = q.lte('created_at', toIso);
+      }
+      const { data: runRows, error: runErr } = await q;
       if (runErr) throw runErr;
       const list = (runRows ?? []) as SmokeRun[];
       setRuns(list);
@@ -113,13 +129,22 @@ export default function AdminSmokeTestEventsPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, fromDate, toDate, maxRuns]);
 
   useEffect(() => { void fetchAll(); }, [fetchAll]);
 
   const generateReport = useCallback(() => {
     setGenerating(true);
     try {
+      // Filter metadata sheet — captures the active filter context.
+      const filterRows = [
+        { field: 'from_date', value: fromDate || '(none)' },
+        { field: 'to_date', value: toDate || '(none)' },
+        { field: 'max_runs', value: String(maxRuns) },
+        { field: 'runs_in_report', value: String(runs.length) },
+        { field: 'generated_at', value: new Date().toISOString() },
+      ];
+
       // Sheet 1: Summary per run (incl. duplicate groups per session)
       const summaryRows = runs.map((run) => {
         const sessionId = run.stripe_session_id ?? '';
@@ -190,6 +215,7 @@ export default function AdminSmokeTestEventsPage() {
       }
 
       const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filterRows), 'Filters');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Summary');
       const dupSheet = XLSX.utils.json_to_sheet(
         dupRows.length > 0 ? dupRows : [{ note: 'No duplicates detected' }],
@@ -237,7 +263,7 @@ export default function AdminSmokeTestEventsPage() {
     } finally {
       setGenerating(false);
     }
-  }, [runs, eventsByRun, toast]);
+  }, [runs, eventsByRun, toast, fromDate, toDate, maxRuns]);
 
   const summaries = useMemo(() => {
     return runs.map((run) => {
