@@ -2,9 +2,9 @@ import * as React from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Badge } from "@/components/ui/badge";
-import { ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fireImageInteraction } from "@/lib/funnelEvents";
+import { getConversionFlag } from "@/lib/conversionFlags";
 
 interface MobileProductGalleryProps {
   images: string[];
@@ -44,7 +44,8 @@ export function MobileProductGallery({
 
   // Preload first 2 images on mount for instant gallery feel
   React.useEffect(() => {
-    const preloadImages = images.slice(0, 2);
+    // CI-9: preload first 3 so the first swipe is instant on mobile.
+    const preloadImages = images.slice(0, 3);
     preloadImages.forEach((src) => {
       const img = new Image();
       img.src = src;
@@ -150,11 +151,17 @@ export function MobileProductGallery({
           </div>
         )}
 
-        {/* Zoom indicator - top right */}
+        {/* Zoom hint — CI-9 calmer text pill (premiumPdpV2) or original icon. */}
         <div className="absolute top-3 right-3 z-20 pointer-events-none">
-          <div className="bg-background/80 backdrop-blur-sm text-foreground p-2 rounded-full shadow-soft">
-            <ZoomIn className="w-4 h-4" />
-          </div>
+          {getConversionFlag('premiumPdpV2') ? (
+            <div className="bg-background/85 backdrop-blur-sm text-foreground/80 text-[10px] uppercase tracking-wider font-medium px-2.5 py-1 rounded-full shadow-soft">
+              Tap to zoom
+            </div>
+          ) : (
+            <div className="bg-background/80 backdrop-blur-sm text-foreground p-2 rounded-full shadow-soft">
+              <ZoomInIcon />
+            </div>
+          )}
         </div>
 
         {/* Embla Carousel - Main swipe area */}
@@ -254,5 +261,17 @@ export function MobileProductGallery({
         </div>
       )}
     </div>
+  );
+}
+
+// Inline so we don't keep the unused import when v2 is on.
+function ZoomInIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <line x1="11" y1="8" x2="11" y2="14" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
   );
 }

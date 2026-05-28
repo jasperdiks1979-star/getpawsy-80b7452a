@@ -999,7 +999,11 @@ const ProductDetail = () => {
             {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
             {isMobile ? (
               <>
-                <MobileStickyTrustBar />
+                {/* CI-9: when premiumPdpV2 is on, the hairline trust bar
+                    above the gallery is suppressed — the SwipeBenefitChips
+                    + price block + sticky ATC already carry trust. Keeps
+                    above-the-fold quiet for cold mobile traffic. */}
+                {!getConversionFlag('premiumPdpV2') && <MobileStickyTrustBar />}
                 <SwipeBenefitChips
                   category={product.category || undefined}
                   productName={product.name}
@@ -1089,8 +1093,15 @@ const ProductDetail = () => {
                   generateClarityIntro(product.name, product.category || "")}
               </p>
 
-              {/* CI-2: Emotional hook — deterministic per category, gated by flag. */}
-              <div className="mt-3">
+              {/* CI-2: Emotional hook — deterministic per category, gated by flag.
+                  CI-9: under premiumPdpV2 we hide it on mobile (the subline +
+                  SwipeBenefitChips already carry the emotional read above the
+                  fold). Desktop still renders it. */}
+              <div
+                className={
+                  getConversionFlag('premiumPdpV2') ? 'mt-3 hidden md:block' : 'mt-3'
+                }
+              >
                 <EmotionalHook
                   category={product.category || undefined}
                   productName={product.name}

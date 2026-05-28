@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Check, Sparkles } from 'lucide-react';
+import { Package, Check, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 /**
  * Product Bundle Upsell
@@ -67,6 +68,7 @@ export const ProductBundleUpsell = ({
   const bundleTotal = mainProductPrice + companion.price;
   const discountAmount = bundleTotal * (discountPercent / 100);
   const bundlePrice = bundleTotal - discountAmount;
+  const v2 = getConversionFlag('premiumPdpV2');
 
   const handleAddBundle = () => {
     // Add companion product to cart
@@ -84,19 +86,25 @@ export const ProductBundleUpsell = ({
   };
 
   return (
-    <div className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-5 border border-primary/15 space-y-4">
+    <div
+      className={
+        v2
+          ? 'rounded-2xl p-5 border border-border/60 bg-card space-y-4'
+          : 'bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-5 border border-primary/15 space-y-4'
+      }
+    >
       <div className="flex items-center gap-2">
         <Package className="w-5 h-5 text-primary" />
-        <h3 className="font-display font-semibold text-foreground text-sm">
+        <h3 className="font-display font-semibold text-foreground text-sm tracking-tight">
           {headline}
         </h3>
-        <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/5">
+        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/5">
           Save {discountPercent}%
         </Badge>
       </div>
 
       <div className="flex items-center gap-4">
-        <Link to={`/product/${companion.slug}`} className="shrink-0">
+        <Link to={`/products/${companion.slug}`} className="shrink-0">
           <img
             src={companion.image_url}
             alt={companion.name}
@@ -106,29 +114,39 @@ export const ProductBundleUpsell = ({
         </Link>
         <div className="flex-1 min-w-0">
           <Link
-            to={`/product/${companion.slug}`}
+            to={`/products/${companion.slug}`}
             className="text-sm font-medium text-foreground hover:text-primary transition-colors line-clamp-2"
           >
             Add {companion.shortName}
           </Link>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm font-semibold text-foreground">
-              ${companion.price.toFixed(2)}
-            </span>
-            <span className="text-xs text-muted-foreground line-through">
-              ${(companion.price * (1 + discountPercent / 100)).toFixed(2)}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Bundle total: ${bundlePrice.toFixed(2)} (save ${discountAmount.toFixed(2)})
-          </p>
+          {v2 ? (
+            <p className="text-xs text-muted-foreground mt-1 tabular-nums">
+              Bundle <span className="text-foreground font-semibold">${bundlePrice.toFixed(2)}</span>
+              <span className="mx-1.5 text-border">·</span>
+              Save ${discountAmount.toFixed(2)}
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm font-semibold text-foreground">
+                  ${companion.price.toFixed(2)}
+                </span>
+                <span className="text-xs text-muted-foreground line-through">
+                  ${(companion.price * (1 + discountPercent / 100)).toFixed(2)}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Bundle total: ${bundlePrice.toFixed(2)} (save ${discountAmount.toFixed(2)})
+              </p>
+            </>
+          )}
         </div>
         <Button
           size="sm"
           variant={added ? 'outline' : 'default'}
           onClick={handleAddBundle}
           disabled={added}
-          className="shrink-0"
+          className="shrink-0 rounded-full"
         >
           {added ? (
             <>
@@ -136,18 +154,19 @@ export const ProductBundleUpsell = ({
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4 mr-1" /> Add
+              <Plus className="w-4 h-4 mr-1" /> Add
             </>
           )}
         </Button>
       </div>
 
-      {/* Joint support cross-sell - contextual only */}
+      {/* Joint support cross-sell — contextual only. CI-9 removes the emoji
+          and tightens the line; the link itself carries the recommendation. */}
       <div className="pt-3 border-t border-border/30">
         <p className="text-xs text-muted-foreground">
-          🦴 Many pet parents also add a{' '}
+          {v2 ? 'Often paired with a ' : '🦴 Many pet parents also add a '}
           <Link
-            to="/product/youmile-hip-joint-health-supplement-for-dogs-120-chews-glucosamine-chondroitin-f72f"
+            to="/products/youmile-hip-joint-health-supplement-for-dogs-120-chews-glucosamine-chondroitin-f72f"
             className="text-primary hover:underline font-medium"
           >
             joint support supplement
