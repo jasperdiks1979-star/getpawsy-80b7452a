@@ -175,7 +175,7 @@ export function getCanonicalProductPayload(
     id: product.id,
     name: product.name,
     slug,
-    url: `${baseUrl}/product/${slug}`,
+    url: `${baseUrl}/products/${slug}`,
     price: priceResult,
     discount,
     availability,

@@ -118,7 +118,7 @@ function getPageInventory(): PageInventoryItem[] {
   // Sample product pages
   for (let i = 0; i < 15; i++) {
     pages.push({
-      url: `/product/sample-product-${i + 1}`, pageType: 'product',
+      url: `/products/sample-product-${i + 1}`, pageType: 'product',
       currentLinks: Math.floor(Math.random() * 4),
       title: `Sample Product ${i + 1}`, category: 'various',
     });

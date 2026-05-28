@@ -271,7 +271,7 @@ export function generateMockTop10Pages(): Top10AssaultPage[] {
       { type: 'internal_link_injection', description: 'Add links from 4 supporting guides', impact: 'high' },
       { type: 'faq_schema', description: 'Add FAQ schema with litter box comparison', impact: 'medium' },
     ]},
-    { url: '/product/luxury-cat-tree-xl', keyword: 'large cat tree', avgPosition: 14.6, impressions: 278, clicks: 11, ctr: 4.0, internalLinks: 4, wordCount: 980, hasSchema: true, isIndexed: true, momentumScore: 72, isPriority: true, boostRecommendations: [
+    { url: '/products/luxury-cat-tree-xl', keyword: 'large cat tree', avgPosition: 14.6, impressions: 278, clicks: 11, ctr: 4.0, internalLinks: 4, wordCount: 980, hasSchema: true, isIndexed: true, momentumScore: 72, isPriority: true, boostRecommendations: [
       { type: 'internal_link_injection', description: 'Add 3 more contextual links from guides', impact: 'high' },
       { type: 'homepage_rotation', description: 'Add to bestseller rotation', impact: 'medium' },
     ]},
@@ -280,7 +280,7 @@ export function generateMockTop10Pages(): Top10AssaultPage[] {
       { type: 'faq_schema', description: 'Add FAQ about orthopedic benefits', impact: 'medium' },
       { type: 'internal_link_injection', description: 'Add links from main dog bed cornerstone', impact: 'high' },
     ]},
-    { url: '/product/orthopedic-dog-bed-large', keyword: 'orthopedic dog bed large', avgPosition: 11.2, impressions: 156, clicks: 9, ctr: 5.8, internalLinks: 5, wordCount: 870, hasSchema: true, isIndexed: true, momentumScore: 76, isPriority: false, boostRecommendations: [
+    { url: '/products/orthopedic-dog-bed-large', keyword: 'orthopedic dog bed large', avgPosition: 11.2, impressions: 156, clicks: 9, ctr: 5.8, internalLinks: 5, wordCount: 870, hasSchema: true, isIndexed: true, momentumScore: 76, isPriority: false, boostRecommendations: [
       { type: 'rich_snippet', description: 'Add product review schema', impact: 'medium' },
     ]},
     { url: '/guides/indoor-cat-enrichment', keyword: 'indoor cat enrichment ideas', avgPosition: 19.1, impressions: 98, clicks: 1, ctr: 1.0, internalLinks: 2, wordCount: 1680, hasSchema: false, isIndexed: true, momentumScore: 42, isPriority: true, boostRecommendations: [
@@ -288,7 +288,7 @@ export function generateMockTop10Pages(): Top10AssaultPage[] {
       { type: 'internal_link_injection', description: 'Needs 4+ more inbound links', impact: 'high' },
       { type: 'faq_schema', description: 'Add enrichment FAQ cluster', impact: 'medium' },
     ]},
-    { url: '/product/modern-cat-condo', keyword: 'modern cat condo', avgPosition: 13.5, impressions: 167, clicks: 7, ctr: 4.2, internalLinks: 3, wordCount: 920, hasSchema: true, isIndexed: true, momentumScore: 70, isPriority: true, boostRecommendations: [
+    { url: '/products/modern-cat-condo', keyword: 'modern cat condo', avgPosition: 13.5, impressions: 167, clicks: 7, ctr: 4.2, internalLinks: 3, wordCount: 920, hasSchema: true, isIndexed: true, momentumScore: 70, isPriority: true, boostRecommendations: [
       { type: 'internal_link_injection', description: 'Add links from cat tree guide', impact: 'high' },
     ]},
     { url: '/guides/outdoor-dog-games-2026', keyword: 'outdoor dog games', avgPosition: 17.8, impressions: 112, clicks: 2, ctr: 1.8, internalLinks: 3, wordCount: 1540, hasSchema: false, isIndexed: true, momentumScore: 45, isPriority: true, boostRecommendations: [
@@ -322,15 +322,15 @@ export function generateMockContentGaps(): ContentGap[] {
 
 export function generateMockRevenuePages(): RevenuePageData[] {
   return [
-    { url: '/product/luxury-cat-tree-xl', keyword: 'large cat tree', impressions: 278, clicks: 11, avgPosition: 14.6, ctr: 4.0, internalLinks: 4, category: 'Cat Trees', revenue: 1240, addToCartRate: 8.2, conversionRate: 3.1, flag: null },
-    { url: '/product/modern-cat-condo', keyword: 'modern cat condo', impressions: 167, clicks: 7, avgPosition: 13.5, ctr: 4.2, internalLinks: 3, category: 'Cat Trees', revenue: 890, addToCartRate: 6.8, conversionRate: 2.8, flag: null },
-    { url: '/product/orthopedic-dog-bed-large', keyword: 'orthopedic dog bed large', impressions: 156, clicks: 9, avgPosition: 11.2, ctr: 5.8, internalLinks: 5, category: 'Dog Beds', revenue: 1680, addToCartRate: 9.1, conversionRate: 4.2, flag: null },
-    { url: '/product/self-cleaning-litter-box', keyword: 'self cleaning litter box', impressions: 312, clicks: 14, avgPosition: 16.8, ctr: 4.5, internalLinks: 1, category: 'Cat Litter', revenue: 420, addToCartRate: 3.2, conversionRate: 1.1, flag: 'high_traffic_low_conv' },
-    { url: '/product/sisal-scratching-post', keyword: 'sisal scratching post', impressions: 89, clicks: 3, avgPosition: 22.1, ctr: 3.4, internalLinks: 2, category: 'Cat Trees', revenue: 1120, addToCartRate: 12.5, conversionRate: 5.8, flag: 'low_traffic_high_conv' },
-    { url: '/product/interactive-dog-toy', keyword: 'interactive dog toy', impressions: 45, clicks: 1, avgPosition: 28.4, ctr: 2.2, internalLinks: 0, category: 'Dog Activities', revenue: 980, addToCartRate: 11.2, conversionRate: 4.9, flag: 'top_revenue_low_vis' },
-    { url: '/product/cat-window-perch', keyword: 'cat window perch', impressions: 234, clicks: 0, avgPosition: 19.5, ctr: 0, internalLinks: 1, category: 'Cat Trees', revenue: 0, addToCartRate: 0, conversionRate: 0, flag: 'high_vis_zero_clicks' },
-    { url: '/product/elevated-dog-bowl', keyword: 'elevated dog bowl', impressions: 178, clicks: 6, avgPosition: 15.3, ctr: 3.4, internalLinks: 2, category: 'Dog Feeding', revenue: 340, addToCartRate: 5.1, conversionRate: 2.1, flag: null },
-    { url: '/product/heated-cat-bed', keyword: 'heated cat bed', impressions: 142, clicks: 4, avgPosition: 17.9, ctr: 2.8, internalLinks: 1, category: 'Cat Comfort', revenue: 560, addToCartRate: 7.3, conversionRate: 3.4, flag: null },
-    { url: '/product/dog-cooling-mat', keyword: 'dog cooling mat', impressions: 198, clicks: 5, avgPosition: 20.1, ctr: 2.5, internalLinks: 2, category: 'Dog Comfort', revenue: 280, addToCartRate: 4.2, conversionRate: 1.5, flag: 'high_traffic_low_conv' },
+    { url: '/products/luxury-cat-tree-xl', keyword: 'large cat tree', impressions: 278, clicks: 11, avgPosition: 14.6, ctr: 4.0, internalLinks: 4, category: 'Cat Trees', revenue: 1240, addToCartRate: 8.2, conversionRate: 3.1, flag: null },
+    { url: '/products/modern-cat-condo', keyword: 'modern cat condo', impressions: 167, clicks: 7, avgPosition: 13.5, ctr: 4.2, internalLinks: 3, category: 'Cat Trees', revenue: 890, addToCartRate: 6.8, conversionRate: 2.8, flag: null },
+    { url: '/products/orthopedic-dog-bed-large', keyword: 'orthopedic dog bed large', impressions: 156, clicks: 9, avgPosition: 11.2, ctr: 5.8, internalLinks: 5, category: 'Dog Beds', revenue: 1680, addToCartRate: 9.1, conversionRate: 4.2, flag: null },
+    { url: '/products/self-cleaning-litter-box', keyword: 'self cleaning litter box', impressions: 312, clicks: 14, avgPosition: 16.8, ctr: 4.5, internalLinks: 1, category: 'Cat Litter', revenue: 420, addToCartRate: 3.2, conversionRate: 1.1, flag: 'high_traffic_low_conv' },
+    { url: '/products/sisal-scratching-post', keyword: 'sisal scratching post', impressions: 89, clicks: 3, avgPosition: 22.1, ctr: 3.4, internalLinks: 2, category: 'Cat Trees', revenue: 1120, addToCartRate: 12.5, conversionRate: 5.8, flag: 'low_traffic_high_conv' },
+    { url: '/products/interactive-dog-toy', keyword: 'interactive dog toy', impressions: 45, clicks: 1, avgPosition: 28.4, ctr: 2.2, internalLinks: 0, category: 'Dog Activities', revenue: 980, addToCartRate: 11.2, conversionRate: 4.9, flag: 'top_revenue_low_vis' },
+    { url: '/products/cat-window-perch', keyword: 'cat window perch', impressions: 234, clicks: 0, avgPosition: 19.5, ctr: 0, internalLinks: 1, category: 'Cat Trees', revenue: 0, addToCartRate: 0, conversionRate: 0, flag: 'high_vis_zero_clicks' },
+    { url: '/products/elevated-dog-bowl', keyword: 'elevated dog bowl', impressions: 178, clicks: 6, avgPosition: 15.3, ctr: 3.4, internalLinks: 2, category: 'Dog Feeding', revenue: 340, addToCartRate: 5.1, conversionRate: 2.1, flag: null },
+    { url: '/products/heated-cat-bed', keyword: 'heated cat bed', impressions: 142, clicks: 4, avgPosition: 17.9, ctr: 2.8, internalLinks: 1, category: 'Cat Comfort', revenue: 560, addToCartRate: 7.3, conversionRate: 3.4, flag: null },
+    { url: '/products/dog-cooling-mat', keyword: 'dog cooling mat', impressions: 198, clicks: 5, avgPosition: 20.1, ctr: 2.5, internalLinks: 2, category: 'Dog Comfort', revenue: 280, addToCartRate: 4.2, conversionRate: 1.5, flag: 'high_traffic_low_conv' },
   ];
 }

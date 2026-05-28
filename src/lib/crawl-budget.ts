@@ -47,7 +47,7 @@ export const DEPTH_MAP: DepthEntry[] = [
   // Depth 3 — Collections (linked from pillars & nav)
   { path: '/collections/*',             label: 'SEO Collections',               depth: 3, tier: 3, priority: 0.85 },
   // Depth 4 — Individual products/posts
-  { path: '/product/*',                 label: 'Product Pages',                 depth: 4, tier: 3, priority: 0.80 },
+  { path: '/products/*',                 label: 'Product Pages',                 depth: 4, tier: 3, priority: 0.80 },
   { path: '/blog/*',                    label: 'Blog Posts',                    depth: 4, tier: 4, priority: 0.60 },
   { path: '/guides/*',                  label: 'Guide Articles',               depth: 4, tier: 3, priority: 0.65 },
 ];

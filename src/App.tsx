@@ -315,7 +315,7 @@ function ProductRouteRedirect() {
   );
 }
 
-/** Redirect /bestseller/:slug to canonical /product/:slug, preserving query/hash. */
+/** Redirect /bestseller/:slug to canonical /products/:slug, preserving query/hash. */
 function BestsellerSlugRedirect() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
@@ -895,7 +895,7 @@ const App = () => {
                               </Suspense>
                             }
                           />
-                          {/* /bestseller/:slug → redirect to /product/:slug for canonical URL consolidation */}
+                          {/* /bestseller/:slug → redirect to /products/:slug for canonical URL consolidation */}
                           <Route
                             path="/bestseller/:slug"
                             element={<BestsellerSlugRedirect />}

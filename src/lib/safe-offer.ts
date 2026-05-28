@@ -42,7 +42,7 @@ export function buildSafeOffer(
 
   return {
     '@type': 'Offer',
-    ...(productPath ? { url: `${baseUrl}/product/${productPath}` } : {}),
+    ...(productPath ? { url: `${baseUrl}/products/${productPath}` } : {}),
     price: numeric.toFixed(2),
     priceCurrency: 'USD',
     availability: inStock
@@ -71,7 +71,7 @@ export function buildSafeProductListItem(
     position,
     item: {
       '@type': 'Product',
-      '@id': `${baseUrl}/product/${productPath}`,
+      '@id': `${baseUrl}/products/${productPath}`,
       name: product.name,
       ...(image ? { image } : {}),
       offers: offer,
