@@ -135,6 +135,27 @@ Deno.serve(async (req) => {
     // Optional source filter: tiktok | pinterest | google | organic | direct | other | all
     const sourceFilter = (url.searchParams.get('source') || 'all').toLowerCase();
 
+    // Adjustable significance thresholds for product classification. Each
+    // has a sensible default but can be overridden per request from the
+    // dashboard's "Thresholds" control.
+    const numParam = (key: string, fallback: number): number => {
+      const raw = url.searchParams.get(key);
+      if (raw == null || raw === '') return fallback;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : fallback;
+    };
+    const thresholds = {
+      min_views: Math.max(1, Math.round(numParam('min_views', 5))),
+      min_prior_views: Math.max(1, Math.round(numParam('min_prior_views', 5))),
+      winner_atc_z: numParam('winner_atc_z', 1),
+      winner_views_z: numParam('winner_views_z', 0),
+      breakout_views_z: numParam('breakout_views_z', 1),
+      breakout_views_delta_pct: numParam('breakout_views_delta_pct', 200),
+      rising_atc_z: numParam('rising_atc_z', 0.5),
+      rising_min_views: Math.max(1, Math.round(numParam('rising_min_views', 3))),
+      falling_delta_pct: numParam('falling_delta_pct', -30),
+    };
+
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false },
     });
@@ -253,20 +274,33 @@ Deno.serve(async (req) => {
       const viewsDeltaPct = deltaPct(p.views, priorViews);
       const atcRateDeltaPp = Math.round((atcRate - priorAtcRate) * 1000) / 10; // percentage points
 
-      // Classification (statistically grounded, not arbitrary thresholds):
-      //  - winner:   sustained traffic (z >= 0) AND wilson lower bound >= overall site ATC rate
-          //              AND atc-rate z-score >= 1 (≥1 std above mean)
-      //  - breakout: new product or ≥200% views growth, with z >= 1 on views
-      //  - rising:   positive views delta and atcRateZ >= 0.5, not yet breakout-level
-      //  - falling:  views delta <= -30% vs prior with prior baseline of ≥5 views
+      // Classification (statistically grounded, fully tunable from the UI).
+      // All cutoffs live in `thresholds` so analysts can tighten/loosen them
+      // without redeploying the function.
       let classification: 'winner' | 'breakout' | 'rising' | 'falling' | 'stable' = 'stable';
-      if (viewsZ >= 0 && p.views >= 5 && wilson >= overallAtcRate && atcRateZ >= 1) {
+      if (
+        viewsZ >= thresholds.winner_views_z &&
+        p.views >= thresholds.min_views &&
+        wilson >= overallAtcRate &&
+        atcRateZ >= thresholds.winner_atc_z
+      ) {
         classification = 'winner';
-      } else if (viewsZ >= 1 && (isNew || (viewsDeltaPct !== null && viewsDeltaPct >= 200))) {
+      } else if (
+        viewsZ >= thresholds.breakout_views_z &&
+        (isNew || (viewsDeltaPct !== null && viewsDeltaPct >= thresholds.breakout_views_delta_pct))
+      ) {
         classification = 'breakout';
-      } else if (p.views >= 3 && atcRateZ >= 0.5 && (viewsDeltaPct === null || viewsDeltaPct > 0)) {
+      } else if (
+        p.views >= thresholds.rising_min_views &&
+        atcRateZ >= thresholds.rising_atc_z &&
+        (viewsDeltaPct === null || viewsDeltaPct > 0)
+      ) {
         classification = 'rising';
-      } else if (priorViews >= 5 && viewsDeltaPct !== null && viewsDeltaPct <= -30) {
+      } else if (
+        priorViews >= thresholds.min_prior_views &&
+        viewsDeltaPct !== null &&
+        viewsDeltaPct <= thresholds.falling_delta_pct
+      ) {
         classification = 'falling';
       }
 
@@ -328,6 +362,7 @@ Deno.serve(async (req) => {
         product_atc_rate_std_pp: Math.round(atcRateStats.std * 1000) / 10,
         sample_size: products.length,
       },
+      thresholds,
       funnel: {
         pdp_views: pdpViews,
         cart_opens: cartOpens,
