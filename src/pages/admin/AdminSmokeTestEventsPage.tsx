@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +67,9 @@ function StepBadge({ ok, label }: { ok: boolean; label: string }) {
 
 export default function AdminSmokeTestEventsPage() {
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const focusSession = searchParams.get('session');
+  const focusKey = searchParams.get('key');
   const [loading, setLoading] = useState(true);
   const [runs, setRuns] = useState<SmokeRun[]>([]);
   const [eventsByRun, setEventsByRun] = useState<Record<string, FunnelEvent[]>>({});
@@ -156,6 +159,7 @@ export default function AdminSmokeTestEventsPage() {
         }
         for (const [key, group] of groups) {
           if (group.length <= 1) continue;
+          const deepLink = `${window.location.origin}/admin/smoke-test-events?session=${encodeURIComponent(sessionId)}&key=${encodeURIComponent(key)}`;
           dupRows.push({
             stripe_session_id: sessionId,
             idempotency_key: key,
@@ -163,6 +167,7 @@ export default function AdminSmokeTestEventsPage() {
             steps: group.map((g) => g.step).join(','),
             first_seen: group[0].created_at,
             last_seen: group[group.length - 1].created_at,
+            deep_link: deepLink,
           });
         }
       }
@@ -186,11 +191,34 @@ export default function AdminSmokeTestEventsPage() {
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Summary');
-      XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.json_to_sheet(dupRows.length > 0 ? dupRows : [{ note: 'No duplicates detected' }]),
-        'Duplicates',
+      const dupSheet = XLSX.utils.json_to_sheet(
+        dupRows.length > 0 ? dupRows : [{ note: 'No duplicates detected' }],
       );
+      // Turn the deep_link column into clickable Excel hyperlinks
+      if (dupRows.length > 0) {
+        const range = XLSX.utils.decode_range(dupSheet['!ref'] ?? 'A1');
+        // Find the deep_link column index from the header row
+        let linkCol = -1;
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const headerCell = dupSheet[XLSX.utils.encode_cell({ r: 0, c })];
+          if (headerCell && String(headerCell.v) === 'deep_link') {
+            linkCol = c;
+            break;
+          }
+        }
+        if (linkCol >= 0) {
+          for (let r = 1; r <= range.e.r; r++) {
+            const addr = XLSX.utils.encode_cell({ r, c: linkCol });
+            const cell = dupSheet[addr];
+            if (cell && typeof cell.v === 'string' && cell.v) {
+              cell.l = { Target: cell.v, Tooltip: 'Open in admin: session + idempotency key' };
+              cell.v = 'Open in admin →';
+              cell.s = { font: { color: { rgb: '1E3A8A' }, underline: true } };
+            }
+          }
+        }
+      }
+      XLSX.utils.book_append_sheet(wb, dupSheet, 'Duplicates');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allEvents), 'All Events');
 
       const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -229,6 +257,19 @@ export default function AdminSmokeTestEventsPage() {
       return { run, events, missing, botEvents, duplicates };
     });
   }, [runs, eventsByRun]);
+
+  // Auto-expand the focused run when arriving via a deep link from the report.
+  useEffect(() => {
+    if (!focusSession || runs.length === 0) return;
+    const target = runs.find((r) => r.stripe_session_id === focusSession);
+    if (!target) return;
+    setExpanded((p) => ({ ...p, [target.id]: true }));
+    // Defer scroll until after expansion paints.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`run-${target.id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [focusSession, runs]);
 
   return (
     <div className="container max-w-6xl py-10 space-y-6">
@@ -301,8 +342,13 @@ export default function AdminSmokeTestEventsPage() {
           const isOpen = expanded[run.id] ?? false;
           const sessionPrefix = run.stripe_session_id ? `${run.stripe_session_id.slice(0, 18)}…` : '—';
           const allOk = missing.length === 0 && botEvents.length === 0 && duplicates === 0;
+          const isFocusedRun = focusSession && run.stripe_session_id === focusSession;
           return (
-            <Card key={run.id}>
+            <Card
+              key={run.id}
+              id={`run-${run.id}`}
+              className={isFocusedRun ? 'ring-2 ring-primary' : undefined}
+            >
               <CardHeader
                 className="cursor-pointer"
                 onClick={() => setExpanded((p) => ({ ...p, [run.id]: !isOpen }))}
@@ -401,8 +447,15 @@ export default function AdminSmokeTestEventsPage() {
                           <tbody>
                             {events.map((e) => {
                               const isExpected = (EXPECTED_STEPS as readonly string[]).includes(e.step);
+                              const isFocusedEvent =
+                                !!focusKey &&
+                                !!isFocusedRun &&
+                                e.idempotency_key === focusKey;
                               return (
-                                <tr key={e.id} className="border-b last:border-0 align-top">
+                                <tr
+                                  key={e.id}
+                                  className={`border-b last:border-0 align-top ${isFocusedEvent ? 'bg-primary/10' : ''}`}
+                                >
                                   <td className="py-1.5 pr-3 font-mono whitespace-nowrap">{fmtTime(e.created_at)}</td>
                                   <td className="py-1.5 pr-3">
                                     <code className={isExpected ? 'text-foreground' : 'text-muted-foreground'}>{e.step}</code>
