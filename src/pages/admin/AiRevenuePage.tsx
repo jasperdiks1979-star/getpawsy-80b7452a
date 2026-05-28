@@ -220,6 +220,12 @@ export default function AiRevenuePage() {
   const [extraContext, setExtraContext] = useState<string>('');
   const [genBusy, setGenBusy] = useState(false);
 
+  // Iteration B: persisted AI insights (separate from live `insights`)
+  const [storedInsights, setStoredInsights] = useState<StoredInsight[]>([]);
+  const [storedBusy, setStoredBusy] = useState(false);
+  const [storedSeverity, setStoredSeverity] = useState<'all' | 'info' | 'warn' | 'critical'>('all');
+  const [genInsightsBusy, setGenInsightsBusy] = useState(false);
+
   // Per-product drilldown panel state. Lazily fetches when a row is clicked.
   interface DrilldownMetrics { views: number; atc: number; atc_rate_pct: number; rage_clicks: number; avg_dwell_ms: number; sessions: number }
   interface DrilldownSession {
