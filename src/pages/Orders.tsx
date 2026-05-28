@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Package, ChevronRight, ShoppingBag, Truck, ExternalLink, AlertCircle } from "lucide-react";
 import OrderClaimButton from "@/components/orders/OrderClaimButton";
 import { format } from "date-fns";
+import { getConversionFlag } from "@/lib/conversionFlags";
 
 // Order card skeleton component
 const OrderCardSkeleton = memo(() => (
@@ -150,6 +151,7 @@ const STATUS_LABELS: Record<string, string> = {
 const Orders = () => {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const premiumV1 = getConversionFlag('premiumOrders');
 
   // Redirect if not logged in
   useEffect(() => {
@@ -204,9 +206,16 @@ const Orders = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">My Orders</h1>
+              {premiumV1 && (
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                  Account · Orders
+                </p>
+              )}
+              <h1 className={premiumV1 ? "font-display text-3xl font-semibold text-foreground tracking-tight" : "text-3xl font-bold text-foreground"}>
+                {premiumV1 ? "Your orders" : "My Orders"}
+              </h1>
               <p className="text-muted-foreground mt-1">
-                View your previous orders and their status
+                {premiumV1 ? "Review past orders and track shipments." : "View your previous orders and their status"}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -216,10 +225,17 @@ const Orders = () => {
                   My Claims
                 </Link>
               </Button>
-              <Badge variant="secondary" className="text-lg px-4 py-2">
-                <Package className="w-4 h-4 mr-2" />
-                {orders?.length || 0} orders
-              </Badge>
+              {premiumV1 ? (
+                <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground border border-border/60 rounded-full px-3 py-1.5">
+                  <Package className="w-3.5 h-3.5" />
+                  {orders?.length || 0} {(orders?.length || 0) === 1 ? 'order' : 'orders'}
+                </span>
+              ) : (
+                <Badge variant="secondary" className="text-lg px-4 py-2">
+                  <Package className="w-4 h-4 mr-2" />
+                  {orders?.length || 0} orders
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -232,29 +248,53 @@ const Orders = () => {
           ) : orders && orders.length > 0 ? (
             <div className="space-y-4">
               {orders.map((order) => (
-                <Card key={order.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <Card
+                  key={order.id}
+                  className={
+                    premiumV1
+                      ? "overflow-hidden border-border/60 shadow-none"
+                      : "overflow-hidden hover:shadow-md transition-shadow"
+                  }
+                >
                   <CardContent className="p-0">
                     <div className="p-6">
                       {/* Order Header */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm text-muted-foreground">Order</span>
-                            <span className="font-mono text-sm font-medium">
-                              #{order.id.slice(0, 8).toUpperCase()}
-                            </span>
-                          </div>
+                          {premiumV1 ? (
+                            <>
+                              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                                Order
+                              </p>
+                              <p className="font-mono text-sm font-medium text-foreground">
+                                #{order.id.slice(0, 8).toUpperCase()}
+                              </p>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm text-muted-foreground">Order</span>
+                              <span className="font-mono text-sm font-medium">
+                                #{order.id.slice(0, 8).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
                           <p className="text-sm text-muted-foreground">
                             {format(new Date(order.created_at), "MMMM d, yyyy 'at' h:mm a")}
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <Badge
-                            variant="outline"
-                            className={STATUS_COLORS[order.status] || STATUS_COLORS.pending}
-                          >
-                            {STATUS_LABELS[order.status] || order.status}
-                          </Badge>
+                          {premiumV1 ? (
+                            <span className="inline-flex items-center text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground border border-border/60 rounded-full px-2.5 py-1">
+                              {STATUS_LABELS[order.status] || order.status}
+                            </span>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className={STATUS_COLORS[order.status] || STATUS_COLORS.pending}
+                            >
+                              {STATUS_LABELS[order.status] || order.status}
+                            </Badge>
+                          )}
                           <span className="text-lg font-bold text-primary">
                             {formatCurrency(Number(order.total_amount), order.currency)}
                           </span>
@@ -310,16 +350,25 @@ const Orders = () => {
                             href={`${CARRIER_TRACKING_URLS[order.tracking_carrier || "postnl"]}${order.tracking_number}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg hover:bg-primary/10 transition-colors group"
+                            className={
+                              premiumV1
+                                ? "flex items-center gap-2 p-3 rounded-lg border border-border/60 hover:bg-muted/40 transition-colors group"
+                                : "flex items-center gap-2 p-3 bg-primary/5 rounded-lg hover:bg-primary/10 transition-colors group"
+                            }
                           >
-                            <Truck className="w-5 h-5 text-primary" />
+                            <Truck className={premiumV1 ? "w-5 h-5 text-muted-foreground" : "w-5 h-5 text-primary"} />
                             <div className="flex-1">
-                              <p className="text-sm font-medium">Track your shipment</p>
+                              {premiumV1 && (
+                                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-0.5">
+                                  Tracking
+                                </p>
+                              )}
+                              <p className="text-sm font-medium">{premiumV1 ? "Track your shipment" : "Track your shipment"}</p>
                               <p className="text-xs text-muted-foreground">
                                 {CARRIER_LABELS[order.tracking_carrier || "usps"]} • {order.tracking_number}
                               </p>
                             </div>
-                            <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ExternalLink className={premiumV1 ? "w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" : "w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity"} />
                           </a>
                         </div>
                       )}
@@ -346,12 +395,27 @@ const Orders = () => {
               ))}
             </div>
           ) : (
-            <Card>
+            <Card className={premiumV1 ? "border-border/60 shadow-none" : undefined}>
               <CardContent className="py-16 text-center">
-                <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">No orders yet</h2>
+                {premiumV1 ? (
+                  <div className="mx-auto mb-5 inline-flex items-center justify-center w-14 h-14 rounded-full border border-border/60">
+                    <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                ) : (
+                  <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                )}
+                {premiumV1 && (
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                    No orders yet
+                  </p>
+                )}
+                <h2 className={premiumV1 ? "font-display text-xl font-semibold mb-2 tracking-tight" : "text-xl font-semibold mb-2"}>
+                  {premiumV1 ? "Your story starts here" : "No orders yet"}
+                </h2>
                 <p className="text-muted-foreground mb-6">
-                  You haven't placed any orders yet. Discover our products!
+                  {premiumV1
+                    ? "Browse the catalog to find something your pet will love."
+                    : "You haven't placed any orders yet. Discover our products!"}
                 </p>
                 <Button asChild>
                   <Link to="/products">
