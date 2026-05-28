@@ -152,6 +152,11 @@ export default function AiRevenuePage() {
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
   const [source, setSource] = useState<SourceFilter>('all');
   const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS);
+  // Prior comparison window: 'equal' mirrors the current window length
+  // immediately before `since`; 'custom' uses user-picked priorFrom/priorTo.
+  const [priorMode, setPriorMode] = useState<'equal' | 'custom'>('equal');
+  const [priorFrom, setPriorFrom] = useState<Date | undefined>(undefined);
+  const [priorTo, setPriorTo] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
