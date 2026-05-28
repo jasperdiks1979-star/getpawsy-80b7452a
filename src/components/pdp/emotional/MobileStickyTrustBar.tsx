@@ -1,13 +1,13 @@
 /**
- * MobileStickyTrustBar — ultra-subtle, top-anchored trust whisper on mobile.
+ * MobileTrustWhisper — ultra-subtle inline trust line shown above the gallery
+ * on mobile PDPs.
  *
  * Premium-DTC posture:
- *   - 24px tall, neutral palette (no primary fill, no badge energy).
- *   - One refined line, three quiet anchors separated by hairline dots.
- *   - Auto-hides on scroll-down, returns on scroll-up.
- *   - All copy is policy-approved; no urgency, no countdowns, no review counts.
+ *   - Inline, not fixed. Never overlaps the global Navbar.
+ *   - Neutral palette, hairline dot separators, refined letter-spacing.
+ *   - Three quiet anchors. No icons. No fills. No badge energy.
+ *   - Copy comes only from `merchant-policy` / `shipping-constants`.
  */
-import { useEffect, useRef, useState } from 'react';
 import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
@@ -17,45 +17,30 @@ import { getConversionFlag } from '@/lib/conversionFlags';
 const Dot = () => (
   <span
     aria-hidden
-    className="inline-block h-[3px] w-[3px] rounded-full bg-muted-foreground/40"
+    className="inline-block h-[3px] w-[3px] rounded-full bg-foreground/25"
   />
 );
 
 export function MobileStickyTrustBar() {
-  const [visible, setVisible] = useState(true);
-  const lastY = useRef(0);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      setVisible(y < 80 || y < lastY.current);
-      lastY.current = y;
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   if (!getConversionFlag('mobileTrustBar')) return null;
 
   return (
     <div
       role="region"
       aria-label="Shipping, returns and checkout"
-      className={`md:hidden fixed top-0 inset-x-0 z-30 transition-transform duration-300 ${
-        visible ? 'translate-y-0' : '-translate-y-full'
-      }`}
+      className="md:hidden -mx-4 px-4 mb-3 border-y border-border/50 bg-background/60"
       style={{ contain: 'layout' }}
     >
-      <div className="h-6 flex items-center justify-center gap-3 px-4 bg-background/85 supports-[backdrop-filter]:bg-background/70 backdrop-blur-md border-b border-border/50">
-        <span className="text-[10.5px] font-medium tracking-[0.06em] text-foreground/80">
+      <div className="h-7 flex items-center justify-center gap-3">
+        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
           Free shipping ${FREE_SHIPPING_THRESHOLD}+
         </span>
         <Dot />
-        <span className="text-[10.5px] font-medium tracking-[0.06em] text-foreground/80">
+        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
           {RETURN_WINDOW_DAYS}-day returns
         </span>
         <Dot />
-        <span className="text-[10.5px] font-medium tracking-[0.06em] text-foreground/80">
+        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
           Secure checkout
         </span>
       </div>
