@@ -37,6 +37,13 @@ const corsHeaders = {
 
 type QualityClass = 'real_human' | 'suspicious' | 'crawler' | 'likely_bot';
 
+type SourceQuality =
+  | 'premium'
+  | 'good'
+  | 'weak'
+  | 'curiosity_only'
+  | 'suspicious';
+
 interface SessionRow {
   session_id: string;
   is_bot: boolean | null;
@@ -47,6 +54,13 @@ interface SessionRow {
   page_view_count: number | null;
   event_count: number | null;
   quality_class: string | null;
+  source_quality?: string | null;
+  in_app_browser?: boolean | null;
+  referrer?: string | null;
+  utm_source?: string | null;
+  duration_seconds?: number | null;
+  max_scroll_pct?: number | null;
+  atc_count?: number | null;
 }
 
 const CRAWLER_UA = /(bot|crawler|spider|scraper|headless|phantom|selenium|puppeteer|playwright|lighthouse|pagespeed|curl|wget|python-requests|go-http-client|okhttp|facebookexternalhit|twitterbot|pinterestbot|tiktokbot|bytespider|googlebot|bingbot|ahrefsbot|semrushbot|yandexbot|duckduckbot|slurp|baiduspider|gptbot|claudebot|perplexitybot)/i;
@@ -67,6 +81,33 @@ function classify(row: SessionRow): QualityClass {
     return 'suspicious';
   }
   return 'real_human';
+}
+
+/**
+ * CI-3 — source-quality scoring. Independent of bot classification: a real
+ * human can still be `curiosity_only` traffic. Inputs are signals we already
+ * persist (dwell, scroll, ATC, in-app browser, geo_quality, utm_source).
+ * Returns null when we don't have enough signal yet (caller leaves column).
+ */
+function scoreSourceQuality(row: SessionRow, cls: QualityClass): SourceQuality | null {
+  if (cls === 'crawler' || cls === 'likely_bot') return 'suspicious';
+  const dwell = row.duration_seconds ?? 0;
+  const scroll = row.max_scroll_pct ?? 0;
+  const atc = row.atc_count ?? 0;
+  const events = row.event_count ?? 0;
+  const pvs = row.page_view_count ?? 0;
+  const inApp = row.in_app_browser === true;
+  const geo = (row.geo_quality || '').toLowerCase();
+
+  // Not enough signal yet — let the next pass classify.
+  if (events === 0 && pvs <= 1 && dwell < 5) return null;
+
+  if (atc > 0 && dwell >= 30 && scroll >= 40 && geo !== 'low') return 'premium';
+  if ((dwell >= 45 || scroll >= 60 || pvs >= 3) && geo !== 'low') return 'good';
+  if (inApp && dwell < 15 && atc === 0) return 'curiosity_only';
+  if (dwell < 10 && scroll < 25 && atc === 0) return 'curiosity_only';
+  if (geo === 'low') return 'weak';
+  return 'weak';
 }
 
 Deno.serve(async (req) => {
@@ -123,11 +164,15 @@ Deno.serve(async (req) => {
 
     let query = admin
       .from('sessions')
-      .select('session_id, is_bot, bot_reason, traffic_quality_score, geo_quality, user_agent, page_view_count, event_count, quality_class')
+      .select('session_id, is_bot, bot_reason, traffic_quality_score, geo_quality, user_agent, page_view_count, event_count, quality_class, source_quality, in_app_browser, referrer, utm_source, duration_seconds, max_scroll_pct, atc_count')
       .gte('started_at', since)
       .order('started_at', { ascending: false })
       .limit(limit);
-    if (onlyUnclassified) query = query.is('quality_class', null);
+    if (onlyUnclassified) {
+      // Treat a row as unclassified if either column is missing so we can
+      // backfill source_quality on rows that already have a quality_class.
+      query = query.or('quality_class.is.null,source_quality.is.null');
+    }
 
     const { data: rows, error } = await query;
     if (error) throw error;
@@ -135,12 +180,21 @@ Deno.serve(async (req) => {
     const breakdown: Record<QualityClass, number> = {
       real_human: 0, suspicious: 0, crawler: 0, likely_bot: 0,
     };
-    const updates: Array<{ session_id: string; quality_class: QualityClass }> = [];
+    const sourceBreakdown: Record<SourceQuality, number> = {
+      premium: 0, good: 0, weak: 0, curiosity_only: 0, suspicious: 0,
+    };
+    const updates: Array<{
+      session_id: string;
+      quality_class: QualityClass;
+      source_quality: SourceQuality | null;
+    }> = [];
     for (const r of (rows || []) as SessionRow[]) {
       const cls = classify(r);
       breakdown[cls]++;
-      if (r.quality_class !== cls) {
-        updates.push({ session_id: r.session_id, quality_class: cls });
+      const sq = scoreSourceQuality(r, cls);
+      if (sq) sourceBreakdown[sq]++;
+      if (r.quality_class !== cls || (sq && r.source_quality !== sq)) {
+        updates.push({ session_id: r.session_id, quality_class: cls, source_quality: sq });
       }
     }
 
@@ -152,9 +206,11 @@ Deno.serve(async (req) => {
         const chunk = updates.slice(i, i + chunkSize);
         // Use upsert on primary key so we only touch the one column.
         for (const u of chunk) {
+          const patch: Record<string, unknown> = { quality_class: u.quality_class };
+          if (u.source_quality) patch.source_quality = u.source_quality;
           const { error: uerr } = await admin
             .from('sessions')
-            .update({ quality_class: u.quality_class })
+            .update(patch)
             .eq('session_id', u.session_id);
           if (!uerr) updated++;
         }
@@ -170,6 +226,7 @@ Deno.serve(async (req) => {
         dry_run: dryRun,
         days,
         breakdown,
+        source_breakdown: sourceBreakdown,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
