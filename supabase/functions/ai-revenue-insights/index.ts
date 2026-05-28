@@ -524,6 +524,32 @@ Deno.serve(async (req) => {
         wilson_atc_lower: Math.round(wilson * 1000) / 10,
         is_new: isNew,
         classification,
+        // ---- Winner v2 derived scores (0-100). Additive, never breaking. ----
+        // Winner Score: composite of statistical strength (z-scores), conversion
+        // confidence (Wilson lower bound vs overall), and traffic volume.
+        // Trend Velocity: momentum of view growth vs prior window, log-scaled.
+        // Conversion Momentum: change in ATC rate (pp) normalised to overall rate.
+        winner_score: (() => {
+          const volume = Math.max(0, Math.min(1, p.views / Math.max(10, viewsStats.mean * 2)));
+          const zPart = Math.max(0, Math.min(1, (viewsZ + atcRateZ + 2) / 6));
+          const confPart = overallAtcRate > 0
+            ? Math.max(0, Math.min(1, wilson / Math.max(overallAtcRate, 0.01)))
+            : 0;
+          return Math.round((0.45 * zPart + 0.35 * confPart + 0.2 * volume) * 100);
+        })(),
+        trend_velocity: (() => {
+          if (viewsDeltaPct === null) return isNew && p.views >= 3 ? 80 : 0;
+          // Map -100..+500 % delta to 0..100 via log-ish curve.
+          const d = Math.max(-100, Math.min(500, viewsDeltaPct));
+          if (d <= 0) return Math.round(50 + d * 0.5); // -100 -> 0, 0 -> 50
+          return Math.round(50 + Math.log10(1 + d) * 25); // +500 -> ~117 clamp
+        })(),
+        conversion_momentum: (() => {
+          if (priorViews < 3 || p.views < 3) return 50;
+          const denom = Math.max(1, overallAtcRate * 100); // pp
+          const norm = atcRateDeltaPp / denom;
+          return Math.max(0, Math.min(100, Math.round(50 + norm * 25)));
+        })(),
       };
     });
     products.sort((a, b) => b.views - a.views);
