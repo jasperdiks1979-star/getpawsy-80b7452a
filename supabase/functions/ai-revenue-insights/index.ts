@@ -54,6 +54,48 @@ function classifySource(row: any): string {
   return 'other';
 }
 
+/** Aggregate funnel metrics per product_id from a flat event array. */
+function aggregateProducts(rows: any[]) {
+  const out: Record<string, { id: string; name: string; views: number; atc: number; rage: number; dwellSum: number; dwellN: number; sessions: Set<string> }> = {};
+  for (const r of rows) {
+    if (!r.product_id) continue;
+    const slot = out[r.product_id] || (out[r.product_id] = { id: r.product_id, name: r.product_name || r.product_id, views: 0, atc: 0, rage: 0, dwellSum: 0, dwellN: 0, sessions: new Set() });
+    slot.sessions.add(r.session_id);
+    if (r.event_name === 'pdp_view' || r.event_name === 'view_item') slot.views++;
+    if (r.event_name === 'add_to_cart') slot.atc++;
+    if (r.event_name === 'rage_click') slot.rage++;
+    if (typeof r.dwell_ms === 'number') { slot.dwellSum += r.dwell_ms; slot.dwellN++; }
+  }
+  return out;
+}
+
+/** Mean + sample standard deviation. */
+function meanStd(values: number[]): { mean: number; std: number } {
+  if (!values.length) return { mean: 0, std: 0 };
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  if (values.length < 2) return { mean, std: 0 };
+  const variance = values.reduce((a, v) => a + (v - mean) ** 2, 0) / (values.length - 1);
+  return { mean, std: Math.sqrt(variance) };
+}
+
+/**
+ * Wilson lower bound of a binomial proportion at ~95% confidence.
+ * Used to rank ATC-rate so low-sample products don't dominate.
+ */
+function wilsonLower(successes: number, total: number, z = 1.96): number {
+  if (!total) return 0;
+  const p = successes / total;
+  const denom = 1 + z * z / total;
+  const center = p + z * z / (2 * total);
+  const margin = z * Math.sqrt((p * (1 - p) + z * z / (4 * total)) / total);
+  return Math.max(0, (center - margin) / denom);
+}
+
+function deltaPct(current: number, prior: number): number | null {
+  if (!prior) return current > 0 ? null : 0; // null = "new" (no prior baseline)
+  return Math.round(((current - prior) / prior) * 1000) / 10;
+}
+
 async function callLovableAi(prompt: string, system: string): Promise<string | null> {
   if (!LOVABLE_API_KEY) return null;
   try {
@@ -100,21 +142,40 @@ Deno.serve(async (req) => {
     const since = fromParam || sinceFor(range);
     const until = toParam || null;
 
-    // 1. Pull funnel events (clean, non-bot)
-    let q = supabase
-      .from('lp_funnel_events')
-      .select('event_name,session_id,product_id,product_name,page_path,utm_source,utm_medium,dwell_ms,raw_payload,is_bot,is_internal,created_at')
-      .gte('created_at', since)
-      .or('is_bot.is.null,is_bot.eq.false')
-      .or('is_internal.is.null,is_internal.eq.false')
-      .limit(20000);
-    if (until) q = q.lte('created_at', until);
-    const { data: events, error } = await q;
-    if (error) throw error;
+    // Compute prior period of equal length for trend comparisons.
+    const sinceMs = new Date(since).getTime();
+    const untilMs = until ? new Date(until).getTime() : Date.now();
+    const windowMs = Math.max(1, untilMs - sinceMs);
+    const priorUntil = new Date(sinceMs).toISOString();
+    const priorSince = new Date(sinceMs - windowMs).toISOString();
+
+    const SELECT_COLS = 'event_name,session_id,product_id,product_name,page_path,utm_source,utm_medium,dwell_ms,raw_payload,is_bot,is_internal,created_at';
+    const fetchEvents = async (gte: string, lte: string | null) => {
+      let q = supabase
+        .from('lp_funnel_events')
+        .select(SELECT_COLS)
+        .gte('created_at', gte)
+        .or('is_bot.is.null,is_bot.eq.false')
+        .or('is_internal.is.null,is_internal.eq.false')
+        .limit(20000);
+      if (lte) q = q.lte('created_at', lte);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data || []);
+    };
+
+    // 1. Pull current + prior funnel events in parallel
+    const [currentEvents, priorEvents] = await Promise.all([
+      fetchEvents(since, until),
+      fetchEvents(priorSince, priorUntil),
+    ]);
+    const events = currentEvents;
 
     let rows = events || [];
+    let priorRows = priorEvents;
     if (sourceFilter && sourceFilter !== 'all') {
       rows = rows.filter(r => classifySource(r) === sourceFilter);
+      priorRows = priorRows.filter(r => classifySource(r) === sourceFilter);
     }
     const sessions = new Map<string, any[]>();
     for (const r of rows) {
@@ -166,29 +227,75 @@ Deno.serve(async (req) => {
       avg_dwell_ms: s.dwellN ? Math.round(s.dwellSum / s.dwellN) : 0,
     })).sort((a, b) => b.sessions - a.sessions);
 
-    // 5. Top products
-    const byProduct: Record<string, { id: string; name: string; views: number; atc: number; dwellSum: number; dwellN: number; rage: number; sessions: Set<string> }> = {};
-    for (const r of rows) {
-      if (!r.product_id) continue;
-      const key = r.product_id;
-      const slot = byProduct[key] || (byProduct[key] = { id: key, name: r.product_name || key, views: 0, atc: 0, dwellSum: 0, dwellN: 0, rage: 0, sessions: new Set() });
-      slot.sessions.add(r.session_id);
-      if (r.event_name === 'pdp_view' || r.event_name === 'view_item') slot.views++;
-      if (r.event_name === 'add_to_cart') slot.atc++;
-      if (r.event_name === 'rage_click') slot.rage++;
-      if (typeof r.dwell_ms === 'number') { slot.dwellSum += r.dwell_ms; slot.dwellN++; }
-    }
-    const products = Object.values(byProduct).map(p => ({
-      id: p.id,
-      name: p.name,
-      views: p.views,
-      atc: p.atc,
-      atc_rate: pct(p.atc, p.views),
-      avg_dwell_ms: p.dwellN ? Math.round(p.dwellSum / p.dwellN) : 0,
-      rage_clicks: p.rage,
-      sessions: p.sessions.size,
-    }));
+    // 5. Top products + statistical baselines vs prior period
+    const currentAgg = aggregateProducts(rows);
+    const priorAgg = aggregateProducts(priorRows);
+
+    // Baseline distributions across the current set (mean / std for z-scores)
+    const allViews = Object.values(currentAgg).map(p => p.views);
+    const allAtcRates = Object.values(currentAgg)
+      .filter(p => p.views >= 3)
+      .map(p => p.atc / p.views);
+    const viewsStats = meanStd(allViews);
+    const atcRateStats = meanStd(allAtcRates);
+    const overallAtcRate = pdpViews ? atcs / pdpViews : 0;
+
+    const products = Object.values(currentAgg).map(p => {
+      const prior = priorAgg[p.id];
+      const priorViews = prior?.views ?? 0;
+      const priorAtc = prior?.atc ?? 0;
+      const priorAtcRate = priorViews ? priorAtc / priorViews : 0;
+      const atcRate = p.views ? p.atc / p.views : 0;
+      const viewsZ = viewsStats.std ? (p.views - viewsStats.mean) / viewsStats.std : 0;
+      const atcRateZ = atcRateStats.std && p.views >= 3 ? (atcRate - atcRateStats.mean) / atcRateStats.std : 0;
+      const wilson = wilsonLower(p.atc, p.views);
+      const isNew = priorViews === 0 && p.views > 0;
+      const viewsDeltaPct = deltaPct(p.views, priorViews);
+      const atcRateDeltaPp = Math.round((atcRate - priorAtcRate) * 1000) / 10; // percentage points
+
+      // Classification (statistically grounded, not arbitrary thresholds):
+      //  - winner:   sustained traffic (z >= 0) AND wilson lower bound >= overall site ATC rate
+          //              AND atc-rate z-score >= 1 (≥1 std above mean)
+      //  - breakout: new product or ≥200% views growth, with z >= 1 on views
+      //  - rising:   positive views delta and atcRateZ >= 0.5, not yet breakout-level
+      //  - falling:  views delta <= -30% vs prior with prior baseline of ≥5 views
+      let classification: 'winner' | 'breakout' | 'rising' | 'falling' | 'stable' = 'stable';
+      if (viewsZ >= 0 && p.views >= 5 && wilson >= overallAtcRate && atcRateZ >= 1) {
+        classification = 'winner';
+      } else if (viewsZ >= 1 && (isNew || (viewsDeltaPct !== null && viewsDeltaPct >= 200))) {
+        classification = 'breakout';
+      } else if (p.views >= 3 && atcRateZ >= 0.5 && (viewsDeltaPct === null || viewsDeltaPct > 0)) {
+        classification = 'rising';
+      } else if (priorViews >= 5 && viewsDeltaPct !== null && viewsDeltaPct <= -30) {
+        classification = 'falling';
+      }
+
+      return {
+        id: p.id,
+        name: p.name,
+        views: p.views,
+        atc: p.atc,
+        atc_rate: pct(p.atc, p.views),
+        avg_dwell_ms: p.dwellN ? Math.round(p.dwellSum / p.dwellN) : 0,
+        rage_clicks: p.rage,
+        sessions: p.sessions.size,
+        prior_views: priorViews,
+        prior_atc_rate: Math.round(priorAtcRate * 1000) / 10,
+        views_delta_pct: viewsDeltaPct,
+        atc_rate_delta_pp: atcRateDeltaPp,
+        views_z: Math.round(viewsZ * 100) / 100,
+        atc_rate_z: Math.round(atcRateZ * 100) / 100,
+        wilson_atc_lower: Math.round(wilson * 1000) / 10,
+        is_new: isNew,
+        classification,
+      };
+    });
     products.sort((a, b) => b.views - a.views);
+
+    const winners = products.filter(p => p.classification === 'winner').sort((a, b) => b.wilson_atc_lower - a.wilson_atc_lower).slice(0, 8);
+    const breakouts = products.filter(p => p.classification === 'breakout').sort((a, b) => (b.views_delta_pct ?? 9999) - (a.views_delta_pct ?? 9999)).slice(0, 8);
+    const risingProducts = products.filter(p => p.classification === 'rising').sort((a, b) => b.atc_rate_z - a.atc_rate_z).slice(0, 8);
+    const fallingProducts = products.filter(p => p.classification === 'falling').sort((a, b) => (a.views_delta_pct ?? 0) - (b.views_delta_pct ?? 0)).slice(0, 8);
 
     // 6. Top landing & exit pages
     const landing: Record<string, number> = {};
@@ -210,6 +317,17 @@ Deno.serve(async (req) => {
       source: sourceFilter,
       total_events: rows.length,
       total_sessions: totalSessions,
+      baselines: {
+        prior_since: priorSince,
+        prior_until: priorUntil,
+        prior_events: priorRows.length,
+        overall_atc_rate_pct: Math.round(overallAtcRate * 1000) / 10,
+        product_views_mean: Math.round(viewsStats.mean * 10) / 10,
+        product_views_std: Math.round(viewsStats.std * 10) / 10,
+        product_atc_rate_mean_pct: Math.round(atcRateStats.mean * 1000) / 10,
+        product_atc_rate_std_pp: Math.round(atcRateStats.std * 1000) / 10,
+        sample_size: products.length,
+      },
       funnel: {
         pdp_views: pdpViews,
         cart_opens: cartOpens,
@@ -230,7 +348,10 @@ Deno.serve(async (req) => {
       os: osCount,
       traffic_quality: trafficQuality,
       top_products: products.slice(0, 12),
-      breakout_products: [...products].sort((a, b) => b.atc_rate - a.atc_rate).slice(0, 8),
+      breakout_products: breakouts,
+      winner_products: winners,
+      rising_products: risingProducts,
+      falling_products: fallingProducts,
       best_dwell: [...products].sort((a, b) => b.avg_dwell_ms - a.avg_dwell_ms).slice(0, 8),
       worst_rage: [...products].sort((a, b) => b.rage_clicks - a.rage_clicks).slice(0, 8),
       top_landing: topLanding,
