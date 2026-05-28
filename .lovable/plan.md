@@ -1,134 +1,117 @@
-## Doel
+# Conversion Intelligence Mode — Phased Build Plan
 
-Evolueer GetPawsy van webshop naar AI-native ecommerce OS, **strikt additief** bovenop de bestaande, beschermde checkout/Stripe/SEO infrastructuur. Dit is een groot pakket (10 fases, ~40-60 bestanden, 6-10 nieuwe DB-tabellen, 8-12 nieuwe edge functions). Ik wil eerst akkoord op scope en prioriteit — anders bouwen we 2 weken zonder reviewmoment.
+The brief covers 10 parts. Shipping all in one pass would risk storefront regressions and hit token/migration limits. Instead, I'll roll it out in **4 conversion-focused phases (CI-1 → CI-4)**, each independently shippable and reversible. After each phase you say `go CI-2` etc.
 
----
-
-## Wat NIET wordt aangeraakt (jouw protected list)
-
-Stripe checkout, webhooks, payment/refund/session flows, redirects, success flows, SEO canonicals, productieroutering, werkende Supabase Stripe-functies. Alle nieuwe code zit onder `/admin/ai-*` routes (lazy-loaded, admin-only via bestaande `AdminRouteGuard`) en nieuwe edge functions met eigen namespace `ai-*`.
+This plan also tells you what I will NOT build (per your "stop building analytics-heavy admin systems" rule).
 
 ---
 
-## Wat er al staat (relevant)
+## What I will NOT build (de-scoped)
 
-- `/admin/ai-revenue` (`AiRevenuePage.tsx`) bestaat al — winner/breakout/rising/falling classificatie, baselines, drilldown, CSV/JSON export, prior window control, persisted filters.
-- `ai-revenue-insights` edge function bestaat.
-- Funnel tracking helpers: `funnelEvents.ts`, `botDetection.ts` (per `.lovable/plan.md`), `usePdpFunnelTracking.ts`, `lp_funnel_events` tabel, `sessions` tabel met geo/bot kolommen.
-- Admin guard, lazy-loading, persisted-state hook — allemaal al productie-klaar.
-
-Veel van Phase 1, 2, 4, 5 is dus **deels al gebouwd**. Ik wil niet duplicaten maken — ik ga uitbreiden op de bestaande pagina/function, niet vervangen.
+- ❌ Heavy new dashboards beyond the two strictly required (Hero Products + Conversion Insights).
+- ❌ Net-new tracking tables when existing `funnel_events` / `sessions` / `ai_priority_queue` already capture the signal — I'll extend, not duplicate.
+- ❌ Real-time AI on storefront (all AI runs admin-side, draft-only).
+- ❌ Any change to Stripe, checkout, canonicals, sitemap, routing, or `merchant-safe` compliance layer.
 
 ---
 
-## Voorgestelde uitvoering in 4 reviewbare iteraties
+## CI-1 — Conversion Foundations (data + hero priority)
 
-Niet alles in één keer. Elke iteratie = werkende feature, mergeable, daarna pauze voor jouw review.
+**Goal:** Fix data blindness + introduce hero-product weighting. Pure backend + admin. Zero storefront UI risk.
 
-### Iteratie A — AI Revenue Operator uitbreiden (Phase 1 + 2)
-**Bouwt voort op bestaande `/admin/ai-revenue`.** Geen nieuwe pagina.
+### Part 1 — Geo + Device Classification (extend, don't replace)
+- Extend existing `geo-classify` edge function to also emit `geo_quality` ∈ {`verified`, `probable`, `unknown`, `bot_like`} using cf-ipcountry + UA cross-check.
+- New `src/lib/deviceClassify.ts`: lightweight UA parser (no library). Outputs `{ device, browser_family, os_family, in_app_browser, device_confidence }`. Detects TikTok/Instagram/Pinterest/FB in-app webviews via UA tokens (`musical_ly`, `Instagram`, `Pinterest`, `FBAN/FBAV`).
+- Persist on session row: `geo_quality`, `browser_family`, `os_family`, `in_app_browser`, `device_confidence` (additive columns).
 
-Toevoegen aan `ai-revenue-insights`:
-- Revenue Health KPI-blok: PDP→ATC, ATC→checkout, checkout→payment, bounce, dwell-avg, rage%, return-visitor%, mobile/desktop split, iOS/Android split, top exit/landing, bot-filtered%.
-- Traffic Quality breakdown per bron (TikTok/Pinterest/Google/Direct/Organic/Unknown) met bounce/dwell/intent/device/geo/bot.
-- Funnel friction score, PDP quality score, mobile conv. score, traffic quality score (afgeleide metrics, geen nieuwe events).
+### Part 2 — Hero Product Layer
+- Migration: `product_priority` table → `{ product_id, tier ('hero'|'testing'|'low_priority'|'seasonal'|'clearance'), notes, updated_by, updated_at }`. Admin-only RLS.
+- New page `/admin/hero-products`: list all products, set tier, bulk actions.
+- Helper `getProductPriority(productId)` consumed by homepage bestsellers, related products, and SEO/creative engines (read-only integration — no storefront re-rank in CI-1, just wired up for CI-2+).
 
-UI: nieuwe Tabs binnen `AiRevenuePage`: `Revenue Health | Products | Traffic | Insights`. Bestaande product-tab blijft.
-
-Geen nieuwe DB-tabellen voor deze iteratie — alleen aggregaties over bestaande `lp_funnel_events` + `sessions`.
-
-### Iteratie B — AI Insights Engine + persistente opslag (Phase 1 deel 2 + 7)
-
-Nieuwe tabel `ai_revenue_insights` (additive):
-```
-id, scope (global|product|traffic_source|device), scope_ref,
-insight_type, severity (info|warn|critical),
-title, body, evidence jsonb, model, prompt_hash,
-generated_at, dismissed_at, dismissed_by
-```
-RLS: admin-only read/write via `has_role`. Service_role full.
-
-Edge function `ai-insights-generate`:
-- Lovable AI Gateway (`google/gemini-3-flash-preview`), tool-calling voor structured output.
-- Input: laatste 7d aggregaten van Iteratie A.
-- Output: lijst insights, opslag in tabel, dedupe op `prompt_hash + 24h`.
-- Cron-bare (knop in UI + handmatige trigger; geen auto-cron deze iteratie).
-
-UI: Insights tab toont opgeslagen insights met dismiss/snooze. Retargeting Intelligence (Phase 7) = zelfde tabel met `scope='audience'`.
-
-### Iteratie C — AI Creative Engine + AI SEO Engine (Phase 3 + 6)
-
-Nieuwe route `/admin/ai-creatives`:
-- Forms voor: TikTok hooks, UGC scripts, Pinterest concepts, ad headlines, CTA variants.
-- Special preset: Automatic Cat Litter Box met de vier hooks als seed examples.
-- Output naar `ai_creative_drafts` tabel (status: draft/approved, never auto-publish).
-- Copy-to-clipboard, export JSON.
-
-Nieuwe route `/admin/ai-seo`:
-- Generators voor FAQ blocks, category copy, comparison pages, long-tail, internal-link suggestions, metadata, schema.
-- Output naar `ai_seo_drafts` tabel (status: draft/approved, never auto-publish).
-- Hookt aan bestaande SEO findings systeem (alleen read).
-
-Beide gebruiken één gedeelde edge function `ai-content-generate` met `kind` parameter.
-
-### Iteratie D — Product Winner Detection v2 + Traffic Quality Engine v2 (Phase 4 + 5)
-
-Phase 4: Bouwt voort op bestaande winner/breakout/rising classificatie. Toevoegen:
-- Winner Score, Trend Velocity, Conversion Momentum als kolommen in de bestaande summary response.
-- Per winner: knop "Generate Pinterest draft" / "Generate TikTok hooks" / "Add to homepage queue" — deze tonen alleen draft modals (geen auto-publish).
-
-Phase 5: Bestaande bot detection uitbreiden:
-- Classificatie kolom op `sessions`: `quality_class enum('real_human','suspicious','crawler','likely_bot')` — additive nullable.
-- Backfill via edge function `ai-traffic-classify` (batch over laatste 30d).
-- Alle Iteratie A KPI's filteren standaard op `quality_class IN ('real_human', NULL)`.
+**Ship after CI-1:** report on data coverage gains, no visible storefront change.
 
 ---
 
-## Wat ik bewust UIT scope houd
+## CI-2 — Emotional PDP + Mobile Conversion (the revenue lever)
 
-- **Auto-publish van wat dan ook** (jij zei "review required" overal — akkoord).
-- **Phase 8** is een policy, geen code — ik documenteer het in `.lovable/plan.md` als guardrail-lijst, geen aparte iteratie.
-- **Phase 9** is een non-functional constraint — geldt voor alles, geen aparte build. Alle nieuwe admin routes worden lazy-loaded (al standaard), passive listeners, geen blocking calls op niet-admin routes.
-- **Phase 10 QA** doe ik aan het eind van elke iteratie met de bestaande Playwright suite + handmatige iPhone smoke; geen aparte phase.
+**Goal:** the actual conversion uplift work. Mobile-first, additive blocks, all gated by feature flag so they can be reverted instantly.
 
----
+### Part 3 — Emotional PDP Blocks
+- New component family `src/components/pdp/emotional/`:
+  - `EmotionalHook.tsx` — single-line headline above buy box
+  - `WhyPetOwnersLoveThis.tsx` — extends existing `WhyPetParentsLoveThis` with category-aware copy
+  - `ProblemAgitation.tsx` + `TransformationOutcome.tsx` (paired)
+  - `LifestylePositioning.tsx`
+  - `EmotionalFaq.tsx` (objection-handling FAQ, distinct from the SEO FAQ)
+- Copy is **deterministic, rules-based per category** (cats/litter/dogs/beds/cat-trees) using existing `getBestFor` and `merchant-policy` BANNED_TERMS scanner. No AI on storefront. AI only used admin-side to *suggest* copy edits.
+- Hero products get the full emotional stack; non-hero get a trimmed version.
 
-## DB-objecten (additief, nullable, reversible)
+### Part 4 — Mobile Conversion Layer
+- New `MobileStickyTrustBar.tsx` (appears at top on scroll, ≤32px, free shipping + 30-day returns + secure checkout).
+- Enhance existing `PdpStickyAtc` with category-aware CTA label from emotional layer.
+- `SwipeBenefitChips.tsx` — horizontally-scrollable benefit chips above gallery on mobile only.
+- Scroll-triggered `ReassuranceCallout.tsx` (single observer, lazy, mobile-only).
+- All gated behind `useSeoFeatureFlags`-style flag system → instant rollback.
 
-```
-CREATE TABLE ai_revenue_insights (Iteratie B)
-CREATE TABLE ai_creative_drafts  (Iteratie C)
-CREATE TABLE ai_seo_drafts       (Iteratie C)
-ALTER TABLE sessions ADD COLUMN quality_class TEXT (Iteratie D)
-```
-
-Alle RLS admin-only via `has_role(auth.uid(),'admin')`. GRANTs voor `authenticated` (admins via app) + `service_role`. Geen anon access.
-
----
-
-## Edge functions (nieuw, allemaal `verify_jwt = false` met in-code admin check via JWT)
-
-```
-ai-insights-generate      (Iteratie B)
-ai-content-generate       (Iteratie C — kind: creative|seo)
-ai-traffic-classify       (Iteratie D)
-```
-
-Bestaande `ai-revenue-insights` wordt uitgebreid, niet vervangen.
+**LCP/CLS guard:** all new mobile blocks use `contain: layout`, are below-the-fold, and have reserved heights.
 
 ---
 
-## Beveiliging (los van deze build, jij hebt openstaande findings)
+## CI-3 — Traffic Quality + Landing Match (intelligence)
 
-Je security scan toont 17 openstaande findings (agm_actions public write, sessions open update, webauthn signature skip, GitHub PAT in localStorage, etc.). Die staan **los** van deze AI-build. Ik raad aan: eerst aparte security-sweep merge, dan AI-build erbovenop. Anders raken de RLS-patterns van nieuwe tabellen besmet met dezelfde fouten. Zeg het als je wilt dat ik die security findings eerst oppak — dat is een aparte plan.
+**Goal:** turn the data from CI-1 into actionable insights. Admin-only.
+
+### Part 6 — Traffic Source Quality Scoring
+- Extend `ai-traffic-classify` edge function with a `source_quality` output ∈ {`premium`, `good`, `weak`, `curiosity_only`, `suspicious`} computed from: dwell, scroll depth, repeat visits, ATC events, in-app browser flag, geo_quality.
+- Store on `sessions.source_quality` (additive column).
+- Surface "true high-intent traffic %" tile on existing `AiExecutivePage`.
+
+### Part 5 — Landing Page Match Analyzer (admin tool)
+- New edge function `ai-landing-match` (admin-gated): takes `{ landing_url, ad_hook, ad_image_url }`, fetches landing snapshot via existing prerender, runs Gemini 2.5 Flash with a structured-output schema to score continuity (headline match, visual match, promise clarity) 0–100 + recommendations.
+- Adds tab to `AiCreativesPage` — no new top-level admin page (per "stop building dashboards" rule).
 
 ---
 
-## Vragen voor jou voor we starten
+## CI-4 — Conversion Insights + Product Prioritization (decision layer)
 
-1. **Iteratie-volgorde akkoord?** A → B → C → D, met review-moment tussen elk. Of wil je een andere volgorde (bv. eerst Creative Engine omdat je TikTok hooks nu nodig hebt)?
-2. **Security findings eerst?** Aanrader. Zo niet, dan bouw ik AI-build met correcte RLS, maar de openstaande findings blijven.
-3. **AI model default:** `google/gemini-3-flash-preview` voor alles (snel, goedkoop, Lovable AI Gateway, geen API key nodig). Of wil je `gemini-2.5-pro` voor de Insights/SEO generators (duurder, betere nuance)?
-4. **Lovable AI rate/credits:** alles gaat via Lovable AI Gateway. Bij hoge admin-gebruik kan 429/402 raken. Akkoord dat ik graceful errors toon (geen retry-storm)?
+**Goal:** wire CI-1/2/3 outputs into the existing `ai_priority_queue` so they show up on `/admin/ai-executive` as ranked actions.
 
-Antwoord met `go A` (alleen Iteratie A starten) of `go A-D` (alles in volgorde, ik pauzeer alsnog tussen elke iteratie voor jouw review) + antwoorden op 1-4. Dan begin ik met Iteratie A — migratie eerst, dan code.
+### Part 7 — AI Conversion Insights
+- New insight type `conversion_friction` in existing `ai_insights` table.
+- Rules engine (no LLM) detects:
+  - "Scroll deep but no CTA reach" (scroll>60% & no atc_view event)
+  - "Mobile gallery engaged, copy ignored"
+  - "TikTok abandon after price view"
+  - "Source X converts Nx better than source Y"
+- Optional Gemini-pass synthesizes into a 1-line narrative per insight.
+
+### Part 9 — AI Product Prioritization
+- Extend existing `ai-revenue-insights` `winner_score` with a `conversion_potential_score` factoring source_quality and emotional-block engagement.
+- Outputs: breakout / weak / dead-traffic-magnet / homepage-candidate / ad-scale-candidate labels — surfaced on the existing AiRevenue page, not a new one.
+
+### Part 8 — Visual Trust System
+- A `trust_blocks_config` JSON in existing site settings (no new table). Toggles US-shipping/returns/support/small-business modules per page.
+- Used by `ConversionTrustBlock` and new `MobileStickyTrustBar`.
+
+---
+
+## Safety, performance, compliance (applies to every phase)
+
+- **Storefront bundle:** every new admin page is lazy-loaded via `React.lazy`. All AI runs in edge functions, never on storefront.
+- **Reversibility:** all new PDP/mobile blocks behind feature flags. Setting `false` returns the page to today's exact render.
+- **Compliance:** every generated/edited string passes `scanForBannedTerms` from `@/config/merchant-policy`. CI fails if banned terms ship.
+- **Approval-first:** AI suggestions land in `ai_priority_queue` with status `pending`. Nothing auto-publishes, nothing auto-prices, nothing auto-canonical.
+- **No touch:** Stripe, webhooks, checkout, canonicals (`#gp-canonical` hook), sitemap, robots, routing.
+
+---
+
+## Deliverable after each phase
+
+A short report with: what shipped, conversion hypothesis, expected impact, risk, rollback steps, and the highest-priority next action.
+
+---
+
+## Confirm / adjust
+
+Reply **`go CI-1`** to start, or tell me to merge/reorder phases. If you want me to skip a part entirely (e.g. you don't want the Landing Match Analyzer), say so now so I don't build it.
