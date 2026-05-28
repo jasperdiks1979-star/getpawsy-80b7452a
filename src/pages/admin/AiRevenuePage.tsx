@@ -229,6 +229,16 @@ export default function AiRevenuePage() {
       params.set('range', r);
     }
     if (source && source !== 'all') params.set('source', source);
+    // Prior-window override. Only sent when the user chose a custom range and
+    // both endpoints are valid; otherwise the edge function falls back to an
+    // equal-length window before `since`.
+    if (priorMode === 'custom' && priorFrom && priorTo) {
+      params.set('prior_mode', 'custom');
+      params.set('prior_from', priorFrom.toISOString());
+      const pEnd = new Date(priorTo);
+      pEnd.setHours(23, 59, 59, 999);
+      params.set('prior_to', pEnd.toISOString());
+    }
     // Pass classification thresholds through to the edge function so winner /
     // breakout / rising / falling cutoffs are tunable per request.
     const defaults = DEFAULT_THRESHOLDS as unknown as Record<string, number>;
