@@ -36,6 +36,8 @@ export type ConversionFlagKey =
   | 'premiumAuth'
   | 'premiumCartCheckoutV4'
   | 'premiumMobileNavV2'
+  | 'premiumProfile'
+  | 'premiumCollectionFilters'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -142,6 +144,16 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // link typography, premium search bar treatment. Pure presentation;
   // nav links, routes, sign-out, and admin entries untouched.
   premiumMobileNavV2: true,
+  // CI-18: profile / account polish — calmer cards (hairline border, no soft
+  // shadow), micro-caps section eyebrow under H1, English-only sign-out copy,
+  // tighter buttons and section spacing. Auth, sign-out handler, passkeys,
+  // and reset-data logic untouched.
+  premiumProfile: true,
+  // CI-18: collection + filter bar polish — hairline breadcrumb row, micro-
+  // caps "Showing X" line, calmer active-filter pills (hairline border, no
+  // tint), and a refined sort dropdown trigger. Pure presentation; filter
+  // state, sort logic, and URL params untouched.
+  premiumCollectionFilters: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
