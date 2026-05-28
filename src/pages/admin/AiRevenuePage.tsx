@@ -485,7 +485,15 @@ export default function AiRevenuePage() {
 
       {/* Saved Recommendations */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
+          {recs.length > 0 && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); downloadJson(`recommendations-${ts}.json`, recs); }}><Download className="w-4 h-4 mr-1" /> JSON</Button>
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); const rows = recs.map(r => ({ id: r.id, title: r.title, category: r.category, severity: r.severity, status: r.status, body: r.body, created_at: r.created_at })); downloadCsv(`recommendations-${ts}.csv`, rows); }}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+            </div>
+          )}
+        </div>
         <div className="space-y-2">
           {recs.length === 0 && <p className="text-sm text-muted-foreground">No saved recommendations yet.</p>}
           {recs.map(r => (
@@ -511,7 +519,15 @@ export default function AiRevenuePage() {
 
       {/* AI Content Generator */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2"><Wand2 className="w-4 h-4" /> AI Content Generator</h2>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Wand2 className="w-4 h-4" /> AI Content Generator</h2>
+          {drafts.length > 0 && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); downloadJson(`drafts-${ts}.json`, drafts); }}><Download className="w-4 h-4 mr-1" /> JSON</Button>
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); const rows = drafts.map(d => ({ id: d.id, kind: d.kind, product_name: d.product_name ?? '', output: d.output, created_at: d.created_at })); downloadCsv(`drafts-${ts}.csv`, rows); }}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+            </div>
+          )}
+        </div>
         <Card><CardContent className="p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
