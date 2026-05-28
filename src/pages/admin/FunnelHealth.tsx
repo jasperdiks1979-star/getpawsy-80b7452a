@@ -35,12 +35,126 @@ interface Kpis {
   sessions_total: number;
 }
 
+interface FunnelIntel {
+  pdp_views: number;
+  cart_opens: number;
+  payment_success: number;
+  bounces: number;
+  session_ends: number;
+  rage_clicks: number;
+  device: Record<string, number>;
+  sources: Record<string, number>;
+  top_pdps: Array<{ product_id: string; product_name: string | null; views: number; atc: number }>;
+  top_landing: Array<{ page_path: string; sessions: number }>;
+  top_exit: Array<{ page_path: string; count: number }>;
+}
+
 function rangeStart(r: Range): string {
   const d = new Date();
   if (r === '24h') d.setHours(d.getHours() - 24);
   else if (r === '7d') d.setDate(d.getDate() - 7);
   else d.setHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+async function loadIntel(r: Range): Promise<FunnelIntel> {
+  const since = rangeStart(r);
+  const { data } = await supabase
+    .from('lp_funnel_events')
+    .select('event_name,product_id,product_name,page_path,utm_source,session_id,raw_payload,is_bot,event_source')
+    .gte('created_at', since)
+    .limit(10_000);
+
+  type Row = {
+    event_name: string;
+    product_id: string | null;
+    product_name: string | null;
+    page_path: string | null;
+    utm_source: string | null;
+    session_id: string | null;
+    raw_payload: Record<string, unknown> | null;
+    is_bot: boolean | null;
+    event_source: string | null;
+  };
+  const rows = ((data ?? []) as Row[]).filter(r => !r.is_bot);
+
+  const device: Record<string, number> = {};
+  const sources: Record<string, number> = {};
+  const pdpByProduct = new Map<string, { name: string | null; views: number; atc: number }>();
+  const landingBySession = new Map<string, string>();
+  const exitByPath = new Map<string, number>();
+
+  let pdp_views = 0;
+  let cart_opens = 0;
+  let payment_success = 0;
+  let bounces = 0;
+  let session_ends = 0;
+  let rage_clicks = 0;
+
+  for (const row of rows) {
+    const ev = row.event_name;
+    const rp = row.raw_payload ?? {};
+    const dt = (rp as { device_type?: string }).device_type ?? 'unknown';
+    device[dt] = (device[dt] ?? 0) + 1;
+
+    const src = (row.utm_source || 'direct').toLowerCase();
+    sources[src] = (sources[src] ?? 0) + 1;
+
+    if (ev === 'pdp_view') {
+      pdp_views++;
+      if (row.product_id) {
+        const cur = pdpByProduct.get(row.product_id) ?? { name: row.product_name, views: 0, atc: 0 };
+        cur.views++;
+        cur.name = cur.name ?? row.product_name;
+        pdpByProduct.set(row.product_id, cur);
+      }
+    } else if (ev === 'add_to_cart' && row.event_source === 'user_click') {
+      if (row.product_id) {
+        const cur = pdpByProduct.get(row.product_id) ?? { name: row.product_name, views: 0, atc: 0 };
+        cur.atc++;
+        pdpByProduct.set(row.product_id, cur);
+      }
+    } else if (ev === 'cart_open') {
+      cart_opens++;
+    } else if (ev === 'payment_success_view') {
+      payment_success++;
+    } else if (ev === 'session_bounce') {
+      bounces++;
+      session_ends++;
+      if (row.page_path) exitByPath.set(row.page_path, (exitByPath.get(row.page_path) ?? 0) + 1);
+    } else if (ev === 'session_end') {
+      session_ends++;
+      if (row.page_path) exitByPath.set(row.page_path, (exitByPath.get(row.page_path) ?? 0) + 1);
+    } else if (ev === 'rage_click') {
+      rage_clicks++;
+    }
+
+    if (row.session_id && row.page_path && !landingBySession.has(row.session_id)) {
+      landingBySession.set(row.session_id, row.page_path);
+    }
+  }
+
+  const top_pdps = Array.from(pdpByProduct.entries())
+    .map(([product_id, v]) => ({ product_id, product_name: v.name, views: v.views, atc: v.atc }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 8);
+
+  const landingCounts = new Map<string, number>();
+  for (const p of landingBySession.values()) landingCounts.set(p, (landingCounts.get(p) ?? 0) + 1);
+  const top_landing = Array.from(landingCounts.entries())
+    .map(([page_path, sessions]) => ({ page_path, sessions }))
+    .sort((a, b) => b.sessions - a.sessions)
+    .slice(0, 8);
+
+  const top_exit = Array.from(exitByPath.entries())
+    .map(([page_path, count]) => ({ page_path, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  return {
+    pdp_views, cart_opens, payment_success, bounces, session_ends, rage_clicks,
+    device, sources, top_pdps, top_landing, top_exit,
+  };
 }
 
 async function loadKpis(r: Range): Promise<Kpis> {
@@ -121,6 +235,7 @@ function Stat({ label, value, hint }: { label: string; value: string | number; h
 export default function FunnelHealth() {
   const [range, setRange] = useState<Range>('24h');
   const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [intel, setIntel] = useState<FunnelIntel | null>(null);
   const [loading, setLoading] = useState(true);
   const [qaRunning, setQaRunning] = useState(false);
   const [qaResult, setQaResult] = useState<string | null>(null);
@@ -128,8 +243,12 @@ export default function FunnelHealth() {
   useEffect(() => {
     let cancel = false;
     setLoading(true);
-    loadKpis(range)
-      .then(k => !cancel && setKpis(k))
+    Promise.all([loadKpis(range), loadIntel(range)])
+      .then(([k, i]) => {
+        if (cancel) return;
+        setKpis(k);
+        setIntel(i);
+      })
       .finally(() => !cancel && setLoading(false));
     return () => { cancel = true; };
   }, [range]);
