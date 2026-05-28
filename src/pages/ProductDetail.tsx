@@ -26,6 +26,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { MobileProductGallery } from "@/components/products/MobileProductGallery";
 import { DesktopProductGallery } from "@/components/products/DesktopProductGallery";
 import { useState, useEffect, useRef, useMemo } from "react";
