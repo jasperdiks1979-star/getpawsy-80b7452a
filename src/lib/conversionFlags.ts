@@ -15,7 +15,8 @@ export type ConversionFlagKey =
   | 'swipeBenefitChips'
   | 'reassuranceCallout'
   | 'dynamicAtcLabel'
-  | 'intentGating';
+  | 'intentGating'
+  | 'premiumCard';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   emotionalHook: true,
@@ -26,6 +27,10 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // When true, weak-intent visitors see the baseline PDP without ad-driven
   // headline overrides or Pinterest-specific banners. Off = legacy behavior.
   intentGating: true,
+  // CI-6: premium DTC product card polish (single badge, calmer typography,
+  // no emoji, refined spacing). Pure presentation; flip to false to restore
+  // the legacy multi-badge card instantly.
+  premiumCard: true,
 };
 
 const LS_KEY = 'gp_conversion_flags_v1';
