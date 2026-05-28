@@ -953,6 +953,79 @@ export default function AiRevenuePage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
+      {/* Iteration B — Saved AI Insights (gemini-2.5-pro, persisted, dedupe 24h) */}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Brain className="w-4 h-4" /> Saved AI Insights
+            <Badge variant="outline" className="text-[10px] uppercase">pro model</Badge>
+          </h2>
+          <div className="flex gap-2 flex-wrap items-center">
+            <Select value={storedSeverity} onValueChange={(v) => setStoredSeverity(v as any)}>
+              <SelectTrigger className="h-8 w-[130px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="warn">Warn</SelectItem>
+                <SelectItem value="info">Info</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="ghost" onClick={() => loadStoredInsights()} disabled={storedBusy}>
+              {storedBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => generateStoredInsights(false)} disabled={genInsightsBusy}>
+              {genInsightsBusy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+              Generate
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => generateStoredInsights(true)} disabled={genInsightsBusy} title="Force regenerate (bypass 24h dedupe)">
+              Force
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Pro-model analysis of the current window, persisted with 24h dedupe. Dismiss or snooze to keep the list tidy.
+        </p>
+        <div className="space-y-2">
+          {storedInsights.length === 0 && !storedBusy && (
+            <p className="text-sm text-muted-foreground">No saved insights. Click Generate to run the pro analyst.</p>
+          )}
+          {storedInsights.map((it) => (
+            <Card key={it.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant={severityVariant(it.severity === 'warn' ? 'warning' : it.severity)}>{it.severity}</Badge>
+                      <Badge variant="outline" className="text-[10px] uppercase">{it.scope}{it.scope_ref ? `:${it.scope_ref}` : ''}</Badge>
+                      <Badge variant="secondary" className="text-[10px]">{it.insight_type}</Badge>
+                      <span className="text-xs text-muted-foreground">{new Date(it.generated_at).toLocaleString()}</span>
+                    </div>
+                    <div className="font-medium mt-1">{it.title}</div>
+                    <div className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{it.body}</div>
+                    {Array.isArray(it.recommendations) && it.recommendations.length > 0 && (
+                      <ul className="text-sm mt-2 list-disc pl-5 space-y-0.5">
+                        {it.recommendations.map((r, i) => <li key={i}>{r}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    <Button size="sm" variant="ghost" onClick={() => snoozeStoredInsight(it.id, 1)}>1d</Button>
+                    <Button size="sm" variant="ghost" onClick={() => snoozeStoredInsight(it.id, 7)}>7d</Button>
+                    <Button size="sm" variant="outline" onClick={() => dismissStoredInsight(it.id)}>Dismiss</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
           {recs.length > 0 && (
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); downloadJson(`recommendations-${ts}.json`, recs); }}><Download className="w-4 h-4 mr-1" /> JSON</Button>
