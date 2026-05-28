@@ -77,6 +77,7 @@ export default function AdminSmokeTestEventsPage() {
   const [eventsByRun, setEventsByRun] = useState<Record<string, FunnelEvent[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [generating, setGenerating] = useState(false);
+  const [csvGenerating, setCsvGenerating] = useState(false);
   // Filters — date range (local YYYY-MM-DD) and max number of runs.
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
