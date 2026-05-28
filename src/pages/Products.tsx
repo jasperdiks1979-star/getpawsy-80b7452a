@@ -73,6 +73,7 @@ const Products = () => {
     categoryParam ? [categoryParam] : []
   );
   const [sortBy, setSortBy] = useState('best-selling');
+  const premiumFilters = getConversionFlag('premiumCollectionFilters');
   const [searchQuery, setSearchQuery] = useState(searchParam || '');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [maxPrice, setMaxPrice] = useState(500);
