@@ -152,6 +152,22 @@ interface Insight { title: string; body: string; severity: 'info' | 'warning' | 
 interface Recommendation { id: string; category: string; severity: string; title: string; body: string; status: string; created_at: string }
 interface Draft { id: string; kind: string; output: string; created_at: string; product_name?: string | null }
 
+interface StoredInsight {
+  id: string;
+  scope: string;
+  scope_ref: string | null;
+  insight_type: string;
+  severity: 'info' | 'warn' | 'critical';
+  title: string;
+  body: string;
+  evidence: Record<string, unknown>;
+  recommendations: string[];
+  model: string | null;
+  generated_at: string;
+  dismissed_at: string | null;
+  snoozed_until: string | null;
+}
+
 const KIND_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'tiktok_hook', label: 'TikTok Hooks' },
   { value: 'pinterest_caption', label: 'Pinterest Captions' },
