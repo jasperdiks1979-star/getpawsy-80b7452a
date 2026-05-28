@@ -348,6 +348,22 @@ export default function AiRevenuePage() {
           <Button size="sm" variant="outline" onClick={() => loadSummary(range)} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" disabled={!summary}><Download className="w-4 h-4 mr-1" /> Export</Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2 space-y-1">
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts, payload } = buildExportPayload(); downloadJson(`ai-revenue-${ts}.json`, payload); }}>
+                <Download className="w-3 h-3 mr-2" /> Full report (JSON)
+              </Button>
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.top_products.map(p => ({ id: p.id, name: p.name, views: p.views, atc: p.atc, atc_rate_pct: p.atc_rate, dwell_sec: (p.avg_dwell_ms / 1000).toFixed(1), rage_clicks: p.rage_clicks, sessions: p.sessions })) : []; downloadCsv(`products-${ts}.csv`, rows); }}>
+                <Download className="w-3 h-3 mr-2" /> Product data (CSV)
+              </Button>
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.traffic_quality.map(t => ({ source: t.source, sessions: t.sessions, views: t.views, atc_rate_pct: t.atc_rate, bounce_rate_pct: t.bounce_rate, avg_dwell_sec: (t.avg_dwell_ms / 1000).toFixed(1) })) : []; downloadCsv(`traffic-${ts}.csv`, rows); }}>
+                <Download className="w-3 h-3 mr-2" /> Traffic quality (CSV)
+              </Button>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
