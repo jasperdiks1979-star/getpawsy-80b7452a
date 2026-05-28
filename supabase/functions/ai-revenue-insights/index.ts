@@ -166,12 +166,32 @@ Deno.serve(async (req) => {
     const since = fromParam || sinceFor(range);
     const until = toParam || null;
 
-    // Compute prior period of equal length for trend comparisons.
+    // Compute prior period for trend comparisons.
+    // Default: equal-length window immediately before `since`.
+    // Override: explicit prior_from / prior_to ISO timestamps when
+    // prior_mode=custom is supplied from the dashboard.
     const sinceMs = new Date(since).getTime();
     const untilMs = until ? new Date(until).getTime() : Date.now();
     const windowMs = Math.max(1, untilMs - sinceMs);
-    const priorUntil = new Date(sinceMs).toISOString();
-    const priorSince = new Date(sinceMs - windowMs).toISOString();
+    const priorMode = (url.searchParams.get('prior_mode') || 'equal').toLowerCase();
+    const priorFromParam = url.searchParams.get('prior_from');
+    const priorToParam = url.searchParams.get('prior_to');
+    let priorSince: string;
+    let priorUntil: string;
+    if (priorMode === 'custom' && priorFromParam && priorToParam) {
+      const pFromMs = new Date(priorFromParam).getTime();
+      const pToMs = new Date(priorToParam).getTime();
+      if (Number.isFinite(pFromMs) && Number.isFinite(pToMs) && pToMs > pFromMs) {
+        priorSince = new Date(pFromMs).toISOString();
+        priorUntil = new Date(pToMs).toISOString();
+      } else {
+        priorUntil = new Date(sinceMs).toISOString();
+        priorSince = new Date(sinceMs - windowMs).toISOString();
+      }
+    } else {
+      priorUntil = new Date(sinceMs).toISOString();
+      priorSince = new Date(sinceMs - windowMs).toISOString();
+    }
 
     const SELECT_COLS = 'event_name,session_id,product_id,product_name,page_path,utm_source,utm_medium,dwell_ms,raw_payload,is_bot,is_internal,created_at';
     const fetchEvents = async (gte: string, lte: string | null) => {
@@ -474,6 +494,7 @@ Deno.serve(async (req) => {
       total_events: rows.length,
       total_sessions: totalSessions,
       baselines: {
+        prior_mode: priorMode === 'custom' && priorFromParam && priorToParam ? 'custom' : 'equal',
         prior_since: priorSince,
         prior_until: priorUntil,
         prior_events: priorRows.length,

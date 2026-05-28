@@ -152,6 +152,11 @@ export default function AiRevenuePage() {
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
   const [source, setSource] = useState<SourceFilter>('all');
   const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS);
+  // Prior comparison window: 'equal' mirrors the current window length
+  // immediately before `since`; 'custom' uses user-picked priorFrom/priorTo.
+  const [priorMode, setPriorMode] = useState<'equal' | 'custom'>('equal');
+  const [priorFrom, setPriorFrom] = useState<Date | undefined>(undefined);
+  const [priorTo, setPriorTo] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -224,6 +229,16 @@ export default function AiRevenuePage() {
       params.set('range', r);
     }
     if (source && source !== 'all') params.set('source', source);
+    // Prior-window override. Only sent when the user chose a custom range and
+    // both endpoints are valid; otherwise the edge function falls back to an
+    // equal-length window before `since`.
+    if (priorMode === 'custom' && priorFrom && priorTo) {
+      params.set('prior_mode', 'custom');
+      params.set('prior_from', priorFrom.toISOString());
+      const pEnd = new Date(priorTo);
+      pEnd.setHours(23, 59, 59, 999);
+      params.set('prior_to', pEnd.toISOString());
+    }
     // Pass classification thresholds through to the edge function so winner /
     // breakout / rising / falling cutoffs are tunable per request.
     const defaults = DEFAULT_THRESHOLDS as unknown as Record<string, number>;
@@ -269,7 +284,7 @@ export default function AiRevenuePage() {
 
   function buildExportPayload() {
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source, thresholds } } };
+    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source, thresholds, prior_mode: priorMode, prior_from: priorFrom, prior_to: priorTo } } };
   }
 
   async function loadSummary(r: Range) {
@@ -364,7 +379,7 @@ export default function AiRevenuePage() {
     loadSummary(range);
     // re-fetch when any filter changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range, fromDate, toDate, source, thresholds]);
+  }, [range, fromDate, toDate, source, thresholds, priorMode, priorFrom, priorTo]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
   const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
@@ -448,6 +463,67 @@ export default function AiRevenuePage() {
           </Button>
           <Popover>
             <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" title="Choose prior comparison window">
+                <CalendarIcon className="w-4 h-4 mr-1" />
+                Prior: {priorMode === 'custom' && priorFrom && priorTo
+                  ? `${format(priorFrom, 'MMM d')}–${format(priorTo, 'MMM d')}`
+                  : 'equal-length'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-3 space-y-3" align="end">
+              <div className="text-sm font-semibold">Prior comparison window</div>
+              <p className="text-xs text-muted-foreground">
+                Baselines for winner / breakout / rising / falling compare the current
+                window to a prior period. Default is the equal-length window immediately
+                before the current one.
+              </p>
+              <Select value={priorMode} onValueChange={(v) => setPriorMode(v as 'equal' | 'custom')}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="equal">Equal-length (auto)</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                </SelectContent>
+              </Select>
+              {priorMode === 'custom' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn('justify-start text-left font-normal', !priorFrom && 'text-muted-foreground')}>
+                        <CalendarIcon className="w-3 h-3 mr-2" />
+                        {priorFrom ? format(priorFrom, 'MMM d') : 'From'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={priorFrom} onSelect={setPriorFrom} initialFocus className={cn('p-3 pointer-events-auto')} />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn('justify-start text-left font-normal', !priorTo && 'text-muted-foreground')}>
+                        <CalendarIcon className="w-3 h-3 mr-2" />
+                        {priorTo ? format(priorTo, 'MMM d') : 'To'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={priorTo} onSelect={setPriorTo} initialFocus className={cn('p-3 pointer-events-auto')} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+              {priorMode === 'custom' && (priorFrom || priorTo) && (
+                <Button size="sm" variant="ghost" onClick={() => { setPriorFrom(undefined); setPriorTo(undefined); }}>
+                  Clear custom range
+                </Button>
+              )}
+              {summary?.baselines && (
+                <div className="text-[11px] text-muted-foreground border-t pt-2">
+                  Active prior: {new Date(summary.baselines.prior_since).toLocaleDateString()} → {new Date(summary.baselines.prior_until).toLocaleDateString()} · {summary.baselines.prior_events} events
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button size="sm" variant="outline" title="Adjust classification thresholds">
                 <SlidersHorizontal className="w-4 h-4 mr-1" /> Thresholds
               </Button>
@@ -505,7 +581,46 @@ export default function AiRevenuePage() {
               <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts, payload } = buildExportPayload(); downloadJson(`ai-revenue-${ts}.json`, payload); }}>
                 <Download className="w-3 h-3 mr-2" /> Full report (JSON)
               </Button>
-              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.top_products.map(p => ({ id: p.id, name: p.name, views: p.views, atc: p.atc, atc_rate_pct: p.atc_rate, dwell_sec: (p.avg_dwell_ms / 1000).toFixed(1), rage_clicks: p.rage_clicks, sessions: p.sessions })) : []; downloadCsv(`products-${ts}.csv`, rows); }}>
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => {
+                const { ts } = buildExportPayload();
+                const buckets: Array<[string, ProductRow[] | undefined]> = summary ? [
+                  ['top', summary.top_products],
+                  ['winner', summary.winner_products],
+                  ['breakout', summary.breakout_products],
+                  ['rising', summary.rising_products],
+                  ['falling', summary.falling_products],
+                ] : [];
+                const seen = new Set<string>();
+                const rows: Array<Record<string, string | number | null | undefined>> = [];
+                for (const [bucket, list] of buckets) {
+                  for (const p of (list ?? [])) {
+                    const key = `${bucket}:${p.id}`;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    rows.push({
+                      bucket,
+                      id: p.id,
+                      name: p.name,
+                      classification: p.classification ?? '',
+                      is_new: p.is_new ? 1 : 0,
+                      views: p.views,
+                      prior_views: p.prior_views ?? '',
+                      views_delta_pct: p.views_delta_pct ?? '',
+                      views_z: p.views_z ?? '',
+                      atc: p.atc,
+                      atc_rate_pct: p.atc_rate,
+                      prior_atc_rate_pct: p.prior_atc_rate ?? '',
+                      atc_rate_delta_pp: p.atc_rate_delta_pp ?? '',
+                      atc_rate_z: p.atc_rate_z ?? '',
+                      wilson_atc_lower_pct: p.wilson_atc_lower ?? '',
+                      dwell_sec: (p.avg_dwell_ms / 1000).toFixed(1),
+                      rage_clicks: p.rage_clicks,
+                      sessions: p.sessions,
+                    });
+                  }
+                }
+                downloadCsv(`products-${ts}.csv`, rows);
+              }}>
                 <Download className="w-3 h-3 mr-2" /> Product data (CSV)
               </Button>
               <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.traffic_quality.map(t => ({ source: t.source, sessions: t.sessions, views: t.views, atc_rate_pct: t.atc_rate, bounce_rate_pct: t.bounce_rate, avg_dwell_sec: (t.avg_dwell_ms / 1000).toFixed(1) })) : []; downloadCsv(`traffic-${ts}.csv`, rows); }}>
