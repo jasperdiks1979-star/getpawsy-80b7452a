@@ -152,7 +152,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td colspan="2" style="padding: 16px 12px; font-weight: bold; font-size: 18px;">Total:</td>
                       <td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #C44569;">
-                        $${cart.cart_total.toFixed(2)}
+                        $${(Number.isFinite(cart.cart_total) ? cart.cart_total : 0).toFixed(2)}
                       </td>
                     </tr>
                   </tfoot>
