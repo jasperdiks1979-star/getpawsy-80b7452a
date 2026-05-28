@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { PaymentBadges } from '@/components/shared/PaymentBadges';
 import { Helmet } from 'react-helmet-async';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star, Compass } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -37,6 +37,7 @@ const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
   const premium = getConversionFlag('premiumCheckoutCart');
   const premiumV3 = getConversionFlag('premiumCartV3');
+  const premiumV4 = getConversionFlag('premiumCartCheckoutV4');
   const scrollDir = useScrollDirection(8);
   const hideMobileBar =
     premiumV3 &&
@@ -74,6 +75,35 @@ const Cart = () => {
   const amountToFreeShipping = Math.max(FREE_SHIPPING_THRESHOLD - totalPrice, 0);
 
   if (items.length === 0) {
+    if (premiumV4) {
+      return (
+        <Layout>
+          <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
+          <div className="container px-4 md:px-6 py-20">
+            <div className="text-center max-w-md mx-auto">
+              <div className="w-20 h-20 rounded-full border border-border/60 flex items-center justify-center mx-auto mb-8">
+                <Compass className="w-8 h-8 text-muted-foreground" strokeWidth={1.5} />
+              </div>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-3">
+                Empty cart
+              </p>
+              <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+                Nothing here yet
+              </h1>
+              <p className="text-[15px] text-muted-foreground/90 mb-8 leading-relaxed">
+                Find something your pet will love. Free shipping over ${FREE_SHIPPING_THRESHOLD}.
+              </p>
+              <Link to="/products">
+                <Button size="lg" className="gap-2 rounded-full px-6">
+                  Browse products
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Layout>
+      );
+    }
     return (
       <Layout>
         <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
@@ -134,7 +164,9 @@ const Cart = () => {
               <div
                 key={item.id}
                 className={
-                  premium
+                  premiumV4
+                    ? 'flex gap-4 p-4 bg-card rounded-2xl border border-border/50'
+                    : premium
                     ? 'flex gap-4 p-4 bg-card rounded-2xl border border-border/60'
                     : 'flex gap-4 p-4 bg-card rounded-xl shadow-card'
                 }
@@ -176,7 +208,7 @@ const Cart = () => {
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                  <div className="flex items-center border rounded-lg">
+                  <div className={premiumV4 ? 'flex items-center border border-border/50 rounded-full' : 'flex items-center border rounded-lg'}>
                     <Button
                       variant="ghost"
                       size="icon"

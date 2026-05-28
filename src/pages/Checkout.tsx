@@ -191,6 +191,7 @@ const Checkout = () => {
   // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
   const scrollDir = useScrollDirection(8);
   const premiumCheckoutV2 = getConversionFlag('premiumCheckoutV2');
+  const premiumV4 = getConversionFlag('premiumCartCheckoutV4');
   const hideMobileBar =
     premiumCheckoutV2 &&
     scrollDir === 'down' &&
@@ -628,10 +629,24 @@ const Checkout = () => {
     return (
       <Layout>
         <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
-        <div className="container px-4 md:px-6 py-16 text-center">
-          <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
+        <div className="container px-4 md:px-6 py-20 text-center">
+          {premiumV4 && (
+            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-3">
+              Empty cart
+            </p>
+          )}
+          <h2 className={premiumV4 ? 'font-display text-2xl md:text-3xl font-semibold tracking-tight mb-3' : 'text-2xl font-bold mb-4'}>
+            {premiumV4 ? 'Nothing here yet' : 'Your cart is empty'}
+          </h2>
+          {premiumV4 && (
+            <p className="text-[15px] text-muted-foreground/90 mb-8 leading-relaxed max-w-sm mx-auto">
+              Add a product to your cart before checking out.
+            </p>
+          )}
           <Link to="/products">
-            <Button>Start Shopping</Button>
+            <Button className={premiumV4 ? 'rounded-full px-6' : ''}>
+              {premiumV4 ? 'Browse products' : 'Start Shopping'}
+            </Button>
           </Link>
         </div>
       </Layout>
@@ -669,7 +684,18 @@ const Checkout = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+        {premiumV4 ? (
+          <div className="mb-8">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-2">
+              Secure checkout
+            </p>
+            <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight">
+              Checkout
+            </h1>
+          </div>
+        ) : (
+          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+        )}
 
         <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
           {/* Left side - Email & Info */}
