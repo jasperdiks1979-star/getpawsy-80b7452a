@@ -384,6 +384,52 @@ Deno.serve(async (req) => {
       osCount[os] = (osCount[os] || 0) + 1;
     }
 
+    // 3b. Device / OS conversion splits (mobile vs desktop, iOS vs Android).
+    // Each slice tracks PDP views + ATCs so we can show actual conversion
+    // rates, not just raw event counts. Sessions are deduped per slice.
+    type Slice = { views: number; atc: number; checkouts: number; sessions: Set<string> };
+    const mkSlice = (): Slice => ({ views: 0, atc: 0, checkouts: 0, sessions: new Set() });
+    const devSlices: Record<string, Slice> = {};
+    const osSlices: Record<string, Slice> = {};
+    const normOs = (raw: string): string => {
+      const o = (raw || '').toLowerCase();
+      if (o.includes('ios') || o.includes('iphone') || o.includes('ipad')) return 'ios';
+      if (o.includes('android')) return 'android';
+      if (o.includes('mac')) return 'macos';
+      if (o.includes('win')) return 'windows';
+      if (o.includes('linux')) return 'linux';
+      return 'other';
+    };
+    const normDev = (raw: string): string => {
+      const d = (raw || '').toLowerCase();
+      if (d.includes('mobile') || d.includes('phone')) return 'mobile';
+      if (d.includes('tablet') || d.includes('ipad')) return 'tablet';
+      if (d.includes('desktop')) return 'desktop';
+      return 'other';
+    };
+    for (const r of rows) {
+      const d = normDev(r.raw_payload?.device || 'unknown');
+      const o = normOs(r.raw_payload?.os || 'unknown');
+      const ds = devSlices[d] || (devSlices[d] = mkSlice());
+      const os2 = osSlices[o] || (osSlices[o] = mkSlice());
+      ds.sessions.add(r.session_id);
+      os2.sessions.add(r.session_id);
+      if (r.event_name === 'pdp_view' || r.event_name === 'view_item') { ds.views++; os2.views++; }
+      if (r.event_name === 'add_to_cart') { ds.atc++; os2.atc++; }
+      if (r.event_name === 'begin_checkout') { ds.checkouts++; os2.checkouts++; }
+    }
+    const sliceToRow = (k: string, s: Slice) => ({
+      key: k,
+      sessions: s.sessions.size,
+      views: s.views,
+      atc: s.atc,
+      checkouts: s.checkouts,
+      atc_rate_pct: pct(s.atc, s.views),
+      checkout_rate_pct: pct(s.checkouts, s.atc),
+    });
+    const deviceSplit = Object.entries(devSlices).map(([k, s]) => sliceToRow(k, s)).sort((a, b) => b.sessions - a.sessions);
+    const osSplit = Object.entries(osSlices).map(([k, s]) => sliceToRow(k, s)).sort((a, b) => b.sessions - a.sessions);
+
     // 4. Source breakdown
     const sourceCounts: Record<string, { sessions: Set<string>; views: number; atc: number; bounce: number; dwellSum: number; dwellN: number }> = {};
     for (const r of rows) {
