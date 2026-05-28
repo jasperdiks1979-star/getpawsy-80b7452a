@@ -494,6 +494,7 @@ Deno.serve(async (req) => {
       total_events: rows.length,
       total_sessions: totalSessions,
       baselines: {
+        prior_mode: priorMode === 'custom' && priorFromParam && priorToParam ? 'custom' : 'equal',
         prior_since: priorSince,
         prior_until: priorUntil,
         prior_events: priorRows.length,
