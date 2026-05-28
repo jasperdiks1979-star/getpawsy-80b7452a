@@ -788,18 +788,27 @@ const SeoCollection = () => {
                 ))}
               </div>
 
-              {/* Infinite scroll loader */}
+              {/* Infinite scroll loader — CI-10 calmer hairline divider when v2 on. */}
               {hasMore && (
-                <div ref={loaderRef} className="flex justify-center py-8">
-                  {scrollLoading ? (
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                      <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                      Loading more products...
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">Scroll for more</span>
-                  )}
-                </div>
+                getConversionFlag('premiumCollection') ? (
+                  <div ref={loaderRef} className="relative flex items-center justify-center py-10">
+                    <span className="absolute inset-x-0 top-1/2 h-px bg-border/50" aria-hidden="true" />
+                    <span className="relative bg-background px-4 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      {scrollLoading ? 'Loading…' : 'More below'}
+                    </span>
+                  </div>
+                ) : (
+                  <div ref={loaderRef} className="flex justify-center py-8">
+                    {scrollLoading ? (
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                        Loading more products...
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Scroll for more</span>
+                    )}
+                  </div>
+                )
               )}
 
               {/* CRO: Mini comparison table after first 4 products */}
