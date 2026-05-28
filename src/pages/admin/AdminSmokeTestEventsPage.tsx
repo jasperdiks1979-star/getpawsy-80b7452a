@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, RefreshCw, ChevronDown, ChevronRight, ExternalLink, Loader2, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
@@ -75,15 +77,29 @@ export default function AdminSmokeTestEventsPage() {
   const [eventsByRun, setEventsByRun] = useState<Record<string, FunnelEvent[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [generating, setGenerating] = useState(false);
+  // Filters — date range (local YYYY-MM-DD) and max number of runs.
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [maxRuns, setMaxRuns] = useState(30);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: runRows, error: runErr } = await supabase
+      let q = supabase
         .from('smoke_test_runs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(30);
+        .limit(Math.max(1, Math.min(500, maxRuns || 30)));
+      if (fromDate) {
+        const fromIso = new Date(`${fromDate}T00:00:00`).toISOString();
+        q = q.gte('created_at', fromIso);
+      }
+      if (toDate) {
+        // Inclusive end-of-day
+        const toIso = new Date(`${toDate}T23:59:59.999`).toISOString();
+        q = q.lte('created_at', toIso);
+      }
+      const { data: runRows, error: runErr } = await q;
       if (runErr) throw runErr;
       const list = (runRows ?? []) as SmokeRun[];
       setRuns(list);
@@ -113,13 +129,22 @@ export default function AdminSmokeTestEventsPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, fromDate, toDate, maxRuns]);
 
   useEffect(() => { void fetchAll(); }, [fetchAll]);
 
   const generateReport = useCallback(() => {
     setGenerating(true);
     try {
+      // Filter metadata sheet — captures the active filter context.
+      const filterRows = [
+        { field: 'from_date', value: fromDate || '(none)' },
+        { field: 'to_date', value: toDate || '(none)' },
+        { field: 'max_runs', value: String(maxRuns) },
+        { field: 'runs_in_report', value: String(runs.length) },
+        { field: 'generated_at', value: new Date().toISOString() },
+      ];
+
       // Sheet 1: Summary per run (incl. duplicate groups per session)
       const summaryRows = runs.map((run) => {
         const sessionId = run.stripe_session_id ?? '';
@@ -190,6 +215,7 @@ export default function AdminSmokeTestEventsPage() {
       }
 
       const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filterRows), 'Filters');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Summary');
       const dupSheet = XLSX.utils.json_to_sheet(
         dupRows.length > 0 ? dupRows : [{ note: 'No duplicates detected' }],
@@ -237,7 +263,7 @@ export default function AdminSmokeTestEventsPage() {
     } finally {
       setGenerating(false);
     }
-  }, [runs, eventsByRun, toast]);
+  }, [runs, eventsByRun, toast, fromDate, toDate, maxRuns]);
 
   const summaries = useMemo(() => {
     return runs.map((run) => {
@@ -320,6 +346,63 @@ export default function AdminSmokeTestEventsPage() {
           {EXPECTED_STEPS.map((s) => (
             <Badge key={s} variant="secondary" className="font-mono text-xs">{s}</Badge>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="from-date" className="text-xs">From</Label>
+            <Input
+              id="from-date"
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="to-date" className="text-xs">To</Label>
+            <Input
+              id="to-date"
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="max-runs" className="text-xs">Max runs (1–500)</Label>
+            <Input
+              id="max-runs"
+              type="number"
+              min={1}
+              max={500}
+              value={maxRuns}
+              onChange={(e) => setMaxRuns(Number(e.target.value) || 30)}
+              className="h-9 w-[140px]"
+            />
+          </div>
+          <Button variant="secondary" size="sm" onClick={fetchAll} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Apply filters
+          </Button>
+          {(fromDate || toDate || maxRuns !== 30) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFromDate(''); setToDate(''); setMaxRuns(30); }}
+              disabled={loading}
+            >
+              Reset
+            </Button>
+          )}
+          <div className="ml-auto text-xs text-muted-foreground">
+            {runs.length} run{runs.length === 1 ? '' : 's'} loaded
+          </div>
         </CardContent>
       </Card>
 
