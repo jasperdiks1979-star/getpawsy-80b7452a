@@ -786,6 +786,9 @@ export default function AiRevenuePage() {
                       dwell_sec: (p.avg_dwell_ms / 1000).toFixed(1),
                       rage_clicks: p.rage_clicks,
                       sessions: p.sessions,
+                      winner_score: p.winner_score ?? '',
+                      trend_velocity: p.trend_velocity ?? '',
+                      conversion_momentum: p.conversion_momentum ?? '',
                     });
                   }
                 }
