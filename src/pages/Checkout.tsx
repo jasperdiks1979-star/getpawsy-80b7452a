@@ -24,6 +24,8 @@ import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
 import { splitKlarnaInstallments, formatKlarnaInstallment } from '@/lib/klarna';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
