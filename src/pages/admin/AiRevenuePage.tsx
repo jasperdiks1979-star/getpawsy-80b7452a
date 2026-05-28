@@ -400,6 +400,57 @@ export default function AiRevenuePage() {
           </Button>
           <Popover>
             <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" title="Adjust classification thresholds">
+                <SlidersHorizontal className="w-4 h-4 mr-1" /> Thresholds
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Classification thresholds</div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setThresholds(DEFAULT_THRESHOLDS)}
+                >
+                  Reset
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tighten z-scores or raise the minimum sample size to surface only the strongest signals.
+                Loosen them to explore early movers.
+              </p>
+              {[
+                { key: 'min_views', label: 'Min views (winner)', step: 1 },
+                { key: 'winner_atc_z', label: 'Winner ATC z ≥', step: 0.1 },
+                { key: 'winner_views_z', label: 'Winner views z ≥', step: 0.1 },
+                { key: 'breakout_views_z', label: 'Breakout views z ≥', step: 0.1 },
+                { key: 'breakout_views_delta_pct', label: 'Breakout Δviews % ≥', step: 10 },
+                { key: 'rising_min_views', label: 'Min views (rising)', step: 1 },
+                { key: 'rising_atc_z', label: 'Rising ATC z ≥', step: 0.1 },
+                { key: 'min_prior_views', label: 'Min prior views (falling)', step: 1 },
+                { key: 'falling_delta_pct', label: 'Falling Δviews % ≤', step: 5 },
+              ].map(({ key, label, step }) => (
+                <div key={key} className="flex items-center justify-between gap-2">
+                  <label className="text-xs text-muted-foreground flex-1" htmlFor={`thr-${key}`}>{label}</label>
+                  <Input
+                    id={`thr-${key}`}
+                    type="number"
+                    step={step}
+                    value={(thresholds as unknown as Record<string, number>)[key]}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (!Number.isFinite(n)) return;
+                      setThresholds(prev => ({ ...prev, [key]: n }));
+                    }}
+                    className="h-8 w-24 text-right tabular-nums"
+                  />
+                </div>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button size="sm" variant="outline" disabled={!summary}><Download className="w-4 h-4 mr-1" /> Export</Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2 space-y-1">
