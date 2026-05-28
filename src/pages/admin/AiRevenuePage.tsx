@@ -32,6 +32,32 @@ import { toast } from 'sonner';
 type Range = '24h' | '7d' | '30d';
 type SourceFilter = 'all' | 'tiktok' | 'pinterest' | 'google' | 'organic' | 'direct' | 'other';
 
+/** Generic localStorage-backed state. Dates need custom ser/des. */
+function usePersistedState<T>(
+  key: string,
+  initial: T,
+  opts?: { serialize?: (v: T) => string; deserialize?: (s: string) => T }
+): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored != null) {
+        return opts?.deserialize ? opts.deserialize(stored) : (JSON.parse(stored) as T);
+      }
+    } catch { /* ignore corrupt storage */ }
+    return initial;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, opts?.serialize ? opts.serialize(value) : JSON.stringify(value));
+    } catch { /* storage full or private mode */ }
+  }, [key, value, opts]);
+  return [value, setValue];
+}
+
+const dateToIso = (d: Date | undefined) => (d ? d.toISOString() : '');
+const isoToDate = (s: string) => { const d = new Date(s); return isNaN(d.getTime()) ? undefined : d; };
+
 interface Thresholds {
   min_views: number;
   min_prior_views: number;
@@ -147,16 +173,16 @@ function severityVariant(sev: string): 'default' | 'secondary' | 'destructive' |
 }
 
 export default function AiRevenuePage() {
-  const [range, setRange] = useState<Range>('7d');
-  const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
-  const [toDate, setToDate] = useState<Date | undefined>(undefined);
-  const [source, setSource] = useState<SourceFilter>('all');
-  const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS);
+  const [range, setRange] = usePersistedState<Range>('gp_ai_rev_range', '7d');
+  const [fromDate, setFromDate] = usePersistedState<Date | undefined>('gp_ai_rev_from', undefined, { serialize: dateToIso, deserialize: isoToDate });
+  const [toDate, setToDate] = usePersistedState<Date | undefined>('gp_ai_rev_to', undefined, { serialize: dateToIso, deserialize: isoToDate });
+  const [source, setSource] = usePersistedState<SourceFilter>('gp_ai_rev_source', 'all');
+  const [thresholds, setThresholds] = usePersistedState<Thresholds>('gp_ai_rev_thresholds', DEFAULT_THRESHOLDS);
   // Prior comparison window: 'equal' mirrors the current window length
   // immediately before `since`; 'custom' uses user-picked priorFrom/priorTo.
-  const [priorMode, setPriorMode] = useState<'equal' | 'custom'>('equal');
-  const [priorFrom, setPriorFrom] = useState<Date | undefined>(undefined);
-  const [priorTo, setPriorTo] = useState<Date | undefined>(undefined);
+  const [priorMode, setPriorMode] = usePersistedState<'equal' | 'custom'>('gp_ai_rev_prior_mode', 'equal');
+  const [priorFrom, setPriorFrom] = usePersistedState<Date | undefined>('gp_ai_rev_prior_from', undefined, { serialize: dateToIso, deserialize: isoToDate });
+  const [priorTo, setPriorTo] = usePersistedState<Date | undefined>('gp_ai_rev_prior_to', undefined, { serialize: dateToIso, deserialize: isoToDate });
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
