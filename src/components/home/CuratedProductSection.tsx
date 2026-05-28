@@ -55,7 +55,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
             return (
               <div key={p.id} className="flex flex-col">
                 <Link
-                  to={`/product/${p.slug}`}
+                  to={`/products/${p.slug}`}
                   className="group flex flex-col rounded-2xl border border-border/40 bg-card overflow-hidden hover:shadow-md transition-shadow flex-1"
                 >
                   <div className="aspect-square overflow-hidden bg-muted">

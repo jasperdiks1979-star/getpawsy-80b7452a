@@ -26,7 +26,7 @@ interface TopProduct {
 
 /**
  * Crawlable "Top Products" grid for homepage.
- * Renders real <a href="/product/..."> links visible in raw HTML.
+ * Renders real <a href="/products/..."> links visible in raw HTML.
  */
 export function TopProductsGrid() {
   const { data: products } = useQuery<TopProduct[]>({
@@ -58,7 +58,7 @@ export function TopProductsGrid() {
           {products.slice(0, 8).map((p) => (
             <a
               key={p.id}
-              href={`/product/${p.slug}`}
+              href={`/products/${p.slug}`}
               className="group block rounded-xl border border-border/40 bg-card overflow-hidden hover:border-primary/40 hover:shadow-md transition-all"
             >
               <div className="aspect-square bg-muted overflow-hidden">

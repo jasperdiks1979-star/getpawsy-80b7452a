@@ -212,7 +212,7 @@ function TopPicksJsonLd() {
   const items = TOP_PICKS.map((p, i) => ({
     '@type': 'ListItem',
     position: i + 1,
-    url: `${SITE_URL}/product/${p.slug}`,
+    url: `${SITE_URL}/products/${p.slug}`,
     name: p.name,
   }));
 
@@ -260,7 +260,7 @@ export function TopPicksSection() {
             return (
               <a
                 key={product.slug}
-                href={`/product/${product.slug}`}
+                href={`/products/${product.slug}`}
                 className="group block bg-card rounded-xl border border-border/50 overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
                 data-seo-slot={`top-pick-${idx}`}
               >

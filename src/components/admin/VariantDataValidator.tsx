@@ -326,7 +326,7 @@ const VariantDataValidator = () => {
                             size="sm"
                             asChild
                           >
-                            <a href={`/product/${product.id}`} target="_blank" rel="noopener noreferrer">
+                            <a href={`/products/${product.id}`} target="_blank" rel="noopener noreferrer">
                               <Eye className="w-4 h-4" />
                             </a>
                           </Button>

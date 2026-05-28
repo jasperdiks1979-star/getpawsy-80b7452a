@@ -68,7 +68,7 @@ export const MostLovedPicks = () => {
             return (
               <FadeInView key={product.slug}>
                 <Link
-                  to={`/product/${product.slug}`}
+                  to={`/products/${product.slug}`}
                   className="group block bg-card rounded-2xl overflow-hidden border border-border/50 shadow-soft hover:shadow-soft-lg transition-all duration-500 hover:-translate-y-1"
                 >
                   {/* Image */}

@@ -116,7 +116,7 @@ export function CrawlDiagnosticsDashboard() {
           crawlDepth: 3,
         },
         {
-          url: '/product/premium-cat-tree-xl',
+          url: '/products/premium-cat-tree-xl',
           type: 'product',
           lastCrawled: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
           isIndexed: false,
@@ -136,11 +136,11 @@ export function CrawlDiagnosticsDashboard() {
       // Mock priority pages
       setPriorityPages([
         {
-          url: '/product/best-seller-cat-tree',
+          url: '/products/best-seller-cat-tree',
           type: 'product',
           lastCrawled: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
           isIndexed: true,
-          canonicalUrl: '/product/best-seller-cat-tree',
+          canonicalUrl: '/products/best-seller-cat-tree',
           structuredDataDetected: true,
           internalLinkCount: 12,
         },

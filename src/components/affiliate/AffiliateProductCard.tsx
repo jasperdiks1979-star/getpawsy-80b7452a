@@ -62,7 +62,7 @@ export function AffiliateProductCard({ product, position }: AffiliateProductCard
 
         {/* CTA */}
         <Button className="w-full gap-2 text-sm" asChild>
-          <Link to={product.slug ? `/product/${product.slug}` : '/products'}>
+          <Link to={product.slug ? `/products/${product.slug}` : '/products'}>
             View Details
           </Link>
         </Button>

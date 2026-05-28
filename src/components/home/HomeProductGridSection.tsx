@@ -71,7 +71,7 @@ export function HomeProductGridSection({
           {validProducts.map((product, idx) => (
             <a
               key={product.id}
-              href={`/product/${product.slug}`}
+              href={`/products/${product.slug}`}
               className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-shadow duration-300"
               data-seo-slot={`${trackingKey}-${idx}`}
             >

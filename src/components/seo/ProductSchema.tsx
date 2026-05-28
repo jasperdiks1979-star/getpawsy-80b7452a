@@ -120,7 +120,7 @@ export function ProductSchema({
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    '@id': `${baseUrl}/product/${productPath}#product`,
+    '@id': `${baseUrl}/products/${productPath}#product`,
     name: truncatedName,
     description: cleanDescription,
     image: images.length > 0 ? images : [primaryImage],
@@ -140,8 +140,8 @@ export function ProductSchema({
     } : {}),
     offers: {
       '@type': 'Offer',
-      '@id': `${baseUrl}/product/${productPath}#offer`,
-      url: `${baseUrl}/product/${productPath}`,
+      '@id': `${baseUrl}/products/${productPath}#offer`,
+      url: `${baseUrl}/products/${productPath}`,
       priceCurrency: 'USD',
       price: canonicalSchemaPrice.toFixed(2),
       priceValidUntil: priceValidUntilStr,
@@ -199,8 +199,8 @@ export function ProductSchema({
   const webPageSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemPage',
-    '@id': `${baseUrl}/product/${productPath}#webpage`,
-    url: `${baseUrl}/product/${productPath}`,
+    '@id': `${baseUrl}/products/${productPath}#webpage`,
+    url: `${baseUrl}/products/${productPath}`,
     name: `${product.name} | GetPawsy`,
     description: metaDescription,
     isPartOf: { '@id': `${baseUrl}/#website` },
@@ -208,15 +208,15 @@ export function ProductSchema({
       '@type': 'ImageObject',
       url: primaryImage,
     },
-    breadcrumb: { '@id': `${baseUrl}/product/${productPath}#breadcrumb` },
-    mainEntity: { '@id': `${baseUrl}/product/${productPath}#product` },
+    breadcrumb: { '@id': `${baseUrl}/products/${productPath}#breadcrumb` },
+    mainEntity: { '@id': `${baseUrl}/products/${productPath}#product` },
   };
 
   // BreadcrumbList Schema
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
-    '@id': `${baseUrl}/product/${productPath}#breadcrumb`,
+    '@id': `${baseUrl}/products/${productPath}#breadcrumb`,
     itemListElement: [
       {
         '@type': 'ListItem',
@@ -240,12 +240,12 @@ export function ProductSchema({
         '@type': 'ListItem',
         position: product.category ? 4 : 3,
         name: product.name,
-        item: `${baseUrl}/product/${productPath}`,
+        item: `${baseUrl}/products/${productPath}`,
       },
     ],
   };
 
-  const productUrl = `${baseUrl}/product/${productPath}`;
+  const productUrl = `${baseUrl}/products/${productPath}`;
 
   // CTR-optimized title: benefit-driven, under 60 chars
   const categoryHint = product.category?.toLowerCase() || '';

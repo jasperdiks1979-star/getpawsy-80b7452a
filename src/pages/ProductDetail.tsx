@@ -367,11 +367,11 @@ const ProductDetail = () => {
   // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
   useEffect(() => {
     if (product?._redirect) {
-      navigate(`/product/${product.slug || product.id}`, { replace: true });
+      navigate(`/products/${product.slug || product.id}`, { replace: true });
       return;
     }
     if (product?.slug && slug && isValidUUID(slug)) {
-      navigate(`/product/${product.slug}`, { replace: true });
+      navigate(`/products/${product.slug}`, { replace: true });
     }
   }, [product, slug, navigate]);
 
@@ -728,7 +728,7 @@ const ProductDetail = () => {
   if (isLoading) {
     const slugName = slug ? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
     const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
-    const loadingCanonical = `https://getpawsy.pet/product/${slug || ""}`;
+    const loadingCanonical = `https://getpawsy.pet/products/${slug || ""}`;
 
     return (
       <Layout>
@@ -753,7 +753,7 @@ const ProductDetail = () => {
   if (isError) {
     const slugName = slug ? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
     const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
-    const errorCanonical = `https://getpawsy.pet/product/${slug || ""}`;
+    const errorCanonical = `https://getpawsy.pet/products/${slug || ""}`;
 
     return (
       <Layout>
@@ -903,7 +903,7 @@ const ProductDetail = () => {
       />
       <FAQSchema
         faqs={generateProductFAQs(product.name || "", product.category || undefined)}
-        pageUrl={`https://getpawsy.pet/product/${product.slug || product.id}`}
+        pageUrl={`https://getpawsy.pet/products/${product.slug || product.id}`}
       />
       {/* Decorative background - hidden on mobile to prevent overflow */}
       <div className="hidden md:block fixed inset-0 pointer-events-none overflow-hidden -z-10">

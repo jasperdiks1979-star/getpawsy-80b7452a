@@ -276,7 +276,7 @@ const CatLitterBoxLanding = () => {
               <ShoppingCart className="w-5 h-5 mr-2" />
               Buy Now — ${sellingPrice.toFixed(2)}
             </Button>
-            <Link to={`/product/${LITTER_BOX_SLUG}`} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+            <Link to={`/products/${LITTER_BOX_SLUG}`} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
               View full details <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
