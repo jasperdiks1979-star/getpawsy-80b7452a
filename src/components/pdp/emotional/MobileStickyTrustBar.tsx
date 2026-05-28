@@ -1,57 +1,46 @@
 /**
- * MobileStickyTrustBar — slim, top-anchored trust strip on mobile.
+ * MobileTrustWhisper — ultra-subtle inline trust line shown above the gallery
+ * on mobile PDPs.
  *
- * Compliance:
- *   - All strings come from `merchant-policy` / `shipping-constants`.
- *   - No fake urgency, no countdowns, no review counts.
- *   - ≤32px tall so it never competes with the header CTA.
- *   - Hides on scroll-down, reappears on scroll-up so it never blocks PDP UI.
+ * Premium-DTC posture:
+ *   - Inline, not fixed. Never overlaps the global Navbar.
+ *   - Neutral palette, hairline dot separators, refined letter-spacing.
+ *   - Three quiet anchors. No icons. No fills. No badge energy.
+ *   - Copy comes only from `merchant-policy` / `shipping-constants`.
  */
-import { useEffect, useRef, useState } from 'react';
-import { Truck, RotateCcw, ShieldCheck } from 'lucide-react';
 import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 import { getConversionFlag } from '@/lib/conversionFlags';
 
+const Dot = () => (
+  <span
+    aria-hidden
+    className="inline-block h-[3px] w-[3px] rounded-full bg-foreground/25"
+  />
+);
+
 export function MobileStickyTrustBar() {
-  const [visible, setVisible] = useState(true);
-  const lastY = useRef(0);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      // Visible when at top OR scrolling up
-      setVisible(y < 80 || y < lastY.current);
-      lastY.current = y;
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   if (!getConversionFlag('mobileTrustBar')) return null;
 
   return (
     <div
       role="region"
       aria-label="Shipping, returns and checkout"
-      className={`md:hidden fixed top-0 inset-x-0 z-30 transition-transform duration-300 ${
-        visible ? 'translate-y-0' : '-translate-y-full'
-      }`}
+      className="md:hidden -mx-4 px-4 mb-3 border-y border-border/50 bg-background/60"
       style={{ contain: 'layout' }}
     >
-      <div className="h-8 flex items-center justify-between gap-3 px-3 bg-primary/95 text-primary-foreground text-[11px] font-medium backdrop-blur">
-        <span className="flex items-center gap-1">
-          <Truck className="w-3 h-3" aria-hidden />
-          Free ship ${FREE_SHIPPING_THRESHOLD}+
+      <div className="h-7 flex items-center justify-center gap-3">
+        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
+          Free shipping ${FREE_SHIPPING_THRESHOLD}+
         </span>
-        <span className="flex items-center gap-1">
-          <RotateCcw className="w-3 h-3" aria-hidden />
+        <Dot />
+        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
           {RETURN_WINDOW_DAYS}-day returns
         </span>
-        <span className="flex items-center gap-1">
-          <ShieldCheck className="w-3 h-3" aria-hidden />
+        <Dot />
+        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
           Secure checkout
         </span>
       </div>

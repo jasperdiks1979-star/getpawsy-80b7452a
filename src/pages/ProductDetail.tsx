@@ -983,6 +983,7 @@ const ProductDetail = () => {
             {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
             {isMobile ? (
               <>
+                <MobileStickyTrustBar />
                 <SwipeBenefitChips
                   category={product.category || undefined}
                   productName={product.name}
@@ -1829,9 +1830,6 @@ const ProductDetail = () => {
             }
           />
         )}
-
-        {/* CI-2: Slim mobile top trust strip. Hides on scroll-down. */}
-        {!showTikTokVariant && <MobileStickyTrustBar />}
 
         {/* Litter Box-only emotional reinforcement before reviews */}
         {isLitterBoxProduct && <LitterBoxLovedSection />}

@@ -6,7 +6,6 @@
  * it adds zero LCP weight and a fixed min-height to prevent CLS.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Heart } from 'lucide-react';
 import { getEmotionalCopy } from '@/lib/categoryEmotional';
 import { getConversionFlag } from '@/lib/conversionFlags';
 
@@ -47,17 +46,26 @@ export function ReassuranceCallout({ category, productName }: Props) {
   return (
     <div
       ref={ref}
-      className="md:hidden my-6 min-h-[68px]"
+      className="md:hidden my-8 min-h-[72px]"
       style={{ contain: 'layout' }}
     >
-      <div
-        className={`flex items-start gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 transition-opacity duration-500 ${
-          seen ? 'opacity-100' : 'opacity-0'
+      <figure
+        className={`text-center px-6 transition-all duration-700 ${
+          seen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1.5'
         }`}
       >
-        <Heart className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" aria-hidden />
-        <p className="text-sm leading-snug text-foreground">{reassurance}</p>
-      </div>
+        <span
+          aria-hidden
+          className="mx-auto block h-px w-10 bg-foreground/15 mb-4"
+        />
+        <blockquote className="text-[17px] leading-[1.5] tracking-[-0.01em] text-foreground/85 font-light italic">
+          “{reassurance}”
+        </blockquote>
+        <span
+          aria-hidden
+          className="mx-auto block h-px w-10 bg-foreground/15 mt-4"
+        />
+      </figure>
     </div>
   );
 }
