@@ -118,24 +118,8 @@ const PaymentSuccess = () => {
         orderValue: totalPrice,
       });
 
-      // Mirror purchase into lp_funnel_events for per-source funnel dashboard
-      // (closes the loop: view_item → add_to_cart → begin_checkout → purchase
-      // attributed by originating UTM source per session).
-      try {
-        const utm = {
-          utm_source: sessionStorage.getItem('gp_utm_utm_source') ?? undefined,
-          utm_medium: sessionStorage.getItem('gp_utm_utm_medium') ?? undefined,
-          utm_campaign: sessionStorage.getItem('gp_utm_utm_campaign') ?? undefined,
-          utm_content: sessionStorage.getItem('gp_utm_utm_content') ?? undefined,
-        };
-        mirrorLpFunnelEvent('purchase', {
-          value: totalPrice,
-          items: items.map(item => ({ item_id: item.id, item_name: item.name })),
-          ...utm,
-        });
-      } catch {
-        // Non-fatal
-      }
+      // Purchase mirror into lp_funnel_events is fired unconditionally
+      // in the earlier useEffect (handles cart-cleared refresh case too).
 
       // Pinterest purchase tracking — deferred, non-blocking
       fireMarketingAsync('pinterest-purchase', async () => {
