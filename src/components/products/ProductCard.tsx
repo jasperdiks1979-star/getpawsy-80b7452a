@@ -18,6 +18,7 @@ import { computeAvailability } from "@/lib/availability";
 import { getProductDiscount } from "@/lib/discount";
 import { getCanonicalCardPrice } from "@/lib/canonical-pricing";
 import { trackFirstGridImage } from "@/lib/grid-timing";
+import { getConversionFlag } from "@/lib/conversionFlags";
 
 export interface Product {
   id: string;
@@ -169,6 +170,26 @@ export const ProductCard = memo(
     const productUrl =
       product.slug && product.slug.trim() !== "" ? `/product/${product.slug}` : `/product/${product.id}`;
 
+    const premium = getConversionFlag("premiumCard");
+
+    // Premium DTC: surface at most ONE primary badge in priority order
+    // (out-of-stock > best seller > top rated > popular > discount). Keeps
+    // the card visually calm and editorial. Species badge is informational
+    // and shown separately if requested.
+    const primaryBadge = (() => {
+      if (!premium) return null;
+      if (isOutOfStock) {
+        return { label: "Sold out", className: "bg-muted text-muted-foreground" } as const;
+      }
+      if (bestSeller) return { label: "Best Seller", className: "bg-foreground text-background" } as const;
+      if (topRated) return { label: "Top Rated", className: "bg-foreground text-background" } as const;
+      if (popularChoice) return { label: "Popular", className: "bg-primary text-primary-foreground" } as const;
+      if (discount && discount > 0) {
+        return { label: `-${discount}%`, className: "bg-destructive text-destructive-foreground" } as const;
+      }
+      return null;
+    })();
+
     return (
       <>
         <PawConfetti
@@ -181,19 +202,25 @@ export const ProductCard = memo(
         <Link
           ref={ref}
           to={productUrl}
-          className="group block"
+          className={`group block ${premium ? "transition-transform duration-300 ease-out hover:-translate-y-0.5" : ""}`}
           onClick={handleCardClick}
           onMouseEnter={handleMouseEnter}
           onFocus={handleFocus}
           data-testid="product-card"
         >
-          <div className="relative glass-card rounded-2xl overflow-hidden">
-            <div className="relative aspect-square overflow-hidden bg-muted">
+          <div
+            className={
+              premium
+                ? "relative rounded-2xl overflow-hidden bg-card border border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)] transition-shadow duration-300"
+                : "relative glass-card rounded-2xl overflow-hidden"
+            }
+          >
+            <div className={`relative aspect-square overflow-hidden ${premium ? "bg-secondary/30" : "bg-muted"}`}>
               <OptimizedImage
                 src={product.image_url || "/placeholder.svg"}
                 alt={product.image_alt_text || `${product.name}${product.category ? ` - ${product.category}` : ""} – GetPawsy`}
                 aspectRatio="square"
-                className="group-hover:scale-105"
+                className={premium ? "group-hover:scale-[1.03] transition-transform duration-500 ease-out" : "group-hover:scale-105"}
                 priority={priority}
                 onImgRef={
                   priority
@@ -204,9 +231,27 @@ export const ProductCard = memo(
                 }
               />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {!premium && (
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              )}
 
-              <div className="absolute top-3 left-3 flex flex-col gap-2">
+              {premium ? (
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                  {primaryBadge && (
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider shadow-sm ${primaryBadge.className}`}
+                    >
+                      {primaryBadge.label}
+                    </span>
+                  )}
+                  {showSpeciesBadge && species && species !== "unknown" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-medium bg-card/90 backdrop-blur-sm text-foreground border border-border/60 shadow-sm">
+                      {species === "cat" ? "Cat" : species === "dog" ? "Dog" : "Cats & Dogs"}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="absolute top-3 left-3 flex flex-col gap-2">
                 {bestSeller && !isOutOfStock && (
                   <Badge className="bg-amber-500 text-white shadow-soft text-[10px]">🏆 Best Seller</Badge>
                 )}
@@ -231,7 +276,8 @@ export const ProductCard = memo(
                     {species === "cat" ? "🐱 Cat" : species === "dog" ? "🐶 Dog" : "🐾 Cats & Dogs"}
                   </Badge>
                 )}
-              </div>
+                </div>
+              )}
 
               <div className="absolute top-3 right-3 hidden md:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                 <Button
@@ -270,21 +316,29 @@ export const ProductCard = memo(
               </div>
             </div>
 
-            <div className="p-5 space-y-3">
+            <div className={premium ? "p-4 md:p-5 space-y-2" : "p-5 space-y-3"}>
               {product.category && (
-                <p className="text-xs text-primary font-medium uppercase tracking-wider">
+                <p className={premium ? "text-[10px] text-muted-foreground font-medium uppercase tracking-[0.14em]" : "text-xs text-primary font-medium uppercase tracking-wider"}>
                   {safeString(product.category)}
                 </p>
               )}
 
-              <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-base leading-snug min-h-[2.5rem]">
+              <h3 className={
+                premium
+                  ? "font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-[15px] md:text-base leading-snug min-h-[2.5rem]"
+                  : "font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-base leading-snug min-h-[2.5rem]"
+              }>
                 {safeString(product.name)}
               </h3>
 
-              <p className="text-[10px] text-primary/80 font-medium mt-0.5">{getTrustLabel(product.id, position ?? 0)}</p>
+              <p className={premium ? "text-[10px] text-muted-foreground/90 font-medium" : "text-[10px] text-primary/80 font-medium mt-0.5"}>
+                {getTrustLabel(product.id, position ?? 0)}
+              </p>
 
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-primary">{cardCanonical.displayPrice}</span>
+              <div className={premium ? "flex items-baseline gap-2 pt-0.5" : "flex items-center gap-2"}>
+                <span className={premium ? "text-[17px] md:text-lg font-semibold text-foreground tracking-tight" : "text-lg font-bold text-primary"}>
+                  {cardCanonical.displayPrice}
+                </span>
                 {cardCanonical.displayCompareAt && (
                   <span className="text-sm text-muted-foreground line-through">
                     {cardCanonical.displayCompareAt}
@@ -292,12 +346,17 @@ export const ProductCard = memo(
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground">Shipping to customers in the United States</p>
+              {!premium && (
+                <p className="text-xs text-muted-foreground">Shipping to customers in the United States</p>
+              )}
+              {premium && (
+                <p className="hidden md:block text-[11px] text-muted-foreground">Free U.S. shipping</p>
+              )}
 
               <div className="flex gap-2 pt-1 md:hidden">
                 <Button
                   type="button"
-                  className="flex-1 gap-2 rounded-full"
+                  className={premium ? "flex-1 gap-2 rounded-full h-9 text-sm" : "flex-1 gap-2 rounded-full"}
                   size="sm"
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
@@ -319,7 +378,7 @@ export const ProductCard = memo(
                 </Button>
               </div>
 
-              {isOutOfStock && <p className="text-xs text-destructive font-medium">Out of Stock</p>}
+              {isOutOfStock && !premium && <p className="text-xs text-destructive font-medium">Out of Stock</p>}
             </div>
           </div>
         </Link>
