@@ -96,6 +96,16 @@ interface Summary {
   range: Range;
   total_events: number;
   total_sessions: number;
+  bot_filtered_events?: number;
+  bot_filtered_pct?: number;
+  quality_scores?: {
+    funnel_friction: number;
+    pdp_quality: number;
+    mobile_conversion: number;
+    traffic_quality: number;
+  };
+  device_split?: Array<{ key: string; sessions: number; views: number; atc: number; checkouts: number; atc_rate_pct: number; checkout_rate_pct: number }>;
+  os_split?: Array<{ key: string; sessions: number; views: number; atc: number; checkouts: number; atc_rate_pct: number; checkout_rate_pct: number }>;
   baselines?: {
     prior_since: string;
     prior_until: string;
