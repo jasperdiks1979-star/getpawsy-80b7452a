@@ -383,6 +383,7 @@ const AiRevenuePage = lazyWithRetry(() => import("./pages/admin/AiRevenuePage"))
 const AiCreativesPage = lazyWithRetry(() => import("./pages/admin/AiCreativesPage"));
 const AiSeoPage = lazyWithRetry(() => import("./pages/admin/AiSeoPage"));
 const AiExecutivePage = lazyWithRetry(() => import("./pages/admin/AiExecutivePage"));
+const HeroProductsPage = lazyWithRetry(() => import("./pages/admin/HeroProductsPage"));
 const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/MomentumAccelerationDashboard"));
 const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
 const WinnersBoostDashboard = lazyWithRetry(() => import("./pages/admin/WinnersBoostDashboard"));
@@ -1757,6 +1758,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <AiExecutivePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="hero-products"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <HeroProductsPage />
                                 </Suspense>
                               }
                             />
