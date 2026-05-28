@@ -43,6 +43,7 @@ import { useCartAnimation } from "@/contexts/CartAnimationContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
+import { usePdpFunnelTracking } from "@/hooks/usePdpFunnelTracking";
 import { useRecentlyViewedProducts } from "@/hooks/useRecentlyViewedProducts";
 import { useHaptic } from "@/hooks/useHaptic";
 import { supabase } from "@/integrations/supabase/client";
