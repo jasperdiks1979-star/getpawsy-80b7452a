@@ -45,6 +45,8 @@ export type ConversionFlagKey =
   | 'premiumNewsletter'
   | 'premiumCartCheckoutV5'
   | 'premiumAuthV2'
+  | 'premiumOrders'
+  | 'premiumWishlist'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -197,6 +199,17 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // dynamic font-display heading per tab ("Sign in" / "Create account"), and
   // a tighter card padding. Auth flow, validation, OAuth handlers untouched.
   premiumAuthV2: true,
+  // CI-23: orders page polish — hairline order cards (no soft shadow), micro-
+  // caps "Order" eyebrow above the order id, calmer status badges (hairline
+  // border, no tinted fill), refined empty state (hairline circle + Compass-
+  // like icon, micro-caps eyebrow), and a quieter tracking row. Pure
+  // presentation; order data, tracking links, and claim flow untouched.
+  premiumOrders: true,
+  // CI-23: wishlist polish — hairline product cards (no soft shadow), micro-
+  // caps category eyebrow, calmer price row, hairline icon ring on the empty
+  // state with micro-caps eyebrow. Pure presentation; wishlist storage,
+  // add-to-cart, and sort/filter logic untouched.
+  premiumWishlist: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
