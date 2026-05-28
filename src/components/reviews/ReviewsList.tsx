@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 interface Review {
   id: string;
@@ -25,6 +26,7 @@ interface ReviewsListProps {
 
 export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
   const { user } = useAuth();
+  const premium = getConversionFlag('premiumReviews');
 
   const handleDelete = async (reviewId: string) => {
     try {
@@ -96,7 +98,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-muted/30 rounded-2xl p-6"
+        className={premium ? 'rounded-2xl border border-border/50 p-6' : 'bg-muted/30 rounded-2xl p-6'}
       >
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           {/* Average Rating */}
@@ -159,7 +161,9 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ delay: idx * 0.05 }}
-              className="bg-background rounded-2xl border border-border/50 p-6 shadow-soft"
+              className={premium
+                ? 'bg-background rounded-2xl border border-border/50 p-6'
+                : 'bg-background rounded-2xl border border-border/50 p-6 shadow-soft'}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
@@ -175,10 +179,17 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
                         {displayName}
                       </span>
                       {isVerified && (
-                        <span className="inline-flex items-center gap-1 text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
-                          <BadgeCheck className="w-3 h-3" />
-                          Verified Buyer
-                        </span>
+                        premium ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-medium">
+                            <BadgeCheck className="w-3 h-3" />
+                            Verified buyer
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+                            <BadgeCheck className="w-3 h-3" />
+                            Verified Buyer
+                          </span>
+                        )
                       )}
                       <span className="text-sm text-muted-foreground">•</span>
                       <span className="text-sm text-muted-foreground">
@@ -189,11 +200,11 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
                     </div>
 
                     {/* Rating */}
-                    <div className="flex items-center gap-0.5 mb-3">
+                    <div className={premium ? 'flex items-center gap-0.5 mb-2' : 'flex items-center gap-0.5 mb-3'}>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
-                          className={`w-4 h-4 ${
+                          className={`${premium ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${
                             star <= review.rating
                               ? 'text-warning fill-warning'
                               : 'text-muted-foreground/30'
@@ -203,7 +214,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
                     </div>
 
                     {/* Title */}
-                    <h4 className="font-semibold text-foreground mb-2">
+                    <h4 className={premium ? 'font-display font-semibold text-foreground tracking-tight mb-1.5' : 'font-semibold text-foreground mb-2'}>
                       {review.title}
                     </h4>
 

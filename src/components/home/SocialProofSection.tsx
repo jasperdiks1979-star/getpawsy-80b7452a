@@ -5,6 +5,7 @@ import {
   DELIVERY_TIME_STANDARD,
   SUPPORT_EMAIL,
 } from '@/lib/shipping-constants';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 /**
  * Customer Promise — replaces unsubstantiated "thousands of pet owners" claim.
@@ -12,6 +13,7 @@ import {
  * are verifiable. We show only factual, policy-backed promises.
  */
 export function SocialProofSection() {
+  const premium = getConversionFlag('premiumSocialProof');
   const promises = [
     {
       icon: Truck,
@@ -36,13 +38,27 @@ export function SocialProofSection() {
   ];
 
   return (
-    <section className="py-10 md:py-14 bg-muted/30 border-t border-border/30" aria-label="Our customer promise">
+    <section
+      className={premium
+        ? 'py-12 md:py-16 border-t border-border/40'
+        : 'py-10 md:py-14 bg-muted/30 border-t border-border/30'}
+      aria-label="Our customer promise"
+    >
       <div className="container px-4 md:px-6 max-w-5xl mx-auto">
         <div className="text-center mb-8">
-          <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">
+          {premium && (
+            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-3">
+              Customer promise
+            </p>
+          )}
+          <h2 className={premium
+            ? 'font-display text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-2'
+            : 'text-xl md:text-2xl font-display font-bold text-foreground mb-2'}>
             Our Customer Promise
           </h2>
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+          <p className={premium
+            ? 'text-[14px] text-muted-foreground/90 max-w-xl mx-auto leading-relaxed'
+            : 'text-sm text-muted-foreground max-w-xl mx-auto'}>
             Every order from GetPawsy LLC is backed by clear, written policies. No fine print, no surprises.
           </p>
         </div>
@@ -50,13 +66,17 @@ export function SocialProofSection() {
           {promises.map(({ icon: Icon, title, detail }) => (
             <div
               key={title}
-              className="flex flex-col items-center text-center p-4 rounded-xl bg-background border border-border/50"
+              className={premium
+                ? 'flex flex-col items-center text-center p-5 rounded-2xl border border-border/50'
+                : 'flex flex-col items-center text-center p-4 rounded-xl bg-background border border-border/50'}
             >
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                <Icon className="w-5 h-5 text-primary" />
+              <div className={premium
+                ? 'w-10 h-10 rounded-full border border-border/60 flex items-center justify-center mb-3'
+                : 'w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-3'}>
+                <Icon className={premium ? 'w-4 h-4 text-foreground/70' : 'w-5 h-5 text-primary'} strokeWidth={premium ? 1.5 : 2} />
               </div>
-              <p className="font-semibold text-sm text-foreground mb-1">{title}</p>
-              <p className="text-xs text-muted-foreground leading-snug">{detail}</p>
+              <p className={premium ? 'font-display font-semibold text-[14px] text-foreground tracking-tight mb-1' : 'font-semibold text-sm text-foreground mb-1'}>{title}</p>
+              <p className={premium ? 'text-[12px] text-muted-foreground/85 leading-snug' : 'text-xs text-muted-foreground leading-snug'}>{detail}</p>
             </div>
           ))}
         </div>

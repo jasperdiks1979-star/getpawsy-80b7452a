@@ -38,6 +38,8 @@ export type ConversionFlagKey =
   | 'premiumMobileNavV2'
   | 'premiumProfile'
   | 'premiumCollectionFilters'
+  | 'premiumReviews'
+  | 'premiumSocialProof'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -154,6 +156,17 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // tint), and a refined sort dropdown trigger. Pure presentation; filter
   // state, sort logic, and URL params untouched.
   premiumCollectionFilters: true,
+  // CI-19: PDP reviews polish — hairline review cards (no soft shadow),
+  // micro-caps "Verified buyer" eyebrow (replaces tinted pill), calmer
+  // star row, tighter title typography, hairline summary card. Pure
+  // presentation; review CRUD, helpful counts, and verified-buyer logic
+  // untouched.
+  premiumReviews: true,
+  // CI-19: homepage social proof polish — micro-caps "Customer promise"
+  // eyebrow, hairline promise tiles (no icon tint), calmer trust-badge
+  // row (no card background, no hover lift). Pure presentation; copy,
+  // links, and shipping constants untouched.
+  premiumSocialProof: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
