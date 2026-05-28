@@ -982,7 +982,12 @@ const ProductDetail = () => {
           >
             {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
             {isMobile ? (
-              <MobileProductGallery
+              <>
+                <SwipeBenefitChips
+                  category={product.category || undefined}
+                  productName={product.name}
+                />
+                <MobileProductGallery
                 images={images}
                 productName={safeString(product.name)}
                 category={product.category || undefined}
@@ -992,7 +997,8 @@ const ProductDetail = () => {
                   setSelectedImage(index);
                   setLightboxOpen(true);
                 }}
-              />
+                />
+              </>
             ) : (
               <DesktopProductGallery
                 images={images}
