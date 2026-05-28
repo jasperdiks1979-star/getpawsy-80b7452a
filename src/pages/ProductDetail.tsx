@@ -103,6 +103,10 @@ import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
 import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
 import { PdpStickyAtc } from "@/components/products/PdpStickyAtc";
+import {
+  LitterBoxConversionBoost,
+  LitterBoxLovedSection,
+} from "@/components/products/LitterBoxConversionBoost";
 import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
@@ -1000,6 +1004,21 @@ const ProductDetail = () => {
               {showTikTokVariant && (
                 <TikTokHero onCtaClick={scrollToBuy} inStock={inStock} />
               )}
+              {/*
+                Universal Litter Box conversion booster — shown to ALL traffic
+                on the automatic litter box PDP (mobile + desktop). Above the
+                title for maximum above-the-fold conversion impact.
+                Suppressed when the TikTok-only hero is already taking the
+                top slot to avoid stacking two heroes.
+              */}
+              {isLitterBoxProduct && !showTikTokVariant && (
+                <LitterBoxConversionBoost
+                  images={safeArray<string>(product.images)}
+                  productName={product.name}
+                  inStock={inStock}
+                  reviewCount={reviews.length}
+                />
+              )}
               {/* Pinterest continuity banner — only when arriving from a pin */}
               {adIntent.source === 'pinterest' && (
                 <div className="mb-3">
@@ -1770,6 +1789,9 @@ const ProductDetail = () => {
             price={activePrice}
           />
         )}
+
+        {/* Litter Box-only emotional reinforcement before reviews */}
+        {isLitterBoxProduct && <LitterBoxLovedSection />}
 
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
