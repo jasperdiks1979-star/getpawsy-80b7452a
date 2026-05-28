@@ -10,6 +10,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useEffect } from 'react';
 import { fireCartOpen } from '@/lib/funnelEvents';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { FreeShippingNudge } from '@/components/cart/FreeShippingNudge';
 import { TieredIncentiveBar } from '@/components/cart/TieredIncentiveBar';
@@ -35,6 +36,13 @@ import {
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
   const premium = getConversionFlag('premiumCheckoutCart');
+  const premiumV3 = getConversionFlag('premiumCartV3');
+  const scrollDir = useScrollDirection(8);
+  const hideMobileBar =
+    premiumV3 &&
+    scrollDir === 'down' &&
+    typeof window !== 'undefined' &&
+    window.scrollY > 200;
 
   // Fire one cart_open event per session+page when the cart route mounts.
   // Dedupe handled centrally in funnelEvents (10s window per session+event).
@@ -251,13 +259,19 @@ const Cart = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
-              {/* Shipping info */}
-              <div className="mt-4 p-2 bg-muted/50 rounded-lg border border-border text-center">
-                <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs">
-                  <Truck className="w-3 h-3" />
-                  <span>Processing: 1–2 business days • Delivery: 5–10 business days</span>
+              {/* Shipping info — hairline micro-caps in v3, legacy pill otherwise. */}
+              {premiumV3 ? (
+                <p className="mt-4 pt-3 border-t border-border/40 text-[11px] uppercase tracking-wider text-muted-foreground text-center">
+                  Processing 1–2 days · Delivery 5–10 days
+                </p>
+              ) : (
+                <div className="mt-4 p-2 bg-muted/50 rounded-lg border border-border text-center">
+                  <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs">
+                    <Truck className="w-3 h-3" />
+                    <span>Processing: 1–2 business days • Delivery: 5–10 business days</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <Link to="/checkout" className="block mt-4">
                 <Button
@@ -328,7 +342,7 @@ const Cart = () => {
           Suppressed when premiumCheckoutCart flag is off. */}
       {premium && (
         <div
-          className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-md border-t border-border/60 px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]"
+          className={`md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-md border-t border-border/60 px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out ${hideMobileBar ? 'translate-y-full' : 'translate-y-0'}`}
           role="region"
           aria-label="Checkout summary"
         >
